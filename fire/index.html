@@ -20,11 +20,7 @@
     padding-bottom: 10px;
     margin-bottom: 8px;
   }
-  .desc {
-    color: #555;
-    font-size: 14px;
-    margin-bottom: 24px;
-  }
+  .desc { color: #555; font-size: 14px; margin-bottom: 24px; }
   .back-link {
     display: inline-block;
     margin-bottom: 16px;
@@ -60,10 +56,7 @@
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 14px;
   }
-  .input-row {
-    display: flex;
-    flex-direction: column;
-  }
+  .input-row { display: flex; flex-direction: column; }
   label {
     font-size: 13px;
     font-weight: 600;
@@ -104,21 +97,9 @@
     text-align: center;
     margin-bottom: 20px;
   }
-  .hero-label {
-    font-size: 14px;
-    opacity: 0.9;
-    margin-bottom: 8px;
-  }
-  .hero-value {
-    font-size: 38px;
-    font-weight: 800;
-    letter-spacing: -1px;
-  }
-  .hero-sub {
-    font-size: 14px;
-    opacity: 0.85;
-    margin-top: 8px;
-  }
+  .hero-label { font-size: 14px; opacity: 0.9; margin-bottom: 8px; }
+  .hero-value { font-size: 38px; font-weight: 800; letter-spacing: -1px; }
+  .hero-sub { font-size: 14px; opacity: 0.85; margin-top: 8px; }
   .verdict {
     margin-top: 16px;
     padding: 10px 16px;
@@ -140,21 +121,9 @@
     border-radius: 6px;
     border-left: 4px solid #1F4E78;
   }
-  .stat-label {
-    font-size: 12px;
-    color: #666;
-    margin-bottom: 4px;
-  }
-  .stat-value {
-    font-size: 18px;
-    font-weight: 700;
-    color: #1F4E78;
-  }
-  .stat-sub {
-    font-size: 12px;
-    color: #888;
-    margin-top: 2px;
-  }
+  .stat-label { font-size: 12px; color: #666; margin-bottom: 4px; }
+  .stat-value { font-size: 18px; font-weight: 700; color: #1F4E78; }
+  .stat-sub { font-size: 12px; color: #888; margin-top: 2px; }
   table {
     width: 100%;
     border-collapse: collapse;
@@ -175,6 +144,7 @@
   }
   td:first-child, th:first-child { text-align: center; }
   tr.retired { background: #f2f2f2; color: #777; }
+  tr.pension { background: #ecfdf5; }
   tr.death { background: #fef3c7; font-weight: 600; }
   tr.negative td { color: #dc2626 !important; font-weight: 600; }
   .table-wrap {
@@ -218,13 +188,13 @@
 <a href="../" class="back-link">← 메인으로</a>
 
 <h1>파이어족 역산 계산기</h1>
-<p class="desc">월 소비액과 사망 시 남길 금액을 입력하면 <b>은퇴 시점에 얼마가 필요한지</b> 자동 역산. 기본값은 한국 평균(2024년 통계청 기준).</p>
+<p class="desc">월 소비액과 사망 시 남길 금액을 입력하면 <b>은퇴 시점에 얼마가 필요한지</b> 자동 역산. 연금 소득도 반영. 기본값은 한국 평균(2024년 기준).</p>
 
 <div class="panel">
   <h2>입력값</h2>
   <div class="inputs">
 
-    <div class="section-label">① 기본 정보 (수정 가능)</div>
+    <div class="section-label">① 기본 정보</div>
     <div class="input-row">
       <label>시작 연도 (자동)</label>
       <input type="number" id="startYear" value="2026">
@@ -252,7 +222,7 @@
       <input type="number" id="legacy" value="0">
     </div>
 
-    <div class="section-label">③ 현재 자산 & 현금흐름</div>
+    <div class="section-label">③ 현재 자산 & 은퇴 전 현금흐름</div>
     <div class="input-row">
       <label>현재 자산 (원) <span class="stat-sub">(40대 평균 4.5억)</span></label>
       <input type="number" id="currentAssets" value="450000000">
@@ -270,7 +240,17 @@
       <span style="color:#666;"> &nbsp;(저축률 <span id="savingRate">31</span>%)</span>
     </div>
 
-    <div class="section-label">④ 변동률 (연 %)</div>
+    <div class="section-label">④ 은퇴 후 수입 (연금)</div>
+    <div class="input-row">
+      <label>연금 수령 시작 나이 <span class="stat-sub">(국민연금 65세)</span></label>
+      <input type="number" id="pensionStartAge" value="65">
+    </div>
+    <div class="input-row">
+      <label>월 연금 수령액 (원) <span class="stat-sub">(20년+ 가입자 평균 100만)</span></label>
+      <input type="number" id="monthlyPension" value="1000000">
+    </div>
+
+    <div class="section-label">⑤ 변동률 (연 %)</div>
     <div class="input-row">
       <label>자산 투자수익률 (%)</label>
       <input type="number" id="returnRate" value="5" step="0.1">
@@ -303,7 +283,7 @@
     <div class="stat">
       <div class="stat-label">은퇴 시점 예상 자산</div>
       <div class="stat-value" id="projRetireAssets">-</div>
-      <div class="stat-sub">현재 수입/지출 페이스로</div>
+      <div class="stat-sub">현재 페이스로</div>
     </div>
     <div class="stat">
       <div class="stat-label">목표 대비 차액</div>
@@ -332,8 +312,9 @@
           <th>연도</th>
           <th>나이</th>
           <th>그 해 수입</th>
+          <th>그 해 연금</th>
           <th>그 해 지출</th>
-          <th>그 해 저축</th>
+          <th>현금흐름</th>
           <th>자산 (명목)</th>
           <th>자산 (현재가치)</th>
         </tr>
@@ -347,41 +328,43 @@
   <h3>📘 사용 설명서</h3>
 
   <h3>① 이 계산기의 목적</h3>
-  <p>"<b>지금 페이스로 가서 얼마 모이는지</b>"가 아니라, "<b>월 X만원 쓰면서 살려면 은퇴할 때 얼마가 필요한지</b>"를 거꾸로 계산하는 도구. 목표 자산 → 현재 페이스 비교 → 부족분 → 추가로 저축해야 할 금액 까지 알려줌.</p>
+  <p>"<b>월 X만원 쓰면서 살려면 은퇴할 때 얼마가 필요한지</b>"를 거꾸로 계산. 연금 소득까지 반영해서, 자산만으로 부담해야 할 부분을 정확히 계산함.</p>
 
   <h3>② 입력값 설명</h3>
   <ul>
-    <li><span class="badge">기본 정보</span> 현재 나이·은퇴 나이·사망 나이 모두 수정 가능. 한국 평균(44/63/84세) 기본값.</li>
-    <li><span class="badge">월 소비액</span> 은퇴 후 매달 쓸 돈 (오늘 기준). 매년 물가만큼 자동 상승. 예: 월 300만원 → 20년 뒤 월 600만원 정도 필요 (물가 3.5% 가정).</li>
-    <li><span class="badge">사망 시 남길 금액</span> 오늘 기준 가치. 0이면 "다 쓰고 가기", 2억이면 "자녀에게 2억 상속" 같은 의미.</li>
-    <li><span class="badge">연 수입액</span> <b>실수령액</b>(처분가능소득) 기준. 세금·4대보험 다 떼고 받는 금액. 한국 가구 평균 5,040만.</li>
-    <li><span class="badge">연 지출액</span> 현재 1년 동안 쓰는 생활비. 한국 가구 평균 3,480만(월 290만).</li>
-    <li><span class="badge">연 저축액 (자동)</span> = 수입 − 지출. 은퇴 전엔 이만큼 자산에 쌓이고, 은퇴 후엔 수입이 0이 되면서 위에 입력한 <b>월 소비액 × 12</b>만큼 자산에서 빠짐.</li>
+    <li><span class="badge">기본 정보</span> 현재·은퇴·사망 나이 모두 수정 가능. 한국 평균(44/63/84세).</li>
+    <li><span class="badge">월 소비액</span> 은퇴 후 매달 쓸 돈 (오늘 기준). 매년 물가만큼 자동 상승.</li>
+    <li><span class="badge">사망 시 남길 금액</span> 오늘 기준. 0이면 다 쓰고 감, 2억이면 자녀 상속 등.</li>
+    <li><span class="badge">연 수입액</span> 실수령액(처분가능소득). <b>은퇴까지만 적용.</b></li>
+    <li><span class="badge">연 지출액</span> 현재 1년 동안 쓰는 생활비 (은퇴 전 지출).</li>
+    <li><span class="badge">연 저축액 (자동)</span> = 수입 − 지출.</li>
+    <li><span class="badge">연금 수령 시작 나이</span> 국민연금 기준 1969년 이후 출생자는 65세. 사적연금 더 빠르면 그 나이로.</li>
+    <li><span class="badge">월 연금 수령액</span> 국민연금 20년+ 가입자 평균 월 100만. 퇴직연금·사적연금 합치면 더 늘려도 됨. 수령 시작 후 매년 물가만큼 인상.</li>
   </ul>
 
   <h3>③ 결과 해석</h3>
   <ul>
-    <li><span class="badge">필요 자산</span> 은퇴 시점에 이 금액이 있어야, 평생 월 X만원 쓰고 사망 시 N억 남길 수 있음.</li>
-    <li><span class="badge">목표 대비 차액</span> 현재 페이스로 도달할 자산 − 필요 자산. 마이너스면 부족, 플러스면 여유.</li>
-    <li><span class="badge">필요 추가 저축액</span> 부족분을 메우기 위해 매년 추가로 저축해야 할 금액. 0이거나 음수면 현재 페이스로 충분.</li>
-    <li><span class="badge">판정 색상</span> 🟢 충분 / 🟡 약간 부족 / 🔴 크게 부족</li>
+    <li><span class="badge">필요 자산</span> 은퇴 시점에 이 금액이 있어야, 평생 월 X만원 쓰고 사망 시 N억 남길 수 있음. <b>연금 소득이 반영된 후의 부족분</b>이라 연금 늘릴수록 필요자산은 줄어듬.</li>
+    <li><span class="badge">목표 대비 차액</span> 현재 페이스로 도달할 자산 − 필요 자산.</li>
+    <li><span class="badge">필요 추가 저축액</span> 매년 추가로 저축해야 할 금액. 0이거나 음수면 현재 페이스로 충분.</li>
+    <li><span class="badge">판정</span> 🟢 충분 / 🟡 약간 부족 / 🔴 크게 부족</li>
   </ul>
 
   <h3>④ 계산 로직</h3>
   <ul>
-    <li><b>은퇴 전 자산 흐름:</b> 자산 × (1+수익률) + 수입 − 지출 (현재 페이스)</li>
-    <li><b>은퇴 후 자산 흐름:</b> 자산 × (1+수익률) − 월소비×12 (매년 물가만큼 증가)</li>
-    <li><b>역산:</b> 사망 시점 자산 = 남길 금액(미래가치) 가 되도록 은퇴 시점 자산을 거꾸로 풀어냄</li>
-    <li>"오늘 기준" 금액들은 모두 사망 시점 미래가치로 환산해서 비교</li>
+    <li><b>은퇴 전:</b> 자산 × (1+수익률) + 수입 − 지출</li>
+    <li><b>은퇴~연금시작 전:</b> 자산 × (1+수익률) − 월소비×12 <i>(수입·연금 모두 0)</i></li>
+    <li><b>연금 수령 후:</b> 자산 × (1+수익률) + 연금 − 월소비×12</li>
+    <li>역산은 사망 시점 자산 = 남길 금액(미래가치)가 되도록 은퇴시점 자산을 거꾸로 풀어냄</li>
   </ul>
 
   <h3>⑤ 주의사항</h3>
   <ul>
     <li>세금·수수료 미반영. 실수익률은 더 낮을 수 있음.</li>
-    <li>수익률을 매년 일정하다고 가정. 실제로는 변동성 큼 → 보수적으로 잡는 게 안전.</li>
-    <li>국민연금·퇴직연금 미반영. 노후소득 있다면 "월 소비액"에서 차감해서 입력.</li>
-    <li>의료비 급증 가능성 미반영. 사망 시 남길 금액을 조금 더 잡거나, 사망 나이를 길게 잡는 방식으로 버퍼 확보 권장.</li>
-    <li>큰 일회성 지출(주택구입·자녀교육·결혼자금 등) 미반영.</li>
+    <li>수익률 매년 일정 가정. 실제로는 변동성 큼.</li>
+    <li>연금 개혁 가능성 미반영. 보수적으로 잡는 게 안전.</li>
+    <li>의료비 급증 가능성 미반영. 사망시 남길금액에 버퍼 두는 것 권장.</li>
+    <li>큰 일회성 지출(주택·자녀·결혼) 미반영.</li>
   </ul>
 </div>
 
@@ -405,12 +388,13 @@ function calculate() {
   const currentAssets = parseFloat(document.getElementById('currentAssets').value) || 0;
   const annualIncome = parseFloat(document.getElementById('annualIncome').value) || 0;
   const annualSpending = parseFloat(document.getElementById('annualSpending').value) || 0;
+  const pensionStartAge = parseInt(document.getElementById('pensionStartAge').value) || 0;
+  const monthlyPension = parseFloat(document.getElementById('monthlyPension').value) || 0;
   const returnRate = (parseFloat(document.getElementById('returnRate').value) || 0) / 100;
   const inflationRate = (parseFloat(document.getElementById('inflationRate').value) || 0) / 100;
   const incomeGrowth = (parseFloat(document.getElementById('incomeGrowth').value) || 0) / 100;
   const spendingGrowth = (parseFloat(document.getElementById('spendingGrowth').value) || 0) / 100;
 
-  // 자동 저축액·저축률 표시
   const autoSaving = annualIncome - annualSpending;
   document.getElementById('autoSaving').textContent = fmt(autoSaving);
   document.getElementById('savingRate').textContent = annualIncome > 0
@@ -426,29 +410,35 @@ function calculate() {
   }
 
   // === 1. 필요자산 역산 ===
+  // 은퇴 후 시뮬레이션: 자산 × (1+r) + 연금(수령중인 경우) − 목표지출
+  // 사망 시점에 legacy(미래가치)가 정확히 남도록 은퇴 시점 자산 X 역산
   const retireSpendingAnnualNow = monthlySpending * 12;
+  const annualPensionNow = monthlyPension * 12;
   const yearsToRetire = retireAge - currentAge;
-  const firstYearSpending = retireSpendingAnnualNow * Math.pow(1 + inflationRate, yearsToRetire);
   const yearsToDeath = deathAge - currentAge;
   const legacyAtDeath = legacy * Math.pow(1 + inflationRate, yearsToDeath);
-  const retireYears = deathAge - retireAge;
 
   function simulateFromRetire(startAssets) {
     let a = startAssets;
-    for (let i = 0; i < retireYears; i++) {
-      const spending = firstYearSpending * Math.pow(1 + inflationRate, i);
-      a = a * (1 + returnRate) - spending;
+    // age = retireAge+1 부터 deathAge 까지 시뮬
+    for (let age = retireAge + 1; age <= deathAge; age++) {
+      const yearsFromNow = age - currentAge;
+      const spending = retireSpendingAnnualNow * Math.pow(1 + inflationRate, yearsFromNow);
+      const pension = age >= pensionStartAge
+        ? annualPensionNow * Math.pow(1 + inflationRate, yearsFromNow)
+        : 0;
+      a = a * (1 + returnRate) + pension - spending;
     }
     return a;
   }
 
-  let lo = 0, hi = 1e13;
-  for (let i = 0; i < 100; i++) {
+  let lo = -1e13, hi = 1e13;
+  for (let i = 0; i < 200; i++) {
     const mid = (lo + hi) / 2;
     if (simulateFromRetire(mid) < legacyAtDeath) lo = mid;
     else hi = mid;
   }
-  const requiredAssets = (lo + hi) / 2;
+  const requiredAssets = Math.max(0, (lo + hi) / 2);
 
   // === 2. 현재 페이스 시뮬레이션 ===
   const tbody = document.getElementById('tableBody');
@@ -462,24 +452,25 @@ function calculate() {
     const yearsFromNow = age - currentAge;
     const year = startYear + yearsFromNow;
     const isRetired = age > retireAge;
+    const isPension = age >= pensionStartAge;
     const isDeath = age === deathAge;
 
-    let thisIncome, thisSpending;
+    let thisIncome, thisSpending, thisPension;
     if (!isRetired) {
-      // 은퇴 전: 현재 페이스 (수입 - 지출)
       thisIncome = annualIncome * Math.pow(1 + incomeGrowth, yearsFromNow);
       thisSpending = annualSpending * Math.pow(1 + spendingGrowth, yearsFromNow);
     } else {
-      // 은퇴 후: 수입 0, 지출은 목표 월소비 기준
       thisIncome = 0;
       thisSpending = retireSpendingAnnualNow * Math.pow(1 + inflationRate, yearsFromNow);
     }
-    const thisSaving = thisIncome - thisSpending;
+    thisPension = isPension ? annualPensionNow * Math.pow(1 + inflationRate, yearsFromNow) : 0;
+
+    const netFlow = thisIncome + thisPension - thisSpending;
 
     if (yearsFromNow === 0) {
-      assets = currentAssets + thisSaving;
+      assets = currentAssets + netFlow;
     } else {
-      assets = assets * (1 + returnRate) + thisSaving;
+      assets = assets * (1 + returnRate) + netFlow;
     }
 
     const realValue = assets / Math.pow(1 + inflationRate, yearsFromNow);
@@ -488,15 +479,17 @@ function calculate() {
     if (age === deathAge) projDeathAssets = assets;
 
     const row = document.createElement('tr');
-    if (isRetired) row.className = 'retired';
+    if (isRetired && !isPension) row.className = 'retired';
+    else if (isPension) row.className = 'pension';
     if (isDeath) row.classList.add('death');
     if (assets < 0) row.classList.add('negative');
     row.innerHTML = `
       <td>${year}</td>
       <td>${age}세${isDeath ? ' ⚰' : ''}</td>
       <td>${thisIncome > 0 ? fmt(thisIncome) : '-'}</td>
+      <td>${thisPension > 0 ? fmt(thisPension) : '-'}</td>
       <td>${fmt(thisSpending)}</td>
-      <td style="color:${thisSaving>=0?'#1F4E78':'#dc2626'};font-weight:600;">${thisSaving>=0?'+':''}${fmt(thisSaving)}</td>
+      <td style="color:${netFlow>=0?'#1F4E78':'#dc2626'};font-weight:600;">${netFlow>=0?'+':''}${fmt(netFlow)}</td>
       <td>${fmt(assets)}</td>
       <td>${fmt(realValue)}</td>
     `;
@@ -514,7 +507,7 @@ function calculate() {
 
   // === 4. UI ===
   document.getElementById('targetAmount').textContent = fmtShort(requiredAssets) + ' 원';
-  document.getElementById('targetSub').textContent = `정확히: ${fmt(requiredAssets)} 원 (= 월 ${fmt(monthlySpending)}원 쓰고, 사망 시 ${fmt(legacy)}원 남기기)`;
+  document.getElementById('targetSub').textContent = `정확히: ${fmt(requiredAssets)} 원 (= 월 ${fmt(monthlySpending)}원 쓰고, 월 ${fmt(monthlyPension)}원 연금받고, 사망 시 ${fmt(legacy)}원 남기기)`;
 
   document.getElementById('projRetireAssets').textContent = fmt(projRetireAssets) + ' 원';
   document.getElementById('gap').textContent = (gap >= 0 ? '−' : '+') + fmt(Math.abs(gap)) + ' 원';
@@ -526,7 +519,7 @@ function calculate() {
   document.getElementById('deathAssetsSub').textContent = `목표: ${fmt(legacyAtDeath)}원 (현재가치 ${fmt(legacy)}원)`;
 
   const verdictEl = document.getElementById('verdict');
-  const ratio = projRetireAssets / requiredAssets;
+  const ratio = requiredAssets > 0 ? projRetireAssets / requiredAssets : 99;
   if (ratio >= 1.0) {
     verdictEl.innerHTML = '<div class="verdict ok">🟢 충분: 현재 페이스로 목표 달성 가능</div>';
   } else if (ratio >= 0.7) {
