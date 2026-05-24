@@ -3,296 +3,129 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>경제적 자유 시뮬레이터</title>
+<title>SwingFarmer 금융 도구</title>
 <style>
   * { box-sizing: border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
-    max-width: 1100px;
+    max-width: 900px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 40px 20px;
     background: #f5f7fa;
     color: #1a1a1a;
+    min-height: 100vh;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 50px;
   }
   h1 {
     color: #1F4E78;
-    border-bottom: 3px solid #1F4E78;
-    padding-bottom: 10px;
+    font-size: 32px;
     margin-bottom: 8px;
   }
-  .desc {
-    color: #555;
-    font-size: 14px;
-    margin-bottom: 24px;
-  }
-  .panel {
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    margin-bottom: 20px;
-  }
-  .panel h2 {
-    margin-top: 0;
-    color: #1F4E78;
-    font-size: 18px;
-  }
-  .inputs {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 14px;
-  }
-  .input-row {
-    display: flex;
-    flex-direction: column;
-  }
-  label {
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 4px;
-    color: #333;
-  }
-  input[type="number"] {
-    padding: 10px;
-    font-size: 15px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background: #FFF2CC;
-    font-weight: 600;
-    color: #0000FF;
-  }
-  input[type="number"]:focus {
-    outline: 2px solid #1F4E78;
-    background: #FFFACD;
-  }
-  .summary {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 12px;
-  }
-  .stat {
-    background: #f0f5fa;
-    padding: 14px;
-    border-radius: 6px;
-    border-left: 4px solid #1F4E78;
-  }
-  .stat-label {
-    font-size: 12px;
+  .subtitle {
     color: #666;
-    margin-bottom: 4px;
+    font-size: 15px;
   }
-  .stat-value {
-    font-size: 20px;
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+  }
+  .card {
+    background: white;
+    border-radius: 10px;
+    padding: 24px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    text-decoration: none;
+    color: inherit;
+    border: 2px solid transparent;
+    transition: all 0.15s ease;
+    display: block;
+  }
+  .card:hover {
+    border-color: #1F4E78;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(31, 78, 120, 0.15);
+  }
+  .card.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  .icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+  }
+  .card-title {
+    font-size: 18px;
     font-weight: 700;
     color: #1F4E78;
+    margin-bottom: 6px;
   }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 12px;
+  .card-desc {
     font-size: 13px;
-  }
-  th, td {
-    padding: 8px 10px;
-    text-align: right;
-    border-bottom: 1px solid #eee;
-  }
-  th {
-    background: #1F4E78;
-    color: white;
-    font-weight: 600;
-    position: sticky;
-    top: 0;
-  }
-  td:first-child, th:first-child {
-    text-align: center;
-  }
-  tr.retired {
-    background: #f2f2f2;
-    color: #777;
-  }
-  .table-wrap {
-    max-height: 500px;
-    overflow-y: auto;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-  }
-  .note {
-    font-size: 12px;
     color: #666;
-    margin-top: 12px;
-    line-height: 1.6;
+    line-height: 1.5;
+  }
+  .tag {
+    display: inline-block;
+    background: #eef2f7;
+    color: #1F4E78;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-top: 10px;
+  }
+  .tag.soon {
+    background: #f5f5f5;
+    color: #999;
+  }
+  footer {
+    text-align: center;
+    margin-top: 60px;
+    color: #999;
+    font-size: 12px;
   }
 </style>
 </head>
 <body>
 
-<h1>경제적 자유 시뮬레이터</h1>
-<p class="desc">노란색 입력칸에 값을 넣으면 자동으로 계산됩니다. 모바일에서도 작동.</p>
+<header>
+  <h1>SwingFarmer 금융 도구</h1>
+  <p class="subtitle">개인 재무 시뮬레이션 & 분석 모음</p>
+</header>
 
-<div class="panel">
-  <h2>입력값</h2>
-  <div class="inputs">
-    <div class="input-row">
-      <label>시작 연도</label>
-      <input type="number" id="startYear" value="2026">
-    </div>
-    <div class="input-row">
-      <label>현재 나이</label>
-      <input type="number" id="currentAge" value="30">
-    </div>
-    <div class="input-row">
-      <label>은퇴 나이 (이 나이까지 저축)</label>
-      <input type="number" id="retireAge" value="60">
-    </div>
-    <div class="input-row">
-      <label>현재 자산 (원)</label>
-      <input type="number" id="currentAssets" value="50000000">
-    </div>
-    <div class="input-row">
-      <label>연 저축액 (원, 현재 기준)</label>
-      <input type="number" id="annualSaving" value="24000000">
-    </div>
-    <div class="input-row">
-      <label>연 투자수익률 (%)</label>
-      <input type="number" id="returnRate" value="7" step="0.1">
-    </div>
-    <div class="input-row">
-      <label>연 물가상승률 (%)</label>
-      <input type="number" id="inflationRate" value="2.5" step="0.1">
-    </div>
-    <div class="input-row">
-      <label>저축액 매년 증가율 (%)</label>
-      <input type="number" id="savingGrowth" value="3" step="0.1">
-    </div>
+<div class="grid">
+
+  <a href="free/" class="card">
+    <div class="icon">🌴</div>
+    <div class="card-title">경제적 자유 시뮬레이터</div>
+    <div class="card-desc">현재 자산, 저축액, 수익률을 입력하면 은퇴 시점과 100세까지의 자산 추이를 자동 계산.</div>
+    <div class="tag">사용 가능</div>
+  </a>
+
+  <div class="card disabled">
+    <div class="icon">💰</div>
+    <div class="card-title">자산 관리 대시보드</div>
+    <div class="card-desc">통화별 자산 추적, 비중 분석. (작업 예정)</div>
+    <div class="tag soon">준비 중</div>
   </div>
+
+  <div class="card disabled">
+    <div class="icon">📊</div>
+    <div class="card-title">금융 데이터 대시보드</div>
+    <div class="card-desc">환율, 유가, VIX, 코스피 등 실시간 갱신. (작업 예정)</div>
+    <div class="tag soon">준비 중</div>
+  </div>
+
 </div>
 
-<div class="panel">
-  <h2>결과 요약</h2>
-  <div class="summary" id="summary"></div>
-</div>
-
-<div class="panel">
-  <h2>연도별 시뮬레이션</h2>
-  <div class="table-wrap">
-    <table id="resultTable">
-      <thead>
-        <tr>
-          <th>연도</th>
-          <th>나이</th>
-          <th>그 해 저축</th>
-          <th>자산 (명목)</th>
-          <th>자산 (현재가치)</th>
-          <th>누적 저축</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody"></tbody>
-    </table>
-  </div>
-  <div class="note">
-    ※ 회색 음영 행 = 은퇴 후. 저축은 0이지만 기존 자산은 계속 운용수익·물가영향을 받음.<br>
-    ※ "자산(현재가치)"는 물가상승률을 차감한 오늘 기준 구매력 환산값.<br>
-    ※ 표는 현재 나이부터 100세까지 자동 표시.
-  </div>
-</div>
-
-<script>
-const fmt = n => Math.round(n).toLocaleString('ko-KR');
-
-function calculate() {
-  const startYear = parseInt(document.getElementById('startYear').value) || 2026;
-  const currentAge = parseInt(document.getElementById('currentAge').value) || 30;
-  const retireAge = parseInt(document.getElementById('retireAge').value) || 60;
-  const currentAssets = parseFloat(document.getElementById('currentAssets').value) || 0;
-  const annualSaving = parseFloat(document.getElementById('annualSaving').value) || 0;
-  const returnRate = (parseFloat(document.getElementById('returnRate').value) || 0) / 100;
-  const inflationRate = (parseFloat(document.getElementById('inflationRate').value) || 0) / 100;
-  const savingGrowth = (parseFloat(document.getElementById('savingGrowth').value) || 0) / 100;
-
-  const tbody = document.getElementById('tableBody');
-  tbody.innerHTML = '';
-
-  let assets = currentAssets;
-  let cumulativeSaving = 0;
-  let retireAssetsNominal = 0, retireAssetsReal = 0;
-  let age100Nominal = 0, age100Real = 0;
-
-  for (let age = currentAge; age <= 100; age++) {
-    const yearsFromNow = age - currentAge;
-    const year = startYear + yearsFromNow;
-    const isRetired = age > retireAge;
-
-    // 그 해 저축액 (은퇴 후 0)
-    const thisSaving = isRetired ? 0 : annualSaving * Math.pow(1 + savingGrowth, yearsFromNow);
-
-    // 자산 굴리기: 전년 자산 × (1+수익률) + 그 해 저축
-    if (yearsFromNow === 0) {
-      assets = currentAssets + thisSaving;
-    } else {
-      assets = assets * (1 + returnRate) + thisSaving;
-    }
-    cumulativeSaving += thisSaving;
-
-    // 현재가치 환산
-    const realValue = assets / Math.pow(1 + inflationRate, yearsFromNow);
-
-    if (age === retireAge) {
-      retireAssetsNominal = assets;
-      retireAssetsReal = realValue;
-    }
-    if (age === 100) {
-      age100Nominal = assets;
-      age100Real = realValue;
-    }
-
-    const row = document.createElement('tr');
-    if (isRetired) row.className = 'retired';
-    row.innerHTML = `
-      <td>${year}</td>
-      <td>${age}세</td>
-      <td>${thisSaving > 0 ? fmt(thisSaving) : '-'}</td>
-      <td>${fmt(assets)}</td>
-      <td>${fmt(realValue)}</td>
-      <td>${fmt(cumulativeSaving)}</td>
-    `;
-    tbody.appendChild(row);
-  }
-
-  // 요약 카드
-  const totalReturn = (retireAssetsNominal - cumulativeSaving - currentAssets);
-  document.getElementById('summary').innerHTML = `
-    <div class="stat">
-      <div class="stat-label">은퇴 시점 자산 (명목)</div>
-      <div class="stat-value">${fmt(retireAssetsNominal)} 원</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">은퇴 시점 자산 (현재가치)</div>
-      <div class="stat-value">${fmt(retireAssetsReal)} 원</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">100세 시점 자산 (명목)</div>
-      <div class="stat-value">${fmt(age100Nominal)} 원</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">100세 시점 자산 (현재가치)</div>
-      <div class="stat-value">${fmt(age100Real)} 원</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">총 운용수익 (은퇴 시점까지)</div>
-      <div class="stat-value">${fmt(totalReturn)} 원</div>
-    </div>
-  `;
-}
-
-// 입력 변경 시마다 자동 계산
-document.querySelectorAll('input').forEach(el => {
-  el.addEventListener('input', calculate);
-});
-
-// 초기 계산
-calculate();
-</script>
+<footer>
+  © SwingFarmer · GitHub Pages
+</footer>
 
 </body>
 </html>
