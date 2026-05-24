@@ -1,1 +1,527 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIRE 역산 계산기 — 필요 자산</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #f5f7fa;
+    color: #1a1a1a;
+  }
+  h1 {
+    color: #1F4E78;
+    border-bottom: 3px solid #1F4E78;
+    padding-bottom: 10px;
+    margin-bottom: 8px;
+  }
+  .desc {
+    color: #555;
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+  .back-link {
+    display: inline-block;
+    margin-bottom: 16px;
+    color: #1F4E78;
+    text-decoration: none;
+    font-size: 14px;
+  }
+  .back-link:hover { text-decoration: underline; }
+  .panel {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+  }
+  .panel h2 {
+    margin-top: 0;
+    color: #1F4E78;
+    font-size: 18px;
+  }
+  .section-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 16px 0 8px 0;
+    grid-column: 1 / -1;
+  }
+  .section-label:first-child { margin-top: 0; }
+  .inputs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+  }
+  .input-row {
+    display: flex;
+    flex-direction: column;
+  }
+  label {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #333;
+  }
+  input[type="number"] {
+    padding: 10px;
+    font-size: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #FFF2CC;
+    font-weight: 600;
+    color: #0000FF;
+  }
+  input[type="number"]:focus {
+    outline: 2px solid #1F4E78;
+    background: #FFFACD;
+  }
+  .hero {
+    background: linear-gradient(135deg, #1F4E78, #2563eb);
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .hero-label {
+    font-size: 14px;
+    opacity: 0.9;
+    margin-bottom: 8px;
+  }
+  .hero-value {
+    font-size: 38px;
+    font-weight: 800;
+    letter-spacing: -1px;
+  }
+  .hero-sub {
+    font-size: 14px;
+    opacity: 0.85;
+    margin-top: 8px;
+  }
+  .verdict {
+    margin-top: 16px;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-weight: 700;
+    display: inline-block;
+  }
+  .verdict.ok {
+    background: #10b981;
+    color: white;
+  }
+  .verdict.warn {
+    background: #f59e0b;
+    color: white;
+  }
+  .verdict.bad {
+    background: #ef4444;
+    color: white;
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+  }
+  .stat {
+    background: #f0f5fa;
+    padding: 14px;
+    border-radius: 6px;
+    border-left: 4px solid #1F4E78;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+  }
+  .stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1F4E78;
+  }
+  .stat-sub {
+    font-size: 12px;
+    color: #888;
+    margin-top: 2px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: 13px;
+  }
+  th, td {
+    padding: 8px 10px;
+    text-align: right;
+    border-bottom: 1px solid #eee;
+  }
+  th {
+    background: #1F4E78;
+    color: white;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+  }
+  td:first-child, th:first-child {
+    text-align: center;
+  }
+  tr.retired { background: #f2f2f2; color: #777; }
+  tr.death { background: #fef3c7; font-weight: 600; }
+  tr.negative td { color: #dc2626 !important; font-weight: 600; }
+  .table-wrap {
+    max-height: 500px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  .manual {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 30px;
+    line-height: 1.7;
+    font-size: 14px;
+  }
+  .manual h3 {
+    color: #1F4E78;
+    margin-top: 18px;
+    margin-bottom: 8px;
+    font-size: 15px;
+  }
+  .manual h3:first-child { margin-top: 0; }
+  .manual ul { padding-left: 20px; margin: 6px 0; }
+  .manual li { margin-bottom: 4px; }
+  .badge {
+    display: inline-block;
+    background: #1F4E78;
+    color: white;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 4px;
+  }
+</style>
+</head>
+<body>
 
+<a href="../" class="back-link">← 메인으로</a>
+
+<h1>FIRE 역산 계산기</h1>
+<p class="desc">월 소비액과 사망 시 남길 금액을 입력하면 <b>은퇴 시점에 얼마가 필요한지</b> 자동 역산. 기본값은 한국 평균 (은퇴 63세 / 기대수명 84세).</p>
+
+<div class="panel">
+  <h2>입력값</h2>
+  <div class="inputs">
+
+    <div class="section-label">① 기본 정보 (수정 가능)</div>
+    <div class="input-row">
+      <label>시작 연도 (자동)</label>
+      <input type="number" id="startYear" value="2026">
+    </div>
+    <div class="input-row">
+      <label>현재 나이</label>
+      <input type="number" id="currentAge" value="44">
+    </div>
+    <div class="input-row">
+      <label>은퇴 나이 <span class="stat-sub">(평균 63세)</span></label>
+      <input type="number" id="retireAge" value="63">
+    </div>
+    <div class="input-row">
+      <label>사망 나이 <span class="stat-sub">(평균 84세)</span></label>
+      <input type="number" id="deathAge" value="84">
+    </div>
+
+    <div class="section-label">② 목표 (얼마 쓰고 얼마 남길지)</div>
+    <div class="input-row">
+      <label>월 소비액 (원, 오늘 기준)</label>
+      <input type="number" id="monthlySpending" value="3000000">
+    </div>
+    <div class="input-row">
+      <label>사망 시 남길 금액 (원, 오늘 기준) <span class="stat-sub">(0=다 쓰고 감)</span></label>
+      <input type="number" id="legacy" value="0">
+    </div>
+
+    <div class="section-label">③ 현재 상황</div>
+    <div class="input-row">
+      <label>현재 자산 (원)</label>
+      <input type="number" id="currentAssets" value="450000000">
+    </div>
+    <div class="input-row">
+      <label>연 저축액 (원)</label>
+      <input type="number" id="annualSaving" value="20000000">
+    </div>
+
+    <div class="section-label">④ 변동률 (연 %)</div>
+    <div class="input-row">
+      <label>자산 투자수익률 (%)</label>
+      <input type="number" id="returnRate" value="5" step="0.1">
+    </div>
+    <div class="input-row">
+      <label>물가상승률 (%)</label>
+      <input type="number" id="inflationRate" value="3.5" step="0.1">
+    </div>
+    <div class="input-row">
+      <label>저축액 증가율 (%)</label>
+      <input type="number" id="savingGrowth" value="3" step="0.1">
+    </div>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="hero-label">은퇴 시점 (<span id="heroRetireAge">63</span>세)에 필요한 자산</div>
+  <div class="hero-value" id="targetAmount">-</div>
+  <div class="hero-sub" id="targetSub"></div>
+  <div id="verdict"></div>
+</div>
+
+<div class="panel">
+  <h2>현재 페이스로 가면?</h2>
+  <div class="summary-grid">
+    <div class="stat">
+      <div class="stat-label">은퇴 시점 예상 자산</div>
+      <div class="stat-value" id="projRetireAssets">-</div>
+      <div class="stat-sub">현재 저축 페이스로</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">목표 대비 차액</div>
+      <div class="stat-value" id="gap">-</div>
+      <div class="stat-sub" id="gapSub"></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">필요 추가 연 저축액</div>
+      <div class="stat-value" id="extraSaving">-</div>
+      <div class="stat-sub">목표 달성하려면 매년 더 모아야 할 금액</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">사망 시 예상 자산</div>
+      <div class="stat-value" id="deathAssets">-</div>
+      <div class="stat-sub" id="deathAssetsSub"></div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>연도별 시뮬레이션 (현재 페이스 기준)</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>연도</th>
+          <th>나이</th>
+          <th>그 해 저축</th>
+          <th>그 해 지출</th>
+          <th>자산 (명목)</th>
+          <th>자산 (현재가치)</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="manual">
+  <h3>📘 사용 설명서</h3>
+
+  <h3>① 이 계산기의 목적</h3>
+  <p>"<b>지금 페이스로 가서 얼마 모이는지</b>"가 아니라, "<b>월 X만원 쓰면서 살려면 은퇴할 때 얼마가 필요한지</b>"를 거꾸로 계산하는 도구. 목표 자산 → 현재 페이스 비교 → 부족분 → 추가로 저축해야 할 금액 까지 알려줌.</p>
+
+  <h3>② 핵심 입력값</h3>
+  <ul>
+    <li><span class="badge">월 소비액</span> 오늘 기준 화폐 가치로 입력. 매년 물가만큼 자동 상승함. 예: 월 300만원 → 20년 뒤엔 월 600만원 정도 필요 (물가 3.5% 기준).</li>
+    <li><span class="badge">사망 시 남길 금액</span> 오늘 기준. 0이면 "다 쓰고 가기", 2억이면 "자녀에게 2억 상속" 같은 의미.</li>
+    <li><span class="badge">사망 나이</span> 한국 평균 기대수명 84세 기본값. 본인 가족력·건강 고려해서 더 길게 잡는 게 보수적 (오래 살 위험이 더 위험함).</li>
+  </ul>
+
+  <h3>③ 결과 해석</h3>
+  <ul>
+    <li><span class="badge">필요 자산</span> 은퇴 시점에 이 금액이 있어야, 평생 월 X만원 쓰고 사망 시 N억 남길 수 있음.</li>
+    <li><span class="badge">목표 대비 차액</span> 현재 저축 페이스로 도달할 자산 − 필요 자산. 마이너스면 부족, 플러스면 여유.</li>
+    <li><span class="badge">필요 추가 저축액</span> 부족분을 메우기 위해 매년 추가로 저축해야 할 금액. 0이거나 음수면 현재 페이스로 충분.</li>
+    <li><span class="badge">판정 색상</span> 🟢 충분 / 🟡 약간 부족 / 🔴 크게 부족</li>
+  </ul>
+
+  <h3>④ 계산 로직</h3>
+  <ul>
+    <li><b>은퇴 후 매년:</b> 자산 × (1+수익률) − 그해 지출 (월소비×12, 매년 물가만큼 증가)</li>
+    <li><b>역산:</b> 사망 시점 자산 = 남길 금액(미래가치) 이 되도록 은퇴 시점 자산을 거꾸로 풀어냄</li>
+    <li><b>"오늘 기준" 금액들</b>은 모두 입력 받은 후 사망 시점 미래가치로 환산해서 계산</li>
+  </ul>
+
+  <h3>⑤ 주의사항</h3>
+  <ul>
+    <li>세금·수수료 미반영. 실수익률은 더 낮을 수 있음.</li>
+    <li>수익률을 매년 일정하다고 가정. 실제로는 변동성 큼 → 보수적으로 잡는 게 안전.</li>
+    <li>국민연금·퇴직연금 미반영. 노후소득 있다면 "월 소비액"에서 차감해서 입력.</li>
+    <li>의료비 급증 가능성 미반영. 사망 시 남길 금액을 조금 더 잡거나, 사망 나이를 길게 잡는 방식으로 버퍼 확보 권장.</li>
+  </ul>
+</div>
+
+<script>
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+const fmtShort = n => {
+  if (Math.abs(n) >= 1e8) return (n / 1e8).toFixed(2) + '억';
+  if (Math.abs(n) >= 1e4) return (n / 1e4).toFixed(0) + '만';
+  return Math.round(n).toLocaleString('ko-KR');
+};
+
+document.getElementById('startYear').value = new Date().getFullYear();
+
+function calculate() {
+  const startYear = parseInt(document.getElementById('startYear').value) || new Date().getFullYear();
+  const currentAge = parseInt(document.getElementById('currentAge').value) || 0;
+  const retireAge = parseInt(document.getElementById('retireAge').value) || 0;
+  const deathAge = parseInt(document.getElementById('deathAge').value) || 0;
+  const monthlySpending = parseFloat(document.getElementById('monthlySpending').value) || 0;
+  const legacy = parseFloat(document.getElementById('legacy').value) || 0;
+  const currentAssets = parseFloat(document.getElementById('currentAssets').value) || 0;
+  const annualSaving = parseFloat(document.getElementById('annualSaving').value) || 0;
+  const returnRate = (parseFloat(document.getElementById('returnRate').value) || 0) / 100;
+  const inflationRate = (parseFloat(document.getElementById('inflationRate').value) || 0) / 100;
+  const savingGrowth = (parseFloat(document.getElementById('savingGrowth').value) || 0) / 100;
+
+  document.getElementById('heroRetireAge').textContent = retireAge;
+
+  if (retireAge >= deathAge || currentAge >= retireAge) {
+    document.getElementById('targetAmount').textContent = '입력값 확인';
+    document.getElementById('targetSub').textContent = '현재 나이 < 은퇴 나이 < 사망 나이 여야 합니다';
+    return;
+  }
+
+  // === 1. 필요자산 역산 ===
+  // 은퇴 시점(retireAge)에 자산 X 가 있다고 했을 때,
+  // 매년 자산 × (1+r) − 그해 지출, 사망 시점에 legacy(미래가치) 가 남아야 함.
+  // 역으로 풀면: X = sum( 미래지출 PV at retire ) + legacy의 PV at retire
+  // 여기서 할인율 = returnRate (운용수익률), 지출은 매년 inflation만큼 증가
+
+  const annualSpendingNow = monthlySpending * 12;
+  // 은퇴 시점의 첫 해 지출(미래가치)
+  const yearsToRetire = retireAge - currentAge;
+  const firstYearSpending = annualSpendingNow * Math.pow(1 + inflationRate, yearsToRetire);
+
+  // 사망 시점 남길 금액(미래가치)
+  const yearsToDeath = deathAge - currentAge;
+  const legacyAtDeath = legacy * Math.pow(1 + inflationRate, yearsToDeath);
+
+  // 은퇴 후 살아갈 햇수
+  const retireYears = deathAge - retireAge;
+
+  // 은퇴 시점 필요자산 계산
+  // 자산 X, 매년: X = X*(1+r) - spending_t  (지출은 매년 inflation 만큼 증가)
+  // 시뮬레이션 방식으로 X 역산 (이분법)
+  function simulateFromRetire(startAssets) {
+    let a = startAssets;
+    for (let i = 0; i < retireYears; i++) {
+      const spending = firstYearSpending * Math.pow(1 + inflationRate, i);
+      a = a * (1 + returnRate) - spending;
+    }
+    return a; // 사망 시점 잔액
+  }
+
+  // 이분법으로 필요자산 찾기
+  let lo = 0, hi = 1e13;
+  for (let i = 0; i < 100; i++) {
+    const mid = (lo + hi) / 2;
+    if (simulateFromRetire(mid) < legacyAtDeath) lo = mid;
+    else hi = mid;
+  }
+  const requiredAssets = (lo + hi) / 2;
+
+  // === 2. 현재 페이스로 시뮬레이션 ===
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+
+  let assets = currentAssets;
+  let projRetireAssets = 0;
+  let projDeathAssets = 0;
+
+  for (let age = currentAge; age <= deathAge; age++) {
+    const yearsFromNow = age - currentAge;
+    const year = startYear + yearsFromNow;
+    const isRetired = age > retireAge;
+    const isDeath = age === deathAge;
+
+    const thisSaving = isRetired ? 0 : annualSaving * Math.pow(1 + savingGrowth, yearsFromNow);
+    const thisSpending = isRetired ? annualSpendingNow * Math.pow(1 + inflationRate, yearsFromNow) : 0;
+
+    if (yearsFromNow === 0) {
+      assets = currentAssets + thisSaving - thisSpending;
+    } else {
+      assets = assets * (1 + returnRate) + thisSaving - thisSpending;
+    }
+
+    const realValue = assets / Math.pow(1 + inflationRate, yearsFromNow);
+
+    if (age === retireAge) projRetireAssets = assets;
+    if (age === deathAge) projDeathAssets = assets;
+
+    const row = document.createElement('tr');
+    if (isRetired) row.className = 'retired';
+    if (isDeath) row.classList.add('death');
+    if (assets < 0) row.classList.add('negative');
+    row.innerHTML = `
+      <td>${year}</td>
+      <td>${age}세${isDeath ? ' ⚰' : ''}</td>
+      <td>${thisSaving > 0 ? fmt(thisSaving) : '-'}</td>
+      <td>${thisSpending > 0 ? fmt(thisSpending) : '-'}</td>
+      <td>${fmt(assets)}</td>
+      <td>${fmt(realValue)}</td>
+    `;
+    tbody.appendChild(row);
+  }
+
+  // === 3. 추가 저축 필요량 계산 ===
+  // 현재 자산 + 추가저축 효과 = 필요자산
+  // 추가 저축 S 만큼 매년 더 저축하면 은퇴 시점에 얼마가 늘어나는가?
+  // 단순화: 매년 추가 저축 S, 매년 (1+savingGrowth)배 + (1+r) 복리
+  // FV = S * sum_{i=0}^{n-1} (1+savingGrowth)^i * (1+r)^(n-1-i)
+  const n = yearsToRetire;
+  let factor = 0;
+  for (let i = 0; i < n; i++) {
+    factor += Math.pow(1 + savingGrowth, i) * Math.pow(1 + returnRate, n - 1 - i);
+  }
+  const gap = requiredAssets - projRetireAssets;
+  const extraSavingNeeded = factor > 0 ? gap / factor : 0;
+
+  // === 4. UI 업데이트 ===
+  document.getElementById('targetAmount').textContent = fmtShort(requiredAssets) + ' 원';
+  document.getElementById('targetSub').textContent = `정확히: ${fmt(requiredAssets)} 원 (= 월 ${fmt(monthlySpending)}원 쓰고, 사망 시 ${fmt(legacy)}원 남기기)`;
+
+  document.getElementById('projRetireAssets').textContent = fmt(projRetireAssets) + ' 원';
+  document.getElementById('gap').textContent = (gap >= 0 ? '−' : '+') + fmt(Math.abs(gap)) + ' 원';
+  document.getElementById('gapSub').textContent = gap >= 0 ? '부족한 금액' : '여유 금액';
+  document.getElementById('extraSaving').textContent = extraSavingNeeded > 0
+    ? '+' + fmt(extraSavingNeeded) + ' 원/년'
+    : '추가 저축 불필요 ✓';
+  document.getElementById('deathAssets').textContent = fmt(projDeathAssets) + ' 원';
+  document.getElementById('deathAssetsSub').textContent = `목표: ${fmt(legacyAtDeath)}원 (현재가치 ${fmt(legacy)}원)`;
+
+  // 판정
+  const verdictEl = document.getElementById('verdict');
+  const ratio = projRetireAssets / requiredAssets;
+  if (ratio >= 1.0) {
+    verdictEl.innerHTML = '<div class="verdict ok">🟢 충분: 현재 페이스로 목표 달성 가능</div>';
+  } else if (ratio >= 0.7) {
+    verdictEl.innerHTML = '<div class="verdict warn">🟡 약간 부족: 저축 늘리거나 수익률 개선 필요</div>';
+  } else {
+    verdictEl.innerHTML = '<div class="verdict bad">🔴 크게 부족: 목표·저축·은퇴시점 조정 필요</div>';
+  }
+}
+
+document.querySelectorAll('input').forEach(el => {
+  el.addEventListener('input', calculate);
+});
+
+calculate();
+</script>
+
+</body>
+</html>
