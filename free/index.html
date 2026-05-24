@@ -83,6 +83,19 @@
     outline: 2px solid #1F4E78;
     background: #FFFACD;
   }
+  .computed {
+    background: #e8f4f8;
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: #1F4E78;
+    grid-column: 1 / -1;
+  }
+  .computed b {
+    font-size: 15px;
+    color: #0d3a5c;
+  }
   .summary-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -189,7 +202,7 @@
 <a href="../" class="back-link">← 메인으로</a>
 
 <h1>경제적자유 계산기</h1>
-<p class="desc">노란색 입력칸에 값을 넣으면 자동으로 계산됩니다. 기본값은 한국 평균치 기준.</p>
+<p class="desc">노란색 입력칸에 값을 넣으면 자동으로 계산됩니다. 기본값은 한국 가구 평균(2024년 통계청 기준).</p>
 
 <div class="panel">
   <h2>입력값</h2>
@@ -215,12 +228,16 @@
       <input type="number" id="currentAssets" value="450000000">
     </div>
     <div class="input-row">
-      <label>연 저축액 (원)</label>
-      <input type="number" id="annualSaving" value="20000000">
+      <label>연 수입액 (원) <span class="stat-sub">(실수령 평균 5,040만)</span></label>
+      <input type="number" id="annualIncome" value="50400000">
     </div>
     <div class="input-row">
-      <label>연 지출액 (원) <span class="stat-sub">(은퇴 후 인출)</span></label>
-      <input type="number" id="annualSpending" value="36000000">
+      <label>연 지출액 (원) <span class="stat-sub">(평균 3,480만)</span></label>
+      <input type="number" id="annualSpending" value="34800000">
+    </div>
+    <div class="computed">
+      자동 계산: <b>연 저축액 = <span id="autoSaving">15,600,000</span> 원</b>
+      <span style="color:#666;"> &nbsp;(저축률 <span id="savingRate">31</span>%)</span>
     </div>
 
     <div class="section-label">③ 변동률 (연 %)</div>
@@ -233,11 +250,11 @@
       <input type="number" id="inflationRate" value="3.5" step="0.1">
     </div>
     <div class="input-row">
-      <label>저축액 증가율 (%)</label>
-      <input type="number" id="savingGrowth" value="3" step="0.1">
+      <label>수입 증가율 (%) <span class="stat-sub">(연봉 인상)</span></label>
+      <input type="number" id="incomeGrowth" value="3" step="0.1">
     </div>
     <div class="input-row">
-      <label>지출액 증가율 (%) <span class="stat-sub">(통상=물가)</span></label>
+      <label>지출 증가율 (%) <span class="stat-sub">(통상=물가)</span></label>
       <input type="number" id="spendingGrowth" value="3.5" step="0.1">
     </div>
   </div>
@@ -265,7 +282,7 @@
     </div>
     <div></div>
 
-    <div class="stat" id="age100NominalBox">
+    <div class="stat">
       <div class="stat-label">100세 시점 자산 (명목)</div>
       <div class="stat-value" id="age100Nominal">-</div>
       <div class="stat-sub" id="age100NominalSub"></div>
@@ -273,7 +290,7 @@
     <div class="stat profit">
       <div class="stat-label">100세 시점 총 운용수익</div>
       <div class="stat-value" id="age100Profit">-</div>
-      <div class="stat-sub">은퇴 후엔 저축X, 지출O. 운용수익으로 버팀</div>
+      <div class="stat-sub">은퇴 후엔 수입X, 지출O. 운용수익으로 버팀</div>
     </div>
 
     <div class="stat">
@@ -292,13 +309,14 @@
 <div class="panel">
   <h2>연도별 시뮬레이션</h2>
   <div class="table-wrap">
-    <table id="resultTable">
+    <table>
       <thead>
         <tr>
           <th>연도</th>
           <th>나이</th>
-          <th>그 해 저축</th>
+          <th>그 해 수입</th>
           <th>그 해 지출</th>
+          <th>그 해 저축</th>
           <th>자산 (명목)</th>
           <th>자산 (현재가치)</th>
         </tr>
@@ -315,34 +333,36 @@
   <ul>
     <li><span class="badge">기본 정보</span> 현재 나이와 은퇴 나이 설정. 시작연도는 자동.</li>
     <li><span class="badge">현재 자산</span> 본인 순자산 (= 자산 − 부채). 40대 한국 평균 4.5억으로 세팅됨.</li>
-    <li><span class="badge">연 저축액</span> 1년 동안 새로 모으는 금액. <b>은퇴 전까지만 적용.</b></li>
-    <li><span class="badge">연 지출액</span> 1년 동안 쓰는 생활비. <b>은퇴 후부터 자산에서 인출.</b> 월 300만원이면 3,600만원.</li>
+    <li><span class="badge">연 수입액</span> 통장에 들어오는 <b>실수령액</b>(처분가능소득) 기준. 세금·4대보험 다 떼고 받는 금액. 한국 가구 평균 5,040만원.</li>
+    <li><span class="badge">연 지출액</span> 1년 동안 쓰는 생활비. 한국 가구 평균 3,480만원 (월 290만원).</li>
+    <li><span class="badge">연 저축액 (자동)</span> = 수입 − 지출. <b>은퇴 전엔 이만큼 자산에 쌓이고, 은퇴 후엔 수입이 0이 되면서 지출만큼 자산에서 빠짐.</b></li>
     <li><span class="badge">자산 투자수익률</span> 보유 자산 전체의 연 수익률. 한국 주식+예금+부동산 평균 잡으면 5% 보수적.</li>
     <li><span class="badge">물가상승률</span> 한국 장기 평균 ~2.5%, 최근 체감 더 높음. 기본 3.5%.</li>
-    <li><span class="badge">저축액 증가율</span> 연봉 인상에 따라 저축액도 매년 증가. 기본 3%.</li>
-    <li><span class="badge">지출액 증가율</span> 보통 물가상승률과 같게 설정 (생활비도 물가만큼 오름).</li>
+    <li><span class="badge">수입 증가율</span> 연봉 인상률. 기본 3%.</li>
+    <li><span class="badge">지출 증가율</span> 보통 물가상승률과 같게 (생활비도 물가만큼 오름).</li>
   </ul>
 
   <h3>② 결과 해석</h3>
   <ul>
     <li><span class="badge">명목 vs 현재가치</span> 명목 = 액면숫자. 현재가치 = 물가 감안한 오늘 기준 구매력. <b>실제 의사결정엔 현재가치가 더 중요.</b></li>
-    <li><span class="badge">총 운용수익</span> = 최종자산 − 시작자산 − 누적저축 + 누적지출. 순수하게 투자로 불어난 부분.</li>
-    <li><span class="badge">자산 고갈 경고</span> 은퇴 후 지출이 운용수익보다 크면 자산이 점점 줄어 0이 됨. 빨간 경고가 뜨면 저축액↑ / 지출↓ / 수익률↑ 중 하나 조정 필요.</li>
+    <li><span class="badge">총 운용수익</span> = 최종자산 − 시작자산 − 누적저축 + 누적지출(은퇴후). 순수하게 투자로 불어난 부분.</li>
+    <li><span class="badge">자산 고갈 경고</span> 은퇴 후 지출이 운용수익보다 크면 자산이 점점 줄어 0이 됨. 빨간 경고가 뜨면 수입↑ / 지출↓ / 수익률↑ / 은퇴 늦추기 중 조정 필요.</li>
     <li><span class="badge">표 색상</span> 회색 = 은퇴 이후. 빨간 글씨 = 자산 마이너스 (이미 고갈).</li>
   </ul>
 
   <h3>③ 계산 로직</h3>
   <ul>
-    <li><b>은퇴 전:</b> 자산 × (1+수익률) + 그해 저축</li>
-    <li><b>은퇴 후:</b> 자산 × (1+수익률) − 그해 지출</li>
-    <li>저축액과 지출액은 매년 각자의 증가율만큼 불어남</li>
+    <li><b>은퇴 전:</b> 자산 × (1+수익률) + 수입 − 지출</li>
+    <li><b>은퇴 후:</b> 자산 × (1+수익률) − 지출 <i>(수입은 0)</i></li>
+    <li>수입은 매년 수입증가율, 지출은 매년 지출증가율만큼 증가</li>
   </ul>
 
   <h3>④ 주의사항</h3>
   <ul>
     <li>세금·수수료 미반영. 실제 수익률은 더 낮을 수 있음.</li>
-    <li>수익률 변동성 미반영 (매년 동일하다는 가정). 실제로는 시점에 따라 결과 크게 달라짐.</li>
+    <li>수익률 변동성 미반영 (매년 동일 가정). 실제로는 시점에 따라 결과 크게 달라짐.</li>
     <li>국민연금·퇴직연금 미반영. 노후소득이 있다면 "연 지출액"에서 차감해서 입력.</li>
+    <li>큰 일회성 지출(주택구입·자녀교육·결혼자금 등) 미반영.</li>
     <li>참고용 시뮬레이션. 실제 재무설계는 전문가 상담 권장.</li>
   </ul>
 </div>
@@ -362,20 +382,27 @@ function calculate() {
   const currentAge = parseInt(document.getElementById('currentAge').value) || 0;
   const retireAge = parseInt(document.getElementById('retireAge').value) || 0;
   const currentAssets = parseFloat(document.getElementById('currentAssets').value) || 0;
-  const annualSaving = parseFloat(document.getElementById('annualSaving').value) || 0;
+  const annualIncome = parseFloat(document.getElementById('annualIncome').value) || 0;
   const annualSpending = parseFloat(document.getElementById('annualSpending').value) || 0;
   const returnRate = (parseFloat(document.getElementById('returnRate').value) || 0) / 100;
   const inflationRate = (parseFloat(document.getElementById('inflationRate').value) || 0) / 100;
-  const savingGrowth = (parseFloat(document.getElementById('savingGrowth').value) || 0) / 100;
+  const incomeGrowth = (parseFloat(document.getElementById('incomeGrowth').value) || 0) / 100;
   const spendingGrowth = (parseFloat(document.getElementById('spendingGrowth').value) || 0) / 100;
+
+  // 자동 계산 저축액 & 저축률 표시
+  const autoSaving = annualIncome - annualSpending;
+  document.getElementById('autoSaving').textContent = fmt(autoSaving);
+  document.getElementById('savingRate').textContent = annualIncome > 0
+    ? (autoSaving / annualIncome * 100).toFixed(1)
+    : '0';
 
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = '';
 
   let assets = currentAssets;
   let cumulativeSaving = 0;
-  let cumulativeSpending = 0;
-  let retireAssetsNominal = 0, retireAssetsReal = 0, retireCumSaving = 0, retireCumSpending = 0;
+  let cumulativeSpendingRetired = 0;
+  let retireAssetsNominal = 0, retireAssetsReal = 0, retireCumSaving = 0;
   let age100Nominal = 0, age100Real = 0, age100CumSaving = 0, age100CumSpending = 0;
   let depletedAge = null;
 
@@ -384,16 +411,18 @@ function calculate() {
     const year = startYear + yearsFromNow;
     const isRetired = age > retireAge;
 
-    const thisSaving = isRetired ? 0 : annualSaving * Math.pow(1 + savingGrowth, yearsFromNow);
-    const thisSpending = isRetired ? annualSpending * Math.pow(1 + spendingGrowth, yearsFromNow) : 0;
+    const thisIncome = isRetired ? 0 : annualIncome * Math.pow(1 + incomeGrowth, yearsFromNow);
+    const thisSpending = annualSpending * Math.pow(1 + spendingGrowth, yearsFromNow);
+    const thisSaving = thisIncome - thisSpending; // 은퇴후엔 자동으로 음수(=인출)
 
     if (yearsFromNow === 0) {
-      assets = currentAssets + thisSaving - thisSpending;
+      assets = currentAssets + thisSaving;
     } else {
-      assets = assets * (1 + returnRate) + thisSaving - thisSpending;
+      assets = assets * (1 + returnRate) + thisSaving;
     }
-    cumulativeSaving += thisSaving;
-    cumulativeSpending += thisSpending;
+
+    if (!isRetired) cumulativeSaving += thisSaving;
+    if (isRetired) cumulativeSpendingRetired += thisSpending;
 
     if (assets < 0 && depletedAge === null) depletedAge = age;
 
@@ -403,13 +432,12 @@ function calculate() {
       retireAssetsNominal = assets;
       retireAssetsReal = realValue;
       retireCumSaving = cumulativeSaving;
-      retireCumSpending = cumulativeSpending;
     }
     if (age === 100) {
       age100Nominal = assets;
       age100Real = realValue;
       age100CumSaving = cumulativeSaving;
-      age100CumSpending = cumulativeSpending;
+      age100CumSpending = cumulativeSpendingRetired;
     }
 
     const row = document.createElement('tr');
@@ -418,16 +446,16 @@ function calculate() {
     row.innerHTML = `
       <td>${year}</td>
       <td>${age}세</td>
-      <td>${thisSaving > 0 ? fmt(thisSaving) : '-'}</td>
-      <td>${thisSpending > 0 ? fmt(thisSpending) : '-'}</td>
+      <td>${thisIncome > 0 ? fmt(thisIncome) : '-'}</td>
+      <td>${fmt(thisSpending)}</td>
+      <td style="color:${thisSaving>=0?'#1F4E78':'#dc2626'};font-weight:600;">${thisSaving>=0?'+':''}${fmt(thisSaving)}</td>
       <td>${fmt(assets)}</td>
       <td>${fmt(realValue)}</td>
     `;
     tbody.appendChild(row);
   }
 
-  // 운용수익 = 최종자산 − 시작자산 − 누적저축 + 누적지출
-  const retireProfit = retireAssetsNominal - currentAssets - retireCumSaving + retireCumSpending;
+  const retireProfit = retireAssetsNominal - currentAssets - retireCumSaving;
   const age100Profit = age100Nominal - currentAssets - age100CumSaving + age100CumSpending;
 
   document.getElementById('retireNominal').textContent = fmt(retireAssetsNominal) + ' 원';
