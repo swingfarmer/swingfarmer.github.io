@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>복리 계산기</title>
+<style>
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:1100px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a}h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:8px}.desc{color:#555;font-size:14px;margin-bottom:24px}.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}.back-link:hover{text-decoration:underline}.panel{background:white;border-radius:8px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:20px}.panel h2{margin-top:0;color:#1F4E78;font-size:18px}.section-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px 0;grid-column:1/-1}.section-label:first-child{margin-top:0}.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.input-row{display:flex;flex-direction:column}label{font-size:13px;font-weight:600;margin-bottom:4px;color:#333}input[type="number"],select{padding:10px;font-size:15px;border:1px solid #ccc;border-radius:4px;background:#FFF2CC;font-weight:600;color:#0000FF}input:focus,select:focus{outline:2px solid #1F4E78;background:#FFFACD}.final{background:linear-gradient(135deg,#10b981,#059669);color:white;padding:24px;border-radius:10px;text-align:center;margin-bottom:20px}.final-label{font-size:14px;opacity:0.9;margin-bottom:6px}.final-value{font-size:40px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums}.final-sub{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.3);font-size:14px;opacity:0.95}.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:14px}.stat{background:#f0f5fa;padding:14px;border-radius:6px;border-left:4px solid #1F4E78}.stat.green{border-left-color:#10b981;background:#ecfdf5}.stat-label{font-size:12px;color:#666;margin-bottom:4px}.stat-value{font-size:18px;font-weight:700;color:#1F4E78;font-variant-numeric:tabular-nums}.stat.green .stat-value{color:#059669}.stat-sub{font-size:11px;color:#888;margin-top:2px}.compare-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}.compare-table th{background:#1F4E78;color:white;padding:10px 8px;font-weight:600;text-align:center}.compare-table td{padding:10px 8px;border-bottom:1px solid #eee;text-align:right;font-variant-numeric:tabular-nums}.compare-table td:first-child{text-align:left;font-weight:600}.compare-table tr.current{background:#fff8e8}.compare-table tr.current td{font-weight:700;color:#b45309}table.yearly{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}table.yearly th{background:#1F4E78;color:white;padding:8px;font-weight:600;position:sticky;top:0}table.yearly td{padding:7px 10px;border-bottom:1px solid #eee;text-align:right;font-variant-numeric:tabular-nums}table.yearly td:first-child{text-align:center;font-weight:600}.table-wrap{max-height:500px;overflow-y:auto;border:1px solid #ddd;border-radius:4px}.manual{background:#fff;border:1px solid #e0e0e0;padding:20px;border-radius:8px;margin-top:30px;line-height:1.7;font-size:14px}.manual h3{color:#1F4E78;margin-top:18px;margin-bottom:8px;font-size:15px}.manual h3:first-child{margin-top:0}.manual ul{padding-left:20px;margin:6px 0}.manual li{margin-bottom:4px}.badge{display:inline-block;background:#1F4E78;color:white;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-right:4px}.info-box{background:#dbeafe;border-left:4px solid #2563eb;padding:10px 14px;margin-top:10px;border-radius:4px;font-size:13px;color:#1e3a8a}
+</style>
+</head>
+<body>
+
+<a href="../" class="back-link">← 금융 계산기로</a>
+
+<h1>📈 복리 계산기</h1>
+<p class="desc">원금 + 추가 적립 + 복리 효과를 시뮬레이션. 일·주·월·연 복리 비교, 인플레이션 반영한 현재가치까지.</p>
+
+<div class="panel">
+  <h2>📥 입력값</h2>
+  <div class="inputs">
+
+    <div class="section-label">① 기본 설정</div>
+    <div class="input-row">
+      <label>초기 원금 (원)</label>
+      <input type="number" id="principal" value="10000000">
+    </div>
+    <div class="input-row">
+      <label>연 수익률 (%)</label>
+      <input type="number" id="rate" value="7" step="0.1">
+    </div>
+    <div class="input-row">
+      <label>투자 기간 (년)</label>
+      <input type="number" id="years" value="30" min="1" max="100">
+    </div>
+
+    <div class="section-label">② 복리 방식</div>
+    <div class="input-row">
+      <label>복리 주기</label>
+      <select id="compound">
+        <option value="365">일복리</option>
+        <option value="52">주복리</option>
+        <option value="12" selected>월복리</option>
+        <option value="4">분기복리</option>
+        <option value="1">연복리</option>
+      </select>
+    </div>
+
+    <div class="section-label">③ 추가 적립 (선택)</div>
+    <div class="input-row">
+      <label>추가 적립액 (원)</label>
+      <input type="number" id="add" value="500000">
+    </div>
+    <div class="input-row">
+      <label>적립 주기</label>
+      <select id="addPeriod">
+        <option value="12" selected>월 적립</option>
+        <option value="52">주 적립</option>
+        <option value="1">연 적립</option>
+      </select>
+    </div>
+
+    <div class="section-label">④ 인플레이션 (실질가치 환산)</div>
+    <div class="input-row">
+      <label>연 물가상승률 (%)</label>
+      <input type="number" id="inflation" value="3.0" step="0.1">
+    </div>
+  </div>
+</div>
+
+<div class="final">
+  <div class="final-label" id="finalLabel">최종 자산 (명목)</div>
+  <div class="final-value" id="finalValue">-</div>
+  <div class="final-sub" id="finalSub"></div>
+</div>
+
+<div class="panel">
+  <h2>📊 요약</h2>
+  <div class="summary-grid">
+    <div class="stat">
+      <div class="stat-label">초기 원금</div>
+      <div class="stat-value" id="S_principal">-</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">총 적립 원금</div>
+      <div class="stat-value" id="S_totalAdd">-</div>
+      <div class="stat-sub" id="S_totalAddSub">추가 적립 누적</div>
+    </div>
+    <div class="stat green">
+      <div class="stat-label">총 운용수익</div>
+      <div class="stat-value" id="S_gain">-</div>
+      <div class="stat-sub">복리 효과로 늘어난 부분</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">최종 자산 (명목)</div>
+      <div class="stat-value" id="S_finalNominal">-</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">현재가치 환산</div>
+      <div class="stat-value" id="S_finalReal">-</div>
+      <div class="stat-sub">오늘 기준 구매력</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">연 평균 수익률 (CAGR)</div>
+      <div class="stat-value" id="S_cagr">-</div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>🔄 복리 주기별 비교</h2>
+  <p style="font-size:12px;color:#888;margin:6px 0 12px">같은 원금·수익률·기간일 때 복리 주기에 따른 차이. 노란색 = 현재 선택한 주기.</p>
+  <table class="compare-table" id="compareTable">
+    <thead>
+      <tr>
+        <th>복리 주기</th>
+        <th>최종 금액 (추가적립 없음)</th>
+        <th>총 수익</th>
+        <th>vs 연복리 차이</th>
+      </tr>
+    </thead>
+    <tbody id="compareBody"></tbody>
+  </table>
+  <div class="info-box" style="margin-top:12px">
+    💡 복리 주기가 잦을수록 약간 더 늘어나지만, 30년·7% 기준 일복리와 연복리 차이는 약 7% 정도. 큰 차이 아님. <b>중요한 건 수익률과 기간.</b>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>📅 연도별 자산 추이</h2>
+  <div class="table-wrap">
+    <table class="yearly">
+      <thead>
+        <tr>
+          <th>연차</th>
+          <th>연초 자산</th>
+          <th>연 적립</th>
+          <th>운용수익</th>
+          <th>연말 자산</th>
+          <th>현재가치</th>
+        </tr>
+      </thead>
+      <tbody id="yearlyBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="manual">
+  <h3>📘 사용 설명서</h3>
+
+  <h3>① 복리란?</h3>
+  <p>이자에 또 이자가 붙는 것. 1년에 7% 수익이면 1년 후 107만 → 다음 해는 107만에 7% (114.49만), 30년 후 약 7.6배 → <b>이자가 이자를 낳는 효과</b>. 아인슈타인이 "세상에서 가장 강력한 힘"이라고 한 게 이것.</p>
+
+  <h3>② 복리 주기란?</h3>
+  <ul>
+    <li><span class="badge">연복리</span> 1년에 한 번 이자 정산. 가장 단순.</li>
+    <li><span class="badge">월복리</span> 매달 이자 정산 → 그 이자가 다음 달 원금에 포함. 은행 적금 표준.</li>
+    <li><span class="badge">일복리</span> 매일 정산. 이론상 가장 빠르지만 실제 차이는 적음.</li>
+    <li>주기 잦을수록 약간 더 빠르지만 <b>수익률·기간이 훨씬 더 중요</b>.</li>
+  </ul>
+
+  <h3>③ 입력값 가이드</h3>
+  <ul>
+    <li><span class="badge">초기 원금</span> 처음 투자하는 금액.</li>
+    <li><span class="badge">연 수익률</span>
+      <ul>
+        <li>예금 3~4%, 채권 4~6%, 한국 주식 장기평균 5~7%, S&P500 장기평균 7~10%</li>
+        <li>비현실적으로 높게 잡으면 (15%+) 결과는 환상이 됨</li>
+      </ul>
+    </li>
+    <li><span class="badge">추가 적립</span> 매달/매주/매년 추가로 넣는 돈. <b>이게 사실상 가장 큰 변수.</b> 원금 적어도 꾸준히 적립하면 결과 큼.</li>
+    <li><span class="badge">인플레이션</span> 30년 뒤 1억의 진짜 가치는? 물가 3%면 약 4,100만 (오늘 기준 구매력). <b>명목값 말고 현재가치도 꼭 확인.</b></li>
+  </ul>
+
+  <h3>④ "복리 마법" 체감 포인트</h3>
+  <ul>
+    <li>10년 vs 30년: 같은 7%여도 30년이 10년의 약 4배 (단순 곱셈으로 7.6배 vs 1.97배)</li>
+    <li>5% vs 8%: 30년 기준 5%면 4.3배, 8%면 10.1배 → <b>수익률 차이가 시간 차이보다 크게 작동</b></li>
+    <li>적립도 중요: 초기 1억 vs 매달 30만 30년 적립 (총 1.08억) → 같은 7%에서 결과 비슷함 (8천만 vs 3.6억). <b>꾸준한 적립이 큰 일시금보다 강할 수 있음.</b></li>
+  </ul>
+
+  <h3>⑤ 주의사항</h3>
+  <ul>
+    <li>실제 수익률은 매년 변동 (특히 주식). 본 계산기는 균일한 수익률 가정.</li>
+    <li>세금 미반영 (예금은 15.4%, 주식 배당 15.4%, 매매차익 별도 등).</li>
+    <li>장기 가정은 어렵다. 30년 후 시장이 어떨지 아무도 모름.</li>
+  </ul>
+</div>
+
+<script>
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+const fmtPct = n => n.toFixed(2) + '%';
+const fmtShort = n => {
+  if (Math.abs(n) >= 1e8) return (n/1e8).toFixed(2) + '억';
+  if (Math.abs(n) >= 1e4) return (n/1e4).toFixed(0) + '만';
+  return Math.round(n).toLocaleString();
+};
+
+// 복리 계산: 원금 P, 연이율 r, 기간 t년, 복리주기 n회/년, 적립 add (주기 addN회/년)
+function calculateFV(P, r, t, n, add, addN) {
+  // 단순화: 적립을 연 단위로 환산해서 매년 처리
+  // 한 해 안에서:
+  //   - 적립은 매기마다 들어감
+  //   - 복리는 매기마다 정산
+  // 더 정확하게: 매 기간(=n과 addN의 최소공배수 기반)마다 처리
+  // 여기선 큰 N으로 일별 시뮬 (간단·정확)
+
+  const DAYS = 365;
+  const dailyRate = r / DAYS;
+  // 복리 주기에 따른 일별 처리 방식
+  // n=365: 매일 / n=52: 7일마다 / n=12: ~30일마다 / n=4: ~91일마다 / n=1: 연 1회
+  const compoundDays = Math.round(DAYS / n);
+  const addDays = Math.round(DAYS / addN);
+
+  let balance = P;
+  let totalAdd = 0;
+  let lastInterest = 0;
+
+  for (let day = 1; day <= t * DAYS; day++) {
+    // 매일 이자 누적 (단순누적)
+    lastInterest += balance * dailyRate;
+    // 복리 정산일?
+    if (day % compoundDays === 0) {
+      balance += lastInterest;
+      lastInterest = 0;
+    }
+    // 적립일?
+    if (day % addDays === 0) {
+      balance += add;
+      totalAdd += add;
+    }
+  }
+  // 남은 이자 정산
+  balance += lastInterest;
+
+  return { finalValue: balance, totalAdd };
+}
+
+// 연도별 시뮬 (표용)
+function yearlyBreakdown(P, r, t, n, add, addN) {
+  const rows = [];
+  const DAYS = 365;
+  const dailyRate = r / DAYS;
+  const compoundDays = Math.round(DAYS / n);
+  const addDays = Math.round(DAYS / addN);
+
+  let balance = P;
+  let lastInterest = 0;
+
+  for (let y = 1; y <= t; y++) {
+    const startBalance = balance;
+    let yearAdd = 0;
+    let yearGain = 0;
+    const startDay = (y-1) * DAYS + 1;
+    const endDay = y * DAYS;
+
+    for (let day = startDay; day <= endDay; day++) {
+      const dailyInt = balance * dailyRate;
+      lastInterest += dailyInt;
+      yearGain += dailyInt;
+      if (day % compoundDays === 0) {
+        balance += lastInterest;
+        lastInterest = 0;
+      }
+      if (day % addDays === 0) {
+        balance += add;
+        yearAdd += add;
+      }
+    }
+    rows.push({
+      year: y,
+      startBalance,
+      yearAdd,
+      yearGain,
+      endBalance: balance + lastInterest
+    });
+  }
+  return rows;
+}
+
+function calculate() {
+  const P = parseFloat(document.getElementById('principal').value) || 0;
+  const r = (parseFloat(document.getElementById('rate').value) || 0) / 100;
+  const t = parseInt(document.getElementById('years').value) || 1;
+  const n = parseInt(document.getElementById('compound').value) || 12;
+  const add = parseFloat(document.getElementById('add').value) || 0;
+  const addN = parseInt(document.getElementById('addPeriod').value) || 12;
+  const infl = (parseFloat(document.getElementById('inflation').value) || 0) / 100;
+
+  // 메인 계산
+  const { finalValue, totalAdd } = calculateFV(P, r, t, n, add, addN);
+  const totalPrincipal = P + totalAdd;
+  const gain = finalValue - totalPrincipal;
+  const realValue = finalValue / Math.pow(1 + infl, t);
+  const cagr = totalPrincipal > 0 ? (Math.pow(finalValue / totalPrincipal, 1/t) - 1) * 100 : 0;
+
+  const set = (id, v) => document.getElementById(id).textContent = v;
+  set('finalValue', fmt(finalValue) + ' 원');
+  set('finalSub', `현재가치 ${fmt(realValue)}원 · 원금 ${fmt(totalPrincipal)} → ${fmtShort(finalValue)} (${(finalValue/totalPrincipal).toFixed(2)}배)`);
+
+  set('S_principal', fmt(P) + ' 원');
+  set('S_totalAdd', fmt(totalAdd) + ' 원');
+  set('S_totalAddSub', addN === 12 ? `월 ${fmt(add)} × ${t*12}개월` : addN === 52 ? `주 ${fmt(add)} × ${t*52}주` : `연 ${fmt(add)} × ${t}회`);
+  set('S_gain', fmt(gain) + ' 원');
+  set('S_finalNominal', fmt(finalValue) + ' 원');
+  set('S_finalReal', fmt(realValue) + ' 원');
+  set('S_cagr', fmtPct(cagr));
+
+  // 복리 주기별 비교 (추가적립 0으로 순수 복리만)
+  const periods = [
+    { n: 1, name: '연복리' },
+    { n: 4, name: '분기복리' },
+    { n: 12, name: '월복리' },
+    { n: 52, name: '주복리' },
+    { n: 365, name: '일복리' },
+  ];
+  const yearly = P * Math.pow(1 + r, t); // 연복리 기준
+  const cmpBody = document.getElementById('compareBody');
+  cmpBody.innerHTML = '';
+  periods.forEach(p => {
+    const { finalValue: fv } = calculateFV(P, r, t, p.n, 0, 1);
+    const diff = fv - yearly;
+    const tr = document.createElement('tr');
+    if (p.n === n) tr.classList.add('current');
+    tr.innerHTML = `
+      <td>${p.name}</td>
+      <td>${fmt(fv)}</td>
+      <td>${fmt(fv - P)}</td>
+      <td>${diff > 0 ? '+' : ''}${fmt(diff)}</td>
+    `;
+    cmpBody.appendChild(tr);
+  });
+
+  // 연도별 표
+  const rows = yearlyBreakdown(P, r, t, n, add, addN);
+  const tbody = document.getElementById('yearlyBody');
+  tbody.innerHTML = '';
+  rows.forEach(row => {
+    const realVal = row.endBalance / Math.pow(1 + infl, row.year);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.year}년차</td>
+      <td>${fmt(row.startBalance)}</td>
+      <td>${row.yearAdd > 0 ? fmt(row.yearAdd) : '-'}</td>
+      <td style="color:#10b981">+${fmt(row.yearGain)}</td>
+      <td><b>${fmt(row.endBalance)}</b></td>
+      <td style="color:#888">${fmt(realVal)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input', calculate);
+  el.addEventListener('change', calculate);
+});
+calculate();
+</script>
+</body>
+</html>
