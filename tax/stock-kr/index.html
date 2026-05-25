@@ -65,7 +65,17 @@
 
     <div class="section-label">④ 법인 (해당 시)</div>
     <div class="input-row">
-      <label>법인세율 (%) <span style="font-size:11px;color:#888;">(과세표준 구간별)</span></label>
+      <label>법인세 적용 방식</label>
+      <select id="corpMode">
+        <option value="auto" selected>자동 누진 (2억까지 9.9%, 초과 20.9%)</option>
+        <option value="rate1">단일세율 9.9% (과표 2억 이하 가정)</option>
+        <option value="rate2">단일세율 20.9% (과표 2~200억 가정)</option>
+        <option value="rate3">단일세율 23.1% (과표 200억 초과 가정)</option>
+        <option value="custom">사용자 지정</option>
+      </select>
+    </div>
+    <div class="input-row" id="corpCustomBox" style="display:none">
+      <label>사용자 지정 법인세율 (%)</label>
       <input type="number" id="corpTaxRate" value="20.9" step="0.1">
     </div>
   </div>
@@ -180,7 +190,24 @@ function calculate() {
   const cgtRate1 = (parseFloat(document.getElementById('cgtRate1').value) || 0) / 100;
   const cgtRate2 = (parseFloat(document.getElementById('cgtRate2').value) || 0) / 100;
   const cgtRateShort = (parseFloat(document.getElementById('cgtRateShort').value) || 0) / 100;
-  const corpTaxRate = (parseFloat(document.getElementById('corpTaxRate').value) || 0) / 100;
+  const corpMode = document.getElementById('corpMode').value;
+  const corpRateInput = (parseFloat(document.getElementById('corpTaxRate').value) || 0) / 100;
+
+  // 법인세 모드별 처리
+  document.getElementById('corpCustomBox').style.display = corpMode === 'custom' ? '' : 'none';
+
+  function corpTaxFunc(gain) {
+    if (gain <= 0) return 0;
+    if (corpMode === 'auto') {
+      // 누진: 2억까지 9.9%, 2~200억 20.9%, 200억+ 23.1%
+      if (gain <= 200000000) return gain * 0.099;
+      if (gain <= 20000000000) return 200000000 * 0.099 + (gain - 200000000) * 0.209;
+      return 200000000 * 0.099 + (20000000000 - 200000000) * 0.209 + (gain - 20000000000) * 0.231;
+    } else if (corpMode === 'rate1') return gain * 0.099;
+    else if (corpMode === 'rate2') return gain * 0.209;
+    else if (corpMode === 'rate3') return gain * 0.231;
+    else return gain * corpRateInput; // custom
+  }
 
   // 공통 비용
   const buyFee = buy * brokerRate;
@@ -232,7 +259,7 @@ function calculate() {
   set('M_yield', buy > 0 ? fmtPct(M_net / buy) : '-');
 
   // === 법인 ===
-  const C_corpTax = Math.max(0, tradeGain * corpTaxRate);
+  const C_corpTax = corpTaxFunc(tradeGain);
   const C_totalCost = buyFee + sellFee + transTax + C_corpTax;
   const C_net = tradeGain - C_corpTax;
   set('C_buy', fmt(buy));
