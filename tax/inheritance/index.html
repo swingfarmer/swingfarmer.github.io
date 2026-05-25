@@ -1,1 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>상속세 계산기</title>
+<style>
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:1100px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a}h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:8px}.desc{color:#555;font-size:14px;margin-bottom:24px}.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}.back-link:hover{text-decoration:underline}.panel{background:white;border-radius:8px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:20px}.panel h2{margin-top:0;color:#1F4E78;font-size:18px}.section-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px 0;grid-column:1/-1}.section-label:first-child{margin-top:0}.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.input-row{display:flex;flex-direction:column}label{font-size:13px;font-weight:600;margin-bottom:4px;color:#333}input[type="number"],select{padding:10px;font-size:15px;border:1px solid #ccc;border-radius:4px;background:#FFF2CC;font-weight:600;color:#0000FF}input:focus,select:focus{outline:2px solid #1F4E78;background:#FFFACD}.calc-table{width:100%;border-collapse:collapse;font-size:14px}.calc-table td{padding:10px 12px;border-bottom:1px solid #eee}.calc-table td:first-child{color:#555}.calc-table td:nth-child(2){text-align:right;font-weight:600;color:#1a1a1a;font-variant-numeric:tabular-nums}.calc-table td:nth-child(3){font-size:12px;color:#888;max-width:280px}.final{background:linear-gradient(135deg,#d97706,#ea580c);color:white;padding:24px;border-radius:10px;text-align:center;margin-bottom:20px}.final-label{font-size:14px;opacity:0.9;margin-bottom:6px}.final-value{font-size:36px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums}.final-sub{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.3);font-size:14px;opacity:0.95}.manual{background:#fff;border:1px solid #e0e0e0;padding:20px;border-radius:8px;margin-top:30px;line-height:1.7;font-size:14px}.manual h3{color:#1F4E78;margin-top:18px;margin-bottom:8px;font-size:15px}.manual h3:first-child{margin-top:0}.manual ul{padding-left:20px;margin:6px 0}.manual li{margin-bottom:4px}.badge{display:inline-block;background:#1F4E78;color:white;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-right:4px}.warn-box{background:#fef3c7;border-left:4px solid #d97706;padding:10px 14px;margin-top:10px;border-radius:4px;font-size:13px;color:#92400e}
+</style>
+</head>
+<body>
 
+<a href="../../" class="back-link">← 메인으로</a>
+
+<h1>⚱️ 상속세 계산기</h1>
+<p class="desc">상속세 자동 계산. 일괄공제·배우자공제·금융재산공제 등 주요 공제 자동 반영. (2026년 5월 기준)</p>
+
+<div class="panel">
+  <h2>📥 입력값</h2>
+  <div class="inputs">
+
+    <div class="section-label">① 상속재산</div>
+    <div class="input-row">
+      <label>총 상속재산가액 (원)</label>
+      <input type="number" id="totalEstate" value="1000000000">
+    </div>
+    <div class="input-row">
+      <label>금융재산 가액 (원) <span style="font-size:11px;color:#888;">(예·적금·주식 등)</span></label>
+      <input type="number" id="financial" value="200000000">
+    </div>
+    <div class="input-row">
+      <label>채무·공과금·장례비 (원)</label>
+      <input type="number" id="debt" value="20000000">
+    </div>
+    <div class="input-row">
+      <label>10년 내 사전증여재산 (원)</label>
+      <input type="number" id="prevGift" value="0">
+    </div>
+
+    <div class="section-label">② 상속인 정보</div>
+    <div class="input-row">
+      <label>배우자 상속 (원) <span style="font-size:11px;color:#888;">(없으면 0)</span></label>
+      <input type="number" id="spouseShare" value="400000000">
+    </div>
+    <div class="input-row">
+      <label>자녀수</label>
+      <input type="number" id="children" value="2">
+    </div>
+    <div class="input-row">
+      <label>미성년 자녀수</label>
+      <input type="number" id="minorChildren" value="0">
+    </div>
+    <div class="input-row">
+      <label>장애인 상속인 수</label>
+      <input type="number" id="disabled" value="0">
+    </div>
+
+    <div class="section-label">③ 기타</div>
+    <div class="input-row">
+      <label>10년 내 납부 증여세 (원)</label>
+      <input type="number" id="prevTax" value="0">
+    </div>
+    <div class="input-row">
+      <label>6개월 내 자진신고</label>
+      <select id="report">
+        <option value="Y" selected>Y (3% 공제)</option>
+        <option value="N">N</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>🧮 계산</h2>
+  <table class="calc-table">
+    <tbody>
+      <tr><td>총 상속재산 + 사전증여</td><td id="grossEstate">-</td><td>10년 내 사전증여 합산</td></tr>
+      <tr><td>채무 등 차감</td><td id="debtOut">-</td><td>채무·장례비·공과금</td></tr>
+      <tr><td>상속세 과세가액</td><td id="taxValue">-</td><td>총재산 + 사전증여 − 채무</td></tr>
+      <tr><td>일괄공제 vs 기초+인적공제</td><td id="dedSummary">-</td><td id="dedDesc">큰 쪽 자동 적용</td></tr>
+      <tr><td>배우자상속공제</td><td id="spouseDed">-</td><td>최소 5억, 최대 30억</td></tr>
+      <tr><td>금융재산공제</td><td id="finDed">-</td><td>금융재산의 20%, 최대 2억</td></tr>
+      <tr><td>과세표준</td><td id="taxBase">-</td><td>과세가액 − 공제</td></tr>
+      <tr><td>산출세액 (누진세율)</td><td id="calcTax">-</td><td>10%~50% 5단계</td></tr>
+      <tr><td>증여세액공제</td><td id="prevTaxOut">-</td><td>10년 내 납부 증여세</td></tr>
+      <tr><td>신고세액공제 (3%)</td><td id="reportDed">-</td><td>6개월 내 신고시</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="final">
+  <div class="final-label">💰 최종 납부세액</div>
+  <div class="final-value" id="finalTax">-</div>
+  <div class="final-sub">실효세율: <b id="effectiveRate">-</b></div>
+</div>
+
+<div class="manual">
+  <h3>📘 사용 설명서</h3>
+
+  <h3>① 입력값 설명</h3>
+  <ul>
+    <li><span class="badge">총 상속재산</span> 부동산·금융자산·차량·골프회원권 등 모든 재산의 시가 합계.</li>
+    <li><span class="badge">금융재산</span> 예금·적금·주식·채권·보험금 등. 별도 공제 대상.</li>
+    <li><span class="badge">채무</span> 피상속인의 사망 시점 채무 + 장례비(1천만 한도) + 공과금.</li>
+    <li><span class="badge">사전증여재산</span> 사망 전 10년 내 상속인에게 증여한 재산. 다시 상속재산에 합산.</li>
+    <li><span class="badge">배우자 상속분</span> 배우자가 실제 상속받는 금액. 공제액 결정에 사용.</li>
+    <li><span class="badge">자녀수·미성년·장애인</span> 인적공제 자동 계산용.</li>
+  </ul>
+
+  <h3>② 주요 공제</h3>
+  <ul>
+    <li><b>일괄공제 5억:</b> 그냥 정액 5억 공제 (가장 흔히 사용).</li>
+    <li><b>기초공제 2억 + 인적공제:</b>
+      <ul>
+        <li>자녀 1인당 5천만</li>
+        <li>미성년 자녀: 만 19세까지 매년 1천만 (1천만 × 남은 햇수)</li>
+        <li>65세 이상 동거가족: 1인당 5천만</li>
+        <li>장애인: 1인당 1천만 × 기대여명</li>
+      </ul>
+      → 합계가 일괄공제 5억보다 크면 이쪽 사용.
+    </li>
+    <li><b>배우자상속공제:</b>
+      <ul>
+        <li>배우자가 있으면 <b>최소 5억</b> 자동 공제</li>
+        <li>실제 상속분이 5억 초과면 그 금액, 최대 30억</li>
+      </ul>
+    </li>
+    <li><b>금융재산공제:</b> 금융재산의 20%, 최대 2억 (2천만 이하 전액).</li>
+  </ul>
+
+  <h3>③ 상속세율 (증여세와 동일)</h3>
+  <ul>
+    <li>1억 이하: 10% / 5억: 20% / 10억: 30% / 30억: 40% / 30억 초과: 50%</li>
+  </ul>
+
+  <div class="warn-box">
+    <b>⚠ 주의:</b> 상속세는 신고기한이 사망일이 속한 달의 말일부터 6개월. 가업상속공제·동거주택상속공제 등 특수공제 미반영. 실제 신고는 세무사 상담 강력 권장.
+  </div>
+</div>
+
+<script>
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+const fmtPct = n => (n * 100).toFixed(2) + '%';
+
+function calcInheritTax(taxBase) {
+  if (taxBase <= 0) return 0;
+  const brackets = [
+    [100000000, 0.10, 0],
+    [500000000, 0.20, 10000000],
+    [1000000000, 0.30, 60000000],
+    [3000000000, 0.40, 160000000],
+    [Infinity, 0.50, 460000000],
+  ];
+  for (const [upper, rate, deduction] of brackets) {
+    if (taxBase <= upper) return taxBase * rate - deduction;
+  }
+  return 0;
+}
+
+function calculate() {
+  const totalEstate = parseFloat(document.getElementById('totalEstate').value) || 0;
+  const financial = parseFloat(document.getElementById('financial').value) || 0;
+  const debt = parseFloat(document.getElementById('debt').value) || 0;
+  const prevGift = parseFloat(document.getElementById('prevGift').value) || 0;
+  const spouseShare = parseFloat(document.getElementById('spouseShare').value) || 0;
+  const children = parseInt(document.getElementById('children').value) || 0;
+  const minorChildren = parseInt(document.getElementById('minorChildren').value) || 0;
+  const disabled = parseInt(document.getElementById('disabled').value) || 0;
+  const prevTax = parseFloat(document.getElementById('prevTax').value) || 0;
+  const report = document.getElementById('report').value === 'Y';
+
+  const grossEstate = totalEstate + prevGift;
+  const taxValue = grossEstate - debt;
+
+  // 일괄공제 vs 기초+인적공제
+  const lumpDed = 500000000;
+  const personalDed = 200000000 // 기초
+    + children * 50000000  // 자녀
+    + minorChildren * 10000000 * 5  // 미성년 (평균 5년 가정, 실제는 19-나이지만 단순화)
+    + disabled * 10000000 * 20;  // 장애인 (기대여명 20년 가정)
+  const dedAmount = Math.max(lumpDed, personalDed);
+  const dedSource = dedAmount === lumpDed ? '일괄공제 5억' : `기초+인적 ${fmt(personalDed)}원`;
+
+  // 배우자공제
+  let spouseDed = 0;
+  if (spouseShare > 0) {
+    spouseDed = Math.min(Math.max(spouseShare, 500000000), 3000000000);
+  }
+
+  // 금융재산공제
+  let finDed = 0;
+  if (financial >= 20000000) finDed = Math.min(financial * 0.2, 200000000);
+  else if (financial > 0) finDed = financial;
+
+  const taxBase = Math.max(0, taxValue - dedAmount - spouseDed - finDed);
+  const calcTax = calcInheritTax(taxBase);
+
+  // 사전증여세 공제
+  const prevTaxOut = Math.min(prevTax, calcTax);
+  const beforeReport = Math.max(0, calcTax - prevTaxOut);
+  const reportDed = report ? beforeReport * 0.03 : 0;
+  const finalTax = beforeReport - reportDed;
+  const effectiveRate = totalEstate > 0 ? finalTax / totalEstate : 0;
+
+  document.getElementById('grossEstate').textContent = fmt(grossEstate) + ' 원';
+  document.getElementById('debtOut').textContent = fmt(debt) + ' 원';
+  document.getElementById('taxValue').textContent = fmt(taxValue) + ' 원';
+  document.getElementById('dedSummary').textContent = fmt(dedAmount) + ' 원';
+  document.getElementById('dedDesc').textContent = dedSource;
+  document.getElementById('spouseDed').textContent = fmt(spouseDed) + ' 원';
+  document.getElementById('finDed').textContent = fmt(finDed) + ' 원';
+  document.getElementById('taxBase').textContent = fmt(taxBase) + ' 원';
+  document.getElementById('calcTax').textContent = fmt(calcTax) + ' 원';
+  document.getElementById('prevTaxOut').textContent = fmt(prevTaxOut) + ' 원';
+  document.getElementById('reportDed').textContent = fmt(reportDed) + ' 원';
+  document.getElementById('finalTax').textContent = fmt(finalTax) + ' 원';
+  document.getElementById('effectiveRate').textContent = fmtPct(effectiveRate);
+}
+
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input', calculate);
+  el.addEventListener('change', calculate);
+});
+calculate();
+</script>
+</body>
+</html>
