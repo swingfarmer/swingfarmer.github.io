@@ -1,1 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>취득세 계산기</title>
+<style>
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:1100px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a}h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:8px}.desc{color:#555;font-size:14px;margin-bottom:24px}.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}.back-link:hover{text-decoration:underline}.panel{background:white;border-radius:8px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:20px}.panel h2{margin-top:0;color:#1F4E78;font-size:18px}.section-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px 0;grid-column:1/-1}.section-label:first-child{margin-top:0}.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.input-row{display:flex;flex-direction:column}label{font-size:13px;font-weight:600;margin-bottom:4px;color:#333}input[type="number"],select{padding:10px;font-size:15px;border:1px solid #ccc;border-radius:4px;background:#FFF2CC;font-weight:600;color:#0000FF}input:focus,select:focus{outline:2px solid #1F4E78;background:#FFFACD}.calc-table{width:100%;border-collapse:collapse;font-size:14px}.calc-table td{padding:10px 12px;border-bottom:1px solid #eee}.calc-table td:first-child{color:#555}.calc-table td:nth-child(2){text-align:right;font-weight:600;color:#1a1a1a;font-variant-numeric:tabular-nums}.calc-table td:nth-child(3){font-size:12px;color:#888;max-width:280px}.final{background:linear-gradient(135deg,#d97706,#ea580c);color:white;padding:24px;border-radius:10px;text-align:center;margin-bottom:20px}.final-label{font-size:14px;opacity:0.9;margin-bottom:6px}.final-value{font-size:36px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums}.final-sub{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.3);font-size:14px;opacity:0.95}.manual{background:#fff;border:1px solid #e0e0e0;padding:20px;border-radius:8px;margin-top:30px;line-height:1.7;font-size:14px}.manual h3{color:#1F4E78;margin-top:18px;margin-bottom:8px;font-size:15px}.manual h3:first-child{margin-top:0}.manual ul{padding-left:20px;margin:6px 0}.manual li{margin-bottom:4px}.badge{display:inline-block;background:#1F4E78;color:white;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-right:4px}.warn-box{background:#fef3c7;border-left:4px solid #d97706;padding:10px 14px;margin-top:10px;border-radius:4px;font-size:13px;color:#92400e}
+</style>
+</head>
+<body>
 
+<a href="../../" class="back-link">← 메인으로</a>
+
+<h1>🏘️ 취득세 계산기</h1>
+<p class="desc">부동산 매수 시 취득세 자동 계산. 주택/토지/상가 구분, 다주택 중과·증여·상속 자동 분기. (2026년 5월 기준)</p>
+
+<div class="panel">
+  <h2>📥 입력값</h2>
+  <div class="inputs">
+
+    <div class="section-label">① 부동산 정보</div>
+    <div class="input-row">
+      <label>부동산 구분</label>
+      <select id="propertyType">
+        <option value="주택" selected>주택</option>
+        <option value="농지">토지 (농지)</option>
+        <option value="농지외">토지 (농지외)</option>
+        <option value="상가">상가·건물</option>
+      </select>
+    </div>
+    <div class="input-row">
+      <label>취득가액 (원)</label>
+      <input type="number" id="price" value="600000000">
+    </div>
+    <div class="input-row">
+      <label>전용면적 (㎡) <span style="font-size:11px;color:#888;">(주택만)</span></label>
+      <input type="number" id="area" value="84">
+    </div>
+
+    <div class="section-label">② 주택수·지역 (주택만 해당)</div>
+    <div class="input-row">
+      <label>취득 후 주택수</label>
+      <input type="number" id="houseCount" value="1">
+    </div>
+    <div class="input-row">
+      <label>조정대상지역</label>
+      <select id="isRegulated">
+        <option value="N" selected>N</option>
+        <option value="Y">Y</option>
+      </select>
+    </div>
+
+    <div class="section-label">③ 취득 유형</div>
+    <div class="input-row">
+      <label>취득 유형</label>
+      <select id="acquireType">
+        <option value="매매" selected>매매</option>
+        <option value="증여">증여</option>
+        <option value="상속">상속</option>
+        <option value="신축">신축(원시취득)</option>
+      </select>
+    </div>
+    <div class="input-row">
+      <label>법인 여부</label>
+      <select id="isCorp">
+        <option value="N" selected>N</option>
+        <option value="Y">Y (주택 12% 적용)</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>🧮 계산</h2>
+  <table class="calc-table">
+    <tbody>
+      <tr><td>적용 취득세율</td><td id="rate">-</td><td id="rateDesc">구분·유형·주택수·지역·법인 자동 적용</td></tr>
+      <tr><td>취득세</td><td id="acquireTax">-</td><td>취득가액 × 적용세율</td></tr>
+      <tr><td>지방교육세</td><td id="eduTax">-</td><td id="eduDesc">취득세의 일부</td></tr>
+      <tr><td>농어촌특별세</td><td id="ruralTax">-</td><td id="ruralDesc">85㎡ 초과 / 농지외 / 상가</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="final">
+  <div class="final-label">💰 최종 납부세액</div>
+  <div class="final-value" id="finalTax">-</div>
+  <div class="final-sub">실효세율: <b id="effectiveRate">-</b></div>
+</div>
+
+<div class="manual">
+  <h3>📘 사용 설명서</h3>
+
+  <h3>① 입력값 설명</h3>
+  <ul>
+    <li><span class="badge">부동산 구분</span> 주택/농지/농지외 토지/상가·건물 중 선택. 세율 구조가 완전히 다름.</li>
+    <li><span class="badge">취득가액</span> 매매가 또는 시가표준액. 증여·상속도 시가 기준.</li>
+    <li><span class="badge">전용면적</span> 주택 매수 시 85㎡ 초과면 농어촌특별세 가산. 토지·상가는 무관.</li>
+    <li><span class="badge">주택수·조정지역</span> 다주택 중과 판정용. 1주택은 1~3% 선형 / 2주택 조정시 8% / 3주택↑ 또는 법인 12%.</li>
+    <li><span class="badge">취득 유형</span> 매매/증여(3.5%)/상속(2.8%)/신축(원시취득). 증여·상속은 별도 세율표.</li>
+  </ul>
+
+  <h3>② 세율 (주택 매매)</h3>
+  <ul>
+    <li>6억 이하: 1%</li>
+    <li>6~9억: 1~3% (선형 증가)</li>
+    <li>9억 초과: 3%</li>
+    <li>다주택 중과: 2주택 조정 8% / 3주택+ 또는 법인 12%</li>
+  </ul>
+
+  <h3>③ 부가세금</h3>
+  <ul>
+    <li><b>지방교육세:</b> 주택 일반 = 취득세×10% / 농지 0.2% / 농지외·상가 0.4% / 증여 0.3% / 상속 0.16%</li>
+    <li><b>농어촌특별세:</b> 주택 85㎡ 초과 0.2~1% / 농지 면제 / 농지외·상가 0.2%</li>
+  </ul>
+
+  <div class="warn-box">
+    <b>⚠ 주의:</b> 일시적 2주택, 생애최초 감면, 신혼부부 감면 등 특례는 미반영. 실제 신고시 확인 필요.
+  </div>
+</div>
+
+<script>
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+const fmtPct = n => (n * 100).toFixed(2) + '%';
+
+function calculate() {
+  const propertyType = document.getElementById('propertyType').value;
+  const price = parseFloat(document.getElementById('price').value) || 0;
+  const area = parseFloat(document.getElementById('area').value) || 0;
+  const houseCount = parseInt(document.getElementById('houseCount').value) || 1;
+  const isRegulated = document.getElementById('isRegulated').value === 'Y';
+  const acquireType = document.getElementById('acquireType').value;
+  const isCorp = document.getElementById('isCorp').value === 'Y';
+
+  let rate = 0, rateDesc = '', eduRate = 0, eduDesc = '', ruralRate = 0, ruralDesc = '면제';
+
+  // 1. 취득세율
+  if (propertyType === '주택') {
+    if (acquireType === '증여') {
+      rate = (isRegulated && houseCount >= 2) ? 0.12 : 0.035;
+      rateDesc = (isRegulated && houseCount >= 2) ? '주택 증여 (조정+다주택) 12%' : '주택 증여 3.5%';
+    } else if (acquireType === '상속') {
+      rate = 0.028;
+      rateDesc = '주택 상속 2.8%';
+    } else if (acquireType === '신축') {
+      rate = 0.028;
+      rateDesc = '주택 신축 2.8%';
+    } else {
+      // 매매
+      if (isCorp || houseCount >= 3) {
+        rate = isRegulated || isCorp ? 0.12 : 0.08;
+        rateDesc = isCorp ? '법인 → 12%' : (isRegulated ? '3주택↑ 조정 → 12%' : '3주택↑ 비조정 → 8%');
+      } else if (houseCount === 2 && isRegulated) {
+        rate = 0.08;
+        rateDesc = '2주택 조정 → 8%';
+      } else {
+        // 1주택 또는 2주택 비조정
+        if (price <= 600000000) rate = 0.01;
+        else if (price <= 900000000) rate = 0.01 + ((price - 600000000) / 300000000) * 0.02;
+        else rate = 0.03;
+        rateDesc = `주택 매매 ${(rate*100).toFixed(2)}% (1~2주택 비조정)`;
+      }
+    }
+  } else if (propertyType === '농지') {
+    rate = acquireType === '매매' ? 0.03 : acquireType === '증여' ? 0.035 : 0.023;
+    rateDesc = `농지 ${acquireType} ${(rate*100).toFixed(1)}%`;
+  } else if (propertyType === '농지외') {
+    rate = acquireType === '매매' ? 0.04 : acquireType === '증여' ? 0.035 : 0.028;
+    rateDesc = `농지외 토지 ${acquireType} ${(rate*100).toFixed(1)}%`;
+  } else if (propertyType === '상가') {
+    rate = acquireType === '매매' ? 0.04 : acquireType === '증여' ? 0.035 : 0.028;
+    rateDesc = `상가·건물 ${acquireType} ${(rate*100).toFixed(1)}%`;
+  }
+
+  const acquireTax = price * rate;
+
+  // 2. 지방교육세
+  if (propertyType === '주택') {
+    if (rate >= 0.08) { eduRate = 0.004; eduDesc = '중과세 0.4%'; }
+    else if (acquireType === '증여') { eduRate = 0.003; eduDesc = '증여 0.3%'; }
+    else if (acquireType === '상속') { eduRate = 0.0016; eduDesc = '상속 0.16%'; }
+    else { eduRate = acquireTax / price * 0.1; eduDesc = '취득세 × 10%'; }
+  } else if (propertyType === '농지') {
+    eduRate = 0.002; eduDesc = '농지 0.2%';
+  } else {
+    eduRate = 0.004; eduDesc = '농지외·상가 0.4%';
+  }
+  const eduTax = price * eduRate;
+
+  // 3. 농어촌특별세
+  if (propertyType === '주택') {
+    if (area > 85) {
+      // 면적 초과시 가산. 일반적으로 0.2%, 중과시 더 높음
+      if (rate >= 0.08) { ruralRate = 0.01; ruralDesc = '85㎡ 초과 + 중과 1%'; }
+      else { ruralRate = 0.002; ruralDesc = '85㎡ 초과 0.2%'; }
+    }
+  } else if (propertyType === '농지') {
+    ruralRate = 0; ruralDesc = '농지 면제';
+  } else {
+    ruralRate = 0.002; ruralDesc = '0.2%';
+  }
+  const ruralTax = price * ruralRate;
+
+  const finalTax = acquireTax + eduTax + ruralTax;
+  const effectiveRate = price > 0 ? finalTax / price : 0;
+
+  document.getElementById('rate').textContent = fmtPct(rate);
+  document.getElementById('rateDesc').textContent = rateDesc;
+  document.getElementById('acquireTax').textContent = fmt(acquireTax) + ' 원';
+  document.getElementById('eduTax').textContent = fmt(eduTax) + ' 원';
+  document.getElementById('eduDesc').textContent = eduDesc;
+  document.getElementById('ruralTax').textContent = fmt(ruralTax) + ' 원';
+  document.getElementById('ruralDesc').textContent = ruralDesc;
+  document.getElementById('finalTax').textContent = fmt(finalTax) + ' 원';
+  document.getElementById('effectiveRate').textContent = fmtPct(effectiveRate);
+}
+
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input', calculate);
+  el.addEventListener('change', calculate);
+});
+calculate();
+</script>
+</body>
+</html>
