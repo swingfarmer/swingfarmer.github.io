@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>대출 상환 계산기</title>
+<style>
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:1100px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a}h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:8px}.desc{color:#555;font-size:14px;margin-bottom:24px}.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}.back-link:hover{text-decoration:underline}.panel{background:white;border-radius:8px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:20px}.panel h2{margin-top:0;color:#1F4E78;font-size:18px}.section-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px 0;grid-column:1/-1}.section-label:first-child{margin-top:0}.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.input-row{display:flex;flex-direction:column}label{font-size:13px;font-weight:600;margin-bottom:4px;color:#333}input[type="number"],select{padding:10px;font-size:15px;border:1px solid #ccc;border-radius:4px;background:#FFF2CC;font-weight:600;color:#0000FF}input:focus,select:focus{outline:2px solid #1F4E78;background:#FFFACD}.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:14px}.stat{background:#f0f5fa;padding:14px;border-radius:6px;border-left:4px solid #1F4E78}.stat.bad{border-left-color:#dc2626;background:#fef2f2}.stat-label{font-size:12px;color:#666;margin-bottom:4px}.stat-value{font-size:20px;font-weight:700;color:#1F4E78;font-variant-numeric:tabular-nums}.stat.bad .stat-value{color:#b91c1c}.stat-sub{font-size:11px;color:#888;margin-top:2px}.final{background:linear-gradient(135deg,#1F4E78,#2563eb);color:white;padding:24px;border-radius:10px;text-align:center;margin-bottom:20px}.final-label{font-size:14px;opacity:0.9;margin-bottom:6px}.final-value{font-size:36px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums}.final-sub{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.3);font-size:14px;opacity:0.95}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th,td{padding:6px 8px;text-align:right;border-bottom:1px solid #eee}th{background:#1F4E78;color:white;font-weight:600;font-size:11px;position:sticky;top:0}td:first-child,th:first-child{text-align:center}.table-wrap{max-height:500px;overflow-y:auto;border:1px solid #ddd;border-radius:4px}tr.grace{background:#fff8e8}tr.first-of-year td{border-top:2px solid #ccc}.manual{background:#fff;border:1px solid #e0e0e0;padding:20px;border-radius:8px;margin-top:30px;line-height:1.7;font-size:14px}.manual h3{color:#1F4E78;margin-top:18px;margin-bottom:8px;font-size:15px}.manual h3:first-child{margin-top:0}.manual ul{padding-left:20px;margin:6px 0}.manual li{margin-bottom:4px}.badge{display:inline-block;background:#1F4E78;color:white;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-right:4px}
+</style>
+</head>
+<body>
+
+<a href="../" class="back-link">← 금융 계산기로</a>
+
+<h1>🏦 대출 상환 계산기</h1>
+<p class="desc">대출금·기간·금리·상환방식을 입력하면 매달 상환액과 총 이자 자동 계산. 거치기간(이자만 내는 기간) 옵션 포함.</p>
+
+<div class="panel">
+  <h2>📥 입력값</h2>
+  <div class="inputs">
+
+    <div class="section-label">① 대출 정보</div>
+    <div class="input-row">
+      <label>대출금액 (원)</label>
+      <input type="number" id="principal" value="100000000">
+    </div>
+    <div class="input-row">
+      <label>연 이자율 (%)</label>
+      <input type="number" id="rate" value="3.5" step="0.01">
+    </div>
+    <div class="input-row">
+      <label>대출 기간 (년)</label>
+      <input type="number" id="years" value="30" min="1" max="50">
+    </div>
+
+    <div class="section-label">② 상환 방식</div>
+    <div class="input-row">
+      <label>상환 방식</label>
+      <select id="method">
+        <option value="equal_pay" selected>원리금균등 (매달 같은 금액)</option>
+        <option value="equal_principal">원금균등 (매달 원금 같음)</option>
+        <option value="bullet">만기일시 (이자만 내다 만기에 원금)</option>
+      </select>
+    </div>
+    <div class="input-row">
+      <label>거치기간 (개월)</label>
+      <input type="number" id="grace" value="0" min="0">
+    </div>
+  </div>
+</div>
+
+<div class="final">
+  <div class="final-label" id="finalLabel">매달 상환액 (대표)</div>
+  <div class="final-value" id="mainPayment">-</div>
+  <div class="final-sub" id="mainSub"></div>
+</div>
+
+<div class="panel">
+  <h2>📊 요약</h2>
+  <div class="summary-grid">
+    <div class="stat">
+      <div class="stat-label">대출 원금</div>
+      <div class="stat-value" id="S_principal">-</div>
+    </div>
+    <div class="stat bad">
+      <div class="stat-label">총 이자</div>
+      <div class="stat-value" id="S_totalInterest">-</div>
+      <div class="stat-sub" id="S_interestRate"></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">총 상환액 (원금+이자)</div>
+      <div class="stat-value" id="S_totalPayment">-</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">상환 기간</div>
+      <div class="stat-value" id="S_period">-</div>
+      <div class="stat-sub" id="S_periodSub"></div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>📅 월별 상환표</h2>
+  <p style="font-size:12px;color:#888;margin:6px 0 12px">노란색 = 거치기간 (원금 상환 없이 이자만)</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>회차</th>
+          <th>월</th>
+          <th>원금</th>
+          <th>이자</th>
+          <th>월 상환액</th>
+          <th>잔액</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="manual">
+  <h3>📘 사용 설명서</h3>
+
+  <h3>① 3가지 상환 방식 비교</h3>
+  <ul>
+    <li><span class="badge">원리금균등</span> 매달 똑같은 금액 상환. 처음엔 이자 비중 크고 점점 원금 비중 증가. <b>가장 일반적. 부담 일정.</b></li>
+    <li><span class="badge">원금균등</span> 매달 원금은 똑같이, 이자는 잔액에 따라 점점 감소. <b>총 이자 가장 적음.</b> 단, 초기 상환액이 큼.</li>
+    <li><span class="badge">만기일시</span> 매달 이자만 내다가 만기에 원금 한 번에. <b>총 이자 가장 많음.</b> 사업용·단기 자금 운용에 사용.</li>
+  </ul>
+
+  <h3>② 거치기간이란?</h3>
+  <p>처음 일정 기간 동안 <b>원금 갚지 않고 이자만</b> 내는 기간. 대출 직후 자금 부담을 줄이고 싶을 때 사용. 단, 그만큼 원금 상환 기간이 짧아져 후반 월 부담은 더 커짐.</p>
+  <ul>
+    <li>예: 30년 대출 + 거치 36개월 → 처음 3년은 이자만, 그 후 27년에 원금 분할 상환</li>
+    <li>총 이자도 더 많아짐 (원금이 그대로 유지되니까)</li>
+  </ul>
+
+  <h3>③ 상환 방식 선택 가이드</h3>
+  <ul>
+    <li><b>현금흐름 안정 중요 →</b> 원리금균등</li>
+    <li><b>이자 최소화 + 초기 부담 OK →</b> 원금균등</li>
+    <li><b>월 부담 최소 + 만기 일시상환 가능 →</b> 만기일시 (위험 큼)</li>
+    <li><b>초기 자금 부족 →</b> 거치기간 추가</li>
+  </ul>
+
+  <h3>④ 주의사항</h3>
+  <ul>
+    <li>본 계산기는 <b>고정금리 단순 가정</b>. 실제 주택담보대출은 변동금리·혼합형 多.</li>
+    <li>중도상환수수료 미반영 (보통 1~1.5%, 3년 내).</li>
+    <li>대출 부대비용(인지세·근저당설정비 등) 미반영.</li>
+    <li>실제 대출 가능 여부는 LTV·DTI·DSR 한도 별도 검토 필요.</li>
+  </ul>
+</div>
+
+<script>
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+
+function calculate() {
+  const P = parseFloat(document.getElementById('principal').value) || 0;
+  const annualRate = (parseFloat(document.getElementById('rate').value) || 0) / 100;
+  const years = parseInt(document.getElementById('years').value) || 1;
+  const method = document.getElementById('method').value;
+  const grace = parseInt(document.getElementById('grace').value) || 0;
+
+  const r = annualRate / 12; // 월 이율
+  const totalMonths = years * 12;
+  const payMonths = totalMonths - grace; // 원금 상환 기간
+
+  if (payMonths <= 0 || P <= 0) return;
+
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+
+  let balance = P;
+  let totalInterest = 0;
+  let totalPrincipal = 0;
+  const payments = []; // 월별 (orig 원금, 이자, 상환액)
+
+  // 거치기간: 이자만
+  for (let m = 1; m <= grace; m++) {
+    const interest = balance * r;
+    totalInterest += interest;
+    payments.push({ month: m, principal: 0, interest, payment: interest, balance, isGrace: true });
+  }
+
+  // 본 상환 기간
+  if (method === 'equal_pay') {
+    // 원리금균등: 월 상환액 = P × r(1+r)^n / ((1+r)^n - 1)
+    let pmt;
+    if (r === 0) pmt = balance / payMonths;
+    else pmt = balance * r * Math.pow(1+r, payMonths) / (Math.pow(1+r, payMonths) - 1);
+
+    for (let m = 1; m <= payMonths; m++) {
+      const interest = balance * r;
+      const principal = pmt - interest;
+      balance -= principal;
+      if (balance < 0.01) balance = 0;
+      totalInterest += interest;
+      totalPrincipal += principal;
+      payments.push({ month: grace + m, principal, interest, payment: pmt, balance, isGrace: false });
+    }
+  } else if (method === 'equal_principal') {
+    // 원금균등: 매달 원금 = P / payMonths, 이자는 잔액 × r
+    const principalEach = balance / payMonths;
+    for (let m = 1; m <= payMonths; m++) {
+      const interest = balance * r;
+      balance -= principalEach;
+      if (balance < 0.01) balance = 0;
+      const payment = principalEach + interest;
+      totalInterest += interest;
+      totalPrincipal += principalEach;
+      payments.push({ month: grace + m, principal: principalEach, interest, payment, balance, isGrace: false });
+    }
+  } else if (method === 'bullet') {
+    // 만기일시: 매달 이자만, 마지막에 원금 일시
+    for (let m = 1; m <= payMonths; m++) {
+      const interest = balance * r;
+      const isLast = m === payMonths;
+      const principal = isLast ? balance : 0;
+      const payment = interest + principal;
+      totalInterest += interest;
+      totalPrincipal += principal;
+      balance = isLast ? 0 : balance;
+      payments.push({ month: grace + m, principal, interest, payment, balance, isGrace: false });
+    }
+  }
+
+  // 표 출력
+  payments.forEach((p, idx) => {
+    const tr = document.createElement('tr');
+    if (p.isGrace) tr.classList.add('grace');
+    if (p.month % 12 === 1 && idx > 0) tr.classList.add('first-of-year');
+    tr.innerHTML = `
+      <td>${p.month}</td>
+      <td>${Math.ceil(p.month/12)}년 ${((p.month-1)%12)+1}월</td>
+      <td>${fmt(p.principal)}</td>
+      <td>${fmt(p.interest)}</td>
+      <td><b>${fmt(p.payment)}</b></td>
+      <td>${fmt(p.balance)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // 요약
+  const totalPayment = P + totalInterest;
+  const set = (id, v) => document.getElementById(id).textContent = v;
+
+  // 메인 표시
+  if (method === 'equal_pay') {
+    const mainPay = payments[grace]?.payment || 0;
+    document.getElementById('finalLabel').textContent = '매달 상환액 (원리금균등)';
+    set('mainPayment', fmt(mainPay) + ' 원');
+    set('mainSub', grace > 0 ? `거치 ${grace}개월 동안은 이자 ${fmt(payments[0]?.interest||0)}원만` : '매달 동일');
+  } else if (method === 'equal_principal') {
+    const firstPay = payments[grace]?.payment || 0;
+    const lastPay = payments[payments.length - 1]?.payment || 0;
+    document.getElementById('finalLabel').textContent = '월 상환액 (원금균등, 첫달 → 마지막달)';
+    set('mainPayment', fmt(firstPay) + ' → ' + fmt(lastPay) + ' 원');
+    set('mainSub', '매달 원금은 동일, 이자는 점점 감소');
+  } else {
+    const monthlyInt = payments[grace]?.interest || 0;
+    const lastPay = payments[payments.length - 1]?.payment || 0;
+    document.getElementById('finalLabel').textContent = '월 이자 + 만기 원금';
+    set('mainPayment', fmt(monthlyInt) + ' 원 / 월');
+    set('mainSub', `만기 시 원금 ${fmt(lastPay)} 일시상환`);
+  }
+
+  set('S_principal', fmt(P) + ' 원');
+  set('S_totalInterest', fmt(totalInterest) + ' 원');
+  set('S_interestRate', `원금 대비 ${(totalInterest/P*100).toFixed(1)}%`);
+  set('S_totalPayment', fmt(totalPayment) + ' 원');
+  set('S_period', `${years}년 (${totalMonths}개월)`);
+  set('S_periodSub', grace > 0 ? `거치 ${grace}개월 + 상환 ${payMonths}개월` : '거치기간 없음');
+}
+
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input', calculate);
+  el.addEventListener('change', calculate);
+});
+calculate();
+</script>
+</body>
+</html>
