@@ -1,1 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>퇴직소득세 계산기</title>
+<style>
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:1100px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a}h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:8px}.desc{color:#555;font-size:14px;margin-bottom:24px}.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}.back-link:hover{text-decoration:underline}.panel{background:white;border-radius:8px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:20px}.panel h2{margin-top:0;color:#1F4E78;font-size:18px}.section-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px 0;grid-column:1/-1}.section-label:first-child{margin-top:0}.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.input-row{display:flex;flex-direction:column}label{font-size:13px;font-weight:600;margin-bottom:4px;color:#333}input[type="number"],select{padding:10px;font-size:15px;border:1px solid #ccc;border-radius:4px;background:#FFF2CC;font-weight:600;color:#0000FF}input:focus,select:focus{outline:2px solid #1F4E78;background:#FFFACD}.calc-table{width:100%;border-collapse:collapse;font-size:14px}.calc-table td{padding:10px 12px;border-bottom:1px solid #eee}.calc-table td:first-child{color:#555}.calc-table td:nth-child(2){text-align:right;font-weight:600;color:#1a1a1a;font-variant-numeric:tabular-nums}.calc-table td:nth-child(3){font-size:12px;color:#888;max-width:280px}.final{background:linear-gradient(135deg,#d97706,#ea580c);color:white;padding:24px;border-radius:10px;text-align:center;margin-bottom:20px}.final-label{font-size:14px;opacity:0.9;margin-bottom:6px}.final-value{font-size:36px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums}.final-sub{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.3);font-size:14px;opacity:0.95}.manual{background:#fff;border:1px solid #e0e0e0;padding:20px;border-radius:8px;margin-top:30px;line-height:1.7;font-size:14px}.manual h3{color:#1F4E78;margin-top:18px;margin-bottom:8px;font-size:15px}.manual h3:first-child{margin-top:0}.manual ul{padding-left:20px;margin:6px 0}.manual li{margin-bottom:4px}.badge{display:inline-block;background:#1F4E78;color:white;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-right:4px}.warn-box{background:#fef3c7;border-left:4px solid #d97706;padding:10px 14px;margin-top:10px;border-radius:4px;font-size:13px;color:#92400e}
+</style>
+</head>
+<body>
 
+<a href="../../" class="back-link">← 메인으로</a>
+
+<h1>💼 퇴직소득세 계산기</h1>
+<p class="desc">회사 퇴직금 일시 수령 시 퇴직소득세. 근속연수공제·환산급여공제 자동 적용. (2026년 5월 기준)</p>
+
+<div class="panel">
+  <h2>📥 입력값</h2>
+  <div class="inputs">
+
+    <div class="section-label">① 퇴직 정보</div>
+    <div class="input-row">
+      <label>퇴직금 (원) <span style="font-size:11px;color:#888;">(세전, 회사 일시 수령)</span></label>
+      <input type="number" id="retirement" value="100000000">
+    </div>
+    <div class="input-row">
+      <label>근속연수 (년) <span style="font-size:11px;color:#888;">(소수점 가능)</span></label>
+      <input type="number" id="years" value="20" step="0.1">
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>🧮 계산 과정</h2>
+  <table class="calc-table">
+    <tbody>
+      <tr><td>퇴직금</td><td id="retire">-</td><td>세전 일시금</td></tr>
+      <tr><td>근속연수공제</td><td id="yearDed">-</td><td id="yearDedDesc">근속기간 구간별 공제</td></tr>
+      <tr><td>환산급여</td><td id="converted">-</td><td>(퇴직금 − 근속공제) ÷ 근속연수 × 12</td></tr>
+      <tr><td>환산급여공제</td><td id="convDed">-</td><td id="convDedDesc">환산급여 구간별 공제</td></tr>
+      <tr><td>과세표준</td><td id="taxBase">-</td><td>환산급여 − 환산급여공제</td></tr>
+      <tr><td>환산산출세액</td><td id="convTax">-</td><td>과표 × 누진세율 6~45%</td></tr>
+      <tr><td>퇴직소득세 (산출세액)</td><td id="calcTax">-</td><td>환산산출세액 ÷ 12 × 근속연수</td></tr>
+      <tr><td>지방소득세 (10%)</td><td id="localTax">-</td><td>퇴직소득세 × 10%</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="final">
+  <div class="final-label">💰 최종 납부세액</div>
+  <div class="final-value" id="finalTax">-</div>
+  <div class="final-sub">실수령 퇴직금: <b id="netRetire">-</b> 원 · 실효세율 <b id="effectiveRate">-</b></div>
+</div>
+
+<div class="manual">
+  <h3>📘 사용 설명서</h3>
+
+  <h3>① 입력값 설명</h3>
+  <ul>
+    <li><span class="badge">퇴직금</span> 세전 금액. DC형 적립금, 퇴직금 환산액, 명예퇴직금 모두 포함.</li>
+    <li><span class="badge">근속연수</span> 입사일~퇴사일. 1년 미만은 1년으로. 소수점 입력 가능.</li>
+  </ul>
+
+  <h3>② 계산 로직 (5단계)</h3>
+  <ul>
+    <li><b>1단계 - 근속연수공제:</b>
+      <ul>
+        <li>~5년: 100만 × 근속</li>
+        <li>~10년: 500만 + 200만 × (근속−5)</li>
+        <li>~20년: 1,500만 + 250만 × (근속−10)</li>
+        <li>20년 초과: 4,000만 + 300만 × (근속−20)</li>
+      </ul>
+    </li>
+    <li><b>2단계 - 환산급여:</b> (퇴직금 − 근속연수공제) ÷ 근속연수 × 12</li>
+    <li><b>3단계 - 환산급여공제:</b>
+      <ul>
+        <li>~800만: 전액</li>
+        <li>~7,000만: 800만 + (초과 × 60%)</li>
+        <li>~1억: 위 + (초과 × 55%)</li>
+        <li>~3억: 위 + (초과 × 45%)</li>
+        <li>3억 초과: 위 + (초과 × 35%)</li>
+      </ul>
+    </li>
+    <li><b>4단계 - 누진세율 6%~45%</b> 적용 → 환산산출세액</li>
+    <li><b>5단계 - 환산산출세액 ÷ 12 × 근속연수</b> = 퇴직소득세</li>
+  </ul>
+
+  <h3>③ 왜 이렇게 복잡한가?</h3>
+  <p>장기 근속한 사람이 받는 큰 퇴직금이 한꺼번에 누진세율 최고구간(45%) 맞으면 너무 가혹하니까, 연 평균값으로 환산해서 세율 매기고 다시 근속연수 곱해서 분산 효과를 줌. 결과적으로 <b>근속이 길수록 실효세율 낮음.</b></p>
+
+  <div class="warn-box">
+    <b>⚠ 주의:</b> IRP로 받아서 연금으로 수령하면 세금이 30~40% 적음 (퇴직소득세 비교 계산기 참고). 회사가 원천징수해서 차감 후 지급하는 게 일반적.
+  </div>
+</div>
+
+<script>
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+const fmtPct = n => (n * 100).toFixed(2) + '%';
+
+function calcProgressiveTax(taxBase) {
+  if (taxBase <= 0) return 0;
+  const brackets = [
+    [14000000, 0.06, 0],
+    [50000000, 0.15, 1260000],
+    [88000000, 0.24, 5760000],
+    [150000000, 0.35, 15440000],
+    [300000000, 0.38, 19940000],
+    [500000000, 0.40, 25940000],
+    [1000000000, 0.42, 35940000],
+    [Infinity, 0.45, 65940000],
+  ];
+  for (const [upper, rate, deduction] of brackets) {
+    if (taxBase <= upper) return taxBase * rate - deduction;
+  }
+  return 0;
+}
+
+function calcYearDeduction(years) {
+  if (years <= 5) return years * 1000000;
+  if (years <= 10) return 5000000 + (years - 5) * 2000000;
+  if (years <= 20) return 15000000 + (years - 10) * 2500000;
+  return 40000000 + (years - 20) * 3000000;
+}
+
+function calcConvDeduction(converted) {
+  if (converted <= 8000000) return converted;
+  if (converted <= 70000000) return 8000000 + (converted - 8000000) * 0.60;
+  if (converted <= 100000000) return 8000000 + 62000000 * 0.60 + (converted - 70000000) * 0.55;
+  if (converted <= 300000000) return 8000000 + 62000000 * 0.60 + 30000000 * 0.55 + (converted - 100000000) * 0.45;
+  return 8000000 + 62000000 * 0.60 + 30000000 * 0.55 + 200000000 * 0.45 + (converted - 300000000) * 0.35;
+}
+
+function calculate() {
+  const retirement = parseFloat(document.getElementById('retirement').value) || 0;
+  const years = parseFloat(document.getElementById('years').value) || 0;
+
+  if (years <= 0 || retirement <= 0) {
+    ['retire','yearDed','converted','convDed','taxBase','convTax','calcTax','localTax','finalTax','netRetire','effectiveRate']
+      .forEach(id => document.getElementById(id).textContent = '-');
+    return;
+  }
+
+  const yearDed = calcYearDeduction(years);
+  const yearDedDesc = years <= 5 ? `~5년: ${years}년 × 100만`
+    : years <= 10 ? `~10년 구간`
+    : years <= 20 ? `~20년 구간`
+    : '20년 초과 구간';
+
+  const converted = Math.max(0, (retirement - yearDed) / years * 12);
+  const convDed = calcConvDeduction(converted);
+  const convDedDesc = converted <= 8000000 ? '~800만 전액 공제'
+    : converted <= 70000000 ? '~7,000만 구간'
+    : converted <= 100000000 ? '~1억 구간'
+    : converted <= 300000000 ? '~3억 구간'
+    : '3억 초과 구간';
+
+  const taxBase = Math.max(0, converted - convDed);
+  const convTax = calcProgressiveTax(taxBase);
+  const calcTax = convTax / 12 * years;
+  const localTax = calcTax * 0.10;
+  const finalTax = calcTax + localTax;
+  const netRetire = retirement - finalTax;
+  const effectiveRate = retirement > 0 ? finalTax / retirement : 0;
+
+  document.getElementById('retire').textContent = fmt(retirement) + ' 원';
+  document.getElementById('yearDed').textContent = fmt(yearDed) + ' 원';
+  document.getElementById('yearDedDesc').textContent = yearDedDesc;
+  document.getElementById('converted').textContent = fmt(converted) + ' 원';
+  document.getElementById('convDed').textContent = fmt(convDed) + ' 원';
+  document.getElementById('convDedDesc').textContent = convDedDesc;
+  document.getElementById('taxBase').textContent = fmt(taxBase) + ' 원';
+  document.getElementById('convTax').textContent = fmt(convTax) + ' 원';
+  document.getElementById('calcTax').textContent = fmt(calcTax) + ' 원';
+  document.getElementById('localTax').textContent = fmt(localTax) + ' 원';
+  document.getElementById('finalTax').textContent = fmt(finalTax) + ' 원';
+  document.getElementById('netRetire').textContent = fmt(netRetire);
+  document.getElementById('effectiveRate').textContent = fmtPct(effectiveRate);
+}
+
+document.querySelectorAll('input').forEach(el => {
+  el.addEventListener('input', calculate);
+});
+calculate();
+</script>
+</body>
+</html>
