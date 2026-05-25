@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>버핏지수 계산기</title>
+<style>
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:1100px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a}h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:8px}.desc{color:#555;font-size:14px;margin-bottom:24px}.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}.back-link:hover{text-decoration:underline}.panel{background:white;border-radius:8px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:20px}.panel h2{margin-top:0;color:#1F4E78;font-size:18px}.section-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px 0;grid-column:1/-1}.section-label:first-child{margin-top:0}.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.input-row{display:flex;flex-direction:column}label{font-size:13px;font-weight:600;margin-bottom:4px;color:#333}input[type="number"]{padding:10px;font-size:15px;border:1px solid #ccc;border-radius:4px;background:#FFF2CC;font-weight:600;color:#0000FF}input:focus{outline:2px solid #1F4E78;background:#FFFACD}.final{padding:30px;border-radius:10px;text-align:center;margin-bottom:20px;color:white}.final.green{background:linear-gradient(135deg,#10b981,#059669)}.final.yellow{background:linear-gradient(135deg,#eab308,#ca8a04)}.final.orange{background:linear-gradient(135deg,#f97316,#ea580c)}.final.red{background:linear-gradient(135deg,#dc2626,#b91c1c)}.final-label{font-size:14px;opacity:0.9;margin-bottom:6px}.final-value{font-size:50px;font-weight:800;letter-spacing:-1px}.final-sub{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.3);font-size:14px;opacity:0.95;font-weight:600}.zone-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}.zone-table th{background:#1F4E78;color:white;padding:8px;font-weight:600;font-size:12px}.zone-table td{padding:10px;border-bottom:1px solid #eee;text-align:center}.zone-table tr.active td{background:#fff8e8;font-weight:700;color:#b45309}.zone-color{display:inline-block;width:16px;height:16px;border-radius:3px;vertical-align:middle;margin-right:6px}.source-box{background:#f0f9ff;border-left:4px solid #2563eb;padding:14px 18px;border-radius:6px;margin-bottom:20px}.source-box h3{margin:0 0 10px 0;color:#1e3a8a;font-size:15px}.source-box ul{margin:6px 0;padding-left:20px}.source-box li{margin-bottom:6px;font-size:13px}.source-box a{color:#2563eb;text-decoration:none;font-weight:600}.source-box a:hover{text-decoration:underline}.manual{background:#fff;border:1px solid #e0e0e0;padding:20px;border-radius:8px;margin-top:30px;line-height:1.7;font-size:14px}.manual h3{color:#1F4E78;margin-top:18px;margin-bottom:8px;font-size:15px}.manual h3:first-child{margin-top:0}.manual ul{padding-left:20px;margin:6px 0}.manual li{margin-bottom:4px}.badge{display:inline-block;background:#1F4E78;color:white;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-right:4px}
+</style>
+</head>
+<body>
+
+<a href="../" class="back-link">← 주식 도구로</a>
+
+<h1>🐂 버핏지수 계산기 (코스피)</h1>
+<p class="desc">워런 버핏이 "주식시장 가치평가의 가장 좋은 단일 지표"라 말한 지수. <b>전체 주식시장 시가총액 ÷ GDP</b>로 계산. 시장이 거품인지 저평가인지 한눈에.</p>
+
+<div class="source-box">
+  <h3>📡 데이터 소스 (직접 조회 후 입력)</h3>
+  <ul>
+    <li><b>코스피 시가총액:</b> <a href="https://data.krx.co.kr/contents/MDC/MAIN/main/index.cmd" target="_blank">KRX 정보데이터시스템</a> → 통계 → 시장개관 (실시간 업데이트)</li>
+    <li><b>코스피+코스닥 합산:</b> <a href="https://kind.krx.co.kr/main.do" target="_blank">KIND 한국거래소</a> → 시장통계</li>
+    <li><b>한국 명목 GDP:</b> <a href="https://ecos.bok.or.kr/" target="_blank">한국은행 경제통계시스템(ECOS)</a> → 국민계정 → 명목GDP (분기별)</li>
+    <li><b>간편 확인:</b> <a href="https://kr.investing.com/economic-calendar/gdp-905" target="_blank">Investing.com</a> 또는 <a href="https://tradingeconomics.com/south-korea/gdp" target="_blank">Trading Economics</a></li>
+  </ul>
+</div>
+
+<div class="panel">
+  <h2>📥 입력값</h2>
+  <div class="inputs">
+    <div class="section-label">① 시가총액 (조원)</div>
+    <div class="input-row">
+      <label>코스피 시가총액 (조원)</label>
+      <input type="number" id="kospiCap" value="2300" step="1">
+    </div>
+    <div class="input-row">
+      <label>코스닥 시가총액 (조원)</label>
+      <input type="number" id="kosdaqCap" value="380" step="1">
+    </div>
+
+    <div class="section-label">② 한국 GDP (조원, 명목 연 기준)</div>
+    <div class="input-row">
+      <label>명목 GDP (조원, 최근 4분기 합)</label>
+      <input type="number" id="gdp" value="2400" step="1">
+    </div>
+  </div>
+</div>
+
+<div class="final" id="finalBox">
+  <div class="final-label">버핏지수 = (코스피+코스닥) / GDP × 100</div>
+  <div class="final-value" id="buffettValue">-</div>
+  <div class="final-sub" id="buffettVerdict">-</div>
+</div>
+
+<div class="panel">
+  <h2>📊 평가 구간표</h2>
+  <table class="zone-table" id="zoneTable">
+    <thead>
+      <tr>
+        <th>버핏지수</th>
+        <th>평가</th>
+        <th>의미</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr data-min="0" data-max="70">
+        <td>< 70%</td>
+        <td><span class="zone-color" style="background:#10b981"></span>현저한 저평가</td>
+        <td>장기 매수 기회</td>
+      </tr>
+      <tr data-min="70" data-max="90">
+        <td>70 ~ 90%</td>
+        <td><span class="zone-color" style="background:#84cc16"></span>적정 (다소 저평가)</td>
+        <td>매수에 우호적</td>
+      </tr>
+      <tr data-min="90" data-max="115">
+        <td>90 ~ 115%</td>
+        <td><span class="zone-color" style="background:#eab308"></span>적정 ~ 약간 고평가</td>
+        <td>중립</td>
+      </tr>
+      <tr data-min="115" data-max="135">
+        <td>115 ~ 135%</td>
+        <td><span class="zone-color" style="background:#f97316"></span>고평가</td>
+        <td>주의 필요</td>
+      </tr>
+      <tr data-min="135" data-max="999">
+        <td>> 135%</td>
+        <td><span class="zone-color" style="background:#dc2626"></span>거품 (현저한 고평가)</td>
+        <td>리스크 매우 높음</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="manual">
+  <h3>📘 사용 설명서</h3>
+
+  <h3>① 버핏지수란?</h3>
+  <p>워런 버핏이 2001년 Fortune誌 인터뷰에서 "어느 한 시점에서 평가가 어디에 있는지를 보여주는 가장 좋은 단일 지표"라고 한 지표. <b>(전체 주식시장 시가총액 ÷ GDP) × 100</b>으로 계산. 100%는 시장 시가총액이 한 해 GDP와 같다는 의미.</p>
+
+  <h3>② 입력값 가이드</h3>
+  <ul>
+    <li><span class="badge">시가총액</span> 단위는 <b>조원</b>. 예: 2,300조원이면 "2300" 입력. 코스피만 보고 싶으면 코스닥을 0으로.</li>
+    <li><span class="badge">GDP</span> <b>최근 4분기 합산 명목 GDP</b>가 가장 정확. 한국은행 ECOS에서 분기별 GDP를 4개 합산. 또는 연간 GDP 추정치.</li>
+    <li>지수가 작동하는 핵심: 시총·GDP 둘 다 <b>같은 통화·같은 단위</b>여야 함.</li>
+  </ul>
+
+  <h3>③ 구간별 평가 기준 (한국 특성 반영)</h3>
+  <ul>
+    <li>버핏의 원래 기준은 미국 시장 기준 (70~80% 적정).</li>
+    <li>한국은 글로벌 평균보다 항상 낮은 편 (코리아 디스카운트) → 80~110% 정도가 한국 적정 구간으로 본다는 의견도 많음.</li>
+    <li>위 구간표는 글로벌 평균 기준. 한국만의 평가는 본인이 추세를 보면서 판단하는 게 좋음.</li>
+  </ul>
+
+  <h3>④ 한계와 주의</h3>
+  <ul>
+    <li>GDP는 분기별로만 발표. 시총은 실시간. 시점 차이 있음.</li>
+    <li>외국기업 상장 비중·해외매출 비중에 따라 의미 달라짐.</li>
+    <li>금리 환경 미반영. 저금리일수록 시장 P/E가 높은 게 정상이라 버핏지수가 높게 나오기 마련.</li>
+    <li>단기 매매 신호 X. 장기 자산배분 판단용.</li>
+  </ul>
+</div>
+
+<script>
+const fmt = n => n.toLocaleString('ko-KR');
+
+function calculate() {
+  const kospi = parseFloat(document.getElementById('kospiCap').value) || 0;
+  const kosdaq = parseFloat(document.getElementById('kosdaqCap').value) || 0;
+  const gdp = parseFloat(document.getElementById('gdp').value) || 0;
+
+  const totalCap = kospi + kosdaq;
+  const buffett = gdp > 0 ? totalCap / gdp * 100 : 0;
+
+  document.getElementById('buffettValue').textContent = buffett.toFixed(1) + '%';
+
+  // 구간 평가
+  let verdict, colorClass;
+  if (buffett < 70) { verdict = '🟢 현저한 저평가 — 장기 매수 기회'; colorClass = 'green'; }
+  else if (buffett < 90) { verdict = '🟢 적정 (다소 저평가) — 매수에 우호적'; colorClass = 'green'; }
+  else if (buffett < 115) { verdict = '🟡 적정 ~ 약간 고평가 — 중립'; colorClass = 'yellow'; }
+  else if (buffett < 135) { verdict = '🟠 고평가 — 주의 필요'; colorClass = 'orange'; }
+  else { verdict = '🔴 거품 (현저한 고평가) — 리스크 매우 높음'; colorClass = 'red'; }
+
+  document.getElementById('buffettVerdict').textContent = verdict;
+  const box = document.getElementById('finalBox');
+  box.className = 'final ' + colorClass;
+
+  // 구간표 강조
+  document.querySelectorAll('#zoneTable tbody tr').forEach(tr => {
+    const min = parseFloat(tr.dataset.min);
+    const max = parseFloat(tr.dataset.max);
+    tr.classList.toggle('active', buffett >= min && buffett < max);
+  });
+}
+
+document.querySelectorAll('input').forEach(el => el.addEventListener('input', calculate));
+calculate();
+</script>
+</body>
+</html>
