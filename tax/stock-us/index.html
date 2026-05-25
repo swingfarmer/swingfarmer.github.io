@@ -1,1 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>해외주식 수수료·세금 계산기</title>
+<style>
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:1100px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a}h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:8px}.desc{color:#555;font-size:14px;margin-bottom:24px}.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}.back-link:hover{text-decoration:underline}.panel{background:white;border-radius:8px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:20px}.panel h2{margin-top:0;color:#1F4E78;font-size:18px}.section-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px 0;grid-column:1/-1}.section-label:first-child{margin-top:0}.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.input-row{display:flex;flex-direction:column}label{font-size:13px;font-weight:600;margin-bottom:4px;color:#333}input[type="number"],select{padding:10px;font-size:15px;border:1px solid #ccc;border-radius:4px;background:#FFF2CC;font-weight:600;color:#0000FF}input:focus,select:focus{outline:2px solid #1F4E78;background:#FFFACD}.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}@media(max-width:700px){.compare-grid{grid-template-columns:1fr}}.compare-box{background:white;border-radius:8px;padding:18px;border:2px solid #e5e7eb}.compare-box.person{border-top:4px solid #3b82f6}.compare-box.corp{border-top:4px solid #8b5cf6}.compare-box h3{margin-top:0;font-size:16px;color:#1F4E78}.row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:13px}.row .v{font-weight:600;font-variant-numeric:tabular-nums}.row.subtotal{border-top:1px solid #1F4E78;margin-top:4px;padding-top:8px;font-weight:600}.row.total{border-top:2px solid #1F4E78;margin-top:8px;padding-top:10px;font-weight:700;font-size:14px}.row.total .v{color:#1F4E78}.row.net{font-size:15px;color:#10b981;font-weight:700;margin-top:6px}.row.net.negative{color:#dc2626}.manual{background:#fff;border:1px solid #e0e0e0;padding:20px;border-radius:8px;margin-top:30px;line-height:1.7;font-size:14px}.manual h3{color:#1F4E78;margin-top:18px;margin-bottom:8px;font-size:15px}.manual h3:first-child{margin-top:0}.manual ul{padding-left:20px;margin:6px 0}.manual li{margin-bottom:4px}.badge{display:inline-block;background:#1F4E78;color:white;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-right:4px}.warn-box{background:#fef3c7;border-left:4px solid #d97706;padding:10px 14px;margin-top:10px;border-radius:4px;font-size:13px;color:#92400e}.info-box{background:#dbeafe;border-left:4px solid #2563eb;padding:10px 14px;margin-top:10px;border-radius:4px;font-size:13px;color:#1e3a8a}
+</style>
+</head>
+<body>
 
+<a href="../../" class="back-link">← 메인으로</a>
+
+<h1>🌎 해외주식 수수료·세금 계산기</h1>
+<p class="desc">해외주식 매매 시 거래수수료·환전수수료·양도세 자동 계산. 개인 vs 법인 비교. (2026년 5월 기준)</p>
+
+<div class="panel">
+  <h2>📥 입력값</h2>
+  <div class="inputs">
+
+    <div class="section-label">① 거래 정보 (외화 기준)</div>
+    <div class="input-row">
+      <label>매수금액 (USD 등 외화)</label>
+      <input type="number" id="buy" value="100000">
+    </div>
+    <div class="input-row">
+      <label>매도금액 (외화)</label>
+      <input type="number" id="sell" value="140000">
+    </div>
+    <div class="input-row">
+      <label>매수 시 환율 (1$ = ₩)</label>
+      <input type="number" id="buyFx" value="1400">
+    </div>
+    <div class="input-row">
+      <label>매도 시 환율 (1$ = ₩)</label>
+      <input type="number" id="sellFx" value="1400">
+    </div>
+
+    <div class="section-label">② 거래 수수료</div>
+    <div class="input-row">
+      <label>위탁수수료율 (%) <span style="font-size:11px;color:#888;">(미국주식 통상 0.25%)</span></label>
+      <input type="number" id="brokerRate" value="0.25" step="0.01">
+    </div>
+    <div class="input-row">
+      <label>SEC Fee (미국, 매도시만 %)</label>
+      <input type="number" id="secFee" value="0.0008" step="0.0001">
+    </div>
+
+    <div class="section-label">③ 환전수수료</div>
+    <div class="input-row">
+      <label>환전수수료 우대율 적용 후 (%)</label>
+      <input type="number" id="fxFee" value="0.25" step="0.01">
+    </div>
+    <div class="input-row">
+      <label>환전 방향</label>
+      <select id="fxDirection">
+        <option value="both" selected>매수·매도 양방향 환전</option>
+        <option value="oneway">매수만 환전 (외화 보유)</option>
+        <option value="none">환전 없음 (외화로 거래)</option>
+      </select>
+    </div>
+
+    <div class="section-label">④ 양도세 가정</div>
+    <div class="input-row">
+      <label>개인 양도세율 (%) <span style="font-size:11px;color:#888;">(20% + 지방세 2% = 22%)</span></label>
+      <input type="number" id="cgtRate" value="22" step="0.1">
+    </div>
+    <div class="input-row">
+      <label>법인세율 (%)</label>
+      <input type="number" id="corpTaxRate" value="20.9" step="0.1">
+    </div>
+  </div>
+</div>
+
+<div class="compare-grid">
+
+  <!-- 개인 -->
+  <div class="compare-box person">
+    <h3>👤 개인</h3>
+    <div class="row"><span>매수금액 (외화)</span><span class="v" id="P_buyFx">-</span></div>
+    <div class="row"><span>매수금액 (KRW 환산)</span><span class="v" id="P_buyKrw">-</span></div>
+    <div class="row"><span>(+) 매수수수료</span><span class="v" id="P_buyFee">-</span></div>
+    <div class="row"><span>(+) 환전수수료 (매수)</span><span class="v" id="P_buyFxFee">-</span></div>
+    <div class="row subtotal"><span>매수 총비용</span><span class="v" id="P_buyTotal">-</span></div>
+    <div class="row"><span>매도금액 (외화)</span><span class="v" id="P_sellFx">-</span></div>
+    <div class="row"><span>매도금액 (KRW 환산)</span><span class="v" id="P_sellKrw">-</span></div>
+    <div class="row"><span>(-) 매도수수료 + SEC Fee</span><span class="v" id="P_sellFee">-</span></div>
+    <div class="row"><span>(-) 환전수수료 (매도)</span><span class="v" id="P_sellFxFee">-</span></div>
+    <div class="row subtotal"><span>매도 순수령</span><span class="v" id="P_sellNet">-</span></div>
+    <div class="row"><span>양도차익 (수수료 후)</span><span class="v" id="P_gain">-</span></div>
+    <div class="row"><span>기본공제 (연 250만)</span><span class="v" id="P_basicDed">-</span></div>
+    <div class="row"><span>과세표준</span><span class="v" id="P_taxBase">-</span></div>
+    <div class="row"><span>(-) 양도세 + 지방세 (22%)</span><span class="v" id="P_cgt">-</span></div>
+    <div class="row total"><span>총 비용 (수수료+세금)</span><span class="v" id="P_totalCost">-</span></div>
+    <div class="row net" id="P_netRow"><span>실현 차익 (세후)</span><span class="v" id="P_net">-</span></div>
+    <div class="row" style="font-size:12px;color:#666"><span>실수익률 (KRW 기준)</span><span class="v" id="P_yield">-</span></div>
+  </div>
+
+  <!-- 법인 -->
+  <div class="compare-box corp">
+    <h3>🏢 법인</h3>
+    <div class="row"><span>매수금액 (외화)</span><span class="v" id="C_buyFx">-</span></div>
+    <div class="row"><span>매수금액 (KRW 환산)</span><span class="v" id="C_buyKrw">-</span></div>
+    <div class="row"><span>(+) 매수수수료</span><span class="v" id="C_buyFee">-</span></div>
+    <div class="row"><span>(+) 환전수수료 (매수)</span><span class="v" id="C_buyFxFee">-</span></div>
+    <div class="row subtotal"><span>매수 총비용</span><span class="v" id="C_buyTotal">-</span></div>
+    <div class="row"><span>매도금액 (외화)</span><span class="v" id="C_sellFx">-</span></div>
+    <div class="row"><span>매도금액 (KRW 환산)</span><span class="v" id="C_sellKrw">-</span></div>
+    <div class="row"><span>(-) 매도수수료 + SEC Fee</span><span class="v" id="C_sellFee">-</span></div>
+    <div class="row"><span>(-) 환전수수료 (매도)</span><span class="v" id="C_sellFxFee">-</span></div>
+    <div class="row subtotal"><span>매도 순수령</span><span class="v" id="C_sellNet">-</span></div>
+    <div class="row"><span>양도차익 (사업소득 합산)</span><span class="v" id="C_gain">-</span></div>
+    <div class="row"><span>기본공제</span><span class="v" style="color:#888">없음 (법인)</span></div>
+    <div class="row"><span>(-) 법인세</span><span class="v" id="C_corpTax">-</span></div>
+    <div class="row total"><span>총 비용 (수수료+세금)</span><span class="v" id="C_totalCost">-</span></div>
+    <div class="row net" id="C_netRow"><span>실현 차익 (세후, 유보)</span><span class="v" id="C_net">-</span></div>
+    <div class="row" style="font-size:12px;color:#666"><span>실수익률 (KRW 기준)</span><span class="v" id="C_yield">-</span></div>
+  </div>
+
+</div>
+
+<div class="info-box">
+  💡 <b>환율차익 주의:</b> 매수환율 < 매도환율이면 환차익 발생 → 양도차익 증가. 환율 변동이 주가 변동보다 클 때 있음.
+</div>
+
+<div class="manual">
+  <h3>📘 사용 설명서</h3>
+
+  <h3>① 해외주식 양도세의 핵심</h3>
+  <ul>
+    <li>국내주식과 달리 <b>개인도 양도세 부과 대상.</b></li>
+    <li>1년간 모든 해외주식 양도차익 합산해서 <b>250만 공제 후 22% 과세.</b></li>
+    <li>매년 5월 종합소득세 신고 시 별도 신고. 증권사가 자동 신고 X.</li>
+    <li>국가별 차이: 미국·중국 등 대부분 동일. 일부 국가는 현지 양도세 추가.</li>
+  </ul>
+
+  <h3>② 입력값 설명</h3>
+  <ul>
+    <li><span class="badge">매수/매도금액</span> 외화 기준 (USD, HKD, JPY 등). 종합소득세 신고 시 KRW로 환산해서 계산.</li>
+    <li><span class="badge">매수/매도 환율</span> 거래일 환율. <b>주의:</b> 매수환율과 매도환율이 다르면 환차익/환차손이 양도차익에 포함됨.</li>
+    <li><span class="badge">위탁수수료</span> 증권사별 다름:
+      <ul>
+        <li>국내 주요 증권사 미국주식: 0.07~0.25%</li>
+        <li>토스증권: 0.07%, 한국투자: 0.07%, 미래에셋: 0.07%</li>
+      </ul>
+    </li>
+    <li><span class="badge">SEC Fee</span> 미국주식 매도 시만. 0.0008% (소액). 다른 국가는 0.</li>
+    <li><span class="badge">환전수수료</span> 우대율 적용 후 실수수료. 우대 80% 받으면 0.2%, 우대 90% 받으면 0.1%.</li>
+    <li><span class="badge">환전 방향</span>
+      <ul>
+        <li><b>양방향:</b> 매수 전 원→달러, 매도 후 달러→원. 수수료 2번.</li>
+        <li>매수만: 외화 잔고로 보유. 수수료 1번.</li>
+        <li>환전 없음: 외화로 계속 거래.</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h3>③ 개인 양도세 계산</h3>
+  <ul>
+    <li><b>양도차익(KRW) = 매도금액(KRW 환산) − 매수금액(KRW 환산) − 수수료</b></li>
+    <li><b>과세표준 = 양도차익 − 250만 (연 1회 공제)</b></li>
+    <li><b>양도세 = 과세표준 × 22%</b> (양도세 20% + 지방세 2%)</li>
+    <li>손실은 다른 해외주식 이익과 상계 가능. 다음 해 이월 X.</li>
+  </ul>
+
+  <h3>④ 법인 매매 특징</h3>
+  <ul>
+    <li>양도차익이 사업소득에 합산되어 <b>법인세(9.9~24%)</b> 부과.</li>
+    <li>250만 기본공제 없음.</li>
+    <li>장점: 손익통산, 다른 사업비용과 상계, 재투자 시 절세.</li>
+    <li>단점: 법인 → 개인 인출 시 배당세 또는 종합과세 추가.</li>
+  </ul>
+
+  <h3>⑤ 환율 변동 영향 (중요)</h3>
+  <p>매수 시 1$=1,300원, 매도 시 1$=1,500원이면 → 주가 그대로여도 환차익 발생 → 양도차익 증가 → 세금 증가. 반대로 매수 시 환율이 높았으면 환차손이 양도차익을 깎음. <b>장기 보유 + 환율 상승 = 세금 증가 효과 있음.</b></p>
+
+  <div class="warn-box">
+    <b>⚠ 주의:</b> 본 계산기는 단일 매매 기준. 1년 누적 양도차익 합산 시 추가 케이스(다른 종목 손실 상계) 별도 검토. 배당소득(현지원천징수 + 국내 정산) 미반영. 종합소득 합산 과세 케이스 미반영 (대주주 등).
+  </div>
+</div>
+
+<script>
+const fmt = n => Math.round(n).toLocaleString('ko-KR') + ' 원';
+const fmtPct = n => (n * 100).toFixed(2) + '%';
+
+function calculate() {
+  const buy = parseFloat(document.getElementById('buy').value) || 0;
+  const sell = parseFloat(document.getElementById('sell').value) || 0;
+  const buyFx = parseFloat(document.getElementById('buyFx').value) || 0;
+  const sellFx = parseFloat(document.getElementById('sellFx').value) || 0;
+  const brokerRate = (parseFloat(document.getElementById('brokerRate').value) || 0) / 100;
+  const secFee = (parseFloat(document.getElementById('secFee').value) || 0) / 100;
+  const fxFeeRate = (parseFloat(document.getElementById('fxFee').value) || 0) / 100;
+  const fxDir = document.getElementById('fxDirection').value;
+  const cgtRate = (parseFloat(document.getElementById('cgtRate').value) || 0) / 100;
+  const corpTaxRate = (parseFloat(document.getElementById('corpTaxRate').value) || 0) / 100;
+
+  // 외화 거래 수수료
+  const buyFee_fx = buy * brokerRate;
+  const sellFee_fx = sell * (brokerRate + secFee);
+
+  // KRW 환산
+  const buyKrw = buy * buyFx;
+  const sellKrw = sell * sellFx;
+  const buyFeeKrw = buyFee_fx * buyFx;
+  const sellFeeKrw = sellFee_fx * sellFx;
+
+  // 환전수수료 (KRW 기준)
+  let buyFxFeeKrw = 0, sellFxFeeKrw = 0;
+  if (fxDir === 'both') {
+    buyFxFeeKrw = buyKrw * fxFeeRate;
+    sellFxFeeKrw = sellKrw * fxFeeRate;
+  } else if (fxDir === 'oneway') {
+    buyFxFeeKrw = buyKrw * fxFeeRate;
+  }
+
+  const buyTotalKrw = buyKrw + buyFeeKrw + buyFxFeeKrw;
+  const sellNetKrw = sellKrw - sellFeeKrw - sellFxFeeKrw;
+  const tradeGain = sellNetKrw - buyTotalKrw;
+
+  const set = (id, val) => document.getElementById(id).textContent = val;
+
+  // === 개인 ===
+  const basicDed = 2500000;
+  const P_taxBase = Math.max(0, tradeGain - basicDed);
+  const P_cgt = P_taxBase * cgtRate;
+  const P_totalCost = buyFeeKrw + sellFeeKrw + buyFxFeeKrw + sellFxFeeKrw + P_cgt;
+  const P_net = tradeGain - P_cgt;
+
+  set('P_buyFx', buy.toLocaleString() + ' $');
+  set('P_buyKrw', fmt(buyKrw));
+  set('P_buyFee', fmt(buyFeeKrw));
+  set('P_buyFxFee', fmt(buyFxFeeKrw));
+  set('P_buyTotal', fmt(buyTotalKrw));
+  set('P_sellFx', sell.toLocaleString() + ' $');
+  set('P_sellKrw', fmt(sellKrw));
+  set('P_sellFee', '-' + fmt(sellFeeKrw));
+  set('P_sellFxFee', '-' + fmt(sellFxFeeKrw));
+  set('P_sellNet', fmt(sellNetKrw));
+  set('P_gain', (tradeGain>=0?'+':'') + fmt(tradeGain));
+  set('P_basicDed', '-' + fmt(basicDed));
+  set('P_taxBase', fmt(P_taxBase));
+  set('P_cgt', '-' + fmt(P_cgt));
+  set('P_totalCost', fmt(P_totalCost));
+  set('P_net', (P_net>=0?'+':'') + fmt(P_net));
+  set('P_yield', buyTotalKrw > 0 ? fmtPct(P_net / buyTotalKrw) : '-');
+  document.getElementById('P_netRow').classList.toggle('negative', P_net < 0);
+
+  // === 법인 ===
+  const C_corpTax = Math.max(0, tradeGain * corpTaxRate);
+  const C_totalCost = buyFeeKrw + sellFeeKrw + buyFxFeeKrw + sellFxFeeKrw + C_corpTax;
+  const C_net = tradeGain - C_corpTax;
+
+  set('C_buyFx', buy.toLocaleString() + ' $');
+  set('C_buyKrw', fmt(buyKrw));
+  set('C_buyFee', fmt(buyFeeKrw));
+  set('C_buyFxFee', fmt(buyFxFeeKrw));
+  set('C_buyTotal', fmt(buyTotalKrw));
+  set('C_sellFx', sell.toLocaleString() + ' $');
+  set('C_sellKrw', fmt(sellKrw));
+  set('C_sellFee', '-' + fmt(sellFeeKrw));
+  set('C_sellFxFee', '-' + fmt(sellFxFeeKrw));
+  set('C_sellNet', fmt(sellNetKrw));
+  set('C_gain', (tradeGain>=0?'+':'') + fmt(tradeGain));
+  set('C_corpTax', '-' + fmt(C_corpTax));
+  set('C_totalCost', fmt(C_totalCost));
+  set('C_net', (C_net>=0?'+':'') + fmt(C_net));
+  set('C_yield', buyTotalKrw > 0 ? fmtPct(C_net / buyTotalKrw) : '-');
+  document.getElementById('C_netRow').classList.toggle('negative', C_net < 0);
+}
+
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input', calculate);
+  el.addEventListener('change', calculate);
+});
+calculate();
+</script>
+</body>
+</html>
