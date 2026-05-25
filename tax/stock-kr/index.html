@@ -1,1 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>국내주식 수수료·세금 계산기</title>
+<style>
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:1100px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a}h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:8px}.desc{color:#555;font-size:14px;margin-bottom:24px}.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}.back-link:hover{text-decoration:underline}.panel{background:white;border-radius:8px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:20px}.panel h2{margin-top:0;color:#1F4E78;font-size:18px}.section-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px 0;grid-column:1/-1}.section-label:first-child{margin-top:0}.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.input-row{display:flex;flex-direction:column}label{font-size:13px;font-weight:600;margin-bottom:4px;color:#333}input[type="number"],select{padding:10px;font-size:15px;border:1px solid #ccc;border-radius:4px;background:#FFF2CC;font-weight:600;color:#0000FF}input:focus,select:focus{outline:2px solid #1F4E78;background:#FFFACD}.compare-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:20px}.compare-box{background:white;border-radius:8px;padding:18px;border:2px solid #e5e7eb}.compare-box.retail{border-top:4px solid #10b981}.compare-box.major{border-top:4px solid #f59e0b}.compare-box.corp{border-top:4px solid #8b5cf6}.compare-box h3{margin-top:0;font-size:16px;color:#1F4E78}.row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:13px}.row .v{font-weight:600;font-variant-numeric:tabular-nums}.row.total{border-top:2px solid #1F4E78;margin-top:8px;padding-top:10px;font-weight:700;font-size:14px}.row.total .v{color:#1F4E78}.row.net{font-size:15px;color:#10b981;font-weight:700;margin-top:6px}.row.negative .v{color:#dc2626}.calc-table{width:100%;border-collapse:collapse;font-size:14px}.calc-table td{padding:8px 10px;border-bottom:1px solid #eee}.calc-table td:nth-child(2){text-align:right;font-weight:600;font-variant-numeric:tabular-nums}.manual{background:#fff;border:1px solid #e0e0e0;padding:20px;border-radius:8px;margin-top:30px;line-height:1.7;font-size:14px}.manual h3{color:#1F4E78;margin-top:18px;margin-bottom:8px;font-size:15px}.manual h3:first-child{margin-top:0}.manual ul{padding-left:20px;margin:6px 0}.manual li{margin-bottom:4px}.badge{display:inline-block;background:#1F4E78;color:white;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-right:4px}.warn-box{background:#fef3c7;border-left:4px solid #d97706;padding:10px 14px;margin-top:10px;border-radius:4px;font-size:13px;color:#92400e}
+</style>
+</head>
+<body>
 
+<a href="../../" class="back-link">← 메인으로</a>
+
+<h1>📈 국내주식 수수료·세금 계산기</h1>
+<p class="desc">국내주식 매매 시 수수료·세금 자동 계산. 일반투자자·대주주·법인 3가지 케이스 동시 비교. (2026년 5월 기준)</p>
+
+<div class="panel">
+  <h2>📥 입력값</h2>
+  <div class="inputs">
+
+    <div class="section-label">① 거래 정보</div>
+    <div class="input-row">
+      <label>매수금액 (원)</label>
+      <input type="number" id="buy" value="100000000">
+    </div>
+    <div class="input-row">
+      <label>매도금액 (원)</label>
+      <input type="number" id="sell" value="130000000">
+    </div>
+    <div class="input-row">
+      <label>보유기간</label>
+      <select id="holdPeriod">
+        <option value="long" selected>1년 이상</option>
+        <option value="short">1년 미만</option>
+      </select>
+    </div>
+    <div class="input-row">
+      <label>시장</label>
+      <select id="market">
+        <option value="kospi" selected>코스피</option>
+        <option value="kosdaq">코스닥</option>
+      </select>
+    </div>
+
+    <div class="section-label">② 거래 수수료 (증권사별 다름)</div>
+    <div class="input-row">
+      <label>위탁수수료율 (%) <span style="font-size:11px;color:#888;">(통상 0.015%)</span></label>
+      <input type="number" id="brokerRate" value="0.015" step="0.001">
+    </div>
+
+    <div class="section-label">③ 대주주 양도세 (해당 시)</div>
+    <div class="input-row">
+      <label>대주주 양도세율 — 과표 3억 이하 (%)</label>
+      <input type="number" id="cgtRate1" value="22" step="0.1">
+    </div>
+    <div class="input-row">
+      <label>대주주 양도세율 — 과표 3억 초과 (%)</label>
+      <input type="number" id="cgtRate2" value="27.5" step="0.1">
+    </div>
+    <div class="input-row">
+      <label>대주주 단기보유 양도세율 (%, 1년 미만)</label>
+      <input type="number" id="cgtRateShort" value="33" step="0.1">
+    </div>
+
+    <div class="section-label">④ 법인 (해당 시)</div>
+    <div class="input-row">
+      <label>법인세율 (%) <span style="font-size:11px;color:#888;">(과세표준 구간별)</span></label>
+      <input type="number" id="corpTaxRate" value="20.9" step="0.1">
+    </div>
+  </div>
+</div>
+
+<div class="compare-grid">
+
+  <!-- 일반투자자 -->
+  <div class="compare-box retail">
+    <h3>👤 일반 개인투자자</h3>
+    <div class="row"><span>매수금액</span><span class="v" id="R_buy">-</span></div>
+    <div class="row"><span>(+) 매수수수료</span><span class="v" id="R_buyFee">-</span></div>
+    <div class="row"><span>매수 총비용</span><span class="v" id="R_buyCost">-</span></div>
+    <div class="row"><span>매도금액</span><span class="v" id="R_sell">-</span></div>
+    <div class="row"><span>(-) 매도수수료</span><span class="v" id="R_sellFee">-</span></div>
+    <div class="row"><span>(-) 증권거래세</span><span class="v" id="R_transTax">-</span></div>
+    <div class="row"><span>매도 순수령</span><span class="v" id="R_sellNet">-</span></div>
+    <div class="row"><span>양도세</span><span class="v" style="color:#10b981">없음 (비과세)</span></div>
+    <div class="row total"><span>총 비용 (수수료+세금)</span><span class="v" id="R_totalCost">-</span></div>
+    <div class="row net"><span>실현 차익 (세후)</span><span class="v" id="R_net">-</span></div>
+    <div class="row" style="font-size:12px;color:#666"><span>실수익률</span><span class="v" id="R_yield">-</span></div>
+  </div>
+
+  <!-- 대주주 -->
+  <div class="compare-box major">
+    <h3>⭐ 대주주 개인</h3>
+    <div class="row"><span>매수금액</span><span class="v" id="M_buy">-</span></div>
+    <div class="row"><span>(+) 매수수수료</span><span class="v" id="M_buyFee">-</span></div>
+    <div class="row"><span>매도금액</span><span class="v" id="M_sell">-</span></div>
+    <div class="row"><span>(-) 매도수수료</span><span class="v" id="M_sellFee">-</span></div>
+    <div class="row"><span>(-) 증권거래세</span><span class="v" id="M_transTax">-</span></div>
+    <div class="row"><span>양도차익</span><span class="v" id="M_gain">-</span></div>
+    <div class="row"><span>기본공제 (250만)</span><span class="v" id="M_basicDed">-</span></div>
+    <div class="row"><span>과세표준</span><span class="v" id="M_taxBase">-</span></div>
+    <div class="row"><span>(-) 양도세 + 지방세</span><span class="v" id="M_cgt">-</span></div>
+    <div class="row total"><span>총 비용 (수수료+세금)</span><span class="v" id="M_totalCost">-</span></div>
+    <div class="row net"><span>실현 차익 (세후)</span><span class="v" id="M_net">-</span></div>
+    <div class="row" style="font-size:12px;color:#666"><span>실수익률</span><span class="v" id="M_yield">-</span></div>
+  </div>
+
+  <!-- 법인 -->
+  <div class="compare-box corp">
+    <h3>🏢 법인</h3>
+    <div class="row"><span>매수금액</span><span class="v" id="C_buy">-</span></div>
+    <div class="row"><span>(+) 매수수수료</span><span class="v" id="C_buyFee">-</span></div>
+    <div class="row"><span>매도금액</span><span class="v" id="C_sell">-</span></div>
+    <div class="row"><span>(-) 매도수수료</span><span class="v" id="C_sellFee">-</span></div>
+    <div class="row"><span>(-) 증권거래세</span><span class="v" id="C_transTax">-</span></div>
+    <div class="row"><span>양도차익 (사업소득 합산)</span><span class="v" id="C_gain">-</span></div>
+    <div class="row"><span>(-) 법인세</span><span class="v" id="C_corpTax">-</span></div>
+    <div class="row total"><span>총 비용 (수수료+세금)</span><span class="v" id="C_totalCost">-</span></div>
+    <div class="row net"><span>실현 차익 (세후, 유보)</span><span class="v" id="C_net">-</span></div>
+    <div class="row" style="font-size:12px;color:#666"><span>실수익률</span><span class="v" id="C_yield">-</span></div>
+  </div>
+
+</div>
+
+<div class="manual">
+  <h3>📘 사용 설명서</h3>
+
+  <h3>① 세 가지 케이스의 차이</h3>
+  <ul>
+    <li><span class="badge">👤 일반 개인</span> <b>양도세 없음.</b> 거래수수료 + 증권거래세(0.18%)만. 한국 주식 매매의 99%가 이 케이스.</li>
+    <li><span class="badge">⭐ 대주주</span> 특정 종목을 <b>지분 1% 이상</b> 또는 <b>평가액 10억 이상</b> 보유 시 대주주로 분류. 양도세 22~33%.</li>
+    <li><span class="badge">🏢 법인</span> 법인 계좌로 매매. 양도차익이 사업소득에 합산되어 법인세(9~24%) 부과.</li>
+  </ul>
+
+  <h3>② 거래 비용 (모든 케이스 공통)</h3>
+  <ul>
+    <li><b>위탁수수료:</b> 증권사별 다름. 통상 0.015% (NH·키움 등). 일부 무료 증권사 있음.</li>
+    <li><b>증권거래세 (매도시만):</b>
+      <ul>
+        <li>코스피: 0.18% (양도세 0.03% + 농특세 0.15%)</li>
+        <li>코스닥: 0.18%</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h3>③ 대주주 양도세 세율 (2026년)</h3>
+  <ul>
+    <li><b>보유 1년 이상:</b>
+      <ul>
+        <li>과세표준 3억 이하: 22% (양도세 20% + 지방세 2%)</li>
+        <li>과세표준 3억 초과: 27.5% (양도세 25% + 지방세 2.5%)</li>
+      </ul>
+    </li>
+    <li><b>보유 1년 미만 (단기):</b> 33% (양도세 30% + 지방세 3%)</li>
+    <li><b>기본공제:</b> 양도차익에서 연 250만 공제</li>
+  </ul>
+
+  <h3>④ 법인 매매 특징</h3>
+  <ul>
+    <li><b>장점:</b> 양도차익이 사업소득에 합산 → 다른 사업 손실이 있으면 상계 가능. 법인세율 9.9%(2억 이하)면 개인 양도세보다 낮음.</li>
+    <li><b>단점:</b> 법인 → 개인 인출 시 배당세(15.4%) 또는 종합과세. 법인 운영비용 발생.</li>
+    <li><b>활용:</b> 트레이딩 빈도 높고 수익 큰 경우, 재투자 목적이면 법인 유리.</li>
+  </ul>
+
+  <div class="warn-box">
+    <b>⚠ 주의:</b> 본 계산기는 일반 매매 기준. 배당소득세(15.4%), 손익통산, 양도세 신고 절차는 미반영. 대주주 판정 기준은 종목별 다르므로 증권사에 확인. 법인 매매는 부수적 사업등록·결산 필요.
+  </div>
+</div>
+
+<script>
+const fmt = n => Math.round(n).toLocaleString('ko-KR') + ' 원';
+const fmtPct = n => (n * 100).toFixed(2) + '%';
+
+function calculate() {
+  const buy = parseFloat(document.getElementById('buy').value) || 0;
+  const sell = parseFloat(document.getElementById('sell').value) || 0;
+  const isLong = document.getElementById('holdPeriod').value === 'long';
+  const brokerRate = (parseFloat(document.getElementById('brokerRate').value) || 0) / 100;
+  const cgtRate1 = (parseFloat(document.getElementById('cgtRate1').value) || 0) / 100;
+  const cgtRate2 = (parseFloat(document.getElementById('cgtRate2').value) || 0) / 100;
+  const cgtRateShort = (parseFloat(document.getElementById('cgtRateShort').value) || 0) / 100;
+  const corpTaxRate = (parseFloat(document.getElementById('corpTaxRate').value) || 0) / 100;
+
+  // 공통 비용
+  const buyFee = buy * brokerRate;
+  const sellFee = sell * brokerRate;
+  const transTax = sell * 0.0018;
+  const buyCost = buy + buyFee;
+  const sellNet = sell - sellFee - transTax;
+  const tradeGain = sellNet - buyCost; // 양도차익 (수수료/거래세 후)
+
+  const set = (id, val) => document.getElementById(id).textContent = val;
+
+  // === 일반투자자 ===
+  const R_totalCost = buyFee + sellFee + transTax;
+  const R_net = tradeGain;
+  set('R_buy', fmt(buy));
+  set('R_buyFee', fmt(buyFee));
+  set('R_buyCost', fmt(buyCost));
+  set('R_sell', fmt(sell));
+  set('R_sellFee', fmt(sellFee));
+  set('R_transTax', fmt(transTax));
+  set('R_sellNet', fmt(sellNet));
+  set('R_totalCost', fmt(R_totalCost));
+  set('R_net', (R_net>=0?'+':'') + fmt(R_net));
+  set('R_yield', buy > 0 ? fmtPct(R_net / buy) : '-');
+
+  // === 대주주 ===
+  const basicDed = 2500000;
+  const M_taxBase = Math.max(0, tradeGain - basicDed);
+  let M_cgt;
+  if (!isLong) {
+    M_cgt = M_taxBase * cgtRateShort;
+  } else {
+    if (M_taxBase <= 300000000) M_cgt = M_taxBase * cgtRate1;
+    else M_cgt = 300000000 * cgtRate1 + (M_taxBase - 300000000) * cgtRate2;
+  }
+  const M_totalCost = buyFee + sellFee + transTax + M_cgt;
+  const M_net = tradeGain - M_cgt;
+  set('M_buy', fmt(buy));
+  set('M_buyFee', fmt(buyFee));
+  set('M_sell', fmt(sell));
+  set('M_sellFee', fmt(sellFee));
+  set('M_transTax', fmt(transTax));
+  set('M_gain', fmt(tradeGain));
+  set('M_basicDed', '-' + fmt(basicDed));
+  set('M_taxBase', fmt(M_taxBase));
+  set('M_cgt', '-' + fmt(M_cgt));
+  set('M_totalCost', fmt(M_totalCost));
+  set('M_net', (M_net>=0?'+':'') + fmt(M_net));
+  set('M_yield', buy > 0 ? fmtPct(M_net / buy) : '-');
+
+  // === 법인 ===
+  const C_corpTax = Math.max(0, tradeGain * corpTaxRate);
+  const C_totalCost = buyFee + sellFee + transTax + C_corpTax;
+  const C_net = tradeGain - C_corpTax;
+  set('C_buy', fmt(buy));
+  set('C_buyFee', fmt(buyFee));
+  set('C_sell', fmt(sell));
+  set('C_sellFee', fmt(sellFee));
+  set('C_transTax', fmt(transTax));
+  set('C_gain', fmt(tradeGain));
+  set('C_corpTax', '-' + fmt(C_corpTax));
+  set('C_totalCost', fmt(C_totalCost));
+  set('C_net', (C_net>=0?'+':'') + fmt(C_net));
+  set('C_yield', buy > 0 ? fmtPct(C_net / buy) : '-');
+}
+
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input', calculate);
+  el.addEventListener('change', calculate);
+});
+calculate();
+</script>
+</body>
+</html>
