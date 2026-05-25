@@ -1,1 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>근로소득세 계산기</title>
+<style>
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:1100px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a}h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:8px}.desc{color:#555;font-size:14px;margin-bottom:24px}.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}.back-link:hover{text-decoration:underline}.panel{background:white;border-radius:8px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:20px}.panel h2{margin-top:0;color:#1F4E78;font-size:18px}.section-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px 0;grid-column:1/-1}.section-label:first-child{margin-top:0}.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.input-row{display:flex;flex-direction:column}label{font-size:13px;font-weight:600;margin-bottom:4px;color:#333}input[type="number"],select{padding:10px;font-size:15px;border:1px solid #ccc;border-radius:4px;background:#FFF2CC;font-weight:600;color:#0000FF}input:focus,select:focus{outline:2px solid #1F4E78;background:#FFFACD}.calc-table{width:100%;border-collapse:collapse;font-size:14px}.calc-table td{padding:9px 12px;border-bottom:1px solid #eee}.calc-table td:first-child{color:#555}.calc-table td:nth-child(2){text-align:right;font-weight:600;color:#1a1a1a;font-variant-numeric:tabular-nums}.calc-table td:nth-child(3){font-size:12px;color:#888;max-width:280px}.calc-table tr.subtotal td{border-top:2px solid #1F4E78}.calc-table tr.subtotal td:nth-child(2){color:#1F4E78;font-size:15px}.final{background:linear-gradient(135deg,#10b981,#059669);color:white;padding:24px;border-radius:10px;text-align:center;margin-bottom:20px}.final-label{font-size:14px;opacity:0.9;margin-bottom:6px}.final-value{font-size:36px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums}.final-sub{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.3);font-size:14px;opacity:0.95}.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:14px}.stat{background:#f0f5fa;padding:14px;border-radius:6px;border-left:4px solid #1F4E78}.stat.tax{border-left-color:#dc2626;background:#fef2f2}.stat.social{border-left-color:#d97706;background:#fff8e8}.stat-label{font-size:12px;color:#666;margin-bottom:4px}.stat-value{font-size:18px;font-weight:700;color:#1F4E78;font-variant-numeric:tabular-nums}.stat.tax .stat-value{color:#b91c1c}.stat.social .stat-value{color:#b45309}.stat-sub{font-size:11px;color:#888;margin-top:2px}.manual{background:#fff;border:1px solid #e0e0e0;padding:20px;border-radius:8px;margin-top:30px;line-height:1.7;font-size:14px}.manual h3{color:#1F4E78;margin-top:18px;margin-bottom:8px;font-size:15px}.manual h3:first-child{margin-top:0}.manual ul{padding-left:20px;margin:6px 0}.manual li{margin-bottom:4px}.badge{display:inline-block;background:#1F4E78;color:white;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-right:4px}.warn-box{background:#fef3c7;border-left:4px solid #d97706;padding:10px 14px;margin-top:10px;border-radius:4px;font-size:13px;color:#92400e}
+</style>
+</head>
+<body>
 
+<a href="../../" class="back-link">← 메인으로</a>
+
+<h1>💵 근로소득세 계산기 (월급/실수령액)</h1>
+<p class="desc">연봉 입력하면 4대보험 + 소득세 + 지방세 자동 계산. 월 실수령액까지. (2026년 5월 기준)</p>
+
+<div class="panel">
+  <h2>📥 입력값</h2>
+  <div class="inputs">
+
+    <div class="section-label">① 급여 정보</div>
+    <div class="input-row">
+      <label>연봉 (세전, 원)</label>
+      <input type="number" id="salary" value="60000000">
+    </div>
+    <div class="input-row">
+      <label>비과세소득 (연, 원) <span style="font-size:11px;color:#888;">(식대·자가운전 등)</span></label>
+      <input type="number" id="nontax" value="2400000">
+    </div>
+
+    <div class="section-label">② 부양가족</div>
+    <div class="input-row">
+      <label>본인 포함 부양가족 수</label>
+      <input type="number" id="family" value="1" min="1">
+    </div>
+    <div class="input-row">
+      <label>20세 이하 자녀 수</label>
+      <input type="number" id="children" value="0">
+    </div>
+    <div class="input-row">
+      <label>70세 이상 부양 (경로)</label>
+      <input type="number" id="senior" value="0">
+    </div>
+
+    <div class="section-label">③ 신용카드/체크카드 (단순화)</div>
+    <div class="input-row">
+      <label>연 카드 사용액 (원) <span style="font-size:11px;color:#888;">(공제 영향)</span></label>
+      <input type="number" id="cardUse" value="20000000">
+    </div>
+
+    <div class="section-label">④ 기타</div>
+    <div class="input-row">
+      <label>국민연금 가입 여부</label>
+      <select id="nps">
+        <option value="Y" selected>Y (4.5%)</option>
+        <option value="N">N</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>🧮 계산 과정</h2>
+  <table class="calc-table">
+    <tbody>
+      <tr><td>연봉 (총급여)</td><td id="A_salary">-</td><td>세전 연봉</td></tr>
+      <tr><td>(-) 비과세소득</td><td id="A_nontax">-</td><td>식대·자가운전 등</td></tr>
+      <tr><td>= 총급여액</td><td id="A_gross">-</td><td>과세대상</td></tr>
+      <tr><td>(-) 근로소득공제</td><td id="A_earnDed">-</td><td id="A_earnDedDesc">구간별 공제</td></tr>
+      <tr><td>= 근로소득금액</td><td id="A_earnIncome">-</td><td></td></tr>
+      <tr><td>(-) 인적공제</td><td id="A_personalDed">-</td><td id="A_personalDedDesc">본인+부양가족</td></tr>
+      <tr><td>(-) 4대보험 본인부담</td><td id="A_social">-</td><td>국민연금+건보+장기요양+고용</td></tr>
+      <tr><td>(-) 카드 등 사용공제 (추정)</td><td id="A_cardDed">-</td><td>소비액의 일부</td></tr>
+      <tr class="subtotal"><td>= 과세표준</td><td id="A_taxBase">-</td><td></td></tr>
+      <tr><td>산출세액 (누진세율)</td><td id="A_calc">-</td><td>6%~45%</td></tr>
+      <tr><td>(-) 근로소득세액공제</td><td id="A_earnCredit">-</td><td>최대 74만</td></tr>
+      <tr><td>(-) 자녀세액공제</td><td id="A_childCredit">-</td><td id="A_childCreditDesc">자녀당 15~30만</td></tr>
+      <tr class="subtotal"><td>= 결정세액 (소득세)</td><td id="A_incomeTax">-</td><td></td></tr>
+      <tr><td>지방소득세 (10%)</td><td id="A_localTax">-</td><td></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="final">
+  <div class="final-label">💰 월 실수령액</div>
+  <div class="final-value" id="monthlyNet">-</div>
+  <div class="final-sub">연 실수령: <b id="annualNet">-</b> 원 · 실효세율 <b id="effectiveRate">-</b></div>
+</div>
+
+<div class="panel">
+  <h2>📊 연봉 vs 실수령 요약</h2>
+  <div class="summary-grid">
+    <div class="stat">
+      <div class="stat-label">연봉 (세전)</div>
+      <div class="stat-value" id="S_salary">-</div>
+    </div>
+    <div class="stat tax">
+      <div class="stat-label">총 세금 (소득세+지방세)</div>
+      <div class="stat-value" id="S_tax">-</div>
+      <div class="stat-sub" id="S_taxPct">연봉 대비</div>
+    </div>
+    <div class="stat social">
+      <div class="stat-label">4대보험 (본인부담)</div>
+      <div class="stat-value" id="S_social">-</div>
+      <div class="stat-sub" id="S_socialPct">연봉 대비</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">연 실수령</div>
+      <div class="stat-value" id="S_net">-</div>
+      <div class="stat-sub">세금·4대보험 차감 후</div>
+    </div>
+  </div>
+</div>
+
+<div class="manual">
+  <h3>📘 사용 설명서</h3>
+
+  <h3>① 입력값 설명</h3>
+  <ul>
+    <li><span class="badge">연봉</span> 세전 총액. 회사가 공식적으로 주는 금액.</li>
+    <li><span class="badge">비과세소득</span> 식대(월 20만 ×12=240만), 자가운전(월 20만), 출산·보육수당 등. 일반 직장인 표준: 240만~480만.</li>
+    <li><span class="badge">부양가족</span> 본인 포함. 배우자·부모·자녀 중 연소득 100만 이하 가족. 1인당 150만 공제.</li>
+    <li><span class="badge">20세 이하 자녀</span> 자녀세액공제 (1자녀 15만, 2자녀 35만, 3자녀+ 35만+1인당 30만).</li>
+    <li><span class="badge">70세 이상</span> 경로우대 추가공제 1인당 100만.</li>
+    <li><span class="badge">카드 사용액</span> 총급여 25% 초과분의 15~30% 공제 (단순화 적용).</li>
+  </ul>
+
+  <h3>② 핵심 계산 순서</h3>
+  <ul>
+    <li><b>1. 총급여 = 연봉 − 비과세소득</b></li>
+    <li><b>2. 근로소득공제</b> (총급여 구간별):
+      <ul>
+        <li>~500만: 총급여 × 70%</li>
+        <li>~1,500만: 350만 + 초과분 × 40%</li>
+        <li>~4,500만: 750만 + 초과분 × 15%</li>
+        <li>~1억: 1,200만 + 초과분 × 5%</li>
+        <li>1억 초과: 1,475만 + 초과분 × 2% (최대 2,000만)</li>
+      </ul>
+    </li>
+    <li><b>3. 근로소득금액 = 총급여 − 근로소득공제</b></li>
+    <li><b>4. 종합소득공제</b> = 인적공제 + 4대보험 + 카드공제 등</li>
+    <li><b>5. 과세표준 = 근로소득금액 − 종합소득공제</b></li>
+    <li><b>6. 산출세액</b>: 누진세율 6%~45% 적용</li>
+    <li><b>7. 결정세액 = 산출세액 − 세액공제</b> (근로소득공제 74만 + 자녀공제)</li>
+  </ul>
+
+  <h3>③ 4대보험 (본인부담)</h3>
+  <ul>
+    <li><b>국민연금:</b> 월급의 4.5% (월 기준소득 월액 상한 ~590만)</li>
+    <li><b>건강보험:</b> 3.545%</li>
+    <li><b>장기요양:</b> 건강보험료의 12.95%</li>
+    <li><b>고용보험:</b> 0.9%</li>
+    <li><b>산재보험:</b> 회사 100% 부담</li>
+  </ul>
+
+  <h3>④ 결과 해석</h3>
+  <ul>
+    <li><span class="badge">실효세율</span> = (소득세 + 지방세) / 연봉. 연봉 6천: 약 7%, 1억: 약 13%, 2억: 약 22%.</li>
+    <li><span class="badge">4대보험 비율</span> 보통 연봉 대비 8.5~9%.</li>
+    <li><span class="badge">월 실수령</span> = 연 실수령 / 12. 단, 회사가 매월 차감하는 방식이라 연말정산 결과 ±50만 정도 차이 날 수 있음.</li>
+  </ul>
+
+  <div class="warn-box">
+    <b>⚠ 주의:</b> 본 계산기는 직장인 일반 케이스 단순화. 의료비·교육비·기부금·연금저축·주택청약 등 별도 세액공제 미반영. 실제 연말정산 결과는 홈택스 모의계산 또는 회사 인사팀 확인 권장.
+  </div>
+</div>
+
+<script>
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+const fmtPct = n => (n * 100).toFixed(2) + '%';
+
+function calcProgressiveTax(taxBase) {
+  if (taxBase <= 0) return 0;
+  const brackets = [
+    [14000000, 0.06, 0],
+    [50000000, 0.15, 1260000],
+    [88000000, 0.24, 5760000],
+    [150000000, 0.35, 15440000],
+    [300000000, 0.38, 19940000],
+    [500000000, 0.40, 25940000],
+    [1000000000, 0.42, 35940000],
+    [Infinity, 0.45, 65940000],
+  ];
+  for (const [u, r, d] of brackets) {
+    if (taxBase <= u) return taxBase * r - d;
+  }
+  return 0;
+}
+
+function calcEarnDeduction(gross) {
+  if (gross <= 5000000) return gross * 0.70;
+  if (gross <= 15000000) return 3500000 + (gross - 5000000) * 0.40;
+  if (gross <= 45000000) return 7500000 + (gross - 15000000) * 0.15;
+  if (gross <= 100000000) return 12000000 + (gross - 45000000) * 0.05;
+  return Math.min(14750000 + (gross - 100000000) * 0.02, 20000000);
+}
+
+function calcEarnTaxCredit(calcTax, gross) {
+  // 산출세액 × 55% (130만 이하), 130만 초과분 × 30%
+  let credit;
+  if (calcTax <= 1300000) credit = calcTax * 0.55;
+  else credit = 715000 + (calcTax - 1300000) * 0.30;
+  // 한도: 총급여 구간별
+  let limit;
+  if (gross <= 33000000) limit = 740000;
+  else if (gross <= 70000000) limit = Math.max(660000, 740000 - (gross - 33000000) * 0.008);
+  else if (gross <= 120000000) limit = Math.max(500000, 660000 - (gross - 70000000) * 0.5/100);
+  else limit = Math.max(200000, 500000 - (gross - 120000000) * 0.5/100);
+  return Math.min(credit, limit);
+}
+
+function calcChildCredit(children) {
+  if (children <= 0) return 0;
+  if (children === 1) return 150000;
+  if (children === 2) return 350000;
+  return 350000 + (children - 2) * 300000;
+}
+
+function calculate() {
+  const salary = parseFloat(document.getElementById('salary').value) || 0;
+  const nontax = parseFloat(document.getElementById('nontax').value) || 0;
+  const family = parseInt(document.getElementById('family').value) || 1;
+  const children = parseInt(document.getElementById('children').value) || 0;
+  const senior = parseInt(document.getElementById('senior').value) || 0;
+  const cardUse = parseFloat(document.getElementById('cardUse').value) || 0;
+  const npsOn = document.getElementById('nps').value === 'Y';
+
+  const gross = Math.max(0, salary - nontax);
+  const earnDed = calcEarnDeduction(gross);
+  const earnIncome = gross - earnDed;
+
+  // 인적공제: 본인+부양 × 150만 + 경로 × 100만 (자녀세액공제는 별도)
+  const personalDed = family * 1500000 + senior * 1000000;
+
+  // 4대보험
+  const nps = npsOn ? Math.min(salary * 0.045, 553500 * 12) : 0;
+  const health = salary * 0.03545;
+  const ltc = health * 0.1295;
+  const emp = salary * 0.009;
+  const social = nps + health + ltc + emp;
+
+  // 카드공제 (단순화): 사용액 - 총급여 × 25% 의 15%, 한도 300만
+  const cardBase = Math.max(0, cardUse - gross * 0.25);
+  const cardDed = Math.min(cardBase * 0.15, 3000000);
+
+  const totalDed = personalDed + social + cardDed;
+  const taxBase = Math.max(0, earnIncome - totalDed);
+
+  const calcTax = calcProgressiveTax(taxBase);
+  const earnCredit = calcEarnTaxCredit(calcTax, gross);
+  const childCredit = calcChildCredit(children);
+  const incomeTax = Math.max(0, calcTax - earnCredit - childCredit);
+  const localTax = incomeTax * 0.10;
+
+  const totalTax = incomeTax + localTax;
+  const annualNet = salary - totalTax - social;
+  const monthlyNet = annualNet / 12;
+  const effectiveRate = salary > 0 ? totalTax / salary : 0;
+
+  const set = (id, val) => document.getElementById(id).textContent = val;
+  set('A_salary', fmt(salary) + ' 원');
+  set('A_nontax', '-' + fmt(nontax) + ' 원');
+  set('A_gross', fmt(gross) + ' 원');
+  set('A_earnDed', '-' + fmt(earnDed) + ' 원');
+  set('A_earnDedDesc', `총급여 구간 ${gross<=5e6?'~500만':gross<=15e6?'~1,500만':gross<=45e6?'~4,500만':gross<=1e8?'~1억':'1억 초과'}`);
+  set('A_earnIncome', fmt(earnIncome) + ' 원');
+  set('A_personalDed', '-' + fmt(personalDed) + ' 원');
+  set('A_personalDedDesc', `본인+부양 ${family}명 × 150만${senior>0?` + 경로 ${senior}명 × 100만`:''}`);
+  set('A_social', '-' + fmt(social) + ' 원');
+  set('A_cardDed', '-' + fmt(cardDed) + ' 원');
+  set('A_taxBase', fmt(taxBase) + ' 원');
+  set('A_calc', fmt(calcTax) + ' 원');
+  set('A_earnCredit', '-' + fmt(earnCredit) + ' 원');
+  set('A_childCredit', '-' + fmt(childCredit) + ' 원');
+  set('A_childCreditDesc', children > 0 ? `자녀 ${children}명` : '해당 없음');
+  set('A_incomeTax', fmt(incomeTax) + ' 원');
+  set('A_localTax', fmt(localTax) + ' 원');
+
+  set('monthlyNet', fmt(monthlyNet) + ' 원');
+  set('annualNet', fmt(annualNet));
+  set('effectiveRate', fmtPct(effectiveRate));
+
+  set('S_salary', fmt(salary) + ' 원');
+  set('S_tax', fmt(totalTax) + ' 원');
+  set('S_taxPct', `연봉 대비 ${(totalTax/salary*100).toFixed(2)}%`);
+  set('S_social', fmt(social) + ' 원');
+  set('S_socialPct', `연봉 대비 ${(social/salary*100).toFixed(2)}%`);
+  set('S_net', fmt(annualNet) + ' 원');
+}
+
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input', calculate);
+  el.addEventListener('change', calculate);
+});
+calculate();
+</script>
+</body>
+</html>
