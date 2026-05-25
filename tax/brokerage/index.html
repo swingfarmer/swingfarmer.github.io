@@ -1,1 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>부동산 중개수수료 계산기</title>
+<style>
+*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:1100px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a}h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:8px}.desc{color:#555;font-size:14px;margin-bottom:24px}.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}.back-link:hover{text-decoration:underline}.panel{background:white;border-radius:8px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:20px}.panel h2{margin-top:0;color:#1F4E78;font-size:18px}.section-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px 0;grid-column:1/-1}.section-label:first-child{margin-top:0}.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.input-row{display:flex;flex-direction:column}label{font-size:13px;font-weight:600;margin-bottom:4px;color:#333}input[type="number"],select{padding:10px;font-size:15px;border:1px solid #ccc;border-radius:4px;background:#FFF2CC;font-weight:600;color:#0000FF}input:focus,select:focus{outline:2px solid #1F4E78;background:#FFFACD}.calc-table{width:100%;border-collapse:collapse;font-size:14px}.calc-table td{padding:10px 12px;border-bottom:1px solid #eee}.calc-table td:first-child{color:#555}.calc-table td:nth-child(2){text-align:right;font-weight:600;color:#1a1a1a;font-variant-numeric:tabular-nums}.calc-table td:nth-child(3){font-size:12px;color:#888;max-width:280px}.final{background:linear-gradient(135deg,#d97706,#ea580c);color:white;padding:24px;border-radius:10px;text-align:center;margin-bottom:20px}.final-label{font-size:14px;opacity:0.9;margin-bottom:6px}.final-value{font-size:36px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums}.final-sub{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.3);font-size:14px;opacity:0.95}.manual{background:#fff;border:1px solid #e0e0e0;padding:20px;border-radius:8px;margin-top:30px;line-height:1.7;font-size:14px}.manual h3{color:#1F4E78;margin-top:18px;margin-bottom:8px;font-size:15px}.manual h3:first-child{margin-top:0}.manual ul{padding-left:20px;margin:6px 0}.manual li{margin-bottom:4px}.badge{display:inline-block;background:#1F4E78;color:white;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-right:4px}.warn-box{background:#fef3c7;border-left:4px solid #d97706;padding:10px 14px;margin-top:10px;border-radius:4px;font-size:13px;color:#92400e}
+</style>
+</head>
+<body>
 
+<a href="../../" class="back-link">← 메인으로</a>
+
+<h1>🤝 부동산 중개수수료 계산기</h1>
+<p class="desc">매매·전세·월세 중개수수료. 매수자/매도자 각각 1회 부담. (2026년 5월, 국토교통부 한도요율 기준)</p>
+
+<div class="panel">
+  <h2>📥 입력값</h2>
+  <div class="inputs">
+
+    <div class="section-label">① 거래 정보</div>
+    <div class="input-row">
+      <label>거래 유형</label>
+      <select id="dealType">
+        <option value="매매" selected>매매</option>
+        <option value="전세">전세</option>
+        <option value="월세">월세</option>
+      </select>
+    </div>
+    <div class="input-row">
+      <label>부동산 구분</label>
+      <select id="propertyType">
+        <option value="주택" selected>주택 (아파트·빌라·단독)</option>
+        <option value="오피스텔">오피스텔 (주거용)</option>
+        <option value="비주거">비주거 (상가·토지)</option>
+      </select>
+    </div>
+
+    <div class="section-label">② 거래 금액</div>
+    <div class="input-row">
+      <label>매매가 또는 전세금 (원)</label>
+      <input type="number" id="price" value="600000000">
+    </div>
+    <div class="input-row">
+      <label>월세 보증금 (원) <span style="font-size:11px;color:#888;">(월세만)</span></label>
+      <input type="number" id="deposit" value="10000000">
+    </div>
+    <div class="input-row">
+      <label>월세 (원) <span style="font-size:11px;color:#888;">(월세만)</span></label>
+      <input type="number" id="monthly" value="800000">
+    </div>
+
+    <div class="section-label">③ 협의 요율 (선택)</div>
+    <div class="input-row">
+      <label>실제 적용 요율 (%) <span style="font-size:11px;color:#888;">(0=한도요율 자동)</span></label>
+      <input type="number" id="customRate" value="0" step="0.01">
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>🧮 계산</h2>
+  <table class="calc-table">
+    <tbody>
+      <tr><td>거래금액 환산</td><td id="convertedPrice">-</td><td id="convertedDesc">월세는 보증금+(월세×100) 환산</td></tr>
+      <tr><td>적용 한도요율</td><td id="maxRate">-</td><td id="rateDesc">국토부 고시 한도</td></tr>
+      <tr><td>한도 수수료</td><td id="maxFee">-</td><td>중개사가 더 받으면 안되는 한도</td></tr>
+      <tr><td>실제 적용 요율</td><td id="appliedRate">-</td><td id="appliedDesc">한도 또는 협의 요율</td></tr>
+      <tr><td>중개수수료 (부가세 제외)</td><td id="baseFee">-</td><td>거래금액 × 적용요율</td></tr>
+      <tr><td>부가가치세 (10%)</td><td id="vat">-</td><td>일반과세자 중개사만 부과</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="final">
+  <div class="final-label">💰 최종 중개수수료 (1인 부담)</div>
+  <div class="final-value" id="finalFee">-</div>
+  <div class="final-sub">매수자·매도자 <b>각각</b> 이 금액을 별도로 부담</div>
+</div>
+
+<div class="manual">
+  <h3>📘 사용 설명서</h3>
+
+  <h3>① 입력값 설명</h3>
+  <ul>
+    <li><span class="badge">거래 유형</span> 매매·전세·월세. 요율이 다름.</li>
+    <li><span class="badge">부동산 구분</span> 주택(주거 목적) vs 오피스텔(주거용) vs 비주거(상가·토지). 비주거는 협의가 더 자유로움.</li>
+    <li><span class="badge">매매가/전세금</span> 거래 금액. 월세는 환산값 사용.</li>
+    <li><span class="badge">월세 환산</span> 거래금액 = 보증금 + 월세×100. 단 보증금+(월세×70) 환산이 5천만 미만이면 보증금+(월세×70) 사용.</li>
+    <li><span class="badge">실제 적용 요율</span> 0으로 두면 한도요율 자동 적용. 협의해서 더 낮게 받았으면 그 요율 입력.</li>
+  </ul>
+
+  <h3>② 주택 한도요율 (매매)</h3>
+  <ul>
+    <li>5천만 미만: 0.6% (한도 25만)</li>
+    <li>5천만 ~ 2억: 0.5% (한도 80만)</li>
+    <li>2억 ~ 9억: 0.4%</li>
+    <li>9억 ~ 12억: 0.5%</li>
+    <li>12억 ~ 15억: 0.6%</li>
+    <li>15억 이상: 0.7%</li>
+  </ul>
+
+  <h3>③ 주택 한도요율 (전세·월세)</h3>
+  <ul>
+    <li>5천만 미만: 0.5% (한도 20만)</li>
+    <li>5천만 ~ 1억: 0.4% (한도 30만)</li>
+    <li>1억 ~ 6억: 0.3%</li>
+    <li>6억 ~ 12억: 0.4%</li>
+    <li>12억 ~ 15억: 0.5%</li>
+    <li>15억 이상: 0.6%</li>
+  </ul>
+
+  <h3>④ 비주거 (상가·토지)</h3>
+  <ul>
+    <li>매매·전세·월세 모두: <b>0.9% 이내 협의</b></li>
+  </ul>
+
+  <div class="warn-box">
+    <b>⚠ 주의:</b> 중개수수료는 매수자·매도자 <b>각각 부담</b>. 표시 금액 × 2가 중개사가 받는 총액. 부가세는 중개사가 일반과세자일 때만. 한도 이상 받으면 신고 가능.
+  </div>
+</div>
+
+<script>
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+const fmtPct = n => (n * 100).toFixed(2) + '%';
+
+function calculate() {
+  const dealType = document.getElementById('dealType').value;
+  const propertyType = document.getElementById('propertyType').value;
+  const price = parseFloat(document.getElementById('price').value) || 0;
+  const deposit = parseFloat(document.getElementById('deposit').value) || 0;
+  const monthly = parseFloat(document.getElementById('monthly').value) || 0;
+  const customRate = (parseFloat(document.getElementById('customRate').value) || 0) / 100;
+
+  // 1. 거래금액 환산
+  let convertedPrice = price;
+  let convertedDesc = '매매가 그대로';
+  if (dealType === '전세') {
+    convertedPrice = price;
+    convertedDesc = '전세금 그대로';
+  } else if (dealType === '월세') {
+    let calc = deposit + monthly * 100;
+    if (calc < 50000000) calc = deposit + monthly * 70;
+    convertedPrice = calc;
+    convertedDesc = `보증금 + 월세 × ${calc === deposit + monthly * 70 ? '70' : '100'}`;
+  }
+
+  // 2. 한도요율
+  let maxRate = 0, maxLimit = Infinity, rateDesc = '';
+  if (propertyType === '비주거') {
+    maxRate = 0.009;
+    rateDesc = '비주거 (상가·토지) 0.9% 이내 협의';
+  } else if (dealType === '매매') {
+    if (convertedPrice < 50000000) { maxRate = 0.006; maxLimit = 250000; rateDesc = '5천만 미만 0.6% (한도 25만)'; }
+    else if (convertedPrice < 200000000) { maxRate = 0.005; maxLimit = 800000; rateDesc = '5천만~2억 0.5% (한도 80만)'; }
+    else if (convertedPrice < 900000000) { maxRate = 0.004; rateDesc = '2~9억 0.4%'; }
+    else if (convertedPrice < 1200000000) { maxRate = 0.005; rateDesc = '9~12억 0.5%'; }
+    else if (convertedPrice < 1500000000) { maxRate = 0.006; rateDesc = '12~15억 0.6%'; }
+    else { maxRate = 0.007; rateDesc = '15억↑ 0.7%'; }
+  } else {
+    // 전세·월세
+    if (convertedPrice < 50000000) { maxRate = 0.005; maxLimit = 200000; rateDesc = '5천만 미만 0.5% (한도 20만)'; }
+    else if (convertedPrice < 100000000) { maxRate = 0.004; maxLimit = 300000; rateDesc = '5천만~1억 0.4% (한도 30만)'; }
+    else if (convertedPrice < 600000000) { maxRate = 0.003; rateDesc = '1~6억 0.3%'; }
+    else if (convertedPrice < 1200000000) { maxRate = 0.004; rateDesc = '6~12억 0.4%'; }
+    else if (convertedPrice < 1500000000) { maxRate = 0.005; rateDesc = '12~15억 0.5%'; }
+    else { maxRate = 0.006; rateDesc = '15억↑ 0.6%'; }
+  }
+
+  const maxFee = Math.min(convertedPrice * maxRate, maxLimit);
+
+  // 3. 적용 요율
+  const appliedRate = customRate > 0 ? Math.min(customRate, maxRate) : maxRate;
+  const appliedDesc = customRate > 0 ? '협의 요율 적용' : '한도요율 적용';
+
+  // 4. 수수료
+  let baseFee = convertedPrice * appliedRate;
+  if (customRate === 0) baseFee = Math.min(baseFee, maxLimit);
+
+  const vat = baseFee * 0.10;
+  const finalFee = baseFee + vat;
+
+  document.getElementById('convertedPrice').textContent = fmt(convertedPrice) + ' 원';
+  document.getElementById('convertedDesc').textContent = convertedDesc;
+  document.getElementById('maxRate').textContent = fmtPct(maxRate);
+  document.getElementById('rateDesc').textContent = rateDesc;
+  document.getElementById('maxFee').textContent = fmt(maxFee) + ' 원';
+  document.getElementById('appliedRate').textContent = fmtPct(appliedRate);
+  document.getElementById('appliedDesc').textContent = appliedDesc;
+  document.getElementById('baseFee').textContent = fmt(baseFee) + ' 원';
+  document.getElementById('vat').textContent = fmt(vat) + ' 원';
+  document.getElementById('finalFee').textContent = fmt(finalFee) + ' 원';
+}
+
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input', calculate);
+  el.addEventListener('change', calculate);
+});
+calculate();
+</script>
+</body>
+</html>
