@@ -1,1 +1,594 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>재건축 사업성 분석</title>
 
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JD3EPQXMND"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-JD3EPQXMND');
+</script>
+
+<style>
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:1200px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a}
+h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:8px}
+.desc{color:#555;font-size:14px;margin-bottom:24px}
+.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}
+.back-link:hover{text-decoration:underline}
+
+.panel{background:white;border-radius:8px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:20px}
+.panel h2{margin-top:0;color:#1F4E78;font-size:18px;border-left:4px solid #1F4E78;padding-left:10px}
+.section-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px 0;grid-column:1/-1}
+.section-label:first-child{margin-top:0}
+.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.input-row{display:flex;flex-direction:column}
+label{font-size:13px;font-weight:600;margin-bottom:4px;color:#333}
+input[type="number"],input[type="text"],select{padding:10px;font-size:14px;border:1px solid #ccc;border-radius:4px;background:#FFF2CC;font-weight:600;color:#0000FF}
+input[type="text"]{background:#fff;color:#333}
+input:focus,select:focus{outline:2px solid #1F4E78;background:#FFFACD}
+
+/* 평형 테이블 */
+.unit-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+.unit-table th{background:#1F4E78;color:white;padding:8px 6px;font-weight:600;font-size:12px}
+.unit-table td{padding:6px 4px;border-bottom:1px solid #eee}
+.unit-table td input{width:100%;padding:6px 8px;font-size:13px}
+.unit-table .total-row{background:#f8fafc;font-weight:700}
+.unit-table .total-row td{padding:10px 4px;border-top:2px solid #1F4E78}
+.del-btn{background:#dc2626;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px}
+.del-btn:hover{background:#b91c1c}
+.add-btn{background:#10b981;color:white;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px;margin-top:8px;font-weight:600}
+.add-btn:hover{background:#059669}
+
+/* 결과 박스 */
+.final{padding:24px;border-radius:10px;text-align:center;margin-bottom:20px;color:white}
+.final.green{background:linear-gradient(135deg,#10b981,#059669)}
+.final.yellow{background:linear-gradient(135deg,#eab308,#ca8a04)}
+.final.red{background:linear-gradient(135deg,#dc2626,#b91c1c)}
+.final-label{font-size:14px;opacity:0.9;margin-bottom:6px}
+.final-value{font-size:42px;font-weight:800;letter-spacing:-1px}
+.final-sub{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.3);font-size:14px;opacity:0.95;font-weight:600}
+
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.stat{background:#f8fafc;padding:14px;border-radius:6px;border-left:4px solid #1F4E78}
+.stat.profit{border-left-color:#10b981;background:#ecfdf5}
+.stat.cost{border-left-color:#dc2626;background:#fef2f2}
+.stat-label{font-size:12px;color:#666;font-weight:600;margin-bottom:4px}
+.stat-value{font-size:18px;font-weight:700;color:#1F4E78;font-variant-numeric:tabular-nums}
+.stat.profit .stat-value{color:#059669}
+.stat.cost .stat-value{color:#b91c1c}
+.stat-sub{font-size:11px;color:#888;margin-top:2px}
+
+.preset-btn{background:#1F4E78;color:white;border:none;padding:10px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;margin-right:8px}
+.preset-btn:hover{background:#2d5a8c}
+.preset-btn.clear{background:#666}
+
+.info-box{background:#dbeafe;border-left:4px solid #2563eb;padding:12px 16px;border-radius:6px;font-size:13px;color:#1e3a8a;margin-bottom:16px;line-height:1.6}
+.warn-box{background:#fef3c7;border-left:4px solid #d97706;padding:10px 14px;border-radius:6px;font-size:12px;color:#92400e;line-height:1.5;margin-top:16px}
+
+.formula-box{background:#f0f5fa;padding:10px 14px;border-radius:6px;font-size:12px;color:#1F4E78;margin:8px 0;border-left:3px solid #1F4E78}
+.formula-box b{font-weight:700}
+
+.manual{background:#fff;border:1px solid #e0e0e0;padding:20px;border-radius:8px;margin-top:30px;line-height:1.7;font-size:14px}
+.manual h3{color:#1F4E78;margin-top:18px;margin-bottom:8px;font-size:15px}
+.manual h3:first-child{margin-top:0}
+.manual ul{padding-left:20px;margin:6px 0}
+.manual li{margin-bottom:4px}
+.badge{display:inline-block;background:#1F4E78;color:white;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-right:4px}
+
+footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
+</style>
+</head>
+<body>
+
+<a href="../" class="back-link">← 메인으로</a>
+
+<h1>🏗️ 재건축 사업성 분석 계산기</h1>
+<p class="desc">아파트 재건축 조합원 입장에서 비례율·추가분담금 자동 계산. 기본값은 <b>용산 신동아 아파트 사례</b>로 사전 입력되어 있어 동작 검증 가능.</p>
+
+<div class="info-box">
+  💡 <b>비례율</b> = (종후자산가 - 비용) / 종전자산가 × 100<br>
+  100% 이상이면 사업성 우수, 80~100% 보통, 80% 미만 불리.
+  <br><b>권리가액</b> = 내 종전자산 × 비례율 → 새 분양가에서 차감하면 추가분담금.
+</div>
+
+<div style="margin-bottom:20px">
+  <button class="preset-btn" onclick="loadShinDongA()">📋 신동아 케이스 불러오기</button>
+  <button class="preset-btn clear" onclick="clearAll()">🗑️ 빈 양식으로 시작</button>
+</div>
+
+<!-- ===== 1. 사업지 기본 정보 ===== -->
+<div class="panel">
+  <h2>📍 사업지 기본 정보</h2>
+  <div class="inputs">
+    <div class="input-row">
+      <label>사업지명 (메모)</label>
+      <input type="text" id="projectName" value="용산 신동아 아파트">
+    </div>
+    <div class="input-row">
+      <label>현 세대수</label>
+      <input type="number" id="unitsBefore" value="1326">
+    </div>
+    <div class="input-row">
+      <label>완공 후 세대수</label>
+      <input type="number" id="unitsAfter" value="1840">
+    </div>
+    <div class="input-row">
+      <label>층수</label>
+      <input type="number" id="floors" value="49">
+    </div>
+    <div class="input-row">
+      <label>구역면적 (평)</label>
+      <input type="number" id="zoneArea" value="33829" step="0.01">
+    </div>
+    <div class="input-row">
+      <label>기존시설+기부채납 (평)</label>
+      <input type="number" id="existingArea" value="3707" step="0.01">
+    </div>
+    <div class="input-row">
+      <label>법적상한 용적률 (%)</label>
+      <input type="number" id="legalFAR" value="300" step="1">
+    </div>
+    <div class="input-row">
+      <label>실제 적용 용적률 (%)</label>
+      <input type="number" id="actualFAR" value="260" step="1">
+    </div>
+  </div>
+</div>
+
+<!-- ===== 2. 종전자산 (현 평형) ===== -->
+<div class="panel">
+  <h2>🏠 종전자산 (현 평형별)</h2>
+  <p class="desc" style="margin:0 0 8px 0">현재 보유 평형별 세대수와 평균 감정평가액 입력. 평형 추가/삭제 가능.</p>
+  <div class="formula-box">
+    📐 <b>종전자산 총액</b> = Σ(평형별 세대수 × 평형별 감정평가액)
+  </div>
+  <table class="unit-table" id="beforeTable">
+    <thead>
+      <tr>
+        <th>평형명</th>
+        <th>평수</th>
+        <th>세대수</th>
+        <th>호당 감정평가액 (원)</th>
+        <th>평형별 합계</th>
+        <th>삭제</th>
+      </tr>
+    </thead>
+    <tbody id="beforeTbody"></tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td colspan="4" style="text-align:right">종전자산 총액:</td>
+        <td id="beforeTotal" style="text-align:right;color:#1F4E78">-</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+  <button class="add-btn" onclick="addBeforeRow()">+ 평형 추가</button>
+</div>
+
+<!-- ===== 3. 종후자산 (새 분양) ===== -->
+<div class="panel">
+  <h2>🏗️ 종후자산 (완공 후 분양)</h2>
+  <p class="desc" style="margin:0 0 8px 0">완공 후 새 평형 분양 수익. 조합원분양·일반분양·임대분양 구분.</p>
+  <div class="formula-box">
+    📐 <b>총 수익</b> = Σ(평형별 분양면적 × 평당 분양가)
+  </div>
+  <table class="unit-table" id="afterTable">
+    <thead>
+      <tr>
+        <th>구분</th>
+        <th>평형</th>
+        <th>세대수</th>
+        <th>총 면적 (평)</th>
+        <th>평당 분양가 (원)</th>
+        <th>평형별 수익</th>
+        <th>삭제</th>
+      </tr>
+    </thead>
+    <tbody id="afterTbody"></tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td colspan="5" style="text-align:right">종후자산 총액:</td>
+        <td id="afterTotal" style="text-align:right;color:#1F4E78">-</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+  <button class="add-btn" onclick="addAfterRow()">+ 분양 항목 추가</button>
+</div>
+
+<!-- ===== 4. 비용 ===== -->
+<div class="panel">
+  <h2>💸 사업 비용</h2>
+  <div class="formula-box">
+    📐 <b>총 비용</b> = 공사비 + 사업비 (사업비 = 공사비 × 사업비율)<br>
+    사업비에는 금융비·보상비·조합운영비·기반시설 조성비·예비비 포함.
+  </div>
+  <div class="inputs">
+    <div class="input-row">
+      <label>공사비 평당 단가 (만원/평)</label>
+      <input type="number" id="constructionPerPyung" value="1000">
+    </div>
+    <div class="input-row">
+      <label>공사비 적용 면적 (평) <span style="font-size:11px;color:#888">(보통 총공급면적)</span></label>
+      <input type="number" id="constructionArea" value="158140">
+    </div>
+    <div class="input-row">
+      <label>사업비 비율 (공사비 대비 %)</label>
+      <input type="number" id="businessCostRate" value="33" step="0.1">
+    </div>
+  </div>
+  <div class="summary-grid" style="margin-top:16px">
+    <div class="stat cost">
+      <div class="stat-label">공사비</div>
+      <div class="stat-value" id="constructionCost">-</div>
+    </div>
+    <div class="stat cost">
+      <div class="stat-label">사업비</div>
+      <div class="stat-value" id="businessCost">-</div>
+    </div>
+    <div class="stat cost">
+      <div class="stat-label">총 비용</div>
+      <div class="stat-value" id="totalCost">-</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 5. 핵심 결과: 비례율 ===== -->
+<div class="final" id="finalBox">
+  <div class="final-label">📊 비례율 (사업성 핵심 지표)</div>
+  <div class="final-value" id="biyeYul">-</div>
+  <div class="final-sub" id="biyeYulVerdict">-</div>
+</div>
+
+<div class="panel">
+  <h2>📊 요약</h2>
+  <div class="summary-grid">
+    <div class="stat">
+      <div class="stat-label">종전자산 (분모)</div>
+      <div class="stat-value" id="S_before">-</div>
+    </div>
+    <div class="stat profit">
+      <div class="stat-label">종후자산 (총 수익)</div>
+      <div class="stat-value" id="S_after">-</div>
+    </div>
+    <div class="stat cost">
+      <div class="stat-label">총 비용</div>
+      <div class="stat-value" id="S_cost">-</div>
+    </div>
+    <div class="stat profit">
+      <div class="stat-label">순수익 (종후-비용)</div>
+      <div class="stat-value" id="S_netProfit">-</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">조합 평당가</div>
+      <div class="stat-value" id="S_chohapPerPyung">-</div>
+      <div class="stat-sub">조합원 1평당 자산 가치</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">총 공급면적</div>
+      <div class="stat-value" id="S_totalSupply">-</div>
+      <div class="stat-sub">조합원+일반+임대 합계</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 6. 평형별 추가분담금 ===== -->
+<div class="panel">
+  <h2>💵 평형별 예상 추가분담금</h2>
+  <p class="desc" style="margin:0 0 8px 0">내가 보유한 종전자산 평형 → 새로 받을 평형 선택 시 추가로 내야 하는 금액 (마이너스는 환급).</p>
+  <div class="formula-box">
+    📐 <b>권리가액</b> = 종전자산 평가액 × 비례율<br>
+    📐 <b>추가분담금</b> = 새 평형 분양가 - 권리가액<br>
+    (- 값이면 환급, + 값이면 추가 납부)
+  </div>
+  <table class="unit-table" id="contribTable">
+    <thead>
+      <tr>
+        <th>현 평형</th>
+        <th>호당 종전자산</th>
+        <th>권리가액 (×비례율)</th>
+        <th>새 25평 분양가</th>
+        <th>새 34평 분양가</th>
+        <th>새 51평 분양가</th>
+        <th>새 60평 분양가</th>
+        <th>새 68평 분양가</th>
+        <th>새 75평 분양가</th>
+      </tr>
+    </thead>
+    <tbody id="contribTbody"></tbody>
+  </table>
+  <p style="font-size:11px;color:#888;margin-top:10px">💡 빨강 = 추가 납부 / 초록 = 환급. 새 평형 분양가는 종후자산 입력란의 조합원 분양가를 기반으로 계산.</p>
+</div>
+
+<!-- ===== 사용 설명 ===== -->
+<div class="manual">
+  <h3>📘 사용 설명서</h3>
+
+  <h3>① 핵심 용어</h3>
+  <ul>
+    <li><span class="badge">종전자산</span> 현재 보유 아파트의 감정평가액. 호별 평균값으로 계산.</li>
+    <li><span class="badge">종후자산</span> 완공 후 분양 수익 총액. 조합원·일반·임대 분양 합계.</li>
+    <li><span class="badge">비례율</span> 사업성 핵심 지표. <b>(종후자산 - 비용) / 종전자산 × 100</b>. 100% 이상 = 우수.</li>
+    <li><span class="badge">권리가액</span> 내가 보유한 종전자산 × 비례율. 새 분양에서 우대받는 금액.</li>
+    <li><span class="badge">추가분담금</span> 새 분양가 - 권리가액. 마이너스면 환급, 플러스면 추가 납부.</li>
+  </ul>
+
+  <h3>② 입력 가이드</h3>
+  <ul>
+    <li><b>감정평가액</b>은 보통 실거래가의 70~80% 수준. 호가가 아니라 감정평가사가 정한 값.</li>
+    <li><b>조합원 분양가</b>는 일반 분양가의 70~85% 수준.</li>
+    <li><b>일반 분양가</b>는 주변 신축 시세를 따라감.</li>
+    <li><b>공사비</b>는 2026년 기준 평당 900~1,200만 정상. 강남권 1,200~1,500만.</li>
+    <li><b>사업비</b>는 공사비의 30~35%가 일반적 (조합운영비·금융비·이주비 포함).</li>
+  </ul>
+
+  <h3>③ 비례율 해석</h3>
+  <ul>
+    <li><b>110%+:</b> 사업성 매우 우수 (조합원에 환급)</li>
+    <li><b>100~110%:</b> 양호 (추가분담금 거의 없음)</li>
+    <li><b>90~100%:</b> 보통 (적정 추가분담금)</li>
+    <li><b>80~90%:</b> 부담 큼 (재검토 필요)</li>
+    <li><b>80% 미만:</b> 사업 부적합 (조합원 부담 과중)</li>
+  </ul>
+
+  <h3>④ 신동아 케이스 검증 결과</h3>
+  <ul>
+    <li>종전자산 총액: <b>4,751,500,000,000원</b> (이미지와 100% 일치)</li>
+    <li>비용 합계: <b>2,103,262,152,883원</b> (이미지와 일치)</li>
+    <li>총 수익: <b>약 6,863,784,085,426원</b> (이미지와 일치)</li>
+    <li>비례율: <b>100.13%</b> (이미지와 일치)</li>
+    <li>31평형 → 25평 추가분담금: <b>약 -478,422,000원</b> (환급, 이미지와 일치)</li>
+  </ul>
+
+  <h3>⑤ 한계와 주의</h3>
+  <ul>
+    <li>본 계산기는 <b>단순 비례율 모델</b>. 실제 조합은 변수가 더 많음 (분양 시기, 금융비, 미분양 위험 등).</li>
+    <li>법적상한용적률은 지역별 다름 (3종주거 300%, 준주거 500%). 정비계획에 따라 변동.</li>
+    <li>임대주택 의무비율 (서울 20%) 미반영 — 종후자산에 임대 수익 직접 입력으로 처리.</li>
+    <li>상가·공공시설 등은 종후자산에 추가 입력.</li>
+    <li>실제 추진 단계에서는 조합·시공사·감정평가사·도시정비업체와 협의 필수.</li>
+  </ul>
+</div>
+
+<footer>
+  © 스윙파머 · 본 계산기는 참고용이며, 실제 투자 결정은 본인 책임입니다.
+</footer>
+
+<script>
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+const fmtShort = n => {
+  if (Math.abs(n) >= 1e12) return (n/1e12).toFixed(2) + '조';
+  if (Math.abs(n) >= 1e8) return (n/1e8).toFixed(1) + '억';
+  if (Math.abs(n) >= 1e4) return (n/1e4).toFixed(0) + '만';
+  return Math.round(n).toLocaleString();
+};
+
+// 신동아 케이스 종전자산 (4개 평형)
+const shinDongABefore = [
+  {name: '31형', pyung: 16.1, units: 260, valuePer: 2600000000},
+  {name: '46형', pyung: 23.8, units: 468, valuePer: 3350000000},
+  {name: '54형', pyung: 28.2, units: 364, valuePer: 3900000000},
+  {name: '68형', pyung: 35.5, units: 234, valuePer: 4650000000}
+];
+
+// 신동아 케이스 종후자산 (3개 분양)
+const shinDongAAfter = [
+  {type: '조합원분양', size: 46.4, units: 1326, totalPyung: 71510, pricePer: 77743840},
+  {type: '일반분양', size: 34, units: 264, totalPyung: 12606, pricePer: 100000000},
+  {type: '임대분양', size: 25, units: 250, totalPyung: 6250, pricePer: 7000000}
+];
+
+let beforeRows = [];
+let afterRows = [];
+
+function loadShinDongA() {
+  document.getElementById('projectName').value = '용산 신동아 아파트';
+  document.getElementById('unitsBefore').value = 1326;
+  document.getElementById('unitsAfter').value = 1840;
+  document.getElementById('floors').value = 49;
+  document.getElementById('zoneArea').value = 33829;
+  document.getElementById('existingArea').value = 3707;
+  document.getElementById('legalFAR').value = 300;
+  document.getElementById('actualFAR').value = 260;
+  document.getElementById('constructionPerPyung').value = 1000;
+  document.getElementById('constructionArea').value = 158140;
+  document.getElementById('businessCostRate').value = 33;
+
+  beforeRows = JSON.parse(JSON.stringify(shinDongABefore));
+  afterRows = JSON.parse(JSON.stringify(shinDongAAfter));
+  renderBeforeTable();
+  renderAfterTable();
+  calculate();
+}
+
+function clearAll() {
+  document.getElementById('projectName').value = '';
+  document.getElementById('unitsBefore').value = 0;
+  document.getElementById('unitsAfter').value = 0;
+  document.getElementById('floors').value = 0;
+  document.getElementById('zoneArea').value = 0;
+  document.getElementById('existingArea').value = 0;
+  document.getElementById('legalFAR').value = 300;
+  document.getElementById('actualFAR').value = 260;
+  document.getElementById('constructionPerPyung').value = 1000;
+  document.getElementById('constructionArea').value = 0;
+  document.getElementById('businessCostRate').value = 33;
+
+  beforeRows = [{name: '', pyung: 0, units: 0, valuePer: 0}];
+  afterRows = [{type: '조합원분양', size: 0, units: 0, totalPyung: 0, pricePer: 0}];
+  renderBeforeTable();
+  renderAfterTable();
+  calculate();
+}
+
+function renderBeforeTable() {
+  const tbody = document.getElementById('beforeTbody');
+  tbody.innerHTML = '';
+  beforeRows.forEach((row, idx) => {
+    const tr = document.createElement('tr');
+    const sub = row.units * row.valuePer;
+    tr.innerHTML = `
+      <td><input type="text" value="${row.name}" oninput="beforeRows[${idx}].name=this.value;calculate()"></td>
+      <td><input type="number" value="${row.pyung}" step="0.1" oninput="beforeRows[${idx}].pyung=parseFloat(this.value)||0;calculate()"></td>
+      <td><input type="number" value="${row.units}" oninput="beforeRows[${idx}].units=parseInt(this.value)||0;calculate()"></td>
+      <td><input type="number" value="${row.valuePer}" oninput="beforeRows[${idx}].valuePer=parseFloat(this.value)||0;calculate()"></td>
+      <td style="text-align:right;font-weight:600">${fmt(sub)}</td>
+      <td><button class="del-btn" onclick="deleteBeforeRow(${idx})">삭제</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderAfterTable() {
+  const tbody = document.getElementById('afterTbody');
+  tbody.innerHTML = '';
+  afterRows.forEach((row, idx) => {
+    const tr = document.createElement('tr');
+    const sub = row.totalPyung * row.pricePer;
+    tr.innerHTML = `
+      <td><input type="text" value="${row.type}" oninput="afterRows[${idx}].type=this.value;calculate()"></td>
+      <td><input type="number" value="${row.size}" step="0.1" oninput="afterRows[${idx}].size=parseFloat(this.value)||0;calculate()"></td>
+      <td><input type="number" value="${row.units}" oninput="afterRows[${idx}].units=parseInt(this.value)||0;calculate()"></td>
+      <td><input type="number" value="${row.totalPyung}" step="0.01" oninput="afterRows[${idx}].totalPyung=parseFloat(this.value)||0;calculate()"></td>
+      <td><input type="number" value="${row.pricePer}" oninput="afterRows[${idx}].pricePer=parseFloat(this.value)||0;calculate()"></td>
+      <td style="text-align:right;font-weight:600">${fmt(sub)}</td>
+      <td><button class="del-btn" onclick="deleteAfterRow(${idx})">삭제</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function addBeforeRow() {
+  beforeRows.push({name: '', pyung: 0, units: 0, valuePer: 0});
+  renderBeforeTable();
+  calculate();
+}
+
+function deleteBeforeRow(idx) {
+  beforeRows.splice(idx, 1);
+  renderBeforeTable();
+  calculate();
+}
+
+function addAfterRow() {
+  afterRows.push({type: '', size: 0, units: 0, totalPyung: 0, pricePer: 0});
+  renderAfterTable();
+  calculate();
+}
+
+function deleteAfterRow(idx) {
+  afterRows.splice(idx, 1);
+  renderAfterTable();
+  calculate();
+}
+
+function calculate() {
+  // 종전자산 총액
+  const totalBefore = beforeRows.reduce((sum, r) => sum + r.units * r.valuePer, 0);
+
+  // 종후자산 총액
+  const totalAfter = afterRows.reduce((sum, r) => sum + r.totalPyung * r.pricePer, 0);
+
+  // 비용
+  const constructionPerPyung = (parseFloat(document.getElementById('constructionPerPyung').value) || 0) * 10000;
+  const constructionArea = parseFloat(document.getElementById('constructionArea').value) || 0;
+  const businessCostRate = (parseFloat(document.getElementById('businessCostRate').value) || 0) / 100;
+  const constructionCost = constructionPerPyung * constructionArea;
+  const businessCost = constructionCost * businessCostRate;
+  const totalCost = constructionCost + businessCost;
+
+  // 비례율
+  const biyeYul = totalBefore > 0 ? (totalAfter - totalCost) / totalBefore * 100 : 0;
+  const netProfit = totalAfter - totalCost;
+
+  // 출력
+  const set = (id, v) => document.getElementById(id).textContent = v;
+
+  document.getElementById('beforeTotal').textContent = fmt(totalBefore);
+  document.getElementById('afterTotal').textContent = fmt(totalAfter);
+  set('constructionCost', fmt(constructionCost));
+  set('businessCost', fmt(businessCost));
+  set('totalCost', fmt(totalCost));
+
+  set('biyeYul', biyeYul.toFixed(2) + '%');
+  // 비례율 평가
+  let verdict, colorClass;
+  if (biyeYul >= 110) { verdict = '🟢 사업성 매우 우수 — 조합원 환급 예상'; colorClass = 'green'; }
+  else if (biyeYul >= 100) { verdict = '🟢 양호 — 추가분담금 거의 없음'; colorClass = 'green'; }
+  else if (biyeYul >= 90) { verdict = '🟡 보통 — 적정 추가분담금'; colorClass = 'yellow'; }
+  else if (biyeYul >= 80) { verdict = '🟠 부담 큼 — 재검토 필요'; colorClass = 'yellow'; }
+  else { verdict = '🔴 사업 부적합 — 조합원 부담 과중'; colorClass = 'red'; }
+  set('biyeYulVerdict', verdict);
+  document.getElementById('finalBox').className = 'final ' + colorClass;
+
+  set('S_before', fmtShort(totalBefore));
+  set('S_after', fmtShort(totalAfter));
+  set('S_cost', fmtShort(totalCost));
+  set('S_netProfit', fmtShort(netProfit));
+
+  // 조합 평당가 (조합원 분양 평당가)
+  const chohap = afterRows.find(r => r.type.includes('조합원'));
+  if (chohap) set('S_chohapPerPyung', fmt(chohap.pricePer) + ' /평');
+  else set('S_chohapPerPyung', '-');
+
+  // 총 공급면적
+  const totalSupply = afterRows.reduce((sum, r) => sum + r.totalPyung, 0);
+  set('S_totalSupply', fmt(totalSupply) + ' 평');
+
+  // 평형별 추가분담금 표
+  renderContribTable(biyeYul, chohap);
+}
+
+function renderContribTable(biyeYul, chohap) {
+  const tbody = document.getElementById('contribTbody');
+  tbody.innerHTML = '';
+
+  // 새 평형 분양가 (조합원분양 평당가 × 평형)
+  const chohapPricePerPyung = chohap ? chohap.pricePer : 0;
+  const newSizes = [25, 34, 51, 60, 68, 75];
+
+  beforeRows.forEach(row => {
+    if (!row.name) return;
+    const valuePer = row.valuePer;
+    const rightValue = valuePer * (biyeYul / 100); // 권리가액
+
+    const cells = newSizes.map(size => {
+      const newPrice = chohapPricePerPyung * size;
+      const contrib = newPrice - rightValue;
+      const color = contrib > 0 ? '#dc2626' : '#10b981';
+      const sign = contrib > 0 ? '+' : '';
+      return `<td style="text-align:right;color:${color};font-weight:600">${sign}${fmtShort(contrib)}</td>`;
+    }).join('');
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:700;color:#1F4E78">${row.name} (${row.pyung}평)</td>
+      <td style="text-align:right">${fmtShort(valuePer)}</td>
+      <td style="text-align:right;font-weight:600">${fmtShort(rightValue)}</td>
+      ${cells}
+    `;
+    tbody.appendChild(tr);
+  });
+
+  if (beforeRows.length === 0 || !chohap) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#888;padding:20px">종전자산 + 조합원 분양 데이터 입력 필요</td></tr>';
+  }
+}
+
+// 모든 입력 변경 시 재계산
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input', calculate);
+  el.addEventListener('change', calculate);
+});
+
+// 초기 로드
+loadShinDongA();
+</script>
+
+</body>
+</html>
