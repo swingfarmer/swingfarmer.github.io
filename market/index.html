@@ -24,17 +24,11 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 .live-badge{font-size:12px;background:#dc2626;color:white;padding:3px 10px;border-radius:12px;font-weight:600;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
 
-.section{background:white;border-radius:10px;padding:20px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
-.section h2{margin:0 0 16px 0;color:#1F4E78;font-size:18px;border-left:4px solid #1F4E78;padding-left:12px}
+.section{background:white;border-radius:10px;padding:18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.section h2{margin:0 0 12px 0;color:#1F4E78;font-size:17px;border-left:4px solid #1F4E78;padding-left:12px}
 .section h2 .sub{font-size:12px;color:#888;margin-left:8px;font-weight:normal}
 
-.ticker-section{background:#1a1a1a;border-radius:10px;padding:0;margin-bottom:20px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
-
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
-@media(max-width:760px){.grid-2,.grid-3{grid-template-columns:1fr}}
-
-.mini-chart{height:140px;border-radius:6px;overflow:hidden;border:1px solid #eee}
+.ticker-wrap{background:#1a1a1a;border-radius:8px;overflow:hidden;margin-top:8px}
 
 .info-box{background:#dbeafe;border-left:4px solid #2563eb;padding:12px 16px;border-radius:6px;font-size:13px;color:#1e3a8a;margin-bottom:16px;line-height:1.6}
 .warn-box{background:#fef3c7;border-left:4px solid #d97706;padding:10px 14px;border-radius:6px;font-size:12px;color:#92400e;line-height:1.5;margin-top:16px}
@@ -47,196 +41,195 @@ footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
 <a href="../" class="back-link">← 메인으로</a>
 
 <h1>📊 실시간 시장 대시보드 <span class="live-badge">LIVE</span></h1>
-<p class="desc">지수·환율·금리·원자재·주식 한 화면. 트레이딩뷰 데이터. 미국·환율·원자재는 거의 실시간, 한국 주식은 약 15분 지연.</p>
+<p class="desc">지수·환율·금리·원자재·주식 한 화면. 트레이딩뷰 데이터 기반. 미국·환율·원자재는 거의 실시간, 한국 주식은 약 15분 지연.</p>
 
 <div class="info-box">
-  💡 일부 종목은 트레이딩뷰 무료 위젯에서 차트만 표시되고 가격이 안 나올 수 있습니다 (트레이딩뷰 정책). 클릭하면 트레이딩뷰 사이트에서 정확한 정보 확인 가능.
+  💡 각 항목 클릭하면 트레이딩뷰 상세 페이지로 이동합니다. 일부 종목은 트레이딩뷰 정책상 가격이 안 보일 수 있어요 (장 마감 후 종가는 표시됨).
 </div>
 
-<!-- 상단 흐름 티커 -->
-<div class="ticker-section">
-  <div class="tradingview-widget-container">
-    <div class="tradingview-widget-container__widget"></div>
-    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-    {
-      "symbols": [
-        {"description": "코스피", "proName": "TVC:KOSPI"},
-        {"description": "코스닥", "proName": "KRX:KOSDAQ"},
-        {"description": "S&P500", "proName": "SP:SPX"},
-        {"description": "나스닥100", "proName": "NASDAQ:NDX"},
-        {"description": "다우", "proName": "TVC:DJI"},
-        {"description": "USD/KRW", "proName": "FX_IDC:USDKRW"},
-        {"description": "WTI", "proName": "TVC:USOIL"},
-        {"description": "금", "proName": "TVC:GOLD"},
-        {"description": "비트코인", "proName": "BINANCE:BTCUSDT"}
-      ],
-      "showSymbolLogo": true,
-      "isTransparent": false,
-      "displayMode": "adaptive",
-      "colorTheme": "dark",
-      "locale": "kr"
-    }
-    </script>
-  </div>
-</div>
-
-<!-- 1. 지수 (Symbol Overview 위젯 - 미니차트) -->
+<!-- 1. 지수 -->
 <div class="section">
   <h2>📈 주요 지수 <span class="sub">한국 + 미국</span></h2>
-  <div class="grid-3">
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "TVC:KOSPI", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#1F4E78", "underLineColor": "rgba(31,78,120,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "KRX:KOSDAQ", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#1F4E78", "underLineColor": "rgba(31,78,120,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "TVC:DJI", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#1F4E78", "underLineColor": "rgba(31,78,120,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "SP:SPX", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#1F4E78", "underLineColor": "rgba(31,78,120,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "NASDAQ:NDX", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#1F4E78", "underLineColor": "rgba(31,78,120,0.15)", "isTransparent": false}
-      </script></div></div>
+  <div class="ticker-wrap">
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+      {
+        "symbols": [
+          {"description": "코스피", "proName": "KRX:KOSPI"},
+          {"description": "코스닥", "proName": "KRX:KOSDAQ"},
+          {"description": "다우", "proName": "FOREXCOM:DJI"},
+          {"description": "S&P 500", "proName": "FOREXCOM:SPXUSD"},
+          {"description": "나스닥100", "proName": "NASDAQ:NDX"},
+          {"description": "VIX", "proName": "CAPITALCOM:VIX"}
+        ],
+        "showSymbolLogo": true,
+        "isTransparent": false,
+        "displayMode": "regular",
+        "colorTheme": "dark",
+        "locale": "kr"
+      }
+      </script>
+    </div>
   </div>
 </div>
 
 <!-- 2. 환율 -->
 <div class="section">
   <h2>💱 환율 <span class="sub">원화 + 달러 인덱스</span></h2>
-  <div class="grid-2">
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "FX_IDC:USDKRW", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#10b981", "underLineColor": "rgba(16,185,129,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "FX_IDC:JPYKRW", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#10b981", "underLineColor": "rgba(16,185,129,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "FX_IDC:CNYKRW", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#10b981", "underLineColor": "rgba(16,185,129,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "TVC:DXY", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#10b981", "underLineColor": "rgba(16,185,129,0.15)", "isTransparent": false}
-      </script></div></div>
+  <div class="ticker-wrap">
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+      {
+        "symbols": [
+          {"description": "원/달러", "proName": "FX_IDC:USDKRW"},
+          {"description": "원/엔(100)", "proName": "FX_IDC:JPYKRW"},
+          {"description": "원/위안", "proName": "FX_IDC:CNYKRW"},
+          {"description": "달러 인덱스", "proName": "CAPITALCOM:DXY"},
+          {"description": "유로/달러", "proName": "FX_IDC:EURUSD"}
+        ],
+        "showSymbolLogo": true,
+        "isTransparent": false,
+        "displayMode": "regular",
+        "colorTheme": "dark",
+        "locale": "kr"
+      }
+      </script>
+    </div>
   </div>
 </div>
 
 <!-- 3. 국채 금리 -->
 <div class="section">
-  <h2>📊 국채 금리 <span class="sub">미국 + 한국 + VIX</span></h2>
-  <div class="grid-3">
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "TVC:US10Y", "width": "100%", "height": 140, "locale": "kr", "dateRange": "3M", "colorTheme": "light", "trendLineColor": "#d97706", "underLineColor": "rgba(217,119,6,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "TVC:US30Y", "width": "100%", "height": 140, "locale": "kr", "dateRange": "3M", "colorTheme": "light", "trendLineColor": "#d97706", "underLineColor": "rgba(217,119,6,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "TVC:KR10Y", "width": "100%", "height": 140, "locale": "kr", "dateRange": "3M", "colorTheme": "light", "trendLineColor": "#d97706", "underLineColor": "rgba(217,119,6,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "TVC:KR30Y", "width": "100%", "height": 140, "locale": "kr", "dateRange": "3M", "colorTheme": "light", "trendLineColor": "#d97706", "underLineColor": "rgba(217,119,6,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "TVC:VIX", "width": "100%", "height": 140, "locale": "kr", "dateRange": "3M", "colorTheme": "light", "trendLineColor": "#dc2626", "underLineColor": "rgba(220,38,38,0.15)", "isTransparent": false}
-      </script></div></div>
+  <h2>📊 국채 금리 <span class="sub">미국 + 한국</span></h2>
+  <div class="ticker-wrap">
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+      {
+        "symbols": [
+          {"description": "미국 10년물", "proName": "CBOT:ZN1!"},
+          {"description": "미국 30년물", "proName": "CBOT:ZB1!"},
+          {"description": "한국 10년물", "proName": "KRX:KTB10F1!"},
+          {"description": "한국 3년물", "proName": "KRX:KTBF1!"}
+        ],
+        "showSymbolLogo": true,
+        "isTransparent": false,
+        "displayMode": "regular",
+        "colorTheme": "dark",
+        "locale": "kr"
+      }
+      </script>
+    </div>
   </div>
 </div>
 
 <!-- 4. 원자재 -->
 <div class="section">
   <h2>🛢️ 원자재 <span class="sub">유가 + 금속</span></h2>
-  <div class="grid-3">
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "TVC:USOIL", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#8b5cf6", "underLineColor": "rgba(139,92,246,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "TVC:UKOIL", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#8b5cf6", "underLineColor": "rgba(139,92,246,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "FRED:POILDUBUSDM", "width": "100%", "height": 140, "locale": "kr", "dateRange": "12M", "colorTheme": "light", "trendLineColor": "#8b5cf6", "underLineColor": "rgba(139,92,246,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "TVC:GOLD", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#eab308", "underLineColor": "rgba(234,179,8,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "TVC:SILVER", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#94a3b8", "underLineColor": "rgba(148,163,184,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "COMEX:HG1!", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#b45309", "underLineColor": "rgba(180,83,9,0.15)", "isTransparent": false}
-      </script></div></div>
+  <div class="ticker-wrap">
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+      {
+        "symbols": [
+          {"description": "WTI 원유", "proName": "TVC:USOIL"},
+          {"description": "브렌트유", "proName": "TVC:UKOIL"},
+          {"description": "금", "proName": "TVC:GOLD"},
+          {"description": "은", "proName": "TVC:SILVER"},
+          {"description": "구리(전기동)", "proName": "CAPITALCOM:COPPER"}
+        ],
+        "showSymbolLogo": true,
+        "isTransparent": false,
+        "displayMode": "regular",
+        "colorTheme": "dark",
+        "locale": "kr"
+      }
+      </script>
+    </div>
   </div>
 </div>
 
-<!-- 5. 주식 -->
+<!-- 5. 미국 주식 M7 -->
 <div class="section">
-  <h2>📈 주식 <span class="sub">미국 M7 + 한국 주요 3종</span></h2>
-  <div class="grid-3">
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "NASDAQ:AAPL", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#1F4E78", "underLineColor": "rgba(31,78,120,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "NASDAQ:MSFT", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#1F4E78", "underLineColor": "rgba(31,78,120,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "NASDAQ:GOOGL", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#1F4E78", "underLineColor": "rgba(31,78,120,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "NASDAQ:AMZN", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#1F4E78", "underLineColor": "rgba(31,78,120,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "NASDAQ:NVDA", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#1F4E78", "underLineColor": "rgba(31,78,120,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "NASDAQ:META", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#1F4E78", "underLineColor": "rgba(31,78,120,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "NASDAQ:TSLA", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#1F4E78", "underLineColor": "rgba(31,78,120,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "KRX:005930", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#dc2626", "underLineColor": "rgba(220,38,38,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "KRX:000660", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#dc2626", "underLineColor": "rgba(220,38,38,0.15)", "isTransparent": false}
-      </script></div></div>
-    <div class="mini-chart"><div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-      {"symbol": "KRX:005380", "width": "100%", "height": 140, "locale": "kr", "dateRange": "1M", "colorTheme": "light", "trendLineColor": "#dc2626", "underLineColor": "rgba(220,38,38,0.15)", "isTransparent": false}
-      </script></div></div>
+  <h2>🇺🇸 미국 주식 M7 <span class="sub">Magnificent 7</span></h2>
+  <div class="ticker-wrap">
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+      {
+        "symbols": [
+          {"description": "애플", "proName": "NASDAQ:AAPL"},
+          {"description": "마이크로소프트", "proName": "NASDAQ:MSFT"},
+          {"description": "알파벳(구글)", "proName": "NASDAQ:GOOGL"},
+          {"description": "아마존", "proName": "NASDAQ:AMZN"},
+          {"description": "엔비디아", "proName": "NASDAQ:NVDA"},
+          {"description": "메타", "proName": "NASDAQ:META"},
+          {"description": "테슬라", "proName": "NASDAQ:TSLA"}
+        ],
+        "showSymbolLogo": true,
+        "isTransparent": false,
+        "displayMode": "regular",
+        "colorTheme": "dark",
+        "locale": "kr"
+      }
+      </script>
+    </div>
+  </div>
+</div>
+
+<!-- 6. 한국 주식 -->
+<div class="section">
+  <h2>🇰🇷 한국 주식 <span class="sub">대표 3종 · 15분 지연</span></h2>
+  <div class="ticker-wrap">
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+      {
+        "symbols": [
+          {"description": "삼성전자", "proName": "KRX:005930"},
+          {"description": "SK하이닉스", "proName": "KRX:000660"},
+          {"description": "현대차", "proName": "KRX:005380"}
+        ],
+        "showSymbolLogo": true,
+        "isTransparent": false,
+        "displayMode": "regular",
+        "colorTheme": "dark",
+        "locale": "kr"
+      }
+      </script>
+    </div>
+  </div>
+</div>
+
+<!-- 보너스: 비트코인 -->
+<div class="section">
+  <h2>🪙 코인 <span class="sub">참고용</span></h2>
+  <div class="ticker-wrap">
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+      {
+        "symbols": [
+          {"description": "비트코인", "proName": "BINANCE:BTCUSDT"},
+          {"description": "이더리움", "proName": "BINANCE:ETHUSDT"},
+          {"description": "솔라나", "proName": "BINANCE:SOLUSDT"}
+        ],
+        "showSymbolLogo": true,
+        "isTransparent": false,
+        "displayMode": "regular",
+        "colorTheme": "dark",
+        "locale": "kr"
+      }
+      </script>
+    </div>
   </div>
 </div>
 
 <div class="warn-box">
-  ⚠ <b>주의:</b> 본 페이지의 가격 정보는 참고용입니다. <b>실제 투자 결정은 본인 책임</b>. 한국 주식은 약 15분 지연. 정확한 실시간 시세는 증권사 HTS·MTS 또는 KRX 공식 데이터 참조.
+  ⚠ <b>주의:</b> 본 페이지의 가격 정보는 참고용입니다. <b>실제 투자 결정은 본인 책임</b>. 한국 주식은 약 15분 지연. 정확한 실시간 시세는 증권사 HTS·MTS 또는 KRX 공식 데이터 참조 권장.<br>
+  📌 안 보이는 종목이 있으면 알려주세요 — 다른 심볼로 대체 가능합니다.
 </div>
 
 <footer>
