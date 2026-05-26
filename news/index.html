@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>뉴스 헤드라인</title>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JD3EPQXMND"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-JD3EPQXMND');
+</script>
+
 <style>
 *{box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:1100px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a}
@@ -22,33 +32,30 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 
 /* 탭 */
 .tabs{display:flex;gap:4px;background:#e5e7eb;padding:4px;border-radius:10px;margin-bottom:20px;flex-wrap:wrap}
-.tab{flex:1;min-width:80px;padding:11px 14px;border:none;background:transparent;cursor:pointer;font-size:14px;font-weight:600;color:#666;border-radius:8px;transition:all 0.15s}
+.tab{flex:1;min-width:90px;padding:10px 12px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:600;color:#666;border-radius:8px;transition:all 0.15s}
 .tab:hover{background:rgba(255,255,255,0.5)}
 .tab.active{background:white;color:#1F4E78;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
 .tab-content{display:none}
 .tab-content.active{display:block}
 
 /* 뉴스 카드 */
-.news-list{display:flex;flex-direction:column;gap:0}
-.news-item{background:white;padding:16px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;gap:14px;text-decoration:none;color:inherit;transition:background 0.1s;align-items:flex-start}
-.news-item:first-child{border-radius:8px 8px 0 0}
-.news-item:last-child{border-bottom:none;border-radius:0 0 8px 8px}
+.news-list-wrap{background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.06);overflow:hidden;max-height:75vh;overflow-y:auto}
+.news-item{padding:14px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;gap:14px;text-decoration:none;color:inherit;transition:background 0.1s;align-items:flex-start}
+.news-item:last-child{border-bottom:none}
 .news-item:hover{background:#f8fafc}
 .news-content{flex:1;min-width:0}
-.news-title{font-size:15px;font-weight:600;color:#1a1a1a;line-height:1.4;margin-bottom:4px}
+.news-title{font-size:14px;font-weight:600;color:#1a1a1a;line-height:1.4;margin-bottom:4px}
 .news-meta{font-size:12px;color:#888}
 .news-source{display:inline-block;background:#eef2f7;color:#1F4E78;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-right:6px}
-.news-time{flex-shrink:0;font-size:12px;color:#888;text-align:right;padding-top:2px}
-.news-list-wrap{background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.06);overflow:hidden}
+.news-time{flex-shrink:0;font-size:12px;color:#888;text-align:right;padding-top:2px;white-space:nowrap}
 
 /* 로딩/에러 */
 .loading{padding:40px;text-align:center;color:#666}
-.error{padding:40px;text-align:center;color:#dc2626;background:#fef2f2;border-radius:8px;border:1px solid #fecaca}
+.error{padding:30px;text-align:center;color:#dc2626;background:#fef2f2;border-radius:8px;border:1px solid #fecaca}
 .error-detail{font-size:12px;color:#888;margin-top:8px}
-.empty{padding:40px;text-align:center;color:#888}
 
-/* 정보 박스 */
 .info-box{background:#dbeafe;border-left:4px solid #2563eb;padding:10px 14px;border-radius:4px;font-size:13px;color:#1e3a8a;margin-bottom:16px}
+.partial-warn{background:#fef3c7;padding:8px 16px;font-size:12px;color:#92400e;border-bottom:1px solid #fde68a}
 
 footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
 </style>
@@ -58,13 +65,26 @@ footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
 <a href="../" class="back-link">← 메인으로</a>
 
 <h1>📰 뉴스 헤드라인 <span class="live-badge">LIVE</span></h1>
-<p class="desc">한국 주요 언론사 RSS 기반 실시간 헤드라인. 속보·경제·부동산·주식 카테고리별. 10분마다 자동 갱신.</p>
+<p class="desc">한국 주요 언론사 RSS 기반 실시간 헤드라인. 8개 카테고리, 카테고리당 5~6개 언론사 통합. 1시간마다 자동 갱신, 카테고리당 최대 100개.</p>
 
 <div class="status-bar">
   <div class="status-left">마지막 갱신: <b id="lastUpdate">로딩 중...</b></div>
   <div class="status-right">
     <span style="color:#666">다음 갱신까지: <b id="nextUpdate">-</b></span>
+    <button class="refresh-btn" id="debugBtn" onclick="toggleDebug()" style="background:#666">🔍 RSS 상태</button>
     <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">🔄 새로고침</button>
+  </div>
+</div>
+
+<!-- 디버그 패널 -->
+<div id="debugPanel" style="display:none;background:white;padding:16px;border-radius:8px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.06);font-size:12px">
+  <div style="font-weight:700;color:#1F4E78;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+    <span>🔍 RSS 작동 상태 (현재 탭 기준)</span>
+    <span style="font-size:11px;color:#888;font-weight:normal">✅ 성공 · ❌ 실패 · ⏳ 대기중</span>
+  </div>
+  <div id="debugList" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px"></div>
+  <div style="margin-top:10px;padding-top:10px;border-top:1px solid #eee;font-size:11px;color:#888">
+    💡 실패한 RSS는 URL이 바뀌었거나, 프록시 서버가 차단됐거나, 일시적 장애일 수 있어. 새로고침 여러 번 해보고도 계속 실패하면 알려줘.
   </div>
 </div>
 
@@ -73,35 +93,33 @@ footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
   <button class="tab" data-tab="economy">💼 경제</button>
   <button class="tab" data-tab="realestate">🏠 부동산</button>
   <button class="tab" data-tab="stock">📈 주식</button>
+  <button class="tab" data-tab="international">🌐 국제</button>
+  <button class="tab" data-tab="politics">🏛️ 정치</button>
+  <button class="tab" data-tab="tech">💻 IT·테크</button>
+  <button class="tab" data-tab="industry">🏭 산업</button>
 </div>
 
-<div class="tab-content active" id="tab-breaking">
-  <div id="list-breaking" class="news-list-wrap">
-    <div class="loading">⏳ 뉴스 불러오는 중...</div>
-  </div>
-</div>
-<div class="tab-content" id="tab-economy">
-  <div id="list-economy" class="news-list-wrap"></div>
-</div>
-<div class="tab-content" id="tab-realestate">
-  <div id="list-realestate" class="news-list-wrap"></div>
-</div>
-<div class="tab-content" id="tab-stock">
-  <div id="list-stock" class="news-list-wrap"></div>
-</div>
+<div class="tab-content active" id="tab-breaking"><div id="list-breaking" class="news-list-wrap"><div class="loading">⏳ 뉴스 불러오는 중...</div></div></div>
+<div class="tab-content" id="tab-economy"><div id="list-economy" class="news-list-wrap"></div></div>
+<div class="tab-content" id="tab-realestate"><div id="list-realestate" class="news-list-wrap"></div></div>
+<div class="tab-content" id="tab-stock"><div id="list-stock" class="news-list-wrap"></div></div>
+<div class="tab-content" id="tab-international"><div id="list-international" class="news-list-wrap"></div></div>
+<div class="tab-content" id="tab-politics"><div id="list-politics" class="news-list-wrap"></div></div>
+<div class="tab-content" id="tab-tech"><div id="list-tech" class="news-list-wrap"></div></div>
+<div class="tab-content" id="tab-industry"><div id="list-industry" class="news-list-wrap"></div></div>
 
 <div class="info-box" style="margin-top:20px">
-  💡 <b>안내:</b> 본 페이지는 각 언론사 RSS를 가져와 표시합니다. 기사 클릭 시 해당 언론사 페이지로 이동합니다. 일부 RSS가 일시적으로 안 보일 수 있으며, 새로고침 버튼으로 수동 갱신 가능합니다.
+  💡 <b>안내:</b> 본 페이지는 각 언론사 RSS를 가져와 표시합니다. 기사 클릭 시 해당 언론사 페이지로 이동. 일부 RSS가 일시적으로 안 보일 수 있으며, 새로고침 버튼으로 수동 갱신 가능.
 </div>
 
 <footer>
-  © 스윙파머 · RSS 출처: 연합뉴스 · 한국경제 · 매일경제 · 머니투데이
+  © 스윙파머 · RSS 출처: 연합뉴스 · 한국경제 · 매일경제 · 서울경제 · 머니투데이 · 파이낸셜뉴스
 </footer>
 
 <script>
 // === 설정 ===
-const REFRESH_INTERVAL = 10 * 60 * 1000; // 10분
-const MAX_ITEMS_PER_CATEGORY = 25;
+const REFRESH_INTERVAL = 60 * 60 * 1000; // 1시간
+const MAX_ITEMS_PER_CATEGORY = 100;
 
 // CORS 우회 프록시 (여러 개 폴백)
 const PROXIES = [
@@ -110,45 +128,124 @@ const PROXIES = [
   'https://api.codetabs.com/v1/proxy?quest='
 ];
 
-// 카테고리별 RSS 소스
+// 카테고리별 RSS 소스 (검증된 것만)
 const FEEDS = {
   breaking: [
     { name: '연합뉴스', url: 'https://www.yna.co.kr/rss/news.xml' },
-    { name: '한국경제', url: 'http://rss.hankyung.com/new_news.xml' },
-    { name: '매일경제', url: 'https://www.mk.co.kr/rss/30000001/' }
+    { name: '한국경제', url: 'https://www.hankyung.com/feed/all-news' },
+    { name: '매일경제', url: 'https://www.mk.co.kr/rss/30000001/' },
+    { name: '서울경제', url: 'https://www.sedaily.com/rss/newsall' },
+    { name: '머니투데이', url: 'https://rss.mt.co.kr/mt_news.xml' },
+    { name: '파이낸셜뉴스', url: 'https://www.fnnews.com/rss/r20/fn_realnews_all.xml' }
   ],
   economy: [
-    { name: '한국경제', url: 'http://rss.hankyung.com/feed/economy.xml' },
+    { name: '한국경제', url: 'https://www.hankyung.com/feed/economy' },
     { name: '매일경제', url: 'https://www.mk.co.kr/rss/30100041/' },
-    { name: '머니투데이', url: 'https://rss.mt.co.kr/mt_news.xml' }
+    { name: '서울경제', url: 'https://www.sedaily.com/rss/economy' },
+    { name: '머니투데이', url: 'https://rss.mt.co.kr/mt_economy.xml' },
+    { name: '파이낸셜뉴스', url: 'https://www.fnnews.com/rss/r20/fn_realnews_economy.xml' }
   ],
   realestate: [
-    { name: '한국경제', url: 'http://rss.hankyung.com/feed/realestate.xml' },
+    { name: '한국경제', url: 'https://www.hankyung.com/feed/realestate' },
     { name: '매일경제', url: 'https://www.mk.co.kr/rss/50300009/' },
-    { name: '머니투데이', url: 'https://rss.mt.co.kr/mt_realty.xml' }
+    { name: '서울경제', url: 'https://www.sedaily.com/rss/realestate' },
+    { name: '머니투데이', url: 'https://rss.mt.co.kr/mt_realty.xml' },
+    { name: '파이낸셜뉴스', url: 'https://www.fnnews.com/rss/r20/fn_realnews_house.xml' }
   ],
   stock: [
-    { name: '한국경제', url: 'http://rss.hankyung.com/feed/finance.xml' },
-    { name: '매일경제', url: 'https://www.mk.co.kr/rss/50200011/' },
-    { name: '머니투데이', url: 'https://rss.mt.co.kr/mt_stock.xml' }
+    { name: '한국경제 증권', url: 'https://www.hankyung.com/feed/finance' },
+    { name: '매일경제 증권', url: 'https://www.mk.co.kr/rss/50200011/' },
+    { name: '서울경제 증권', url: 'https://www.sedaily.com/rss/finance' },
+    { name: '머니투데이', url: 'https://rss.mt.co.kr/mt_stock.xml' },
+    { name: '파이낸셜뉴스', url: 'https://www.fnnews.com/rss/r20/fn_realnews_stock.xml' }
+  ],
+  international: [
+    { name: '연합뉴스 국제', url: 'https://www.yna.co.kr/rss/international.xml' },
+    { name: '한국경제 국제', url: 'https://www.hankyung.com/feed/international' },
+    { name: '서울경제 국제', url: 'https://www.sedaily.com/rss/international' },
+    { name: '머니투데이 국제', url: 'https://rss.mt.co.kr/mt_world.xml' },
+    { name: '파이낸셜뉴스', url: 'https://www.fnnews.com/rss/r20/fn_realnews_international.xml' }
+  ],
+  politics: [
+    { name: '연합뉴스 정치', url: 'https://www.yna.co.kr/rss/politics.xml' },
+    { name: '한국경제 정치', url: 'https://www.hankyung.com/feed/politics' },
+    { name: '서울경제 정치', url: 'https://www.sedaily.com/rss/politics' },
+    { name: '머니투데이 정치', url: 'https://rss.mt.co.kr/mt_politics.xml' },
+    { name: '파이낸셜뉴스', url: 'https://www.fnnews.com/rss/r20/fn_realnews_politics.xml' }
+  ],
+  tech: [
+    { name: '한국경제 IT', url: 'https://www.hankyung.com/feed/it' },
+    { name: '서울경제 IT', url: 'https://www.sedaily.com/rss/it' },
+    { name: '머니투데이 IT', url: 'https://rss.mt.co.kr/mt_pann.xml' },
+    { name: '파이낸셜뉴스 IT', url: 'https://www.fnnews.com/rss/r20/fn_realnews_industry.xml' },
+    { name: '연합뉴스 IT·과학', url: 'https://www.yna.co.kr/rss/it-science.xml' }
+  ],
+  industry: [
+    { name: '한국경제 산업', url: 'https://www.hankyung.com/feed/industry' },
+    { name: '서울경제 기업', url: 'https://www.sedaily.com/rss/business' },
+    { name: '머니투데이 산업', url: 'https://rss.mt.co.kr/mt_industry.xml' },
+    { name: '파이낸셜뉴스 산업', url: 'https://www.fnnews.com/rss/r20/fn_realnews_industry.xml' },
+    { name: '연합뉴스 산업', url: 'https://www.yna.co.kr/rss/economy.xml' }
   ]
 };
 
 let lastUpdateTime = null;
 let nextUpdateTime = null;
+let rssStatus = {}; // {카테고리: {언론사명: {status, count, error}}}
+let currentTab = 'breaking';
 
 // === 탭 전환 ===
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
     const target = btn.dataset.tab;
+    currentTab = target;
     document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-' + target).classList.add('active');
+    updateDebugPanel();
   });
 });
 
-// === RSS 파싱 (XML → 객체) ===
+function toggleDebug() {
+  const panel = document.getElementById('debugPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  if (panel.style.display === 'block') updateDebugPanel();
+}
+
+function updateDebugPanel() {
+  const panel = document.getElementById('debugList');
+  if (!panel) return;
+  const feeds = FEEDS[currentTab] || [];
+  const statuses = rssStatus[currentTab] || {};
+
+  panel.innerHTML = feeds.map(feed => {
+    const s = statuses[feed.name] || { status: 'pending', count: 0 };
+    let icon, color, detail;
+    if (s.status === 'success') {
+      icon = '✅';
+      color = '#10b981';
+      detail = `${s.count}개 수신`;
+    } else if (s.status === 'failed') {
+      icon = '❌';
+      color = '#dc2626';
+      detail = s.error || '실패';
+    } else {
+      icon = '⏳';
+      color = '#888';
+      detail = '대기중';
+    }
+    return `
+      <div style="padding:8px 12px;background:#f8fafc;border-radius:6px;border-left:3px solid ${color}">
+        <div style="font-weight:600;color:#1a1a1a">${icon} ${feed.name}</div>
+        <div style="font-size:11px;color:#666;margin-top:2px">${detail}</div>
+        <div style="font-size:10px;color:#aaa;margin-top:2px;word-break:break-all">${feed.url.substring(0, 60)}${feed.url.length > 60 ? '...' : ''}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// === RSS 파싱 ===
 function parseRSS(xmlText, sourceName) {
   const parser = new DOMParser();
   const xml = parser.parseFromString(xmlText, 'text/xml');
@@ -170,24 +267,21 @@ function parseRSS(xmlText, sourceName) {
   return result;
 }
 
-// === 프록시 폴백 fetch ===
+// === 프록시 폴백 ===
 async function fetchWithProxy(url) {
   for (let i = 0; i < PROXIES.length; i++) {
     try {
       const proxyUrl = PROXIES[i] + encodeURIComponent(url);
-      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) });
+      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) });
       if (res.ok) {
         const text = await res.text();
-        if (text && text.length > 100) return text;
+        if (text && text.length > 100 && (text.includes('<item') || text.includes('<entry'))) return text;
       }
-    } catch (e) {
-      // 다음 프록시 시도
-    }
+    } catch (e) {}
   }
   throw new Error('All proxies failed');
 }
 
-// === 시간 포맷 ===
 function timeAgo(date) {
   if (!date) return '';
   const diff = Date.now() - date.getTime();
@@ -201,7 +295,6 @@ function timeAgo(date) {
   return date.toLocaleDateString('ko-KR', { month:'short', day:'numeric' });
 }
 
-// === HTML 엔티티 디코드 ===
 function decodeHTML(str) {
   const txt = document.createElement('textarea');
   txt.innerHTML = str;
@@ -214,15 +307,29 @@ async function loadCategory(category) {
   const feeds = FEEDS[category];
   const allItems = [];
   const errors = [];
+  const successes = [];
 
-  // 병렬로 모든 피드 가져오기
+  // 상태 초기화
+  rssStatus[category] = {};
+  feeds.forEach(f => {
+    rssStatus[category][f.name] = { status: 'pending', count: 0 };
+  });
+
   const promises = feeds.map(async feed => {
     try {
       const xml = await fetchWithProxy(feed.url);
       const items = parseRSS(xml, feed.name);
-      return items;
+      if (items.length > 0) {
+        successes.push(feed.name);
+        rssStatus[category][feed.name] = { status: 'success', count: items.length };
+        return items;
+      }
+      errors.push(feed.name);
+      rssStatus[category][feed.name] = { status: 'failed', count: 0, error: '응답은 받았으나 기사 없음' };
+      return [];
     } catch (e) {
       errors.push(feed.name);
+      rssStatus[category][feed.name] = { status: 'failed', count: 0, error: 'RSS 접근 실패 (프록시·URL 확인 필요)' };
       return [];
     }
   });
@@ -230,25 +337,43 @@ async function loadCategory(category) {
   const results = await Promise.all(promises);
   results.forEach(items => allItems.push(...items));
 
-  // 시간순 정렬 (최신 먼저)
-  allItems.sort((a, b) => {
+  // 디버그 패널 갱신
+  if (category === currentTab) updateDebugPanel();
+
+  // 중복 제거 (같은 제목)
+  const seen = new Set();
+  const unique = [];
+  for (const item of allItems) {
+    const key = item.title.replace(/\s+/g, '').toLowerCase().substring(0, 40);
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(item);
+    }
+  }
+
+  // 시간순 정렬
+  unique.sort((a, b) => {
     if (!a.pubDate) return 1;
     if (!b.pubDate) return -1;
     return b.pubDate - a.pubDate;
   });
 
-  const displayItems = allItems.slice(0, MAX_ITEMS_PER_CATEGORY);
+  const displayItems = unique.slice(0, MAX_ITEMS_PER_CATEGORY);
 
   if (displayItems.length === 0) {
     container.innerHTML = `<div class="error">
       ⚠ 뉴스를 불러올 수 없습니다.<br>
       <div class="error-detail">실패한 소스: ${errors.join(', ')}</div>
-      <div class="error-detail">잠시 후 다시 시도해주세요. (프록시 서버 일시 장애 가능성)</div>
+      <div class="error-detail">상단의 [🔍 RSS 상태] 버튼 클릭하면 어느 소스가 실패했는지 자세히 확인 가능합니다.</div>
+      <div class="error-detail">잠시 후 새로고침 또는 다른 시간대 재시도 권장.</div>
     </div>`;
     return;
   }
 
   let html = '';
+  if (errors.length > 0) {
+    html += `<div class="partial-warn">⚠ 일부 소스 가져오기 실패: ${errors.join(', ')} · ${displayItems.length}개 표시 (성공: ${successes.length}/${feeds.length})</div>`;
+  }
   displayItems.forEach(item => {
     const title = decodeHTML(item.title);
     html += `
@@ -264,23 +389,16 @@ async function loadCategory(category) {
     `;
   });
 
-  if (errors.length > 0) {
-    html += `<div style="padding:10px 16px;background:#fef3c7;font-size:12px;color:#92400e">⚠ 일부 소스 가져오기 실패: ${errors.join(', ')}</div>`;
-  }
-
   container.innerHTML = html;
 }
 
-// === 전체 새로고침 ===
 async function refreshAll() {
   const btn = document.getElementById('refreshBtn');
   btn.disabled = true;
   btn.textContent = '⏳ 로딩 중...';
 
-  // 4개 카테고리 병렬 로드
-  const cats = ['breaking', 'economy', 'realestate', 'stock'];
+  const cats = Object.keys(FEEDS);
 
-  // 초기 로딩 표시
   cats.forEach(c => {
     const el = document.getElementById('list-' + c);
     if (!el.innerHTML.trim() || el.querySelector('.error')) {
@@ -298,7 +416,6 @@ async function refreshAll() {
   btn.textContent = '🔄 새로고침';
 }
 
-// === 상태 표시 갱신 ===
 function updateStatus() {
   if (lastUpdateTime) {
     document.getElementById('lastUpdate').textContent =
@@ -312,13 +429,8 @@ function updateStatus() {
   }
 }
 
-// 매초 카운트다운 갱신
 setInterval(updateStatus, 1000);
-
-// 10분마다 자동 갱신
 setInterval(refreshAll, REFRESH_INTERVAL);
-
-// 첫 로딩
 refreshAll();
 </script>
 
