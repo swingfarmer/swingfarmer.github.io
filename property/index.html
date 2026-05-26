@@ -106,7 +106,7 @@ input[readonly]{background:#f0f0f0;color:#666}
     <div class="section-label">① 필수 입력</div>
     <div class="input-row">
       <label>매매가 (원)</label>
-      <input type="number" id="salePrice" value="4500000000">
+      <input type="number" id="salePrice" value="5000000000">
     </div>
     <div class="input-row">
       <label>임대보증금 (원)</label>
@@ -114,17 +114,17 @@ input[readonly]{background:#f0f0f0;color:#666}
     </div>
     <div class="input-row">
       <label>월 임대료 (원)</label>
-      <input type="number" id="monthly" value="16000000">
+      <input type="number" id="monthly" value="17000000">
     </div>
 
     <div class="section-label">② 매물 정보 (메모용, 계산에 사용 X)</div>
     <div class="input-row">
       <label>매물명/주소</label>
-      <input type="text" class="text-input" id="memo" value="목동 현대파크빌 1층 상가">
+      <input type="text" class="text-input" id="memo" value="" placeholder="예: 강남역 인근 1층 상가">
     </div>
     <div class="input-row">
       <label>전용면적 (㎡)</label>
-      <input type="number" id="area" value="267.72" step="0.01">
+      <input type="number" id="area" value="333.33" step="0.01">
     </div>
 
     <div class="section-label">③ 자동 계산</div>
@@ -136,9 +136,11 @@ input[readonly]{background:#f0f0f0;color:#666}
       <label>평당가 (실평수 기준)</label>
       <input type="number" id="pricePerPyung" readonly>
     </div>
+
+    <div class="section-label">④ 광고에 표시된 수익률 (선택)</div>
     <div class="input-row">
-      <label>표시 수익률 (광고용)</label>
-      <input type="number" id="displayYield" readonly>
+      <label>광고 표시 수익률 (%) <span style="font-size:11px;color:#888;">(중개사가 알려준 값)</span></label>
+      <input type="number" id="displayYield" value="4.5" step="0.1">
     </div>
   </div>
 </div>
@@ -224,9 +226,9 @@ input[readonly]{background:#f0f0f0;color:#666}
     <h2>⭐ 7가지 수익률 비교</h2>
     <div class="yield-grid">
       <div class="yield-card">
-        <div class="yield-name">① 중개사 표시 수익률</div>
+        <div class="yield-name">① 중개사 표시 수익률 <span style="font-size:11px;color:#888">(광고)</span></div>
         <div class="yield-value" id="Y1">-</div>
-        <div class="yield-desc">광고용. 비용·세금 모두 무시</div>
+        <div class="yield-desc" id="Y1desc">광고용. 비용·세금 모두 무시</div>
       </div>
       <div class="yield-card">
         <div class="yield-name">② Gross (연임대료 / 매매가)</div>
@@ -514,16 +516,17 @@ input[readonly]{background:#f0f0f0;color:#666}
     <h3>📖 이 분석기의 목적</h3>
     <p>상가 매물의 <b>진짜 수익률</b>을 계산합니다. 광고 수익률(예: 4.75%)이 아니라, 취득세·중개료·재산세·관리비·임대소득세·대출이자까지 다 차감한 후 손에 들어오는 실제 수익률을 계산합니다.</p>
 
-    <h3>⚡ 빠른 사용법 (3단계)</h3>
+    <h3>⚡ 빠른 사용법 (4단계)</h3>
     <ul>
-      <li><b>1단계:</b> 위의 [📥 매물 정보 입력]에서 매매가·보증금·월세 3개만 수정</li>
-      <li><b>2단계:</b> [📊 기본 분석] 탭에서 7가지 수익률 확인. ⑤번이 "진짜 수익률"에 가장 가까움</li>
-      <li><b>3단계:</b> [📈 가격 시나리오]·[🏢 법인 비교] 탭에서 추가 분석</li>
+      <li><b>1단계:</b> 위의 [📥 매물 정보 입력]에서 매매가·보증금·월세 입력</li>
+      <li><b>2단계:</b> [④ 광고 표시 수익률]에 중개사가 광고에 적은 수익률 입력 (선택, 부풀린 광고 검증용)</li>
+      <li><b>3단계:</b> [📊 기본 분석] 탭에서 7가지 수익률 확인. ⑤번이 "진짜 수익률"에 가장 가까움</li>
+      <li><b>4단계:</b> [📈 가격 시나리오]·[🏢 법인 비교] 탭에서 추가 분석</li>
     </ul>
 
     <h3>🔢 7가지 수익률 — 무엇이 다른가</h3>
     <ul>
-      <li><span class="badge">①</span> <b>중개사 표시:</b> 광고용. 연임대료 ÷ (매매가-보증금). 비용·세금 모두 무시.</li>
+      <li><span class="badge">①</span> <b>광고 표시 수익률:</b> 중개사가 알려준 광고용 값. 사용자가 직접 입력. 비교용으로 자동계산값(연임대료/(매매가-보증금))과 차이도 표시. 부풀려진 광고를 잡아내는 용도.</li>
       <li><span class="badge">②</span> <b>Gross:</b> 연임대료 ÷ 매매가. 단순 비교용.</li>
       <li><span class="badge">③</span> <b>Cap Rate (NOI/매매가):</b> ⭐ 부동산 평가 국제 표준. 다른 매물과 비교할 때 이 숫자.</li>
       <li><span class="badge">④</span> <b>NOI/실투자금 (대출X):</b> 보증금·부대비용 반영.</li>
@@ -718,7 +721,7 @@ function calculate() {
   if (area > 0) {
     document.getElementById('pricePerPyung').value = Math.round(salePrice / (area / 3.3058));
   }
-  document.getElementById('displayYield').value = ((monthly * 12) / (salePrice - deposit) * 100).toFixed(2);
+  // 광고 표시 수익률은 사용자 직접 입력 (자동계산 X)
 
   const r = compute(salePrice, deposit, monthly);
 
@@ -762,7 +765,18 @@ function calculate() {
   set('A_netCF_loan', fmt(r.netCF_loan));
 
   // 7가지 수익률
-  set('Y1', fmtPct(r.y1));
+  // ① 광고 표시 수익률 (사용자 입력값)
+  const adYield = num('displayYield') / 100;
+  const calcedY1 = r.y1; // 자동계산: 연임대료 / (매매가-보증금)
+  set('Y1', fmtPct(adYield));
+  const diff = adYield - calcedY1;
+  if (Math.abs(diff) < 0.001) {
+    document.getElementById('Y1desc').textContent = `광고값 = 계산값 (${fmtPct(calcedY1)})`;
+  } else if (diff > 0) {
+    document.getElementById('Y1desc').textContent = `⚠ 광고 > 실제 (계산값 ${fmtPct(calcedY1)}, ${(diff*100).toFixed(2)}%p 부풀림)`;
+  } else {
+    document.getElementById('Y1desc').textContent = `광고 < 실제 (계산값 ${fmtPct(calcedY1)})`;
+  }
   set('Y2', fmtPct(r.y2));
   set('Y3', fmtPct(r.y3));
   set('Y4', fmtPct(r.y4));
