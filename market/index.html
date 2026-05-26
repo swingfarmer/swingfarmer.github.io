@@ -1,1 +1,296 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>실시간 시장 대시보드</title>
 
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JD3EPQXMND"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-JD3EPQXMND');
+</script>
+
+<style>
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:1200px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a}
+h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.desc{color:#555;font-size:14px;margin-bottom:24px}
+.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}
+.back-link:hover{text-decoration:underline}
+
+.live-badge{font-size:12px;background:#dc2626;color:white;padding:3px 10px;border-radius:12px;font-weight:600;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+
+.section{background:white;border-radius:10px;padding:20px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.section h2{margin:0 0 16px 0;color:#1F4E78;font-size:18px;border-left:4px solid #1F4E78;padding-left:12px}
+.section h2 .sub{font-size:12px;color:#888;margin-left:8px;font-weight:normal}
+
+.widget-container{min-height:300px;border-radius:6px;overflow:hidden}
+
+/* 티커 영역 */
+.ticker-section{background:#1a1a1a;border-radius:10px;padding:0;margin-bottom:20px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+
+.info-box{background:#dbeafe;border-left:4px solid #2563eb;padding:12px 16px;border-radius:6px;font-size:13px;color:#1e3a8a;margin-bottom:16px;line-height:1.6}
+.warn-box{background:#fef3c7;border-left:4px solid #d97706;padding:10px 14px;border-radius:6px;font-size:12px;color:#92400e;line-height:1.5;margin-top:16px}
+
+footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
+</style>
+</head>
+<body>
+
+<a href="../" class="back-link">← 메인으로</a>
+
+<h1>📊 실시간 시장 대시보드 <span class="live-badge">LIVE</span></h1>
+<p class="desc">지수·환율·금리·원자재·주식 한 화면에서. 트레이딩뷰 데이터 기반.</p>
+
+<div class="info-box">
+  💡 <b>데이터 출처:</b> 트레이딩뷰. 미국 주식·환율·원자재는 거의 실시간. 한국 주식은 15분 지연 (정상). 거래소 휴장 시 마지막 가격 표시.
+</div>
+
+<!-- 상단 티커 -->
+<div class="ticker-section">
+  <div class="tradingview-widget-container">
+    <div class="tradingview-widget-container__widget"></div>
+    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+    {
+      "symbols": [
+        {"description": "코스피", "proName": "KRX:KOSPI"},
+        {"description": "코스닥", "proName": "KRX:KOSDAQ"},
+        {"description": "S&P 500", "proName": "FOREXCOM:SPXUSD"},
+        {"description": "나스닥", "proName": "NASDAQ:NDX"},
+        {"description": "다우", "proName": "DJ:DJI"},
+        {"description": "원달러", "proName": "FX_IDC:USDKRW"},
+        {"description": "WTI", "proName": "TVC:USOIL"},
+        {"description": "금", "proName": "TVC:GOLD"},
+        {"description": "비트코인", "proName": "BINANCE:BTCUSDT"}
+      ],
+      "showSymbolLogo": true,
+      "isTransparent": false,
+      "displayMode": "adaptive",
+      "colorTheme": "dark",
+      "locale": "kr"
+    }
+    </script>
+  </div>
+</div>
+
+<!-- 1. 지수 -->
+<div class="section">
+  <h2>📈 주요 지수 <span class="sub">한국 + 미국</span></h2>
+  <div class="widget-container">
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
+      {
+        "width": "100%",
+        "height": 400,
+        "symbolsGroups": [
+          {
+            "name": "🇰🇷 한국",
+            "originalName": "Korea",
+            "symbols": [
+              {"name": "KRX:KOSPI", "displayName": "코스피"},
+              {"name": "KRX:KOSDAQ", "displayName": "코스닥"}
+            ]
+          },
+          {
+            "name": "🇺🇸 미국",
+            "originalName": "USA",
+            "symbols": [
+              {"name": "DJ:DJI", "displayName": "다우존스"},
+              {"name": "FOREXCOM:SPXUSD", "displayName": "S&P 500"},
+              {"name": "NASDAQ:NDX", "displayName": "나스닥 100"}
+            ]
+          }
+        ],
+        "showSymbolLogo": true,
+        "isTransparent": false,
+        "colorTheme": "light",
+        "locale": "kr"
+      }
+      </script>
+    </div>
+  </div>
+</div>
+
+<!-- 2. 환율 -->
+<div class="section">
+  <h2>💱 환율 <span class="sub">원화 + 달러 인덱스</span></h2>
+  <div class="widget-container">
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
+      {
+        "width": "100%",
+        "height": 350,
+        "symbolsGroups": [
+          {
+            "name": "원화 환율",
+            "originalName": "KRW",
+            "symbols": [
+              {"name": "FX_IDC:USDKRW", "displayName": "원/달러"},
+              {"name": "FX_IDC:JPYKRW", "displayName": "원/엔(100)"},
+              {"name": "FX_IDC:CNYKRW", "displayName": "원/위안"}
+            ]
+          },
+          {
+            "name": "달러 인덱스",
+            "originalName": "DXY",
+            "symbols": [
+              {"name": "TVC:DXY", "displayName": "DXY (달러지수)"}
+            ]
+          }
+        ],
+        "showSymbolLogo": true,
+        "isTransparent": false,
+        "colorTheme": "light",
+        "locale": "kr"
+      }
+      </script>
+    </div>
+  </div>
+</div>
+
+<!-- 3. 금리 -->
+<div class="section">
+  <h2>📊 국채 금리 <span class="sub">미국 + 한국 / 10년·30년 / VIX</span></h2>
+  <div class="widget-container">
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
+      {
+        "width": "100%",
+        "height": 400,
+        "symbolsGroups": [
+          {
+            "name": "🇺🇸 미국 국채",
+            "originalName": "USA",
+            "symbols": [
+              {"name": "TVC:US10Y", "displayName": "미국 10년물"},
+              {"name": "TVC:US30Y", "displayName": "미국 30년물"}
+            ]
+          },
+          {
+            "name": "🇰🇷 한국 국채",
+            "originalName": "Korea",
+            "symbols": [
+              {"name": "TVC:KR10Y", "displayName": "한국 10년물"},
+              {"name": "TVC:KR30Y", "displayName": "한국 30년물"}
+            ]
+          },
+          {
+            "name": "변동성",
+            "originalName": "Volatility",
+            "symbols": [
+              {"name": "TVC:VIX", "displayName": "VIX (공포지수)"}
+            ]
+          }
+        ],
+        "showSymbolLogo": true,
+        "isTransparent": false,
+        "colorTheme": "light",
+        "locale": "kr"
+      }
+      </script>
+    </div>
+  </div>
+</div>
+
+<!-- 4. 원자재 -->
+<div class="section">
+  <h2>🛢️ 원자재 <span class="sub">유가 + 금속</span></h2>
+  <div class="widget-container">
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
+      {
+        "width": "100%",
+        "height": 400,
+        "symbolsGroups": [
+          {
+            "name": "🛢️ 유가",
+            "originalName": "Oil",
+            "symbols": [
+              {"name": "TVC:USOIL", "displayName": "WTI 원유"},
+              {"name": "TVC:UKOIL", "displayName": "브렌트유"},
+              {"name": "NYMEX:DCB1!", "displayName": "두바이유"}
+            ]
+          },
+          {
+            "name": "💎 금속",
+            "originalName": "Metals",
+            "symbols": [
+              {"name": "TVC:GOLD", "displayName": "금"},
+              {"name": "TVC:SILVER", "displayName": "은"},
+              {"name": "TVC:COPPER", "displayName": "구리"}
+            ]
+          }
+        ],
+        "showSymbolLogo": true,
+        "isTransparent": false,
+        "colorTheme": "light",
+        "locale": "kr"
+      }
+      </script>
+    </div>
+  </div>
+</div>
+
+<!-- 5. 주식 -->
+<div class="section">
+  <h2>📈 주식 <span class="sub">미국 M7 + 한국 주요 3종</span></h2>
+  <div class="widget-container">
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js" async>
+      {
+        "width": "100%",
+        "height": 550,
+        "symbolsGroups": [
+          {
+            "name": "🇺🇸 미국 M7",
+            "originalName": "Magnificent 7",
+            "symbols": [
+              {"name": "NASDAQ:AAPL", "displayName": "Apple (애플)"},
+              {"name": "NASDAQ:MSFT", "displayName": "Microsoft (MS)"},
+              {"name": "NASDAQ:GOOGL", "displayName": "Alphabet (구글)"},
+              {"name": "NASDAQ:AMZN", "displayName": "Amazon (아마존)"},
+              {"name": "NASDAQ:NVDA", "displayName": "NVIDIA (엔비디아)"},
+              {"name": "NASDAQ:META", "displayName": "Meta (메타)"},
+              {"name": "NASDAQ:TSLA", "displayName": "Tesla (테슬라)"}
+            ]
+          },
+          {
+            "name": "🇰🇷 한국 주요",
+            "originalName": "Korea Stock",
+            "symbols": [
+              {"name": "KRX:005930", "displayName": "삼성전자"},
+              {"name": "KRX:000660", "displayName": "SK하이닉스"},
+              {"name": "KRX:005380", "displayName": "현대차"}
+            ]
+          }
+        ],
+        "showSymbolLogo": true,
+        "isTransparent": false,
+        "colorTheme": "light",
+        "locale": "kr"
+      }
+      </script>
+    </div>
+  </div>
+</div>
+
+<div class="warn-box">
+  ⚠ <b>주의:</b> 본 페이지의 가격 정보는 참고용입니다. <b>실제 투자 결정은 본인 책임</b>. 한국 주식 데이터는 트레이딩뷰 정책상 약 15분 지연됨. 정확한 실시간 시세는 증권사 HTS·MTS 또는 KRX 공식 데이터 참조 권장.
+</div>
+
+<footer>
+  © 스윙파머 · 데이터: TradingView
+</footer>
+
+</body>
+</html>
