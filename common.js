@@ -72,8 +72,8 @@
     #sf-header .sf-fontsize .sf-a-lg { display: none; }
   }
 
-  /* 글자크기 스케일 - body 전체 배율 (px 고정 요소는 JS로 보강) */
-  body.sf-scaled { font-size: calc(100% * var(--sf-font-scale)); }
+  /* 글자크기 - body zoom (헤더는 고정 크기 유지) */
+  #sf-content-zoom { }
 
   /* ============ 다크모드 ============ */
   body.sf-dark {
@@ -174,7 +174,7 @@
     }
   }
 
-  // ---------- 4. 글자크기 ----------
+  // ---------- 4. 글자크기 (px 측정 방식 - 검증됨) ----------
   var sfBaseSizes = null;
   function cacheBaseSizes() {
     if (sfBaseSizes) return;
@@ -203,7 +203,6 @@
   // ---------- 5. 초기화 + 이벤트 ----------
   function init() {
     buildHeader();
-    document.body.classList.add('sf-scaled');
 
     // 저장된 설정 불러오기
     var savedSize = '1';
@@ -214,7 +213,7 @@
       if (s) savedSize = s;
     } catch (e) {}
 
-    // 글자크기 적용 (저장값 또는 기본). 위젯 로딩 후 캐시되도록 약간 지연.
+    // 글자크기 적용 (저장값 또는 기본). 콘텐츠 로딩 후 측정되도록 지연.
     setTimeout(function () { applyFontSize(savedSize); }, 300);
 
     // 다크모드 토글
