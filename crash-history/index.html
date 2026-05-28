@@ -1,1 +1,231 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>역대 폭락장 비교 — 시장은 늘 무너졌다</title>
 
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JD3EPQXMND"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-JD3EPQXMND');
+</script>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:1000px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a;line-height:1.7}
+.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}
+.back-link:hover{text-decoration:underline}
+h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:8px;font-size:26px}
+.subtitle{color:#666;font-size:15px;margin-bottom:24px}
+
+.panel{background:white;border-radius:10px;padding:24px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.panel h2{margin:0 0 16px 0;color:#1F4E78;font-size:19px;border-left:4px solid #1F4E78;padding-left:12px}
+
+.crash-card{border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin-bottom:16px;border-left:5px solid #dc2626}
+.crash-card h3{margin:0 0 4px 0;color:#1a1a1a;font-size:18px}
+.crash-card .year-tag{font-size:13px;color:#888;margin-bottom:14px}
+.crash-card .cause{font-size:14px;color:#555;margin-bottom:16px;background:#f8fafc;padding:10px 14px;border-radius:6px}
+.crash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:600px){.crash-grid{grid-template-columns:1fr}}
+.crash-stat{text-align:center;padding:14px 8px;border-radius:8px;background:#fef2f2}
+.crash-stat .market{font-size:12px;color:#666;font-weight:600;margin-bottom:4px}
+.crash-stat .value{font-size:24px;font-weight:800;color:#dc2626}
+.crash-stat.mild{background:#fffbeb}
+.crash-stat.mild .value{color:#d97706}
+.crash-stat.severe{background:#fef2f2}
+
+.chart-container{position:relative;height:380px;width:100%;margin-top:10px}
+
+.lesson-box{background:linear-gradient(135deg,#1F4E78,#2563eb);color:white;border-radius:10px;padding:24px;margin-bottom:20px}
+.lesson-box h2{color:white;border:none;padding:0;margin:0 0 14px 0}
+.lesson-box p{margin:10px 0}
+.lesson-box .big-quote{font-size:20px;font-weight:700;line-height:1.5;margin:16px 0;padding:16px;background:rgba(255,255,255,0.12);border-radius:8px}
+
+.takeaway{display:flex;gap:14px;align-items:flex-start;margin:14px 0}
+.takeaway .num{background:#1F4E78;color:white;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;font-size:14px}
+.takeaway .text{flex:1}
+.takeaway .text b{color:#1F4E78}
+
+.disclaimer{background:#f8fafc;border:1px solid #e5e7eb;padding:14px 18px;border-radius:8px;margin-top:30px;font-size:11px;color:#666;line-height:1.7}
+.disclaimer b{color:#1F4E78}
+
+footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
+</style>
+</head>
+<body>
+
+<a href="../" class="back-link">← 메인으로</a>
+
+<h1>🚨 역대 폭락장 비교</h1>
+<p class="subtitle">최근 30년, 주식 시장 역사상 최악의 공포로 기록된 해들. <b>"내 계좌가 녹아내리는 시기는 무조건 온다"</b>를 기본 전제로.</p>
+
+<!-- 핵심 메시지 -->
+<div class="lesson-box">
+  <h2>💡 핵심 전제</h2>
+  <p>가장 안전하고 우상향한다고 믿는 <b>미국 S&P 500조차</b>, 지난 30년간 '조정 없이 평탄하게 오른 해'는 단 한 번도 없었습니다.</p>
+  <div class="big-quote">
+    "올해 안에도 내 계좌가 15~20% 정도 녹아내리는 시기는 무조건 온다."<br>
+    — 이걸 기본 전제로 깔아두는 것이 건강한 투자의 첫걸음.
+  </div>
+  <p style="opacity:0.9;font-size:14px">수익률이 높은 나스닥이나 변동성이 큰 코스피에 투자한다면 더더욱.</p>
+</div>
+
+<!-- 폭락장 차트 -->
+<div class="panel">
+  <h2>📉 주요 폭락장 최대 낙폭 비교</h2>
+  <div class="chart-container">
+    <canvas id="crashChart"></canvas>
+  </div>
+  <p style="font-size:11px;color:#888;margin-top:10px">※ 각 위기 시기의 연간 또는 고점 대비 최대 낙폭 기준 (지수·집계 방식에 따라 수치는 다소 차이날 수 있음).</p>
+</div>
+
+<!-- 개별 폭락장 카드 -->
+<div class="panel">
+  <h2>🗓️ 시대별 폭락장 상세</h2>
+
+  <div class="crash-card">
+    <h3>IMF 외환위기</h3>
+    <div class="year-tag">1997~1998년</div>
+    <div class="cause">💥 <b>원인:</b> 아시아 외환위기. 한국 원화 가치 폭락, 기업 연쇄 도산, IMF 구제금융. 한국에 궤멸적 타격.</div>
+    <div class="crash-grid">
+      <div class="crash-stat severe"><div class="market">🇰🇷 코스피</div><div class="value">-50%↓</div></div>
+      <div class="crash-stat mild"><div class="market">🇺🇸 S&P 500</div><div class="value">-11~19%</div></div>
+      <div class="crash-stat mild"><div class="market">🇺🇸 나스닥</div><div class="value">조정 수준</div></div>
+    </div>
+  </div>
+
+  <div class="crash-card">
+    <h3>닷컴 버블 붕괴</h3>
+    <div class="year-tag">2000~2002년</div>
+    <div class="cause">💥 <b>원인:</b> IT·인터넷 기업 거품 붕괴. 기술주 중심 폭락이 수년간 침체로 이어짐.</div>
+    <div class="crash-grid">
+      <div class="crash-stat severe"><div class="market">🇰🇷 코스피</div><div class="value">-50%↓</div></div>
+      <div class="crash-stat mild"><div class="market">🇺🇸 S&P 500</div><div class="value">-17%</div></div>
+      <div class="crash-stat severe"><div class="market">🇺🇸 나스닥</div><div class="value">-50%↓</div></div>
+    </div>
+  </div>
+
+  <div class="crash-card">
+    <h3>글로벌 금융위기</h3>
+    <div class="year-tag">2008년</div>
+    <div class="cause">💥 <b>원인:</b> 서브프라임 모기지 사태. 전 세계 동반 폭락. 어떤 지수든 반토막.</div>
+    <div class="crash-grid">
+      <div class="crash-stat severe"><div class="market">🇰🇷 코스피</div><div class="value">-54%</div></div>
+      <div class="crash-stat severe"><div class="market">🇺🇸 S&P 500</div><div class="value">-48%</div></div>
+      <div class="crash-stat severe"><div class="market">🇺🇸 나스닥</div><div class="value">-49%</div></div>
+    </div>
+  </div>
+
+  <div class="crash-card">
+    <h3>코로나 팬데믹 쇼크</h3>
+    <div class="year-tag">2020년 3월</div>
+    <div class="cause">💥 <b>원인:</b> 코로나19 대유행. 한 달 만에 급락 후 V자 반등 (역사상 가장 빠른 회복).</div>
+    <div class="crash-grid">
+      <div class="crash-stat severe"><div class="market">🇰🇷 코스피</div><div class="value">-35%</div></div>
+      <div class="crash-stat severe"><div class="market">🇺🇸 S&P 500</div><div class="value">-34%</div></div>
+      <div class="crash-stat severe"><div class="market">🇺🇸 나스닥</div><div class="value">-30%</div></div>
+    </div>
+  </div>
+
+  <div class="crash-card">
+    <h3>긴축 베어마켓</h3>
+    <div class="year-tag">2022년</div>
+    <div class="cause">💥 <b>원인:</b> 인플레이션 + 연준 급격한 금리 인상. 2008년 이후 최악의 연간 하락.</div>
+    <div class="crash-grid">
+      <div class="crash-stat mild"><div class="market">🇰🇷 코스피</div><div class="value">-25%</div></div>
+      <div class="crash-stat mild"><div class="market">🇺🇸 S&P 500</div><div class="value">-19.4%</div></div>
+      <div class="crash-stat severe"><div class="market">🇺🇸 나스닥</div><div class="value">-33%</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 교훈 -->
+<div class="panel">
+  <h2>🎯 핵심 교훈</h2>
+
+  <div class="takeaway">
+    <div class="num">1</div>
+    <div class="text"><b>폭락은 예외가 아니라 일상이다.</b> 30년간 S&P 500도 매년 어느 시점엔 조정을 겪었다. 평탄하게만 오른 해는 없었다.</div>
+  </div>
+  <div class="takeaway">
+    <div class="num">2</div>
+    <div class="text"><b>변동성이 클수록 낙폭도 크다.</b> 나스닥·코스피는 수익률이 높은 만큼, 위기 때 -50% 반토막도 각오해야 한다.</div>
+  </div>
+  <div class="takeaway">
+    <div class="num">3</div>
+    <div class="text"><b>분산이 방어한다.</b> 같은 위기에도 미국(S&P)은 -17%, 한국(코스피)은 -50%로 차이가 컸던 해가 있었다 (외환위기·닷컴). 지역·자산 분산의 의미.</div>
+  </div>
+  <div class="takeaway">
+    <div class="num">4</div>
+    <div class="text"><b>회복 속도는 위기마다 다르다.</b> 2020년 코로나는 몇 달 만에 V자 회복했지만, 2000년 닷컴은 회복에 수년이 걸렸다. 바닥 예측보다 버티는 힘이 중요.</div>
+  </div>
+  <div class="takeaway">
+    <div class="num">5</div>
+    <div class="text"><b>현금과 멘탈이 무기다.</b> "15~20% 하락은 무조건 온다"를 전제하면, 폭락장에서 패닉 매도 대신 추가 매수 기회로 삼을 수 있다.</div>
+  </div>
+</div>
+
+<div class="disclaimer">
+  📌 <b>이용 안내</b><br>
+  본 페이지의 수치는 각 위기 시기의 연간 또는 고점 대비 최대 낙폭을 정리한 <b>참고 자료</b>입니다.<br>
+  • 지수·집계 기관·기간 산정 방식에 따라 수치는 다소 차이가 날 수 있습니다.<br>
+  • 과거 데이터가 미래 수익률이나 손실을 보장하지 않습니다.<br>
+  • 본 내용은 투자 권유가 아니며, 모든 투자 판단과 책임은 본인에게 있습니다.
+</div>
+
+<footer>
+  © 스윙파머 · 역대 폭락장 비교
+</footer>
+
+<script>
+new Chart(document.getElementById('crashChart'), {
+  type: 'bar',
+  data: {
+    labels: ['IMF 외환위기\n(1997~98)', '닷컴 버블\n(2000~02)', '금융위기\n(2008)', '코로나\n(2020)', '긴축장\n(2022)'],
+    datasets: [
+      {
+        label: '🇰🇷 코스피',
+        data: [-52, -50, -54, -35, -25],
+        backgroundColor: '#dc2626'
+      },
+      {
+        label: '🇺🇸 S&P 500',
+        data: [-15, -17, -48, -34, -19.4],
+        backgroundColor: '#1F4E78'
+      },
+      {
+        label: '🇺🇸 나스닥',
+        data: [-13, -50, -49, -30, -33],
+        backgroundColor: '#10b981'
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {position: 'top'},
+      tooltip: {callbacks: {label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}%`}}
+    },
+    scales: {
+      y: {
+        max: 0,
+        min: -60,
+        ticks: {callback: v => v + '%'},
+        title: {display: true, text: '최대 낙폭 (%)'}
+      }
+    }
+  }
+});
+</script>
+
+</body>
+</html>
