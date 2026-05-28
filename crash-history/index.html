@@ -147,6 +147,33 @@ footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
 
 </div>
 
+<!-- 매년 반복되는 단기 조정 -->
+<div class="panel">
+  <h2>📅 매년 반복되는 단기 조정 (연중 최대 낙폭)</h2>
+  <p style="font-size:13px;color:#666;margin-bottom:14px">
+    연수익률이 플러스인 해에도 <b>연중 어느 시점엔 큰 조정</b>이 옵니다. 아래는 각 해의 고점 대비 <b>연중 최대 낙폭</b>입니다. S&P 500은 1978년부터 거의 매년 두 자릿수 조정을 겪었습니다.
+  </p>
+  <div class="chart-container" style="height:420px">
+    <canvas id="drawdownChart"></canvas>
+  </div>
+  <div style="overflow-x:auto;margin-top:20px">
+    <table style="width:100%;border-collapse:collapse;font-size:13px" id="drawdownTable">
+      <thead>
+        <tr>
+          <th style="background:#1F4E78;color:white;padding:8px;position:sticky;left:0">연도</th>
+          <th style="background:#1F4E78;color:white;padding:8px">🇺🇸 S&P 500</th>
+          <th style="background:#1F4E78;color:white;padding:8px">🇺🇸 나스닥</th>
+          <th style="background:#1F4E78;color:white;padding:8px">🇰🇷 코스피</th>
+        </tr>
+      </thead>
+      <tbody id="drawdownTbody"></tbody>
+    </table>
+  </div>
+  <p style="font-size:11px;color:#888;margin-top:10px">
+    💡 <b>S&P 500</b>은 JP모건 자료 기반 완전한 연도별 데이터. <b>나스닥·코스피</b>는 정제된 연중 최대낙폭 공개 자료가 제한적이라 <b>주요 위기 연도만</b> 표시 (나머지는 "-"). 코스피는 1980년 기준점 시작.
+  </p>
+</div>
+
 <!-- 교훈 -->
 <div class="panel">
   <h2>🎯 핵심 교훈</h2>
@@ -225,6 +252,111 @@ new Chart(document.getElementById('crashChart'), {
     }
   }
 });
+
+// === 연간 최대낙폭 데이터 ===
+const drawdownData = [
+  {year: 1978, sp: -14, nasdaq: null, kospi: null},
+  {year: 1979, sp: -10, nasdaq: null, kospi: null},
+  {year: 1980, sp: -17, nasdaq: null, kospi: null},
+  {year: 1981, sp: -18, nasdaq: null, kospi: null},
+  {year: 1982, sp: -17, nasdaq: null, kospi: null},
+  {year: 1983, sp: -7, nasdaq: null, kospi: null},
+  {year: 1984, sp: -13, nasdaq: null, kospi: null},
+  {year: 1985, sp: -8, nasdaq: null, kospi: null},
+  {year: 1986, sp: -9, nasdaq: null, kospi: null},
+  {year: 1987, sp: -34, nasdaq: -36, kospi: null},
+  {year: 1988, sp: -7, nasdaq: null, kospi: null},
+  {year: 1989, sp: -7, nasdaq: null, kospi: null},
+  {year: 1990, sp: -19, nasdaq: -26, kospi: null},
+  {year: 1991, sp: -6, nasdaq: null, kospi: null},
+  {year: 1992, sp: -6, nasdaq: null, kospi: null},
+  {year: 1993, sp: -5, nasdaq: null, kospi: null},
+  {year: 1994, sp: -8, nasdaq: null, kospi: null},
+  {year: 1995, sp: -3, nasdaq: null, kospi: null},
+  {year: 1996, sp: -7, nasdaq: null, kospi: null},
+  {year: 1997, sp: -11, nasdaq: null, kospi: -42},
+  {year: 1998, sp: -19, nasdaq: -29, kospi: -50},
+  {year: 1999, sp: -12, nasdaq: null, kospi: -28},
+  {year: 2000, sp: -17, nasdaq: -45, kospi: -52},
+  {year: 2001, sp: -29, nasdaq: -53, kospi: -34},
+  {year: 2002, sp: -33, nasdaq: -45, kospi: -32},
+  {year: 2003, sp: -14, nasdaq: null, kospi: null},
+  {year: 2004, sp: -7, nasdaq: null, kospi: -23},
+  {year: 2005, sp: -7, nasdaq: null, kospi: null},
+  {year: 2006, sp: -7, nasdaq: null, kospi: null},
+  {year: 2007, sp: -10, nasdaq: null, kospi: null},
+  {year: 2008, sp: -48, nasdaq: -49, kospi: -54},
+  {year: 2009, sp: -27, nasdaq: null, kospi: null},
+  {year: 2010, sp: -16, nasdaq: null, kospi: null},
+  {year: 2011, sp: -19, nasdaq: -19, kospi: -27},
+  {year: 2012, sp: -10, nasdaq: null, kospi: null},
+  {year: 2013, sp: -6, nasdaq: null, kospi: null},
+  {year: 2014, sp: -7, nasdaq: null, kospi: null},
+  {year: 2015, sp: -12, nasdaq: null, kospi: null},
+  {year: 2016, sp: -10, nasdaq: null, kospi: null},
+  {year: 2017, sp: -3, nasdaq: null, kospi: null},
+  {year: 2018, sp: -19, nasdaq: -23, kospi: -25},
+  {year: 2019, sp: -7, nasdaq: null, kospi: null},
+  {year: 2020, sp: -34, nasdaq: -30, kospi: -35},
+  {year: 2021, sp: -5, nasdaq: null, kospi: null},
+  {year: 2022, sp: -23, nasdaq: -35, kospi: -28},
+  {year: 2023, sp: -18, nasdaq: null, kospi: null},
+  {year: 2024, sp: -10, nasdaq: null, kospi: null},
+  {year: 2025, sp: -18, nasdaq: null, kospi: null}
+];
+
+// 연간 최대낙폭 차트 (S&P 전체 + 나스닥·코스피 점)
+new Chart(document.getElementById('drawdownChart'), {
+  type: 'bar',
+  data: {
+    labels: drawdownData.map(d => d.year),
+    datasets: [
+      {
+        label: '🇺🇸 S&P 500',
+        data: drawdownData.map(d => d.sp),
+        backgroundColor: '#1F4E78',
+        order: 3
+      },
+      {
+        label: '🇺🇸 나스닥',
+        data: drawdownData.map(d => d.nasdaq),
+        backgroundColor: '#10b981',
+        order: 2
+      },
+      {
+        label: '🇰🇷 코스피',
+        data: drawdownData.map(d => d.kospi),
+        backgroundColor: '#dc2626',
+        order: 1
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {position: 'top'},
+      tooltip: {callbacks: {label: ctx => ctx.parsed.y === null ? `${ctx.dataset.label}: 데이터 없음` : `${ctx.dataset.label}: ${ctx.parsed.y}%`}}
+    },
+    scales: {
+      y: {max: 0, min: -60, ticks: {callback: v => v + '%'}, title: {display: true, text: '연중 최대 낙폭 (%)'}},
+      x: {ticks: {maxRotation: 90, minRotation: 90, font: {size: 9}}}
+    }
+  }
+});
+
+// 표 렌더링
+const tbody = document.getElementById('drawdownTbody');
+tbody.innerHTML = drawdownData.map((d, i) => {
+  const cell = v => v === null
+    ? '<td style="padding:7px 8px;text-align:center;color:#ccc;border-bottom:1px solid #eee">-</td>'
+    : `<td style="padding:7px 8px;text-align:center;color:#dc2626;font-weight:600;border-bottom:1px solid #eee">${v}%</td>`;
+  const bg = i % 2 ? 'background:#f8fafc' : '';
+  return `<tr style="${bg}">
+    <td style="padding:7px 8px;font-weight:700;color:#1F4E78;border-bottom:1px solid #eee;position:sticky;left:0;${bg||'background:#fff'}">${d.year}</td>
+    ${cell(d.sp)}${cell(d.nasdaq)}${cell(d.kospi)}
+  </tr>`;
+}).join('');
 </script>
 
 </body>
