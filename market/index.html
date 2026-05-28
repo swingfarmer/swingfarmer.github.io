@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>실시간 시장 대시보드</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>실시간 시장 대시보드</title>
+
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-JD3EPQXMND"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -54,30 +55,64 @@ footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
   💡 <b>두 가지 방식 혼합:</b> 검은 띠 = 실시간 가격 위젯. 회색 카드 = 트레이딩뷰 무료 위젯이 미지원하는 항목 (클릭하면 외부 사이트). 이 방식이 가장 안정적입니다.
 </div>
 
-<!-- 1. 주요 지수 -->
+<!-- 0-A. 코스피200 야간선물 -->
 <div class="section">
-  <h2>📈 주요 지수 <span class="sub">한국 + 미국</span></h2>
-  <!-- 작동하는 미국 지수만 위젯 -->
-  <div class="ticker-wrap">
+  <h2>🌙 코스피200 야간선물 <span class="sub">밤사이 한국시장 프리뷰 (18:00~익일 05:00)</span></h2>
+  <div style="font-size:12px;color:#888;margin-bottom:10px">미국장 영향으로 다음날 코스피 시초가 방향을 미리 가늠. S&amp;P500·나스닥·환율과 높은 상관관계. <b>야간선물은 트레이딩뷰 전용 데이터라 위젯 표시 불가</b> → 아래에서 확인.</div>
+  <div class="link-grid">
+    <a href="https://longnshort.kr/" target="_blank" class="link-card">
+      <div class="name">🌐 롱앤숏</div>
+      <div class="desc-mini">야간선물 전용 대시보드</div>
+      <div class="src">longnshort.kr →</div>
+    </a>
+  </div>
+</div>
+
+<!-- 0-B. 글로벌 지수 종합 (한 차트에 비교) -->
+<div class="section">
+  <h2>🌐 글로벌 종합 <span class="sub">지수·원자재·금리·코인 미니 차트 (클릭으로 전환)</span></h2>
+  <div style="background:#1a1a1a;border-radius:8px;overflow:hidden">
     <div class="tradingview-widget-container">
       <div class="tradingview-widget-container__widget"></div>
-      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js" async>
       {
         "symbols": [
-          {"description": "다우", "proName": "FOREXCOM:DJI"},
-          {"description": "S&P 500", "proName": "FOREXCOM:SPXUSD"},
-          {"description": "VIX", "proName": "CAPITALCOM:VIX"}
+          ["다우", "FOREXCOM:DJI|1D"],
+          ["S&P 500", "FOREXCOM:SPXUSD|1D"],
+          ["나스닥", "FOREXCOM:NSXUSD|1D"],
+          ["니케이225", "FOREXCOM:JPXJPY|1D"],
+          ["VIX", "CAPITALCOM:VIX|1D"],
+          ["비트코인", "BINANCE:BTCUSDT|1D"],
+          ["금(골드)", "TVC:GOLD|1D"],
+          ["WTI 원유", "TVC:USOIL|1D"],
+          ["달러인덱스", "CAPITALCOM:DXY|1D"]
         ],
-        "showSymbolLogo": true,
-        "isTransparent": false,
-        "displayMode": "regular",
+        "chartOnly": false,
+        "width": "100%",
+        "height": 400,
+        "locale": "kr",
         "colorTheme": "dark",
-        "locale": "kr"
+        "autosize": true,
+        "showVolume": false,
+        "showMA": false,
+        "hideDateRanges": false,
+        "scalePosition": "right",
+        "scaleMode": "Normal",
+        "fontFamily": "-apple-system, sans-serif",
+        "fontSize": "10",
+        "lineWidth": 2,
+        "lineType": 0,
+        "dateRanges": ["1d|5", "1m|30", "3m|60", "12m|1D"]
       }
       </script>
     </div>
   </div>
-  <!-- 위젯 미지원: 한국 지수 + 나스닥100 -->
+  <div style="font-size:11px;color:#888;margin-top:8px">💡 차트 상단의 종목명을 클릭하면 해당 지표로 전환됩니다.</div>
+</div>
+
+<!-- 1. 한국 지수 (글로벌 종합에 없는 코스피·코스닥) -->
+<div class="section">
+  <h2>🇰🇷 한국 지수 <span class="sub">코스피·코스닥 (위젯 미지원, 외부 링크)</span></h2>
   <div class="link-grid">
     <a href="https://kr.investing.com/indices/kospi" target="_blank" class="link-card">
       <div class="name">🇰🇷 코스피</div>
