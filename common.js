@@ -53,13 +53,16 @@
   #sf-header .sf-fontsize { display: flex; align-items: center; gap: 3px; background: rgba(255,255,255,0.1); border-radius: 8px; padding: 3px; }
   #sf-header .sf-fontsize button {
     background: transparent; border: none; color: #fff; cursor: pointer;
-    width: 28px; height: 28px; border-radius: 6px; font-weight: 700;
+    width: 30px; height: 30px; border-radius: 6px; font-weight: 700;
     display: flex; align-items: center; justify-content: center; padding: 0;
+    transition: background 0.15s;
   }
   #sf-header .sf-fontsize button:hover { background: rgba(255,255,255,0.2); }
+  #sf-header .sf-fontsize button.active { background: #fff; color: #1F4E78; }
   #sf-header .sf-fontsize .sf-a-sm { font-size: 11px; }
   #sf-header .sf-fontsize .sf-a-md { font-size: 14px; }
   #sf-header .sf-fontsize .sf-a-lg { font-size: 17px; }
+  #sf-header .sf-fontsize .sf-a-xl { font-size: 20px; }
   #sf-header .sf-fontsize .sf-divider { font-size: 12px; opacity: 0.4; }
 
   @media (max-width: 600px) {
@@ -69,8 +72,8 @@
     #sf-header .sf-fontsize .sf-a-lg { display: none; }
   }
 
-  /* 글자크기 스케일 - 본문 주요 요소 */
-  body { font-size: calc(1em * var(--sf-font-scale)); }
+  /* 글자크기 스케일 - body 전체 배율 (px 고정 요소는 JS로 보강) */
+  body.sf-scaled { font-size: calc(100% * var(--sf-font-scale)); }
 
   /* ============ 다크모드 ============ */
   body.sf-dark {
@@ -148,11 +151,9 @@
       '<div class="sf-tools">' +
         '<div class="sf-fontsize" title="글자 크기">' +
           '<button class="sf-a-sm" data-size="0.9" title="작게">A</button>' +
-          '<span class="sf-divider">|</span>' +
           '<button class="sf-a-md" data-size="1" title="기본">A</button>' +
-          '<span class="sf-divider">|</span>' +
-          '<button class="sf-a-lg" data-size="1.15" title="크게">A</button>' +
-          '<button class="sf-a-lg" data-size="1.3" title="더 크게" style="font-size:20px">A</button>' +
+          '<button class="sf-a-lg" data-size="1.2" title="크게">A</button>' +
+          '<button class="sf-a-xl" data-size="1.4" title="더 크게">A</button>' +
         '</div>' +
         '<button class="sf-btn" id="sf-dark-toggle" title="다크모드">🌙</button>' +
         '<a class="sf-btn wide label-hide" href="' + KAKAO_URL + '" target="_blank" title="수정사항 문의">💬<span class="txt">문의</span></a>' +
@@ -174,21 +175,47 @@
   }
 
   // ---------- 4. 글자크기 ----------
+  var sfBaseSizes = null;
+  function cacheBaseSizes() {
+    if (sfBaseSizes) return;
+    sfBaseSizes = [];
+    var sel = 'p, li, td, th, span, a, label, h1, h2, h3, h4, .card-title, .card-desc, .desc, .subtitle, .tag, .stat-value, .stat-label, .stock-name, .stock-note, .cat-desc, .panel-sub, input, select, button, blockquote';
+    var nodes = document.querySelectorAll(sel);
+    nodes.forEach(function (el) {
+      if (el.closest && el.closest('#sf-header')) return;
+      var px = parseFloat(window.getComputedStyle(el).fontSize);
+      if (px) sfBaseSizes.push({el: el, base: px});
+    });
+  }
   function applyFontSize(scale) {
+    scale = parseFloat(scale) || 1;
     document.documentElement.style.setProperty('--sf-font-scale', scale);
+    cacheBaseSizes();
+    sfBaseSizes.forEach(function (item) {
+      item.el.style.fontSize = (item.base * scale) + 'px';
+    });
+    var btns = document.querySelectorAll('#sf-header .sf-fontsize button');
+    btns.forEach(function (b) {
+      b.classList.toggle('active', parseFloat(b.getAttribute('data-size')) === scale);
+    });
   }
 
   // ---------- 5. 초기화 + 이벤트 ----------
   function init() {
     buildHeader();
+    document.body.classList.add('sf-scaled');
 
-    // 저장된 설정 불러오기 (GitHub Pages에서 작동, artifacts에선 무시될 수 있음)
+    // 저장된 설정 불러오기
+    var savedSize = '1';
     try {
       var savedDark = localStorage.getItem('sf-dark');
       if (savedDark === '1') applyDark(true);
-      var savedSize = localStorage.getItem('sf-fontsize');
-      if (savedSize) applyFontSize(savedSize);
+      var s = localStorage.getItem('sf-fontsize');
+      if (s) savedSize = s;
     } catch (e) {}
+
+    // 글자크기 적용 (저장값 또는 기본). 위젯 로딩 후 캐시되도록 약간 지연.
+    setTimeout(function () { applyFontSize(savedSize); }, 300);
 
     // 다크모드 토글
     var darkBtn = document.getElementById('sf-dark-toggle');
