@@ -242,11 +242,11 @@
       <input type="number" id="currentAssets" value="450000000">
     </div>
     <div class="input-row">
-      <label>연 수입액 (원) <span class="stat-sub">(실수령 평균 5,040만)</span></label>
+      <label>연 수입액 (원) <span class="stat-sub">(실수령 평균 5,040만)</span> <span class="stat-sub" id="incomeConv" style="color:#2563eb"></span></label>
       <input type="number" id="annualIncome" value="50400000">
     </div>
     <div class="input-row">
-      <label>연 지출액 (원) <span class="stat-sub">(평균 3,480만)</span></label>
+      <label>연 지출액 (원) <span class="stat-sub">(평균 3,480만)</span> <span class="stat-sub" id="spendingConv" style="color:#2563eb"></span></label>
       <input type="number" id="annualSpending" value="34800000">
     </div>
     <div class="computed">
@@ -260,13 +260,13 @@
       <input type="number" id="pensionStartAge" value="65">
     </div>
     <div class="input-row">
-      <label>월 연금 수령액 (원) <span class="stat-sub">(20년+ 가입자 평균 100만)</span></label>
+      <label>월 연금 수령액 (원) <span class="stat-sub">(20년+ 가입자 평균 100만)</span> <span class="stat-sub" id="pensionConv" style="color:#2563eb"></span></label>
       <input type="number" id="monthlyPension" value="1000000">
     </div>
 
     <div class="section-label">④ 은퇴 후 지출 & 상속 목표<button class="info-btn" onclick="sfShowInfo('goal')" title="설명 보기">i</button></div>
     <div class="input-row">
-      <label>월 소비액 (원, 오늘 기준) <span class="stat-sub">(평균 290만)</span></label>
+      <label>월 소비액 (원, 오늘 기준) <span class="stat-sub">(평균 290만)</span> <span class="stat-sub" id="spendConv" style="color:#2563eb"></span></label>
       <input type="number" id="monthlySpending" value="2900000">
     </div>
     <div class="input-row">
@@ -471,6 +471,12 @@ function calculate() {
   document.getElementById('savingRate').textContent = annualIncome > 0
     ? (autoSaving / annualIncome * 100).toFixed(1)
     : '0';
+
+  // 🆕 단위 환산 표시
+  document.getElementById('incomeConv').textContent = '· 월 환산 ≒ ' + fmtShort(annualIncome / 12) + '원';
+  document.getElementById('spendingConv').textContent = '· 월 환산 ≒ ' + fmtShort(annualSpending / 12) + '원';
+  document.getElementById('pensionConv').textContent = '· 연 환산 ≒ ' + fmtShort(monthlyPension * 12) + '원';
+  document.getElementById('spendConv').textContent = '· 연 환산 ≒ ' + fmtShort(monthlySpending * 12) + '원';
 
   document.getElementById('heroRetireAge').textContent = retireAge;
 
