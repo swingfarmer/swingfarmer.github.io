@@ -338,6 +338,15 @@
   </div>
 </div>
 
+<!-- 🆕 안전선 — 은퇴 전 수입/지출 한계 -->
+<div class="panel" style="border-left:4px solid #8b5cf6">
+  <h2 style="margin-bottom:6px">🎯 안전선 — 은퇴 전 수입·지출 한계</h2>
+  <p style="font-size:12px;color:#666;margin:0 0 14px 0">현재 페이스로 갔을 때 부족/여유 금액을 메우려면 은퇴 전 수입을 얼마나 늘려야/줄여도 되는지, 지출은 얼마나 줄여야/늘려도 되는지 자동 계산.</p>
+  <div id="limitsBox">
+    <!-- JS로 채움 -->
+  </div>
+</div>
+
 <div class="panel">
   <h2>현재 페이스로 가면?</h2>
   <div class="summary-grid">
@@ -662,6 +671,63 @@ function calculate() {
       '<div style="font-size:14px;font-weight:700;color:' + (sAnnualSaving > annualSaving ? '#dc2626' : '#10b981') + '">' + fmtShort(Math.max(0, sAnnualSaving)) + '원/년</div>' +
       '</div></div>';
   }).join('');
+
+  // === 7. 안전선 — 은퇴 전 수입/지출 한계 계산 ===
+  // 수입 증분 ΔX가 매년 (1+incomeGrowth)^t 만큼 증가하며 은퇴까지 복리됨
+  // 지출 증분 ΔY는 (1+spendingGrowth)^t 로 증가하며 은퇴까지 복리됨
+  // gap = requiredAssets - projRetireAssets
+  let factorIncome = 0, factorSpending = 0;
+  for (let i = 0; i < yearsToRetire; i++) {
+    factorIncome  += Math.pow(1 + incomeGrowth,  i) * Math.pow(1 + returnRate, yearsToRetire - 1 - i);
+    factorSpending += Math.pow(1 + spendingGrowth, i) * Math.pow(1 + returnRate, yearsToRetire - 1 - i);
+  }
+  const limitsEl = document.getElementById('limitsBox');
+  if (limitsEl) {
+    const isShortage = gap > 0; // 부족 상태
+    const absGap = Math.abs(gap);
+    const incomeAdj  = factorIncome  > 0 ? absGap / factorIncome  : 0;
+    const spendingAdj = factorSpending > 0 ? absGap / factorSpending : 0;
+
+    if (isShortage) {
+      // 부족: 수입을 늘리거나 / 지출을 줄여야
+      limitsEl.innerHTML =
+        '<div style="background:#fef2f2;border:2px solid #dc2626;border-radius:8px;padding:16px;margin-bottom:12px">' +
+          '<div style="color:#dc2626;font-weight:700;font-size:14px;margin-bottom:8px">🔴 현재 ' + fmtShort(absGap) + '원 부족 — 파이어 달성을 위해:</div>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">' +
+            '<div style="background:white;padding:12px;border-radius:6px;border-left:4px solid #dc2626">' +
+              '<div style="font-size:11px;color:#666">방법 ①: 연 수입을 늘리기</div>' +
+              '<div style="font-size:20px;font-weight:700;color:#dc2626;margin:4px 0">+' + fmtShort(incomeAdj) + '원/년</div>' +
+              '<div style="font-size:11px;color:#888">현재 ' + fmtShort(annualIncome) + ' → ' + fmtShort(annualIncome + incomeAdj) + '원/년</div>' +
+            '</div>' +
+            '<div style="background:white;padding:12px;border-radius:6px;border-left:4px solid #dc2626">' +
+              '<div style="font-size:11px;color:#666">방법 ②: 연 지출을 줄이기</div>' +
+              '<div style="font-size:20px;font-weight:700;color:#dc2626;margin:4px 0">−' + fmtShort(spendingAdj) + '원/년</div>' +
+              '<div style="font-size:11px;color:#888">현재 ' + fmtShort(annualSpending) + ' → ' + fmtShort(Math.max(0, annualSpending - spendingAdj)) + '원/년</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="margin-top:10px;font-size:12px;color:#7f1d1d;line-height:1.6">📌 위 두 방법 중 하나만 해도 됩니다. 또는 절반씩 섞어도 OK (수입 ↑' + fmtShort(incomeAdj/2) + ' + 지출 ↓' + fmtShort(spendingAdj/2) + ').</div>' +
+        '</div>';
+    } else {
+      // 여유: 수입을 줄여도 / 지출을 늘려도
+      limitsEl.innerHTML =
+        '<div style="background:#f0fdf4;border:2px solid #10b981;border-radius:8px;padding:16px;margin-bottom:12px">' +
+          '<div style="color:#059669;font-weight:700;font-size:14px;margin-bottom:8px">🟢 ' + fmtShort(absGap) + '원 여유 — 안전선:</div>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">' +
+            '<div style="background:white;padding:12px;border-radius:6px;border-left:4px solid #10b981">' +
+              '<div style="font-size:11px;color:#666">최대 가능: 연 수입 감소</div>' +
+              '<div style="font-size:20px;font-weight:700;color:#10b981;margin:4px 0">−' + fmtShort(incomeAdj) + '원/년까지 OK</div>' +
+              '<div style="font-size:11px;color:#888">현재 ' + fmtShort(annualIncome) + ' → 최저 ' + fmtShort(Math.max(0, annualIncome - incomeAdj)) + '원/년</div>' +
+            '</div>' +
+            '<div style="background:white;padding:12px;border-radius:6px;border-left:4px solid #10b981">' +
+              '<div style="font-size:11px;color:#666">최대 가능: 연 지출 증가</div>' +
+              '<div style="font-size:20px;font-weight:700;color:#10b981;margin:4px 0">+' + fmtShort(spendingAdj) + '원/년까지 OK</div>' +
+              '<div style="font-size:11px;color:#888">현재 ' + fmtShort(annualSpending) + ' → 최대 ' + fmtShort(annualSpending + spendingAdj) + '원/년</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="margin-top:10px;font-size:12px;color:#166534;line-height:1.6">📌 이 한계까지는 파이어 달성. 이직·소비 여유 결정 시 참고. 또는 두 한계의 절반씩 동시 적용 가능.</div>' +
+        '</div>';
+    }
+  }
 }
 
 // === 정보 모달 ===
