@@ -251,6 +251,17 @@
 
 <div class="panel">
   <h2>결과 요약</h2>
+  <!-- 🆕 저장/불러오기 버튼 -->
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;padding:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;align-items:center">
+    <div style="font-size:12px;color:#166534;font-weight:600;margin-right:auto">💾 결과 저장 (본인 PC에만 저장, 서버 전송 X)</div>
+    <button id="btnSavePdf" type="button" style="background:#dc2626;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">📄 PDF로 저장</button>
+    <button id="btnSaveJson" type="button" style="background:#1F4E78;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">💾 입력값 저장 (JSON)</button>
+    <label style="background:#10b981;color:white;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">
+      📂 불러오기
+      <input type="file" id="fileLoad" accept=".json" style="display:none">
+    </label>
+  </div>
+  <div id="capture-area">
   <div class="summary-grid">
 
     <div class="stat">
@@ -293,6 +304,7 @@
       <div class="stat-sub">이 나이에 자산이 0원이 됩니다</div>
     </div>
   </div>
+  </div><!-- /capture-area -->
 </div>
 
 <div class="panel">
@@ -479,6 +491,82 @@ document.querySelectorAll('input').forEach(el => {
 });
 
 calculate();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+// === 저장/불러오기 (경제자유) ===
+(function(){
+  var INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth'];
+  var PAGE_NAME = '경제적자유';
+
+  function getDateStr(){
+    var d = new Date();
+    return d.getFullYear() + ('0'+(d.getMonth()+1)).slice(-2) + ('0'+d.getDate()).slice(-2);
+  }
+
+  // JSON 저장
+  document.getElementById('btnSaveJson').addEventListener('click', function(){
+    var data = { page: PAGE_NAME, savedAt: new Date().toISOString(), inputs: {} };
+    INPUT_IDS.forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) data.inputs[id] = el.value;
+    });
+    var blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = PAGE_NAME + '_입력값_' + getDateStr() + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // JSON 불러오기
+  document.getElementById('fileLoad').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try {
+        var data = JSON.parse(ev.target.result);
+        if (!data.inputs) { alert('파일 형식이 올바르지 않습니다.'); return; }
+        INPUT_IDS.forEach(function(id){
+          if (data.inputs[id] !== undefined) {
+            var el = document.getElementById(id);
+            if (el) el.value = data.inputs[id];
+          }
+        });
+        // 재계산 트리거
+        if (typeof calculate === 'function') calculate();
+        else if (typeof simulate === 'function') simulate();
+        else {
+          // 첫 input에 input 이벤트 dispatch
+          var first = document.getElementById(INPUT_IDS[0]);
+          if (first) first.dispatchEvent(new Event('input', {bubbles:true}));
+        }
+        alert('✅ 입력값 불러오기 완료. 결과가 다시 계산됩니다.');
+      } catch(err) {
+        alert('❌ 파일 읽기 실패: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // 같은 파일 재선택 가능하게
+  });
+
+  // PDF 저장
+  document.getElementById('btnSavePdf').addEventListener('click', function(){
+    var el = document.getElementById('capture-area');
+    if (!el) { alert('결과 영역을 찾을 수 없습니다.'); return; }
+    var opt = {
+      margin: 10,
+      filename: PAGE_NAME + '_결과_' + getDateStr() + '.pdf',
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(el).save();
+  });
+})();
 </script>
 
 <script src="/common.js?v=2"></script>
