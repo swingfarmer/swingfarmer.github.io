@@ -57,7 +57,15 @@ input:focus{outline:2px solid #1F4E78;background:#FFFACD}
 .manual li{margin-bottom:4px}
 .add-row-btn{background:#1F4E78;color:white;border:none;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;margin-top:10px}
 .add-row-btn:hover{background:#2d5a8c}
-.buy-row{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;margin-bottom:8px;align-items:end}
+.buy-row{display:grid;grid-template-columns:1fr 1fr 44px;gap:10px;margin-bottom:8px;align-items:end}
+.buy-row .del-btn{width:44px;height:42px}
+@media(max-width:600px){
+  .buy-row{grid-template-columns:1fr 1fr;gap:10px;position:relative;background:#f8fafc;padding:36px 12px 12px;border-radius:8px;border:1px solid #eee;margin-bottom:10px}
+  .buy-row .del-btn{position:absolute;top:6px;right:6px;width:28px;height:28px;font-size:13px}
+  .inputs{grid-template-columns:1fr}
+  body{padding:12px}
+}
+.cur-unit{color:#1F4E78;font-weight:700}
 .del-btn{background:#fee2e2;color:#dc2626;border:none;width:38px;height:40px;border-radius:6px;cursor:pointer;font-size:16px;font-weight:700}
 .del-btn:hover{background:#fecaca}
 </style>
@@ -99,7 +107,7 @@ input:focus{outline:2px solid #1F4E78;background:#FFFACD}
     <div class="section-label">기존 보유 (현재 평단)</div>
     <div class="inputs">
       <div class="input-row">
-        <label>기존 평균 단가 (원)</label>
+        <label>기존 평균 단가 (<span class="cur-unit">원</span>)</label>
         <input type="number" id="avgPrice" value="10000">
       </div>
       <div class="input-row">
@@ -115,7 +123,7 @@ input:focus{outline:2px solid #1F4E78;background:#FFFACD}
     <div class="section-label">현재 시세 (선택 — 손익 계산용)</div>
     <div class="inputs">
       <div class="input-row">
-        <label>현재 주가 (원, 0이면 생략)</label>
+        <label>현재 주가 (<span class="cur-unit">원</span>, 0이면 생략)</label>
         <input type="number" id="curPrice" value="8000">
       </div>
     </div>
@@ -168,7 +176,7 @@ input:focus{outline:2px solid #1F4E78;background:#FFFACD}
     <h2>🎯 목표 평단까지 몇 주 더 사야 하나?</h2>
     <div class="inputs">
       <div class="input-row">
-        <label>기존 평균 단가 (원)</label>
+        <label>기존 평균 단가 (<span class="cur-unit">원</span>)</label>
         <input type="number" id="t_avgPrice" value="10000">
       </div>
       <div class="input-row">
@@ -176,11 +184,11 @@ input:focus{outline:2px solid #1F4E78;background:#FFFACD}
         <input type="number" id="t_avgQty" value="100">
       </div>
       <div class="input-row">
-        <label>추가 매수 가격 (원)</label>
+        <label>추가 매수 가격 (<span class="cur-unit">원</span>)</label>
         <input type="number" id="t_buyPrice" value="8000">
       </div>
       <div class="input-row">
-        <label>목표 평균 단가 (원)</label>
+        <label>목표 평균 단가 (<span class="cur-unit">원</span>)</label>
         <input type="number" id="t_targetAvg" value="9000">
       </div>
     </div>
@@ -222,11 +230,11 @@ input:focus{outline:2px solid #1F4E78;background:#FFFACD}
     <h2>📈 본전 회복에 필요한 상승률</h2>
     <div class="inputs">
       <div class="input-row">
-        <label>현재 평균 단가 (원)</label>
+        <label>현재 평균 단가 (<span class="cur-unit">원</span>)</label>
         <input type="number" id="b_avgPrice" value="10000">
       </div>
       <div class="input-row">
-        <label>현재 주가 (원)</label>
+        <label>현재 주가 (<span class="cur-unit">원</span>)</label>
         <input type="number" id="b_curPrice" value="7000">
       </div>
     </div>
@@ -310,6 +318,9 @@ function fmt2(n){ return CUR.isUSD ? n.toLocaleString('en-US',{minimumFractionDi
 document.getElementById('currency').addEventListener('change', function(){
   setCurrency(this.value);
   document.getElementById('currencyHint').textContent = CUR.isUSD ? '소수점 가능 (예: $8.53, 0.5주)' : '정수 단위 (예: 8,000원)';
+  // 모든 입력 라벨의 단위 표기 변경
+  var unitText = CUR.isUSD ? '$' : '원';
+  document.querySelectorAll('.cur-unit').forEach(function(el){ el.textContent = unitText; });
   calcAvg(); calcTarget(); calcBreakeven();
 });
 
@@ -329,7 +340,7 @@ function addBuyRow(price, qty){
   var div = document.createElement('div');
   div.className = 'buy-row';
   div.innerHTML =
-    '<div class="input-row"><label>추가 매수가 (원)</label><input type="number" class="buyPrice" value="' + (price||'') + '"></div>' +
+    '<div class="input-row"><label>추가 매수가 (<span class="cur-unit">' + (CUR.isUSD?'$':'원') + '</span>)</label><input type="number" class="buyPrice" value="' + (price||'') + '"></div>' +
     '<div class="input-row"><label>추가 수량 (주)</label><input type="number" class="buyQty" value="' + (qty||'') + '"></div>' +
     '<button class="del-btn" type="button">✕</button>';
   div.querySelector('.del-btn').addEventListener('click', function(){ div.remove(); calcAvg(); });
@@ -456,6 +467,7 @@ function calcBreakeven(){
 ['b_avgPrice','b_curPrice'].forEach(function(id){ document.getElementById(id).addEventListener('input', calcBreakeven); });
 
 // 초기화
+buyRowsEl.innerHTML = '';
 addBuyRow(8000, 100);
 calcAvg();
 calcTarget();
