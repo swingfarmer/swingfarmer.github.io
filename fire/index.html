@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<title>파이어족 역산 계산기</title>
+<title>파이어족 계산기</title>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -188,14 +188,25 @@
 
 <a href="../" class="back-link">← 메인으로</a>
 
-<h1>파이어족 역산 계산기</h1>
-<p class="desc">월 소비액과 사망 시 남길 금액을 입력하면 <b>은퇴 시점에 얼마가 필요한지</b> 자동 역산. 연금 소득도 반영. 기본값은 한국 평균(2024년 기준).</p>
+<h1>파이어족 계산기</h1>
+<p class="desc">월 소비액과 사망 시 남길 금액을 입력하면 <b>은퇴 시점에 얼마가 필요한지</b> 자동 계산. 연금 소득도 반영. 기본값은 한국 평균(2024년 기준).</p>
+
+<!-- 🆕 명목/현재가치 안내 -->
+<div style="background:#dbeafe;border-left:4px solid #2563eb;padding:14px 18px;border-radius:6px;margin-bottom:20px;font-size:13px;color:#1e3a8a;line-height:1.7">
+  <b style="font-size:14px">📖 결과 읽기 전에 — "명목" vs "현재가치"</b><br>
+  <b>명목</b> = 미래 시점의 액수 그대로 (인플레이션 미반영)<br>
+  <b>현재가치</b> = 지금(2026년) 돈으로 환산한 실제 구매력<br><br>
+  <b style="color:#dc2626">⚠ "은퇴 시점 필요한 자산" = 명목값입니다.</b><br>
+  예: 19년 후 은퇴 때 통장에 <b>8.5억</b>이 찍혀야 한다는 뜻. 지금 8.5억이 아니라 미래의 8.5억.<br>
+  현재가치 환산은 결과 박스에 같이 표시됩니다.
+</div>
 
 <div class="panel">
   <h2>입력값</h2>
   <div class="inputs">
 
     <div class="section-label">① 기본 정보</div>
+    <div style="font-size:12px;color:#666;margin:-6px 0 8px 0;line-height:1.5">📌 시작 연도와 나이를 입력합니다. 사망 나이까지 시뮬레이션이 진행됩니다.</div>
     <div class="input-row">
       <label>시작 연도 (자동)</label>
       <input type="number" id="startYear" value="2026">
@@ -213,17 +224,8 @@
       <input type="number" id="deathAge" value="84">
     </div>
 
-    <div class="section-label">② 은퇴 후 목표</div>
-    <div class="input-row">
-      <label>월 소비액 (원, 오늘 기준) <span class="stat-sub">(평균 290만)</span></label>
-      <input type="number" id="monthlySpending" value="2900000">
-    </div>
-    <div class="input-row">
-      <label>사망 시 남길 금액 (원, 오늘 기준) <span class="stat-sub">(0=다 쓰고 감)</span></label>
-      <input type="number" id="legacy" value="0">
-    </div>
-
-    <div class="section-label">③ 현재 자산 & 은퇴 전 현금흐름</div>
+    <div class="section-label">② 현재 자산 & 은퇴 전 현금흐름</div>
+    <div style="font-size:12px;color:#666;margin:-6px 0 8px 0;line-height:1.5">📌 지금 보유한 자산과, 은퇴 전까지 매년 들어오고 나가는 돈. 저축액이 자동 계산됩니다.</div>
     <div class="input-row">
       <label>현재 자산 (원) <span class="stat-sub">(40대 평균 4.5억)</span></label>
       <input type="number" id="currentAssets" value="450000000">
@@ -241,7 +243,8 @@
       <span style="color:#666;"> &nbsp;(저축률 <span id="savingRate">31</span>%)</span>
     </div>
 
-    <div class="section-label">④ 은퇴 후 수입 (연금)</div>
+    <div class="section-label">③ 은퇴 후 수입 (연금)</div>
+    <div style="font-size:12px;color:#666;margin:-6px 0 8px 0;line-height:1.5">📌 은퇴 후 받게 될 국민연금·개인연금 등. 연금이 시작되면 그만큼 자산을 덜 까먹습니다.</div>
     <div class="input-row">
       <label>연금 수령 시작 나이 <span class="stat-sub">(국민연금 65세)</span></label>
       <input type="number" id="pensionStartAge" value="65">
@@ -251,7 +254,19 @@
       <input type="number" id="monthlyPension" value="1000000">
     </div>
 
+    <div class="section-label">④ 은퇴 후 지출 & 상속 목표</div>
+    <div style="font-size:12px;color:#666;margin:-6px 0 8px 0;line-height:1.5">📌 <b>오늘 기준 금액</b>으로 입력하세요. 미래 인플레이션은 자동으로 반영됩니다.<br>월 소비액 = 은퇴 후 매달 쓰고 싶은 돈 / 남길 금액 = 사망 시 자녀·가족에게 물려줄 돈 (0이면 다 쓰고 감)</div>
+    <div class="input-row">
+      <label>월 소비액 (원, 오늘 기준) <span class="stat-sub">(평균 290만)</span></label>
+      <input type="number" id="monthlySpending" value="2900000">
+    </div>
+    <div class="input-row">
+      <label>사망 시 남길 금액 (원, 오늘 기준) <span class="stat-sub">(0=다 쓰고 감)</span></label>
+      <input type="number" id="legacy" value="0">
+    </div>
+
     <div class="section-label">⑤ 변동률 (연 %)</div>
+    <div style="font-size:12px;color:#666;margin:-6px 0 8px 0;line-height:1.5">📌 매년 자산이 얼마나 늘고 물가가 얼마나 오를지. 보수적으로 잡으세요 (수익률 5%, 물가 3.5% 권장).</div>
     <div class="input-row">
       <label>자산 투자수익률 (%)</label>
       <input type="number" id="returnRate" value="5" step="0.1">
@@ -284,9 +299,10 @@
 
 <div id="capture-area">
 <div class="hero">
-  <div class="hero-label">은퇴 시점 (<span id="heroRetireAge">63</span>세)에 필요한 자산</div>
+  <div class="hero-label">은퇴 시점 (<span id="heroRetireAge">63</span>세)에 필요한 자산 <span style="background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:10px;font-size:11px;margin-left:6px">명목값</span></div>
   <div class="hero-value" id="targetAmount">-</div>
   <div class="hero-sub" id="targetSub"></div>
+  <div style="margin-top:6px;font-size:13px;opacity:0.9">≈ 오늘 기준 <b id="targetAmountReal">-</b> (현재가치 환산)</div>
   <div id="verdict"></div>
 </div>
 
@@ -522,6 +538,9 @@ function calculate() {
   // === 4. UI ===
   document.getElementById('targetAmount').textContent = fmtShort(requiredAssets) + ' 원';
   document.getElementById('targetSub').textContent = `정확히: ${fmt(requiredAssets)} 원 (= 월 ${fmt(monthlySpending)}원 쓰고, 월 ${fmt(monthlyPension)}원 연금받고, 사망 시 ${fmt(legacy)}원 남기기)`;
+  // 현재가치 환산: 은퇴 시점 명목 ÷ (1+물가)^은퇴까지년수
+  const requiredAssetsReal = requiredAssets / Math.pow(1 + inflationRate, yearsToRetire);
+  document.getElementById('targetAmountReal').textContent = fmtShort(requiredAssetsReal) + ' 원';
 
   document.getElementById('projRetireAssets').textContent = fmt(projRetireAssets) + ' 원';
   document.getElementById('gap').textContent = (gap >= 0 ? '−' : '+') + fmt(Math.abs(gap)) + ' 원';
