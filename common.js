@@ -29,25 +29,26 @@
     border-bottom: 1px solid #fde68a;
     padding: 7px 16px;
     font-size: 12.5px; font-weight: 500;
-    display: flex; align-items: center; justify-content: center; gap: 10px;
+    text-align: center;
     box-shadow: 0 1px 4px rgba(0,0,0,0.05);
   }
-  #sf-notice .sf-notice-text { flex: 1; text-align: center; line-height: 1.4; }
+  #sf-notice .sf-notice-text { line-height: 1.5; }
   #sf-notice .sf-notice-text b { color: #b45309; }
   #sf-notice .sf-notice-close {
-    background: rgba(0,0,0,0.08); border: none; color: #92400e;
-    width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
-    font-size: 14px; line-height: 1; display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; transition: background 0.15s;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.12); border: none; color: #92400e;
+    width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
+    font-size: 11px; line-height: 1; padding: 0; vertical-align: middle;
+    margin-left: 8px; transition: background 0.15s;
   }
-  #sf-notice .sf-notice-close:hover { background: rgba(0,0,0,0.18); }
+  #sf-notice .sf-notice-close:hover { background: rgba(0,0,0,0.22); }
   body.sf-dark #sf-notice {
     background: #1a2c42; color: #fcd34d;
     border-bottom-color: #1e3a5f;
   }
   body.sf-dark #sf-notice .sf-notice-text b { color: #fbbf24; }
-  body.sf-dark #sf-notice .sf-notice-close { background: rgba(255,255,255,0.1); color: #fcd34d; }
-  body.sf-dark #sf-notice .sf-notice-close:hover { background: rgba(255,255,255,0.18); }
+  body.sf-dark #sf-notice .sf-notice-close { background: rgba(255,255,255,0.15); color: #fcd34d; }
+  body.sf-dark #sf-notice .sf-notice-close:hover { background: rgba(255,255,255,0.25); }
   @media (max-width: 600px) {
     #sf-notice { font-size: 11.5px; padding: 6px 12px; }
   }
@@ -202,8 +203,7 @@
     var notice = document.createElement('div');
     notice.id = 'sf-notice';
     notice.innerHTML =
-      '<div class="sf-notice-text">ℹ️ <b>모든 계산기는 입력 기록이 저장되지 않습니다.</b> 새로고침하면 사라져요. 민감 정보 안심하고 입력하세요.</div>' +
-      '<button class="sf-notice-close" id="sf-notice-close" title="이 세션 동안 숨기기">✕</button>';
+      '<div class="sf-notice-text">ℹ️ <b>모든 계산기는 입력 기록이 서버에 저장되지 않습니다.</b> PC에 PDF·JSON으로 직접 저장하세요. 민감 정보 안심하고 입력하세요. <button class="sf-notice-close" id="sf-notice-close" title="이 세션 동안 숨기기">✕</button></div>';
     document.body.insertBefore(notice, document.body.firstChild.nextSibling);
     document.body.classList.add('sf-has-notice');
 
