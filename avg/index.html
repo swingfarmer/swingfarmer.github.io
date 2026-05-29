@@ -64,8 +64,19 @@ input:focus{outline:2px solid #1F4E78;background:#FFFACD}
 </head>
 <body>
 
+<a href="/" class="back-link">← 메인으로</a>
+
 <h1>📊 물타기·불타기 평단 계산기</h1>
-<p class="desc">추가 매수 후 평균 단가 계산, 목표 평단까지 필요한 수량 역산, 본전 회복에 필요한 상승률까지. 통화 구분 없음 — 원·달러 등 같은 단위로 입력하세요.</p>
+<p class="desc">추가 매수 후 평균 단가 계산, 목표 평단까지 필요한 수량 역산, 본전 회복에 필요한 상승률까지. 통화를 선택하면 단위가 맞춰집니다.</p>
+
+<div class="panel" style="padding:14px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+  <label style="font-size:13px;font-weight:600;color:#333;margin:0">💱 통화 선택</label>
+  <select id="currency" style="padding:8px 14px;font-size:14px;border:1px solid #ccc;border-radius:6px;background:#FFF2CC;font-weight:600;color:#1F4E78;cursor:pointer">
+    <option value="KRW" selected>원화 ₩ (한국주식)</option>
+    <option value="USD">달러 $ (해외주식)</option>
+  </select>
+  <span style="font-size:12px;color:#888" id="currencyHint">정수 단위 (예: 8,000원)</span>
+</div>
 
 <div class="warn-box">
   <div class="warn-title">⚠️ 물타기 전에 꼭 읽으세요</div>
@@ -270,8 +281,37 @@ input:focus{outline:2px solid #1F4E78;background:#FFFACD}
 </div>
 
 <script>
-function fmt(n){ return Math.round(n).toLocaleString('ko-KR'); }
-function fmt2(n){ return n.toLocaleString('ko-KR', {maximumFractionDigits:2}); }
+// === 통화 설정 ===
+var CUR = { code:'KRW', symbol:'원', isUSD:false };
+function setCurrency(code){
+  if (code === 'USD') CUR = { code:'USD', symbol:'$', isUSD:true };
+  else CUR = { code:'KRW', symbol:'원', isUSD:false };
+}
+// 금액 포맷 (통화 반영)
+function money(n){
+  if (CUR.isUSD) return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  return Math.round(n).toLocaleString('ko-KR') + '원';
+}
+// 단가 포맷 (소수점 더 정밀)
+function price(n){
+  if (CUR.isUSD) return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:4});
+  return n.toLocaleString('ko-KR', {maximumFractionDigits:2}) + '원';
+}
+// 수량 포맷
+function qtyFmt(n){
+  if (CUR.isUSD) return n.toLocaleString('en-US', {maximumFractionDigits:4}) + '주';
+  return Math.round(n).toLocaleString('ko-KR') + '주';
+}
+// 구버전 호환
+function fmt(n){ return CUR.isUSD ? n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : Math.round(n).toLocaleString('ko-KR'); }
+function fmt2(n){ return CUR.isUSD ? n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4}) : n.toLocaleString('ko-KR', {maximumFractionDigits:2}); }
+
+// 통화 변경 이벤트
+document.getElementById('currency').addEventListener('change', function(){
+  setCurrency(this.value);
+  document.getElementById('currencyHint').textContent = CUR.isUSD ? '소수점 가능 (예: $8.53, 0.5주)' : '정수 단위 (예: 8,000원)';
+  calcAvg(); calcTarget(); calcBreakeven();
+});
 
 // === 탭 전환 ===
 document.querySelectorAll('.tab').forEach(function(t){
@@ -315,29 +355,29 @@ function calcAvg(){
 
   var newAvg = totalQty > 0 ? totalCost / totalQty : 0;
 
-  document.getElementById('newAvg').textContent = fmt2(newAvg) + ' 원';
-  document.getElementById('totalQty').textContent = fmt(totalQty) + ' 주';
-  document.getElementById('totalCost').textContent = fmt(totalCost) + ' 원';
-  document.getElementById('oldAvgShow').textContent = fmt2(avgPrice) + ' 원';
-  document.getElementById('newAvgShow').textContent = fmt2(newAvg) + ' 원';
+  document.getElementById('newAvg').textContent = price(newAvg);
+  document.getElementById('totalQty').textContent = qtyFmt(totalQty);
+  document.getElementById('totalCost').textContent = money(totalCost);
+  document.getElementById('oldAvgShow').textContent = price(avgPrice);
+  document.getElementById('newAvgShow').textContent = price(newAvg);
 
   var avgDiff = newAvg - avgPrice;
   var avgDiffPct = avgPrice > 0 ? (avgDiff/avgPrice*100) : 0;
   var changeEl = document.getElementById('avgChange');
-  if (avgDiff < 0) changeEl.innerHTML = '<span style="color:#059669">▼ ' + fmt2(Math.abs(avgDiff)) + '원 (' + avgDiffPct.toFixed(2) + '%) 물타기</span>';
-  else if (avgDiff > 0) changeEl.innerHTML = '<span style="color:#dc2626">▲ ' + fmt2(avgDiff) + '원 (+' + avgDiffPct.toFixed(2) + '%) 불타기</span>';
+  if (avgDiff < 0) changeEl.innerHTML = '<span style="color:#059669">▼ ' + price(Math.abs(avgDiff)) + ' (' + avgDiffPct.toFixed(2) + '%) 물타기</span>';
+  else if (avgDiff > 0) changeEl.innerHTML = '<span style="color:#dc2626">▲ ' + price(avgDiff) + ' (+' + avgDiffPct.toFixed(2) + '%) 불타기</span>';
   else changeEl.textContent = '변동 없음';
 
   document.getElementById('newAvgSub').textContent =
-    '총 ' + fmt(totalQty) + '주 · 총 투자 ' + fmt(totalCost) + '원';
+    '총 ' + qtyFmt(totalQty) + ' · 총 투자 ' + money(totalCost);
 
   // 손익 (현재가 입력 시)
   if (curPrice > 0 && totalQty > 0) {
     var evalAmount = curPrice * totalQty;
     var pnl = evalAmount - totalCost;
     var pnlPct = totalCost > 0 ? (pnl/totalCost*100) : 0;
-    document.getElementById('evalAmount').textContent = fmt(evalAmount) + ' 원';
-    document.getElementById('pnl').textContent = (pnl>=0?'+':'−') + fmt(Math.abs(pnl)) + ' 원';
+    document.getElementById('evalAmount').textContent = money(evalAmount);
+    document.getElementById('pnl').textContent = (pnl>=0?'+':'−') + money(Math.abs(pnl));
     document.getElementById('pnlPct').textContent = (pnlPct>=0?'+':'') + pnlPct.toFixed(2) + '%';
     var pnlStat = document.getElementById('statPnl');
     pnlStat.className = 'stat ' + (pnl>=0 ? 'green' : 'red');
@@ -372,21 +412,22 @@ function calcTarget(){
     document.getElementById('t_cost').textContent = '-';
     document.getElementById('t_finalQty').textContent = '-';
     document.getElementById('t_finalAvg').textContent = '-';
-    warnEl.innerHTML = '<div style="padding:12px 14px;background:#fef2f2;border-radius:6px;font-size:12.5px;color:#7f1d1d;line-height:1.6">⚠️ <b>목표 평단 도달 불가능.</b> 매수가(' + fmt(buyPrice) + ')가 목표 평단(' + fmt(targetAvg) + ')보다 낮아야 물타기로 목표 도달 가능. 예: 평단 10,000을 9,000으로 낮추려면 9,000보다 싼 가격에 사야 함.</div>';
+    warnEl.innerHTML = '<div style="padding:12px 14px;background:#fef2f2;border-radius:6px;font-size:12.5px;color:#7f1d1d;line-height:1.6">⚠️ <b>목표 평단 도달 불가능.</b> 매수가(' + price(buyPrice) + ')가 목표 평단(' + price(targetAvg) + ')보다 낮아야 물타기로 목표 도달 가능. 예: 평단 10,000을 9,000으로 낮추려면 9,000보다 싸게 사야 함.</div>';
     return;
   }
 
-  var needQtyR = Math.ceil(needQty);
+  // USD는 소수점 수량 허용, KRW는 정수(올림)
+  var needQtyR = CUR.isUSD ? needQty : Math.ceil(needQty);
   var cost = needQtyR * buyPrice;
   var finalQty = avgQty + needQtyR;
   var finalAvg = (avgPrice*avgQty + buyPrice*needQtyR) / finalQty;
 
-  document.getElementById('t_needQty').textContent = fmt(needQtyR) + ' 주';
-  document.getElementById('t_needSub').textContent = '@ ' + fmt(buyPrice) + '원 × ' + fmt(needQtyR) + '주 = ' + fmt(cost) + '원 투입';
-  document.getElementById('t_qty').textContent = fmt(needQtyR) + ' 주';
-  document.getElementById('t_cost').textContent = fmt(cost) + ' 원';
-  document.getElementById('t_finalQty').textContent = fmt(finalQty) + ' 주';
-  document.getElementById('t_finalAvg').textContent = fmt2(finalAvg) + ' 원';
+  document.getElementById('t_needQty').textContent = qtyFmt(needQtyR);
+  document.getElementById('t_needSub').textContent = '@ ' + price(buyPrice) + ' × ' + qtyFmt(needQtyR) + ' = ' + money(cost) + ' 투입';
+  document.getElementById('t_qty').textContent = qtyFmt(needQtyR);
+  document.getElementById('t_cost').textContent = money(cost);
+  document.getElementById('t_finalQty').textContent = qtyFmt(finalQty);
+  document.getElementById('t_finalAvg').textContent = price(finalAvg);
   warnEl.innerHTML = '';
 }
 
@@ -403,10 +444,10 @@ function calcBreakeven(){
   var risePct = (avgPrice - curPrice) / curPrice * 100;
 
   document.getElementById('b_needRise').textContent = (risePct>=0?'+':'') + risePct.toFixed(2) + '%';
-  document.getElementById('b_needSub').textContent = '현재 ' + fmt(curPrice) + '원 → 평단 ' + fmt(avgPrice) + '원';
+  document.getElementById('b_needSub').textContent = '현재 ' + price(curPrice) + ' → 평단 ' + price(avgPrice);
   document.getElementById('b_curPnl').textContent = (curPnlPct>=0?'+':'') + curPnlPct.toFixed(2) + '%';
   document.getElementById('b_rise').textContent = (risePct>=0?'+':'') + risePct.toFixed(2) + '%';
-  document.getElementById('b_targetPrice').textContent = fmt(avgPrice) + ' 원';
+  document.getElementById('b_targetPrice').textContent = price(avgPrice);
 }
 
 // 이벤트 바인딩
