@@ -493,7 +493,8 @@ document.querySelectorAll('input').forEach(el => {
 calculate();
 </script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 // === 저장/불러오기 (경제자유) ===
 (function(){
@@ -553,18 +554,54 @@ calculate();
     e.target.value = ''; // 같은 파일 재선택 가능하게
   });
 
-  // PDF 저장
+  // PDF 저장 - 입력값~시뮬레이션 표 전체를 1장에 (콘텐츠 크기로 페이지 맞춤)
   document.getElementById('btnSavePdf').addEventListener('click', function(){
-    var el = document.getElementById('capture-area');
-    if (!el) { alert('결과 영역을 찾을 수 없습니다.'); return; }
-    var opt = {
-      margin: 10,
-      filename: PAGE_NAME + '_결과_' + getDateStr() + '.pdf',
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, backgroundColor: '#ffffff' },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-    html2pdf().set(opt).from(el).save();
+    var allPanels = document.querySelectorAll('.panel');
+    if (!allPanels.length) { alert('캡처 영역 없음'); return; }
+
+    var wrapper = document.createElement('div');
+    wrapper.id = 'sf-pdf-wrap';
+    wrapper.style.cssText = 'background:#fff;padding:24px;width:800px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic",sans-serif;color:#1a1a1a';
+
+    var title = document.createElement('h1');
+    title.textContent = '경제적자유 계산 결과';
+    title.style.cssText = 'color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin:0 0 4px 0;font-size:22px';
+    wrapper.appendChild(title);
+    var dateP = document.createElement('p');
+    dateP.textContent = '저장일: ' + new Date().toLocaleDateString('ko-KR');
+    dateP.style.cssText = 'color:#666;font-size:12px;margin:0 0 16px 0';
+    wrapper.appendChild(dateP);
+
+    allPanels.forEach(function(p){ wrapper.appendChild(p.cloneNode(true)); });
+
+    wrapper.style.position = 'fixed';
+    wrapper.style.left = '-99999px';
+    wrapper.style.top = '0';
+    document.body.appendChild(wrapper);
+
+    // 콘텐츠 실제 크기 측정 후, 그 비율로 PDF 페이지 생성 (단일 페이지)
+    setTimeout(function(){
+      html2canvas(wrapper, { scale: 1.5, backgroundColor: '#ffffff', logging: false, useCORS: true }).then(function(canvas){
+        var imgData = canvas.toDataURL('image/jpeg', 0.92);
+        var pxWidth = canvas.width;
+        var pxHeight = canvas.height;
+        // A4 폭 210mm 기준, 콘텐츠 비율 유지하여 1장 PDF 생성
+        var pdfWidth = 210; // A4 가로
+        var pdfHeight = (pxHeight * pdfWidth) / pxWidth; // 비율 유지
+        var pdf = new jspdf.jsPDF({
+          unit: 'mm',
+          format: [pdfWidth, pdfHeight],
+          orientation: pdfHeight > pdfWidth ? 'portrait' : 'landscape',
+          compress: true
+        });
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(PAGE_NAME + '_결과_' + getDateStr() + '.pdf');
+        wrapper.remove();
+      }).catch(function(err){
+        wrapper.remove();
+        alert('PDF 생성 실패: ' + err.message);
+      });
+    }, 100);
   });
 })();
 </script>
