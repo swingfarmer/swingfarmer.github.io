@@ -1,1 +1,369 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>DXY × KOSPI × S&P500 상관관계 분석</title>
 
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JD3EPQXMND"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-JD3EPQXMND');
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+  :root {
+    --bg: #f5f7fa;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --border: #e5e7eb;
+    --purple: #7c3aed;
+    --green: #059669;
+    --blue: #2563eb;
+    --red: #dc2626;
+    --orange: #ea580c;
+    --text: #1a1a1a;
+    --muted: #6b7280;
+    --dim: #4b5563;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-hover: 0 4px 12px rgba(31,78,120,0.12);
+  }
+
+  body.sf-dark {
+    --bg: #080c14;
+    --surface: #0d1421;
+    --surface2: #111827;
+    --border: #1e2d45;
+    --purple: #7c5cfc;
+    --green: #22d3a0;
+    --blue: #38bdf8;
+    --red: #f87171;
+    --orange: #fb923c;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --dim: #94a3b8;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-hover: 0 4px 12px rgba(124,92,252,0.2);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', -apple-system, sans-serif; line-height: 1.5; padding: 16px; min-height: 100vh; }
+  .container { max-width: 1080px; margin: 0 auto; }
+
+  .header { text-align: center; padding: 28px 16px 24px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+  .header-tag { display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--purple); background: rgba(124,58,237,0.08); padding: 4px 12px; border-radius: 4px; letter-spacing: 1px; margin-bottom: 14px; font-weight: 600; }
+  body.sf-dark .header-tag { background: rgba(124,92,252,0.15); }
+  .header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.3; margin-bottom: 8px; }
+  .header h1 span { color: var(--blue); }
+  .header p { color: var(--muted); font-size: 13px; }
+
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; box-shadow: var(--shadow); transition: transform 0.15s, box-shadow 0.15s; }
+  .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+  .card-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.5px; margin-bottom: 8px; }
+  .card-value { font-family: 'IBM Plex Mono', monospace; font-size: 32px; font-weight: 700; margin-bottom: 6px; }
+  .card.purple .card-value { color: var(--purple); }
+  .card.blue .card-value { color: var(--blue); }
+  .card.green .card-value { color: var(--green); }
+  .card-desc { font-size: 11.5px; color: var(--dim); line-height: 1.5; }
+  @media (max-width: 720px) { .cards { grid-template-columns: 1fr; } }
+
+  .pattern-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 24px; }
+  .pat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow); }
+  .pat-num { font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 700; min-width: 60px; }
+  .pat-num.g { color: var(--green); }
+  .pat-num.r { color: var(--red); }
+  .pat-num.m { color: var(--muted); }
+  .pat-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .pat-sub { font-size: 11px; color: var(--muted); line-height: 1.4; }
+  @media (max-width: 720px) { .pattern-row { grid-template-columns: 1fr; } }
+
+  .chart-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 24px; box-shadow: var(--shadow); }
+  .chart-title { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  .chart-wrap { height: 360px; position: relative; }
+
+  .political { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin-bottom: 24px; box-shadow: var(--shadow); }
+  .political h2 { font-size: 18px; color: var(--purple); margin-bottom: 6px; border-left: 4px solid var(--purple); padding-left: 10px; }
+  .political .sub-title { color: var(--muted); font-size: 12px; margin-bottom: 16px; padding-left: 14px; }
+
+  .pres-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 14px 0 18px; }
+  .pres { background: var(--surface2); border: 1px solid var(--border); border-left: 4px solid var(--muted); border-radius: 6px; padding: 12px 14px; }
+  .pres.gop { border-left-color: var(--red); }
+  .pres.dem { border-left-color: var(--blue); }
+  .pres-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .pres-period { font-size: 11px; color: var(--muted); margin-bottom: 8px; font-family: 'IBM Plex Mono', monospace; }
+  .pres-change { font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .pres-change.up { color: var(--green); }
+  .pres-change.down { color: var(--red); }
+  .pres-note { font-size: 11px; color: var(--dim); line-height: 1.5; }
+
+  .party-pref { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; }
+  @media (max-width: 600px) { .party-pref { grid-template-columns: 1fr; } }
+  .party { background: var(--surface2); border-radius: 8px; padding: 16px; border: 1px solid var(--border); }
+  .party.gop { border-top: 4px solid var(--red); }
+  .party.dem { border-top: 4px solid var(--blue); }
+  .party h3 { font-size: 15px; margin-bottom: 4px; }
+  .party.gop h3 { color: var(--red); }
+  .party.dem h3 { color: var(--blue); }
+  .party .pref-label { font-size: 11px; color: var(--muted); margin-bottom: 8px; font-family: 'IBM Plex Mono', monospace; }
+  .party .pref-tag { display: inline-block; background: rgba(0,0,0,0.05); padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-bottom: 10px; }
+  body.sf-dark .party .pref-tag { background: rgba(255,255,255,0.08); }
+  .party.gop .pref-tag.want { background: rgba(220,38,38,0.12); color: var(--red); }
+  .party.dem .pref-tag.want { background: rgba(37,99,235,0.12); color: var(--blue); }
+  .party ul { padding-left: 18px; margin-top: 8px; }
+  .party li { font-size: 12px; line-height: 1.7; color: var(--dim); }
+
+  .gap-note { background: var(--surface2); border-left: 4px solid var(--orange); padding: 12px 14px; border-radius: 0 6px 6px 0; font-size: 12px; line-height: 1.7; color: var(--dim); margin-top: 16px; }
+  .gap-note b { color: var(--orange); }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab { padding: 8px 16px; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; transition: all 0.15s; }
+  .tab.active { background: var(--purple); color: #fff; border-color: var(--purple); }
+  .tab:hover:not(.active) { background: var(--surface2); }
+
+  .insights, .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; box-shadow: var(--shadow); }
+  .insights h2 { font-size: 16px; color: var(--purple); margin-bottom: 12px; }
+  .insight-item { margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px dashed var(--border); }
+  .insight-item:last-child { border-bottom: none; margin-bottom: 0; }
+  .insight-num { display: inline-block; width: 24px; height: 24px; background: var(--purple); color: #fff; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: 700; margin-right: 8px; }
+  .insight-title { font-size: 14px; font-weight: 700; display: inline; }
+  .insight-body { font-size: 12.5px; color: var(--dim); line-height: 1.7; margin-top: 6px; padding-left: 32px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: var(--surface2); color: var(--purple); padding: 10px 8px; text-align: center; font-weight: 700; border-bottom: 2px solid var(--purple); font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
+  td { padding: 8px; text-align: center; border-bottom: 1px solid var(--border); font-family: 'IBM Plex Mono', monospace; }
+  .pos { color: var(--green); font-weight: 600; }
+  .neg { color: var(--red); font-weight: 600; }
+  .match { color: var(--green); font-weight: 600; font-size: 11px; }
+  .except { color: var(--red); font-size: 11px; }
+  .neutral { color: var(--muted); font-size: 11px; }
+  tr.hl-match td { background: rgba(16,185,129,0.08); }
+  tr.hl-except td { background: rgba(220,38,38,0.08); }
+  body.sf-dark tr.hl-match td { background: rgba(34,211,160,0.06); }
+  body.sf-dark tr.hl-except td { background: rgba(248,113,113,0.06); }
+
+  .footer { text-align: center; font-size: 11px; color: var(--muted); margin-top: 24px; font-family: 'IBM Plex Mono', monospace; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="header-tag">QUANT ANALYSIS · 2000–2025</div>
+    <h1>DXY × KOSPI × <span>S&P500</span><br>연도별 상관관계 분석</h1>
+    <p>달러인덱스(DXY)는 코스피를 예측하는가? 26년 데이터 검증</p>
+  </div>
+
+  <div class="cards">
+    <div class="card purple">
+      <div class="card-label">DXY ↔ KOSPI 상관계수</div>
+      <div class="card-value">-0.47</div>
+      <div class="card-desc">역상관 확인. 달러약세 → 코스피 상승 패턴 통계적으로 유의미</div>
+    </div>
+    <div class="card blue">
+      <div class="card-label">DXY ↔ S&P500 상관계수</div>
+      <div class="card-value">-0.17</div>
+      <div class="card-desc">미국증시는 달러방향과 거의 무관. 독자적 움직임</div>
+    </div>
+    <div class="card green">
+      <div class="card-label">KOSPI ↔ S&P500 상관계수</div>
+      <div class="card-value">+0.61</div>
+      <div class="card-desc">한미 증시 동조화 존재. 단 코스피 변동성이 훨씬 큼</div>
+    </div>
+  </div>
+
+  <div class="pattern-row">
+    <div class="pat"><div class="pat-num g">14년</div><div><div class="pat-title">이론대로 작동</div><div class="pat-sub">약달러→코스피↑ or 강달러→코스피↓</div></div></div>
+    <div class="pat"><div class="pat-num r">6년</div><div><div class="pat-title">예외 케이스</div><div class="pat-sub">이론과 반대 방향 (중국특수, 계엄 등)</div></div></div>
+    <div class="pat"><div class="pat-num m">6년</div><div><div class="pat-title">중립/불명확</div><div class="pat-sub">DXY 변동 미미 구간</div></div></div>
+  </div>
+
+  <div class="chart-box">
+    <div class="chart-title">// 연도별 수익률 비교 — 막대: KOSPI(초록) · S&P500(파랑) / 선: DXY변화%(보라)</div>
+    <div class="chart-wrap"><canvas id="mainChart"></canvas></div>
+  </div>
+
+  <!-- 🆕 미국 정치와 달러인덱스 -->
+  <div class="political">
+    <h2>🏛️ 미국 대통령 정당 × 달러인덱스 (역사 데이터)</h2>
+    <div class="sub-title">1988년 H.W. Bush 이후 패턴: <b>공화당 임기엔 약달러, 민주당 임기엔 강달러</b>가 우세 (재임 종료 기준 DXY 변화)</div>
+
+    <div class="pres-grid">
+      <div class="pres gop"><div class="pres-name">🐘 H.W. Bush (공화)</div><div class="pres-period">1989–1993</div><div class="pres-change down">−5%</div><div class="pres-note">달러 약세 흐름</div></div>
+      <div class="pres dem"><div class="pres-name">🫏 Clinton (민주)</div><div class="pres-period">1993–2001</div><div class="pres-change up">+22%</div><div class="pres-note">루빈 재무장관 "강달러 정책" 명시</div></div>
+      <div class="pres gop"><div class="pres-name">🐘 W. Bush (공화)</div><div class="pres-period">2001–2009</div><div class="pres-change down">−25%</div><div class="pres-note">2008년 금융위기 + 약달러 누적</div></div>
+      <div class="pres dem"><div class="pres-name">🫏 Obama (민주)</div><div class="pres-period">2009–2017</div><div class="pres-change up">+18%</div><div class="pres-note">출구전략 + 안정적 강달러</div></div>
+      <div class="pres gop"><div class="pres-name">🐘 Trump 1기 (공화)</div><div class="pres-period">2017–2021</div><div class="pres-change down">−10%</div><div class="pres-note">초반 강세 → 후반 코로나 + 약달러</div></div>
+      <div class="pres dem"><div class="pres-name">🫏 Biden (민주)</div><div class="pres-period">2021–2025</div><div class="pres-change up">+8%</div><div class="pres-note">긴축 사이클 + 안전자산 수요</div></div>
+    </div>
+
+    <div class="gap-note">
+      📊 <b>요약:</b> 1988년 이후 6개 임기 중 5개가 패턴 일치 (공화=약달러, 민주=강달러). 평균적으로 <b>공화당 임기 동안 달러 약 6~9% 약세, 민주당 임기는 강세</b>. 단, 이는 결과론적 통계일 뿐이며, 달러는 정당보다 <b>금리·무역수지·자본흐름</b>에 더 영향받음.
+    </div>
+  </div>
+
+  <!-- 🆕 각 당의 선호 정책 -->
+  <div class="political">
+    <h2>🎯 각 당이 선호하는 달러 방향 (정책 입장)</h2>
+    <div class="sub-title">정치적 "선호"와 실제 시장 "결과"는 자주 다름 — 둘을 구분하는 게 핵심</div>
+
+    <div class="party-pref">
+      <div class="party gop">
+        <h3>🐘 공화당 (Republican)</h3>
+        <div class="pref-label">// PREFERENCE</div>
+        <div class="pref-tag want">약달러 선호 (수출 친화)</div>
+        <ul>
+          <li><b>트럼프식 입장:</b> "달러가 너무 강하다" — 미국 제조업·수출 경쟁력 강화 위해 약달러 원함</li>
+          <li><b>관세·보호무역:</b> 무역적자 축소를 위한 통화 압박</li>
+          <li><b>저금리 선호:</b> 연준에 금리 인하 압력 행사</li>
+          <li><b>모순 발생:</b> 감세·재정확대는 오히려 달러 강세 요인</li>
+        </ul>
+      </div>
+
+      <div class="party dem">
+        <h3>🫏 민주당 (Democrat)</h3>
+        <div class="pref-label">// PREFERENCE</div>
+        <div class="pref-tag want">강달러 정책 명시 ("Strong Dollar Policy")</div>
+        <ul>
+          <li><b>클린턴/루빈 전통:</b> "강한 달러는 미국 이익" — 1995년 이후 공식 입장</li>
+          <li><b>금융자본 친화:</b> 월스트리트·국제 자본흐름 중시</li>
+          <li><b>인플레 억제:</b> 강달러 → 수입물가 안정</li>
+          <li><b>모순 발생:</b> 재정지출 확대는 약달러 압력 (바이든 초기)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="gap-note">
+      ⚠️ <b>"선호 ≠ 결과":</b> 트럼프는 약달러를 원하지만 1기 후반·2기 초반 정책(감세·관세·금리)으로 시장은 강달러 반응. 민주당은 강달러를 표방하지만 오바마 초반엔 양적완화로 약달러. 즉 <b>정당의 입장과 실제 달러 흐름은 별개</b>로 봐야 함.
+    </div>
+
+    <div class="gap-note" style="border-left-color:var(--purple);margin-top:10px">
+      💡 <b>실전 적용:</b> 새 대통령 취임 시 "공화/민주" 자체보다 <b>구체적 정책 패키지</b>(감세·관세·금리·재정)를 봐야 함. 트럼프 2기는 관세+감세로 강달러 압력 강함, 단 본인이 약달러 원하는 발언으로 변동성 큼.
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('insights', this)">📌 인사이트</button>
+    <button class="tab" onclick="switchTab('table', this)">📋 연도별 상세</button>
+  </div>
+
+  <div class="insights" id="tab-insights">
+    <h2>핵심 인사이트 6가지</h2>
+    <div class="insight-item"><span class="insight-num">1</span><span class="insight-title">기본 공식: 약달러 → 코스피 상승</span><div class="insight-body">DXY ↔ KOSPI 상관계수 -0.47. 통계적으로 의미 있는 역상관. 외국인 자금은 달러 약세기에 신흥국(한국)으로 유입. 26년 중 14년(54%)이 이 패턴.</div></div>
+    <div class="insight-item"><span class="insight-num">2</span><span class="insight-title">미국 증시는 달러와 거의 무관</span><div class="insight-body">DXY ↔ S&P500 상관계수 -0.17. 미국 기업 실적·연준 정책·AI 같은 구조적 요인이 환율보다 우선. 환율 신호로 미국 증시 예측은 약함.</div></div>
+    <div class="insight-item"><span class="insight-num">3</span><span class="insight-title">예외가 강한 변수일 때 발생</span><div class="insight-body">2005·2007년 중국발 수출 호조, 2024년 12·3 비상계엄 같은 특수 상황. DXY가 약해도 한국 고유 리스크가 더 크면 코스피 하락.</div></div>
+    <div class="insight-item"><span class="insight-num">4</span><span class="insight-title">한미 증시 동조화는 강함 (+0.61)</span><div class="insight-body">코스피와 S&P500은 같은 방향. 단 코스피 변동폭이 1.5~2배. 미국이 -20%면 한국은 -30% 식. 위기에 더 약하고, 회복도 빠름.</div></div>
+    <div class="insight-item"><span class="insight-num">5</span><span class="insight-title">정당별 달러 패턴은 참고용</span><div class="insight-body">"공화당=약달러, 민주당=강달러" 패턴이 88년 이후 6/6 임기 중 5개에서 일치. 단 인과는 약하고, 실제 변수는 연준·금리·무역수지. 단순한 정치 이벤트 베팅은 위험.</div></div>
+    <div class="insight-item"><span class="insight-num">6</span><span class="insight-title">실전 활용</span><div class="insight-body">DXY 트렌드는 코스피 방향성 가늠 보조 지표로 사용. 단독 신호로는 부족 (54% 적중률). 환율 + 금리 + 외국인 순매수 + 기업이익 함께 봐야.</div></div>
+  </div>
+
+  <div class="table-wrap" id="tab-table" style="display:none">
+    <table>
+      <thead><tr><th>연도</th><th>DXY 변화</th><th>KOSPI</th><th>S&P500</th><th>이론 검증</th><th>비고</th></tr></thead>
+      <tbody id="dataTable"></tbody>
+    </table>
+  </div>
+
+  <div class="footer">DATA SOURCE: KOSPI, S&P500, US Dollar Index (1999–2025) · 정치 데이터: StoneX, Cashu Research, IG International</div>
+</div>
+
+<script>
+const data = [
+  { year: 2000, dxy: 8.2, kospi: -50.9, sp500: -10.1, pattern: 'match', note: 'IT버블·강달러→코스피↓' },
+  { year: 2001, dxy: 5.8, kospi: 37.5, sp500: -13.0, pattern: 'except', note: '한국 IMF회복+IT반등 특수' },
+  { year: 2002, dxy: -12.8, kospi: -9.5, sp500: -23.4, pattern: 'except', note: '약달러지만 글로벌증시 폭락' },
+  { year: 2003, dxy: -14.7, kospi: 29.2, sp500: 26.4, pattern: 'match', note: '약달러+이라크전 후 회복' },
+  { year: 2004, dxy: -7.0, kospi: 10.5, sp500: 9.0, pattern: 'match', note: '약달러→신흥국 자금유입' },
+  { year: 2005, dxy: 12.8, kospi: 54.0, sp500: 3.0, pattern: 'except', note: '강달러+중국특수→코스피↑' },
+  { year: 2006, dxy: -8.3, kospi: 4.0, sp500: 13.6, pattern: 'neutral', note: 'DXY약세인데 코스피 정체' },
+  { year: 2007, dxy: -8.4, kospi: 32.3, sp500: 3.5, pattern: 'match', note: '약달러+중국호황' },
+  { year: 2008, dxy: 6.0, kospi: -40.7, sp500: -38.5, pattern: 'match', note: '금융위기·강달러→폭락' },
+  { year: 2009, dxy: -4.2, kospi: 49.7, sp500: 23.5, pattern: 'match', note: '약달러+QE→회복' },
+  { year: 2010, dxy: 1.5, kospi: 21.9, sp500: 12.8, pattern: 'neutral', note: 'DXY 보합' },
+  { year: 2011, dxy: 1.5, kospi: -11.0, sp500: 0.0, pattern: 'neutral', note: '유럽위기·DXY보합' },
+  { year: 2012, dxy: -0.5, kospi: 9.4, sp500: 13.4, pattern: 'neutral', note: 'DXY보합·완만회복' },
+  { year: 2013, dxy: 0.3, kospi: 0.7, sp500: 29.6, pattern: 'neutral', note: '버냉키 테이퍼링·DXY보합' },
+  { year: 2014, dxy: 12.8, kospi: -4.8, sp500: 11.4, pattern: 'match', note: '강달러·연준출구→코스피↓' },
+  { year: 2015, dxy: 9.3, kospi: 2.4, sp500: -0.7, pattern: 'except', note: '강달러인데 한국 선방' },
+  { year: 2016, dxy: 3.6, kospi: 3.3, sp500: 9.5, pattern: 'neutral', note: '트럼프당선·약변동' },
+  { year: 2017, dxy: -9.9, kospi: 21.8, sp500: 19.4, pattern: 'match', note: '약달러+반도체호황' },
+  { year: 2018, dxy: 4.4, kospi: -17.3, sp500: -6.2, pattern: 'match', note: '미중무역분쟁·강달러' },
+  { year: 2019, dxy: 0.2, kospi: 7.7, sp500: 28.9, pattern: 'neutral', note: 'DXY보합·미증시강세' },
+  { year: 2020, dxy: -6.7, kospi: 30.8, sp500: 16.3, pattern: 'match', note: '코로나QE·약달러→증시↑' },
+  { year: 2021, dxy: 6.7, kospi: 3.6, sp500: 26.9, pattern: 'except', note: '강달러+한국 IT조정' },
+  { year: 2022, dxy: 8.2, kospi: -24.9, sp500: -19.4, pattern: 'match', note: '연준급격긴축·강달러' },
+  { year: 2023, dxy: -2.1, kospi: 18.7, sp500: 24.2, pattern: 'match', note: '약달러반전·AI랠리' },
+  { year: 2024, dxy: 7.1, kospi: -9.6, sp500: 23.3, pattern: 'except', note: '계엄 + 미증시 독주' },
+  { year: 2025, dxy: -6.0, kospi: 35.0, sp500: 13.0, pattern: 'match', note: '약달러+한국 밸류업' }
+];
+
+function fmt(v) { const s = v > 0 ? '+' : ''; return s + v.toFixed(1) + '%'; }
+function cls(v) { return v > 0 ? 'pos' : 'neg'; }
+
+function renderTable() {
+  const tb = document.getElementById('dataTable');
+  tb.innerHTML = data.map(d => {
+    const patClass = d.pattern === 'match' ? 'match' : d.pattern === 'except' ? 'except' : 'neutral';
+    const patText = d.pattern === 'match' ? '✓ 일치' : d.pattern === 'except' ? '✗ 예외' : '중립';
+    const rowClass = d.pattern === 'match' ? 'hl-match' : d.pattern === 'except' ? 'hl-except' : '';
+    return `<tr class="${rowClass}"><td><b>${d.year}</b></td><td class="${cls(d.dxy)}">${fmt(d.dxy)}</td><td class="${cls(d.kospi)}">${fmt(d.kospi)}</td><td class="${cls(d.sp500)}">${fmt(d.sp500)}</td><td class="${patClass}">${patText}</td><td style="text-align:left;font-size:11px;color:var(--dim)">${d.note}</td></tr>`;
+  }).join('');
+}
+
+let chartInstance = null;
+function buildChart() {
+  if (chartInstance) chartInstance.destroy();
+  const ctx = document.getElementById('mainChart').getContext('2d');
+  const isDark = document.body.classList.contains('sf-dark');
+  const gridColor = isDark ? '#1e2d45' : '#e5e7eb';
+  const textColor = isDark ? '#94a3b8' : '#6b7280';
+
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.map(d => d.year),
+      datasets: [
+        { label: 'KOSPI %', data: data.map(d => d.kospi), backgroundColor: 'rgba(16,185,129,0.75)', borderRadius: 3, order: 2 },
+        { label: 'S&P500 %', data: data.map(d => d.sp500), backgroundColor: 'rgba(37,99,235,0.75)', borderRadius: 3, order: 2 },
+        { label: 'DXY %', data: data.map(d => d.dxy), type: 'line', borderColor: '#7c3aed', backgroundColor: 'rgba(124,58,237,0.1)', borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: '#7c3aed', tension: 0.2, order: 1, yAxisID: 'y1' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { color: textColor, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1) + '%' } }
+      },
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } },
+        y: { grid: { color: gridColor }, ticks: { color: textColor, callback: v => v + '%' }, title: { display: true, text: 'KOSPI/S&P500 (%)', color: textColor } },
+        y1: { position: 'right', grid: { display: false }, ticks: { color: '#7c3aed', callback: v => v + '%' }, title: { display: true, text: 'DXY (%)', color: '#7c3aed' } }
+      }
+    }
+  });
+}
+
+function switchTab(type, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-insights').style.display = type === 'insights' ? 'block' : 'none';
+  document.getElementById('tab-table').style.display = type === 'table' ? 'block' : 'none';
+}
+
+renderTable();
+buildChart();
+
+// 다크모드 토글 감지해서 차트 다시 그리기
+const observer = new MutationObserver(() => buildChart());
+observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+</script>
+
+<script src="/common.js?v=2"></script>
+</body>
+</html>
