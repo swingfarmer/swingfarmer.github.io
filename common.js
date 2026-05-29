@@ -20,6 +20,37 @@
   }
   /* 헤더 높이만큼 본문 밀기 */
   body { padding-top: 56px !important; }
+  body.sf-has-notice { padding-top: 90px !important; }
+
+  /* === 공지 띠 (헤더 바로 아래) === */
+  #sf-notice {
+    position: fixed; top: 56px; left: 0; right: 0; z-index: 99998;
+    background: #fef3c7; color: #92400e;
+    border-bottom: 1px solid #fde68a;
+    padding: 7px 16px;
+    font-size: 12.5px; font-weight: 500;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  #sf-notice .sf-notice-text { flex: 1; text-align: center; line-height: 1.4; }
+  #sf-notice .sf-notice-text b { color: #b45309; }
+  #sf-notice .sf-notice-close {
+    background: rgba(0,0,0,0.08); border: none; color: #92400e;
+    width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
+    font-size: 14px; line-height: 1; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: background 0.15s;
+  }
+  #sf-notice .sf-notice-close:hover { background: rgba(0,0,0,0.18); }
+  body.sf-dark #sf-notice {
+    background: #1a2c42; color: #fcd34d;
+    border-bottom-color: #1e3a5f;
+  }
+  body.sf-dark #sf-notice .sf-notice-text b { color: #fbbf24; }
+  body.sf-dark #sf-notice .sf-notice-close { background: rgba(255,255,255,0.1); color: #fcd34d; }
+  body.sf-dark #sf-notice .sf-notice-close:hover { background: rgba(255,255,255,0.18); }
+  @media (max-width: 600px) {
+    #sf-notice { font-size: 11.5px; padding: 6px 12px; }
+  }
 
   /* === 공통 헤더 === */
   #sf-header {
@@ -161,6 +192,28 @@
     document.body.insertBefore(header, document.body.firstChild);
   }
 
+  // ---------- 2-B. 공지 띠 생성 ----------
+  function buildNotice() {
+    // 세션 동안 이미 닫았는지 확인
+    try {
+      if (sessionStorage.getItem('sf-notice-closed') === '1') return;
+    } catch (e) {}
+
+    var notice = document.createElement('div');
+    notice.id = 'sf-notice';
+    notice.innerHTML =
+      '<div class="sf-notice-text">ℹ️ <b>모든 계산기는 입력 기록이 저장되지 않습니다.</b> 새로고침하면 사라져요. 민감 정보 안심하고 입력하세요.</div>' +
+      '<button class="sf-notice-close" id="sf-notice-close" title="이 세션 동안 숨기기">✕</button>';
+    document.body.insertBefore(notice, document.body.firstChild.nextSibling);
+    document.body.classList.add('sf-has-notice');
+
+    document.getElementById('sf-notice-close').addEventListener('click', function () {
+      notice.remove();
+      document.body.classList.remove('sf-has-notice');
+      try { sessionStorage.setItem('sf-notice-closed', '1'); } catch (e) {}
+    });
+  }
+
   // ---------- 3. 다크모드 ----------
   function applyDark(on) {
     if (on) {
@@ -203,6 +256,7 @@
   // ---------- 5. 초기화 + 이벤트 ----------
   function init() {
     buildHeader();
+    buildNotice();
 
     // 저장된 설정 불러오기
     var savedSize = '1';
