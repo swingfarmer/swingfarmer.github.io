@@ -91,11 +91,18 @@ summary .chev{color:#888;font-size:12px;font-weight:600}
   </div>
   <div class="ctrl">
     <div class="top">
-      <label><span class="dot oil"></span>유가 변동 <span class="unit">(기준 대비)</span></label>
-      <div class="valbox"><input type="number" id="oilNum" value="0" step="1"><span class="unit">$/bbl</span></div>
+      <label><span class="dot oil"></span>항공유 변동 <span class="unit">(기준 대비)</span></label>
+      <div class="valbox">
+        <input type="number" id="oilNum" value="0" step="1">
+        <select id="oilUnit" style="font-family:inherit;font-weight:700;font-size:12px;border:1px solid #ccc;border-radius:6px;padding:5px;background:#FFF2CC;color:#1F4E78;cursor:pointer">
+          <option value="bbl" selected>$/bbl</option>
+          <option value="gal">¢/gal</option>
+        </select>
+      </div>
     </div>
     <input type="range" id="oilRange" min="-30" max="30" value="0" step="1">
     <div class="scale"><span>-30</span><span>0</span><span>+30</span></div>
+    <div style="font-size:11px;color:#888;margin-top:6px" id="oilConv">≈ 다른 단위 자동 환산 (1배럴 = 42갤런)</div>
   </div>
   <div class="ctrl">
     <div class="top">
@@ -143,7 +150,7 @@ summary .chev{color:#888;font-size:12px;font-weight:600}
   <h3>🔎 2Q 실측 역산 검증</h3>
   <div class="hint">7월말 실적 나오면 4개 넣어. 추정 계수가 방향·규모로 얼마나 빗나갔는지 잡아냄 (별도 기준 권장).</div>
   <div class="infield"><label>2Q 실제 영업이익 <small>(억원)</small></label><input type="number" id="cOP" placeholder="예: -420"></div>
-  <div class="infield"><label>2Q 평균 유가 변동 <small>(기준 대비 Δ$/bbl)</small></label><input type="number" id="cOil" placeholder="예: 8"></div>
+  <div class="infield"><label>2Q 평균 항공유 변동 <small>(기준 대비 Δ$/bbl)</small></label><input type="number" id="cOil" placeholder="예: 8"></div>
   <div class="infield"><label>6월말 환율 변동 <small>(기준 대비 Δ원)</small></label><input type="number" id="cFx" placeholder="예: 30"></div>
   <div class="infield"><label>2Q 실제 순이익(지배) <small>(억원)</small></label><input type="number" id="cNI" placeholder="예: -1400"></div>
   <div class="infield"><label>2Q 순이자비용 가정 <small>(억원, 환율효과 분리용)</small></label><input type="number" id="cInt" value="-1100"></div>
@@ -165,7 +172,8 @@ summary .chev{color:#888;font-size:12px;font-weight:600}
   <h3>📖 사용 설명</h3>
   <ul>
     <li><b>별도/연결 · 연간/분기</b> 토글로 기준을 고른다. 기본은 별도·연간(2026F).</li>
-    <li><b>유가·환율 슬라이더</b>를 움직이면 영업이익(유가 라인)·순이익(환율 라인)이 자동 재계산.</li>
+    <li><b>항공유·환율 슬라이더</b>를 움직이면 영업이익(항공유 라인)·순이익(환율 라인)이 자동 재계산.</li>
+    <li><b>항공유 단위</b>는 $/bbl(배럴당 달러) ↔ ¢/gal(갤런당 센트) 토글. 하나 넣으면 나머지 자동 환산(1배럴=42갤런). 싱가포르 MOPS Jet은 ¢/gal 기준.</li>
     <li><b>가정값</b>을 펼치면 전가율·환산환율·환율민감도를 직접 조정 가능.</li>
     <li><b>2Q 역산 검증</b>은 7월말 실적이 나온 뒤 쓰는 패널.</li>
   </ul>
@@ -227,7 +235,40 @@ bindSeg('segBasis','basis');bindSeg('segTerm','term');
 function link(r,nu,key){const R=$(r),N=$(nu);
   R.addEventListener('input',()=>{N.value=R.value;state[key]=parseFloat(R.value)||0;compute();});
   N.addEventListener('input',()=>{let v=parseFloat(N.value)||0;R.value=v;state[key]=v;compute();});}
-link('oilRange','oilNum','oil');link('fxRange','fxNum','fx');
+link('fxRange','fxNum','fx');
+
+// 항공유: 슬라이더·내부 state는 항상 $/bbl 기준, 입력칸은 선택 단위 표시
+// ¢/gal → $/bbl : ×42÷100  |  $/bbl → ¢/gal : ×100÷42
+function galToBbl(g){return g*42/100;}
+function bblToGal(b){return b*100/42;}
+function oilUnit(){return document.getElementById('oilUnit').value;}
+function refreshOilConv(){
+  const conv=document.getElementById('oilConv');
+  const bbl=state.oil;
+  if(oilUnit()==='bbl'){ conv.textContent='≈ '+bblToGal(bbl).toFixed(1)+' ¢/gal (1배럴=42갤런)'; }
+  else { conv.textContent='≈ $'+bbl.toFixed(2)+'/bbl (1배럴=42갤런)'; }
+}
+(function(){
+  const R=$('oilRange'), N=$('oilNum'), U=$('oilUnit');
+  // 슬라이더 = $/bbl 고정
+  R.addEventListener('input',()=>{
+    state.oil=parseFloat(R.value)||0;
+    N.value = oilUnit()==='bbl' ? state.oil : Math.round(bblToGal(state.oil));
+    compute(); refreshOilConv();
+  });
+  // 숫자 입력 = 현재 단위 기준 → $/bbl로 변환해 state에
+  N.addEventListener('input',()=>{
+    let v=parseFloat(N.value)||0;
+    state.oil = oilUnit()==='bbl' ? v : galToBbl(v);
+    R.value = Math.max(-30,Math.min(30,Math.round(state.oil)));
+    compute(); refreshOilConv();
+  });
+  // 단위 전환 시 입력칸 값 환산
+  U.addEventListener('change',()=>{
+    N.value = oilUnit()==='bbl' ? +state.oil.toFixed(2) : Math.round(bblToGal(state.oil));
+    refreshOilConv();
+  });
+})();
 ['aPass','aFx','aFxNI'].forEach(id=>$(id).addEventListener('input',compute));
 $('resetBtn').addEventListener('click',()=>{$('aPass').value=70;$('aFx').value=1500;$('aFxNI').value=state.basis==='연결'?475:350;compute();});
 function recheck(){
@@ -261,6 +302,7 @@ function recheck(){
 }
 ['cOP','cOil','cFx','cNI','cInt'].forEach(id=>$(id).addEventListener('input',recheck));
 compute();
+refreshOilConv();
 </script>
 
 <script src="/common.js?v=2"></script>
