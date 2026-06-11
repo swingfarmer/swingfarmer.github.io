@@ -1,1 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>실적 민감도 계산기</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:620px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a;font-feature-settings:"tnum"}
+.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}
+.back-link:hover{text-decoration:underline}
+h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:6px;font-size:22px}
+.desc{color:#555;font-size:14px;margin-bottom:20px}
+.card{background:white;border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:16px}
+.card h3{font-size:14px;font-weight:700;color:#1F4E78;margin-bottom:14px}
+.field{margin-bottom:14px}.field:last-child{margin-bottom:0}
+.field label{display:block;font-weight:600;font-size:13px;margin-bottom:5px;color:#333}
+.field label small{color:#888;font-weight:500}
+.field input{width:100%;font-family:inherit;font-weight:600;font-size:15px;border:1px solid #ccc;border-radius:6px;padding:10px;color:#0000FF;background:#FFF2CC}
+.field input:focus{outline:2px solid #1F4E78;background:#FFFACD}
+.field input[type=text]{color:#1a1a1a}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ctrl .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.ctrl label{font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:7px}
+.dot{width:9px;height:9px;border-radius:50%}.dot.cost{background:#b45309}.dot.fx{background:#1d4ed8}
+.valbox{display:flex;align-items:center;gap:6px}
+.valbox input{width:84px;text-align:right;font-family:inherit;font-weight:700;font-size:15px;border:1px solid #ccc;border-radius:6px;padding:6px 8px;color:#0000FF;background:#FFF2CC}
+.unit{color:#888;font-size:12px;font-weight:600}
+input[type=range]{width:100%;accent-color:#1F4E78;height:24px;cursor:pointer;margin-top:4px}
+.ctrl{margin-bottom:18px}.ctrl:last-child{margin-bottom:0}
+.results{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+@media(max-width:480px){.results{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}}
+.res{border:1px solid #e6e9ee;border-radius:10px;padding:16px;background:#fff}
+.res .route{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px}
+.res h2{font-size:14px;font-weight:800;margin-bottom:10px;color:#1a1a1a}
+.big{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.big.pos{color:#0a7c4a}.big.neg{color:#c0392b}
+.baserow{font-size:12px;color:#888;margin-top:6px}
+.delta{font-size:12px;font-weight:700;margin-top:8px;padding-top:8px;border-top:1px dashed #e6e9ee}
+.delta span{display:block;margin-top:2px}
+.d-cost{color:#b45309}.d-fx{color:#1d4ed8}.d-zero{color:#888}
+.sens{background:#1F4E78;color:#fff;border-radius:10px;padding:6px 16px}
+.sens .row{display:flex;justify-content:space-between;padding:9px 0;font-size:13.5px}
+.sens .row+.row{border-top:1px solid rgba(255,255,255,.16)}
+.sens .v{font-weight:800}.sens .v.amber{color:#fbbf24}.sens .v.sky{color:#93c5fd}
+.manual{background:#fff;border:1px solid #e0e0e0;padding:18px;border-radius:8px;margin-top:24px;line-height:1.7;font-size:13.5px}
+.manual h3{color:#1F4E78;margin-top:16px;margin-bottom:8px;font-size:14px}
+.manual h3:first-child{margin-top:0}
+.manual ul{padding-left:18px;margin:6px 0}
+.manual li{margin-bottom:5px}
+.manual b{color:#1F4E78}
+.warn-box{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12.5px;color:#92400e;line-height:1.6}
+</style>
+</head>
+<body>
 
+<a href="../" class="back-link">← 주식 분석 도구로</a>
+
+<h1>📐 실적 민감도 계산기</h1>
+<p class="desc">비용 변수(유가·원자재 등)는 영업이익을, 환율은 순이익을 흔듭니다. 어떤 종목이든 계수만 넣으면 추정. 기본값은 대한항공 예시.</p>
+
+<div class="warn-box">
+  ⚠️ 모든 계수는 <b>추정치</b>입니다. 헤지 비율·시차·세율에 따라 실제와 달라질 수 있으며, 입력 기록은 서버에 저장되지 않습니다.
+</div>
+
+<div class="card">
+  <h3>① 기준 실적 입력</h3>
+  <div class="field"><label>종목명 <small>(표시용)</small></label><input id="name" type="text" value="" placeholder="예: 대한항공"></div>
+  <div class="grid2">
+    <div class="field"><label>기준 영업이익 <small>(억원)</small></label><input id="baseOP" type="number" value="12820"></div>
+    <div class="field"><label>기준 순이익 <small>(억원)</small></label><input id="baseNI" type="number" value="2500"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>② 민감도 계수</h3>
+  <div class="field">
+    <label>비용 변수 이름 / 단위</label>
+    <div class="grid2">
+      <input id="costName" type="text" value="유가">
+      <input id="costUnit" type="text" value="$/bbl">
+    </div>
+  </div>
+  <div class="field">
+    <label>비용 변수 1단위 상승당 영업이익 변동 <small>(억원, 비용↑이면 음수)</small></label>
+    <input id="costCoef" type="number" value="-180">
+  </div>
+  <div class="field">
+    <label>환율 10원 상승당 순이익 변동 <small>(억원, 보통 음수)</small></label>
+    <input id="fxCoef" type="number" value="-350">
+  </div>
+</div>
+
+<div class="card">
+  <h3>③ 변동 시나리오</h3>
+  <div class="ctrl">
+    <div class="top">
+      <label><span class="dot cost"></span><span id="costLabel">유가</span> 변동</label>
+      <div class="valbox"><input id="costNum" type="number" value="0" step="1"><span class="unit" id="costUnitLbl">$/bbl</span></div>
+    </div>
+    <input type="range" id="costRange" min="-30" max="30" value="0" step="1">
+  </div>
+  <div class="ctrl">
+    <div class="top">
+      <label><span class="dot fx"></span>환율 변동</label>
+      <div class="valbox"><input id="fxNum" type="number" value="0" step="5"><span class="unit">원</span></div>
+    </div>
+    <input type="range" id="fxRange" min="-100" max="100" value="0" step="5">
+  </div>
+</div>
+
+<div class="results">
+  <div class="res">
+    <div class="route" id="r1">비용 라인</div>
+    <h2>영업이익</h2>
+    <div class="big" id="opVal">—</div>
+    <div class="baserow" id="opBase"></div>
+    <div class="delta">
+      <span class="d-cost" id="opCost"></span>
+      <span class="d-zero">환율 영향 ≈ 0 (중립)</span>
+    </div>
+  </div>
+  <div class="res">
+    <div class="route">환율 라인</div>
+    <h2>순이익</h2>
+    <div class="big" id="niVal">—</div>
+    <div class="baserow" id="niBase"></div>
+    <div class="delta">
+      <span class="d-cost" id="niCost"></span>
+      <span class="d-fx" id="niFx"></span>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="padding:0">
+  <div class="sens">
+    <div class="row"><span id="s1">비용 +1단위</span><span class="v amber" id="sCost">—</span></div>
+    <div class="row"><span>환율 +10원</span><span class="v sky" id="sFx">—</span></div>
+  </div>
+</div>
+
+<div class="manual">
+  <h3>📖 사용 설명</h3>
+  <ul>
+    <li><b>① 기준 실적:</b> 분석할 종목의 현재(또는 가이던스) 영업이익·순이익을 억원 단위로 입력.</li>
+    <li><b>② 민감도 계수:</b> 비용 변수(유가·원자재 등) 1단위 변할 때 영업이익이 얼마 변하는지, 환율 10원당 순이익이 얼마 변하는지.</li>
+    <li><b>③ 시나리오:</b> 슬라이더나 숫자로 비용·환율 변동폭을 넣으면 영업이익·순이익이 자동 재계산.</li>
+  </ul>
+  <h3>🧮 모델</h3>
+  <ul>
+    <li>비용 변수는 <b>영업이익</b>을 직접 치고, 그 변동분이 순이익에도 전달됩니다(세전 근사).</li>
+    <li>환율은 영업이익엔 거의 중립이고, 영업외 <b>외화환산손익</b>으로 순이익만 흔듭니다.</li>
+  </ul>
+  <h3>📐 계수 구하는 법 (예: 유가)</h3>
+  <ul>
+    <li>비용 1단위 영업이익 민감도 ≈ 연간 소비량(백만 배럴) × 환산환율 ÷ 100 × (1 − 전가율)</li>
+    <li>환율 계수는 순외화부채 규모에 비례.</li>
+  </ul>
+  <h3>⚠️ 주의</h3>
+  <ul>
+    <li>모든 계수는 추정치이며 헤지·시차·세율로 달라집니다.</li>
+    <li>투자 판단과 책임은 본인에게 있습니다.</li>
+  </ul>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+function n(id){let v=parseFloat($(id).value);return isNaN(v)?0:v;}
+function fmt(v){const s=v<0?'−':(v>0?'+':'');const a=Math.abs(Math.round(v));
+  if(a>=10000)return s+(a/10000).toFixed(2).replace(/\.?0+$/,'')+'조';return s+a.toLocaleString('ko-KR')+'억';}
+function fmtAbs(v){const a=Math.abs(Math.round(v));const sg=v<0?'−':'';
+  if(a>=10000)return sg+(a/10000).toFixed(2).replace(/\.?0+$/,'')+'조원';return sg+a.toLocaleString('ko-KR')+'억원';}
+function setBig(id,v){const el=$(id);el.textContent=fmtAbs(v);el.classList.toggle('pos',v>=0);el.classList.toggle('neg',v<0);}
+
+function compute(){
+  const baseOP=n('baseOP'), baseNI=n('baseNI');
+  const costCoef=n('costCoef'), fxCoef=n('fxCoef');
+  const dCost=n('costNum'), dFx=n('fxNum');
+  const costEffect = costCoef * dCost;
+  const fxEffectNI = (fxCoef/10) * dFx;
+  const op = baseOP + costEffect;
+  const ni = baseNI + costEffect + fxEffectNI;
+  setBig('opVal',op); setBig('niVal',ni);
+  $('opBase').textContent='기준 '+fmtAbs(baseOP);
+  $('niBase').textContent='기준 '+fmtAbs(baseNI);
+  const cn=$('costName').value||'비용';
+  $('opCost').textContent=cn+' '+fmt(costEffect);
+  $('niCost').textContent=cn+' '+fmt(costEffect);
+  $('niFx').textContent='환율 '+fmt(fxEffectNI);
+  $('sCost').textContent='영업이익 '+fmt(costCoef);
+  $('sFx').textContent='순이익 '+fmt(fxCoef);
+}
+function syncLabels(){
+  const cn=$('costName').value||'비용', cu=$('costUnit').value||'';
+  $('costLabel').textContent=cn; $('costUnitLbl').textContent=cu;
+  $('r1').textContent=cn+' 라인'; $('s1').textContent=cn+' +1'+(cu?(' '+cu):'단위');
+}
+function link(r,nu){const R=$(r),N=$(nu);
+  R.addEventListener('input',()=>{N.value=R.value;compute();});
+  N.addEventListener('input',()=>{R.value=N.value;compute();});}
+link('costRange','costNum');link('fxRange','fxNum');
+['baseOP','baseNI','costCoef','fxCoef'].forEach(id=>$(id).addEventListener('input',compute));
+['costName','costUnit'].forEach(id=>$(id).addEventListener('input',()=>{syncLabels();compute();}));
+syncLabels();compute();
+</script>
+
+<script src="/common.js?v=2"></script>
+</body>
+</html>
