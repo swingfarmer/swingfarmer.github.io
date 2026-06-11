@@ -1,1 +1,268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>대한항공 실적 시뮬레이터</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:620px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a;font-feature-settings:"tnum"}
+.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}
+.back-link:hover{text-decoration:underline}
+h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:6px;font-size:22px}
+.desc{color:#555;font-size:13.5px;margin-bottom:20px}
+.card{background:white;border:1px solid #e6e9ee;border-radius:10px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.toggles{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.seg{display:inline-flex;background:#eef2f7;border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;color:#6b7280;font-family:inherit;font-weight:700;font-size:13px;padding:7px 14px;border-radius:8px;cursor:pointer;transition:.15s}
+.seg button.on{background:#1F4E78;color:#fff}
+.ctrl{margin-bottom:16px}.ctrl:last-child{margin-bottom:0}
+.ctrl .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.ctrl label{font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:7px}
+.dot{width:9px;height:9px;border-radius:50%}.dot.oil{background:#b45309}.dot.fx{background:#1d4ed8}
+.valbox{display:flex;align-items:center;gap:6px}
+.valbox input{width:78px;text-align:right;font-family:inherit;font-weight:700;font-size:15px;border:1px solid #ccc;border-radius:6px;padding:6px 8px;color:#0000FF;background:#FFF2CC}
+.unit{color:#888;font-size:12px;font-weight:600}
+input[type=range]{width:100%;accent-color:#1F4E78;height:24px;cursor:pointer}
+.scale{display:flex;justify-content:space-between;color:#888;font-size:11px;margin-top:2px}
+.results{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:480px){.results{grid-template-columns:1fr}}
+.res{border:1px solid #e6e9ee;border-radius:10px;padding:14px;background:#fff}
+.res .route{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px}
+.res h2{font-size:14px;font-weight:800;margin-bottom:10px}
+.big{font-size:25px;font-weight:800;letter-spacing:-.02em}
+.big.pos{color:#0a7c4a}.big.neg{color:#c0392b}
+.baserow{font-size:12px;color:#888;margin-top:6px}
+.delta{font-size:12px;font-weight:700;margin-top:8px;padding-top:8px;border-top:1px dashed #e6e9ee}
+.delta span{display:block;margin-top:2px}
+.d-oil{color:#b45309}.d-fx{color:#1d4ed8}.d-zero{color:#888}
+.sens{background:#1F4E78;color:#fff;border-radius:10px;padding:6px 16px}
+.sens .row{display:flex;justify-content:space-between;padding:9px 0;font-size:13.5px}
+.sens .row+.row{border-top:1px solid rgba(255,255,255,.16)}
+.sens .v{font-weight:800}.sens .v.amber{color:#fbbf24}.sens .v.sky{color:#93c5fd}
+details{border:1px solid #e6e9ee;border-radius:10px;background:#fff;margin-bottom:14px}
+summary{cursor:pointer;font-weight:700;font-size:13px;padding:13px 16px;list-style:none;display:flex;justify-content:space-between;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary .chev{color:#888;font-size:12px;font-weight:600}
+.pad{padding:0 16px 16px}
+.arow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #e6e9ee;font-size:13px}
+.arow:first-child{border-top:0}
+.arow .lab{font-weight:600}.arow .lab small{display:block;color:#888;font-weight:500;font-size:11px}
+.arow input{width:88px;text-align:right;font-family:inherit;font-weight:700;border:1px solid #ccc;border-radius:6px;padding:6px 7px;color:#0000FF;background:#FFF2CC}
+.reset{margin-top:10px;background:none;border:1px solid #ccc;border-radius:8px;padding:7px 12px;font-family:inherit;font-weight:700;font-size:12px;color:#888;cursor:pointer}
+.checkcard{border:2px solid #6d28d9;background:#f1ecfb;border-radius:12px;padding:16px;margin-bottom:14px}
+.checkcard h3{font-size:14px;font-weight:800;color:#6d28d9;margin-bottom:4px}
+.checkcard .hint{font-size:12px;color:#6b7280;margin-bottom:12px;line-height:1.5}
+.infield{margin-bottom:10px}
+.infield label{display:block;font-weight:600;font-size:13px;margin-bottom:4px}
+.infield label small{color:#888;font-weight:500}
+.infield input{width:100%;font-family:inherit;font-weight:700;font-size:14px;border:1px solid #d6cdf0;border-radius:8px;padding:9px 11px;background:#fff;color:#0000FF}
+.verdict{margin-top:12px;background:#fff;border:1px solid #d6cdf0;border-radius:10px;padding:13px}
+.vrow{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;padding:6px 0}
+.vrow+.vrow{border-top:1px dashed #e6e9ee}
+.vrow .k{font-weight:600}.vrow .est{color:#888;font-weight:600}.vrow .act{font-weight:800;color:#6d28d9}
+.vgap{font-size:13px;font-weight:800;margin-top:10px;padding-top:10px;border-top:1px solid #e6e9ee}
+.vgap.ok{color:#0a7c4a}.vgap.off{color:#c0392b}
+.note{font-size:11.5px;color:#888;line-height:1.6;margin-top:12px}.note b{color:#1a1a1a}
+.manual{background:#fff;border:1px solid #e0e0e0;padding:18px;border-radius:8px;margin-top:24px;line-height:1.7;font-size:13.5px}
+.manual h3{color:#1F4E78;margin-top:16px;margin-bottom:8px;font-size:14px}
+.manual h3:first-child{margin-top:0}
+.manual ul{padding-left:18px;margin:6px 0}.manual li{margin-bottom:5px}.manual b{color:#1F4E78}
+</style>
+</head>
+<body>
 
+<a href="../" class="back-link">← 주식 분석 도구로</a>
+
+<h1>✈️ 대한항공 실적 시뮬레이터</h1>
+<p class="desc">한투 가이던스 기준 · 유가→영업이익 / 환율→순이익 분리 · 2Q 실측 역산 검증 패널 포함. 입력 기록은 서버에 저장되지 않습니다.</p>
+
+<div class="card">
+  <div class="toggles">
+    <div class="seg" id="segBasis">
+      <button data-v="별도" class="on">별도</button>
+      <button data-v="연결">연결</button>
+    </div>
+    <div class="seg" id="segTerm">
+      <button data-v="연간" class="on">연간(2026F)</button>
+      <button data-v="분기">2Q 단기</button>
+    </div>
+  </div>
+  <div class="ctrl">
+    <div class="top">
+      <label><span class="dot oil"></span>유가 변동 <span class="unit">(기준 대비)</span></label>
+      <div class="valbox"><input type="number" id="oilNum" value="0" step="1"><span class="unit">$/bbl</span></div>
+    </div>
+    <input type="range" id="oilRange" min="-30" max="30" value="0" step="1">
+    <div class="scale"><span>-30</span><span>0</span><span>+30</span></div>
+  </div>
+  <div class="ctrl">
+    <div class="top">
+      <label><span class="dot fx"></span>환율 변동 <span class="unit">(6월말, 기준 대비)</span></label>
+      <div class="valbox"><input type="number" id="fxNum" value="0" step="5"><span class="unit">원</span></div>
+    </div>
+    <input type="range" id="fxRange" min="-100" max="100" value="0" step="5">
+    <div class="scale"><span>-100</span><span>0</span><span>+100</span></div>
+  </div>
+</div>
+
+<div class="results">
+  <div class="res">
+    <div class="route">유가 라인</div><h2>영업이익</h2>
+    <div class="big" id="opVal">—</div>
+    <div class="baserow" id="opBase"></div>
+    <div class="delta"><span class="d-oil" id="opOil"></span><span class="d-zero" id="opFx"></span></div>
+  </div>
+  <div class="res">
+    <div class="route">환율 라인</div><h2>순이익(지배)</h2>
+    <div class="big" id="niVal">—</div>
+    <div class="baserow" id="niBase"></div>
+    <div class="delta"><span class="d-oil" id="niOil"></span><span class="d-fx" id="niFx"></span></div>
+  </div>
+</div>
+
+<div class="card" style="padding:0;margin-top:14px">
+  <div class="sens">
+    <div class="row"><span>유가 +$1/bbl</span><span class="v amber" id="sOil">—</span></div>
+    <div class="row"><span>환율 +10원</span><span class="v sky" id="sFx">—</span></div>
+  </div>
+</div>
+
+<details>
+  <summary>가정값 <span class="chev">▾</span></summary>
+  <div class="pad">
+    <div class="arow"><span class="lab">전가율<small>유류할증료+운임, IATA ~70%</small></span><input type="number" id="aPass" value="70" step="5"><span class="unit">%</span></div>
+    <div class="arow"><span class="lab">연료 환산환율<small>유가 효과 원화 환산</small></span><input type="number" id="aFx" value="1500" step="10"><span class="unit">원</span></div>
+    <div class="arow"><span class="lab">순이익 환율민감도<small>별도 350 / 연결 475</small></span><input type="number" id="aFxNI" value="350" step="25"><span class="unit">억/10원</span></div>
+    <button class="reset" id="resetBtn">기본값 복원</button>
+  </div>
+</details>
+
+<div class="checkcard">
+  <h3>🔎 2Q 실측 역산 검증</h3>
+  <div class="hint">7월말 실적 나오면 4개 넣어. 추정 계수가 방향·규모로 얼마나 빗나갔는지 잡아냄 (별도 기준 권장).</div>
+  <div class="infield"><label>2Q 실제 영업이익 <small>(억원)</small></label><input type="number" id="cOP" placeholder="예: -420"></div>
+  <div class="infield"><label>2Q 평균 유가 변동 <small>(기준 대비 Δ$/bbl)</small></label><input type="number" id="cOil" placeholder="예: 8"></div>
+  <div class="infield"><label>6월말 환율 변동 <small>(기준 대비 Δ원)</small></label><input type="number" id="cFx" placeholder="예: 30"></div>
+  <div class="infield"><label>2Q 실제 순이익(지배) <small>(억원)</small></label><input type="number" id="cNI" placeholder="예: -1400"></div>
+  <div class="infield"><label>2Q 순이자비용 가정 <small>(억원, 환율효과 분리용)</small></label><input type="number" id="cInt" value="-1100"></div>
+
+  <div class="verdict" id="verdict" style="display:none">
+    <div class="vrow"><span class="k">전가율</span><span><span class="est" id="vPassEst"></span> → <span class="act" id="vPassAct"></span></span></div>
+    <div class="vrow"><span class="k">유가 net 계수(억/$)</span><span><span class="est" id="vOilEst"></span> → <span class="act" id="vOilAct"></span></span></div>
+    <div class="vrow"><span class="k">환율 민감도(억/10원)</span><span><span class="est" id="vFxEst"></span> → <span class="act" id="vFxAct"></span></span></div>
+    <div class="vgap" id="vGap"></div>
+  </div>
+  <div class="note">
+    <b>한계.</b> 영업이익엔 여객·화물 매출 성장이 섞여 순수 유가효과만 깔끔히 안 갈린다.
+    순이익 역산은 순이자비용 가정에 의존한다. 그래서 이건 "정밀 보정"이 아니라
+    <b>"추정이 얼마나 빗나갔나"의 근사 진단</b>이다. 데이터 나오면 채팅에서 전체 재검증하자.
+  </div>
+</div>
+
+<div class="manual">
+  <h3>📖 사용 설명</h3>
+  <ul>
+    <li><b>별도/연결 · 연간/분기</b> 토글로 기준을 고른다. 기본은 별도·연간(2026F).</li>
+    <li><b>유가·환율 슬라이더</b>를 움직이면 영업이익(유가 라인)·순이익(환율 라인)이 자동 재계산.</li>
+    <li><b>가정값</b>을 펼치면 전가율·환산환율·환율민감도를 직접 조정 가능.</li>
+    <li><b>2Q 역산 검증</b>은 7월말 실적이 나온 뒤 쓰는 패널.</li>
+  </ul>
+  <h3>🧮 모델 핵심</h3>
+  <ul>
+    <li><b>유가</b>는 영업이익을 직접 친다. 유류할증료+운임으로 약 70%를 전가하므로, net 효과는 gross의 30% 수준.</li>
+    <li><b>환율</b>은 영업이익엔 거의 중립(달러 매출↔달러 비용 상쇄), 대신 영업외 외화환산손익으로 순이익을 흔든다.</li>
+  </ul>
+  <h3>🔎 역산 검증 쓰는 법 (7월말)</h3>
+  <ul>
+    <li>2Q 실제 영업이익·순이익, 유가·환율 변동분을 넣으면 → 추정 계수(전가율 70%, 환율민감도 350 등)가 실제와 얼마나 맞았는지 진단.</li>
+    <li>영업이익 추정 오차가 ±15% 안이면 ✓, 벗어나면 ⚠.</li>
+  </ul>
+  <h3>⚠️ 주의</h3>
+  <ul>
+    <li>계수는 고정이 아니다. 헤지비율·유류할증료 시차·소비량으로 출렁인다. "현재 흐름 기준 근사치"로만 사용.</li>
+    <li>투자 판단과 책임은 본인에게 있습니다.</li>
+  </ul>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const BASE={
+  별도:{연간:{op:12820,ni:2500,fuelMbbl:40},분기:{op:-360,ni:-1200,fuelMbbl:10}},
+  연결:{연간:{op:8460,ni:750,fuelMbbl:56},분기:{op:-3350,ni:-3800,fuelMbbl:14}}
+};
+const state={basis:'별도',term:'연간',oil:0,fx:0};
+function n(id){let v=parseFloat($(id).value);return isNaN(v)?0:v;}
+function clamp(v,a,b,d){v=parseFloat(v);if(isNaN(v))return d;return Math.min(b,Math.max(a,v));}
+function assume(){return{pass:clamp($('aPass').value,0,100,70),fxKRW:clamp($('aFx').value,100,5000,1500),fxNI:clamp($('aFxNI').value,0,2000,350)};}
+function fmt(v){const s=v<0?'−':(v>0?'+':'');const a=Math.abs(Math.round(v));
+  if(a>=10000)return s+(a/10000).toFixed(2).replace(/\.?0+$/,'')+'조';return s+a.toLocaleString('ko-KR')+'억';}
+function fmtAbs(v){const a=Math.abs(Math.round(v));const sg=v<0?'−':'';
+  if(a>=10000)return sg+(a/10000).toFixed(2).replace(/\.?0+$/,'')+'조원';return sg+a.toLocaleString('ko-KR')+'억원';}
+function setBig(id,v){const e=$(id);e.textContent=fmtAbs(v);e.classList.toggle('pos',v>=0);e.classList.toggle('neg',v<0);}
+function grossPerDollar(){const b=BASE[state.basis][state.term];return b.fuelMbbl*assume().fxKRW/100;}
+function netPerDollar(){return grossPerDollar()*(1-assume().pass/100);}
+function compute(){
+  const b=BASE[state.basis][state.term];const a=assume();const net=netPerDollar();
+  const oilOP=-net*state.oil, oilNI=-net*state.oil;
+  const fxNI=-(a.fxNI/10)*state.fx;
+  const op=b.op+oilOP, ni=b.ni+oilNI+fxNI;
+  setBig('opVal',op);setBig('niVal',ni);
+  $('opBase').textContent='기준 '+fmtAbs(b.op);
+  $('niBase').textContent='기준 '+fmtAbs(b.ni);
+  $('opOil').textContent='유가 '+fmt(oilOP);
+  $('opFx').textContent='환율 '+fmt(0)+' (중립)';
+  $('niOil').textContent='유가 '+fmt(oilNI);
+  $('niFx').textContent='환율 '+fmt(fxNI);
+  $('sOil').textContent='영업이익 '+fmt(-net);
+  $('sFx').textContent='순이익 '+fmt(-a.fxNI);
+  recheck();
+}
+function bindSeg(seg,key){document.querySelectorAll('#'+seg+' button').forEach(btn=>{
+  btn.addEventListener('click',()=>{document.querySelectorAll('#'+seg+' button').forEach(x=>x.classList.remove('on'));
+  btn.classList.add('on');state[key]=btn.dataset.v;
+  if(key==='basis')$('aFxNI').value=state.basis==='연결'?475:350;compute();});});}
+bindSeg('segBasis','basis');bindSeg('segTerm','term');
+function link(r,nu,key){const R=$(r),N=$(nu);
+  R.addEventListener('input',()=>{N.value=R.value;state[key]=parseFloat(R.value)||0;compute();});
+  N.addEventListener('input',()=>{let v=parseFloat(N.value)||0;R.value=v;state[key]=v;compute();});}
+link('oilRange','oilNum','oil');link('fxRange','fxNum','fx');
+['aPass','aFx','aFxNI'].forEach(id=>$(id).addEventListener('input',compute));
+$('resetBtn').addEventListener('click',()=>{$('aPass').value=70;$('aFx').value=1500;$('aFxNI').value=state.basis==='연결'?475:350;compute();});
+function recheck(){
+  const opStr=$('cOP').value, niStr=$('cNI').value;
+  if(opStr===''||niStr===''){$('verdict').style.display='none';return;}
+  const actOP=n('cOP'), dOil=n('cOil'), dFx=n('cFx'), actNI=n('cNI'), intC=n('cInt');
+  const b=BASE[state.basis]['분기'];
+  const a=assume();
+  const grossQ=b.fuelMbbl*a.fxKRW/100;
+  let actNet=null, actPass=null;
+  if(dOil!==0){ actNet = -(actOP - b.op)/dOil; actPass = 1 - actNet/grossQ; }
+  const estNet = grossQ*(1-a.pass/100);
+  const oilNIcontrib = -estNet*dOil;
+  const fxComponent = actNI - b.ni - oilNIcontrib - (intC - (-1100));
+  let actFxSens=null;
+  if(dFx!==0){ actFxSens = -(fxComponent)/(dFx/10); }
+  $('verdict').style.display='block';
+  $('vPassEst').textContent=a.pass+'%';
+  $('vPassAct').textContent= actPass===null?'유가Δ=0':(Math.round(actPass*100)+'%');
+  $('vOilEst').textContent=Math.round(estNet);
+  $('vOilAct').textContent= actNet===null?'—':Math.round(actNet);
+  $('vFxEst').textContent=a.fxNI;
+  $('vFxAct').textContent= actFxSens===null?'환율Δ=0':Math.round(actFxSens);
+  const estOP = b.op - estNet*dOil;
+  const opErr = actOP - estOP;
+  const g=$('vGap');
+  const within = Math.abs(opErr) <= Math.max(150, Math.abs(estOP)*0.15);
+  g.className='vgap '+(within?'ok':'off');
+  g.textContent = (within?'✓ 영업이익 추정 오차 ':'⚠ 영업이익 추정 오차 ')+fmt(opErr)+
+    ' (추정 '+fmtAbs(estOP)+' vs 실측 '+fmtAbs(actOP)+')';
+}
+['cOP','cOil','cFx','cNI','cInt'].forEach(id=>$(id).addEventListener('input',recheck));
+compute();
+</script>
+
+<script src="/common.js?v=2"></script>
+</body>
+</html>
