@@ -136,8 +136,10 @@ const MAX_ITEMS_PER_CATEGORY = 100;
 // CORS 우회 프록시 (여러 개 폴백)
 const PROXIES = [
   'https://api.allorigins.win/raw?url=',
-  'https://corsproxy.io/?',
-  'https://api.codetabs.com/v1/proxy?quest='
+  'https://corsproxy.io/?url=',
+  'https://api.codetabs.com/v1/proxy?quest=',
+  'https://thingproxy.freeboard.io/fetch/',
+  'https://proxy.cors.sh/'
 ];
 
 // 카테고리별 RSS 소스
@@ -266,7 +268,12 @@ function parseRSS(xmlText, sourceName) {
 async function fetchWithProxy(url) {
   for (let i = 0; i < PROXIES.length; i++) {
     try {
-      const proxyUrl = PROXIES[i] + encodeURIComponent(url);
+      // 프록시별로 인코딩 방식이 다름
+      // allorigins, corsproxy(?url=), codetabs : 인코딩 필요
+      // thingproxy, cors.sh : raw URL 그대로
+      const p = PROXIES[i];
+      const needsEncode = p.includes('allorigins') || p.includes('corsproxy') || p.includes('codetabs');
+      const proxyUrl = needsEncode ? (p + encodeURIComponent(url)) : (p + url);
       const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) });
       if (res.ok) {
         const text = await res.text();
