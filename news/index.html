@@ -125,7 +125,7 @@ footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
 </div>
 
 <footer>
-  © 스윙파머 · RSS 출처: 연합뉴스 · 한국경제 · 매일경제 · 서울경제 · 파이낸셜뉴스
+  © 스윙파머 · RSS 출처: 연합뉴스 · 한국경제 · 매일경제 · 서울경제 · 파이낸셜뉴스 · SBS · 이데일리 · 전자신문
 </footer>
 
 <script>
@@ -140,66 +140,76 @@ const PROXIES = [
   'https://api.codetabs.com/v1/proxy?quest='
 ];
 
-// 카테고리별 RSS 소스 (검증된 것만)
+// 카테고리별 RSS 소스
 const FEEDS = {
   breaking: [
     { name: '연합뉴스', url: 'https://www.yna.co.kr/rss/news.xml' },
     { name: '한국경제', url: 'https://www.hankyung.com/feed/all-news' },
     { name: '매일경제', url: 'https://www.mk.co.kr/rss/30000001/' },
     { name: '서울경제', url: 'https://www.sedaily.com/rss/newsall' },
-    { name: '파이낸셜뉴스', url: 'https://www.fnnews.com/rss/r20/fn_realnews_all.xml' }
+    { name: '파이낸셜뉴스', url: 'https://www.fnnews.com/rss/r20/fn_realnews_all.xml' },
+    { name: 'SBS', url: 'https://news.sbs.co.kr/news/headlineRssFeed.do?plink=RSSREADER' },
+    { name: '이데일리', url: 'http://rss.edaily.co.kr/edaily_news.xml' }
   ],
   economy: [
     { name: '한국경제', url: 'https://www.hankyung.com/feed/economy' },
     { name: '매일경제', url: 'https://www.mk.co.kr/rss/30100041/' },
     { name: '서울경제', url: 'https://www.sedaily.com/rss/economy' },
     { name: '파이낸셜뉴스', url: 'https://www.fnnews.com/rss/r20/fn_realnews_economy.xml' },
-    { name: '연합뉴스 경제', url: 'https://www.yna.co.kr/rss/economy.xml' }
+    { name: '연합뉴스 경제', url: 'https://www.yna.co.kr/rss/economy.xml' },
+    { name: 'SBS 경제', url: 'https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=02&plink=RSSREADER' },
+    { name: '이데일리 경제', url: 'http://rss.edaily.co.kr/economy_news.xml' }
   ],
   realestate: [
     { name: '한국경제', url: 'https://www.hankyung.com/feed/realestate' },
     { name: '매일경제', url: 'https://www.mk.co.kr/rss/50300009/' },
     { name: '서울경제', url: 'https://www.sedaily.com/rss/realestate' },
-    { name: '연합뉴스 경제', url: 'https://www.yna.co.kr/rss/economy.xml' }
+    { name: '연합뉴스 경제', url: 'https://www.yna.co.kr/rss/economy.xml' },
+    { name: '매일경제 부동산', url: 'http://news.mk.co.kr/rss/land.xml' }
   ],
   stock: [
     { name: '한국경제 증권', url: 'https://www.hankyung.com/feed/finance' },
     { name: '매일경제 증권', url: 'https://www.mk.co.kr/rss/50200011/' },
     { name: '서울경제 증권', url: 'https://www.sedaily.com/rss/finance' },
     { name: '파이낸셜뉴스', url: 'https://www.fnnews.com/rss/r20/fn_realnews_stock.xml' },
-    { name: '연합뉴스 경제', url: 'https://www.yna.co.kr/rss/economy.xml' }
+    { name: '연합뉴스 경제', url: 'https://www.yna.co.kr/rss/economy.xml' },
+    { name: '이데일리 증권', url: 'http://rss.edaily.co.kr/stock_news.xml' }
   ],
   international: [
     { name: '연합뉴스 국제', url: 'https://www.yna.co.kr/rss/international.xml' },
     { name: '한국경제 국제', url: 'https://www.hankyung.com/feed/international' },
     { name: '서울경제 국제', url: 'https://www.sedaily.com/rss/international' },
-    { name: '파이낸셜뉴스', url: 'https://www.fnnews.com/rss/r20/fn_realnews_international.xml' }
+    { name: '파이낸셜뉴스', url: 'https://www.fnnews.com/rss/r20/fn_realnews_international.xml' },
+    { name: 'SBS 국제', url: 'https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=08&plink=RSSREADER' }
   ],
   politics: [
     { name: '한국경제 정치', url: 'https://www.hankyung.com/feed/politics' },
     { name: '서울경제 정치', url: 'https://www.sedaily.com/rss/politics' },
     { name: '파이낸셜뉴스', url: 'https://www.fnnews.com/rss/r20/fn_realnews_politics.xml' },
-    { name: '연합뉴스', url: 'https://www.yna.co.kr/rss/news.xml' }
+    { name: '연합뉴스', url: 'https://www.yna.co.kr/rss/news.xml' },
+    { name: 'SBS 정치', url: 'https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=01&plink=RSSREADER' }
   ],
   tech: [
     { name: '한국경제 IT', url: 'https://www.hankyung.com/feed/it' },
     { name: '서울경제 IT', url: 'https://www.sedaily.com/rss/it' },
     { name: '파이낸셜뉴스 산업', url: 'https://www.fnnews.com/rss/r20/fn_realnews_industry.xml' },
-    { name: '연합뉴스', url: 'https://www.yna.co.kr/rss/news.xml' }
+    { name: '연합뉴스', url: 'https://www.yna.co.kr/rss/news.xml' },
+    { name: 'SBS IT', url: 'https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=14&plink=RSSREADER' },
+    { name: '전자신문 IT', url: 'http://rss.etnews.co.kr/Section901.xml' }
   ],
   industry: [
     { name: '한국경제', url: 'https://www.hankyung.com/feed/all-news' },
     { name: '파이낸셜뉴스 산업', url: 'https://www.fnnews.com/rss/r20/fn_realnews_industry.xml' },
-    { name: '연합뉴스 경제', url: 'https://www.yna.co.kr/rss/economy.xml' }
+    { name: '연합뉴스 경제', url: 'https://www.yna.co.kr/rss/economy.xml' },
+    { name: '전자신문 금융증권', url: 'http://rss.etnews.co.kr/Section022.xml' }
   ]
 };
 
 let lastUpdateTime = null;
 let nextUpdateTime = null;
-let rssStatus = {}; // {카테고리: {언론사명: {status, count, error}}}
+let rssStatus = {};
 let currentTab = 'breaking';
 
-// === 탭 전환 ===
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
     const target = btn.dataset.tab;
@@ -223,34 +233,20 @@ function updateDebugPanel() {
   if (!panel) return;
   const feeds = FEEDS[currentTab] || [];
   const statuses = rssStatus[currentTab] || {};
-
   panel.innerHTML = feeds.map(feed => {
     const s = statuses[feed.name] || { status: 'pending', count: 0 };
     let icon, color, detail;
-    if (s.status === 'success') {
-      icon = '✅';
-      color = '#10b981';
-      detail = `${s.count}개 수신`;
-    } else if (s.status === 'failed') {
-      icon = '❌';
-      color = '#dc2626';
-      detail = s.error || '실패';
-    } else {
-      icon = '⏳';
-      color = '#888';
-      detail = '대기중';
-    }
-    return `
-      <div style="padding:8px 12px;background:#f8fafc;border-radius:6px;border-left:3px solid ${color}">
+    if (s.status === 'success') { icon = '✅'; color = '#10b981'; detail = `${s.count}개 수신`; }
+    else if (s.status === 'failed') { icon = '❌'; color = '#dc2626'; detail = s.error || '실패'; }
+    else { icon = '⏳'; color = '#888'; detail = '대기중'; }
+    return `<div style="padding:8px 12px;background:#f8fafc;border-radius:6px;border-left:3px solid ${color}">
         <div style="font-weight:600;color:#1a1a1a">${icon} ${feed.name}</div>
         <div style="font-size:11px;color:#666;margin-top:2px">${detail}</div>
         <div style="font-size:10px;color:#aaa;margin-top:2px;word-break:break-all">${feed.url.substring(0, 60)}${feed.url.length > 60 ? '...' : ''}</div>
-      </div>
-    `;
+      </div>`;
   }).join('');
 }
 
-// === RSS 파싱 ===
 function parseRSS(xmlText, sourceName) {
   const parser = new DOMParser();
   const xml = parser.parseFromString(xmlText, 'text/xml');
@@ -261,18 +257,12 @@ function parseRSS(xmlText, sourceName) {
     const link = item.querySelector('link')?.textContent?.trim() || '';
     const pubDateStr = item.querySelector('pubDate')?.textContent?.trim() || '';
     let pubDate = null;
-    if (pubDateStr) {
-      const d = new Date(pubDateStr);
-      if (!isNaN(d.getTime())) pubDate = d;
-    }
-    if (title && link) {
-      result.push({ title, link, pubDate, source: sourceName });
-    }
+    if (pubDateStr) { const d = new Date(pubDateStr); if (!isNaN(d.getTime())) pubDate = d; }
+    if (title && link) { result.push({ title, link, pubDate, source: sourceName }); }
   });
   return result;
 }
 
-// === 프록시 폴백 ===
 async function fetchWithProxy(url) {
   for (let i = 0; i < PROXIES.length; i++) {
     try {
@@ -306,19 +296,14 @@ function decodeHTML(str) {
   return txt.value;
 }
 
-// === 카테고리 로드 ===
 async function loadCategory(category) {
   const container = document.getElementById('list-' + category);
   const feeds = FEEDS[category];
   const allItems = [];
   const errors = [];
   const successes = [];
-
-  // 상태 초기화
   rssStatus[category] = {};
-  feeds.forEach(f => {
-    rssStatus[category][f.name] = { status: 'pending', count: 0 };
-  });
+  feeds.forEach(f => { rssStatus[category][f.name] = { status: 'pending', count: 0 }; });
 
   const promises = feeds.map(async feed => {
     try {
@@ -341,28 +326,19 @@ async function loadCategory(category) {
 
   const results = await Promise.all(promises);
   results.forEach(items => allItems.push(...items));
-
-  // 디버그 패널 갱신
   if (category === currentTab) updateDebugPanel();
 
-  // 중복 제거 (같은 제목)
   const seen = new Set();
   const unique = [];
   for (const item of allItems) {
     const key = item.title.replace(/\s+/g, '').toLowerCase().substring(0, 40);
-    if (!seen.has(key)) {
-      seen.add(key);
-      unique.push(item);
-    }
+    if (!seen.has(key)) { seen.add(key); unique.push(item); }
   }
-
-  // 시간순 정렬
   unique.sort((a, b) => {
     if (!a.pubDate) return 1;
     if (!b.pubDate) return -1;
     return b.pubDate - a.pubDate;
   });
-
   const displayItems = unique.slice(0, MAX_ITEMS_PER_CATEGORY);
 
   if (displayItems.length === 0) {
@@ -381,19 +357,14 @@ async function loadCategory(category) {
   }
   displayItems.forEach(item => {
     const title = decodeHTML(item.title);
-    html += `
-      <a href="${item.link}" target="_blank" rel="noopener" class="news-item">
+    html += `<a href="${item.link}" target="_blank" rel="noopener" class="news-item">
         <div class="news-content">
           <div class="news-title">${title}</div>
-          <div class="news-meta">
-            <span class="news-source">${item.source}</span>
-          </div>
+          <div class="news-meta"><span class="news-source">${item.source}</span></div>
         </div>
         <div class="news-time">${timeAgo(item.pubDate)}</div>
-      </a>
-    `;
+      </a>`;
   });
-
   container.innerHTML = html;
 }
 
@@ -401,22 +372,17 @@ async function refreshAll() {
   const btn = document.getElementById('refreshBtn');
   btn.disabled = true;
   btn.textContent = '⏳ 로딩 중...';
-
   const cats = Object.keys(FEEDS);
-
   cats.forEach(c => {
     const el = document.getElementById('list-' + c);
     if (!el.innerHTML.trim() || el.querySelector('.error')) {
       el.innerHTML = '<div class="loading">⏳ 뉴스 불러오는 중...</div>';
     }
   });
-
   await Promise.all(cats.map(c => loadCategory(c)));
-
   lastUpdateTime = new Date();
   nextUpdateTime = new Date(lastUpdateTime.getTime() + REFRESH_INTERVAL);
   updateStatus();
-
   btn.disabled = false;
   btn.textContent = '🔄 새로고침';
 }
