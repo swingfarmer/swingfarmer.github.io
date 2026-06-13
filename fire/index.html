@@ -189,11 +189,23 @@
 <a href="../" class="back-link">← 메인으로</a>
 
 <h1>파이어족 계산기</h1>
-<p class="desc">월 소비액과 사망 시 남길 금액을 입력하면 <b>은퇴 시점에 얼마가 필요한지</b> 자동 계산. 연금 소득도 반영. 기본값은 한국 평균(2024년 기준).</p>
+<p class="desc">월 소비액과 사망 시 남길 금액을 입력하면 <b>은퇴 시점에 얼마가 필요한지</b> 자동 계산. 연금 소득도 반영. 기본값은 <b>2000년 이후 장기 평균</b> 기준.</p>
 
 <!-- 🆕 명목/현재가치 안내 (간결) -->
 <div style="background:#dbeafe;border-left:4px solid #2563eb;padding:12px 16px;border-radius:6px;margin-bottom:16px;font-size:13px;color:#1e3a8a;line-height:1.7">
   <b>📖 결과 읽기 핵심:</b> "필요한 자산" = <b>명목값</b> (미래 시점 액수 그대로). 시작 연도 기준 구매력은 <b>현재가치</b>로 따로 표시됩니다. <a href="#" onclick="sfShowInfo('namok-real');return false;" style="color:#2563eb;font-weight:600;text-decoration:underline">자세히 ▸</a>
+</div>
+
+<!-- 🆕 기본값 출처 안내 -->
+<div style="background:#f0fdf4;border-left:4px solid #16a34a;padding:13px 18px;border-radius:6px;margin-bottom:16px;font-size:12.5px;color:#14532d;line-height:1.7">
+  <b style="font-size:13.5px">📊 기본값은 2000년 이후 장기 평균 기준</b><br>
+  특정 연도(호황·불황)에 치우치지 않도록 장기 추세를 반영했습니다.<br>
+  • <b>물가상승률 2.7%</b> — 2000년 이후 소비자물가(CPI) 평균<br>
+  • <b>지출 증가율 3.0%</b> — 생활물가지수 기준 (식료품·외식 등 실제 체감 소비. 전체 물가보다 높음)<br>
+  • <b>수입 증가율 3.5%</b> — 명목임금 상승률 장기 평균<br>
+  • <b>투자수익률 6%</b> — 코스피~S&P500 중간 (⑤ 변동률 ⓘ 참고)<br>
+  • <b>월 연금 110만</b> — 국민연금 20년+ 가입자 평균 (2025년 기준)<br>
+  본인 상황에 맞게 자유롭게 조정하세요.
 </div>
 
 <style>
@@ -260,8 +272,8 @@
       <input type="number" id="pensionStartAge" value="65">
     </div>
     <div class="input-row">
-      <label>월 연금 수령액 (원) <span class="stat-sub">(20년+ 가입자 평균 100만)</span> <span class="stat-sub" id="pensionConv" style="color:#2563eb"></span></label>
-      <input type="number" id="monthlyPension" value="1000000">
+      <label>월 연금 수령액 (원) <span class="stat-sub">(20년+ 가입자 평균 110만)</span> <span class="stat-sub" id="pensionConv" style="color:#2563eb"></span></label>
+      <input type="number" id="monthlyPension" value="1100000">
     </div>
 
     <div class="section-label">④ 은퇴 후 지출 & 상속 목표<button class="info-btn" onclick="sfShowInfo('goal')" title="설명 보기">i</button></div>
@@ -274,22 +286,22 @@
       <input type="number" id="legacy" value="0">
     </div>
 
-    <div class="section-label">⑤ 변동률 (연 %)<button class="info-btn" onclick="sfShowInfo('rates')" title="설명 보기">i</button></div>
+    <div class="section-label">⑤ 변동률 (연 %) <span style="text-transform:none;font-weight:500;color:#888">— 2000년 이후 장기 평균</span><button class="info-btn" onclick="sfShowInfo('rates')" title="설명 보기">i</button></div>
     <div class="input-row">
       <label>자산 투자수익률 (%)</label>
-      <input type="number" id="returnRate" value="5" step="0.1">
+      <input type="number" id="returnRate" value="6" step="0.1">
     </div>
     <div class="input-row">
       <label>물가상승률 (%)</label>
-      <input type="number" id="inflationRate" value="3.5" step="0.1">
+      <input type="number" id="inflationRate" value="2.7" step="0.1">
     </div>
     <div class="input-row">
       <label>수입 증가율 (%) <span class="stat-sub">(연봉 인상)</span></label>
-      <input type="number" id="incomeGrowth" value="3" step="0.1">
+      <input type="number" id="incomeGrowth" value="3.5" step="0.1">
     </div>
     <div class="input-row">
-      <label>지출 증가율 (%) <span class="stat-sub">(통상=물가)</span></label>
-      <input type="number" id="spendingGrowth" value="3.5" step="0.1">
+      <label>지출 증가율 (%) <span class="stat-sub">(생활물가)</span></label>
+      <input type="number" id="spendingGrowth" value="3" step="0.1">
     </div>
   </div>
 </div>
@@ -410,7 +422,7 @@
     <li><span class="badge">연 지출액</span> 현재 1년 동안 쓰는 생활비 (은퇴 전 지출).</li>
     <li><span class="badge">연 저축액 (자동)</span> = 수입 − 지출.</li>
     <li><span class="badge">연금 수령 시작 나이</span> 국민연금 기준 1969년 이후 출생자는 65세. 사적연금 더 빠르면 그 나이로.</li>
-    <li><span class="badge">월 연금 수령액</span> 국민연금 20년+ 가입자 평균 월 100만. 퇴직연금·사적연금 합치면 더 늘려도 됨. 수령 시작 후 매년 물가만큼 인상.</li>
+    <li><span class="badge">월 연금 수령액</span> 국민연금 20년+ 가입자 평균 월 110만 (2025년 기준). 전체 평균은 약 67만으로 더 낮음. 퇴직연금·사적연금 합치면 더 늘려도 됨. 수령 시작 후 매년 물가만큼 인상.</li>
   </ul>
 
   <h3>③ 결과 해석</h3>
@@ -472,7 +484,6 @@ function calculate() {
     ? (autoSaving / annualIncome * 100).toFixed(1)
     : '0';
 
-  // 🆕 단위 환산 표시
   document.getElementById('incomeConv').textContent = '· 월 환산 ≒ ' + fmtShort(annualIncome / 12) + '원';
   document.getElementById('spendingConv').textContent = '· 월 환산 ≒ ' + fmtShort(annualSpending / 12) + '원';
   document.getElementById('pensionConv').textContent = '· 연 환산 ≒ ' + fmtShort(monthlyPension * 12) + '원';
@@ -486,9 +497,6 @@ function calculate() {
     return;
   }
 
-  // === 1. 필요자산 역산 ===
-  // 은퇴 후 시뮬레이션: 자산 × (1+r) + 연금(수령중인 경우) − 목표지출
-  // 사망 시점에 legacy(미래가치)가 정확히 남도록 은퇴 시점 자산 X 역산
   const retireSpendingAnnualNow = monthlySpending * 12;
   const annualPensionNow = monthlyPension * 12;
   const yearsToRetire = retireAge - currentAge;
@@ -497,7 +505,6 @@ function calculate() {
 
   function simulateFromRetire(startAssets) {
     let a = startAssets;
-    // age = retireAge+1 부터 deathAge 까지 시뮬
     for (let age = retireAge + 1; age <= deathAge; age++) {
       const yearsFromNow = age - currentAge;
       const spending = retireSpendingAnnualNow * Math.pow(1 + inflationRate, yearsFromNow);
@@ -517,7 +524,6 @@ function calculate() {
   }
   const requiredAssets = Math.max(0, (lo + hi) / 2);
 
-  // === 2. 현재 페이스 시뮬레이션 ===
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = '';
 
@@ -573,7 +579,6 @@ function calculate() {
     tbody.appendChild(row);
   }
 
-  // === 3. 추가 저축 필요량 ===
   const n = yearsToRetire;
   let factor = 0;
   for (let i = 0; i < n; i++) {
@@ -582,10 +587,8 @@ function calculate() {
   const gap = requiredAssets - projRetireAssets;
   const extraSavingNeeded = factor > 0 ? gap / factor : 0;
 
-  // === 4. UI ===
   document.getElementById('targetAmount').textContent = fmtShort(requiredAssets) + ' 원';
   document.getElementById('targetSub').textContent = `정확히: ${fmt(requiredAssets)} 원 (= 월 ${fmt(monthlySpending)}원 쓰고, 월 ${fmt(monthlyPension)}원 연금받고, 사망 시 ${fmt(legacy)}원 남기기)`;
-  // 현재가치 환산: 은퇴 시점 명목 ÷ (1+물가)^은퇴까지년수
   const requiredAssetsReal = requiredAssets / Math.pow(1 + inflationRate, yearsToRetire);
   document.getElementById('targetAmountReal').textContent = fmtShort(requiredAssetsReal) + ' 원';
 
@@ -608,7 +611,6 @@ function calculate() {
     verdictEl.innerHTML = '<div class="verdict bad">🔴 크게 부족: 목표·저축·은퇴시점 조정 필요</div>';
   }
 
-  // === 5. 입력값 요약 ===
   const annualSaving = annualIncome - annualSpending;
   const savingRate = annualIncome > 0 ? Math.round(annualSaving/annualIncome*100) : 0;
   const summaryItems = [
@@ -625,14 +627,12 @@ function calculate() {
     return '<div style="background:#f8fafc;padding:10px 12px;border-radius:6px;border:1px solid #e5e7eb"><div style="font-size:11px;color:#888;margin-bottom:3px">' + it.label + '</div><div style="font-weight:700;color:#1F4E78">' + it.value + '</div></div>';
   }).join('');
 
-  // 서술형 요약
   const narrativeMsg = '현재 <b>' + currentAge + '세</b>이고 <b>' + retireAge + '세</b>에 은퇴, <b>' + deathAge + '세</b>까지 산다고 가정. ' +
     '은퇴 후엔 매달 <b>' + fmtShort(monthlySpending) + '원</b>을 쓰고, <b>' + pensionStartAge + '세</b>부터 월 <b>' + fmtShort(monthlyPension) + '원</b>의 연금을 받음. ' +
     '사망 시 <b>' + (legacy > 0 ? fmtShort(legacy) + '원' : '0원') + '</b>을 남기는 것이 목표. ' +
     '자산은 매년 <b>' + (returnRate*100).toFixed(1) + '%</b> 수익, 물가는 <b>' + (inflationRate*100).toFixed(1) + '%</b> 상승 가정.';
   document.getElementById('summaryNarrative').innerHTML = '📝 ' + narrativeMsg;
 
-  // === 6. 지출 ±10% 시나리오 ===
   function calcRequiredFor(monthlySpend) {
     const retireSpendAnnualNow = monthlySpend * 12;
     function simFrom(startA) {
@@ -662,10 +662,9 @@ function calculate() {
     const req = calcRequiredFor(s.spend);
     const diff = req - requiredAssets;
     const diffPct = requiredAssets > 0 ? (diff/requiredAssets*100) : 0;
-    // 필요 저축액도 다시 계산
     const sGap = req - projRetireAssets;
     const sExtra = factor > 0 ? sGap / factor : 0;
-    const sAnnualSaving = annualSaving + sExtra; // 현재 저축 + 추가 필요분
+    const sAnnualSaving = annualSaving + sExtra;
     return '<div style="background:white;border:2px solid ' + s.color + ';border-radius:8px;padding:14px">' +
       '<div style="font-size:12px;font-weight:700;color:' + s.color + ';margin-bottom:4px">' + s.label + '</div>' +
       '<div style="font-size:11px;color:#888;margin-bottom:6px">월 ' + fmtShort(s.spend) + '원</div>' +
@@ -678,10 +677,6 @@ function calculate() {
       '</div></div>';
   }).join('');
 
-  // === 7. 안전선 — 은퇴 전 수입/지출 한계 계산 ===
-  // 수입 증분 ΔX가 매년 (1+incomeGrowth)^t 만큼 증가하며 은퇴까지 복리됨
-  // 지출 증분 ΔY는 (1+spendingGrowth)^t 로 증가하며 은퇴까지 복리됨
-  // gap = requiredAssets - projRetireAssets
   let factorIncome = 0, factorSpending = 0;
   for (let i = 0; i < yearsToRetire; i++) {
     factorIncome  += Math.pow(1 + incomeGrowth,  i) * Math.pow(1 + returnRate, yearsToRetire - 1 - i);
@@ -689,13 +684,12 @@ function calculate() {
   }
   const limitsEl = document.getElementById('limitsBox');
   if (limitsEl) {
-    const isShortage = gap > 0; // 부족 상태
+    const isShortage = gap > 0;
     const absGap = Math.abs(gap);
     const incomeAdj  = factorIncome  > 0 ? absGap / factorIncome  : 0;
     const spendingAdj = factorSpending > 0 ? absGap / factorSpending : 0;
 
     if (isShortage) {
-      // 부족: 수입을 늘리거나 / 지출을 줄여야
       limitsEl.innerHTML =
         '<div style="background:#fef2f2;border:2px solid #dc2626;border-radius:8px;padding:16px;margin-bottom:12px">' +
           '<div style="color:#dc2626;font-weight:700;font-size:14px;margin-bottom:8px">🔴 현재 ' + fmtShort(absGap) + '원 부족 — 파이어 달성을 위해:</div>' +
@@ -714,7 +708,6 @@ function calculate() {
           '<div style="margin-top:10px;font-size:12px;color:#7f1d1d;line-height:1.6">📌 위 두 방법 중 하나만 해도 됩니다. 또는 절반씩 섞어도 OK (수입 ↑' + fmtShort(incomeAdj/2) + ' + 지출 ↓' + fmtShort(spendingAdj/2) + ').</div>' +
         '</div>';
     } else {
-      // 여유: 수입을 줄여도 / 지출을 늘려도
       limitsEl.innerHTML =
         '<div style="background:#f0fdf4;border:2px solid #10b981;border-radius:8px;padding:16px;margin-bottom:12px">' +
           '<div style="color:#059669;font-weight:700;font-size:14px;margin-bottom:8px">🟢 ' + fmtShort(absGap) + '원 여유 — 안전선:</div>' +
@@ -736,7 +729,6 @@ function calculate() {
   }
 }
 
-// === 정보 모달 ===
 window.sfShowInfo = function(key) {
   var contents = {
     'namok-real': {
@@ -753,15 +745,15 @@ window.sfShowInfo = function(key) {
     },
     'pension': {
       title: '③ 은퇴 후 수입 (연금)',
-      body: '<b>연금 수령 시작 나이</b>: 보통 국민연금 65세. 개인연금이 더 일찍 시작되면 그 나이로.<br><b>월 연금액</b>: 국민연금 + 개인연금 + 퇴직연금 등 모두 합산. 20년 이상 가입자 평균 약 100만 원.<br><br>연금이 시작되면 그만큼 자산을 덜 까먹어서 필요 자산이 줄어듭니다.'
+      body: '<b>연금 수령 시작 나이</b>: 보통 국민연금 65세. 개인연금이 더 일찍 시작되면 그 나이로.<br><b>월 연금액</b>: 국민연금 + 개인연금 + 퇴직연금 등 모두 합산. <b>국민연금 20년 이상 가입자 평균은 약 월 110만 원</b> (2025년 기준). 전체 수급자 평균은 약 67만 원으로 더 낮지만, 20년 이상 가입 기준이 더 현실적입니다.<br><br>연금이 시작되면 그만큼 자산을 덜 까먹어서 필요 자산이 줄어듭니다.'
     },
     'goal': {
       title: '④ 은퇴 후 지출 & 상속 목표',
       body: '<b>월 소비액 (오늘 기준)</b>: 은퇴 후 매달 얼마 쓸지. <b>지금 가치로 입력</b>. 인플레이션은 자동 반영.<br><b>사망 시 남길 금액</b>: 자녀·가족에게 물려줄 돈 (오늘 기준). <b>0이면 "다 쓰고 감"</b>.<br><br>월 소비 290만 = 한국 노인 가구 평균 수준. 여유로운 노후 원하면 350~500만 권장.'
     },
     'rates': {
-      title: '⑤ 변동률 (연 %)',
-      body: '<b>자산 투자수익률</b>: 매년 자산이 늘어나는 비율. 5% = S&P500 장기 평균 보수적 수치. 너무 높게 잡지 마세요 (실제 못 따라갈 위험).<br><b>물가상승률</b>: 한국 장기 평균 2~3.5%. 보수적으로 3.5% 권장.<br><b>수입 증가율</b>: 연봉 인상률. 보통 2~4%.<br><b>지출 증가율</b>: 통상 물가와 같이 잡음.<br><br><b>실수익률 = 투자수익률 - 물가</b>. 이 차이가 클수록 자산이 빨리 쌓임.'
+      title: '⑤ 변동률 (연 %) — 2000년 이후 장기 평균',
+      body: '<b>자산 투자수익률 (기본 6%)</b> — 2000년 이후 연평균:<br>• 나스닥 ~15% (변동성 최대, 닷컴 후 회복에 15년)<br>• S&P500 7~10%<br>• 다우 ~11%<br>• 코스피 5~7% (배당 포함)<br>기본값 6%는 코스피~S&P500 중간의 보수적 가정. 과거 수익률이 미래를 보장하진 않습니다.<br><br><b>물가상승률 (기본 2.7%)</b> — 2000년 이후 전체 소비자물가(CPI) 평균. 현재가치 환산과 연금 인상에 쓰입니다.<br><br><b>지출 증가율 (기본 3.0%)</b> — <b>생활물가지수</b> 기준. 식료품·외식 등 자주 쓰는 품목은 전체 물가보다 빨리 오르므로, 노후 지출은 물가보다 약간 높게 잡는 게 현실적입니다.<br><br><b>수입 증가율 (기본 3.5%)</b> — 명목임금 상승률 장기 평균.<br><br><b>실수익률 = 투자수익률 − 물가</b>. 이 차이가 클수록 자산이 빨리 쌓입니다. 세금·수수료 미반영.'
     }
   };
   var c = contents[key];
@@ -783,7 +775,6 @@ calculate();
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
-// === 저장/불러오기 (파이어족) ===
 (function(){
   var INPUT_IDS = ['startYear','currentAge','retireAge','deathAge','monthlySpending','legacy','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth'];
   var PAGE_NAME = '파이어족';
@@ -823,7 +814,6 @@ calculate();
           }
         });
         if (typeof calculate === 'function') calculate();
-        else if (typeof simulate === 'function') simulate();
         else {
           var first = document.getElementById(INPUT_IDS[0]);
           if (first) first.dispatchEvent(new Event('input', {bubbles:true}));
@@ -846,7 +836,7 @@ calculate();
     wrapper.style.cssText = 'background:#fff;padding:24px;width:800px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic",sans-serif;color:#1a1a1a';
 
     var title = document.createElement('h1');
-    title.textContent = '파이어족 역산 계산 결과';
+    title.textContent = '파이어족 계산 결과';
     title.style.cssText = 'color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin:0 0 4px 0;font-size:22px';
     wrapper.appendChild(title);
     var dateP = document.createElement('p');
