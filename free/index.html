@@ -174,6 +174,16 @@
     font-weight: 600;
     margin-right: 4px;
   }
+  .info-btn {
+    display: inline-block;
+    cursor: pointer;
+    color: #1F4E78;
+    font-size: 13px;
+    font-weight: 700;
+    margin-left: 2px;
+    user-select: none;
+  }
+  .info-btn:hover { color: #2d6ba3; }
 </style>
 </head>
 <body>
@@ -181,7 +191,7 @@
 <a href="../" class="back-link">← 메인으로</a>
 
 <h1>경제적자유 계산기</h1>
-<p class="desc">노란색 입력칸에 값을 넣으면 자동으로 계산됩니다. 기본값은 한국 평균(2024년 통계청·국민연금공단 기준).</p>
+<p class="desc">노란색 입력칸에 값을 넣으면 자동으로 계산됩니다. 기본값은 <b>2000년 이후 장기 평균</b> 기준 (통계청·국민연금공단).</p>
 
 <!-- 🆕 명목/현재가치 안내 -->
 <div style="background:#dbeafe;border-left:4px solid #2563eb;padding:14px 18px;border-radius:6px;margin-bottom:20px;font-size:13px;color:#1e3a8a;line-height:1.7">
@@ -193,6 +203,17 @@
   • <b>명목</b>은 종이 위 숫자 (자랑용)<br>
   • <b>현재가치</b>는 실제 살림살이 (실력)<br>
   은퇴·노후 계획은 <b>현재가치 기준</b>으로 판단해야 정확합니다.
+</div>
+
+<!-- 🆕 기본값 출처 안내 -->
+<div style="background:#f0fdf4;border-left:4px solid #16a34a;padding:13px 18px;border-radius:6px;margin-bottom:20px;font-size:12.5px;color:#14532d;line-height:1.7">
+  <b style="font-size:13.5px">📊 기본값은 2000년 이후 장기 평균 기준</b><br>
+  특정 연도(호황·불황)에 치우치지 않도록 장기 추세를 반영했습니다.<br>
+  • <b>물가상승률 2.7%</b> — 2000년 이후 소비자물가(CPI) 평균<br>
+  • <b>지출 증가율 3.0%</b> — 생활물가지수 기준 (식료품·외식 등 실제 체감 소비. 전체 물가보다 높음)<br>
+  • <b>수입 증가율 3.5%</b> — 명목임금 상승률 장기 평균<br>
+  • <b>투자수익률 6%</b> — 코스피~S&P500 중간 (수익률 옆 ⓘ 참고)<br>
+  본인 상황에 맞게 자유롭게 조정하세요.
 </div>
 
 <div class="panel">
@@ -237,26 +258,52 @@
       <input type="number" id="pensionStartAge" value="65">
     </div>
     <div class="input-row">
-      <label>월 연금 수령액 (원) <span class="stat-sub">(20년+ 가입자 평균 100만)</span></label>
-      <input type="number" id="monthlyPension" value="1000000">
+      <label>월 연금 수령액 (원) <span class="stat-sub">(20년+ 가입자 평균 110만)</span></label>
+      <input type="number" id="monthlyPension" value="1100000">
     </div>
 
-    <div class="section-label">④ 변동률 (연 %)</div>
+    <div class="section-label">④ 변동률 (연 %) <span style="text-transform:none;font-weight:500;color:#888">— 2000년 이후 장기 평균 기준</span></div>
     <div class="input-row">
-      <label>자산 투자수익률 (%)</label>
-      <input type="number" id="returnRate" value="5" step="0.1">
+      <label>자산 투자수익률 (%) <span class="info-btn" onclick="toggleReturnInfo()">ⓘ</span></label>
+      <input type="number" id="returnRate" value="6" step="0.1">
     </div>
     <div class="input-row">
-      <label>물가상승률 (%)</label>
-      <input type="number" id="inflationRate" value="3.5" step="0.1">
+      <label>물가상승률 (%) <span class="info-btn" onclick="toggleInflInfo()">ⓘ</span></label>
+      <input type="number" id="inflationRate" value="2.7" step="0.1">
     </div>
     <div class="input-row">
       <label>수입 증가율 (%) <span class="stat-sub">(연봉 인상)</span></label>
-      <input type="number" id="incomeGrowth" value="3" step="0.1">
+      <input type="number" id="incomeGrowth" value="3.5" step="0.1">
     </div>
     <div class="input-row">
-      <label>지출 증가율 (%) <span class="stat-sub">(통상=물가)</span></label>
-      <input type="number" id="spendingGrowth" value="3.5" step="0.1">
+      <label>지출 증가율 (%) <span class="stat-sub">(생활물가)</span></label>
+      <input type="number" id="spendingGrowth" value="3" step="0.1">
+    </div>
+
+    <div id="returnInfo" style="display:none;grid-column:1/-1;background:#f0f5fa;border:1px solid #c7d7e8;border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.7;color:#1a3a52;margin-top:4px">
+      <b style="color:#1F4E78">📈 투자수익률 참고 (2000년 이후 연평균)</b><br>
+      <table style="width:100%;margin:8px 0;font-size:12.5px;border-collapse:collapse">
+        <tr style="border-bottom:1px solid #d0ddea"><td style="padding:5px 4px;text-align:left">나스닥</td><td style="padding:5px 4px;text-align:right">강세장 약 15% (변동성 최대)</td></tr>
+        <tr style="border-bottom:1px solid #d0ddea"><td style="padding:5px 4px;text-align:left">S&P500</td><td style="padding:5px 4px;text-align:right">약 7~10%</td></tr>
+        <tr style="border-bottom:1px solid #d0ddea"><td style="padding:5px 4px;text-align:left">다우</td><td style="padding:5px 4px;text-align:right">약 11% (안정적)</td></tr>
+        <tr><td style="padding:5px 4px;text-align:left">코스피</td><td style="padding:5px 4px;text-align:right">약 5~7% (배당 포함)</td></tr>
+      </table>
+      <span style="color:#888;font-size:12px">⚠️ 과거 수익률이 미래를 보장하지 않습니다. 나스닥은 2000년 닷컴버블 후 전고점 회복에 15년 걸렸습니다. 기본값 6%는 코스피~S&P500 중간의 보수적 가정입니다. 세금·수수료 미반영.</span>
+    </div>
+
+    <div id="inflInfo" style="display:none;grid-column:1/-1;background:#fef9f0;border:1px solid #e8d5b0;border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.7;color:#5a4a2a;margin-top:4px">
+      <b style="color:#b45309">💰 물가상승률이 어디에 쓰이나?</b><br>
+      이 값은 단순 안내가 아니라 <b>계산에 직접 쓰입니다.</b> 두 곳:<br>
+      <div style="margin:8px 0 8px 8px">
+        <b>① 현재가치 환산</b> — 미래 자산을 "오늘 돈"으로 바꿀 때. 물가가 높을수록 미래 돈의 실제 구매력(현재가치)이 줄어듭니다. 표의 <b>'자산(현재가치)'</b> 칸 전체가 이 값으로 계산됩니다.<br>
+        <b>② 연금 자동 인상</b> — 국민연금은 매년 물가만큼 올라갑니다(실제 정책). 이 값으로 연금이 해마다 인상되어 반영됩니다.
+      </div>
+      <b style="color:#b45309">📊 참고 (2000년 이후 연평균)</b><br>
+      <table style="width:100%;margin:8px 0;font-size:12.5px;border-collapse:collapse">
+        <tr style="border-bottom:1px solid #e8d5b0"><td style="padding:5px 4px;text-align:left">전체 소비자물가(CPI)</td><td style="padding:5px 4px;text-align:right">약 2.5~2.7%</td></tr>
+        <tr><td style="padding:5px 4px;text-align:left">생활물가지수(식료품·외식 등)</td><td style="padding:5px 4px;text-align:right">전체보다 높음 (체감물가)</td></tr>
+      </table>
+      <span style="color:#888;font-size:12px">기본값 2.7%는 전체 CPI 장기 평균. 지출 증가율(3%)을 더 높게 둔 이유는 실제 생활비(생활물가)가 전체 물가보다 빨리 오르기 때문입니다.</span>
     </div>
   </div>
 </div>
@@ -351,7 +398,7 @@
     <li><span class="badge">연 지출액</span> 1년 동안 쓰는 생활비. <b>평생 적용</b>(은퇴 후에도 계속). 평균 3,480만.</li>
     <li><span class="badge">연 저축액 (자동)</span> = 수입 − 지출. 은퇴 전에만 자산에 쌓임.</li>
     <li><span class="badge">연금 수령 시작 나이</span> 국민연금 기준 1969년 이후 출생자는 65세. 사적연금이 더 빠르면 그 나이로 조정.</li>
-    <li><span class="badge">월 연금 수령액</span> 국민연금 20년+ 가입자 평균 약 월 100만원. 사적연금·퇴직연금 합산해서 더 늘려도 됨. <b>연금 수령 시작 후부터 사망까지 매년 물가만큼 인상</b> (국민연금 실제 정책 반영).</li>
+    <li><span class="badge">월 연금 수령액</span> 국민연금 20년+ 가입자 평균 약 월 110만원 (2025년 기준). 전체 수급자 평균은 약 67만원으로 더 낮지만, 20년 이상 가입 기준이 더 현실적. 사적연금·퇴직연금 합산해서 더 늘려도 됨. <b>연금 수령 시작 후부터 사망까지 매년 물가만큼 인상</b> (국민연금 실제 정책 반영).</li>
   </ul>
 
   <h3>② 결과 해석</h3>
@@ -390,6 +437,16 @@ const fmtShort = n => {
 
 document.getElementById('startYear').value = new Date().getFullYear();
 
+function toggleReturnInfo() {
+  var el = document.getElementById('returnInfo');
+  el.style.display = (el.style.display === 'none' || !el.style.display) ? 'block' : 'none';
+}
+
+function toggleInflInfo() {
+  var el = document.getElementById('inflInfo');
+  el.style.display = (el.style.display === 'none' || !el.style.display) ? 'block' : 'none';
+}
+
 function calculate() {
   const startYear = parseInt(document.getElementById('startYear').value) || new Date().getFullYear();
   const currentAge = parseInt(document.getElementById('currentAge').value) || 0;
@@ -414,7 +471,7 @@ function calculate() {
   tbody.innerHTML = '';
 
   let assets = currentAssets;
-  let cumulativeNetFlow = 0; // 순현금흐름 누적 (수입+연금-지출)
+  let cumulativeNetFlow = 0;
   let retireAssetsNominal = 0, retireAssetsReal = 0, retireCumFlow = 0;
   let age100Nominal = 0, age100Real = 0, age100CumFlow = 0;
   let depletedAge = null;
@@ -427,11 +484,8 @@ function calculate() {
     const isRetired = age > retireAge;
     const isPension = age >= pensionStartAge;
 
-    // 수입: 은퇴 전까지만
     const thisIncome = isRetired ? 0 : annualIncome * Math.pow(1 + incomeGrowth, yearsFromNow);
-    // 지출: 항상
     const thisSpending = annualSpending * Math.pow(1 + spendingGrowth, yearsFromNow);
-    // 연금: 수령 시작 나이 이후, 물가만큼 자동 인상 (오늘 기준→해당 나이까지의 물가 반영)
     const thisPension = isPension ? annualPension * Math.pow(1 + inflationRate, yearsFromNow) : 0;
 
     const netFlow = thisIncome + thisPension - thisSpending;
@@ -508,7 +562,6 @@ calculate();
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
-// === 저장/불러오기 (경제자유) ===
 (function(){
   var INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth'];
   var PAGE_NAME = '경제적자유';
@@ -518,7 +571,6 @@ calculate();
     return d.getFullYear() + ('0'+(d.getMonth()+1)).slice(-2) + ('0'+d.getDate()).slice(-2);
   }
 
-  // JSON 저장
   document.getElementById('btnSaveJson').addEventListener('click', function(){
     var data = { page: PAGE_NAME, savedAt: new Date().toISOString(), inputs: {} };
     INPUT_IDS.forEach(function(id){
@@ -534,7 +586,6 @@ calculate();
     URL.revokeObjectURL(url);
   });
 
-  // JSON 불러오기
   document.getElementById('fileLoad').addEventListener('change', function(e){
     var file = e.target.files[0];
     if (!file) return;
@@ -549,11 +600,9 @@ calculate();
             if (el) el.value = data.inputs[id];
           }
         });
-        // 재계산 트리거
         if (typeof calculate === 'function') calculate();
         else if (typeof simulate === 'function') simulate();
         else {
-          // 첫 input에 input 이벤트 dispatch
           var first = document.getElementById(INPUT_IDS[0]);
           if (first) first.dispatchEvent(new Event('input', {bubbles:true}));
         }
@@ -563,10 +612,9 @@ calculate();
       }
     };
     reader.readAsText(file);
-    e.target.value = ''; // 같은 파일 재선택 가능하게
+    e.target.value = '';
   });
 
-  // PDF 저장 - 입력값~시뮬레이션 표 전체를 1장에 (콘텐츠 크기로 페이지 맞춤)
   document.getElementById('btnSavePdf').addEventListener('click', function(){
     var allPanels = document.querySelectorAll('.panel');
     if (!allPanels.length) { alert('캡처 영역 없음'); return; }
@@ -591,15 +639,13 @@ calculate();
     wrapper.style.top = '0';
     document.body.appendChild(wrapper);
 
-    // 콘텐츠 실제 크기 측정 후, 그 비율로 PDF 페이지 생성 (단일 페이지)
     setTimeout(function(){
       html2canvas(wrapper, { scale: 1.5, backgroundColor: '#ffffff', logging: false, useCORS: true }).then(function(canvas){
         var imgData = canvas.toDataURL('image/jpeg', 0.92);
         var pxWidth = canvas.width;
         var pxHeight = canvas.height;
-        // A4 폭 210mm 기준, 콘텐츠 비율 유지하여 1장 PDF 생성
-        var pdfWidth = 210; // A4 가로
-        var pdfHeight = (pxHeight * pdfWidth) / pxWidth; // 비율 유지
+        var pdfWidth = 210;
+        var pdfHeight = (pxHeight * pdfWidth) / pxWidth;
         var pdf = new jspdf.jsPDF({
           unit: 'mm',
           format: [pdfWidth, pdfHeight],
