@@ -14,7 +14,7 @@
 <a href="../" class="back-link">← 세금 계산기로</a>
 
 <h1>🏘️ 취득세 계산기</h1>
-<p class="desc">부동산 매수 시 취득세 자동 계산. 주택/토지/상가 구분, 다주택 중과·증여·상속 자동 분기. (2026년 5월 기준)</p>
+<p class="desc">부동산 매수 시 취득세 자동 계산. 주택/오피스텔/토지/상가 구분, 다주택 중과·증여·상속 자동 분기. (2026년 기준)</p>
 
 <div class="panel">
   <h2>📥 입력값</h2>
@@ -25,9 +25,17 @@
       <label>부동산 구분</label>
       <select id="propertyType">
         <option value="주택" selected>주택</option>
+        <option value="오피스텔">오피스텔</option>
         <option value="농지">토지 (농지)</option>
         <option value="농지외">토지 (농지외)</option>
         <option value="상가">상가·건물</option>
+      </select>
+    </div>
+    <div class="input-row" id="officetelUseRow" style="display:none">
+      <label>오피스텔 용도</label>
+      <select id="officetelUse">
+        <option value="업무용" selected>업무용 (4.6% 단일)</option>
+        <option value="주거용">주거용 (주택세율·주택수 포함)</option>
       </select>
     </div>
     <div class="input-row">
@@ -35,7 +43,7 @@
       <input type="number" id="price" value="600000000">
     </div>
     <div class="input-row">
-      <label>전용면적 (㎡) <span style="font-size:11px;color:#888;">(주택만)</span></label>
+      <label>전용면적 (㎡) <span style="font-size:11px;color:#888;">(주택·주거용오피스텔)</span></label>
       <input type="number" id="area" value="84">
     </div>
 
@@ -82,6 +90,7 @@
       <tr><td>농어촌특별세</td><td id="ruralTax">-</td><td id="ruralDesc">85㎡ 초과 / 농지외 / 상가</td></tr>
     </tbody>
   </table>
+  <div id="officetelNote" style="display:none;background:#eff6ff;border-left:4px solid #2563eb;padding:10px 14px;margin-top:12px;border-radius:4px;font-size:12.5px;color:#1e3a8a;line-height:1.6"></div>
 </div>
 
 <div class="final">
@@ -110,10 +119,17 @@
     <li>다주택 중과: 2주택 조정 8% / 3주택+ 또는 법인 12%</li>
   </ul>
 
-  <h3>③ 부가세금</h3>
+  <h3>③ 오피스텔 (용도별)</h3>
   <ul>
-    <li><b>지방교육세:</b> 주택 일반 = 취득세×10% / 농지 0.2% / 농지외·상가 0.4% / 증여 0.3% / 상속 0.16%</li>
-    <li><b>농어촌특별세:</b> 주택 85㎡ 초과 0.2~1% / 농지 면제 / 농지외·상가 0.2%</li>
+    <li><b>업무용:</b> 일반건물 4.6%(취득세4%+교육세0.4%+농특세0.2%) 단일. <b>주택 수에 포함 안 됨.</b> 부가세 환급 가능(일반임대사업자).</li>
+    <li><b>주거용:</b> 주택 세율(1~12%) 적용. <b>2020.8.12 이후 취득분은 주택 수에 포함</b>(다른 주택 취득 시 중과 영향). 단 시가표준액 1억 이하는 주택 수 제외. 85㎡ 이하 농특세 면제.</li>
+    <li>실제 사용 용도로 판정(등기부상 용도 아님). 경계 사례는 세무 전문가 상담 권장.</li>
+  </ul>
+
+  <h3>④ 부가세금</h3>
+  <ul>
+    <li><b>지방교육세:</b> 주택 일반 = 취득세×10% / 농지 0.2% / 농지외·상가·업무용오피스텔 0.4% / 증여 0.3% / 상속 0.16%</li>
+    <li><b>농어촌특별세:</b> 주택·주거용오피스텔 85㎡ 초과 0.2~1% (85㎡ 이하 면제) / 농지 면제 / 농지외·상가·업무용오피스텔 0.2%</li>
   </ul>
 
   <div class="warn-box">
@@ -127,6 +143,7 @@ const fmtPct = n => (n * 100).toFixed(2) + '%';
 
 function calculate() {
   const propertyType = document.getElementById('propertyType').value;
+  const officetelUse = document.getElementById('officetelUse').value;
   const price = parseFloat(document.getElementById('price').value) || 0;
   const area = parseFloat(document.getElementById('area').value) || 0;
   const houseCount = parseInt(document.getElementById('houseCount').value) || 1;
@@ -134,10 +151,20 @@ function calculate() {
   const acquireType = document.getElementById('acquireType').value;
   const isCorp = document.getElementById('isCorp').value === 'Y';
 
+  // 오피스텔 용도 선택칸 표시/숨김
+  document.getElementById('officetelUseRow').style.display = (propertyType === '오피스텔') ? 'flex' : 'none';
+  // 오피스텔 주택수 안내
+  const noteEl = document.getElementById('officetelNote');
+
+  // 주거용 오피스텔은 내부적으로 주택 세율 체계를 그대로 적용
+  let effectiveType = propertyType;
+  if (propertyType === '오피스텔') {
+    effectiveType = (officetelUse === '주거용') ? '주택' : '농지외'; // 업무용=일반건물 4.6%(=농지외 매매와 동일), 주거용=주택세율
+  }
+
   let rate = 0, rateDesc = '', eduRate = 0, eduDesc = '', ruralRate = 0, ruralDesc = '면제';
 
-  // 1. 취득세율
-  if (propertyType === '주택') {
+  if (effectiveType === '주택') {
     if (acquireType === '증여') {
       rate = (isRegulated && houseCount >= 2) ? 0.12 : 0.035;
       rateDesc = (isRegulated && houseCount >= 2) ? '주택 증여 (조정+다주택) 12%' : '주택 증여 3.5%';
@@ -148,7 +175,6 @@ function calculate() {
       rate = 0.028;
       rateDesc = '주택 신축 2.8%';
     } else {
-      // 매매
       if (isCorp || houseCount >= 3) {
         rate = isRegulated || isCorp ? 0.12 : 0.08;
         rateDesc = isCorp ? '법인 → 12%' : (isRegulated ? '3주택↑ 조정 → 12%' : '3주택↑ 비조정 → 8%');
@@ -156,47 +182,47 @@ function calculate() {
         rate = 0.08;
         rateDesc = '2주택 조정 → 8%';
       } else {
-        // 1주택 또는 2주택 비조정
         if (price <= 600000000) rate = 0.01;
         else if (price <= 900000000) rate = 0.01 + ((price - 600000000) / 300000000) * 0.02;
         else rate = 0.03;
         rateDesc = `주택 매매 ${(rate*100).toFixed(2)}% (1~2주택 비조정)`;
       }
     }
-  } else if (propertyType === '농지') {
+    if (propertyType === '오피스텔') rateDesc = '[주거용 오피스텔] ' + rateDesc;
+  } else if (effectiveType === '농지') {
     rate = acquireType === '매매' ? 0.03 : acquireType === '증여' ? 0.035 : 0.023;
     rateDesc = `농지 ${acquireType} ${(rate*100).toFixed(1)}%`;
-  } else if (propertyType === '농지외') {
+  } else if (effectiveType === '농지외') {
     rate = acquireType === '매매' ? 0.04 : acquireType === '증여' ? 0.035 : 0.028;
     rateDesc = `농지외 토지 ${acquireType} ${(rate*100).toFixed(1)}%`;
-  } else if (propertyType === '상가') {
+    if (propertyType === '오피스텔') rateDesc = `[업무용 오피스텔] 일반건물 ${acquireType} ${(rate*100).toFixed(1)}%`;
+  } else if (effectiveType === '상가') {
     rate = acquireType === '매매' ? 0.04 : acquireType === '증여' ? 0.035 : 0.028;
     rateDesc = `상가·건물 ${acquireType} ${(rate*100).toFixed(1)}%`;
   }
 
   const acquireTax = price * rate;
 
-  // 2. 지방교육세
-  if (propertyType === '주택') {
+  if (effectiveType === '주택') {
     if (rate >= 0.08) { eduRate = 0.004; eduDesc = '중과세 0.4%'; }
     else if (acquireType === '증여') { eduRate = 0.003; eduDesc = '증여 0.3%'; }
     else if (acquireType === '상속') { eduRate = 0.0016; eduDesc = '상속 0.16%'; }
     else { eduRate = acquireTax / price * 0.1; eduDesc = '취득세 × 10%'; }
-  } else if (propertyType === '농지') {
+  } else if (effectiveType === '농지') {
     eduRate = 0.002; eduDesc = '농지 0.2%';
   } else {
     eduRate = 0.004; eduDesc = '농지외·상가 0.4%';
   }
   const eduTax = price * eduRate;
 
-  // 3. 농어촌특별세
-  if (propertyType === '주택') {
+  if (effectiveType === '주택') {
     if (area > 85) {
-      // 면적 초과시 가산. 일반적으로 0.2%, 중과시 더 높음
       if (rate >= 0.08) { ruralRate = 0.01; ruralDesc = '85㎡ 초과 + 중과 1%'; }
       else { ruralRate = 0.002; ruralDesc = '85㎡ 초과 0.2%'; }
+    } else {
+      ruralRate = 0; ruralDesc = '85㎡ 이하 → 면제';
     }
-  } else if (propertyType === '농지') {
+  } else if (effectiveType === '농지') {
     ruralRate = 0; ruralDesc = '농지 면제';
   } else {
     ruralRate = 0.002; ruralDesc = '0.2%';
@@ -215,6 +241,18 @@ function calculate() {
   document.getElementById('ruralDesc').textContent = ruralDesc;
   document.getElementById('finalTax').textContent = fmt(finalTax) + ' 원';
   document.getElementById('effectiveRate').textContent = fmtPct(effectiveRate);
+
+  // 오피스텔 안내
+  if (propertyType === '오피스텔') {
+    noteEl.style.display = 'block';
+    if (officetelUse === '업무용') {
+      noteEl.innerHTML = '💡 <b>업무용 오피스텔</b>: 주택 수와 무관하게 일반건물 4.6%(취득세4%+교육세0.4%+농특세0.2%) 단일 적용. <b>다른 주택 취득 시 주택 수에 포함되지 않음.</b> 부가가치세(건물분 10%)는 일반임대사업자로 등록 시 환급 가능(이 계산기 미반영).';
+    } else {
+      noteEl.innerHTML = '💡 <b>주거용 오피스텔</b>: 주택 세율 적용 + <b>2020.8.12 이후 취득분은 주택 수에 포함</b>(다른 주택 취득 시 중과 영향). 단, <b>시가표준액 1억 이하</b>는 주택 수에서 제외. 85㎡ 이하는 농특세 면제. 위 "주택수·조정지역" 값을 정확히 입력하세요.';
+    }
+  } else {
+    noteEl.style.display = 'none';
+  }
 }
 
 document.querySelectorAll('input, select').forEach(el => {
