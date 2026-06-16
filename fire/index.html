@@ -306,15 +306,24 @@
   </div>
 </div>
 
-<!-- 🆕 저장/불러오기 버튼 -->
-<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;padding:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;align-items:center">
-  <div style="font-size:12px;color:#166534;font-weight:600;margin-right:auto">💾 결과 저장 (본인 PC에만 저장, 서버 전송 X)</div>
-  <button id="btnSavePdf" type="button" style="background:#dc2626;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">📄 PDF로 저장</button>
-  <button id="btnSaveJson" type="button" style="background:#1F4E78;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">💾 입력값 저장 (JSON)</button>
-  <label style="background:#10b981;color:white;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">
-    📂 불러오기
-    <input type="file" id="fileLoad" accept=".json" style="display:none">
-  </label>
+<!-- 🆕 저장/불러오기 버튼 + 자동저장 안내 -->
+<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;margin-bottom:14px">
+  <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
+    <div style="font-size:12px;color:#166534;font-weight:600;margin-right:auto">💾 저장 (서버 전송 없음 · 광고 없음)</div>
+    <button id="btnSavePdf" type="button" style="background:#dc2626;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">📄 PDF로 저장</button>
+    <button id="btnSaveJson" type="button" style="background:#1F4E78;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">💾 입력값 저장 (JSON)</button>
+    <label style="background:#10b981;color:white;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">
+      📂 불러오기
+      <input type="file" id="fileLoad" accept=".json" style="display:none">
+    </label>
+    <button id="btnClearAuto" type="button" style="background:#9ca3af;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">🗑 자동저장 지우기</button>
+  </div>
+  <div style="font-size:11.5px;color:#166534;line-height:1.7;border-top:1px solid #bbf7d0;padding-top:9px">
+    <b>📌 저장 방식 안내 (꼭 읽어주세요)</b><br>
+    • <b>자동 저장:</b> 입력하면 <b>이 브라우저에</b> 자동 저장돼요. 껐다 켜도 값이 남아있습니다. <b style="color:#b91c1c">단, 서버가 아니라 "지금 쓰는 이 브라우저"에만 저장</b>됩니다. → 다른 PC·폰에서는 안 보이고, 브라우저 기록(쿠키·캐시)을 지우면 사라집니다.<br>
+    • <b>영구 보관·다른 기기 이동:</b> <b>[입력값 저장(JSON)]</b> 버튼으로 파일을 내려받아 두세요. 그 파일을 <b>[불러오기]</b> 하면 어디서든 복원됩니다. (이게 진짜 백업)<br>
+    • 입력한 어떤 정보도 <b>서버로 전송되지 않습니다.</b> 광고도 없습니다.
+  </div>
 </div>
 
 <div id="capture-area">
@@ -818,6 +827,7 @@ calculate();
           var first = document.getElementById(INPUT_IDS[0]);
           if (first) first.dispatchEvent(new Event('input', {bubbles:true}));
         }
+        try { autoSave(); } catch(e) {}
         alert('✅ 입력값 불러오기 완료. 결과가 다시 계산됩니다.');
       } catch(err) {
         alert('❌ 파일 읽기 실패: ' + err.message);
@@ -826,6 +836,48 @@ calculate();
     reader.readAsText(file);
     e.target.value = '';
   });
+
+  // === 자동저장 (localStorage) ===
+  var AUTO_KEY = 'sf_fire_autosave';
+  function autoSave(){
+    try {
+      var data = {};
+      INPUT_IDS.forEach(function(id){
+        var el = document.getElementById(id);
+        if (el) data[id] = el.value;
+      });
+      localStorage.setItem(AUTO_KEY, JSON.stringify(data));
+    } catch(e) {}
+  }
+  function autoLoad(){
+    try {
+      var raw = localStorage.getItem(AUTO_KEY);
+      if (!raw) return;
+      var data = JSON.parse(raw);
+      INPUT_IDS.forEach(function(id){
+        if (data[id] !== undefined) {
+          var el = document.getElementById(id);
+          if (el) el.value = data[id];
+        }
+      });
+      if (typeof calculate === 'function') calculate();
+    } catch(e) {}
+  }
+  INPUT_IDS.forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', autoSave);
+      el.addEventListener('change', autoSave);
+    }
+  });
+  var clearBtn = document.getElementById('btnClearAuto');
+  if (clearBtn) clearBtn.addEventListener('click', function(){
+    if (confirm('이 브라우저에 자동저장된 입력값을 지울까요?\\n(JSON으로 저장해둔 파일은 영향 없습니다)')) {
+      try { localStorage.removeItem(AUTO_KEY); } catch(e) {}
+      alert('자동저장을 지웠습니다. 새로고침하면 기본값으로 돌아갑니다.');
+    }
+  });
+  autoLoad();
 
   document.getElementById('btnSavePdf').addEventListener('click', function(){
     var allPanels = document.querySelectorAll('.panel, .hero');
