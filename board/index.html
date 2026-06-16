@@ -261,9 +261,17 @@ function updateTypeUI(){
   if(isNotice){
     $('pwLabel').innerHTML = '관리자 비밀번호';
     $('pwHint').textContent = '공지 작성에는 관리자 비밀번호가 필요합니다.';
+    // 공지는 작성자 기본 '운영자'
+    if(!editingId && (!$('fAuthor').value.trim() || $('fAuthor').value.trim()==='익명')){
+      $('fAuthor').value = '운영자';
+    }
   } else {
     $('pwLabel').innerHTML = '비밀번호 <span style="color:#888;font-weight:400">(본인 글 수정·삭제용)</span>';
     $('pwHint').textContent = '문의 글은 이 비밀번호로 나중에 수정·삭제할 수 있어요.';
+    // 문의로 바꾸면 '운영자' 기본값 비우기
+    if(!editingId && $('fAuthor').value.trim()==='운영자'){
+      $('fAuthor').value = '';
+    }
   }
 }
 $('fType').addEventListener('change', updateTypeUI);
@@ -280,12 +288,14 @@ $('btnSubmit').addEventListener('click', async ()=>{
   if(!title){ alert('제목을 입력하세요.'); return; }
   if(!content){ alert('내용을 입력하세요.'); return; }
 
-  // 공지는 관리자 비밀번호 확인
-  if(type === 'notice'){
-    const ph = await hashPw(pw);
-    if(ph !== ADMIN_PW_HASH){ alert('관리자 비밀번호가 틀렸습니다.'); return; }
-  } else {
-    if(pw.length < 4){ alert('비밀번호를 4자 이상 입력하세요.'); return; }
+  // 신규 작성일 때만 비밀번호 검사 (수정은 진입 시 이미 인증됨)
+  if(!editingId){
+    if(type === 'notice'){
+      const ph = await hashPw(pw);
+      if(ph !== ADMIN_PW_HASH){ alert('관리자 비밀번호가 틀렸습니다.'); return; }
+    } else {
+      if(pw.length < 4){ alert('비밀번호를 4자 이상 입력하세요.'); return; }
+    }
   }
 
   $('btnSubmit').disabled = true;
