@@ -1,6 +1,6 @@
 /* ============================================
    스윙파머 공통 스크립트 (common.js)
-   - 상단 고정 헤더 (메인 링크 + 다크모드 + 글자크기 + 문의)
+   - 상단 고정 헤더 (메인 링크 + 다크모드 + 글자크기 + 공지문의 + 문의)
    - 다크모드 (localStorage 저장)
    - 글자크기 4단계 (작게/기본/크게/더크게)
    사용법: 각 페이지 <head> 또는 <body> 끝에
@@ -11,6 +11,7 @@
   'use strict';
 
   var KAKAO_URL = 'https://open.kakao.com/o/svyzG3wi';
+  var BOARD_URL = '/board/';
   var MAIN_URL = '/';
 
   // ---------- 1. 공통 스타일 주입 ----------
@@ -79,6 +80,7 @@
     width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
     font-size: 15px; display: flex; align-items: center; justify-content: center;
     transition: background 0.15s; padding: 0; line-height: 1;
+    text-decoration: none;
   }
   #sf-header .sf-btn:hover { background: rgba(255,255,255,0.28); }
   #sf-header .sf-btn.wide { width: auto; padding: 0 10px; font-size: 13px; font-weight: 600; gap: 4px; }
@@ -188,7 +190,8 @@
           '<button class="sf-a-xl" data-size="1.4" title="더 크게">A</button>' +
         '</div>' +
         '<button class="sf-btn" id="sf-dark-toggle" title="다크모드">🌙</button>' +
-        '<a class="sf-btn wide label-hide" href="' + KAKAO_URL + '" target="_blank" title="수정사항 문의">💬<span class="txt">문의</span></a>' +
+        '<a class="sf-btn wide label-hide" href="' + BOARD_URL + '" title="공지 & 문의 게시판">📢<span class="txt">공지·문의</span></a>' +
+        '<a class="sf-btn wide label-hide" href="' + KAKAO_URL + '" target="_blank" title="카톡 문의">💬<span class="txt">카톡</span></a>' +
       '</div>';
     document.body.insertBefore(header, document.body.firstChild);
   }
