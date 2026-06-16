@@ -193,6 +193,9 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
       <div class="field"><label>첫 배당월</label><select id="fMonth">
         <option value="1">1월</option><option value="2">2월</option><option value="3" selected>3월</option><option value="4">4월</option><option value="5">5월</option><option value="6">6월</option><option value="7">7월</option><option value="8">8월</option><option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
       </select></div>
+      <div class="field"><label>현재가 <span style="font-size:10px;color:#888">(선택·평가손익용)</span></label><input type="number" id="fNow" value="0" step="any" placeholder="비우면 매입가 기준"></div>
+      <div class="field"><label>누적 받은 배당 <span style="font-size:10px;color:#888">(선택·원금회수율용)</span></label><input type="number" id="fReceived" value="0" step="any" placeholder="지금까지 총액"></div>
+      <div class="field" style="grid-column:1/-1"><label>메모 (선택)</label><input type="text" id="fMemo" placeholder="예: 배당성장주, 장기보유 / 2024.3 매수"></div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-primary" id="btnAdd">➕ 추가</button>
@@ -207,8 +210,8 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
       <table class="holdings" id="holdingsTable">
         <thead>
           <tr>
-            <th>종목</th><th>통화</th><th>수량</th><th>평단</th><th>평가액</th>
-            <th>주당배당</th><th>연배당</th><th>시가배당률</th><th>관리</th>
+            <th>종목</th><th>통화</th><th>수량</th><th>평단</th><th>현재가</th><th>평가액</th><th>평가손익</th>
+            <th>주당배당</th><th>연배당</th><th>수익률</th><th>원금회수</th><th>관리</th>
           </tr>
         </thead>
         <tbody id="holdingsBody"></tbody>
@@ -219,24 +222,47 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 
   <div class="panel">
     <h2>⚙️ 환율·세율 설정</h2>
-    <div class="form-grid" style="max-width:560px">
-      <div class="field"><label>USD/KRW 환율 <span style="font-size:10px;color:#888">(달러→원)</span></label><input type="number" id="fxRate" value="1380" step="1"></div>
-      <div class="field"><label>국내 배당 세율 (%)</label><input type="number" id="taxKR" value="15.4" step="0.1"></div>
-      <div class="field"><label>미국 배당 세율 (%)</label><input type="number" id="taxUS" value="15" step="0.1"></div>
+    <div class="form-grid" style="max-width:560px;margin-bottom:6px">
+      <div class="field"><label>USD/KRW 환율 <span style="font-size:10px;color:#888">(달러→원)</span></label><input type="number" id="fxRate" value="1500" step="1"></div>
+      <div class="field"><label>과세 주체</label><select id="taxEntity"><option value="personal" selected>개인</option><option value="corp">법인</option></select></div>
     </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-      <span style="font-size:12px;color:#666;align-self:center">국내 세율 프리셋:</span>
-      <button class="btn btn-gray btn-sm" onclick="setTaxKR(15.4)">일반 15.4%</button>
-      <button class="btn btn-gray btn-sm" onclick="setTaxKR(0)">비과세 0%</button>
-      <button class="btn btn-gray btn-sm" onclick="setTaxKR(26.4)">금융종합 26.4%</button>
-      <button class="btn btn-gray btn-sm" onclick="setTaxKR(35.2)">금융종합 35.2%</button>
-      <button class="btn btn-gray btn-sm" onclick="setTaxKR(11)">법인 11%</button>
-      <button class="btn btn-gray btn-sm" onclick="setTaxKR(22)">법인 22%</button>
+
+    <!-- 개인 모드 -->
+    <div id="personalTax">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+        <label style="font-size:13px;font-weight:600;color:#444;display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" id="useComprehensive" style="width:16px;height:16px"> 금융소득종합과세 적용 (연 금융소득 2천만원 초과)
+        </label>
+      </div>
+      <div id="simpleTaxRow" class="form-grid" style="max-width:400px">
+        <div class="field"><label>국내 배당 세율 (%)</label><input type="number" id="taxKR" value="15.4" step="0.1"></div>
+        <div class="field"><label>미국 배당 세율 (%)</label><input type="number" id="taxUS" value="15" step="0.1"></div>
+      </div>
+      <div id="compTaxRow" style="display:none">
+        <div class="form-grid" style="max-width:560px">
+          <div class="field"><label>배당 외 다른 금융소득 (원/년) <span style="font-size:10px;color:#888">(이 앱 밖의 이자·배당)</span></label><input type="number" id="otherFinIncome" value="0" step="1000000"></div>
+          <div class="field"><label>미국 배당 원천징수 (%) <span style="font-size:10px;color:#888">(외국납부세액)</span></label><input type="number" id="taxUS2" value="15" step="0.1"></div>
+        </div>
+        <div id="compTaxResult" style="font-size:12.5px;color:#1e3a8a;background:#eff6ff;border-radius:6px;padding:10px 12px;line-height:1.7;margin-top:4px"></div>
+      </div>
     </div>
-    <p style="font-size:11.5px;color:#888;line-height:1.6">
-      • <b>일반 15.4%</b>: 배당소득세 14% + 지방세 1.4% (연 금융소득 2천만원 이하).<br>
-      • <b>금융종합과세</b>: 연 금융소득 2천만원 초과 시 다른 소득과 합산해 누진세율(6~45%) 적용. 26.4%·35.2%는 예시 구간이며 본인 소득에 맞게 직접 입력하세요.<br>
-      • <b>법인</b>: 법인세율(9~24%+지방세). 보유 주체가 법인이면 선택. 정확한 적용은 세무 전문가 상담 권장.
+
+    <!-- 법인 모드 -->
+    <div id="corpTax" style="display:none">
+      <div class="form-grid" style="max-width:560px">
+        <div class="field"><label>법인 과세표준 구간</label><select id="corpBracket">
+          <option value="9.9">2억 이하 (9% + 지방세 = 9.9%)</option>
+          <option value="20.9">2억~200억 (19% = 20.9%)</option>
+          <option value="23.1">200억~3000억 (21% = 23.1%)</option>
+          <option value="26.4">3000억 초과 (24% = 26.4%)</option>
+        </select></div>
+        <div class="field"><label>미국 배당 원천징수 (%)</label><input type="number" id="taxUSCorp" value="15" step="0.1"></div>
+      </div>
+      <p style="font-size:11.5px;color:#888;line-height:1.6">법인은 배당소득이 다른 소득과 합쳐져 <b>법인세율</b>로 과세됩니다. 위는 과세표준 구간별 세율(+지방소득세 10%). 실제론 다른 손익과 합산되니 <b>근사치</b>입니다.</p>
+    </div>
+
+    <p style="font-size:11.5px;color:#888;line-height:1.7;margin-top:10px;border-top:1px solid #eee;padding-top:8px">
+      ⚠️ <b>세금은 근사치입니다.</b> 금융소득종합과세는 <b>다른 종합소득(근로·사업 등)과도 합산</b>되어 실제 세율이 달라질 수 있고, 비교과세·세액공제 등은 미반영입니다. 이 앱은 "<b>다른 종합소득은 없고 금융소득만 있다</b>"는 단순 가정으로 계산합니다. 정밀 계산은 세무 전문가·홈택스를 이용하세요.
     </p>
   </div>
 </div>
@@ -296,8 +322,11 @@ const $=id=>document.getElementById(id);
 const AUTO_KEY='sf_dividend_portfolio';
 let holdings=[];   // {id,name,ticker,country,qty,avg,dps,freq,month}
 let editingId=null;
-let fxRate=1380;
+let fxRate=1500;
 let taxKR=15.4, taxUS=15;
+let taxEntity='personal', useComprehensive=false, otherFinIncome=0;
+let corpRate=9.9;
+let effKRRate=0.154, effUSRate=0.15;
 let goalMonthly=1000000, growthRate=7, growthYears=10;
 let targetWeights={}; // {holdingId: percent}
 let growthChart2=null;
@@ -310,6 +339,8 @@ const fmtWon=n=>{const full=Math.round(n).toLocaleString('ko-KR')+'원';const a=
 
 // 통화 환산: 종목 금액(현지통화) → 원화
 function toKRW(amount,country){return country==='US'?amount*fxRate:amount;}
+// 평가액(원): 현재가 있으면 현재가, 없으면 매입가 기준
+function marketValueKRW(h){const px=(h.now&&h.now>0)?h.now:h.avg;return toKRW(h.qty*px,h.country);}
 
 // === 탭 ===
 document.querySelectorAll('.tab').forEach(btn=>{
@@ -332,12 +363,16 @@ function readForm(){
     avg: parseFloat($('fAvg').value)||0,
     dps: parseFloat($('fDps').value)||0,
     freq: parseInt($('fFreq').value)||4,
-    month: parseInt($('fMonth').value)||3
+    month: parseInt($('fMonth').value)||3,
+    now: parseFloat($('fNow').value)||0,
+    received: parseFloat($('fReceived').value)||0,
+    memo: $('fMemo').value.trim()
   };
 }
 function clearForm(){
   $('fName').value='';$('fTicker').value='';$('fCountry').value='KR';
   $('fQty').value=0;$('fAvg').value=0;$('fDps').value=0;$('fFreq').value=4;$('fMonth').value=3;
+  $('fNow').value=0;$('fReceived').value=0;$('fMemo').value='';
 }
 $('btnAdd').addEventListener('click',()=>{
   const data=readForm();
@@ -361,10 +396,59 @@ $('btnCancelEdit').addEventListener('click',()=>{
   $('btnAdd').textContent='➕ 추가';
   $('btnCancelEdit').style.display='none';
 });
-$('fxRate').addEventListener('input',()=>{fxRate=parseFloat($('fxRate').value)||1380;save();renderHoldings();renderDashboard();});
+$('fxRate').addEventListener('input',()=>{fxRate=parseFloat($('fxRate').value)||1500;save();renderHoldings();renderDashboard();});
 $('taxKR').addEventListener('input',()=>{taxKR=parseFloat($('taxKR').value)||0;save();renderDashboard();});
 $('taxUS').addEventListener('input',()=>{taxUS=parseFloat($('taxUS').value)||0;save();renderDashboard();});
-window.setTaxKR=function(v){taxKR=v;$('taxKR').value=v;save();renderDashboard();};
+
+// 세율 모드 UI 갱신
+function refreshTaxUI(){
+  $('personalTax').style.display = taxEntity==='personal'?'block':'none';
+  $('corpTax').style.display = taxEntity==='corp'?'block':'none';
+  if(taxEntity==='personal'){
+    $('simpleTaxRow').style.display = useComprehensive?'none':'grid';
+    $('compTaxRow').style.display = useComprehensive?'block':'none';
+  }
+}
+$('taxEntity').addEventListener('change',()=>{taxEntity=$('taxEntity').value;refreshTaxUI();save();renderDashboard();});
+$('useComprehensive').addEventListener('change',()=>{useComprehensive=$('useComprehensive').checked;refreshTaxUI();save();renderDashboard();});
+$('otherFinIncome').addEventListener('input',()=>{otherFinIncome=parseFloat($('otherFinIncome').value)||0;save();renderDashboard();});
+$('taxUS2').addEventListener('input',()=>{save();renderDashboard();});
+$('corpBracket').addEventListener('change',()=>{corpRate=parseFloat($('corpBracket').value)||9.9;save();renderDashboard();});
+$('taxUSCorp').addEventListener('input',()=>{save();renderDashboard();});
+
+// 종합소득세 누진 (지방세 제외, 원)
+function comprehensiveTax(base){
+  if(base<=0)return 0;
+  const b=[[14000000,0.06,0],[50000000,0.15,1260000],[88000000,0.24,5760000],[150000000,0.35,15440000],[300000000,0.38,19940000],[500000000,0.40,25940000],[1000000000,0.42,35940000],[Infinity,0.45,65940000]];
+  for(const [up,r,d] of b){if(base<=up)return base*r-d;}
+  return 0;
+}
+// 국내 배당총액(원)에 대한 세금(원) — 모드별
+function calcKRTax(domesticDividendKRW){
+  if(taxEntity==='corp'){
+    return domesticDividendKRW*(corpRate/100);
+  }
+  // 개인
+  if(!useComprehensive){
+    return domesticDividendKRW*(taxKR/100);
+  }
+  // 금융소득종합과세: (타금융소득 + 국내배당) 합산
+  // 2천만원까지는 14% 분리, 초과분은 종합과세(누진) — 단순 가정(다른 종합소득 0)
+  const totalFin=otherFinIncome+domesticDividendKRW;
+  if(totalFin<=20000000){
+    // 종합과세 미달 → 15.4%
+    return domesticDividendKRW*0.154;
+  }
+  // 비교과세 근사: 2천만까지 14% + 초과분 누진
+  const over=totalFin-20000000;
+  const compNational=comprehensiveTax(over)+20000000*0.14;
+  const compTotal=compNational*1.1; // 종합과세 방식(지방세 포함)
+  // 비교과세: 전체 금융소득 14% 분리과세 방식과 비교, 큰 값
+  const sepTotal=totalFin*0.154;
+  const finalTax=Math.max(compTotal,sepTotal);
+  const ratio=totalFin>0?domesticDividendKRW/totalFin:0;
+  return finalTax*ratio;
+}
 $('goalMonthly').addEventListener('input',()=>{goalMonthly=parseFloat($('goalMonthly').value)||0;save();renderDashboard();});
 $('growthRate').addEventListener('input',()=>{growthRate=parseFloat($('growthRate').value)||0;save();renderDashboard();});
 $('growthYears').addEventListener('input',()=>{growthYears=parseInt($('growthYears').value)||10;save();renderDashboard();});
@@ -373,6 +457,7 @@ function editHolding(id){
   const h=holdings.find(x=>x.id===id);if(!h)return;
   $('fName').value=h.name;$('fTicker').value=h.ticker;$('fCountry').value=h.country;
   $('fQty').value=h.qty;$('fAvg').value=h.avg;$('fDps').value=h.dps;$('fFreq').value=h.freq;$('fMonth').value=h.month;
+  $('fNow').value=h.now||0;$('fReceived').value=h.received||0;$('fMemo').value=h.memo||'';
   editingId=id;
   $('formTitle').innerHTML='✏️ 종목 수정 <span class="edit-badge">수정 중</span>';
   $('btnAdd').textContent='💾 저장';
@@ -398,18 +483,32 @@ function renderHoldings(){
   $('holdingsTable').style.display='table';
   body.innerHTML=holdings.map(h=>{
     const cur=h.country==='US'?'$':'₩';
-    const value=h.qty*h.avg;
+    const hasNow=h.now&&h.now>0;
+    const cost=h.qty*h.avg;                       // 매입원가
+    const value=hasNow?h.qty*h.now:cost;          // 평가액 (현재가 있으면 현재가)
+    const plAmt=hasNow?(h.now-h.avg)*h.qty:0;      // 평가손익
+    const plPct=hasNow&&h.avg>0?((h.now-h.avg)/h.avg*100):0;
     const annual=h.qty*h.dps;
-    const yld=h.avg>0?(h.dps/h.avg*100):0;
+    const yocPct=h.avg>0?(h.dps/h.avg*100):0;      // 매입가 기준(YOC)
+    const curYldPct=hasNow&&h.now>0?(h.dps/h.now*100):0; // 시가배당률
+    const recovery=cost>0&&h.received?(h.received/cost*100):0;
+    const plColor=plAmt>0?'#dc2626':(plAmt<0?'#2563eb':'#888');
+    // 수익률 셀: 현재가 있으면 시가배당률, 없으면 YOC(매입가 기준)
+    const yldCell=hasNow
+      ? `<span title="시가배당률">${curYldPct.toFixed(2)}%</span><br><span style="font-size:10px;color:#888" title="매입가 기준 YOC">YOC ${yocPct.toFixed(1)}%</span>`
+      : `<span title="매입가 기준 YOC">${yocPct.toFixed(2)}%</span><br><span style="font-size:10px;color:#bbb">YOC</span>`;
     return `<tr>
-      <td><b>${h.name}</b>${h.ticker?` <span class="ticker">${h.ticker}</span>`:''}</td>
+      <td><b>${h.name}</b>${h.ticker?` <span class="ticker">${h.ticker}</span>`:''}${h.memo?`<br><span style="font-size:11px;color:#888">📝 ${h.memo}</span>`:''}</td>
       <td><span class="flag ${h.country==='US'?'us':'kr'}">${h.country==='US'?'미국 $':'국내 ₩'}</span></td>
       <td>${fmt(h.qty)}</td>
       <td>${cur}${h.avg.toLocaleString('ko-KR',{maximumFractionDigits:2})}</td>
+      <td>${hasNow?cur+h.now.toLocaleString('ko-KR',{maximumFractionDigits:2}):'<span style="color:#ccc">-</span>'}</td>
       <td>${cur}${fmt(value)}</td>
+      <td>${hasNow?`<span style="color:${plColor};font-weight:600">${plAmt>0?'+':''}${fmt(plAmt)}<br><span style="font-size:10px">${plPct>0?'+':''}${plPct.toFixed(1)}%</span></span>`:'<span style="color:#ccc">-</span>'}</td>
       <td>${cur}${h.dps.toLocaleString('ko-KR',{maximumFractionDigits:2})}</td>
       <td>${cur}${fmt(annual)}</td>
-      <td>${yld.toFixed(2)}%</td>
+      <td>${yldCell}</td>
+      <td>${h.received?`<span title="누적배당 ÷ 투자원금">${recovery.toFixed(1)}%</span>`:'<span style="color:#ccc">-</span>'}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-gray btn-sm" onclick="editHolding(${h.id})">수정</button>
         <button class="btn btn-red btn-sm" onclick="deleteHolding(${h.id})">삭제</button>
@@ -423,7 +522,7 @@ function monthlyDistribution(h,afterTax){
   // freq회를 첫 배당월부터 균등 간격으로 분산
   const months=new Array(12).fill(0);
   let annualKRW=toKRW(h.qty*h.dps,h.country);
-  if(afterTax)annualKRW*=(h.country==='US'?(1-taxUS/100):(1-taxKR/100));
+  if(afterTax)annualKRW*=(h.country==='US'?(1-effUSRate):(1-effKRRate));
   if(annualKRW<=0||h.freq<=0)return months;
   const perPay=annualKRW/h.freq;
   const gap=12/h.freq;
@@ -442,14 +541,25 @@ function renderDashboard(){
   $('dashEmpty').style.display=hasData?'none':'block';
 
   // 합계
-  let totalValueKRW=0,totalAnnualKRW=0,totalAfterTax=0;
-  const monthTotals=new Array(12).fill(0);
+  let totalValueKRW=0,totalAnnualKRW=0;
+  let domesticDivKRW=0, usDivKRW=0;
   holdings.forEach(h=>{
-    const valKRW=toKRW(h.qty*h.avg,h.country);
+    const valKRW=marketValueKRW(h);
     const annKRW=toKRW(h.qty*h.dps,h.country);
     totalValueKRW+=valKRW;
     totalAnnualKRW+=annKRW;
-    totalAfterTax+=annKRW*(h.country==='US'?(1-taxUS/100):(1-taxKR/100));
+    if(h.country==='US')usDivKRW+=annKRW; else domesticDivKRW+=annKRW;
+  });
+  // 국내 유효세율 (종합과세면 합산 누진 → 역산)
+  const krTaxAmount=calcKRTax(domesticDivKRW);
+  effKRRate=domesticDivKRW>0?(krTaxAmount/domesticDivKRW):(taxEntity==='personal'&&!useComprehensive?taxKR/100:(taxEntity==='corp'?corpRate/100:0.154));
+  const usEffRate=(taxEntity==='corp'? (parseFloat(($('taxUSCorp')||{}).value)||15) : (useComprehensive?(parseFloat(($('taxUS2')||{}).value)||15):taxUS))/100;
+  effUSRate=usEffRate;
+  const totalAfterTax=domesticDivKRW*(1-effKRRate)+usDivKRW*(1-usEffRate);
+
+  // 월별 분산 (calMode 반영)
+  const monthTotals=new Array(12).fill(0);
+  holdings.forEach(h=>{
     const md=monthlyDistribution(h,calMode==='after');
     for(let i=0;i<12;i++)monthTotals[i]+=md[i];
   });
@@ -459,7 +569,17 @@ function renderDashboard(){
   $('sumMonthly').innerHTML=fmtWon(totalAnnualKRW/12);
   $('sumAfterTax').innerHTML=fmtWon(totalAfterTax);
   const afterTaxCard=$('sumAfterTax').closest('.scard').querySelector('.sub');
-  if(afterTaxCard)afterTaxCard.textContent='국내 '+taxKR+'% · 미국 '+taxUS+'%';
+  if(afterTaxCard)afterTaxCard.textContent='국내 실효 '+(effKRRate*100).toFixed(1)+'% · 미국 '+(usEffRate*100).toFixed(1)+'%';
+  // 종합과세 안내
+  const compEl=$('compTaxResult');
+  if(compEl&&taxEntity==='personal'&&useComprehensive){
+    const totalFin=otherFinIncome+domesticDivKRW;
+    if(totalFin<=20000000){
+      compEl.innerHTML='현재 (타 금융소득 '+fmt(otherFinIncome)+'원 + 국내배당 '+fmt(domesticDivKRW)+'원 = <b>'+fmt(totalFin)+'원</b>)으로 <b>2천만원 이하</b>라 일반 분리과세(15.4%)가 적용됩니다.';
+    } else {
+      compEl.innerHTML='타 금융소득 '+fmt(otherFinIncome)+'원 + 국내배당 '+fmt(domesticDivKRW)+'원 = <b>'+fmt(totalFin)+'원</b>이 2천만원을 초과 → 초과분 누진과세. 국내배당 실효세율 <b style="color:#1e40af">'+(effKRRate*100).toFixed(1)+'%</b> (다른 종합소득 0 가정).';
+    }
+  }
   $('sumValue').innerHTML=fmtWon(totalValueKRW);
   const portYield=totalValueKRW>0?(totalAnnualKRW/totalValueKRW*100):0;
   $('sumYield').textContent='배당수익률 '+portYield.toFixed(2)+'%';
@@ -475,7 +595,7 @@ function renderDashboard(){
 
   // 비중 도넛 (평가액)
   const names=holdings.map(h=>h.name);
-  const valueData=holdings.map(h=>toKRW(h.qty*h.avg,h.country));
+  const valueData=holdings.map(h=>marketValueKRW(h));
   const divData=holdings.map(h=>toKRW(h.qty*h.dps,h.country));
   if(weightChart)weightChart.destroy();
   weightChart=new Chart($('weightChart'),{
@@ -569,7 +689,7 @@ function renderTargetWeights(totalValueKRW){
   if(holdings.length===0){body.innerHTML='';$('targetEmpty').style.display='block';$('targetTable').style.display='none';return;}
   $('targetEmpty').style.display='none';$('targetTable').style.display='table';
   body.innerHTML=holdings.map(h=>{
-    const valKRW=toKRW(h.qty*h.avg,h.country);
+    const valKRW=marketValueKRW(h);
     const curPct=totalValueKRW>0?(valKRW/totalValueKRW*100):0;
     const tgt=targetWeights[h.id]!==undefined?targetWeights[h.id]:'';
     const tgtNum=parseFloat(tgt);
@@ -595,7 +715,7 @@ window.setTargetWeight=function(id,val){
   if(val===''||isNaN(parseFloat(val)))delete targetWeights[id];
   else targetWeights[id]=parseFloat(val);
   save();
-  let totalValueKRW=0;holdings.forEach(h=>totalValueKRW+=toKRW(h.qty*h.avg,h.country));
+  let totalValueKRW=0;holdings.forEach(h=>totalValueKRW+=marketValueKRW(h));
   renderTargetWeights(totalValueKRW);
 };
 
@@ -632,7 +752,10 @@ function renderMonthTable(){
 
 // === 저장 ===
 function save(){
-  try{localStorage.setItem(AUTO_KEY,JSON.stringify({holdings,fxRate,taxKR,taxUS,goalMonthly,growthRate,growthYears,targetWeights}));}catch(e){}
+  try{
+    const taxUS2v=($('taxUS2')||{}).value, taxUSCorpv=($('taxUSCorp')||{}).value;
+    localStorage.setItem(AUTO_KEY,JSON.stringify({holdings,fxRate,taxKR,taxUS,taxEntity,useComprehensive,otherFinIncome,corpRate,taxUS2:taxUS2v,taxUSCorp:taxUSCorpv,goalMonthly,growthRate,growthYears,targetWeights}));
+  }catch(e){}
 }
 function load(){
   try{
@@ -640,19 +763,28 @@ function load(){
     if(!raw)return;
     const data=JSON.parse(raw);
     holdings=data.holdings||[];
-    fxRate=data.fxRate||1380;
+    fxRate=data.fxRate||1500;
     taxKR=data.taxKR!==undefined?data.taxKR:15.4;
     taxUS=data.taxUS!==undefined?data.taxUS:15;
+    taxEntity=data.taxEntity||'personal';
+    useComprehensive=data.useComprehensive||false;
+    otherFinIncome=data.otherFinIncome||0;
+    corpRate=data.corpRate||9.9;
     goalMonthly=data.goalMonthly!==undefined?data.goalMonthly:1000000;
     growthRate=data.growthRate!==undefined?data.growthRate:7;
     growthYears=data.growthYears!==undefined?data.growthYears:10;
     targetWeights=data.targetWeights||{};
     $('fxRate').value=fxRate;$('taxKR').value=taxKR;$('taxUS').value=taxUS;
+    $('taxEntity').value=taxEntity;$('useComprehensive').checked=useComprehensive;
+    $('otherFinIncome').value=otherFinIncome;$('corpBracket').value=corpRate;
+    if(data.taxUS2!==undefined&&$('taxUS2'))$('taxUS2').value=data.taxUS2;
+    if(data.taxUSCorp!==undefined&&$('taxUSCorp'))$('taxUSCorp').value=data.taxUSCorp;
     $('goalMonthly').value=goalMonthly;$('growthRate').value=growthRate;$('growthYears').value=growthYears;
+    refreshTaxUI();
   }catch(e){}
 }
 $('btnSaveJson').addEventListener('click',()=>{
-  const data={app:'배당포트폴리오',savedAt:new Date().toISOString(),holdings,fxRate,taxKR,taxUS,goalMonthly,growthRate,growthYears,targetWeights};
+  const data={app:'배당포트폴리오',savedAt:new Date().toISOString(),holdings,fxRate,taxKR,taxUS,taxEntity,useComprehensive,otherFinIncome,corpRate,taxUS2:($('taxUS2')||{}).value,taxUSCorp:($('taxUSCorp')||{}).value,goalMonthly,growthRate,growthYears,targetWeights};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -667,14 +799,21 @@ $('fileLoad').addEventListener('change',e=>{
     try{
       const data=JSON.parse(ev.target.result);
       if(!data.holdings){alert('파일 형식이 올바르지 않습니다.');return;}
-      holdings=data.holdings;fxRate=data.fxRate||1380;
+      holdings=data.holdings;fxRate=data.fxRate||1500;
       taxKR=data.taxKR!==undefined?data.taxKR:15.4;taxUS=data.taxUS!==undefined?data.taxUS:15;
+      taxEntity=data.taxEntity||'personal';useComprehensive=data.useComprehensive||false;
+      otherFinIncome=data.otherFinIncome||0;corpRate=data.corpRate||9.9;
       goalMonthly=data.goalMonthly!==undefined?data.goalMonthly:1000000;
       growthRate=data.growthRate!==undefined?data.growthRate:7;
       growthYears=data.growthYears!==undefined?data.growthYears:10;
       targetWeights=data.targetWeights||{};
       $('fxRate').value=fxRate;$('taxKR').value=taxKR;$('taxUS').value=taxUS;
+      $('taxEntity').value=taxEntity;$('useComprehensive').checked=useComprehensive;
+      $('otherFinIncome').value=otherFinIncome;$('corpBracket').value=corpRate;
+      if(data.taxUS2!==undefined&&$('taxUS2'))$('taxUS2').value=data.taxUS2;
+      if(data.taxUSCorp!==undefined&&$('taxUSCorp'))$('taxUSCorp').value=data.taxUSCorp;
       $('goalMonthly').value=goalMonthly;$('growthRate').value=growthRate;$('growthYears').value=growthYears;
+      refreshTaxUI();
       save();renderHoldings();renderDashboard();
       alert('✅ 불러오기 완료. '+holdings.length+'개 종목.');
     }catch(err){alert('❌ 파일 읽기 실패: '+err.message);}
