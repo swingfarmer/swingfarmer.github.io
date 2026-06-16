@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>배당 포트폴리오 관리기</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:1000px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a;font-feature-settings:"tnum"}
+.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}
+.back-link:hover{text-decoration:underline}
+h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:6px;font-size:22px}
+.desc{color:#555;font-size:13.5px;margin-bottom:18px}
+
+/* 탭 */
+.tabs{display:flex;gap:4px;background:#e5e7eb;padding:4px;border-radius:10px;margin-bottom:20px}
+.tab{flex:1;padding:11px;border:none;background:transparent;cursor:pointer;font-size:14px;font-weight:700;color:#666;border-radius:8px;transition:all .15s;font-family:inherit}
+.tab:hover{background:rgba(255,255,255,.5)}
+.tab.active{background:white;color:#1F4E78;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+.panel{background:white;border-radius:10px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:18px}
+.panel h2{color:#1F4E78;font-size:17px;margin-bottom:14px}
+.panel h2 .sub{font-size:12px;color:#888;font-weight:400;margin-left:6px}
+
+/* 요약 카드 */
+.summary-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:18px}
+.scard{padding:20px;border-radius:10px;color:white}
+.scard.blue{background:linear-gradient(135deg,#1F4E78,#2563eb)}
+.scard.green{background:linear-gradient(135deg,#059669,#10b981)}
+.scard.amber{background:linear-gradient(135deg,#d97706,#f59e0b)}
+.scard.purple{background:linear-gradient(135deg,#6d28d9,#8b5cf6)}
+.scard .lbl{font-size:13px;opacity:.9;margin-bottom:6px}
+.scard .val{font-size:26px;font-weight:800;letter-spacing:-.5px}
+.scard .sub{font-size:12px;opacity:.85;margin-top:4px}
+
+.chart-wrap{position:relative;width:100%}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:760px){.chart-grid{grid-template-columns:1fr}}
+
+/* 입력 폼 */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:14px}
+.field{display:flex;flex-direction:column}
+.field label{font-size:12px;font-weight:600;margin-bottom:4px;color:#444}
+.field input,.field select{padding:9px;font-size:14px;border:1px solid #ccc;border-radius:6px;background:#FFF2CC;font-weight:600;color:#0000FF;font-family:inherit}
+.field input[type=text]{color:#1a1a1a}
+.field input:focus,.field select:focus{outline:2px solid #1F4E78;background:#FFFACD}
+.btn{padding:10px 18px;border:none;border-radius:7px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-primary{background:#1F4E78;color:white}
+.btn-primary:hover{background:#2d6ba3}
+.btn-gray{background:#9ca3af;color:white}
+.btn-red{background:#dc2626;color:white}
+.btn-green{background:#10b981;color:white}
+.btn-sm{padding:5px 10px;font-size:12px}
+
+/* 종목 테이블 */
+.holdings{width:100%;border-collapse:collapse;font-size:13px}
+.holdings th{background:#1F4E78;color:white;padding:9px 8px;text-align:right;font-weight:600;font-size:12px}
+.holdings th:first-child,.holdings td:first-child{text-align:left}
+.holdings td{padding:9px 8px;text-align:right;border-bottom:1px solid #eee}
+.holdings tr:hover td{background:#f8fafc}
+.holdings .ticker{font-size:11px;color:#888}
+.holdings .flag{font-size:11px;padding:1px 6px;border-radius:8px;font-weight:600}
+.flag.kr{background:#dbeafe;color:#1e40af}
+.flag.us{background:#fee2e2;color:#b91c1c}
+.empty{text-align:center;color:#999;padding:40px 20px;font-size:14px}
+
+.notice{background:#dbeafe;border-left:4px solid #2563eb;padding:12px 16px;border-radius:6px;font-size:12.5px;color:#1e3a8a;line-height:1.7;margin-bottom:16px}
+.save-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;margin-bottom:16px}
+.save-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.save-note{font-size:11.5px;color:#166534;line-height:1.7;border-top:1px solid #bbf7d0;padding-top:9px}
+.manual{background:#fff;border:1px solid #e0e0e0;padding:20px;border-radius:8px;line-height:1.8;font-size:13.5px}
+.manual h3{color:#1F4E78;margin:16px 0 8px;font-size:15px}
+.manual h3:first-child{margin-top:0}
+.manual ul{padding-left:20px;margin:6px 0}
+.manual li{margin-bottom:5px}
+.manual b{color:#1F4E78}
+.edit-badge{background:#fef3c7;color:#92400e;font-size:11px;padding:2px 8px;border-radius:8px;margin-left:8px;font-weight:600}
+</style>
+</head>
+<body>
+
+<a href="../" class="back-link">← 메인으로</a>
+<h1>💰 배당 포트폴리오 관리기</h1>
+<p class="desc">보유 배당주·ETF를 등록하면 연 배당금·월별 캘린더·비중을 한눈에. 국내(원)·미국(달러) 모두 지원. 입력값은 이 브라우저에 자동 저장(서버 전송 없음).</p>
+
+<div class="tabs">
+  <button class="tab active" data-tab="dash">📊 대시보드</button>
+  <button class="tab" data-tab="manage">📋 종목 관리</button>
+  <button class="tab" data-tab="help">📖 사용법·저장</button>
+</div>
+
+<!-- ===== 대시보드 ===== -->
+<div class="tab-content active" id="tab-dash">
+  <div class="summary-cards">
+    <div class="scard blue"><div class="lbl">연 배당금 (세전)</div><div class="val" id="sumAnnual">-</div><div class="sub" id="sumAnnualSub"></div></div>
+    <div class="scard green"><div class="lbl">월 평균 배당</div><div class="val" id="sumMonthly">-</div><div class="sub">연 배당 ÷ 12</div></div>
+    <div class="scard amber"><div class="lbl">연 배당금 (세후)</div><div class="val" id="sumAfterTax">-</div><div class="sub">국내 15.4% · 미국 15%</div></div>
+    <div class="scard purple"><div class="lbl">총 평가액 / 배당수익률</div><div class="val" id="sumValue">-</div><div class="sub" id="sumYield"></div></div>
+  </div>
+
+  <div class="panel">
+    <h2>📅 월별 배당 캘린더 <span class="sub">어느 달에 얼마 들어오는지 (세전, 원화 환산)</span></h2>
+    <div class="chart-wrap"><canvas id="monthlyChart" height="120"></canvas></div>
+  </div>
+
+  <div class="chart-grid">
+    <div class="panel">
+      <h2>🍩 종목별 비중 <span class="sub">평가액 기준</span></h2>
+      <div class="chart-wrap"><canvas id="weightChart" height="200"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>🍩 배당 기여 비중 <span class="sub">연 배당금 기준</span></h2>
+      <div class="chart-wrap"><canvas id="divChart" height="200"></canvas></div>
+    </div>
+  </div>
+
+  <div class="panel" id="dashEmpty" style="display:none">
+    <div class="empty">아직 등록된 종목이 없어요.<br>「📋 종목 관리」 탭에서 보유 종목을 추가해 주세요.</div>
+  </div>
+</div>
+
+<!-- ===== 종목 관리 ===== -->
+<div class="tab-content" id="tab-manage">
+  <div class="panel">
+    <h2 id="formTitle">➕ 종목 추가</h2>
+    <div class="form-grid">
+      <div class="field"><label>종목명</label><input type="text" id="fName" placeholder="예: 삼성전자"></div>
+      <div class="field"><label>티커 (선택)</label><input type="text" id="fTicker" placeholder="005930 / SCHD"></div>
+      <div class="field"><label>국가·통화</label><select id="fCountry"><option value="KR" selected>국내 (원)</option><option value="US">미국 (달러)</option></select></div>
+      <div class="field"><label>수량 (주)</label><input type="number" id="fQty" value="0" step="1"></div>
+      <div class="field"><label>평균 매입가</label><input type="number" id="fAvg" value="0" step="any"></div>
+      <div class="field"><label>주당 연 배당금</label><input type="number" id="fDps" value="0" step="any"></div>
+      <div class="field"><label>배당 주기</label><select id="fFreq"><option value="12">매월</option><option value="4" selected>분기 (3개월)</option><option value="2">반기 (6개월)</option><option value="1">연 1회</option></select></div>
+      <div class="field"><label>첫 배당월</label><select id="fMonth">
+        <option value="1">1월</option><option value="2">2월</option><option value="3" selected>3월</option><option value="4">4월</option><option value="5">5월</option><option value="6">6월</option><option value="7">7월</option><option value="8">8월</option><option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
+      </select></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" id="btnAdd">➕ 추가</button>
+      <button class="btn btn-gray" id="btnCancelEdit" style="display:none">취소</button>
+      <span style="font-size:12px;color:#888;align-self:center">주당 연 배당금 = 1년간 1주가 받는 총 배당. 분기배당이면 (분기배당×4).</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>📋 보유 종목 <span class="sub" id="holdCount"></span></h2>
+    <div style="overflow-x:auto">
+      <table class="holdings" id="holdingsTable">
+        <thead>
+          <tr>
+            <th>종목</th><th>통화</th><th>수량</th><th>평단</th><th>평가액</th>
+            <th>주당배당</th><th>연배당</th><th>시가배당률</th><th>관리</th>
+          </tr>
+        </thead>
+        <tbody id="holdingsBody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="manageEmpty">아직 등록된 종목이 없어요. 위에서 추가해 주세요.</div>
+  </div>
+
+  <div class="panel">
+    <h2>⚙️ 환율 설정</h2>
+    <div class="form-grid" style="max-width:300px">
+      <div class="field"><label>USD/KRW 환율 <span style="font-size:10px;color:#888">(달러→원 환산)</span></label><input type="number" id="fxRate" value="1380" step="1"></div>
+    </div>
+    <p style="font-size:12px;color:#888">미국 주식의 평가액·배당을 원화로 환산할 때 사용. 수시로 갱신하세요.</p>
+  </div>
+</div>
+
+<!-- ===== 사용법·저장 ===== -->
+<div class="tab-content" id="tab-help">
+  <div class="save-box">
+    <div class="save-row">
+      <div style="font-size:13px;color:#166534;font-weight:700;margin-right:auto">💾 저장 (서버 전송 없음 · 광고 없음)</div>
+      <button class="btn btn-primary btn-sm" id="btnSaveJson">💾 데이터 저장 (JSON)</button>
+      <label class="btn btn-green btn-sm" style="cursor:pointer">📂 불러오기<input type="file" id="fileLoad" accept=".json" style="display:none"></label>
+      <button class="btn btn-red btn-sm" id="btnClearAll">🗑 전체 삭제</button>
+    </div>
+    <div class="save-note">
+      <b>📌 저장 방식 안내 (꼭 읽어주세요)</b><br>
+      • <b>자동 저장:</b> 종목을 추가·수정하면 <b>이 브라우저에</b> 자동 저장돼요. 껐다 켜도 남아있습니다. <b style="color:#b91c1c">단, 서버가 아니라 "지금 쓰는 이 브라우저"에만 저장</b>됩니다. → 다른 PC·폰에서는 안 보이고, 브라우저 기록(쿠키·캐시)을 지우면 사라집니다.<br>
+      • <b>영구 보관·다른 기기 이동:</b> <b>[데이터 저장(JSON)]</b> 버튼으로 파일을 내려받아 두세요. 그 파일을 <b>[불러오기]</b>하면 어디서든 복원됩니다. <b>(이게 진짜 백업)</b><br>
+      • 입력한 어떤 정보도 <b>서버로 전송되지 않습니다.</b> 광고도 없습니다.
+    </div>
+  </div>
+
+  <div class="manual">
+    <h3>📘 사용 설명서</h3>
+    <h3>① 종목 등록</h3>
+    <ul>
+      <li><b>종목명·티커:</b> 표시용. 티커는 비워도 됨.</li>
+      <li><b>국가·통화:</b> 국내(원) / 미국(달러). 미국 주식은 환율로 원화 환산됨.</li>
+      <li><b>수량·평균 매입가:</b> 보유 주수와 평단. 평가액 = 수량 × 평단.</li>
+      <li><b>주당 연 배당금:</b> 1년간 1주가 받는 <b>총</b> 배당. 분기 배당이면 (1회 배당 × 4)로 입력. 예: 분기 200원이면 800원.</li>
+      <li><b>배당 주기·첫 배당월:</b> 월별 캘린더 계산용. 분기·3월 시작이면 3·6·9·12월에 나눠 들어옴.</li>
+    </ul>
+    <h3>② 대시보드 보는 법</h3>
+    <ul>
+      <li><b>연 배당금(세전):</b> 전 종목 합계. 미국 주식은 원화 환산 포함.</li>
+      <li><b>세후:</b> 국내 배당소득세 15.4%, 미국 원천징수 15% 적용(근사).</li>
+      <li><b>월별 캘린더:</b> 배당 주기·첫 배당월로 12개월에 분산. 배당 많은 달이 한눈에.</li>
+      <li><b>비중 도넛:</b> 평가액 기준 / 배당금 기준 두 가지. 집중도 파악용.</li>
+    </ul>
+    <h3>③ 세금·환율 주의</h3>
+    <ul>
+      <li>세율은 <b>근사치</b>입니다. 금융소득종합과세(연 2천만원 초과), 미국 세액공제 등 개인 상황은 미반영.</li>
+      <li>환율은 직접 입력값 고정. 실제 수령액은 수령 시점 환율로 달라집니다.</li>
+      <li>배당락·배당 변경·특별배당은 반영 안 됨. 입력값 기준 단순 계산입니다.</li>
+    </ul>
+    <h3>④ 한계</h3>
+    <ul>
+      <li>실시간 주가·배당 자동 조회는 없습니다(수동 입력). 증권사 연동도 없습니다.</li>
+      <li>참고용 관리 도구이며, 실제 투자 판단·세무는 본인 책임입니다.</li>
+    </ul>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const AUTO_KEY='sf_dividend_portfolio';
+let holdings=[];   // {id,name,ticker,country,qty,avg,dps,freq,month}
+let editingId=null;
+let fxRate=1380;
+
+const fmt=n=>Math.round(n).toLocaleString('ko-KR');
+const fmtShort=n=>{const a=Math.abs(n);if(a>=1e8)return (n/1e8).toFixed(2).replace(/\.?0+$/,'')+'억';if(a>=1e4)return (n/1e4).toFixed(0)+'만';return Math.round(n).toLocaleString('ko-KR');};
+
+// 통화 환산: 종목 금액(현지통화) → 원화
+function toKRW(amount,country){return country==='US'?amount*fxRate:amount;}
+
+// === 탭 ===
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+    btn.classList.add('active');
+    $('tab-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab==='dash') renderDashboard();
+  });
+});
+
+// === 종목 추가/수정 ===
+function readForm(){
+  return {
+    name: $('fName').value.trim()||'(이름없음)',
+    ticker: $('fTicker').value.trim(),
+    country: $('fCountry').value,
+    qty: parseFloat($('fQty').value)||0,
+    avg: parseFloat($('fAvg').value)||0,
+    dps: parseFloat($('fDps').value)||0,
+    freq: parseInt($('fFreq').value)||4,
+    month: parseInt($('fMonth').value)||3
+  };
+}
+function clearForm(){
+  $('fName').value='';$('fTicker').value='';$('fCountry').value='KR';
+  $('fQty').value=0;$('fAvg').value=0;$('fDps').value=0;$('fFreq').value=4;$('fMonth').value=3;
+}
+$('btnAdd').addEventListener('click',()=>{
+  const data=readForm();
+  if(editingId!==null){
+    const idx=holdings.findIndex(h=>h.id===editingId);
+    if(idx>=0) holdings[idx]={...holdings[idx],...data};
+    editingId=null;
+    $('formTitle').innerHTML='➕ 종목 추가';
+    $('btnAdd').textContent='➕ 추가';
+    $('btnCancelEdit').style.display='none';
+  } else {
+    data.id=Date.now()+Math.random();
+    holdings.push(data);
+  }
+  clearForm();
+  save();renderHoldings();renderDashboard();
+});
+$('btnCancelEdit').addEventListener('click',()=>{
+  editingId=null;clearForm();
+  $('formTitle').innerHTML='➕ 종목 추가';
+  $('btnAdd').textContent='➕ 추가';
+  $('btnCancelEdit').style.display='none';
+});
+$('fxRate').addEventListener('input',()=>{fxRate=parseFloat($('fxRate').value)||1380;save();renderHoldings();renderDashboard();});
+
+function editHolding(id){
+  const h=holdings.find(x=>x.id===id);if(!h)return;
+  $('fName').value=h.name;$('fTicker').value=h.ticker;$('fCountry').value=h.country;
+  $('fQty').value=h.qty;$('fAvg').value=h.avg;$('fDps').value=h.dps;$('fFreq').value=h.freq;$('fMonth').value=h.month;
+  editingId=id;
+  $('formTitle').innerHTML='✏️ 종목 수정 <span class="edit-badge">수정 중</span>';
+  $('btnAdd').textContent='💾 저장';
+  $('btnCancelEdit').style.display='inline-block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function deleteHolding(id){
+  if(!confirm('이 종목을 삭제할까요?'))return;
+  holdings=holdings.filter(x=>x.id!==id);
+  save();renderHoldings();renderDashboard();
+}
+
+// === 렌더: 종목 테이블 ===
+function renderHoldings(){
+  const body=$('holdingsBody');
+  $('holdCount').textContent=holdings.length>0?('· '+holdings.length+'개'):'';
+  if(holdings.length===0){
+    body.innerHTML='';$('manageEmpty').style.display='block';
+    $('holdingsTable').style.display='none';
+    return;
+  }
+  $('manageEmpty').style.display='none';
+  $('holdingsTable').style.display='table';
+  body.innerHTML=holdings.map(h=>{
+    const cur=h.country==='US'?'$':'₩';
+    const value=h.qty*h.avg;
+    const annual=h.qty*h.dps;
+    const yld=h.avg>0?(h.dps/h.avg*100):0;
+    return `<tr>
+      <td><b>${h.name}</b>${h.ticker?` <span class="ticker">${h.ticker}</span>`:''}</td>
+      <td><span class="flag ${h.country==='US'?'us':'kr'}">${h.country==='US'?'미국 $':'국내 ₩'}</span></td>
+      <td>${fmt(h.qty)}</td>
+      <td>${cur}${h.avg.toLocaleString('ko-KR',{maximumFractionDigits:2})}</td>
+      <td>${cur}${fmt(value)}</td>
+      <td>${cur}${h.dps.toLocaleString('ko-KR',{maximumFractionDigits:2})}</td>
+      <td>${cur}${fmt(annual)}</td>
+      <td>${yld.toFixed(2)}%</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-gray btn-sm" onclick="editHolding(${h.id})">수정</button>
+        <button class="btn btn-red btn-sm" onclick="deleteHolding(${h.id})">삭제</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// === 월별 배당 분산 ===
+function monthlyDistribution(h){
+  // freq회를 첫 배당월부터 균등 간격으로 분산
+  const months=new Array(12).fill(0);
+  const annualKRW=toKRW(h.qty*h.dps,h.country);
+  if(annualKRW<=0||h.freq<=0)return months;
+  const perPay=annualKRW/h.freq;
+  const gap=12/h.freq;
+  for(let i=0;i<h.freq;i++){
+    let m=(h.month-1+Math.round(i*gap))%12;
+    months[m]+=perPay;
+  }
+  return months;
+}
+
+let monthlyChart=null,weightChart=null,divChart=null;
+const PALETTE=['#1F4E78','#2563eb','#059669','#d97706','#8b5cf6','#dc2626','#0891b2','#ca8a04','#be185d','#4338ca','#15803d','#b45309'];
+
+function renderDashboard(){
+  const hasData=holdings.length>0;
+  $('dashEmpty').style.display=hasData?'none':'block';
+
+  // 합계
+  let totalValueKRW=0,totalAnnualKRW=0,totalAfterTax=0;
+  const monthTotals=new Array(12).fill(0);
+  holdings.forEach(h=>{
+    const valKRW=toKRW(h.qty*h.avg,h.country);
+    const annKRW=toKRW(h.qty*h.dps,h.country);
+    totalValueKRW+=valKRW;
+    totalAnnualKRW+=annKRW;
+    totalAfterTax+=annKRW*(h.country==='US'?0.85:0.846); // 미국15% / 국내15.4%
+    const md=monthlyDistribution(h);
+    for(let i=0;i<12;i++)monthTotals[i]+=md[i];
+  });
+
+  $('sumAnnual').textContent=fmtShort(totalAnnualKRW)+'원';
+  $('sumAnnualSub').textContent='원화 환산 합계';
+  $('sumMonthly').textContent=fmtShort(totalAnnualKRW/12)+'원';
+  $('sumAfterTax').textContent=fmtShort(totalAfterTax)+'원';
+  $('sumValue').textContent=fmtShort(totalValueKRW)+'원';
+  const portYield=totalValueKRW>0?(totalAnnualKRW/totalValueKRW*100):0;
+  $('sumYield').textContent='배당수익률 '+portYield.toFixed(2)+'%';
+
+  // 월별 차트
+  const monthLabels=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  if(monthlyChart)monthlyChart.destroy();
+  monthlyChart=new Chart($('monthlyChart'),{
+    type:'bar',
+    data:{labels:monthLabels,datasets:[{label:'월 배당(원)',data:monthTotals,backgroundColor:'#2563eb',borderRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.parsed.y)+'원'}}},scales:{y:{ticks:{callback:v=>fmtShort(v)}}}}
+  });
+
+  // 비중 도넛 (평가액)
+  const names=holdings.map(h=>h.name);
+  const valueData=holdings.map(h=>toKRW(h.qty*h.avg,h.country));
+  const divData=holdings.map(h=>toKRW(h.qty*h.dps,h.country));
+  if(weightChart)weightChart.destroy();
+  weightChart=new Chart($('weightChart'),{
+    type:'doughnut',
+    data:{labels:names,datasets:[{data:valueData,backgroundColor:PALETTE}]},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}},tooltip:{callbacks:{label:c=>c.label+': '+fmtShort(c.parsed)+'원'}}}}
+  });
+  if(divChart)divChart.destroy();
+  divChart=new Chart($('divChart'),{
+    type:'doughnut',
+    data:{labels:names,datasets:[{data:divData,backgroundColor:PALETTE}]},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}},tooltip:{callbacks:{label:c=>c.label+': '+fmtShort(c.parsed)+'원'}}}}
+  });
+}
+
+// === 저장 ===
+function save(){
+  try{localStorage.setItem(AUTO_KEY,JSON.stringify({holdings,fxRate}));}catch(e){}
+}
+function load(){
+  try{
+    const raw=localStorage.getItem(AUTO_KEY);
+    if(!raw)return;
+    const data=JSON.parse(raw);
+    holdings=data.holdings||[];
+    fxRate=data.fxRate||1380;
+    $('fxRate').value=fxRate;
+  }catch(e){}
+}
+$('btnSaveJson').addEventListener('click',()=>{
+  const data={app:'배당포트폴리오',savedAt:new Date().toISOString(),holdings,fxRate};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const d=new Date();
+  a.href=url;a.download='배당포트폴리오_'+d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2)+'.json';
+  a.click();URL.revokeObjectURL(url);
+});
+$('fileLoad').addEventListener('change',e=>{
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(!data.holdings){alert('파일 형식이 올바르지 않습니다.');return;}
+      holdings=data.holdings;fxRate=data.fxRate||1380;
+      $('fxRate').value=fxRate;
+      save();renderHoldings();renderDashboard();
+      alert('✅ 불러오기 완료. '+holdings.length+'개 종목.');
+    }catch(err){alert('❌ 파일 읽기 실패: '+err.message);}
+  };
+  reader.readAsText(file);e.target.value='';
+});
+$('btnClearAll').addEventListener('click',()=>{
+  if(!confirm('모든 종목을 삭제할까요?\n(JSON으로 저장해둔 파일은 영향 없습니다)'))return;
+  holdings=[];save();renderHoldings();renderDashboard();
+  alert('전체 삭제 완료.');
+});
+
+// === 초기화 ===
+load();
+renderHoldings();
+renderDashboard();
+</script>
+
+<script src="/common.js?v=2"></script>
+</body>
+</html>
