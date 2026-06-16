@@ -79,6 +79,7 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
     <button class="ftab" data-filter="question">💬 문의</button>
   </div>
   <button class="btn btn-primary" id="btnWrite" style="margin-left:auto">✏️ 글쓰기</button>
+  <button class="btn btn-red" id="btnBulkDelete">🗑 일괄삭제</button>
 </div>
 
 <div id="postList" class="post-list">
@@ -110,7 +111,10 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
     </div>
     <div class="field" id="pwField">
       <label id="pwLabel">비밀번호 <span style="color:#888;font-weight:400">(본인 글 수정·삭제용)</span></label>
-      <input type="password" id="fPw" placeholder="4자 이상" maxlength="30">
+      <div style="position:relative">
+        <input type="password" id="fPw" placeholder="4자 이상" maxlength="30" style="width:100%;padding-right:44px">
+        <button type="button" id="fPwToggle" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:4px">👁</button>
+      </div>
       <span class="hint" id="pwHint">문의 글은 이 비밀번호로 나중에 수정·삭제할 수 있어요.</span>
     </div>
     <div class="field admin-only" id="pinField">
@@ -130,7 +134,10 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
   <div class="modal" style="max-width:380px">
     <h2 id="pwModalTitle">🔒 비밀번호 확인</h2>
     <div class="field">
-      <input type="password" id="pwInput" placeholder="비밀번호 입력" maxlength="30">
+      <div style="position:relative">
+        <input type="password" id="pwInput" placeholder="비밀번호 입력" maxlength="30" style="width:100%;padding-right:44px">
+        <button type="button" id="pwToggle" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:4px">👁</button>
+      </div>
       <span class="hint" id="pwModalHint"></span>
     </div>
     <div class="modal-actions">
@@ -177,6 +184,40 @@ async function hashPw(pw){
   const buf = await crypto.subtle.digest('SHA-256', enc);
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
+
+// 비밀번호 입력 모달 (Promise) — prompt 대신, ** 마스킹 + 👁 표시
+function askPassword(title, hint){
+  return new Promise(resolve=>{
+    $('pwModalTitle').textContent = title || '🔒 비밀번호 확인';
+    $('pwModalHint').textContent = hint || '';
+    $('pwInput').value = '';
+    $('pwInput').type = 'password';
+    $('pwModal').classList.add('active');
+    setTimeout(()=>$('pwInput').focus(), 50);
+    const ok = ()=>{ cleanup(); resolve($('pwInput').value); };
+    const cancel = ()=>{ cleanup(); resolve(null); };
+    function onKey(e){ if(e.key==='Enter') ok(); if(e.key==='Escape') cancel(); }
+    function cleanup(){
+      $('pwModal').classList.remove('active');
+      $('btnPwConfirm').removeEventListener('click', ok);
+      $('btnPwCancel').removeEventListener('click', cancel);
+      $('pwInput').removeEventListener('keydown', onKey);
+    }
+    $('btnPwConfirm').addEventListener('click', ok);
+    $('btnPwCancel').addEventListener('click', cancel);
+    $('pwInput').addEventListener('keydown', onKey);
+  });
+}
+// 표시 토글 (모달 비번)
+$('pwToggle').addEventListener('click', ()=>{
+  const i = $('pwInput');
+  i.type = i.type==='password' ? 'text' : 'password';
+});
+// 표시 토글 (글쓰기 비번)
+$('fPwToggle').addEventListener('click', ()=>{
+  const i = $('fPw');
+  i.type = i.type==='password' ? 'text' : 'password';
+});
 
 function fmtDate(ts){
   if(!ts) return '';
@@ -328,19 +369,13 @@ $('btnSubmit').addEventListener('click', async ()=>{
 window.editPost = async function(id){
   const p = allPosts.find(x=>x.id===id);
   if(!p) return;
-  if(p.type === 'notice'){
-    // 공지 수정 → 관리자 비번
-    const pw = prompt('관리자 비밀번호를 입력하세요.');
-    if(pw === null) return;
-    if(await hashPw(pw) !== ADMIN_PW_HASH){ alert('비밀번호가 틀렸습니다.'); return; }
-    fillEdit(p);
-  } else {
-    // 문의 수정 → 본인 비번
-    const pw = prompt('글 작성 시 정한 비밀번호를 입력하세요.');
-    if(pw === null) return;
-    if(await hashPw(pw) !== p.pwHash){ alert('비밀번호가 틀렸습니다.'); return; }
-    fillEdit(p);
-  }
+  const pw = await askPassword('🔒 수정 비밀번호', p.type==='notice'?'관리자 비밀번호를 입력하세요.':'본인 비밀번호 또는 관리자 비밀번호를 입력하세요.');
+  if(pw === null) return;
+  const ph = await hashPw(pw);
+  const isAdmin = (ph === ADMIN_PW_HASH);
+  const isOwner = (p.type!=='notice' && ph === p.pwHash);
+  if(!isAdmin && !isOwner){ alert('비밀번호가 틀렸습니다.'); return; }
+  fillEdit(p);
 };
 function fillEdit(p){
   editingId = p.id;
@@ -361,18 +396,13 @@ function fillEdit(p){
 window.deletePost = async function(id){
   const p = allPosts.find(x=>x.id===id);
   if(!p) return;
-  let ok = false;
-  if(p.type === 'notice'){
-    const pw = prompt('관리자 비밀번호를 입력하세요.');
-    if(pw === null) return;
-    ok = (await hashPw(pw) === ADMIN_PW_HASH);
-    if(!ok){ alert('비밀번호가 틀렸습니다.'); return; }
-  } else {
-    const pw = prompt('글 작성 시 정한 비밀번호를 입력하세요.');
-    if(pw === null) return;
-    ok = (await hashPw(pw) === p.pwHash);
-    if(!ok){ alert('비밀번호가 틀렸습니다.'); return; }
-  }
+  const pw = await askPassword('🔒 삭제 비밀번호', p.type==='notice'?'관리자 비밀번호를 입력하세요.':'본인 비밀번호 또는 관리자 비밀번호를 입력하세요.');
+  if(pw === null) return;
+  const ph = await hashPw(pw);
+  // 관리자 비번이면 무엇이든 삭제 가능, 아니면 본인 비번(문의만)
+  const isAdmin = (ph === ADMIN_PW_HASH);
+  const isOwner = (p.type!=='notice' && ph === p.pwHash);
+  if(!isAdmin && !isOwner){ alert('비밀번호가 틀렸습니다.'); return; }
   if(!confirm('정말 삭제할까요?')) return;
   try{
     await deleteDoc(doc(db, 'posts', id));
@@ -384,6 +414,27 @@ window.deletePost = async function(id){
 
 // 모달 바깥 클릭 닫기
 $('writeModal').addEventListener('click', e=>{ if(e.target===$('writeModal')) $('writeModal').classList.remove('active'); });
+
+// === 일괄삭제 (관리자 전용) ===
+$('btnBulkDelete').addEventListener('click', async ()=>{
+  const pw = await askPassword('🗑 일괄삭제 (관리자)', '관리자 비밀번호를 입력하면 현재 보이는 목록을 모두 삭제합니다.');
+  if(pw === null) return;
+  if(await hashPw(pw) !== ADMIN_PW_HASH){ alert('관리자 비밀번호가 틀렸습니다.'); return; }
+  let targets = allPosts.slice();
+  if(currentFilter !== 'all') targets = targets.filter(p => p.type === currentFilter);
+  if(targets.length === 0){ alert('삭제할 글이 없습니다.'); return; }
+  const label = currentFilter==='all'?'전체':(currentFilter==='notice'?'공지':'문의');
+  if(!confirm('현재 "'+label+'" 목록 '+targets.length+'개를 모두 삭제할까요?\n(되돌릴 수 없습니다)')) return;
+  $('btnBulkDelete').disabled = true;
+  $('btnBulkDelete').textContent = '삭제 중...';
+  try{
+    for(const p of targets){ await deleteDoc(doc(db, 'posts', p.id)); }
+    await loadPosts();
+    alert(targets.length+'개 삭제 완료.');
+  }catch(e){ alert('삭제 중 오류: '+e.message); }
+  $('btnBulkDelete').disabled = false;
+  $('btnBulkDelete').textContent = '🗑 일괄삭제';
+});
 
 loadPosts();
 </script>
