@@ -102,8 +102,23 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
   </div>
 
   <div class="panel">
-    <h2>📅 월별 배당 캘린더 <span class="sub">어느 달에 얼마 들어오는지 (세전, 원화 환산)</span></h2>
+    <h2>📅 월별 배당 캘린더 <span class="sub">어느 달에 얼마 들어오는지 (원화 환산)</span></h2>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <button class="btn btn-sm" id="btnPretax" onclick="setCalMode('pre')" style="background:#1F4E78;color:white">세전</button>
+      <button class="btn btn-sm" id="btnAftertax" onclick="setCalMode('after')" style="background:#9ca3af;color:white">세후</button>
+    </div>
     <div class="chart-wrap"><canvas id="monthlyChart" height="120"></canvas></div>
+  </div>
+
+  <div class="panel" id="monthTablePanel">
+    <h2>🗓️ 종목별 월 배당 표 <span class="sub">종목이 몇 월에 얼마씩 (원화·<span id="monthTableMode">세전</span>)</span></h2>
+    <div style="overflow-x:auto">
+      <table class="holdings" id="monthTable" style="font-size:12px">
+        <thead id="monthTableHead"></thead>
+        <tbody id="monthTableBody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="monthTableEmpty" style="display:none">종목을 추가하면 표시됩니다.</div>
   </div>
 
   <div class="chart-grid">
@@ -134,6 +149,7 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
       </div>
     </div>
     <div id="goalMsg" style="font-size:13px;color:#444;line-height:1.6"></div>
+    <div id="goalInvestMsg" style="font-size:13px;color:#444;line-height:1.7;margin-top:10px;padding:12px 14px;background:#f0f5fa;border-radius:6px;border-left:3px solid #1F4E78"></div>
   </div>
 
   <!-- 배당 성장 예측 -->
@@ -274,6 +290,7 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const AUTO_KEY='sf_dividend_portfolio';
@@ -284,6 +301,7 @@ let taxKR=15.4, taxUS=15;
 let goalMonthly=1000000, growthRate=7, growthYears=10;
 let targetWeights={}; // {holdingId: percent}
 let growthChart2=null;
+let calMode='pre'; // pre=세전, after=세후
 
 const fmt=n=>Math.round(n).toLocaleString('ko-KR');
 const fmtShort=n=>{const a=Math.abs(n);if(a>=1e8)return (n/1e8).toFixed(2).replace(/\.?0+$/,'')+'억';if(a>=1e4)return (n/1e4).toFixed(0)+'만';return Math.round(n).toLocaleString('ko-KR');};
@@ -401,10 +419,11 @@ function renderHoldings(){
 }
 
 // === 월별 배당 분산 ===
-function monthlyDistribution(h){
+function monthlyDistribution(h,afterTax){
   // freq회를 첫 배당월부터 균등 간격으로 분산
   const months=new Array(12).fill(0);
-  const annualKRW=toKRW(h.qty*h.dps,h.country);
+  let annualKRW=toKRW(h.qty*h.dps,h.country);
+  if(afterTax)annualKRW*=(h.country==='US'?(1-taxUS/100):(1-taxKR/100));
   if(annualKRW<=0||h.freq<=0)return months;
   const perPay=annualKRW/h.freq;
   const gap=12/h.freq;
@@ -431,7 +450,7 @@ function renderDashboard(){
     totalValueKRW+=valKRW;
     totalAnnualKRW+=annKRW;
     totalAfterTax+=annKRW*(h.country==='US'?(1-taxUS/100):(1-taxKR/100));
-    const md=monthlyDistribution(h);
+    const md=monthlyDistribution(h,calMode==='after');
     for(let i=0;i<12;i++)monthTotals[i]+=md[i];
   });
 
@@ -450,8 +469,8 @@ function renderDashboard(){
   if(monthlyChart)monthlyChart.destroy();
   monthlyChart=new Chart($('monthlyChart'),{
     type:'bar',
-    data:{labels:monthLabels,datasets:[{label:'월 배당(원)',data:monthTotals,backgroundColor:'#2563eb',borderRadius:5}]},
-    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.parsed.y)+'원'}}},scales:{y:{ticks:{callback:v=>fmtShort(v)}}}}
+    data:{labels:monthLabels,datasets:[{label:'월 배당(원, '+(calMode==='after'?'세후':'세전')+')',data:monthTotals,backgroundColor:calMode==='after'?'#059669':'#2563eb',borderRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},datalabels:{display:false},tooltip:{callbacks:{label:c=>fmt(c.parsed.y)+'원'}}},scales:{y:{ticks:{callback:v=>fmtShort(v)}}}}
   });
 
   // 비중 도넛 (평가액)
@@ -462,22 +481,41 @@ function renderDashboard(){
   weightChart=new Chart($('weightChart'),{
     type:'doughnut',
     data:{labels:names,datasets:[{data:valueData,backgroundColor:PALETTE}]},
-    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);const p=t>0?(c.parsed/t*100).toFixed(1):0;return c.label+': '+fmt(c.parsed)+'원 ('+p+'%)';}}}}}
+    options:{responsive:true,maintainAspectRatio:true,plugins:{
+      legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}},
+      tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);const p=t>0?(c.parsed/t*100).toFixed(1):0;return c.label+': '+fmt(c.parsed)+'원 ('+p+'%)';}}},
+      datalabels:{
+        color:'#fff',font:{size:11,weight:'bold'},textAlign:'center',
+        formatter:(v,ctx)=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);const p=t>0?(v/t*100):0;if(p<7)return '';return ctx.chart.data.labels[ctx.dataIndex]+'\n'+p.toFixed(0)+'%';},
+        textStrokeColor:'rgba(0,0,0,.45)',textStrokeWidth:3
+      }
+    }},
+    plugins:[ChartDataLabels]
   });
   if(divChart)divChart.destroy();
   divChart=new Chart($('divChart'),{
     type:'doughnut',
     data:{labels:names,datasets:[{data:divData,backgroundColor:PALETTE}]},
-    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);const p=t>0?(c.parsed/t*100).toFixed(1):0;return c.label+': '+fmt(c.parsed)+'원 ('+p+'%)';}}}}}
+    options:{responsive:true,maintainAspectRatio:true,plugins:{
+      legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}},
+      tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);const p=t>0?(c.parsed/t*100).toFixed(1):0;return c.label+': '+fmt(c.parsed)+'원 ('+p+'%)';}}},
+      datalabels:{
+        color:'#fff',font:{size:11,weight:'bold'},textAlign:'center',
+        formatter:(v,ctx)=>{const t=ctx.dataset.data.reduce((a,b)=>a+b,0);const p=t>0?(v/t*100):0;if(p<7)return '';return ctx.chart.data.labels[ctx.dataIndex]+'\n'+p.toFixed(0)+'%';},
+        textStrokeColor:'rgba(0,0,0,.45)',textStrokeWidth:3
+      }
+    }},
+    plugins:[ChartDataLabels]
   });
 
-  renderGoal(totalAnnualKRW);
+  renderGoal(totalAnnualKRW,totalValueKRW);
   renderGrowth(totalAnnualKRW);
   renderTargetWeights(totalValueKRW);
+  renderMonthTable();
 }
 
 // 목표 달성률
-function renderGoal(totalAnnualKRW){
+function renderGoal(totalAnnualKRW,totalValueKRW){
   const monthly=totalAnnualKRW/12;
   const pct=goalMonthly>0?(monthly/goalMonthly*100):0;
   const barPct=Math.min(100,pct);
@@ -488,6 +526,20 @@ function renderGoal(totalAnnualKRW){
     $('goalMsg').innerHTML='🎉 <b style="color:#059669">목표 달성!</b> 현재 월 평균 <b>'+fmt(monthly)+'원</b>으로 목표(월 '+fmt(goalMonthly)+'원)를 넘었습니다.';
   } else {
     $('goalMsg').innerHTML='현재 월 평균 <b>'+fmt(monthly)+'원</b> / 목표 월 <b>'+fmt(goalMonthly)+'원</b>. 목표까지 <b style="color:#dc2626">월 '+fmt(gap)+'원</b> (연 '+fmt(gap*12)+'원) 부족.';
+  }
+  // 목표까지 필요 투자금 (현재 포트폴리오 배당수익률 기준 역산)
+  const portYield=totalValueKRW>0?(totalAnnualKRW/totalValueKRW):0;
+  const goalAnnual=goalMonthly*12;
+  if(pct>=100){
+    $('goalInvestMsg').innerHTML='✅ 이미 목표를 달성해서 추가 투자가 필요 없습니다.';
+  } else if(portYield<=0){
+    $('goalInvestMsg').innerHTML='💡 <b>목표까지 필요 투자금</b>: 종목을 등록하면 현재 배당수익률 기준으로 "얼마를 더 투자하면 목표 달성"인지 계산해 드립니다.';
+  } else {
+    const needAnnualMore=goalAnnual-totalAnnualKRW; // 더 받아야 할 연 배당
+    const needInvest=needAnnualMore/portYield;      // 같은 수익률로 더 투자할 금액
+    $('goalInvestMsg').innerHTML='💡 <b>목표까지 필요 투자금</b>: 현재 포트폴리오 배당수익률 <b>'+(portYield*100).toFixed(2)+'%</b>를 그대로 유지한다면, '+
+      '<b style="color:#1F4E78">약 '+fmt(needInvest)+'원</b>'+(needInvest>=1e4?' ('+fmtShort(needInvest)+')':'')+'을 더 투자하면 월 배당 목표('+fmt(goalMonthly)+'원)에 도달합니다. '+
+      '<span style="color:#888;font-size:12px">※ 같은 수익률 가정. 더 높은 배당률 종목을 사면 필요 금액은 줄어듭니다.</span>';
   }
 }
 
@@ -505,7 +557,7 @@ function renderGrowth(totalAnnualKRW){
   growthChart2=new Chart($('growthChart'),{
     type:'line',
     data:{labels,datasets:[{label:'연 배당(원)',data,borderColor:'#059669',backgroundColor:'rgba(5,150,105,.1)',fill:true,tension:.3,pointRadius:3}]},
-    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.parsed.y)+'원'}}},scales:{y:{ticks:{callback:v=>fmtShort(v)}}}}
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},datalabels:{display:false},tooltip:{callbacks:{label:c=>fmt(c.parsed.y)+'원'}}},scales:{y:{ticks:{callback:v=>fmtShort(v)}}}}
   });
   const future=totalAnnualKRW*Math.pow(1+g,years);
   $('growthMsg').innerHTML='현재 연 배당 <b>'+fmt(totalAnnualKRW)+'원</b>이 연 '+growthRate+'%씩 늘면, <b>'+years+'년 후 '+fmt(future)+'원</b> (월 '+fmt(future/12)+'원)이 됩니다. <span style="color:#888;font-size:12px">※ 배당 증가만 반영, 추가 매수·재투자 제외. 명목 기준(물가 미반영).</span>';
@@ -546,6 +598,37 @@ window.setTargetWeight=function(id,val){
   let totalValueKRW=0;holdings.forEach(h=>totalValueKRW+=toKRW(h.qty*h.avg,h.country));
   renderTargetWeights(totalValueKRW);
 };
+
+// 세전/세후 토글
+window.setCalMode=function(m){
+  calMode=m;
+  $('btnPretax').style.background=m==='pre'?'#1F4E78':'#9ca3af';
+  $('btnAftertax').style.background=m==='after'?'#059669':'#9ca3af';
+  $('monthTableMode').textContent=m==='after'?'세후':'세전';
+  renderDashboard();
+};
+
+// 종목별 월 배당 표
+function renderMonthTable(){
+  if(holdings.length===0){
+    $('monthTableHead').innerHTML='';$('monthTableBody').innerHTML='';
+    $('monthTableEmpty').style.display='block';$('monthTable').style.display='none';return;
+  }
+  $('monthTableEmpty').style.display='none';$('monthTable').style.display='table';
+  const mLabels=['1','2','3','4','5','6','7','8','9','10','11','12'];
+  $('monthTableHead').innerHTML='<tr><th>종목</th>'+mLabels.map(m=>'<th>'+m+'월</th>').join('')+'<th>연합계</th></tr>';
+  const colTotals=new Array(12).fill(0);
+  let grandTotal=0;
+  const rows=holdings.map(h=>{
+    const md=monthlyDistribution(h,calMode==='after');
+    const annual=md.reduce((a,b)=>a+b,0);
+    grandTotal+=annual;
+    const cells=md.map((v,i)=>{colTotals[i]+=v;return '<td>'+(v>0?fmt(v):'<span style="color:#ddd">-</span>')+'</td>';}).join('');
+    return '<tr><td><b>'+h.name+'</b></td>'+cells+'<td><b>'+fmt(annual)+'</b></td></tr>';
+  }).join('');
+  const totalRow='<tr style="background:#f0f5fa;font-weight:700"><td>월 합계</td>'+colTotals.map(v=>'<td>'+(v>0?fmt(v):'-')+'</td>').join('')+'<td>'+fmt(grandTotal)+'</td></tr>';
+  $('monthTableBody').innerHTML=rows+totalRow;
+}
 
 // === 저장 ===
 function save(){
