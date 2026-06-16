@@ -449,6 +449,50 @@ function calcKRTax(domesticDividendKRW){
   const ratio=totalFin>0?domesticDividendKRW/totalFin:0;
   return finalTax*ratio;
 }
+
+window.toggleCompBreakdown=function(){
+  var el=document.getElementById('compBreakdown');
+  if(el)el.style.display=(el.style.display==='none'||!el.style.display)?'block':'none';
+};
+
+// 종합과세 계산 내역 HTML (펼침용)
+function comprehensiveBreakdown(domesticDividendKRW){
+  const totalFin=otherFinIncome+domesticDividendKRW;
+  const over=totalFin-20000000;
+  const overTax=comprehensiveTax(over);
+  const baseTax20=20000000*0.14;
+  const compNational=overTax+baseTax20;
+  const compTotal=compNational*1.1;
+  const sepTotal=totalFin*0.154;
+  const finalTax=Math.max(compTotal,sepTotal);
+  const usedComp=compTotal>=sepTotal;
+  const ratio=totalFin>0?domesticDividendKRW/totalFin:0;
+  const divTax=finalTax*ratio;
+  const divAfter=domesticDividendKRW-divTax;
+  // 초과분이 속한 세율 구간 찾기
+  let bracketDesc='';
+  const brs=[[14000000,'6%'],[50000000,'15%'],[88000000,'24%'],[150000000,'35%'],[300000000,'38%'],[500000000,'40%'],[1000000000,'42%'],[Infinity,'45%']];
+  for(const [up,r] of brs){if(over<=up){bracketDesc=r;break;}}
+  return '<div style="font-weight:700;color:#1e40af;margin-bottom:6px">🧮 금융소득종합과세 계산 내역</div>'+
+    '<table style="width:100%;font-size:12px;border-collapse:collapse">'+
+    '<tr><td style="padding:3px 0;color:#555">금융소득 합계</td><td style="text-align:right;font-weight:600">'+fmt(totalFin)+'원</td></tr>'+
+    '<tr><td style="padding:3px 0;color:#888;padding-left:10px">└ 배당 외 금융소득</td><td style="text-align:right;color:#888">'+fmt(otherFinIncome)+'원</td></tr>'+
+    '<tr><td style="padding:3px 0;color:#888;padding-left:10px">└ 국내 배당</td><td style="text-align:right;color:#888">'+fmt(domesticDividendKRW)+'원</td></tr>'+
+    '<tr><td colspan="2" style="border-top:1px dashed #c7d7e8;padding-top:5px"></td></tr>'+
+    '<tr><td style="padding:3px 0;color:#555">① 2,000만원 (14% 분리)</td><td style="text-align:right">세금 '+fmt(baseTax20)+'원</td></tr>'+
+    '<tr><td style="padding:3px 0;color:#555">② 초과분 '+fmt(over)+'원 (누진 '+bracketDesc+' 구간)</td><td style="text-align:right">세금 '+fmt(overTax)+'원</td></tr>'+
+    '<tr><td style="padding:3px 0;color:#555">③ 산출세액 (국세, ①+②)</td><td style="text-align:right;font-weight:600">'+fmt(compNational)+'원</td></tr>'+
+    '<tr><td style="padding:3px 0;color:#555">④ 지방소득세 10% 포함</td><td style="text-align:right;font-weight:600">'+fmt(compTotal)+'원</td></tr>'+
+    '<tr><td style="padding:3px 0;color:#555">⑤ 비교과세 (전체×15.4%)</td><td style="text-align:right">'+fmt(sepTotal)+'원</td></tr>'+
+    '<tr><td style="padding:3px 0;color:#1e40af;font-weight:600">⑥ 최종세액 = MAX(④,⑤)</td><td style="text-align:right;font-weight:700;color:#1e40af">'+fmt(finalTax)+'원</td></tr>'+
+    '<tr><td colspan="2" style="font-size:11px;color:#888;padding:2px 0 5px">→ '+(usedComp?'종합과세 방식 적용 (④가 더 큼)':'비교과세 적용 (⑤가 더 큼, 15.4% 하한)')+'</td></tr>'+
+    '<tr><td colspan="2" style="border-top:1px dashed #c7d7e8;padding-top:5px"></td></tr>'+
+    '<tr><td style="padding:3px 0;color:#555">⑦ 배당 귀속분 ('+fmt(domesticDividendKRW)+'/'+fmt(totalFin)+' = '+(ratio*100).toFixed(1)+'%)</td><td style="text-align:right;font-weight:700;color:#dc2626">'+fmt(divTax)+'원</td></tr>'+
+    '<tr><td style="padding:3px 0;color:#059669;font-weight:600">⑧ 배당 세후 수령</td><td style="text-align:right;font-weight:700;color:#059669">'+fmt(divAfter)+'원</td></tr>'+
+    '<tr><td style="padding:3px 0;color:#1e40af;font-weight:700">배당 실효세율</td><td style="text-align:right;font-weight:800;color:#1e40af">'+(domesticDividendKRW>0?(divTax/domesticDividendKRW*100).toFixed(2):0)+'%</td></tr>'+
+    '</table>'+
+    '<div style="font-size:11px;color:#999;margin-top:6px;line-height:1.5">※ 다른 종합소득(근로·사업)은 0으로 가정. 기본공제·배당가산(Gross-up)·세액공제 미반영 근사치입니다. 정밀 계산은 홈택스를 이용하세요.</div>';
+}
 $('goalMonthly').addEventListener('input',()=>{goalMonthly=parseFloat($('goalMonthly').value)||0;save();renderDashboard();});
 $('growthRate').addEventListener('input',()=>{growthRate=parseFloat($('growthRate').value)||0;save();renderDashboard();});
 $('growthYears').addEventListener('input',()=>{growthYears=parseInt($('growthYears').value)||10;save();renderDashboard();});
@@ -577,7 +621,9 @@ function renderDashboard(){
     if(totalFin<=20000000){
       compEl.innerHTML='현재 (타 금융소득 '+fmt(otherFinIncome)+'원 + 국내배당 '+fmt(domesticDivKRW)+'원 = <b>'+fmt(totalFin)+'원</b>)으로 <b>2천만원 이하</b>라 일반 분리과세(15.4%)가 적용됩니다.';
     } else {
-      compEl.innerHTML='타 금융소득 '+fmt(otherFinIncome)+'원 + 국내배당 '+fmt(domesticDivKRW)+'원 = <b>'+fmt(totalFin)+'원</b>이 2천만원을 초과 → 초과분 누진과세. 국내배당 실효세율 <b style="color:#1e40af">'+(effKRRate*100).toFixed(1)+'%</b> (다른 종합소득 0 가정).';
+      compEl.innerHTML='타 금융소득 '+fmt(otherFinIncome)+'원 + 국내배당 '+fmt(domesticDivKRW)+'원 = <b>'+fmt(totalFin)+'원</b>이 2천만원을 초과 → 초과분 누진과세. 국내배당 실효세율 <b style="color:#1e40af">'+(effKRRate*100).toFixed(1)+'%</b> (다른 종합소득 0 가정). '+
+        '<a href="#" onclick="toggleCompBreakdown();return false;" style="color:#1e40af;font-weight:600;text-decoration:underline">🧮 계산식 보기 ▾</a>'+
+        '<div id="compBreakdown" style="display:none;margin-top:10px;background:white;border:1px solid #c7d7e8;border-radius:6px;padding:12px">'+comprehensiveBreakdown(domesticDivKRW)+'</div>';
     }
   }
   $('sumValue').innerHTML=fmtWon(totalValueKRW);
