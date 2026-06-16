@@ -17,6 +17,7 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 .seg{display:inline-flex;background:#eef2f7;border-radius:10px;padding:3px;gap:2px}
 .seg button{border:0;background:transparent;color:#6b7280;font-family:inherit;font-weight:700;font-size:13px;padding:7px 14px;border-radius:8px;cursor:pointer;transition:.15s}
 .seg button.on{background:#1F4E78;color:#fff}
+.seg.scn button.on{background:#6d28d9}
 .ctrl{margin-bottom:16px}.ctrl:last-child{margin-bottom:0}
 .ctrl .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
 .ctrl label{font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:7px}
@@ -41,6 +42,8 @@ input[type=range]{width:100%;accent-color:#1F4E78;height:24px;cursor:pointer}
 .sens .row{display:flex;justify-content:space-between;padding:9px 0;font-size:13.5px}
 .sens .row+.row{border-top:1px solid rgba(255,255,255,.16)}
 .sens .v{font-weight:800}.sens .v.amber{color:#fbbf24}.sens .v.sky{color:#93c5fd}
+.infobar{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:11px 14px;margin-bottom:14px;font-size:12px;color:#9a3412;line-height:1.55}
+.infobar b{color:#7c2d12}
 details{border:1px solid #e6e9ee;border-radius:10px;background:#fff;margin-bottom:14px}
 summary{cursor:pointer;font-weight:700;font-size:13px;padding:13px 16px;list-style:none;display:flex;justify-content:space-between;align-items:center}
 summary::-webkit-details-marker{display:none}
@@ -76,7 +79,12 @@ summary .chev{color:#888;font-size:12px;font-weight:600}
 <a href="../" class="back-link">← 주식 분석 도구로</a>
 
 <h1>✈️ 대한항공 실적 시뮬레이터</h1>
-<p class="desc">한투 가이던스 기준 · 유가→영업이익 / 환율→순이익 분리 · 2Q 실측 역산 검증 패널 포함. 입력 기록은 서버에 저장되지 않습니다.</p>
+<p class="desc">증권사 시나리오(한투/하나) 토글 · 유가→영업이익 / 환율→순이익 분리 · 2Q 실측 역산 검증 패널 포함. 입력 기록은 서버에 저장되지 않습니다.</p>
+
+<div class="infobar">
+  🛢️ <b>유가 근황(2026.6).</b> 7월 국제선 유류할증료 <b>19단계</b> 확정(MOPS 갤런당 338.3센트, 6월 27단계→8계단↓).
+  미·이란 종전(6/19)·호르무즈 재개방으로 유가 Peak-out. 단 완전 정상화는 수개월. <b>3Q부터 연료비 개선 시작(점진적).</b>
+</div>
 
 <div class="card">
   <div class="toggles">
@@ -87,6 +95,10 @@ summary .chev{color:#888;font-size:12px;font-weight:600}
     <div class="seg" id="segTerm">
       <button data-v="연간" class="on">연간(2026F)</button>
       <button data-v="분기">2Q 단기</button>
+    </div>
+    <div class="seg scn" id="segScn">
+      <button data-v="한투" class="on">한투(보수)</button>
+      <button data-v="하나">하나(낙관)</button>
     </div>
   </div>
   <div class="ctrl">
@@ -139,16 +151,16 @@ summary .chev{color:#888;font-size:12px;font-weight:600}
 <details>
   <summary>가정값 <span class="chev">▾</span></summary>
   <div class="pad">
-    <div class="arow"><span class="lab">전가율<small>유류할증료+운임, IATA ~70%</small></span><input type="number" id="aPass" value="70" step="5"><span class="unit">%</span></div>
+    <div class="arow"><span class="lab">전가율<small>유류할증료+운임 / 한투 70% · 하나 85%</small></span><input type="number" id="aPass" value="70" step="5"><span class="unit">%</span></div>
     <div class="arow"><span class="lab">연료 환산환율<small>유가 효과 원화 환산</small></span><input type="number" id="aFx" value="1500" step="10"><span class="unit">원</span></div>
     <div class="arow"><span class="lab">순이익 환율민감도<small>별도 350 / 연결 475</small></span><input type="number" id="aFxNI" value="350" step="25"><span class="unit">억/10원</span></div>
-    <button class="reset" id="resetBtn">기본값 복원</button>
+    <button class="reset" id="resetBtn">시나리오 기본값 복원</button>
   </div>
 </details>
 
 <div class="checkcard">
   <h3>🔎 2Q 실측 역산 검증</h3>
-  <div class="hint">7월말 실적 나오면 4개 넣어. 추정 계수가 방향·규모로 얼마나 빗나갔는지 잡아냄 (별도 기준 권장).</div>
+  <div class="hint">7월말 실적 나오면 4개 넣어. 추정 계수가 방향·규모로 얼마나 빗나갔는지 잡아냄 (별도 기준 권장). 한투/하나 중 누가 맞았는지 시나리오 토글로 대조 가능.</div>
   <div class="infield"><label>2Q 실제 영업이익 <small>(억원)</small></label><input type="number" id="cOP" placeholder="예: -420"></div>
   <div class="infield"><label>2Q 평균 항공유 변동 <small>(기준 대비 Δ$/bbl)</small></label><input type="number" id="cOil" placeholder="예: 8"></div>
   <div class="infield"><label>6월말 환율 변동 <small>(기준 대비 Δ원)</small></label><input type="number" id="cFx" placeholder="예: 30"></div>
@@ -171,36 +183,48 @@ summary .chev{color:#888;font-size:12px;font-weight:600}
 <div class="manual">
   <h3>📖 사용 설명</h3>
   <ul>
-    <li><b>별도/연결 · 연간/분기</b> 토글로 기준을 고른다. 기본은 별도·연간(2026F).</li>
+    <li><b>별도/연결 · 연간/분기 · 시나리오(한투/하나)</b> 토글로 기준을 고른다. 기본은 별도·연간·한투.</li>
+    <li><b>시나리오</b>: 한투(보수)는 2Q 별도 -360억·전가율 70%, 하나(낙관)는 2Q 별도 +650억·전가율 85%. 같은 분기를 두고 증권사 전망이 갈려, 7월 실측으로 갈린다.</li>
     <li><b>항공유·환율 슬라이더</b>를 움직이면 영업이익(항공유 라인)·순이익(환율 라인)이 자동 재계산.</li>
-    <li><b>항공유 단위</b>는 $/bbl(배럴당 달러) ↔ ¢/gal(갤런당 센트) 토글. 하나 넣으면 나머지 자동 환산(1배럴=42갤런). 싱가포르 MOPS Jet은 ¢/gal 기준.</li>
+    <li><b>항공유 단위</b>는 $/bbl ↔ ¢/gal 토글. 하나 넣으면 나머지 자동 환산(1배럴=42갤런). 싱가포르 MOPS Jet은 ¢/gal 기준(7월 산정치 338센트).</li>
     <li><b>가정값</b>을 펼치면 전가율·환산환율·환율민감도를 직접 조정 가능.</li>
     <li><b>2Q 역산 검증</b>은 7월말 실적이 나온 뒤 쓰는 패널.</li>
   </ul>
   <h3>🧮 모델 핵심</h3>
   <ul>
-    <li><b>유가</b>는 영업이익을 직접 친다. 유류할증료+운임으로 약 70%를 전가하므로, net 효과는 gross의 30% 수준.</li>
+    <li><b>유가</b>는 영업이익을 직접 친다. 유류할증료+운임으로 전가(한투 70%/하나 85%)하므로, net 효과는 gross의 15~30% 수준.</li>
     <li><b>환율</b>은 영업이익엔 거의 중립(달러 매출↔달러 비용 상쇄), 대신 영업외 외화환산손익으로 순이익을 흔든다.</li>
   </ul>
-  <h3>🔎 역산 검증 쓰는 법 (7월말)</h3>
+  <h3>📊 기준값 출처 (한투 6/15 표5)</h3>
   <ul>
-    <li>2Q 실제 영업이익·순이익, 유가·환율 변동분을 넣으면 → 추정 계수(전가율 70%, 환율민감도 350 등)가 실제와 얼마나 맞았는지 진단.</li>
-    <li>영업이익 추정 오차가 ±15% 안이면 ✓, 벗어나면 ⚠.</li>
+    <li>별도 영업이익 2026F 1.28조 / 연결 8,460억 / 연결 지배순이익 3,430억.</li>
+    <li>2Q 연결 영업이익 -3,350억 · 연결 지배순이익 -1,390억.</li>
+    <li>하나(6/15): 별도 영업이익 2026F 1.35조 · 2Q 별도 +650억(Top Pick).</li>
   </ul>
   <h3>⚠️ 주의</h3>
   <ul>
-    <li>계수는 고정이 아니다. 헤지비율·유류할증료 시차·소비량으로 출렁인다. "현재 흐름 기준 근사치"로만 사용.</li>
+    <li>계수·기준값은 추정이다. 헤지비율·유류할증료 시차·소비량으로 출렁인다. "현재 흐름 기준 근사치"로만 사용.</li>
+    <li>하나 시나리오의 순이익 기준값은 별도 OP만 공개돼 추정 보정한 값. 연결은 한투 기준 유지.</li>
     <li>투자 판단과 책임은 본인에게 있습니다.</li>
   </ul>
 </div>
 
 <script>
 const $=id=>document.getElementById(id);
+// 기준값(억원). 한투 6/15 표5 / 하나 6/15. 연결은 한투 기준 공통.
 const BASE={
-  별도:{연간:{op:12820,ni:2500,fuelMbbl:40},분기:{op:-360,ni:-1200,fuelMbbl:10}},
-  연결:{연간:{op:8460,ni:750,fuelMbbl:56},분기:{op:-3350,ni:-3800,fuelMbbl:14}}
+  한투:{
+    별도:{연간:{op:12820,ni:2500,fuelMbbl:40},분기:{op:-360,ni:-1200,fuelMbbl:10}},
+    연결:{연간:{op:8460,ni:3430,fuelMbbl:56},분기:{op:-3350,ni:-1390,fuelMbbl:14}}
+  },
+  하나:{
+    별도:{연간:{op:13500,ni:2700,fuelMbbl:40},분기:{op:650,ni:-300,fuelMbbl:10}},
+    연결:{연간:{op:8460,ni:3430,fuelMbbl:56},분기:{op:-3350,ni:-1390,fuelMbbl:14}}
+  }
 };
-const state={basis:'별도',term:'연간',oil:0,fx:0};
+const PASS={한투:70,하나:85};
+const state={scenario:'한투',basis:'별도',term:'연간',oil:0,fx:0};
+function node(){return BASE[state.scenario][state.basis][state.term];}
 function n(id){let v=parseFloat($(id).value);return isNaN(v)?0:v;}
 function clamp(v,a,b,d){v=parseFloat(v);if(isNaN(v))return d;return Math.min(b,Math.max(a,v));}
 function assume(){return{pass:clamp($('aPass').value,0,100,70),fxKRW:clamp($('aFx').value,100,5000,1500),fxNI:clamp($('aFxNI').value,0,2000,350)};}
@@ -209,10 +233,10 @@ function fmt(v){const s=v<0?'−':(v>0?'+':'');const a=Math.abs(Math.round(v));
 function fmtAbs(v){const a=Math.abs(Math.round(v));const sg=v<0?'−':'';
   if(a>=10000)return sg+(a/10000).toFixed(2).replace(/\.?0+$/,'')+'조원';return sg+a.toLocaleString('ko-KR')+'억원';}
 function setBig(id,v){const e=$(id);e.textContent=fmtAbs(v);e.classList.toggle('pos',v>=0);e.classList.toggle('neg',v<0);}
-function grossPerDollar(){const b=BASE[state.basis][state.term];return b.fuelMbbl*assume().fxKRW/100;}
+function grossPerDollar(){const b=node();return b.fuelMbbl*assume().fxKRW/100;}
 function netPerDollar(){return grossPerDollar()*(1-assume().pass/100);}
 function compute(){
-  const b=BASE[state.basis][state.term];const a=assume();const net=netPerDollar();
+  const b=node();const a=assume();const net=netPerDollar();
   const oilOP=-net*state.oil, oilNI=-net*state.oil;
   const fxNI=-(a.fxNI/10)*state.fx;
   const op=b.op+oilOP, ni=b.ni+oilNI+fxNI;
@@ -230,15 +254,16 @@ function compute(){
 function bindSeg(seg,key){document.querySelectorAll('#'+seg+' button').forEach(btn=>{
   btn.addEventListener('click',()=>{document.querySelectorAll('#'+seg+' button').forEach(x=>x.classList.remove('on'));
   btn.classList.add('on');state[key]=btn.dataset.v;
-  if(key==='basis')$('aFxNI').value=state.basis==='연결'?475:350;compute();});});}
-bindSeg('segBasis','basis');bindSeg('segTerm','term');
+  if(key==='basis')$('aFxNI').value=state.basis==='연결'?475:350;
+  if(key==='scenario')$('aPass').value=PASS[state.scenario];
+  compute();});});}
+bindSeg('segBasis','basis');bindSeg('segTerm','term');bindSeg('segScn','scenario');
 function link(r,nu,key){const R=$(r),N=$(nu);
   R.addEventListener('input',()=>{N.value=R.value;state[key]=parseFloat(R.value)||0;compute();});
   N.addEventListener('input',()=>{let v=parseFloat(N.value)||0;R.value=v;state[key]=v;compute();});}
 link('fxRange','fxNum','fx');
 
 // 항공유: 슬라이더·내부 state는 항상 $/bbl 기준, 입력칸은 선택 단위 표시
-// ¢/gal → $/bbl : ×42÷100  |  $/bbl → ¢/gal : ×100÷42
 function galToBbl(g){return g*42/100;}
 function bblToGal(b){return b*100/42;}
 function oilUnit(){return document.getElementById('oilUnit').value;}
@@ -250,32 +275,29 @@ function refreshOilConv(){
 }
 (function(){
   const R=$('oilRange'), N=$('oilNum'), U=$('oilUnit');
-  // 슬라이더 = $/bbl 고정
   R.addEventListener('input',()=>{
     state.oil=parseFloat(R.value)||0;
     N.value = oilUnit()==='bbl' ? state.oil : Math.round(bblToGal(state.oil));
     compute(); refreshOilConv();
   });
-  // 숫자 입력 = 현재 단위 기준 → $/bbl로 변환해 state에
   N.addEventListener('input',()=>{
     let v=parseFloat(N.value)||0;
     state.oil = oilUnit()==='bbl' ? v : galToBbl(v);
     R.value = Math.max(-30,Math.min(30,Math.round(state.oil)));
     compute(); refreshOilConv();
   });
-  // 단위 전환 시 입력칸 값 환산
   U.addEventListener('change',()=>{
     N.value = oilUnit()==='bbl' ? +state.oil.toFixed(2) : Math.round(bblToGal(state.oil));
     refreshOilConv();
   });
 })();
 ['aPass','aFx','aFxNI'].forEach(id=>$(id).addEventListener('input',compute));
-$('resetBtn').addEventListener('click',()=>{$('aPass').value=70;$('aFx').value=1500;$('aFxNI').value=state.basis==='연결'?475:350;compute();});
+$('resetBtn').addEventListener('click',()=>{$('aPass').value=PASS[state.scenario];$('aFx').value=1500;$('aFxNI').value=state.basis==='연결'?475:350;compute();});
 function recheck(){
   const opStr=$('cOP').value, niStr=$('cNI').value;
   if(opStr===''||niStr===''){$('verdict').style.display='none';return;}
   const actOP=n('cOP'), dOil=n('cOil'), dFx=n('cFx'), actNI=n('cNI'), intC=n('cInt');
-  const b=BASE[state.basis]['분기'];
+  const b=BASE[state.scenario][state.basis]['분기'];
   const a=assume();
   const grossQ=b.fuelMbbl*a.fxKRW/100;
   let actNet=null, actPass=null;
