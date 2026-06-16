@@ -97,8 +97,13 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
   <div class="summary-cards">
     <div class="scard blue"><div class="lbl">연 배당금 (세전)</div><div class="val" id="sumAnnual">-</div><div class="sub" id="sumAnnualSub"></div></div>
     <div class="scard green"><div class="lbl">월 평균 배당</div><div class="val" id="sumMonthly">-</div><div class="sub">연 배당 ÷ 12</div></div>
-    <div class="scard amber"><div class="lbl">연 배당금 (세후)</div><div class="val" id="sumAfterTax">-</div><div class="sub">국내 15.4% · 미국 15%</div></div>
+    <div class="scard amber"><div class="lbl">연 배당금 (세후) <span onclick="toggleAfterTaxInfo()" style="cursor:pointer;background:rgba(255,255,255,.25);border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">i</span></div><div class="val" id="sumAfterTax">-</div><div class="sub" id="sumAfterTaxSub">국내 15.4% · 미국 15%</div></div>
     <div class="scard purple"><div class="lbl">총 평가액 / 배당수익률</div><div class="val" id="sumValue">-</div><div class="sub" id="sumYield"></div></div>
+  </div>
+
+  <div id="afterTaxInfo" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;margin-bottom:18px;font-size:13px;line-height:1.7;color:#92400e">
+    <b style="color:#b45309">💡 세후 배당금은 어떻게 계산되나요?</b><br>
+    <span id="afterTaxInfoBody"></span>
   </div>
 
   <div class="panel">
@@ -454,6 +459,10 @@ window.toggleCompBreakdown=function(){
   var el=document.getElementById('compBreakdown');
   if(el)el.style.display=(el.style.display==='none'||!el.style.display)?'block':'none';
 };
+window.toggleAfterTaxInfo=function(){
+  var el=document.getElementById('afterTaxInfo');
+  if(el)el.style.display=(el.style.display==='none'||!el.style.display)?'block':'none';
+};
 
 // 종합과세 계산 내역 HTML (펼침용)
 function comprehensiveBreakdown(domesticDividendKRW){
@@ -614,6 +623,17 @@ function renderDashboard(){
   $('sumAfterTax').innerHTML=fmtWon(totalAfterTax);
   const afterTaxCard=$('sumAfterTax').closest('.scard').querySelector('.sub');
   if(afterTaxCard)afterTaxCard.textContent='국내 실효 '+(effKRRate*100).toFixed(1)+'% · 미국 '+(usEffRate*100).toFixed(1)+'%';
+  // 세후 안내 본문 (모드별)
+  const atInfo=$('afterTaxInfoBody');
+  if(atInfo){
+    if(taxEntity==='corp'){
+      atInfo.innerHTML='현재 <b>법인</b> 기준입니다. 배당소득에 법인세율 <b>'+corpRate+'%</b>(지방세 포함)를 적용한 근사치예요. 실제로는 다른 손익과 합산되어 달라집니다. 세율은 <b>「📋 종목 관리」 탭 → 환율·세율 설정</b>에서 바꿀 수 있어요.';
+    } else if(useComprehensive){
+      atInfo.innerHTML='현재 <b>금융소득종합과세</b> 기준입니다. 국내 배당은 2,000만원까지 15.4% 분리과세, 초과분은 다른 금융소득과 합산해 누진세율이 적용돼요. 그래서 실효세율이 15.4%보다 높아질 수 있습니다.<br>👉 <b>단계별 계산식</b>은 <b>「📋 종목 관리」 탭 → 환율·세율 설정 → 금융소득종합과세 체크 아래의 "🧮 계산식 보기"</b>에서 확인하세요.';
+    } else {
+      atInfo.innerHTML='현재 <b>일반 분리과세</b> 기준입니다. 국내 배당 <b>'+taxKR+'%</b>(14%+지방세 1.4%), 미국 배당 <b>'+taxUS+'%</b>(원천징수)를 적용했어요. 금융소득이 연 2,000만원을 넘으면 종합과세 대상이 될 수 있으니, <b>「📋 종목 관리」 탭 → 환율·세율 설정</b>에서 "금융소득종합과세"를 켜고 다른 소득을 입력해 보세요.';
+    }
+  }
   // 종합과세 안내
   const compEl=$('compTaxResult');
   if(compEl&&taxEntity==='personal'&&useComprehensive){
