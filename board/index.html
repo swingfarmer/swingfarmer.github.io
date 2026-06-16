@@ -39,6 +39,22 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 .post-body{margin-top:10px;padding-top:10px;border-top:1px solid #f0f0f0;font-size:14px;line-height:1.7;color:#333;white-space:pre-wrap;word-break:break-word;display:none}
 .post.open .post-body{display:block}
 .post-actions{margin-top:12px;display:flex;gap:6px;flex-wrap:wrap}
+.replies{margin-top:14px;padding-top:12px;border-top:1px dashed #ddd}
+.reply-empty{font-size:12px;color:#aaa;padding:4px 0 10px}
+.reply-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.reply{background:#f8fafc;border-radius:8px;padding:9px 12px;font-size:13px}
+.reply.admin{background:#eff6ff;border-left:3px solid #2563eb}
+.reply-head{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+.reply-name{font-weight:700;color:#1F4E78;font-size:12px}
+.reply.admin .reply-name{color:#1e40af}
+.reply-date{font-size:11px;color:#aaa;margin-right:auto}
+.reply-del{background:none;border:none;color:#ccc;cursor:pointer;font-size:12px;padding:0 4px}
+.reply-del:hover{color:#dc2626}
+.reply-text-body{color:#333;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.reply-form{display:flex;gap:6px;flex-wrap:wrap}
+.reply-form .reply-author{width:90px;padding:7px 9px;font-size:13px;border:1px solid #ccc;border-radius:6px;background:#FFF2CC;font-family:inherit}
+.reply-form .reply-text{flex:1;min-width:140px;padding:7px 9px;font-size:13px;border:1px solid #ccc;border-radius:6px;background:#FFF2CC;font-family:inherit}
+.reply-form input:focus{outline:2px solid #1F4E78;background:#FFFACD}
 
 .empty{text-align:center;color:#999;padding:50px 20px;background:white;border-radius:10px}
 .loading{text-align:center;color:#888;padding:40px}
@@ -79,7 +95,17 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
     <button class="ftab" data-filter="question">💬 문의</button>
   </div>
   <button class="btn btn-primary" id="btnWrite" style="margin-left:auto">✏️ 글쓰기</button>
+  <button class="btn btn-gray" id="btnSelectMode">☑️ 선택삭제</button>
   <button class="btn btn-red" id="btnBulkDelete">🗑 일괄삭제</button>
+</div>
+
+<div id="selectBar" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:12px;align-items:center;gap:10px">
+  <label style="font-size:13px;font-weight:600;color:#991b1b;display:flex;align-items:center;gap:6px;cursor:pointer">
+    <input type="checkbox" id="checkAll" style="width:16px;height:16px"> 전체 선택
+  </label>
+  <span id="selectCount" style="font-size:13px;color:#991b1b;margin-right:auto">0개 선택됨</span>
+  <button class="btn btn-red btn-sm" id="btnDeleteSelected">선택 삭제</button>
+  <button class="btn btn-gray btn-sm" id="btnSelectCancel">취소</button>
 </div>
 
 <div id="postList" class="post-list">
@@ -149,7 +175,7 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, updateDoc, doc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, updateDoc, doc, query, orderBy, serverTimestamp, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
@@ -172,6 +198,7 @@ const ADMIN_PW_HASH = "7046371e5d7b0d17221938e25d12b146ddc83a20546fb86eab16cb1d5
 
 let allPosts = [];
 let currentFilter = 'all';
+let selectMode = false;
 let editingId = null;
 let pwAction = null; // {type:'edit'|'delete', post}
 
@@ -254,8 +281,9 @@ function render(){
   }
   $('postList').innerHTML = posts.map(p => {
     const cls = (p.type==='notice'?'notice':'') + (p.pinned?' pinned':'');
-    return `<div class="post ${cls}" data-id="${p.id}" onclick="this.classList.toggle('open')">
+    return `<div class="post ${cls}" data-id="${p.id}" onclick="window.postClick(event, this)">
       <div class="post-head">
+        <input type="checkbox" class="post-check" data-id="${p.id}" onclick="event.stopPropagation()" style="display:none;width:17px;height:17px;cursor:pointer">
         ${p.pinned?'<span class="badge pin">📌 고정</span>':''}
         <span class="badge ${p.type}">${p.type==='notice'?'📢 공지':'💬 문의'}</span>
         <span class="post-title">${esc(p.title)}</span>
@@ -269,10 +297,44 @@ function render(){
           <button class="btn btn-gray btn-sm" onclick="window.editPost('${p.id}')">수정</button>
           <button class="btn btn-red btn-sm" onclick="window.deletePost('${p.id}')">삭제</button>
         </div>
+        <div class="replies" onclick="event.stopPropagation()">
+          ${renderReplies(p)}
+          <div class="reply-form">
+            <input type="text" class="reply-author" id="ra_${p.id}" placeholder="이름" maxlength="20">
+            <input type="text" class="reply-text" id="rt_${p.id}" placeholder="답글 달기..." maxlength="500">
+            <button class="btn btn-primary btn-sm" onclick="window.addReply('${p.id}')">등록</button>
+          </div>
+        </div>
       </div>
     </div>`;
   }).join('');
 }
+
+// 답글 목록 렌더
+function renderReplies(p){
+  const reps = p.replies || [];
+  if(reps.length === 0) return '<div class="reply-empty">아직 답글이 없어요.</div>';
+  return '<div class="reply-list">' + reps.map((r,idx)=>{
+    const isAdmin = r.admin;
+    return `<div class="reply ${isAdmin?'admin':''}">
+      <div class="reply-head">
+        <span class="reply-name">${isAdmin?'🛡️ ':''}${esc(r.author||'익명')}</span>
+        <span class="reply-date">${fmtDate(r.createdAt)}</span>
+        <button class="reply-del" onclick="window.deleteReply('${p.id}',${idx})" title="삭제">✕</button>
+      </div>
+      <div class="reply-text-body">${esc(r.text)}</div>
+    </div>`;
+  }).join('') + '</div>';
+
+// 글 클릭: 선택모드면 체크, 아니면 펼침
+window.postClick = function(e, el){
+  if(selectMode){
+    const chk = el.querySelector('.post-check');
+    if(chk){ chk.checked = !chk.checked; updateSelectCount(); }
+  } else {
+    el.classList.toggle('open');
+  }
+};
 
 // === 필터 ===
 document.querySelectorAll('.ftab').forEach(t=>{
@@ -415,6 +477,52 @@ window.deletePost = async function(id){
 // 모달 바깥 클릭 닫기
 $('writeModal').addEventListener('click', e=>{ if(e.target===$('writeModal')) $('writeModal').classList.remove('active'); });
 
+// === 선택삭제 모드 ===
+function setSelectMode(on){
+  selectMode = on;
+  $('selectBar').style.display = on ? 'flex' : 'none';
+  document.querySelectorAll('.post-check').forEach(c=>{ c.style.display = on?'inline-block':'none'; c.checked=false; });
+  $('checkAll').checked = false;
+  updateSelectCount();
+  // 선택모드일 땐 글 펼침 막기(체크 편하게)
+  document.querySelectorAll('.post').forEach(p=>{
+    p.style.cursor = on ? 'default' : 'pointer';
+  });
+}
+function updateSelectCount(){
+  const n = document.querySelectorAll('.post-check:checked').length;
+  $('selectCount').textContent = n + '개 선택됨';
+}
+$('btnSelectMode').addEventListener('click', ()=> setSelectMode(true));
+$('btnSelectCancel').addEventListener('click', ()=> setSelectMode(false));
+$('checkAll').addEventListener('change', ()=>{
+  const on = $('checkAll').checked;
+  document.querySelectorAll('.post-check').forEach(c=> c.checked = on);
+  updateSelectCount();
+});
+// 체크 변경 감지 (이벤트 위임)
+$('postList').addEventListener('change', e=>{
+  if(e.target.classList.contains('post-check')) updateSelectCount();
+});
+$('btnDeleteSelected').addEventListener('click', async ()=>{
+  const ids = Array.from(document.querySelectorAll('.post-check:checked')).map(c=>c.dataset.id);
+  if(ids.length===0){ alert('선택된 글이 없습니다.'); return; }
+  const pw = await askPassword('🔒 선택 삭제 (관리자)', ids.length+'개 글을 삭제하려면 관리자 비밀번호를 입력하세요.');
+  if(pw === null) return;
+  if(await hashPw(pw) !== ADMIN_PW_HASH){ alert('관리자 비밀번호가 틀렸습니다.'); return; }
+  if(!confirm('선택한 '+ids.length+'개 글을 삭제할까요?\n(되돌릴 수 없습니다)')) return;
+  $('btnDeleteSelected').disabled = true;
+  $('btnDeleteSelected').textContent = '삭제 중...';
+  try{
+    for(const id of ids){ await deleteDoc(doc(db, 'posts', id)); }
+    await loadPosts();
+    setSelectMode(false);
+    alert(ids.length+'개 삭제 완료.');
+  }catch(e){ alert('삭제 중 오류: '+e.message); }
+  $('btnDeleteSelected').disabled = false;
+  $('btnDeleteSelected').textContent = '선택 삭제';
+});
+
 // === 일괄삭제 (관리자 전용) ===
 $('btnBulkDelete').addEventListener('click', async ()=>{
   const pw = await askPassword('🗑 일괄삭제 (관리자)', '관리자 비밀번호를 입력하면 현재 보이는 목록을 모두 삭제합니다.');
@@ -435,6 +543,43 @@ $('btnBulkDelete').addEventListener('click', async ()=>{
   $('btnBulkDelete').disabled = false;
   $('btnBulkDelete').textContent = '🗑 일괄삭제';
 });
+
+// === 답글 ===
+window.addReply = async function(postId){
+  const author = ($('ra_'+postId).value || '').trim() || '익명';
+  const text = ($('rt_'+postId).value || '').trim();
+  if(!text){ alert('답글 내용을 입력하세요.'); return; }
+  // 관리자 이름(운영자/관리자/admin)으로 달면 관리자 비번 요구
+  let isAdmin = false;
+  if(author==='운영자' || author==='관리자' || author==='admin'){
+    const pw = await askPassword('🛡️ 관리자 답글', '관리자 이름으로 답글을 달려면 관리자 비밀번호를 입력하세요.');
+    if(pw === null) return;
+    if(await hashPw(pw) !== ADMIN_PW_HASH){ alert('관리자 비밀번호가 틀렸습니다.'); return; }
+    isAdmin = true;
+  }
+  try{
+    await updateDoc(doc(db, 'posts', postId), {
+      replies: arrayUnion({ author, text, admin: isAdmin, createdAt: new Date() })
+    });
+    await loadPosts();
+    setTimeout(()=>{ const el=document.querySelector('.post[data-id="'+postId+'"]'); if(el) el.classList.add('open'); }, 50);
+  }catch(e){ alert('답글 등록 실패: '+e.message); }
+};
+
+window.deleteReply = async function(postId, idx){
+  const p = allPosts.find(x=>x.id===postId);
+  if(!p || !p.replies || !p.replies[idx]) return;
+  const pw = await askPassword('🔒 답글 삭제', '관리자 비밀번호를 입력하세요.');
+  if(pw === null) return;
+  if(await hashPw(pw) !== ADMIN_PW_HASH){ alert('관리자 비밀번호가 틀렸습니다.'); return; }
+  if(!confirm('이 답글을 삭제할까요?')) return;
+  try{
+    const newReplies = p.replies.filter((_,i)=>i!==idx);
+    await updateDoc(doc(db,'posts',postId), { replies: newReplies });
+    await loadPosts();
+    setTimeout(()=>{ const el=document.querySelector('.post[data-id="'+postId+'"]'); if(el) el.classList.add('open'); }, 50);
+  }catch(e){ alert('답글 삭제 실패: '+e.message); }
+};
 
 loadPosts();
 </script>
