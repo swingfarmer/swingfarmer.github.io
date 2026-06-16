@@ -33,7 +33,7 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 .scard.amber{background:linear-gradient(135deg,#d97706,#f59e0b)}
 .scard.purple{background:linear-gradient(135deg,#6d28d9,#8b5cf6)}
 .scard .lbl{font-size:13px;opacity:.9;margin-bottom:6px}
-.scard .val{font-size:26px;font-weight:800;letter-spacing:-.5px}
+.scard .val{font-size:21px;font-weight:800;letter-spacing:-.5px;line-height:1.25}
 .scard .sub{font-size:12px;opacity:.85;margin-top:4px}
 
 .chart-wrap{position:relative;width:100%}
@@ -120,6 +120,46 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
   <div class="panel" id="dashEmpty" style="display:none">
     <div class="empty">아직 등록된 종목이 없어요.<br>「📋 종목 관리」 탭에서 보유 종목을 추가해 주세요.</div>
   </div>
+
+  <!-- 목표 달성률 -->
+  <div class="panel" id="goalPanel">
+    <h2>🎯 배당 목표 달성률 <span class="sub">월 배당 목표 대비 현재</span></h2>
+    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+      <div class="field" style="max-width:200px"><label>월 배당 목표 (원)</label><input type="number" id="goalMonthly" value="1000000" step="100000"></div>
+      <div style="flex:1;min-width:200px">
+        <div style="background:#e5e7eb;border-radius:20px;height:28px;overflow:hidden;position:relative">
+          <div id="goalBar" style="height:100%;background:linear-gradient(90deg,#10b981,#059669);width:0%;transition:width .4s;border-radius:20px"></div>
+          <div id="goalBarText" style="position:absolute;top:0;left:0;right:0;height:100%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#1a1a1a"></div>
+        </div>
+      </div>
+    </div>
+    <div id="goalMsg" style="font-size:13px;color:#444;line-height:1.6"></div>
+  </div>
+
+  <!-- 배당 성장 예측 -->
+  <div class="panel" id="growthPanel">
+    <h2>📈 배당 성장 예측 <span class="sub">매년 배당이 늘어난다면 (재투자 제외, 단순 성장)</span></h2>
+    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+      <div class="field" style="max-width:180px"><label>연 배당성장률 (%)</label><input type="number" id="growthRate" value="7" step="0.5"></div>
+      <div class="field" style="max-width:160px"><label>예측 기간 (년)</label><input type="number" id="growthYears" value="10" step="1"></div>
+      <span style="font-size:12px;color:#888;align-self:center">배당귀족주 장기 성장률 약 6~10%. 종목마다 다름.</span>
+    </div>
+    <div class="chart-wrap"><canvas id="growthChart" height="110"></canvas></div>
+    <div id="growthMsg" style="font-size:13px;color:#444;line-height:1.7;margin-top:10px"></div>
+  </div>
+
+  <!-- 목표 비중 비교 -->
+  <div class="panel" id="targetWeightPanel">
+    <h2>⚖️ 목표 비중 vs 현재 비중 <span class="sub">종목별 목표 비중을 정하면 리밸런싱 가이드</span></h2>
+    <p style="font-size:12px;color:#888;margin-bottom:10px">각 종목의 목표 비중(%)을 입력하면, 현재 비중과 비교해 더 살지/줄일지 알려줍니다. 합이 100%가 아니어도 됩니다.</p>
+    <div style="overflow-x:auto">
+      <table class="holdings" id="targetTable">
+        <thead><tr><th>종목</th><th>현재 평가액</th><th>현재 비중</th><th>목표 비중(%)</th><th>차이</th><th>조정 금액</th></tr></thead>
+        <tbody id="targetBody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="targetEmpty" style="display:none">종목을 추가하면 표시됩니다.</div>
+  </div>
 </div>
 
 <!-- ===== 종목 관리 ===== -->
@@ -162,11 +202,26 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
   </div>
 
   <div class="panel">
-    <h2>⚙️ 환율 설정</h2>
-    <div class="form-grid" style="max-width:300px">
-      <div class="field"><label>USD/KRW 환율 <span style="font-size:10px;color:#888">(달러→원 환산)</span></label><input type="number" id="fxRate" value="1380" step="1"></div>
+    <h2>⚙️ 환율·세율 설정</h2>
+    <div class="form-grid" style="max-width:560px">
+      <div class="field"><label>USD/KRW 환율 <span style="font-size:10px;color:#888">(달러→원)</span></label><input type="number" id="fxRate" value="1380" step="1"></div>
+      <div class="field"><label>국내 배당 세율 (%)</label><input type="number" id="taxKR" value="15.4" step="0.1"></div>
+      <div class="field"><label>미국 배당 세율 (%)</label><input type="number" id="taxUS" value="15" step="0.1"></div>
     </div>
-    <p style="font-size:12px;color:#888">미국 주식의 평가액·배당을 원화로 환산할 때 사용. 수시로 갱신하세요.</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+      <span style="font-size:12px;color:#666;align-self:center">국내 세율 프리셋:</span>
+      <button class="btn btn-gray btn-sm" onclick="setTaxKR(15.4)">일반 15.4%</button>
+      <button class="btn btn-gray btn-sm" onclick="setTaxKR(0)">비과세 0%</button>
+      <button class="btn btn-gray btn-sm" onclick="setTaxKR(26.4)">금융종합 26.4%</button>
+      <button class="btn btn-gray btn-sm" onclick="setTaxKR(35.2)">금융종합 35.2%</button>
+      <button class="btn btn-gray btn-sm" onclick="setTaxKR(11)">법인 11%</button>
+      <button class="btn btn-gray btn-sm" onclick="setTaxKR(22)">법인 22%</button>
+    </div>
+    <p style="font-size:11.5px;color:#888;line-height:1.6">
+      • <b>일반 15.4%</b>: 배당소득세 14% + 지방세 1.4% (연 금융소득 2천만원 이하).<br>
+      • <b>금융종합과세</b>: 연 금융소득 2천만원 초과 시 다른 소득과 합산해 누진세율(6~45%) 적용. 26.4%·35.2%는 예시 구간이며 본인 소득에 맞게 직접 입력하세요.<br>
+      • <b>법인</b>: 법인세율(9~24%+지방세). 보유 주체가 법인이면 선택. 정확한 적용은 세무 전문가 상담 권장.
+    </p>
   </div>
 </div>
 
@@ -225,9 +280,15 @@ const AUTO_KEY='sf_dividend_portfolio';
 let holdings=[];   // {id,name,ticker,country,qty,avg,dps,freq,month}
 let editingId=null;
 let fxRate=1380;
+let taxKR=15.4, taxUS=15;
+let goalMonthly=1000000, growthRate=7, growthYears=10;
+let targetWeights={}; // {holdingId: percent}
+let growthChart2=null;
 
 const fmt=n=>Math.round(n).toLocaleString('ko-KR');
 const fmtShort=n=>{const a=Math.abs(n);if(a>=1e8)return (n/1e8).toFixed(2).replace(/\.?0+$/,'')+'억';if(a>=1e4)return (n/1e4).toFixed(0)+'만';return Math.round(n).toLocaleString('ko-KR');};
+// 원단위 풀 표기 + 억/만 보조 (요약카드용)
+const fmtWon=n=>{const full=Math.round(n).toLocaleString('ko-KR')+'원';const a=Math.abs(n);if(a>=1e4){return full+' <span style="font-size:13px;opacity:.7">('+fmtShort(n)+')</span>';}return full;};
 
 // 통화 환산: 종목 금액(현지통화) → 원화
 function toKRW(amount,country){return country==='US'?amount*fxRate:amount;}
@@ -283,6 +344,12 @@ $('btnCancelEdit').addEventListener('click',()=>{
   $('btnCancelEdit').style.display='none';
 });
 $('fxRate').addEventListener('input',()=>{fxRate=parseFloat($('fxRate').value)||1380;save();renderHoldings();renderDashboard();});
+$('taxKR').addEventListener('input',()=>{taxKR=parseFloat($('taxKR').value)||0;save();renderDashboard();});
+$('taxUS').addEventListener('input',()=>{taxUS=parseFloat($('taxUS').value)||0;save();renderDashboard();});
+window.setTaxKR=function(v){taxKR=v;$('taxKR').value=v;save();renderDashboard();};
+$('goalMonthly').addEventListener('input',()=>{goalMonthly=parseFloat($('goalMonthly').value)||0;save();renderDashboard();});
+$('growthRate').addEventListener('input',()=>{growthRate=parseFloat($('growthRate').value)||0;save();renderDashboard();});
+$('growthYears').addEventListener('input',()=>{growthYears=parseInt($('growthYears').value)||10;save();renderDashboard();});
 
 function editHolding(id){
   const h=holdings.find(x=>x.id===id);if(!h)return;
@@ -363,16 +430,18 @@ function renderDashboard(){
     const annKRW=toKRW(h.qty*h.dps,h.country);
     totalValueKRW+=valKRW;
     totalAnnualKRW+=annKRW;
-    totalAfterTax+=annKRW*(h.country==='US'?0.85:0.846); // 미국15% / 국내15.4%
+    totalAfterTax+=annKRW*(h.country==='US'?(1-taxUS/100):(1-taxKR/100));
     const md=monthlyDistribution(h);
     for(let i=0;i<12;i++)monthTotals[i]+=md[i];
   });
 
-  $('sumAnnual').textContent=fmtShort(totalAnnualKRW)+'원';
+  $('sumAnnual').innerHTML=fmtWon(totalAnnualKRW);
   $('sumAnnualSub').textContent='원화 환산 합계';
-  $('sumMonthly').textContent=fmtShort(totalAnnualKRW/12)+'원';
-  $('sumAfterTax').textContent=fmtShort(totalAfterTax)+'원';
-  $('sumValue').textContent=fmtShort(totalValueKRW)+'원';
+  $('sumMonthly').innerHTML=fmtWon(totalAnnualKRW/12);
+  $('sumAfterTax').innerHTML=fmtWon(totalAfterTax);
+  const afterTaxCard=$('sumAfterTax').closest('.scard').querySelector('.sub');
+  if(afterTaxCard)afterTaxCard.textContent='국내 '+taxKR+'% · 미국 '+taxUS+'%';
+  $('sumValue').innerHTML=fmtWon(totalValueKRW);
   const portYield=totalValueKRW>0?(totalAnnualKRW/totalValueKRW*100):0;
   $('sumYield').textContent='배당수익률 '+portYield.toFixed(2)+'%';
 
@@ -393,19 +462,94 @@ function renderDashboard(){
   weightChart=new Chart($('weightChart'),{
     type:'doughnut',
     data:{labels:names,datasets:[{data:valueData,backgroundColor:PALETTE}]},
-    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}},tooltip:{callbacks:{label:c=>c.label+': '+fmtShort(c.parsed)+'원'}}}}
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);const p=t>0?(c.parsed/t*100).toFixed(1):0;return c.label+': '+fmt(c.parsed)+'원 ('+p+'%)';}}}}}
   });
   if(divChart)divChart.destroy();
   divChart=new Chart($('divChart'),{
     type:'doughnut',
     data:{labels:names,datasets:[{data:divData,backgroundColor:PALETTE}]},
-    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}},tooltip:{callbacks:{label:c=>c.label+': '+fmtShort(c.parsed)+'원'}}}}
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}},tooltip:{callbacks:{label:c=>{const t=c.dataset.data.reduce((a,b)=>a+b,0);const p=t>0?(c.parsed/t*100).toFixed(1):0;return c.label+': '+fmt(c.parsed)+'원 ('+p+'%)';}}}}}
   });
+
+  renderGoal(totalAnnualKRW);
+  renderGrowth(totalAnnualKRW);
+  renderTargetWeights(totalValueKRW);
 }
+
+// 목표 달성률
+function renderGoal(totalAnnualKRW){
+  const monthly=totalAnnualKRW/12;
+  const pct=goalMonthly>0?(monthly/goalMonthly*100):0;
+  const barPct=Math.min(100,pct);
+  $('goalBar').style.width=barPct+'%';
+  $('goalBarText').textContent=pct.toFixed(1)+'%';
+  const gap=goalMonthly-monthly;
+  if(pct>=100){
+    $('goalMsg').innerHTML='🎉 <b style="color:#059669">목표 달성!</b> 현재 월 평균 <b>'+fmt(monthly)+'원</b>으로 목표(월 '+fmt(goalMonthly)+'원)를 넘었습니다.';
+  } else {
+    $('goalMsg').innerHTML='현재 월 평균 <b>'+fmt(monthly)+'원</b> / 목표 월 <b>'+fmt(goalMonthly)+'원</b>. 목표까지 <b style="color:#dc2626">월 '+fmt(gap)+'원</b> (연 '+fmt(gap*12)+'원) 부족.';
+  }
+}
+
+// 배당 성장 예측
+function renderGrowth(totalAnnualKRW){
+  const years=Math.max(1,Math.min(50,growthYears));
+  const g=growthRate/100;
+  const labels=[],data=[];
+  const nowYear=new Date().getFullYear();
+  for(let i=0;i<=years;i++){
+    labels.push((nowYear+i)+'년');
+    data.push(totalAnnualKRW*Math.pow(1+g,i));
+  }
+  if(growthChart2)growthChart2.destroy();
+  growthChart2=new Chart($('growthChart'),{
+    type:'line',
+    data:{labels,datasets:[{label:'연 배당(원)',data,borderColor:'#059669',backgroundColor:'rgba(5,150,105,.1)',fill:true,tension:.3,pointRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.parsed.y)+'원'}}},scales:{y:{ticks:{callback:v=>fmtShort(v)}}}}
+  });
+  const future=totalAnnualKRW*Math.pow(1+g,years);
+  $('growthMsg').innerHTML='현재 연 배당 <b>'+fmt(totalAnnualKRW)+'원</b>이 연 '+growthRate+'%씩 늘면, <b>'+years+'년 후 '+fmt(future)+'원</b> (월 '+fmt(future/12)+'원)이 됩니다. <span style="color:#888;font-size:12px">※ 배당 증가만 반영, 추가 매수·재투자 제외. 명목 기준(물가 미반영).</span>';
+}
+
+// 목표 비중 비교
+function renderTargetWeights(totalValueKRW){
+  const body=$('targetBody');
+  if(holdings.length===0){body.innerHTML='';$('targetEmpty').style.display='block';$('targetTable').style.display='none';return;}
+  $('targetEmpty').style.display='none';$('targetTable').style.display='table';
+  body.innerHTML=holdings.map(h=>{
+    const valKRW=toKRW(h.qty*h.avg,h.country);
+    const curPct=totalValueKRW>0?(valKRW/totalValueKRW*100):0;
+    const tgt=targetWeights[h.id]!==undefined?targetWeights[h.id]:'';
+    const tgtNum=parseFloat(tgt);
+    let diffCell='-',adjCell='-';
+    if(!isNaN(tgtNum)){
+      const diff=tgtNum-curPct;
+      const adjAmount=totalValueKRW*diff/100;
+      const color=diff>0?'#059669':(diff<0?'#dc2626':'#888');
+      diffCell='<span style="color:'+color+';font-weight:700">'+(diff>0?'+':'')+diff.toFixed(1)+'%p</span>';
+      adjCell='<span style="color:'+color+'">'+(adjAmount>0?'+':'')+fmt(adjAmount)+'원</span>';
+    }
+    return `<tr>
+      <td><b>${h.name}</b></td>
+      <td>${fmt(valKRW)}원</td>
+      <td>${curPct.toFixed(1)}%</td>
+      <td><input type="number" value="${tgt}" step="1" style="width:70px;text-align:right;border:1px solid #ccc;border-radius:5px;padding:4px 6px;background:#FFF2CC;color:#0000FF;font-weight:600;font-family:inherit" onchange="setTargetWeight(${h.id},this.value)" placeholder="-"></td>
+      <td>${diffCell}</td>
+      <td>${adjCell}</td>
+    </tr>`;
+  }).join('');
+}
+window.setTargetWeight=function(id,val){
+  if(val===''||isNaN(parseFloat(val)))delete targetWeights[id];
+  else targetWeights[id]=parseFloat(val);
+  save();
+  let totalValueKRW=0;holdings.forEach(h=>totalValueKRW+=toKRW(h.qty*h.avg,h.country));
+  renderTargetWeights(totalValueKRW);
+};
 
 // === 저장 ===
 function save(){
-  try{localStorage.setItem(AUTO_KEY,JSON.stringify({holdings,fxRate}));}catch(e){}
+  try{localStorage.setItem(AUTO_KEY,JSON.stringify({holdings,fxRate,taxKR,taxUS,goalMonthly,growthRate,growthYears,targetWeights}));}catch(e){}
 }
 function load(){
   try{
@@ -414,11 +558,18 @@ function load(){
     const data=JSON.parse(raw);
     holdings=data.holdings||[];
     fxRate=data.fxRate||1380;
-    $('fxRate').value=fxRate;
+    taxKR=data.taxKR!==undefined?data.taxKR:15.4;
+    taxUS=data.taxUS!==undefined?data.taxUS:15;
+    goalMonthly=data.goalMonthly!==undefined?data.goalMonthly:1000000;
+    growthRate=data.growthRate!==undefined?data.growthRate:7;
+    growthYears=data.growthYears!==undefined?data.growthYears:10;
+    targetWeights=data.targetWeights||{};
+    $('fxRate').value=fxRate;$('taxKR').value=taxKR;$('taxUS').value=taxUS;
+    $('goalMonthly').value=goalMonthly;$('growthRate').value=growthRate;$('growthYears').value=growthYears;
   }catch(e){}
 }
 $('btnSaveJson').addEventListener('click',()=>{
-  const data={app:'배당포트폴리오',savedAt:new Date().toISOString(),holdings,fxRate};
+  const data={app:'배당포트폴리오',savedAt:new Date().toISOString(),holdings,fxRate,taxKR,taxUS,goalMonthly,growthRate,growthYears,targetWeights};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -434,7 +585,13 @@ $('fileLoad').addEventListener('change',e=>{
       const data=JSON.parse(ev.target.result);
       if(!data.holdings){alert('파일 형식이 올바르지 않습니다.');return;}
       holdings=data.holdings;fxRate=data.fxRate||1380;
-      $('fxRate').value=fxRate;
+      taxKR=data.taxKR!==undefined?data.taxKR:15.4;taxUS=data.taxUS!==undefined?data.taxUS:15;
+      goalMonthly=data.goalMonthly!==undefined?data.goalMonthly:1000000;
+      growthRate=data.growthRate!==undefined?data.growthRate:7;
+      growthYears=data.growthYears!==undefined?data.growthYears:10;
+      targetWeights=data.targetWeights||{};
+      $('fxRate').value=fxRate;$('taxKR').value=taxKR;$('taxUS').value=taxUS;
+      $('goalMonthly').value=goalMonthly;$('growthRate').value=growthRate;$('growthYears').value=growthYears;
       save();renderHoldings();renderDashboard();
       alert('✅ 불러오기 완료. '+holdings.length+'개 종목.');
     }catch(err){alert('❌ 파일 읽기 실패: '+err.message);}
