@@ -23,14 +23,29 @@ h1{color:#1F4E78;font-size:32px;margin-bottom:8px}
 .subtitle{color:#666;font-size:15px}
 .hidden-badge{display:inline-block;background:#1F4E78;color:white;font-size:12px;font-weight:600;padding:4px 12px;border-radius:12px;margin-top:10px}
 
-.section-title{font-size:14px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px 0;border-bottom:1px solid #e5e7eb;padding-bottom:6px}
+.section-title{font-size:14px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px 0;border-bottom:1px solid #e5e7eb;padding-bottom:6px;cursor:pointer;display:flex;align-items:center;gap:8px;user-select:none}
+.section-title:hover{color:#1F4E78}
+.section-title .arrow{font-size:12px;transition:transform .2s;color:#aaa}
+.section-title.collapsed .arrow{transform:rotate(-90deg)}
+.section-body{overflow:hidden}
+.section-body.collapsed{display:none}
 
 .row{display:grid;gap:18px;margin-bottom:18px}
 .row.row-2{grid-template-columns:1fr 1fr}
 .row.row-3{grid-template-columns:1fr 1fr 1fr}
 .row.row-1{grid-template-columns:1fr}
 @media(max-width:700px){
-  .row.row-2,.row.row-3{grid-template-columns:1fr}
+  /* 모바일: 2칸 + 카드 작게 */
+  .row.row-2,.row.row-3{grid-template-columns:1fr 1fr;gap:10px}
+  .card{padding:14px}
+  .card.large{padding:16px}
+  .icon{font-size:24px;margin-bottom:8px}
+  .card-title{font-size:14px}
+  .card.large .icon{font-size:26px;margin-bottom:8px}
+  .card.large .card-title{font-size:15px}
+  .card-desc{font-size:11.5px;line-height:1.4}
+  .card.large .card-desc{font-size:12px}
+  .tag{font-size:10px}
 }
 
 .card{background:white;border-radius:10px;padding:24px;box-shadow:0 2px 6px rgba(0,0,0,0.06);text-decoration:none;color:inherit;border:2px solid transparent;transition:all 0.15s ease;display:flex;flex-direction:column;height:100%}
@@ -62,47 +77,44 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
 </header>
 
 <!-- 정보 -->
-<div class="section-title">📰 정보·시장</div>
-<div class="row row-2">
-  <a href="/news/" class="card large">
+<div class="section-title" data-section="info">📰 정보·시장 <span class="arrow">▼</span></div>
+<div class="section-body" data-body="info">
+<div class="row row-3">
+  <a href="/news/" class="card">
     <div class="icon">📰</div>
     <div class="card-title">뉴스 헤드라인</div>
     <div class="card-desc">한국 주요 언론사 실시간 헤드라인. 8개 카테고리. 1시간마다 자동 갱신.</div>
     <div class="tag live">LIVE</div>
   </a>
-  <a href="/books/" class="card large">
-    <div class="icon">📚</div>
-    <div class="card-title">책 베스트셀러</div>
-    <div class="card-desc">교보·예스24·알라딘·영풍 4개 서점 베스트셀러 비교.</div>
-    <div class="tag">바로가기</div>
-  </a>
-</div>
-<div class="row row-2">
-  <a href="/market/" class="card large">
+  <a href="/market/" class="card">
     <div class="icon">📊</div>
     <div class="card-title">실시간 시장 대시보드</div>
     <div class="card-desc">코스피·다우·나스닥·환율·금리·유가·금·미국 M7 등. 트레이딩뷰 + 인베스팅닷컴.</div>
     <div class="tag live">LIVE</div>
   </a>
-  <a href="/crash-history/" class="card large">
-    <div class="icon">🚨</div>
-    <div class="card-title">역대 폭락장 비교</div>
-    <div class="card-desc">IMF·닷컴·금융위기·코로나·긴축장. 연간 최대낙폭·수익률 비교.</div>
-    <div class="tag">투자 교양</div>
-  </a>
-  <a href="https://longnshort.kr/" target="_blank" rel="noopener" class="card large">
+  <a href="https://longnshort.kr/" target="_blank" rel="noopener" class="card">
     <div class="icon">🌙</div>
     <div class="card-title">야간선물 대시보드 ↗</div>
     <div class="card-desc">코스피 야간선물·달러원·원유·비트코인·골드·나스닥·미10년물·외국인기관 매매. (외부 롱앤숏)</div>
     <div class="tag live">외부</div>
   </a>
-</div>
-<div class="row row-2">
+  <a href="/crash-history/" class="card">
+    <div class="icon">🚨</div>
+    <div class="card-title">역대 폭락장 비교</div>
+    <div class="card-desc">IMF·닷컴·금융위기·코로나·긴축장. 연간 최대낙폭·수익률 비교.</div>
+    <div class="tag">투자 교양</div>
+  </a>
   <a href="/correlation/" class="card">
     <div class="icon">🔗</div>
     <div class="card-title">DXY × KOSPI × S&P500 상관관계</div>
     <div class="card-desc">달러인덱스·코스피·미국 증시 간 상관관계 분석. 매크로 흐름 읽기.</div>
     <div class="tag hidden">히든</div>
+  </a>
+  <a href="/books/" class="card">
+    <div class="icon">📚</div>
+    <div class="card-title">책 베스트셀러</div>
+    <div class="card-desc">교보·예스24·알라딘·영풍 4개 서점 베스트셀러 비교.</div>
+    <div class="tag">바로가기</div>
   </a>
   <a href="/quotes/" class="card">
     <div class="icon">💬</div>
@@ -111,9 +123,12 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
     <div class="tag">매일 갱신</div>
   </a>
 </div>
+</div>
+
 
 <!-- 자산 설계 -->
-<div class="section-title">💰 자산 설계</div>
+<div class="section-title" data-section="asset">💰 자산 설계 <span class="arrow">▼</span></div>
+<div class="section-body" data-body="asset">
 <div class="row row-3">
   <a href="/wealth-reports/" class="card">
     <div class="icon">📊</div>
@@ -134,9 +149,11 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
     <div class="tag">사용 가능</div>
   </a>
 </div>
+</div>
 
 <!-- 부동산 -->
-<div class="section-title">🏢 부동산</div>
+<div class="section-title" data-section="estate">🏢 부동산 <span class="arrow">▼</span></div>
+<div class="section-body" data-body="estate">
 <div class="row row-3">
   <a href="/commerce/" class="card">
     <div class="icon">🗺️</div>
@@ -157,9 +174,11 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
     <div class="tag">10개 사례</div>
   </a>
 </div>
+</div>
 
 <!-- 계산기 -->
-<div class="section-title">🧮 계산기</div>
+<div class="section-title" data-section="calc">🧮 계산기 <span class="arrow">▼</span></div>
+<div class="section-body" data-body="calc">
 <div class="row row-3">
   <a href="/stock-tools/" class="card">
     <div class="icon">📊</div>
@@ -191,16 +210,12 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
     <div class="card-desc">배당주·ETF 등록 → 연 배당·월별 캘린더·비중·목표 달성률. 국내·미국, 자동저장+파일백업.</div>
     <div class="tag">사용 가능</div>
   </a>
-  <a href="/board/" class="card">
-    <div class="icon">📢</div>
-    <div class="card-title">공지 & 문의 게시판</div>
-    <div class="card-desc">업데이트 공지·문의. 누구나 읽고 문의 작성, 공지는 운영자만. 답글 가능.</div>
-    <div class="tag">사용 가능</div>
-  </a>
+</div>
 </div>
 
-<!-- 개인 (히든) -->
-<div class="section-title">🏢 회사 문서</div>
+<!-- 회사 문서 -->
+<div class="section-title" data-section="company">🏢 회사 문서 <span class="arrow">▼</span></div>
+<div class="section-body" data-body="company">
 <div class="row row-3">
   <a href="/company/" class="card">
     <div class="icon">🏢</div>
@@ -209,8 +224,11 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
     <div class="tag hidden">관리자</div>
   </a>
 </div>
+</div>
 
-<div class="section-title">🔒 개인 (나만 보기)</div>
+<!-- 개인 (히든) -->
+<div class="section-title" data-section="personal">🔒 개인 (나만 보기) <span class="arrow">▼</span></div>
+<div class="section-body" data-body="personal">
 <div class="row row-3">
   <a href="/portfolio/" class="card">
     <div class="icon">📊</div>
@@ -221,15 +239,19 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
   <a href="/notes/" class="card">
     <div class="icon">📝</div>
     <div class="card-title">투자 메모·일지</div>
-    <div class="card-desc">시장 관찰·관심 단지·포트폴리오 메모.</div>
-    <div class="tag hidden">히든</div>
-  </a>
-  <a href="https://analytics.google.com" target="_blank" class="card">
-    <div class="icon">📈</div>
-    <div class="card-title">구글 애널리틱스</div>
-    <div class="card-desc">사이트 방문자·페이지뷰·실시간 접속 집계 (G-JD3EPQXMND). 구글 로그인 필요.</div>
+    <div class="card-desc">시장 관찰·종목 분석·매매 기록. 구글 로그인(관리자 전용), 분류·검색·조회수.</div>
     <div class="tag hidden">관리자</div>
   </a>
+  <div class="card" id="adminToolsCard">
+    <div class="icon">📈</div>
+    <div class="card-title">접속 통계 · 관리</div>
+    <div class="card-desc">구글 애널리틱스(방문자·페이지뷰, G-JD3EPQXMND)와 Firebase 콘솔(게시판·DB).</div>
+    <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+      <a href="https://analytics.google.com" target="_blank" rel="noopener" style="flex:1;min-width:90px;text-align:center;background:#1F4E78;color:white;text-decoration:none;font-size:12px;font-weight:600;padding:7px 8px;border-radius:6px">📊 GA</a>
+      <a href="https://console.firebase.google.com/project/swingfarmer-board01" target="_blank" rel="noopener" style="flex:1;min-width:90px;text-align:center;background:#f59e0b;color:white;text-decoration:none;font-size:12px;font-weight:600;padding:7px 8px;border-radius:6px">🔥 Firebase</a>
+    </div>
+  </div>
+</div>
 </div>
 
 <div style="text-align:center;margin-top:40px">
@@ -240,6 +262,31 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
   © 스윙파머 · 전체 메뉴 (히든)
 </footer>
 
-<script src="/common.js?v=2"></script>
+<script>
+// 섹션 접기/펼치기 (localStorage 저장)
+(function(){
+  var KEY = 'sf_hidden_collapsed';
+  var collapsed = {};
+  try{ collapsed = JSON.parse(localStorage.getItem(KEY)) || {}; }catch(e){}
+
+  document.querySelectorAll('.section-title[data-section]').forEach(function(title){
+    var sec = title.getAttribute('data-section');
+    var body = document.querySelector('.section-body[data-body="'+sec+'"]');
+    // 저장된 상태 복원
+    if(collapsed[sec]){
+      title.classList.add('collapsed');
+      if(body) body.classList.add('collapsed');
+    }
+    title.addEventListener('click', function(){
+      var isCol = title.classList.toggle('collapsed');
+      if(body) body.classList.toggle('collapsed', isCol);
+      collapsed[sec] = isCol;
+      try{ localStorage.setItem(KEY, JSON.stringify(collapsed)); }catch(e){}
+    });
+  });
+})();
+</script>
+
+<script src="/common.js?v=3"></script>
 </body>
 </html>
