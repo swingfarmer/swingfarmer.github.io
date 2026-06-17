@@ -316,6 +316,13 @@
       <div style="font-size:12px;color:#166534;font-weight:600;margin-right:auto">💾 저장 (서버 전송 없음 · 광고 없음)</div>
       <button id="btnSavePdf" type="button" style="background:#dc2626;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">📄 PDF로 저장</button>
       <button id="btnShare" type="button" style="background:#7c3aed;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">📷 이미지로 공유</button>
+      <!-- 관리자 클라우드 (로그인 시에만 노출) -->
+      <span id="cloudArea" style="display:none;align-items:center;gap:6px">
+        <button id="btnCloudSave" type="button" style="background:#0ea5e9;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">☁️ 클라우드 저장</button>
+        <button id="btnCloudLoad" type="button" style="background:#0284c7;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">☁️ 불러오기</button>
+        <span id="cloudWho" style="font-size:11px;color:#0369a1"></span>
+      </span>
+      <button id="btnAdminLogin" type="button" style="display:none;background:#fff;color:#444;border:1px solid #ddd;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">🔑 관리자 로그인</button>
       <button id="btnSaveJson" type="button" style="background:#1F4E78;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">💾 입력값 저장 (JSON)</button>
       <label style="background:#10b981;color:white;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">
         📂 불러오기
@@ -873,6 +880,102 @@ calculate();
     });
   });
 })();
+</script>
+
+<script type="module">
+// === 관리자 클라우드 저장 (Firebase) ===
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
+  authDomain: "swingfarmer-board01.firebaseapp.com",
+  projectId: "swingfarmer-board01",
+  storageBucket: "swingfarmer-board01.firebasestorage.app",
+  messagingSenderId: "312575044644",
+  appId: "1:312575044644:web:81d754eb1d90f25454fcb1"
+};
+const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1";
+const CALC_KEY = "free"; // 이 계산기 식별자
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+const $ = id => document.getElementById(id);
+
+let currentUser = null;
+
+// 관리자 로그인 버튼은 URL에 #admin 있을 때만 노출 (남들 눈에 안 띄게)
+if(location.hash === '#admin' || location.hash === '#관리자'){
+  $('btnAdminLogin').style.display = 'inline-block';
+}
+
+$('btnAdminLogin').addEventListener('click', async ()=>{
+  try{ await signInWithPopup(auth, provider); }
+  catch(e){ alert('로그인 실패: '+e.message); }
+});
+
+onAuthStateChanged(auth, user=>{
+  currentUser = user;
+  const isAdmin = user && user.uid === ADMIN_UID;
+  if(isAdmin){
+    $('cloudArea').style.display = 'inline-flex';
+    $('btnAdminLogin').style.display = 'none';
+    $('cloudWho').textContent = '☁️ ' + (user.displayName||user.email||'관리자');
+  } else {
+    $('cloudArea').style.display = 'none';
+    // 로그인했지만 관리자 아니면 로그아웃
+    if(user && !isAdmin){ signOut(auth); }
+  }
+});
+
+// 입력값 수집/적용 (PDF 스크립트의 INPUT_IDS와 동일)
+const INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth'];
+
+function collectInputs(){
+  const data = {};
+  INPUT_IDS.forEach(id=>{ const el=$(id); if(el) data[id]=el.value; });
+  return data;
+}
+function applyInputs(data){
+  INPUT_IDS.forEach(id=>{ const el=$(id); if(el && data[id]!==undefined){ el.value=data[id]; } });
+  // 재계산 트리거
+  const first=$('currentAge'); if(first){ first.dispatchEvent(new Event('input',{bubbles:true})); }
+}
+
+$('btnCloudSave').addEventListener('click', async ()=>{
+  if(!currentUser || currentUser.uid!==ADMIN_UID){ alert('관리자 로그인이 필요합니다.'); return; }
+  $('btnCloudSave').disabled=true; $('btnCloudSave').textContent='저장 중...';
+  try{
+    const ref = doc(db, 'calc_data', ADMIN_UID);
+    // 기존 문서 가져와서 free만 갱신 (다른 계산기 데이터 보존)
+    let existing = {};
+    try{ const snap=await getDoc(ref); if(snap.exists()) existing=snap.data(); }catch(e){}
+    existing[CALC_KEY] = { data: collectInputs(), savedAt: new Date().toISOString() };
+    await setDoc(ref, existing, {merge:true});
+    alert('✅ 클라우드에 저장됐어요. 다른 기기에서 로그인하면 불러올 수 있어요.');
+  }catch(e){ alert('저장 실패: '+e.message); }
+  $('btnCloudSave').disabled=false; $('btnCloudSave').textContent='☁️ 클라우드 저장';
+});
+
+$('btnCloudLoad').addEventListener('click', async ()=>{
+  if(!currentUser || currentUser.uid!==ADMIN_UID){ alert('관리자 로그인이 필요합니다.'); return; }
+  $('btnCloudLoad').disabled=true; $('btnCloudLoad').textContent='불러오는 중...';
+  try{
+    const ref = doc(db, 'calc_data', ADMIN_UID);
+    const snap = await getDoc(ref);
+    if(snap.exists() && snap.data()[CALC_KEY]){
+      applyInputs(snap.data()[CALC_KEY].data);
+      const t = snap.data()[CALC_KEY].savedAt;
+      alert('✅ 불러왔어요.' + (t?('\n저장 시각: '+new Date(t).toLocaleString('ko-KR')):''));
+    } else {
+      alert('저장된 클라우드 데이터가 없어요. 먼저 "클라우드 저장"을 해보세요.');
+    }
+  }catch(e){ alert('불러오기 실패: '+e.message); }
+  $('btnCloudLoad').disabled=false; $('btnCloudLoad').textContent='☁️ 불러오기';
+});
 </script>
 
 <script src="/common.js?v=3"></script>
