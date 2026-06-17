@@ -325,7 +325,55 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<!-- 공유 이미지 모달 -->
+<div id="shareModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:16px;max-width:420px;width:100%;max-height:90vh;overflow:auto;padding:20px">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <h3 style="font-size:16px;color:#1F4E78;margin:0">📷 이미지로 공유</h3>
+      <button id="shareClose" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#444;margin-bottom:14px;cursor:pointer;background:#f8fafc;padding:10px 12px;border-radius:8px">
+      <input type="checkbox" id="hideAmount" style="width:16px;height:16px">
+      💰 실제 금액 숨기기 (비율·수익률만 표시)
+    </label>
+    <!-- 캡처 대상 공유 카드 -->
+    <div id="shareCard" style="background:linear-gradient(150deg,#1e293b,#0f172a);border-radius:16px;padding:24px;color:white;font-family:-apple-system,'Malgun Gothic',sans-serif">
+      <div style="font-size:13px;opacity:.7;margin-bottom:4px">💰 나의 배당 포트폴리오</div>
+      <div id="shareYield" style="font-size:13px;color:#34d399;font-weight:600;margin-bottom:18px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px">
+          <div style="font-size:11px;opacity:.7;margin-bottom:4px">연 배당 (세전)</div>
+          <div id="shareAnnual" style="font-size:18px;font-weight:800"></div>
+        </div>
+        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px">
+          <div style="font-size:11px;opacity:.7;margin-bottom:4px">월 평균 배당</div>
+          <div id="shareMonthly" style="font-size:18px;font-weight:800"></div>
+        </div>
+        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px">
+          <div style="font-size:11px;opacity:.7;margin-bottom:4px">연 배당 (세후)</div>
+          <div id="shareAfter" style="font-size:18px;font-weight:800;color:#fbbf24"></div>
+        </div>
+        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px">
+          <div style="font-size:11px;opacity:.7;margin-bottom:4px">보유 종목</div>
+          <div id="shareCount" style="font-size:18px;font-weight:800"></div>
+        </div>
+      </div>
+      <div id="shareTop" style="font-size:12px;opacity:.85;line-height:1.7;margin-bottom:16px"></div>
+      <div style="display:flex;align-items:center;border-top:1px solid rgba(255,255,255,.15);padding-top:12px">
+        <span style="font-size:11px;opacity:.6">swingfarmer.github.io · 배당 포트폴리오 관리기</span>
+        <span style="margin-left:auto;font-size:18px">📈</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-primary" id="shareDownload" style="flex:1">📥 이미지 저장</button>
+      <button class="btn btn-green" id="shareNative" style="flex:1">📤 공유하기</button>
+    </div>
+    <p style="font-size:11px;color:#888;margin-top:10px;line-height:1.6">※ 이 이미지는 SNS·카톡 등에 공유할 수 있어요. "금액 숨기기"를 켜면 실제 금액 없이 비율·수익률만 나옵니다.</p>
+  </div>
+</div>
+
 <script>
 const $=id=>document.getElementById(id);
 const AUTO_KEY='sf_dividend_portfolio';
@@ -1024,54 +1072,7 @@ renderHoldings();
 renderDashboard();
 </script>
 
-<!-- 공유 이미지 모달 -->
-<div id="shareModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:16px">
-  <div style="background:white;border-radius:16px;max-width:420px;width:100%;max-height:90vh;overflow:auto;padding:20px">
-    <div style="display:flex;align-items:center;margin-bottom:14px">
-      <h3 style="font-size:16px;color:#1F4E78;margin:0">📷 이미지로 공유</h3>
-      <button id="shareClose" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
-    </div>
-    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#444;margin-bottom:14px;cursor:pointer;background:#f8fafc;padding:10px 12px;border-radius:8px">
-      <input type="checkbox" id="hideAmount" style="width:16px;height:16px">
-      💰 실제 금액 숨기기 (비율·수익률만 표시)
-    </label>
-    <!-- 캡처 대상 공유 카드 -->
-    <div id="shareCard" style="background:linear-gradient(150deg,#1e293b,#0f172a);border-radius:16px;padding:24px;color:white;font-family:-apple-system,'Malgun Gothic',sans-serif">
-      <div style="font-size:13px;opacity:.7;margin-bottom:4px">💰 나의 배당 포트폴리오</div>
-      <div id="shareYield" style="font-size:13px;color:#34d399;font-weight:600;margin-bottom:18px"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
-        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px">
-          <div style="font-size:11px;opacity:.7;margin-bottom:4px">연 배당 (세전)</div>
-          <div id="shareAnnual" style="font-size:18px;font-weight:800"></div>
-        </div>
-        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px">
-          <div style="font-size:11px;opacity:.7;margin-bottom:4px">월 평균 배당</div>
-          <div id="shareMonthly" style="font-size:18px;font-weight:800"></div>
-        </div>
-        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px">
-          <div style="font-size:11px;opacity:.7;margin-bottom:4px">연 배당 (세후)</div>
-          <div id="shareAfter" style="font-size:18px;font-weight:800;color:#fbbf24"></div>
-        </div>
-        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px">
-          <div style="font-size:11px;opacity:.7;margin-bottom:4px">보유 종목</div>
-          <div id="shareCount" style="font-size:18px;font-weight:800"></div>
-        </div>
-      </div>
-      <div id="shareTop" style="font-size:12px;opacity:.85;line-height:1.7;margin-bottom:16px"></div>
-      <div style="display:flex;align-items:center;border-top:1px solid rgba(255,255,255,.15);padding-top:12px">
-        <span style="font-size:11px;opacity:.6">swingfarmer.github.io · 배당 포트폴리오 관리기</span>
-        <span style="margin-left:auto;font-size:18px">📈</span>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:16px">
-      <button class="btn btn-primary" id="shareDownload" style="flex:1">📥 이미지 저장</button>
-      <button class="btn btn-green" id="shareNative" style="flex:1">📤 공유하기</button>
-    </div>
-    <p style="font-size:11px;color:#888;margin-top:10px;line-height:1.6">※ 이 이미지는 SNS·카톡 등에 공유할 수 있어요. "금액 숨기기"를 켜면 실제 금액 없이 비율·수익률만 나옵니다.</p>
-  </div>
-</div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="/common.js?v=3"></script>
 </body>
 </html>
