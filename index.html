@@ -143,6 +143,52 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
 </footer>
 
 <script>
+// 카톡 등 인앱 브라우저 감지 → 외부 브라우저 안내
+(function(){
+  var ua = navigator.userAgent.toLowerCase();
+  var inApp = /kakaotalk|naver|line|fban|fbav|instagram|daumapps|everytimeapp|whale\/|band/i.test(ua);
+  if(!inApp) return;
+
+  var url = location.href;
+  var isAndroid = /android/i.test(ua);
+
+  var bar = document.createElement('div');
+  bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:100000;background:#1F4E78;color:white;padding:12px 16px;font-size:13px;line-height:1.6;box-shadow:0 2px 8px rgba(0,0,0,.2);font-family:-apple-system,sans-serif';
+  bar.innerHTML =
+    '<b>🌐 외부 브라우저로 열어주세요</b><br>'+
+    '<span style="font-size:12px;opacity:.9">카카오톡 등 앱 안에서는 일부 기능(앱 설치 등)이 제한돼요. 크롬·사파리로 열면 정상 작동합니다.</span>'+
+    '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">'+
+      '<button id="iabOpen" style="background:white;color:#1F4E78;border:none;border-radius:6px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer">'+(isAndroid?'크롬으로 열기':'주소 복사')+'</button>'+
+      '<button id="iabCopy" style="background:rgba(255,255,255,.2);color:white;border:none;border-radius:6px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer">주소 복사</button>'+
+      '<button id="iabClose" style="background:transparent;color:white;border:1px solid rgba(255,255,255,.4);border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer">닫기</button>'+
+    '</div>';
+  document.body.insertBefore(bar, document.body.firstChild);
+  document.body.style.paddingTop = bar.offsetHeight + 'px';
+
+  function copyUrl(){
+    if(navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ alert('주소가 복사됐어요. 크롬·사파리 주소창에 붙여넣어 여세요.'); }); }
+    else { prompt('아래 주소를 복사해서 브라우저에 붙여넣으세요:', url); }
+  }
+
+  document.getElementById('iabOpen').addEventListener('click', function(){
+    if(isAndroid){
+      // 안드로이드: 크롬으로 강제 열기(intent)
+      var intent = 'intent://'+url.replace(/^https?:\/\//,'')+'#Intent;scheme=https;package=com.android.chrome;end';
+      location.href = intent;
+      // 실패 대비 복사 안내
+      setTimeout(copyUrl, 1500);
+    } else {
+      copyUrl();
+    }
+  });
+  document.getElementById('iabCopy').addEventListener('click', copyUrl);
+  document.getElementById('iabClose').addEventListener('click', function(){
+    bar.remove(); document.body.style.paddingTop='';
+  });
+})();
+</script>
+
+<script>
 // service worker 등록 (PWA 설치 조건 충족 + 오프라인)
 if('serviceWorker' in navigator){
   window.addEventListener('load', function(){
@@ -174,6 +220,13 @@ if('serviceWorker' in navigator){
   function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent); }
 
   btn.addEventListener('click', async function(){
+    // 카톡 등 인앱 브라우저면 설치 불가 안내
+    var ua = navigator.userAgent.toLowerCase();
+    if(/kakaotalk|naver|line|fban|fbav|instagram|daumapps|everytimeapp|whale\/|band/i.test(ua)){
+      help.style.display='block';
+      help.innerHTML='⚠️ <b>지금 카카오톡 등 앱 안의 브라우저예요.</b><br>여기서는 앱 설치가 안 됩니다. 화면 위의 안내대로 <b>크롬·사파리로 먼저 연 다음</b> 설치하세요.';
+      return;
+    }
     if(deferredPrompt){
       // 안드로이드/크롬: 네이티브 설치 창
       deferredPrompt.prompt();
