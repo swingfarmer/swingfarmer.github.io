@@ -4,139 +4,342 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<title>투자 메모·일지</title>
-
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-JD3EPQXMND"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-JD3EPQXMND');
-</script>
-
+<title>투자 메모·일지 (관리자)</title>
 <style>
-*{box-sizing:border-box}
+*{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:900px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a}
-h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:8px}
-.desc{color:#555;font-size:14px;margin-bottom:24px;line-height:1.6}
-.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}
+.back-link{display:inline-block;margin-bottom:14px;color:#1F4E78;text-decoration:none;font-size:14px}
 .back-link:hover{text-decoration:underline}
+h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:6px;font-size:21px}
+.desc{color:#555;font-size:13px;margin-bottom:16px}
 
-.category{background:white;border-radius:10px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
-.category h2{margin:0 0 12px 0;color:#1F4E78;font-size:18px;border-left:4px solid #1F4E78;padding-left:10px}
-.category .cat-desc{font-size:13px;color:#888;margin-bottom:14px}
+/* 로그인 상태바 */
+.authbar{background:white;border-radius:10px;padding:12px 16px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.authbar .who{font-size:13px;color:#444;margin-right:auto}
+.authbar .who b{color:#1F4E78}
+.uid-box{background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:16px;line-height:1.6;word-break:break-all}
+.uid-box b{color:#b45309}
+.uid-box code{background:#fff;padding:2px 6px;border-radius:4px;font-weight:700;color:#dc2626}
 
-.note-list{list-style:none;padding:0;margin:0}
-.note-item{padding:12px 14px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:flex-start;gap:14px;transition:background 0.1s}
-.note-item:last-child{border-bottom:none}
-.note-item:hover{background:#f8fafc}
-.note-item a{color:#1F4E78;text-decoration:none;font-weight:600;font-size:15px;flex:1}
-.note-item a:hover{text-decoration:underline}
-.note-item .note-meta{font-size:12px;color:#888;white-space:nowrap;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
-.note-item .tag{display:inline-block;background:#dbeafe;color:#1e3a8a;padding:1px 8px;border-radius:10px;font-size:10px;font-weight:600}
-.note-item .tag.idea{background:#fef3c7;color:#92400e}
-.note-item .tag.report{background:#dcfce7;color:#166534}
-.note-item .tag.watch{background:#e0e7ff;color:#3730a3}
+.btn{padding:9px 16px;border:none;border-radius:7px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-primary{background:#1F4E78;color:white}
+.btn-primary:hover{background:#2d6ba3}
+.btn-gray{background:#9ca3af;color:white}
+.btn-red{background:#dc2626;color:white}
+.btn-google{background:#fff;color:#444;border:1px solid #ddd;display:inline-flex;align-items:center;gap:8px}
+.btn-google:hover{background:#f8f8f8}
+.btn-sm{padding:5px 11px;font-size:12px}
 
-.empty{text-align:center;color:#aaa;padding:20px;font-size:13px}
+/* 잠금 화면 */
+.locked{background:white;border-radius:12px;padding:50px 30px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.locked .icon{font-size:48px;margin-bottom:16px}
+.locked h2{font-size:18px;color:#1F4E78;margin-bottom:10px}
+.locked p{font-size:14px;color:#666;line-height:1.7;margin-bottom:20px}
 
-.guide{background:#f0f5fa;border-left:4px solid #1F4E78;padding:14px 18px;border-radius:8px;margin-top:30px;font-size:13px;color:#1F4E78;line-height:1.7}
-.guide b{font-weight:700}
-.guide code{background:#fff;padding:2px 6px;border-radius:3px;font-family:monospace;font-size:12px;color:#dc2626}
+/* 목록 */
+.toolbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.search-box{flex:1;min-width:160px;padding:9px 12px;font-size:14px;border:1px solid #ccc;border-radius:7px;font-family:inherit}
+.note-list{display:flex;flex-direction:column;gap:1px;background:#e5e7eb;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden}
+.note-row{background:white;padding:14px 16px;cursor:pointer;transition:background .12s;display:flex;align-items:center;gap:12px}
+.note-row:hover{background:#f0f5fa}
+.note-row .tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:#dbeafe;color:#1e40af;flex-shrink:0}
+.note-row .title{font-weight:600;font-size:14.5px;color:#1a1a1a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.note-row .date{font-size:12px;color:#999;flex-shrink:0}
+.list-empty{background:white;text-align:center;color:#999;padding:50px 20px;border-radius:10px;font-size:14px}
 
-footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
+/* 상세 */
+.detail{background:white;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.detail-head{border-bottom:2px solid #1F4E78;padding-bottom:14px;margin-bottom:18px}
+.detail-head .tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:#dbeafe;color:#1e40af}
+.detail-head h2{font-size:20px;color:#1a1a1a;margin:8px 0}
+.detail-head .meta{font-size:12px;color:#999}
+.detail-body{font-size:15px;line-height:1.8;color:#333;white-space:pre-wrap;word-break:break-word;min-height:200px}
+.detail-actions{margin-top:20px;padding-top:16px;border-top:1px solid #eee;display:flex;gap:8px;flex-wrap:wrap}
+
+/* 작성/수정 폼 */
+.editor{background:white;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.editor h2{font-size:17px;color:#1F4E78;margin-bottom:16px}
+.field{display:flex;flex-direction:column;margin-bottom:14px}
+.field label{font-size:13px;font-weight:600;margin-bottom:5px;color:#444}
+.field input,.field select,.field textarea{padding:11px;font-size:14px;border:1px solid #ccc;border-radius:7px;font-family:inherit;background:#FFF2CC}
+.field textarea{min-height:340px;resize:vertical;line-height:1.7}
+.field input:focus,.field textarea:focus,.field select:focus{outline:2px solid #1F4E78;background:#FFFACD}
+.editor-actions{display:flex;gap:8px;justify-content:flex-end}
+
+.loading{text-align:center;color:#888;padding:40px}
+.hidden{display:none !important}
 </style>
 </head>
 <body>
 
-<a href="../" class="back-link">← 메인으로</a>
-
+<a href="/1808/" class="back-link">← 히든 메뉴</a>
 <h1>📝 투자 메모·일지</h1>
-<p class="desc">개인 투자 일지·관심 단지·시장 메모. 외부 공유 없이 개인 기록용. GitHub에서 직접 편집해서 글 추가.</p>
+<p class="desc">관리자 전용 공간입니다. 시장 관찰·종목 분석·매매 기록을 자유롭게 남겨두세요.</p>
 
-<!-- 카테고리 1: 시장 관찰 -->
-<div class="category">
-  <h2>📊 시장 관찰</h2>
-  <p class="cat-desc">시장 전망·매크로·거시경제 메모</p>
-  <ul class="note-list">
-    <li class="note-item">
-      <a href="2026-05-market-overview.html">2026.5 — 미국 금리·달러·국제유가 종합</a>
-      <div class="note-meta">
-        <span>2026.05.28</span>
-        <span class="tag report">분석</span>
-      </div>
-    </li>
-    <li class="note-item">
-      <a href="2026-05-iran-conflict.html">2026.5 — 미·이란 갈등이 한국 시장에 미치는 영향</a>
-      <div class="note-meta">
-        <span>2026.05.20</span>
-        <span class="tag idea">아이디어</span>
-      </div>
-    </li>
-  </ul>
+<!-- 로그인 상태바 -->
+<div class="authbar" id="authbar">
+  <div class="who" id="whoami">로그인 확인 중...</div>
+  <button class="btn btn-google hidden" id="btnLogin">
+    <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+    구글로 로그인
+  </button>
+  <button class="btn btn-gray btn-sm hidden" id="btnLogout">로그아웃</button>
 </div>
 
-<!-- 카테고리 2: 관심 단지 -->
-<div class="category">
-  <h2>🏗️ 관심 부동산·재건축</h2>
-  <p class="cat-desc">관심 가지고 추적 중인 단지·사업지</p>
-  <ul class="note-list">
-    <li class="note-item">
-      <a href="2026-05-shindonga-tracking.html">용산 신동아 — 1,903세대 정비계획 확정 분석</a>
-      <div class="note-meta">
-        <span>2026.05.15</span>
-        <span class="tag watch">추적</span>
-      </div>
-    </li>
-    <li class="note-item">
-      <a href="2026-05-yeouido-comparison.html">여의도 재건축 단지 비교 — 삼부·대교·시범</a>
-      <div class="note-meta">
-        <span>2026.05.10</span>
-        <span class="tag report">분석</span>
-      </div>
-    </li>
-  </ul>
+<!-- 내 UID 안내 (로그인 시, 관리자 설정 전) -->
+<div class="uid-box hidden" id="uidBox"></div>
+
+<!-- 잠금 화면 (비로그인 / 권한없음) -->
+<div class="locked hidden" id="lockedView">
+  <div class="icon">🔒</div>
+  <h2 id="lockedTitle">로그인이 필요합니다</h2>
+  <p id="lockedMsg">이 게시판은 관리자 전용입니다.<br>구글 계정으로 로그인해 주세요.</p>
 </div>
 
-<!-- 카테고리 3: 종목 메모 -->
-<div class="category">
-  <h2>📈 종목·포트폴리오 메모</h2>
-  <p class="cat-desc">관심 종목·포트폴리오 변화·매매 일지</p>
-  <ul class="note-list">
-    <li class="note-item">
-      <a href="2026-05-portfolio.html">2026.5 — 한국주식 포트폴리오 현황</a>
-      <div class="note-meta">
-        <span>2026.05.25</span>
-        <span class="tag watch">포트폴리오</span>
-      </div>
-    </li>
-  </ul>
+<!-- 목록 화면 -->
+<div id="listView" class="hidden">
+  <div class="toolbar">
+    <input type="text" class="search-box" id="searchBox" placeholder="🔍 제목·내용 검색">
+    <button class="btn btn-primary" id="btnNew">✏️ 새 메모</button>
+  </div>
+  <div class="note-list" id="noteList"></div>
 </div>
 
-<!-- 카테고리 4: 기타 -->
-<div class="category">
-  <h2>💭 기타 메모</h2>
-  <p class="cat-desc">아이디어·읽은 책·잡다한 메모</p>
-  <ul class="note-list">
-    <li class="empty">아직 작성된 메모가 없습니다.</li>
-  </ul>
+<!-- 상세 화면 -->
+<div id="detailView" class="hidden">
+  <div class="detail">
+    <div class="detail-head">
+      <span class="tag" id="dTag">메모</span>
+      <h2 id="dTitle"></h2>
+      <div class="meta" id="dMeta"></div>
+    </div>
+    <div class="detail-body" id="dBody"></div>
+    <div class="detail-actions">
+      <button class="btn btn-gray" id="btnBackList">← 목록</button>
+      <button class="btn btn-primary" id="btnEdit">✏️ 수정</button>
+      <button class="btn btn-red" id="btnDelete">🗑 삭제</button>
+    </div>
+  </div>
 </div>
 
-<!-- 사용 가이드 -->
-<div class="guide">
-  <b>📘 새 메모 추가하는 방법</b><br><br>
-  1. <code>notes/template.html</code> 파일 복사<br>
-  2. 새 파일명 짓기 (예: <code>2026-06-medical-stocks.html</code>)<br>
-  3. GitHub에서 파일 편집 → 내용 작성<br>
-  4. <code>notes/index.html</code> (이 페이지) 편집해서 새 메모 링크 추가<br>
-  5. Commit changes → 자동 반영<br><br>
-  💡 <b>파일명 규칙:</b> <code>YYYY-MM-키워드.html</code> 형식 권장 (정렬·검색 용이)
+<!-- 작성/수정 화면 -->
+<div id="editorView" class="hidden">
+  <div class="editor">
+    <h2 id="editorTitle">✏️ 새 메모</h2>
+    <div class="field">
+      <label>분류</label>
+      <select id="eCategory">
+        <option value="메모">📝 메모</option>
+        <option value="종목분석">📊 종목분석</option>
+        <option value="매매기록">💰 매매기록</option>
+        <option value="시장관찰">🌐 시장관찰</option>
+        <option value="부동산">🏢 부동산</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>제목</label>
+      <input type="text" id="eTitle" placeholder="제목" maxlength="120">
+    </div>
+    <div class="field">
+      <label>내용</label>
+      <textarea id="eBody" placeholder="자유롭게 작성하세요..."></textarea>
+    </div>
+    <div class="editor-actions">
+      <button class="btn btn-gray" id="btnCancelEdit">취소</button>
+      <button class="btn btn-primary" id="btnSave">저장</button>
+    </div>
+  </div>
 </div>
 
-<footer>
-  © 스윙파머 · 개인 투자 메모
-</footer>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, updateDoc, doc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 
-<script src="/common.js?v=2"></script>
+const firebaseConfig = {
+  apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
+  authDomain: "swingfarmer-board01.firebaseapp.com",
+  projectId: "swingfarmer-board01",
+  storageBucket: "swingfarmer-board01.firebasestorage.app",
+  messagingSenderId: "312575044644",
+  appId: "1:312575044644:web:81d754eb1d90f25454fcb1",
+  measurementId: "G-WGQH1DPTFB"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const NOTES = collection(db, 'notes');
+
+// ⚠️ 관리자 UID — 로그인 후 화면에 표시되는 UID를 여기에 붙여넣으세요.
+// 비워두면 "로그인한 누구나" 접근 가능(임시). 반드시 본인 UID로 채우세요!
+const ADMIN_UID = "";
+
+const $ = id => document.getElementById(id);
+const esc = s => (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+let currentUser = null;
+let notes = [];
+let currentNoteId = null;
+let editingId = null;
+
+function fmtDate(ts){
+  if(!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  const p = n => ('0'+n).slice(-2);
+  return d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+}
+
+function isAdmin(){
+  if(!currentUser) return false;
+  if(!ADMIN_UID) return true; // UID 미설정 시 임시로 로그인한 사람 허용
+  return currentUser.uid === ADMIN_UID;
+}
+
+function showView(name){
+  ['lockedView','listView','detailView','editorView'].forEach(v=>$(v).classList.add('hidden'));
+  if(name) $(name).classList.remove('hidden');
+}
+
+// === 인증 ===
+const provider = new GoogleAuthProvider();
+$('btnLogin').addEventListener('click', async ()=>{
+  try{ await signInWithPopup(auth, provider); }
+  catch(e){ alert('로그인 실패: '+e.message); }
+});
+$('btnLogout').addEventListener('click', ()=> signOut(auth));
+
+onAuthStateChanged(auth, user=>{
+  currentUser = user;
+  if(!user){
+    // 비로그인
+    $('whoami').textContent = '로그인하지 않음';
+    $('btnLogin').classList.remove('hidden');
+    $('btnLogout').classList.add('hidden');
+    $('uidBox').classList.add('hidden');
+    $('lockedTitle').textContent = '로그인이 필요합니다';
+    $('lockedMsg').innerHTML = '이 게시판은 관리자 전용입니다.<br>구글 계정으로 로그인해 주세요.';
+    showView('lockedView');
+    return;
+  }
+  // 로그인됨
+  $('whoami').innerHTML = '로그인: <b>'+esc(user.displayName||user.email)+'</b>';
+  $('btnLogin').classList.add('hidden');
+  $('btnLogout').classList.remove('hidden');
+
+  // UID 미설정이면 안내 박스 표시
+  if(!ADMIN_UID){
+    $('uidBox').classList.remove('hidden');
+    $('uidBox').innerHTML = '⚙️ <b>관리자 설정 안내</b><br>아직 관리자 UID가 설정되지 않아, 현재는 <b>로그인한 누구나</b> 접근 가능합니다.<br>아래 UID를 코드의 <b>ADMIN_UID</b>와 Firestore 보안 규칙에 붙여넣으면 <b>본인만</b> 접근하게 됩니다.<br>내 UID: <code>'+esc(user.uid)+'</code>';
+  } else {
+    $('uidBox').classList.add('hidden');
+  }
+
+  if(!isAdmin()){
+    // 로그인했지만 관리자 아님
+    $('lockedTitle').textContent = '접근 권한이 없습니다';
+    $('lockedMsg').innerHTML = '이 계정은 관리자가 아닙니다.<br>관리자 본인 계정으로 로그인해 주세요.';
+    showView('lockedView');
+    return;
+  }
+  // 관리자 → 목록
+  loadNotes();
+});
+
+// === 목록 로드 ===
+async function loadNotes(){
+  showView('listView');
+  $('noteList').innerHTML = '<div class="loading">불러오는 중...</div>';
+  try{
+    const q = query(NOTES, orderBy('createdAt','desc'));
+    const snap = await getDocs(q);
+    notes = [];
+    snap.forEach(d => notes.push({id:d.id, ...d.data()}));
+    renderList();
+  }catch(e){
+    $('noteList').innerHTML = '<div class="list-empty">불러오기 실패: '+esc(e.message)+'</div>';
+  }
+}
+
+function renderList(){
+  const kw = $('searchBox').value.trim().toLowerCase();
+  let list = notes;
+  if(kw){
+    list = notes.filter(n => (n.title||'').toLowerCase().includes(kw) || (n.body||'').toLowerCase().includes(kw));
+  }
+  if(list.length===0){
+    $('noteList').innerHTML = '<div class="list-empty">'+(kw?'검색 결과가 없습니다.':'아직 메모가 없어요. 「새 메모」로 첫 글을 남겨보세요.')+'</div>';
+    return;
+  }
+  $('noteList').innerHTML = list.map(n=>`
+    <div class="note-row" onclick="window.openNote('${n.id}')">
+      <span class="tag">${esc(n.category||'메모')}</span>
+      <span class="title">${esc(n.title||'(제목없음)')}</span>
+      <span class="date">${fmtDate(n.createdAt)}</span>
+    </div>`).join('');
+}
+$('searchBox').addEventListener('input', renderList);
+
+// === 상세 ===
+window.openNote = function(id){
+  const n = notes.find(x=>x.id===id);
+  if(!n) return;
+  currentNoteId = id;
+  $('dTag').textContent = n.category||'메모';
+  $('dTitle').textContent = n.title||'(제목없음)';
+  $('dMeta').textContent = fmtDate(n.createdAt) + (n.updatedAt ? ' (수정: '+fmtDate(n.updatedAt)+')' : '');
+  $('dBody').textContent = n.body||'';
+  showView('detailView');
+};
+$('btnBackList').addEventListener('click', ()=> showView('listView'));
+
+// === 작성 ===
+$('btnNew').addEventListener('click', ()=>{
+  editingId = null;
+  $('editorTitle').textContent = '✏️ 새 메모';
+  $('eCategory').value = '메모'; $('eTitle').value=''; $('eBody').value='';
+  showView('editorView');
+});
+$('btnEdit').addEventListener('click', ()=>{
+  const n = notes.find(x=>x.id===currentNoteId);
+  if(!n) return;
+  editingId = currentNoteId;
+  $('editorTitle').textContent = '✏️ 메모 수정';
+  $('eCategory').value = n.category||'메모'; $('eTitle').value = n.title||''; $('eBody').value = n.body||'';
+  showView('editorView');
+});
+$('btnCancelEdit').addEventListener('click', ()=>{
+  showView(editingId ? 'detailView' : 'listView');
+});
+
+$('btnSave').addEventListener('click', async ()=>{
+  const category = $('eCategory').value;
+  const title = $('eTitle').value.trim();
+  const body = $('eBody').value.trim();
+  if(!title){ alert('제목을 입력하세요.'); return; }
+  $('btnSave').disabled = true; $('btnSave').textContent = '저장 중...';
+  try{
+    if(editingId){
+      await updateDoc(doc(db,'notes',editingId), { category, title, body, updatedAt: serverTimestamp() });
+    } else {
+      await addDoc(NOTES, { category, title, body, uid: currentUser.uid, createdAt: serverTimestamp() });
+    }
+    await loadNotes();
+  }catch(e){ alert('저장 실패: '+e.message); }
+  $('btnSave').disabled = false; $('btnSave').textContent = '저장';
+});
+
+// === 삭제 ===
+$('btnDelete').addEventListener('click', async ()=>{
+  if(!currentNoteId) return;
+  if(!confirm('이 메모를 삭제할까요?')) return;
+  try{
+    await deleteDoc(doc(db,'notes',currentNoteId));
+    await loadNotes();
+  }catch(e){ alert('삭제 실패: '+e.message); }
+});
+</script>
+
+<script src="/common.js?v=3"></script>
 </body>
 </html>
