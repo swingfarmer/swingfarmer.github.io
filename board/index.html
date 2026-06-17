@@ -175,7 +175,7 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, updateDoc, doc, query, orderBy, serverTimestamp, arrayUnion, getDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, updateDoc, doc, query, orderBy, serverTimestamp, arrayUnion, getDoc, increment } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
@@ -291,6 +291,7 @@ function render(){
       <div class="post-meta">
         <span>👤 ${esc(p.author||'익명')}</span>
         <span>🕒 ${fmtDate(p.createdAt)}</span>
+        <span class="view-count">👁 ${p.views||0}</span>
       </div>
       <div class="post-body">${esc(p.content)}
         <div class="post-actions" onclick="event.stopPropagation()">
@@ -333,9 +334,31 @@ window.postClick = function(e, el){
     const chk = el.querySelector('.post-check');
     if(chk){ chk.checked = !chk.checked; updateSelectCount(); }
   } else {
+    const wasOpen = el.classList.contains('open');
     el.classList.toggle('open');
+    // 펼칠 때(닫힘→열림) 조회수 +1, 같은 브라우저 중복 방지
+    if(!wasOpen){
+      const id = el.dataset.id;
+      addView(id, el);
+    }
   }
 };
+
+// 조회수 증가 (localStorage로 브라우저별 중복 방지)
+async function addView(id, el){
+  try{
+    let viewed = [];
+    try{ viewed = JSON.parse(localStorage.getItem('sf_board_viewed')) || []; }catch(e){}
+    if(viewed.includes(id)) return; // 이미 본 글
+    await updateDoc(doc(db,'posts',id), { views: increment(1) });
+    viewed.push(id);
+    if(viewed.length>500) viewed = viewed.slice(-500);
+    localStorage.setItem('sf_board_viewed', JSON.stringify(viewed));
+    // 화면 숫자 갱신
+    const p = allPosts.find(x=>x.id===id);
+    if(p){ p.views = (p.views||0)+1; const vEl = el.querySelector('.view-count'); if(vEl) vEl.textContent = '👁 '+p.views; }
+  }catch(e){}
+}
 
 // === 필터 ===
 document.querySelectorAll('.ftab').forEach(t=>{
