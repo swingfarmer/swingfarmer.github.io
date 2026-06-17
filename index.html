@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1F4E78">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="스윙파머">
 <title>스윙파머 금융도구</title>
 
 <!-- ===== Google Analytics (GA4) ===== -->
@@ -113,9 +118,74 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
   </a>
 </div>
 
+<!-- PWA 설치 안내 -->
+<div id="installBox" style="background:white;border:1px solid #e0e7ef;border-radius:12px;padding:20px;margin-top:24px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+    <img src="/icon-192.png" alt="앱 아이콘" style="width:44px;height:44px;border-radius:10px">
+    <div>
+      <div style="font-size:16px;font-weight:700;color:#1F4E78">📱 홈 화면에 앱으로 추가</div>
+      <div style="font-size:12.5px;color:#888">설치하면 앱처럼 전체화면으로 바로 열려요</div>
+    </div>
+    <button id="btnInstall" style="margin-left:auto;background:#1F4E78;color:white;border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">앱 설치하기</button>
+  </div>
+  <div style="font-size:12.5px;color:#666;line-height:1.7;background:#f8fafc;border-radius:8px;padding:12px 14px;margin-top:6px">
+    <b style="color:#1F4E78">안심하세요 — 이건 일반 앱 설치가 아닙니다.</b><br>
+    • <b>앱스토어를 거치지 않고</b>, 이 웹사이트를 홈 화면 아이콘으로 추가하는 기능이에요(PWA).<br>
+    • <b>개인정보를 수집하거나 권한을 요구하지 않습니다.</b> 위치·연락처·사진 접근 없음.<br>
+    • 설치해도 <b>용량을 거의 차지하지 않고</b>, 그냥 홈 화면 바로가기 + 전체화면일 뿐이에요.<br>
+    • 마음에 안 들면 <b>아이콘을 길게 눌러 삭제</b>하면 끝. 흔적 안 남아요.
+  </div>
+  <div id="installHelp" style="display:none;font-size:12.5px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-top:10px;line-height:1.7"></div>
+</div>
+
 <footer>
   © 스윙파머 · GitHub Pages
 </footer>
+
+<script>
+// PWA 설치
+(function(){
+  var deferredPrompt = null;
+  var btn = document.getElementById('btnInstall');
+  var help = document.getElementById('installHelp');
+
+  // 이미 설치된 상태(standalone)면 안내 박스 숨김
+  if(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone){
+    var box = document.getElementById('installBox');
+    if(box) box.style.display='none';
+    return;
+  }
+
+  // 안드로이드/크롬: 설치 프롬프트 이벤트 잡기
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    deferredPrompt = e;
+  });
+
+  function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent); }
+
+  btn.addEventListener('click', async function(){
+    if(deferredPrompt){
+      // 안드로이드/크롬: 네이티브 설치 창
+      deferredPrompt.prompt();
+      var choice = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      if(choice.outcome==='accepted'){
+        help.style.display='block';
+        help.innerHTML='✅ 설치되었습니다! 홈 화면에서 스윙파머 아이콘을 확인하세요.';
+      }
+    } else if(isIOS()){
+      // 아이폰: 수동 안내
+      help.style.display='block';
+      help.innerHTML='🍎 <b>아이폰에서 설치하는 법</b><br>1. 하단(또는 상단)의 <b>공유 버튼 <span style="font-family:monospace">⬆️</span></b>을 누르세요<br>2. 메뉴를 내려서 <b>"홈 화면에 추가"</b>를 선택<br>3. 오른쪽 위 <b>"추가"</b>를 누르면 끝!';
+    } else {
+      // 그 외(데스크톱 등): 안내
+      help.style.display='block';
+      help.innerHTML='💻 <b>이 브라우저에서 설치하는 법</b><br>주소창 오른쪽의 <b>설치 아이콘(⊕ 또는 모니터 모양)</b>을 누르거나, 브라우저 메뉴에서 <b>"앱 설치" / "홈 화면에 추가"</b>를 선택하세요.<br><span style="color:#888">※ 일부 브라우저(사파리 데스크톱 등)는 지원하지 않을 수 있어요. 모바일 크롬/엣지를 권장합니다.</span>';
+    }
+  });
+})();
+</script>
 
 <script src="/common.js?v=3"></script>
 </body>
