@@ -4,55 +4,443 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<title>회사 문서 작업</title>
+<title>거래명세표</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:900px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a}
-.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;background:#f5f7fa;color:#1a1a1a;padding:16px}
+.wrap{max-width:1100px;margin:0 auto}
+.back-link{display:inline-block;margin-bottom:12px;color:#1F4E78;text-decoration:none;font-size:14px}
 .back-link:hover{text-decoration:underline}
-h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:6px;font-size:22px}
-.desc{color:#555;font-size:13.5px;margin-bottom:22px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
-.card{background:white;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08);text-decoration:none;color:inherit;transition:all .15s;border:1px solid #eee;display:block}
-.card:hover{box-shadow:0 4px 14px rgba(0,0,0,.12);transform:translateY(-2px)}
-.card.soon{opacity:.55;cursor:default}
-.card.soon:hover{transform:none;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.icon{font-size:30px;margin-bottom:10px}
-.card-title{font-size:16px;font-weight:700;color:#1F4E78;margin-bottom:6px}
-.card-desc{font-size:13px;color:#666;line-height:1.6}
-.tag{display:inline-block;margin-top:12px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;background:#dbeafe;color:#1e40af}
-.tag.soon{background:#f3f4f6;color:#9ca3af}
-footer{margin-top:30px;text-align:center;color:#aaa;font-size:12px}
+h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:8px;margin-bottom:14px;font-size:20px}
+
+/* 상단 컨트롤바 */
+.controls{background:white;border-radius:10px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.controls .grp{display:flex;align-items:center;gap:6px;font-size:13px}
+.controls label{font-weight:600;color:#444}
+.controls select,.controls input{padding:7px 9px;font-size:13px;border:1px solid #ccc;border-radius:6px;font-family:inherit}
+.controls select{background:#FFF2CC;font-weight:600}
+.btn{padding:8px 14px;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-primary{background:#1F4E78;color:white}
+.btn-primary:hover{background:#2d6ba3}
+.btn-gray{background:#9ca3af;color:white}
+.btn-green{background:#10b981;color:white}
+.btn-red{background:#dc2626;color:white}
+.btn-sm{padding:5px 10px;font-size:12px}
+.radio-grp{display:flex;gap:10px;align-items:center}
+.radio-grp label{display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:500}
+
+/* 입력 패널 */
+.input-panel{background:white;border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:16px}
+.input-panel h2{font-size:15px;color:#1F4E78;margin-bottom:12px}
+.form-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+.field{display:flex;flex-direction:column;gap:3px}
+.field label{font-size:12px;font-weight:600;color:#555}
+.field input{padding:8px;font-size:13px;border:1px solid #ccc;border-radius:6px;background:#FFF2CC;font-family:inherit}
+.field input:focus{outline:2px solid #1F4E78;background:#FFFACD}
+
+/* 품목 입력 테이블 */
+.items-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px}
+.items-table th{background:#1F4E78;color:white;padding:7px 5px;font-size:12px;font-weight:600}
+.items-table td{padding:3px;border:1px solid #ddd}
+.items-table input{width:100%;padding:6px;font-size:13px;border:1px solid transparent;border-radius:4px;background:#FFF2CC;font-family:inherit;text-align:right}
+.items-table input.txt{text-align:left}
+.items-table input:focus{outline:2px solid #1F4E78;background:#FFFACD}
+.items-table .calc{text-align:right;padding-right:8px;color:#1F4E78;font-weight:600;background:#f8fafc}
+.items-table .del-btn{background:#dc2626;color:white;border:none;border-radius:4px;width:24px;height:24px;cursor:pointer;font-size:13px}
+
+/* === 인쇄용 명세표 === */
+.print-area{display:flex;gap:14px;flex-wrap:wrap}
+.statement{flex:1;min-width:440px;background:white;border:2px solid #000;font-size:11px;color:#000}
+.st-row{display:flex;border-bottom:1px solid #000}
+.st-row:last-child{border-bottom:none}
+.st-cell{border-right:1px solid #000;padding:3px 5px;display:flex;align-items:center}
+.st-cell:last-child{border-right:none}
+.st-title{font-size:14px;font-weight:800;text-align:center;justify-content:center;flex:1;letter-spacing:2px}
+.st-label{background:#f0f0f0;font-weight:700;justify-content:center;text-align:center}
+.st-center{justify-content:center;text-align:center}
+.st-right{justify-content:flex-end;text-align:right}
+
+/* 공급자 박스 */
+.supplier-box{display:flex}
+.supplier-left{width:42%;border-right:1px solid #000;display:flex;flex-direction:column}
+.supplier-right{width:58%;display:flex;flex-direction:column}
+.sup-head{text-align:center;font-weight:700;background:#f0f0f0;padding:3px;border-bottom:1px solid #000}
+.sup-line{display:flex;border-bottom:1px solid #000;min-height:24px}
+.sup-line:last-child{border-bottom:none}
+.sup-line .lbl{width:64px;background:#f0f0f0;font-weight:700;text-align:center;display:flex;align-items:center;justify-content:center;border-right:1px solid #000;font-size:10px;flex-shrink:0}
+.sup-line .val{flex:1;padding:2px 5px;display:flex;align-items:center}
+.sup-line .lbl2{width:44px;background:#f0f0f0;font-weight:700;text-align:center;display:flex;align-items:center;justify-content:center;border-right:1px solid #000;border-left:1px solid #000;font-size:10px;flex-shrink:0}
+
+/* 품목 인쇄 테이블 */
+.print-items{width:100%;border-collapse:collapse}
+.print-items th{border-right:1px solid #000;border-bottom:1px solid #000;background:#f0f0f0;padding:3px 2px;font-size:10px;font-weight:700}
+.print-items th:last-child{border-right:none}
+.print-items td{border-right:1px solid #000;border-bottom:1px solid #000;padding:2px 4px;height:19px;font-size:10px}
+.print-items td:last-child{border-right:none}
+.print-items .r{text-align:right}
+.print-items .c{text-align:center}
+
+.empty-hint{color:#888;font-size:13px;text-align:center;padding:20px}
+
+@media (max-width:760px){
+  .statement{min-width:100%}
+}
+
+/* === 인쇄 시 === */
+@media print {
+  body{background:white;padding:0}
+  .no-print{display:none !important}
+  .wrap{max-width:none}
+  .print-area{gap:6px}
+  .statement{border:2px solid #000;min-width:0}
+  body.landscape{}
+}
+@page{size:A4 landscape;margin:8mm}
+body.portrait-print @page{size:A4 portrait}
 </style>
 </head>
 <body>
+<div class="wrap">
 
-<a href="/" class="back-link">← 메인으로</a>
-<h1>🏢 회사 문서 작업</h1>
-<p class="desc">거래명세표·견적서 등 회사 관련 문서를 작성·출력하는 공간입니다. 입력값은 이 브라우저에 저장(서버 전송 없음).</p>
+<a href="../" class="back-link no-print">← 회사 문서</a> <a href="/" class="back-link no-print" style="margin-left:10px">🏠 메인</a>
+<h1 class="no-print">🧾 거래명세표</h1>
 
-<div class="grid">
-  <a href="invoice/" class="card">
-    <div class="icon">🧾</div>
-    <div class="card-title">거래명세표</div>
-    <div class="card-desc">공급자 등록·선택, 품목 입력 시 공급가액·세액 자동 계산. 공급자/공급받는자 보관용 2장 동시 출력.</div>
-    <div class="tag">사용 가능</div>
-  </a>
-  <div class="card soon">
-    <div class="icon">📄</div>
-    <div class="card-title">견적서</div>
-    <div class="card-desc">추후 추가 예정.</div>
-    <div class="tag soon">준비 중</div>
+<!-- 컨트롤 바 -->
+<div class="controls no-print">
+  <div class="grp">
+    <label>출력방향</label>
+    <div class="radio-grp">
+      <label><input type="radio" name="orient" value="landscape" checked> 가로</label>
+      <label><input type="radio" name="orient" value="portrait"> 세로</label>
+    </div>
   </div>
-  <div class="card soon">
-    <div class="icon">🧮</div>
-    <div class="card-title">세금계산서</div>
-    <div class="card-desc">추후 추가 예정.</div>
-    <div class="tag soon">준비 중</div>
+  <div class="grp">
+    <label>공급자</label>
+    <select id="supplierSelect"></select>
+    <button class="btn btn-green btn-sm" id="btnAddSupplier">+ 등록</button>
+    <button class="btn btn-gray btn-sm" id="btnEditSupplier">수정</button>
+    <button class="btn btn-red btn-sm" id="btnDelSupplier">삭제</button>
+  </div>
+  <button class="btn btn-primary" id="btnPrint" style="margin-left:auto">🖨️ 프린트</button>
+</div>
+
+<!-- 공급자 등록/수정 폼 (토글) -->
+<div class="input-panel no-print" id="supplierForm" style="display:none">
+  <h2 id="supplierFormTitle">공급자 등록</h2>
+  <div class="form-row">
+    <div class="field" style="flex:1;min-width:140px"><label>상호</label><input type="text" id="sName" placeholder="○○상사"></div>
+    <div class="field" style="flex:1;min-width:120px"><label>성명(대표)</label><input type="text" id="sCeo" placeholder="홍길동"></div>
+    <div class="field" style="flex:1.4;min-width:160px"><label>등록번호</label><input type="text" id="sRegno" placeholder="000-00-00000"></div>
+  </div>
+  <div class="form-row">
+    <div class="field" style="flex:2;min-width:240px"><label>사업장 주소</label><input type="text" id="sAddr" placeholder="서울시 ..."></div>
+    <div class="field" style="flex:1;min-width:120px"><label>업태</label><input type="text" id="sBiz" placeholder="도소매"></div>
+    <div class="field" style="flex:1;min-width:120px"><label>종목</label><input type="text" id="sItem" placeholder="..."></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:6px">
+    <button class="btn btn-primary btn-sm" id="btnSaveSupplier">저장</button>
+    <button class="btn btn-gray btn-sm" id="btnCancelSupplier">취소</button>
   </div>
 </div>
 
-<footer>© 스윙파머 · 회사 문서</footer>
+<!-- 거래 기본정보 입력 -->
+<div class="input-panel no-print">
+  <h2>거래 정보</h2>
+  <div class="form-row">
+    <div class="field"><label>권</label><input type="text" id="iGwon" style="width:70px"></div>
+    <div class="field"><label>호</label><input type="text" id="iHo" style="width:70px"></div>
+    <div class="field"><label>날짜</label><input type="date" id="iDate"></div>
+    <div class="field" style="flex:1;min-width:180px"><label>공급받는자 (귀하)</label><input type="text" id="iBuyer" placeholder="○○○ 귀하"></div>
+  </div>
+</div>
+
+<!-- 품목 입력 -->
+<div class="input-panel no-print">
+  <h2>품목 입력</h2>
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th style="width:50px">월</th><th style="width:50px">일</th>
+        <th>품명</th><th style="width:90px">규격</th>
+        <th style="width:80px">수량</th><th style="width:100px">단가</th>
+        <th style="width:120px">공급가액</th><th style="width:110px">세액</th>
+        <th style="width:36px"></th>
+      </tr>
+    </thead>
+    <tbody id="itemsBody"></tbody>
+  </table>
+  <button class="btn btn-gray btn-sm" id="btnAddRow">+ 행 추가</button>
+  <span style="font-size:12px;color:#888;margin-left:10px">공급가액 = 수량 × 단가 / 세액 = 공급가액 × 10% (자동)</span>
+</div>
+
+<!-- 인쇄 영역: 좌우 2장 -->
+<div class="print-area" id="printArea"></div>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const AUTO_KEY = 'sf_invoice_autosave';
+const SUP_KEY = 'sf_invoice_suppliers';
+
+let suppliers = [];   // [{name,ceo,regno,addr,biz,item}]
+let items = [];       // [{month,day,name,spec,qty,price}]
+let editingSupplierIdx = null;
+
+const won = n => (Math.round(n)||0).toLocaleString('ko-KR');
+
+// 한글 금액 변환
+function toKorean(num){
+  num = Math.round(num);
+  if(num===0) return '영';
+  const d=['','일','이','삼','사','오','육','칠','팔','구'];
+  const u=['','십','백','천'];
+  const b=['','만','억','조'];
+  let s='';
+  let g=0;
+  let bidx=0;
+  const parts=[];
+  while(num>0){ parts.push(num%10000); num=Math.floor(num/10000); }
+  for(let i=parts.length-1;i>=0;i--){
+    let p=parts[i]; let ps='';
+    for(let j=3;j>=0;j--){
+      const digit=Math.floor(p/Math.pow(10,j))%10;
+      if(digit>0) ps+=d[digit]+u[j];
+    }
+    if(ps) s+=ps+b[i];
+  }
+  return s;
+}
+
+// === 공급자 관리 ===
+function loadSuppliers(){
+  try{ suppliers = JSON.parse(localStorage.getItem(SUP_KEY)) || []; }catch(e){ suppliers=[]; }
+}
+function saveSuppliers(){ try{ localStorage.setItem(SUP_KEY, JSON.stringify(suppliers)); }catch(e){} }
+function renderSupplierSelect(){
+  const sel = $('supplierSelect');
+  if(suppliers.length===0){
+    sel.innerHTML = '<option value="">(등록된 공급자 없음)</option>';
+  } else {
+    sel.innerHTML = suppliers.map((s,i)=>`<option value="${i}">${s.name||'(이름없음)'}</option>`).join('');
+  }
+  renderPrint();
+}
+$('btnAddSupplier').addEventListener('click', ()=>{
+  editingSupplierIdx = null;
+  $('supplierFormTitle').textContent = '공급자 등록';
+  $('sName').value=''; $('sCeo').value=''; $('sRegno').value=''; $('sAddr').value=''; $('sBiz').value=''; $('sItem').value='';
+  $('supplierForm').style.display = 'block';
+});
+$('btnEditSupplier').addEventListener('click', ()=>{
+  const idx = parseInt($('supplierSelect').value);
+  if(isNaN(idx) || !suppliers[idx]){ alert('수정할 공급자를 선택하세요.'); return; }
+  editingSupplierIdx = idx;
+  const s = suppliers[idx];
+  $('supplierFormTitle').textContent = '공급자 수정';
+  $('sName').value=s.name; $('sCeo').value=s.ceo; $('sRegno').value=s.regno; $('sAddr').value=s.addr; $('sBiz').value=s.biz; $('sItem').value=s.item;
+  $('supplierForm').style.display = 'block';
+});
+$('btnDelSupplier').addEventListener('click', ()=>{
+  const idx = parseInt($('supplierSelect').value);
+  if(isNaN(idx) || !suppliers[idx]){ alert('삭제할 공급자를 선택하세요.'); return; }
+  if(!confirm('"'+suppliers[idx].name+'" 공급자를 삭제할까요?')) return;
+  suppliers.splice(idx,1);
+  saveSuppliers(); renderSupplierSelect();
+});
+$('btnSaveSupplier').addEventListener('click', ()=>{
+  const s = {
+    name:$('sName').value.trim(), ceo:$('sCeo').value.trim(), regno:$('sRegno').value.trim(),
+    addr:$('sAddr').value.trim(), biz:$('sBiz').value.trim(), item:$('sItem').value.trim()
+  };
+  if(!s.name){ alert('상호를 입력하세요.'); return; }
+  if(editingSupplierIdx!==null){ suppliers[editingSupplierIdx]=s; }
+  else { suppliers.push(s); }
+  saveSuppliers();
+  $('supplierForm').style.display='none';
+  renderSupplierSelect();
+  if(editingSupplierIdx===null) $('supplierSelect').value = suppliers.length-1;
+  renderPrint();
+});
+$('btnCancelSupplier').addEventListener('click', ()=> $('supplierForm').style.display='none');
+$('supplierSelect').addEventListener('change', renderPrint);
+
+// === 품목 ===
+function addRow(data){
+  items.push(data || {month:'',day:'',name:'',spec:'',qty:'',price:''});
+  renderItems();
+}
+function renderItems(){
+  const body = $('itemsBody');
+  body.innerHTML = items.map((it,i)=>{
+    const amt = (parseFloat(it.qty)||0)*(parseFloat(it.price)||0);
+    const tax = Math.round(amt*0.1);
+    return `<tr>
+      <td><input type="text" value="${it.month}" oninput="window.upd(${i},'month',this.value)" maxlength="2"></td>
+      <td><input type="text" value="${it.day}" oninput="window.upd(${i},'day',this.value)" maxlength="2"></td>
+      <td><input type="text" class="txt" value="${esc(it.name)}" oninput="window.upd(${i},'name',this.value)"></td>
+      <td><input type="text" class="txt" value="${esc(it.spec)}" oninput="window.upd(${i},'spec',this.value)"></td>
+      <td><input type="number" value="${it.qty}" oninput="window.upd(${i},'qty',this.value)"></td>
+      <td><input type="number" value="${it.price}" oninput="window.upd(${i},'price',this.value)"></td>
+      <td class="calc">${won(amt)}</td>
+      <td class="calc">${won(tax)}</td>
+      <td><button class="del-btn" onclick="window.delRow(${i})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+const esc = s => (s||'').replace(/"/g,'&quot;');
+window.upd = function(i,k,v){ items[i][k]=v; const amt=(parseFloat(items[i].qty)||0)*(parseFloat(items[i].price)||0); renderItemsCalc(i,amt); save(); renderPrint(); };
+function renderItemsCalc(i,amt){
+  const row = $('itemsBody').children[i];
+  if(row){ row.children[6].textContent=won(amt); row.children[7].textContent=won(Math.round(amt*0.1)); }
+}
+window.delRow = function(i){ items.splice(i,1); renderItems(); save(); renderPrint(); };
+$('btnAddRow').addEventListener('click', ()=>{ addRow(); save(); });
+
+// 거래정보 입력 시 저장+갱신
+['iGwon','iHo','iDate','iBuyer'].forEach(id=>{
+  $(id).addEventListener('input', ()=>{ save(); renderPrint(); });
+});
+
+// === 자동저장 ===
+function save(){
+  try{
+    localStorage.setItem(AUTO_KEY, JSON.stringify({
+      gwon:$('iGwon').value, ho:$('iHo').value, date:$('iDate').value, buyer:$('iBuyer').value,
+      supplierIdx:$('supplierSelect').value, items
+    }));
+  }catch(e){}
+}
+function load(){
+  try{
+    const d = JSON.parse(localStorage.getItem(AUTO_KEY));
+    if(!d) return;
+    $('iGwon').value=d.gwon||''; $('iHo').value=d.ho||''; $('iDate').value=d.date||''; $('iBuyer').value=d.buyer||'';
+    items = d.items || [];
+    if(d.supplierIdx!==undefined) setTimeout(()=>{ $('supplierSelect').value=d.supplierIdx; renderPrint(); },0);
+  }catch(e){}
+}
+
+// === 인쇄 명세표 렌더 ===
+function renderPrint(){
+  const idx = parseInt($('supplierSelect').value);
+  const sup = suppliers[idx] || {name:'',ceo:'',regno:'',addr:'',biz:'',item:''};
+  const date = $('iDate').value;
+  let y='',m='',dd='';
+  if(date){ const p=date.split('-'); y=p[0]; m=p[1]; dd=p[2]; }
+  const gwon=$('iGwon').value, ho=$('iHo').value, buyer=$('iBuyer').value;
+
+  let totalAmt=0, totalTax=0;
+  items.forEach(it=>{ const a=(parseFloat(it.qty)||0)*(parseFloat(it.price)||0); totalAmt+=a; totalTax+=Math.round(a*0.1); });
+  const grandTotal = totalAmt+totalTax;
+  const koreanAmt = toKorean(grandTotal);
+
+  $('printArea').innerHTML = ['공급자 보관용','공급받는자 보관용'].map(copyLabel =>
+    buildStatement(copyLabel, {y,m,dd,gwon,ho,buyer,sup,totalAmt,totalTax,grandTotal,koreanAmt})
+  ).join('');
+}
+
+function buildStatement(copyLabel, d){
+  // 품목 행 (최소 12행)
+  const minRows = 12;
+  let rowsHtml = '';
+  for(let i=0;i<Math.max(minRows, items.length+1);i++){
+    const it = items[i];
+    if(it){
+      const amt=(parseFloat(it.qty)||0)*(parseFloat(it.price)||0);
+      const tax=Math.round(amt*0.1);
+      rowsHtml += `<tr>
+        <td class="c">${esc(it.month)}</td><td class="c">${esc(it.day)}</td>
+        <td>${esc(it.name)}</td><td class="c">${esc(it.spec)}</td>
+        <td class="r">${it.qty?won(it.qty):''}</td><td class="r">${it.price?won(it.price):''}</td>
+        <td class="r">${amt?won(amt):''}</td><td class="r">${tax?won(tax):''}</td>
+      </tr>`;
+    } else if(i===items.length && items.length>0){
+      rowsHtml += `<tr><td></td><td></td><td class="c">** 이하여백 **</td><td></td><td></td><td></td><td></td><td></td></tr>`;
+    } else {
+      rowsHtml += `<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+    }
+  }
+
+  return `<div class="statement">
+    <!-- 헤더: 권/호/제목 -->
+    <div class="st-row">
+      <div class="st-cell st-label" style="width:34px">권</div>
+      <div class="st-cell" style="width:50px">${esc(d.gwon)}</div>
+      <div class="st-cell st-label" style="width:34px">호</div>
+      <div class="st-cell" style="width:50px">${esc(d.ho)}</div>
+      <div class="st-cell st-title">거 래 명 세 표 <span style="font-size:10px;letter-spacing:0">(${copyLabel})</span></div>
+    </div>
+    <!-- 날짜/귀하 + 공급자 -->
+    <div class="st-row">
+      <div style="width:42%;border-right:1px solid #000;display:flex;flex-direction:column">
+        <div class="st-cell" style="border-bottom:1px solid #000;border-right:none;min-height:26px">
+          <span style="font-weight:700">${d.y? d.y+' 년 '+d.m+' 월 '+d.dd+' 일' : '____ 년 __ 월 __ 일'}</span>
+        </div>
+        <div class="st-cell st-center" style="border-bottom:1px solid #000;border-right:none;min-height:40px;font-weight:700">
+          ${esc(d.buyer)||''} ${d.buyer?'':'귀하'}
+        </div>
+        <div class="st-cell st-center" style="border-right:none;flex:1;min-height:30px">아래와 같이 계산합니다.</div>
+      </div>
+      <div style="width:58%;display:flex;flex-direction:column">
+        <div class="sup-head">공 급 자</div>
+        <div class="sup-line"><div class="lbl">등록번호</div><div class="val" style="letter-spacing:1px">${esc(d.sup.regno)}</div></div>
+        <div class="sup-line"><div class="lbl">상호</div><div class="val">${esc(d.sup.name)}</div><div class="lbl2">성명</div><div class="val" style="flex:0 0 90px">${esc(d.sup.ceo)}</div></div>
+        <div class="sup-line"><div class="lbl">사업장<br>주소</div><div class="val">${esc(d.sup.addr)}</div></div>
+        <div class="sup-line"><div class="lbl">업태</div><div class="val">${esc(d.sup.biz)}</div><div class="lbl2">종목</div><div class="val" style="flex:0 0 90px">${esc(d.sup.item)}</div></div>
+      </div>
+    </div>
+    <!-- 합계금액 -->
+    <div class="st-row" style="min-height:30px">
+      <div class="st-cell st-center" style="flex:1;font-weight:700">
+        합계금액 금 <span style="font-size:12px">${d.koreanAmt||'영'}</span> 원정
+        <span style="margin-left:12px">(₩ <b>${won(d.grandTotal)}</b>)</span>
+      </div>
+    </div>
+    <!-- 품목 테이블 -->
+    <table class="print-items">
+      <thead><tr>
+        <th style="width:24px">월</th><th style="width:24px">일</th>
+        <th>품 명</th><th style="width:50px">규격</th>
+        <th style="width:44px">수량</th><th style="width:60px">단가</th>
+        <th style="width:78px">공급가액</th><th style="width:66px">세액</th>
+      </tr></thead>
+      <tbody>${rowsHtml}</tbody>
+      <tfoot>
+        <tr style="font-weight:700;background:#f0f0f0">
+          <td class="c" colspan="6">합 계</td>
+          <td class="r">${won(d.totalAmt)}</td><td class="r">${won(d.totalTax)}</td>
+        </tr>
+      </tfoot>
+    </table>
+    <!-- 비고 -->
+    <div class="st-row" style="border-top:1px solid #000;min-height:28px">
+      <div class="st-cell st-label" style="width:44px">비고</div>
+      <div class="st-cell" style="flex:1;border-right:none"></div>
+    </div>
+  </div>`;
+}
+
+// === 출력방향 ===
+document.querySelectorAll('input[name="orient"]').forEach(r=>{
+  r.addEventListener('change', ()=>{
+    const v = document.querySelector('input[name="orient"]:checked').value;
+    const style = document.getElementById('pageStyle') || document.createElement('style');
+    style.id = 'pageStyle';
+    style.textContent = '@page{size:A4 '+v+';margin:8mm}';
+    document.head.appendChild(style);
+  });
+});
+$('btnPrint').addEventListener('click', ()=> window.print());
+
+// === 초기화 ===
+loadSuppliers();
+renderSupplierSelect();
+load();
+if(items.length===0) addRow();
+renderItems();
+renderPrint();
+</script>
 
 <script src="/common.js?v=3"></script>
 </body>
