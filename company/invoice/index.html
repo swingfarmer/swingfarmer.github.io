@@ -88,12 +88,15 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:8px;margin-botto
 
 /* === 인쇄 시 === */
 @media print {
-  body{background:white;padding:0}
+  body{background:white;padding:0 !important}
   .no-print{display:none !important}
-  .wrap{max-width:none}
+  /* common.js 상단 헤더·공지띠·본문여백 제거 */
+  #sf-header, #sf-notice { display:none !important; }
+  body.sf-has-notice { padding-top:0 !important; }
+  body { padding-top:0 !important; }
+  .wrap{max-width:none;padding:0}
   .print-area{gap:6px}
   .statement{border:2px solid #000;min-width:0}
-  body.landscape{}
 }
 @page{size:A4 landscape;margin:8mm}
 body.portrait-print @page{size:A4 portrait}
@@ -151,6 +154,12 @@ body.portrait-print @page{size:A4 portrait}
     <div class="field"><label>호</label><input type="text" id="iHo" style="width:70px"></div>
     <div class="field"><label>날짜</label><input type="date" id="iDate"></div>
     <div class="field" style="flex:1;min-width:180px"><label>공급받는자 (귀하)</label><input type="text" id="iBuyer" placeholder="○○○ 귀하"></div>
+    <div class="field"><label>과세 구분</label>
+      <div class="radio-grp" style="padding:7px 0">
+        <label><input type="radio" name="taxType" value="tax" checked> 과세(10%)</label>
+        <label><input type="radio" name="taxType" value="free"> 면세</label>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -188,6 +197,22 @@ let items = [];       // [{month,day,name,spec,qty,price}]
 let editingSupplierIdx = null;
 
 const won = n => (Math.round(n)||0).toLocaleString('ko-KR');
+
+// 한 품목의 실제 세액 (수동 입력 우선, 없으면 자동)
+function itemTax(it){
+  const isFree = document.querySelector('input[name="taxType"]:checked').value==='free';
+  const amt = (parseFloat(it.qty)||0)*(parseFloat(it.price)||0);
+  if(it.tax!==undefined && it.tax!==''){ return parseFloat(it.tax)||0; }
+  return isFree ? 0 : Math.round(amt*0.1);
+}
+
+// 사업자번호 하이픈 자동 (123-12-12345)
+function fmtRegno(v){
+  const d = (v||'').replace(/[^0-9]/g,'').slice(0,10);
+  if(d.length<=3) return d;
+  if(d.length<=5) return d.slice(0,3)+'-'+d.slice(3);
+  return d.slice(0,3)+'-'+d.slice(3,5)+'-'+d.slice(5);
+}
 
 // 한글 금액 변환
 function toKorean(num){
@@ -250,7 +275,7 @@ $('btnDelSupplier').addEventListener('click', ()=>{
 });
 $('btnSaveSupplier').addEventListener('click', ()=>{
   const s = {
-    name:$('sName').value.trim(), ceo:$('sCeo').value.trim(), regno:$('sRegno').value.trim(),
+    name:$('sName').value.trim(), ceo:$('sCeo').value.trim(), regno:fmtRegno($('sRegno').value),
     addr:$('sAddr').value.trim(), biz:$('sBiz').value.trim(), item:$('sItem').value.trim()
   };
   if(!s.name){ alert('상호를 입력하세요.'); return; }
@@ -263,6 +288,7 @@ $('btnSaveSupplier').addEventListener('click', ()=>{
   renderPrint();
 });
 $('btnCancelSupplier').addEventListener('click', ()=> $('supplierForm').style.display='none');
+$('sRegno').addEventListener('input', e=>{ e.target.value = fmtRegno(e.target.value); });
 $('supplierSelect').addEventListener('change', renderPrint);
 
 // === 품목 ===
@@ -272,9 +298,12 @@ function addRow(data){
 }
 function renderItems(){
   const body = $('itemsBody');
+  const isFree = document.querySelector('input[name="taxType"]:checked').value==='free';
   body.innerHTML = items.map((it,i)=>{
     const amt = (parseFloat(it.qty)||0)*(parseFloat(it.price)||0);
-    const tax = Math.round(amt*0.1);
+    const autoTax = isFree ? 0 : Math.round(amt*0.1);
+    const taxVal = (it.tax!==undefined && it.tax!=='') ? it.tax : '';
+    const taxPlaceholder = won(autoTax);
     return `<tr>
       <td><input type="text" value="${it.month}" oninput="window.upd(${i},'month',this.value)" maxlength="2"></td>
       <td><input type="text" value="${it.day}" oninput="window.upd(${i},'day',this.value)" maxlength="2"></td>
@@ -283,17 +312,26 @@ function renderItems(){
       <td><input type="number" value="${it.qty}" oninput="window.upd(${i},'qty',this.value)"></td>
       <td><input type="number" value="${it.price}" oninput="window.upd(${i},'price',this.value)"></td>
       <td class="calc">${won(amt)}</td>
-      <td class="calc">${won(tax)}</td>
+      <td><input type="number" value="${taxVal}" placeholder="${taxPlaceholder}" oninput="window.upd(${i},'tax',this.value)" title="비우면 자동(${taxPlaceholder}). 직접 입력 시 수정됨"></td>
       <td><button class="del-btn" onclick="window.delRow(${i})">✕</button></td>
     </tr>`;
   }).join('');
 }
 const esc = s => (s||'').replace(/"/g,'&quot;');
-window.upd = function(i,k,v){ items[i][k]=v; const amt=(parseFloat(items[i].qty)||0)*(parseFloat(items[i].price)||0); renderItemsCalc(i,amt); save(); renderPrint(); };
-function renderItemsCalc(i,amt){
+window.upd = function(i,k,v){
+  items[i][k]=v;
+  // 공급가액 셀 갱신
+  const amt=(parseFloat(items[i].qty)||0)*(parseFloat(items[i].price)||0);
   const row = $('itemsBody').children[i];
-  if(row){ row.children[6].textContent=won(amt); row.children[7].textContent=won(Math.round(amt*0.1)); }
-}
+  if(row) row.children[6].textContent=won(amt);
+  // 수량/단가 바뀌면 세액 placeholder(자동값) 갱신
+  if((k==='qty'||k==='price') && row){
+    const isFree = document.querySelector('input[name="taxType"]:checked').value==='free';
+    const taxInput = row.children[7].querySelector('input');
+    if(taxInput) taxInput.placeholder = won(isFree?0:Math.round(amt*0.1));
+  }
+  save(); renderPrint();
+};
 window.delRow = function(i){ items.splice(i,1); renderItems(); save(); renderPrint(); };
 $('btnAddRow').addEventListener('click', ()=>{ addRow(); save(); });
 
@@ -301,12 +339,17 @@ $('btnAddRow').addEventListener('click', ()=>{ addRow(); save(); });
 ['iGwon','iHo','iDate','iBuyer'].forEach(id=>{
   $(id).addEventListener('input', ()=>{ save(); renderPrint(); });
 });
+// 과세/면세 변경
+document.querySelectorAll('input[name="taxType"]').forEach(r=>{
+  r.addEventListener('change', ()=>{ renderItems(); save(); renderPrint(); });
+});
 
 // === 자동저장 ===
 function save(){
   try{
     localStorage.setItem(AUTO_KEY, JSON.stringify({
       gwon:$('iGwon').value, ho:$('iHo').value, date:$('iDate').value, buyer:$('iBuyer').value,
+      taxType:document.querySelector('input[name="taxType"]:checked').value,
       supplierIdx:$('supplierSelect').value, items
     }));
   }catch(e){}
@@ -316,6 +359,7 @@ function load(){
     const d = JSON.parse(localStorage.getItem(AUTO_KEY));
     if(!d) return;
     $('iGwon').value=d.gwon||''; $('iHo').value=d.ho||''; $('iDate').value=d.date||''; $('iBuyer').value=d.buyer||'';
+    if(d.taxType){ const r=document.querySelector('input[name="taxType"][value="'+d.taxType+'"]'); if(r) r.checked=true; }
     items = d.items || [];
     if(d.supplierIdx!==undefined) setTimeout(()=>{ $('supplierSelect').value=d.supplierIdx; renderPrint(); },0);
   }catch(e){}
@@ -331,7 +375,7 @@ function renderPrint(){
   const gwon=$('iGwon').value, ho=$('iHo').value, buyer=$('iBuyer').value;
 
   let totalAmt=0, totalTax=0;
-  items.forEach(it=>{ const a=(parseFloat(it.qty)||0)*(parseFloat(it.price)||0); totalAmt+=a; totalTax+=Math.round(a*0.1); });
+  items.forEach(it=>{ const a=(parseFloat(it.qty)||0)*(parseFloat(it.price)||0); totalAmt+=a; totalTax+=itemTax(it); });
   const grandTotal = totalAmt+totalTax;
   const koreanAmt = toKorean(grandTotal);
 
@@ -348,7 +392,7 @@ function buildStatement(copyLabel, d){
     const it = items[i];
     if(it){
       const amt=(parseFloat(it.qty)||0)*(parseFloat(it.price)||0);
-      const tax=Math.round(amt*0.1);
+      const tax=itemTax(it);
       rowsHtml += `<tr>
         <td class="c">${esc(it.month)}</td><td class="c">${esc(it.day)}</td>
         <td>${esc(it.name)}</td><td class="c">${esc(it.spec)}</td>
