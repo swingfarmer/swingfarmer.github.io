@@ -1,1 +1,423 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>적정주가 계산기 (밸류에이션)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:920px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a;font-feature-settings:"tnum"}
+.back-link{display:inline-block;margin-bottom:14px;color:#1F4E78;text-decoration:none;font-size:14px}
+.back-link:hover{text-decoration:underline}
+h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:6px;font-size:21px}
+.desc{color:#555;font-size:13px;margin-bottom:16px;line-height:1.6}
 
+.tabs{display:flex;gap:4px;background:#e5e7eb;padding:4px;border-radius:10px;margin-bottom:18px;flex-wrap:wrap}
+.tab{flex:1;min-width:90px;padding:10px 6px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:700;color:#666;border-radius:8px;font-family:inherit}
+.tab.active{background:white;color:#1F4E78;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+.panel{background:white;border-radius:10px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:16px}
+.panel h2{color:#1F4E78;font-size:16px;margin-bottom:6px}
+.panel .method-desc{font-size:12.5px;color:#666;line-height:1.7;margin-bottom:16px;background:#f8fafc;border-left:3px solid #1F4E78;padding:10px 14px;border-radius:6px}
+
+.field{display:flex;flex-direction:column;margin-bottom:13px}
+.field label{font-size:13px;font-weight:600;margin-bottom:5px;color:#444;display:flex;align-items:center;gap:6px}
+.field input,.field select{padding:10px;font-size:14px;border:1px solid #ccc;border-radius:6px;background:#FFF2CC;color:#0000FF;font-weight:600;font-family:inherit}
+.field input:focus,.field select:focus{outline:2px solid #1F4E78;background:#FFFACD}
+.field .hint{font-size:11px;color:#888;margin-top:3px;font-weight:400}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}}
+
+.info-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#1F4E78;color:white;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
+.info-box{display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 12px;font-size:12px;color:#1e40af;line-height:1.7;margin:-6px 0 13px}
+.info-box.show{display:block}
+
+.result{background:linear-gradient(135deg,#1F4E78,#2563eb);color:white;border-radius:10px;padding:20px;margin-top:6px}
+.result .lbl{font-size:13px;opacity:.9;margin-bottom:6px}
+.result .val{font-size:30px;font-weight:800;letter-spacing:-.5px}
+.result .verdict{margin-top:10px;font-size:14px;font-weight:600;padding:8px 12px;border-radius:6px;display:inline-block}
+.verdict.under{background:rgba(34,197,94,.25);color:#bbf7d0}
+.verdict.over{background:rgba(239,68,68,.25);color:#fecaca}
+.verdict.fair{background:rgba(255,255,255,.2);color:#fff}
+.result .calc-detail{margin-top:12px;font-size:12px;opacity:.85;line-height:1.7;border-top:1px solid rgba(255,255,255,.2);padding-top:10px}
+
+/* 종합 */
+.band-wrap{margin:20px 0}
+.band{position:relative;height:60px;background:linear-gradient(90deg,#dcfce7,#fef9c3,#fee2e2);border-radius:8px;margin:30px 0 40px}
+.band-marker{position:absolute;top:-6px;width:2px;height:72px;background:#1a1a1a}
+.band-marker .tag{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;white-space:nowrap;background:#1a1a1a;color:white;padding:2px 6px;border-radius:4px}
+.band-marker.cur{background:#dc2626;z-index:5}
+.band-marker.cur .tag{background:#dc2626;top:auto;bottom:-22px}
+.method-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:14px}
+.method-table th{background:#1F4E78;color:white;padding:9px;text-align:right;font-size:12px}
+.method-table th:first-child{text-align:left}
+.method-table td{padding:9px;text-align:right;border-bottom:1px solid #eee}
+.method-table td:first-child{text-align:left;font-weight:600}
+.method-table .under{color:#16a34a;font-weight:700}
+.method-table .over{color:#dc2626;font-weight:700}
+
+.example-note{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:12.5px;color:#92400e;line-height:1.7;margin-bottom:16px}
+.example-note b{color:#b45309}
+.manual{background:#fff;border:1px solid #e0e0e0;padding:18px;border-radius:8px;line-height:1.8;font-size:13px;margin-top:16px}
+.manual h3{color:#1F4E78;margin:14px 0 6px;font-size:14px}
+.manual h3:first-child{margin-top:0}
+.disclaimer{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 14px;font-size:12px;color:#991b1b;line-height:1.7;margin-top:14px}
+</style>
+</head>
+<body>
+
+<a href="/1808/" class="back-link">← 히든 메뉴</a>
+<h1>📐 적정주가 계산기</h1>
+<p class="desc">4가지 밸류에이션 방법(고든성장·멀티플·DCF·잔여이익)으로 적정주가를 직접 계산합니다. 셀사이드 목표주가가 어떤 가정에 의존하는지 검증하는 도구. <b>기본값은 현대건설(000720) 예시</b>로 채워져 있습니다.</p>
+
+<div class="example-note">
+  💡 <b>현대건설 예시값 안내</b> — 하나증권·키움 리포트 기준 대략값입니다(2025~2026F). EPS 2,867~4,510원, BPS 약 72,000~76,000원, DPS 600~800원, ROE 약 6%. <b>실제 투자 전 최신 수치로 직접 교체하세요.</b> 값은 자동 저장됩니다.
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="gordon">배당(고든)</button>
+  <button class="tab" data-tab="multiple">멀티플</button>
+  <button class="tab" data-tab="dcf">DCF</button>
+  <button class="tab" data-tab="rim">잔여이익</button>
+  <button class="tab" data-tab="summary">📊 종합</button>
+</div>
+
+<!-- 공통: 현재가 -->
+<div class="panel">
+  <div class="field" style="max-width:280px;margin-bottom:0">
+    <label>현재 주가 (원) <span class="info-btn" onclick="toggleInfo('iCur')">i</span></label>
+    <input type="number" id="curPrice" value="160000" oninput="calcAll()">
+    <div class="info-box" id="info-iCur">모든 방법의 "저평가/고평가" 판정 기준이 되는 현재 시장 가격입니다.</div>
+  </div>
+</div>
+
+<!-- 고든 성장 모형 -->
+<div class="tab-content active" id="tab-gordon">
+  <div class="panel">
+    <h2>💵 고든 성장 모형 (DDM)</h2>
+    <div class="method-desc">
+      <b>적정주가 = 내년 예상 배당 ÷ (요구수익률 − 배당성장률)</b><br>
+      배당을 영구히 받는다고 가정하고, 그 가치를 현재로 환산. <b>배당주·안정적 기업</b>에 적합. 성장주엔 부적합(배당 적어서).
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label>주당배당금 DPS (원) <span class="info-btn" onclick="toggleInfo('gDps')">i</span></label>
+        <input type="number" id="gDps" value="600" oninput="calcAll()">
+        <div class="info-box" id="info-gDps">올해(또는 최근) 1주당 배당금. 현대건설은 600~800원 수준.</div>
+      </div>
+      <div class="field">
+        <label>요구수익률 (%) <span class="info-btn" onclick="toggleInfo('gReq')">i</span></label>
+        <input type="number" id="gReq" value="9" step="0.1" oninput="calcAll()">
+        <div class="info-box" id="info-gReq">이 주식에 기대하는 연 수익률. 보통 무위험금리(3~4%) + 위험프리미엄(5~7%) = 8~11%. 높을수록 적정가 낮아짐.</div>
+      </div>
+      <div class="field">
+        <label>배당성장률 (%) <span class="info-btn" onclick="toggleInfo('gGrow')">i</span></label>
+        <input type="number" id="gGrow" value="3" step="0.1" oninput="calcAll()">
+        <div class="info-box" id="info-gGrow">배당이 매년 늘어나는 비율. 요구수익률보다 작아야 함(아니면 계산 불가). 장기 GDP성장률(2~4%) 수준이 보수적.</div>
+      </div>
+    </div>
+    <div class="result" id="resGordon"></div>
+  </div>
+</div>
+
+<!-- 멀티플 -->
+<div class="tab-content" id="tab-multiple">
+  <div class="panel">
+    <h2>📊 멀티플 밸류에이션 (PER · PBR)</h2>
+    <div class="method-desc">
+      <b>PER 방식: 적정주가 = 예상 EPS × 목표 PER</b><br>
+      <b>PBR 방식: 적정주가 = BPS × 목표 PBR</b><br>
+      가장 빠르고 직관적. 목표 멀티플을 뭘로 잡냐가 핵심(과거 평균·동종업계·셀사이드 가정). 셀사이드가 멀티플을 부풀리는 게 흔해서 검증 포인트.
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label>예상 EPS (원) <span class="info-btn" onclick="toggleInfo('mEps')">i</span></label>
+        <input type="number" id="mEps" value="4510" oninput="calcAll()">
+        <div class="info-box" id="info-mEps">주당순이익(순이익÷주식수). 현대건설 2026F 약 4,510원(하나), 2025E 2,867원.</div>
+      </div>
+      <div class="field">
+        <label>목표 PER (배) <span class="info-btn" onclick="toggleInfo('mPer')">i</span></label>
+        <input type="number" id="mPer" value="14" step="0.1" oninput="calcAll()">
+        <div class="info-box" id="info-mPer">EPS의 몇 배를 쳐줄지. 과거 5년 평균 약 16.9배, 셀사이드는 16배 적용. 보수적이면 과거평균, 공격적이면 더 높게.</div>
+      </div>
+      <div class="field">
+        <label>BPS (원) <span class="info-btn" onclick="toggleInfo('mBps')">i</span></label>
+        <input type="number" id="mBps" value="75939" oninput="calcAll()">
+        <div class="info-box" id="info-mBps">주당순자산(자본÷주식수). 현대건설 2026F 약 75,939원.</div>
+      </div>
+      <div class="field">
+        <label>목표 PBR (배) <span class="info-btn" onclick="toggleInfo('mPbr')">i</span></label>
+        <input type="number" id="mPbr" value="0.85" step="0.01" oninput="calcAll()">
+        <div class="info-box" id="info-mPbr">BPS의 몇 배. 과거 5년 평균 약 0.67배, 현재 약 0.85배. ROE가 낮으면 1배 미만이 정상.</div>
+      </div>
+    </div>
+    <div class="result" id="resMultiplePer"></div>
+    <div style="height:10px"></div>
+    <div class="result" id="resMultiplePbr"></div>
+  </div>
+</div>
+
+<!-- DCF -->
+<div class="tab-content" id="tab-dcf">
+  <div class="panel">
+    <h2>💸 DCF (현금흐름 할인)</h2>
+    <div class="method-desc">
+      <b>미래 잉여현금흐름(FCF)을 현재가치로 할인 + 영구가치</b><br>
+      가장 정통이지만 가정이 많음(FCF 추정·할인율·영구성장률). 작은 가정 변화에 결과가 크게 흔들려 "쓰레기 들어가면 쓰레기 나온다"는 비판도. 간이 버전으로 계산합니다.
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label>주당 FCF (원) <span class="info-btn" onclick="toggleInfo('dFcf')">i</span></label>
+        <input type="number" id="dFcf" value="3000" oninput="calcAll()">
+        <div class="info-box" id="info-dFcf">주당 잉여현금흐름(영업현금흐름−자본지출)÷주식수. 건설사는 변동 큼. 현대건설은 수주산업 특성상 마이너스인 해도 있음 — 정상화 가정값 입력.</div>
+      </div>
+      <div class="field">
+        <label>FCF 성장률 (%, 향후 5년) <span class="info-btn" onclick="toggleInfo('dGrow')">i</span></label>
+        <input type="number" id="dGrow" value="8" step="0.5" oninput="calcAll()">
+        <div class="info-box" id="info-dGrow">앞으로 5년간 FCF 연평균 성장률. 성장 테제(원전 등) 반영하되 과도하면 위험.</div>
+      </div>
+      <div class="field">
+        <label>할인율 WACC (%) <span class="info-btn" onclick="toggleInfo('dWacc')">i</span></label>
+        <input type="number" id="dWacc" value="9" step="0.1" oninput="calcAll()">
+        <div class="info-box" id="info-dWacc">가중평균자본비용. 미래 돈을 현재로 깎는 비율. 보통 8~10%. 높을수록 적정가 낮아짐.</div>
+      </div>
+      <div class="field">
+        <label>영구성장률 (%) <span class="info-btn" onclick="toggleInfo('dTerm')">i</span></label>
+        <input type="number" id="dTerm" value="2" step="0.1" oninput="calcAll()">
+        <div class="info-box" id="info-dTerm">5년 후부터 영원히 성장할 비율. GDP성장률(2~3%) 이하가 상식. WACC보다 작아야 함.</div>
+      </div>
+    </div>
+    <div class="result" id="resDcf"></div>
+  </div>
+</div>
+
+<!-- RIM -->
+<div class="tab-content" id="tab-rim">
+  <div class="panel">
+    <h2>📘 잔여이익 모형 (RIM)</h2>
+    <div class="method-desc">
+      <b>적정주가 = BPS + 미래 초과이익의 현재가치</b><br>
+      초과이익 = (ROE − 요구수익률) × BPS. ROE가 요구수익률보다 높으면 순자산 이상의 가치, 낮으면 이하. 한국에서 많이 쓰는 보수적 모델. <b>ROE가 핵심</b>.
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label>BPS (원) <span class="info-btn" onclick="toggleInfo('rBps')">i</span></label>
+        <input type="number" id="rBps" value="75939" oninput="calcAll()">
+        <div class="info-box" id="info-rBps">주당순자산. 멀티플 탭과 같은 값(현대건설 2026F 약 75,939원).</div>
+      </div>
+      <div class="field">
+        <label>ROE (%) <span class="info-btn" onclick="toggleInfo('rRoe')">i</span></label>
+        <input type="number" id="rRoe" value="6.1" step="0.1" oninput="calcAll()">
+        <div class="info-box" id="info-rRoe">자기자본이익률(순이익÷자본). 현대건설 2026F 약 6.1%. 요구수익률보다 낮으면 적정가가 BPS보다 낮게 나옴.</div>
+      </div>
+      <div class="field">
+        <label>요구수익률 (%) <span class="info-btn" onclick="toggleInfo('rReq')">i</span></label>
+        <input type="number" id="rReq" value="9" step="0.1" oninput="calcAll()">
+        <div class="info-box" id="info-rReq">기대 수익률. 고든·DCF와 비슷한 8~11%. ROE가 이보다 낮으면 시장이 순자산도 안 쳐주는 게 정상.</div>
+      </div>
+      <div class="field">
+        <label>초과이익 지속연수 <span class="info-btn" onclick="toggleInfo('rYears')">i</span></label>
+        <input type="number" id="rYears" value="10" oninput="calcAll()">
+        <div class="info-box" id="info-rYears">초과이익(또는 미달)이 몇 년 지속될지. 보통 5~10년. 경쟁으로 초과이익은 결국 사라진다고 봄.</div>
+      </div>
+    </div>
+    <div class="result" id="resRim"></div>
+  </div>
+</div>
+
+<!-- 종합 -->
+<div class="tab-content" id="tab-summary">
+  <div class="panel">
+    <h2>📊 4가지 방법 종합</h2>
+    <p style="font-size:13px;color:#666;margin-bottom:6px">각 방법의 적정주가를 한눈에. 방법마다 가정이 다르니 <b>하나의 정답이 아니라 "밴드(범위)"</b>로 보세요.</p>
+    <div class="band-wrap">
+      <div class="band" id="band"></div>
+    </div>
+    <table class="method-table">
+      <thead><tr><th>방법</th><th>적정주가</th><th>현재가 대비</th><th>판정</th></tr></thead>
+      <tbody id="summaryBody"></tbody>
+    </table>
+    <div id="summaryMsg" style="font-size:13px;color:#444;line-height:1.8;margin-top:16px;padding:14px;background:#f8fafc;border-radius:8px"></div>
+  </div>
+
+  <div class="manual">
+    <h3>📘 어떻게 해석하나</h3>
+    <h3>① 한 숫자를 믿지 마라</h3>
+    4가지 방법이 다른 답을 내는 게 정상입니다. 가정이 다르니까요. <b>여러 방법이 비슷한 값으로 모이면</b> 신뢰도가 높고, <b>크게 흩어지면</b> 그 종목은 가정에 매우 민감하다는 뜻(=불확실).
+    <h3>② 셀사이드 검증법</h3>
+    셀사이드 목표주가를 보고, "이 가격이 나오려면 어떤 가정이 필요한가?"를 역으로 넣어보세요. 예: 목표 PER을 과거평균보다 훨씬 높게 잡았다면, 그 멀티플 확장의 근거(성장 테제)가 실제로 실현 가능한지 따져야 합니다.
+    <h3>③ 방법별 적합도</h3>
+    • <b>고든</b>: 배당 많고 안정적인 기업 / • <b>멀티플</b>: 빠른 비교, 동종업계 / • <b>DCF</b>: 현금흐름 예측 가능한 기업 / • <b>RIM</b>: ROE가 명확한 기업. 건설사처럼 현금흐름 변동이 크면 DCF는 흔들리고, 배당이 적으면 고든은 낮게 나옵니다.
+  </div>
+
+  <div class="disclaimer">
+    ⚠️ 이 계산기는 <b>교육·참고용</b>입니다. 입력 가정에 따라 결과가 크게 달라지며, 어떤 모델도 미래를 정확히 예측하지 못합니다. 실제 투자 판단·매매는 본인 책임이며, 최신 재무데이터와 전문가 의견을 함께 확인하세요.
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const AUTO_KEY='sf_valuation_autosave';
+const fmt=n=>{ if(!isFinite(n)||isNaN(n)) return '계산 불가'; return Math.round(n).toLocaleString('ko-KR')+'원'; };
+
+const INPUTS=['curPrice','gDps','gReq','gGrow','mEps','mPer','mBps','mPbr','dFcf','dGrow','dWacc','dTerm','rBps','rRoe','rReq','rYears'];
+
+function toggleInfo(id){
+  const el=$('info-'+id);
+  if(el) el.classList.toggle('show');
+}
+
+// 탭
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+    btn.classList.add('active');
+    $('tab-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab==='summary') renderSummary();
+  });
+});
+
+function verdict(fair, cur){
+  if(!isFinite(fair)||fair<=0) return {cls:'fair',txt:'계산 불가'};
+  const gap=(fair-cur)/cur*100;
+  if(gap>15) return {cls:'under',txt:'저평가 (+'+gap.toFixed(0)+'% 여력)'};
+  if(gap<-15) return {cls:'over',txt:'고평가 ('+gap.toFixed(0)+'%)'};
+  return {cls:'fair',txt:'적정 ('+(gap>=0?'+':'')+gap.toFixed(0)+'%)'};
+}
+function resultHtml(fair, cur, detail){
+  const v=verdict(fair,cur);
+  return '<div class="lbl">적정주가</div><div class="val">'+fmt(fair)+'</div>'+
+    '<div class="verdict '+v.cls+'">'+v.txt+'</div>'+
+    (detail?'<div class="calc-detail">'+detail+'</div>':'');
+}
+
+let results={};
+
+function calcAll(){
+  const cur=parseFloat($('curPrice').value)||0;
+
+  // 고든
+  const dps=parseFloat($('gDps').value)||0;
+  const gReq=(parseFloat($('gReq').value)||0)/100;
+  const gGrow=(parseFloat($('gGrow').value)||0)/100;
+  let gordon=NaN;
+  if(gReq>gGrow){ gordon=(dps*(1+gGrow))/(gReq-gGrow); }
+  results.gordon=gordon;
+  $('resGordon').innerHTML=resultHtml(gordon,cur,
+    '내년배당 '+fmt(dps*(1+gGrow))+' ÷ ('+($('gReq').value)+'% − '+($('gGrow').value)+'%) = '+fmt(gordon)+
+    (gReq<=gGrow?'<br><b style="color:#fecaca">⚠ 요구수익률이 배당성장률보다 작거나 같아 계산 불가</b>':''));
+
+  // 멀티플
+  const eps=parseFloat($('mEps').value)||0;
+  const per=parseFloat($('mPer').value)||0;
+  const bps=parseFloat($('mBps').value)||0;
+  const pbr=parseFloat($('mPbr').value)||0;
+  const mPerVal=eps*per;
+  const mPbrVal=bps*pbr;
+  results.mPer=mPerVal; results.mPbr=mPbrVal;
+  $('resMultiplePer').innerHTML='<div class="lbl">PER 방식 적정주가</div><div class="val">'+fmt(mPerVal)+'</div>'+
+    '<div class="verdict '+verdict(mPerVal,cur).cls+'">'+verdict(mPerVal,cur).txt+'</div>'+
+    '<div class="calc-detail">EPS '+fmt(eps)+' × PER '+per+'배 = '+fmt(mPerVal)+'</div>';
+  $('resMultiplePbr').innerHTML='<div class="lbl">PBR 방식 적정주가</div><div class="val">'+fmt(mPbrVal)+'</div>'+
+    '<div class="verdict '+verdict(mPbrVal,cur).cls+'">'+verdict(mPbrVal,cur).txt+'</div>'+
+    '<div class="calc-detail">BPS '+fmt(bps)+' × PBR '+pbr+'배 = '+fmt(mPbrVal)+'</div>';
+
+  // DCF (간이: 5년 FCF 성장 후 영구가치, 주당)
+  const fcf=parseFloat($('dFcf').value)||0;
+  const dGrow=(parseFloat($('dGrow').value)||0)/100;
+  const wacc=(parseFloat($('dWacc').value)||0)/100;
+  const term=(parseFloat($('dTerm').value)||0)/100;
+  let dcf=NaN;
+  if(wacc>term){
+    let pv=0; let f=fcf;
+    for(let t=1;t<=5;t++){ f=f*(1+dGrow); pv+=f/Math.pow(1+wacc,t); }
+    const tv=(f*(1+term))/(wacc-term); // 5년차 FCF 기준 영구가치
+    pv+=tv/Math.pow(1+wacc,5);
+    dcf=pv;
+  }
+  results.dcf=dcf;
+  $('resDcf').innerHTML=resultHtml(dcf,cur,
+    '5년간 할인 FCF 합 + 영구가치 할인 = 주당 '+fmt(dcf)+
+    (wacc<=term?'<br><b style="color:#fecaca">⚠ WACC가 영구성장률보다 작거나 같아 계산 불가</b>':''));
+
+  // RIM
+  const rBps=parseFloat($('rBps').value)||0;
+  const roe=(parseFloat($('rRoe').value)||0)/100;
+  const rReq=(parseFloat($('rReq').value)||0)/100;
+  const years=parseInt($('rYears').value)||10;
+  let rim=rBps;
+  if(rReq>0){
+    const excess=(roe-rReq)*rBps; // 연 초과이익(주당)
+    let pv=0;
+    for(let t=1;t<=years;t++){ pv+=excess/Math.pow(1+rReq,t); }
+    rim=rBps+pv;
+  }
+  results.rim=rim;
+  $('resRim').innerHTML=resultHtml(rim,cur,
+    'BPS '+fmt(rBps)+' + 초과이익((ROE '+$('rRoe').value+'% − 요구 '+$('rReq').value+'%)×BPS) '+years+'년 할인 = '+fmt(rim));
+
+  save();
+}
+
+function renderSummary(){
+  const cur=parseFloat($('curPrice').value)||0;
+  const rows=[
+    {name:'배당 (고든성장)', val:results.gordon},
+    {name:'멀티플 (PER)', val:results.mPer},
+    {name:'멀티플 (PBR)', val:results.mPbr},
+    {name:'DCF', val:results.dcf},
+    {name:'잔여이익 (RIM)', val:results.rim}
+  ];
+  const valid=rows.filter(r=>isFinite(r.val)&&r.val>0);
+  $('summaryBody').innerHTML=rows.map(r=>{
+    if(!isFinite(r.val)||r.val<=0) return '<tr><td>'+r.name+'</td><td>계산 불가</td><td>-</td><td>-</td></tr>';
+    const gap=(r.val-cur)/cur*100;
+    const v=verdict(r.val,cur);
+    return '<tr><td>'+r.name+'</td><td>'+fmt(r.val)+'</td>'+
+      '<td class="'+(gap>0?'under':'over')+'">'+(gap>=0?'+':'')+gap.toFixed(1)+'%</td>'+
+      '<td class="'+(v.cls==='under'?'under':v.cls==='over'?'over':'')+'">'+(v.cls==='under'?'저평가':v.cls==='over'?'고평가':'적정')+'</td></tr>';
+  }).join('');
+
+  // 밴드
+  if(valid.length>0){
+    const vals=valid.map(r=>r.val);
+    const min=Math.min(...vals,cur), max=Math.max(...vals,cur);
+    const range=max-min||1;
+    const pos=v=>((v-min)/range*100);
+    let html='';
+    valid.forEach(r=>{
+      html+='<div class="band-marker" style="left:'+pos(r.val)+'%"><span class="tag">'+r.name.replace(/ .*/,'')+' '+Math.round(r.val/1000)+'k</span></div>';
+    });
+    html+='<div class="band-marker cur" style="left:'+pos(cur)+'%"><span class="tag">현재가 '+Math.round(cur/1000)+'k</span></div>';
+    $('band').innerHTML=html;
+
+    const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
+    const avgGap=(avg-cur)/cur*100;
+    const minK=fmt(Math.min(...vals)), maxK=fmt(Math.max(...vals));
+    $('summaryMsg').innerHTML='📊 <b>적정주가 밴드: '+minK+' ~ '+maxK+'</b> (평균 '+fmt(avg)+')<br>'+
+      '현재가 '+fmt(cur)+'는 평균 대비 <b class="'+(avgGap>0?'':'')+'" style="color:'+(avgGap>0?'#16a34a':'#dc2626')+'">'+(avgGap>=0?'+':'')+avgGap.toFixed(1)+'%</b>.<br>'+
+      '<span style="font-size:12px;color:#888">방법별 편차가 크면(밴드가 넓으면) 그만큼 밸류에이션이 가정에 민감하다는 뜻입니다. 여러 방법이 모이는 구간을 주목하세요.</span>';
+  } else {
+    $('band').innerHTML='';
+    $('summaryMsg').textContent='유효한 계산 결과가 없습니다. 입력값을 확인하세요.';
+  }
+}
+
+function save(){
+  try{ const d={}; INPUTS.forEach(id=>d[id]=$(id).value); localStorage.setItem(AUTO_KEY,JSON.stringify(d)); }catch(e){}
+}
+function load(){
+  try{ const d=JSON.parse(localStorage.getItem(AUTO_KEY)); if(!d) return; INPUTS.forEach(id=>{ if(d[id]!==undefined&&$(id)) $(id).value=d[id]; }); }catch(e){}
+}
+
+load();
+calcAll();
+</script>
+
+<script src="/common.js?v=3"></script>
+</body>
+</html>
