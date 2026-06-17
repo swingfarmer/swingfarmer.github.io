@@ -101,6 +101,7 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
   <div class="toolbar">
     <input type="text" class="search-box" id="searchBox" placeholder="🔍 제목·내용 검색">
     <button class="btn btn-primary" id="btnNew">✏️ 새 메모</button>
+    <button class="btn btn-red" id="btnDeleteAll">🗑 전체삭제</button>
   </div>
   <div class="note-list" id="noteList"></div>
 </div>
@@ -171,9 +172,8 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const NOTES = collection(db, 'notes');
 
-// ⚠️ 관리자 UID — 로그인 후 화면에 표시되는 UID를 여기에 붙여넣으세요.
-// 비워두면 "로그인한 누구나" 접근 가능(임시). 반드시 본인 UID로 채우세요!
-const ADMIN_UID = "";
+// ⚠️ 관리자 UID — 이 UID로 로그인한 사람만 접근 가능
+const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1";
 
 const $ = id => document.getElementById(id);
 const esc = s => (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -337,6 +337,20 @@ $('btnDelete').addEventListener('click', async ()=>{
     await deleteDoc(doc(db,'notes',currentNoteId));
     await loadNotes();
   }catch(e){ alert('삭제 실패: '+e.message); }
+});
+
+// === 전체삭제 ===
+$('btnDeleteAll').addEventListener('click', async ()=>{
+  if(notes.length===0){ alert('삭제할 메모가 없습니다.'); return; }
+  if(!confirm('정말 모든 메모('+notes.length+'개)를 삭제할까요?\n되돌릴 수 없습니다!')) return;
+  if(!confirm('한 번 더 확인합니다. 전체 삭제를 진행할까요?')) return;
+  $('btnDeleteAll').disabled = true; $('btnDeleteAll').textContent = '삭제 중...';
+  try{
+    for(const n of notes){ await deleteDoc(doc(db,'notes',n.id)); }
+    await loadNotes();
+    alert('전체 삭제 완료.');
+  }catch(e){ alert('삭제 중 오류: '+e.message); }
+  $('btnDeleteAll').disabled = false; $('btnDeleteAll').textContent = '🗑 전체삭제';
 });
 </script>
 
