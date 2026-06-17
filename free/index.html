@@ -315,6 +315,7 @@
     <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
       <div style="font-size:12px;color:#166534;font-weight:600;margin-right:auto">💾 저장 (서버 전송 없음 · 광고 없음)</div>
       <button id="btnSavePdf" type="button" style="background:#dc2626;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">📄 PDF로 저장</button>
+      <button id="btnShare" type="button" style="background:#7c3aed;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">📷 이미지로 공유</button>
       <button id="btnSaveJson" type="button" style="background:#1F4E78;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">💾 입력값 저장 (JSON)</button>
       <label style="background:#10b981;color:white;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">
         📂 불러오기
@@ -458,6 +459,46 @@
   </ul>
 </div>
 
+<!-- 공유 이미지 모달 -->
+<div id="shareModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:16px;max-width:420px;width:100%;max-height:90vh;overflow:auto;padding:20px">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <h3 style="font-size:16px;color:#1F4E78;margin:0">📷 이미지로 공유</h3>
+      <button id="shareClose" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#444;margin-bottom:14px;cursor:pointer;background:#f8fafc;padding:10px 12px;border-radius:8px">
+      <input type="checkbox" id="hideAmount" style="width:16px;height:16px">
+      💰 실제 금액 숨기기 (나이·달성 여부만 표시)
+    </label>
+    <div id="shareCard" style="background:linear-gradient(150deg,#0f766e,#0f172a);border-radius:16px;padding:24px;color:white;font-family:-apple-system,'Malgun Gothic',sans-serif">
+      <div style="font-size:13px;opacity:.7;margin-bottom:4px">🎯 나의 경제적 자유 플랜</div>
+      <div id="shareHeadline" style="font-size:20px;font-weight:800;line-height:1.4;margin:8px 0 18px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px">
+          <div style="font-size:11px;opacity:.7;margin-bottom:4px">은퇴 시점 자산</div>
+          <div id="shareRetire" style="font-size:17px;font-weight:800"></div>
+          <div style="font-size:10px;opacity:.6;margin-top:2px">현재가치 기준</div>
+        </div>
+        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px">
+          <div style="font-size:11px;opacity:.7;margin-bottom:4px">100세 시점 자산</div>
+          <div id="shareAge100" style="font-size:17px;font-weight:800;color:#fbbf24"></div>
+          <div style="font-size:10px;opacity:.6;margin-top:2px">현재가치 기준</div>
+        </div>
+      </div>
+      <div id="shareStatus" style="font-size:13px;font-weight:600;padding:10px 14px;border-radius:8px;margin-bottom:16px;text-align:center"></div>
+      <div style="display:flex;align-items:center;border-top:1px solid rgba(255,255,255,.15);padding-top:12px">
+        <span style="font-size:11px;opacity:.6">swingfarmer.github.io · 경제적자유 계산기</span>
+        <span style="margin-left:auto;font-size:18px">📈</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button id="shareDownload" style="flex:1;background:#1F4E78;color:white;border:none;padding:11px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">📥 이미지 저장</button>
+      <button id="shareNative" style="flex:1;background:#059669;color:white;border:none;padding:11px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">📤 공유하기</button>
+    </div>
+    <p style="font-size:11px;color:#888;margin-top:10px;line-height:1.6">※ SNS·카톡 등에 공유할 수 있어요. "금액 숨기기"를 켜면 자산 금액 없이 은퇴 나이·달성 여부만 나옵니다.</p>
+  </div>
+</div>
+
 <script>
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
 const fmtShort = n => {
@@ -586,6 +627,15 @@ function calculate() {
   } else {
     depletedBox.style.display = 'none';
   }
+
+  // 공유용 데이터 저장
+  window._shareData = {
+    curAge: parseInt(document.getElementById('currentAge') ? document.getElementById('currentAge').value : 0) || 0,
+    retireAge: retireAge,
+    retireReal: retireAssetsReal,
+    age100Real: age100Real,
+    depletedAge: depletedAge
+  };
 }
 
 document.querySelectorAll('input').forEach(el => {
@@ -746,6 +796,85 @@ calculate();
 })();
 </script>
 
-<script src="/common.js?v=2"></script>
+<script>
+// === 이미지 공유 ===
+(function(){
+  function fmtShareWon(n){
+    n=Math.round(n);
+    if(Math.abs(n)>=1e8) return (n/1e8).toFixed(1).replace(/\.0$/,'')+'억원';
+    if(Math.abs(n)>=1e4) return Math.round(n/1e4).toLocaleString('ko-KR')+'만원';
+    return n.toLocaleString('ko-KR')+'원';
+  }
+  var $=function(id){return document.getElementById(id);};
+
+  function fillShareCard(){
+    var d = window._shareData;
+    if(!d){ alert('먼저 값을 입력하세요.'); return false; }
+    var hide = $('hideAmount').checked;
+    // 헤드라인
+    var ageGap = d.retireAge - d.curAge;
+    if(d.depletedAge!==null){
+      $('shareHeadline').innerHTML = '⚠️ '+d.retireAge+'세 은퇴 후<br>'+d.depletedAge+'세에 자산 고갈 예상';
+    } else {
+      $('shareHeadline').innerHTML = '✨ '+d.retireAge+'세 은퇴, 100세까지<br>자산이 마르지 않아요';
+    }
+    if(hide){
+      $('shareRetire').textContent = '••••';
+      $('shareAge100').textContent = '••••';
+    } else {
+      $('shareRetire').textContent = fmtShareWon(d.retireReal);
+      $('shareAge100').textContent = fmtShareWon(d.age100Real);
+    }
+    var st = $('shareStatus');
+    if(d.depletedAge!==null){
+      st.textContent = '🔴 자산 고갈 위험 — 계획 점검 필요';
+      st.style.background='rgba(239,68,68,.25)'; st.style.color='#fecaca';
+    } else {
+      st.textContent = '🟢 경제적 자유 달성 가능';
+      st.style.background='rgba(34,197,94,.25)'; st.style.color='#bbf7d0';
+    }
+    return true;
+  }
+
+  $('btnShare').addEventListener('click', function(){
+    if(!window._shareData){ alert('먼저 값을 입력하세요.'); return; }
+    $('hideAmount').checked=false;
+    if(fillShareCard()) $('shareModal').style.display='flex';
+  });
+  $('shareClose').addEventListener('click', function(){ $('shareModal').style.display='none'; });
+  $('shareModal').addEventListener('click', function(e){ if(e.target===$('shareModal')) $('shareModal').style.display='none'; });
+  $('hideAmount').addEventListener('change', fillShareCard);
+
+  function makeCanvas(){
+    if(typeof html2canvas==='undefined'){ alert('이미지 라이브러리 로딩 중입니다. 잠시 후 다시 시도하세요.'); return null; }
+    return html2canvas($('shareCard'), {scale:2, backgroundColor:null, logging:false});
+  }
+  $('shareDownload').addEventListener('click', function(){
+    var p = makeCanvas(); if(!p) return;
+    p.then(function(canvas){
+      var link=document.createElement('a');
+      link.download='경제적자유_'+new Date().toISOString().slice(0,10)+'.png';
+      link.href=canvas.toDataURL('image/png'); link.click();
+    });
+  });
+  $('shareNative').addEventListener('click', function(){
+    var p = makeCanvas(); if(!p) return;
+    p.then(function(canvas){
+      canvas.toBlob(function(blob){
+        var file = new File([blob], 'free.png', {type:'image/png'});
+        if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+          navigator.share({files:[file], title:'나의 경제적 자유 플랜'}).catch(function(){});
+        } else {
+          var link=document.createElement('a');
+          link.download='경제적자유.png'; link.href=canvas.toDataURL('image/png'); link.click();
+          alert('이 기기는 직접 공유가 안 돼 이미지로 저장했어요. 저장된 이미지를 공유하세요.');
+        }
+      }, 'image/png');
+    });
+  });
+})();
+</script>
+
+<script src="/common.js?v=3"></script>
 </body>
 </html>
