@@ -143,6 +143,15 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
 </footer>
 
 <script>
+// service worker 등록 (PWA 설치 조건 충족 + 오프라인)
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('/sw.js').catch(function(e){
+      console.log('SW 등록 실패:', e);
+    });
+  });
+}
+
 // PWA 설치
 (function(){
   var deferredPrompt = null;
