@@ -318,8 +318,7 @@
       <button id="btnShare" type="button" style="background:#7c3aed;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">📷 이미지로 공유</button>
       <!-- 관리자 클라우드 (로그인 시에만 노출) -->
       <span id="cloudArea" style="display:none;align-items:center;gap:6px">
-        <button id="btnCloudSave" type="button" style="background:#0ea5e9;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">☁️ 클라우드 저장</button>
-        <button id="btnCloudLoad" type="button" style="background:#0284c7;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">☁️ 불러오기</button>
+        <button id="btnCloudOpen" type="button" style="background:#0ea5e9;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">☁️ 클라우드 시나리오</button>
         <span id="cloudWho" style="font-size:11px;color:#0369a1"></span>
         <button id="btnCloudLogout" type="button" style="background:#9ca3af;color:white;border:none;padding:7px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">로그아웃</button>
       </span>
@@ -504,6 +503,29 @@
       <button id="shareNative" style="flex:1;background:#059669;color:white;border:none;padding:11px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">📤 공유하기</button>
     </div>
     <p style="font-size:11px;color:#888;margin-top:10px;line-height:1.6">※ SNS·카톡 등에 공유할 수 있어요. "금액 숨기기"를 켜면 자산 금액 없이 은퇴 나이·달성 여부만 나옵니다.</p>
+  </div>
+</div>
+
+<!-- 클라우드 슬롯 모달 -->
+<div id="slotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:16px;max-width:460px;width:100%;max-height:90vh;overflow:auto;padding:20px">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <h3 style="font-size:16px;color:#1F4E78;margin:0">☁️ 클라우드 시나리오</h3>
+      <button id="slotClose" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <!-- 현재 입력 저장 -->
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">💾 현재 입력값을 저장</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="slotName" placeholder="시나리오 이름 (예: 은퇴 55세 안)" maxlength="30" style="flex:1;padding:9px;font-size:13px;border:1px solid #ccc;border-radius:6px">
+        <button id="slotSaveBtn" style="background:#0ea5e9;color:white;border:none;padding:9px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">저장</button>
+      </div>
+    </div>
+    <!-- 저장된 슬롯 목록 -->
+    <div style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px">📋 저장된 시나리오</div>
+    <div id="slotList" style="display:flex;flex-direction:column;gap:8px">
+      <div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>
+    </div>
   </div>
 </div>
 
@@ -946,37 +968,97 @@ function applyInputs(data){
   const first=$('currentAge'); if(first){ first.dispatchEvent(new Event('input',{bubbles:true})); }
 }
 
-$('btnCloudSave').addEventListener('click', async ()=>{
-  if(!currentUser || currentUser.uid!==ADMIN_UID){ alert('관리자 로그인이 필요합니다.'); return; }
-  $('btnCloudSave').disabled=true; $('btnCloudSave').textContent='저장 중...';
+// === 클라우드 슬롯 (시나리오 여러개) ===
+const docRef = () => doc(db, 'calc_data', ADMIN_UID);
+
+async function loadSlots(){
+  // free 문서의 slots 배열 반환
   try{
-    const ref = doc(db, 'calc_data', ADMIN_UID);
-    // 기존 문서 가져와서 free만 갱신 (다른 계산기 데이터 보존)
-    let existing = {};
-    try{ const snap=await getDoc(ref); if(snap.exists()) existing=snap.data(); }catch(e){}
-    existing[CALC_KEY] = { data: collectInputs(), savedAt: new Date().toISOString() };
-    await setDoc(ref, existing, {merge:true});
-    alert('✅ 클라우드에 저장됐어요. 다른 기기에서 로그인하면 불러올 수 있어요.');
+    const snap = await getDoc(docRef());
+    if(snap.exists() && snap.data()[CALC_KEY] && Array.isArray(snap.data()[CALC_KEY].slots)){
+      return snap.data()[CALC_KEY].slots;
+    }
+  }catch(e){}
+  return [];
+}
+async function saveSlots(slots){
+  const ref = docRef();
+  let existing = {};
+  try{ const snap=await getDoc(ref); if(snap.exists()) existing=snap.data(); }catch(e){}
+  existing[CALC_KEY] = { slots: slots, updatedAt: new Date().toISOString() };
+  await setDoc(ref, existing, {merge:true});
+}
+
+function renderSlots(slots){
+  const box = $('slotList');
+  if(!slots || slots.length===0){
+    box.innerHTML = '<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 시나리오가 없어요.<br>위에서 이름을 정해 저장해보세요.</div>';
+    return;
+  }
+  box.innerHTML = slots.map((s,i)=>{
+    const t = s.savedAt ? new Date(s.savedAt).toLocaleString('ko-KR') : '';
+    return '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px">'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.name||'(이름없음)')+'</div>'+
+        '<div style="font-size:11px;color:#999">'+t+'</div>'+
+      '</div>'+
+      '<button onclick="window._slotLoad('+i+')" style="background:#0284c7;color:white;border:none;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button>'+
+      '<button onclick="window._slotDelete('+i+')" style="background:#dc2626;color:white;border:none;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">삭제</button>'+
+    '</div>';
+  }).join('');
+}
+
+let _slotsCache = [];
+async function refreshSlots(){
+  $('slotList').innerHTML = '<div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>';
+  _slotsCache = await loadSlots();
+  renderSlots(_slotsCache);
+}
+
+$('btnCloudOpen').addEventListener('click', async ()=>{
+  if(!currentUser || currentUser.uid!==ADMIN_UID){ alert('관리자 로그인이 필요합니다.'); return; }
+  $('slotName').value='';
+  $('slotModal').style.display='flex';
+  await refreshSlots();
+});
+$('slotClose').addEventListener('click', ()=> $('slotModal').style.display='none');
+$('slotModal').addEventListener('click', e=>{ if(e.target===$('slotModal')) $('slotModal').style.display='none'; });
+
+$('slotSaveBtn').addEventListener('click', async ()=>{
+  const name = $('slotName').value.trim();
+  if(!name){ alert('시나리오 이름을 입력하세요.'); return; }
+  // 같은 이름 있으면 덮어쓰기 확인
+  const idx = _slotsCache.findIndex(s=>s.name===name);
+  if(idx>=0 && !confirm('"'+name+'" 시나리오가 이미 있어요. 덮어쓸까요?')) return;
+  $('slotSaveBtn').disabled=true; $('slotSaveBtn').textContent='저장 중...';
+  try{
+    const entry = { name, data: collectInputs(), savedAt: new Date().toISOString() };
+    if(idx>=0) _slotsCache[idx]=entry; else _slotsCache.push(entry);
+    await saveSlots(_slotsCache);
+    renderSlots(_slotsCache);
+    $('slotName').value='';
+    alert('✅ "'+name+'" 저장 완료.');
   }catch(e){ alert('저장 실패: '+e.message); }
-  $('btnCloudSave').disabled=false; $('btnCloudSave').textContent='☁️ 클라우드 저장';
+  $('slotSaveBtn').disabled=false; $('slotSaveBtn').textContent='저장';
 });
 
-$('btnCloudLoad').addEventListener('click', async ()=>{
-  if(!currentUser || currentUser.uid!==ADMIN_UID){ alert('관리자 로그인이 필요합니다.'); return; }
-  $('btnCloudLoad').disabled=true; $('btnCloudLoad').textContent='불러오는 중...';
+window._slotLoad = function(i){
+  const s = _slotsCache[i];
+  if(!s) return;
+  applyInputs(s.data);
+  $('slotModal').style.display='none';
+  alert('✅ "'+s.name+'" 불러왔어요.');
+};
+window._slotDelete = async function(i){
+  const s = _slotsCache[i];
+  if(!s) return;
+  if(!confirm('"'+s.name+'" 시나리오를 삭제할까요?')) return;
   try{
-    const ref = doc(db, 'calc_data', ADMIN_UID);
-    const snap = await getDoc(ref);
-    if(snap.exists() && snap.data()[CALC_KEY]){
-      applyInputs(snap.data()[CALC_KEY].data);
-      const t = snap.data()[CALC_KEY].savedAt;
-      alert('✅ 불러왔어요.' + (t?('\n저장 시각: '+new Date(t).toLocaleString('ko-KR')):''));
-    } else {
-      alert('저장된 클라우드 데이터가 없어요. 먼저 "클라우드 저장"을 해보세요.');
-    }
-  }catch(e){ alert('불러오기 실패: '+e.message); }
-  $('btnCloudLoad').disabled=false; $('btnCloudLoad').textContent='☁️ 불러오기';
-});
+    _slotsCache.splice(i,1);
+    await saveSlots(_slotsCache);
+    renderSlots(_slotsCache);
+  }catch(e){ alert('삭제 실패: '+e.message); }
+};
 
 $('btnCloudLogout').addEventListener('click', async ()=>{
   if(confirm('로그아웃 할까요?')){
