@@ -236,8 +236,22 @@
 
     <div class="section-label">② 은퇴 전 현금흐름 (수입·지출)</div>
     <div class="input-row">
-      <label>현재 자산 (원) <span class="stat-sub">(40대 평균 4.5억)</span></label>
+      <label>금융·투자자산 (원) <span class="info-btn" onclick="toggleFinAssetInfo()">ⓘ</span></label>
       <input type="number" id="currentAssets" value="450000000">
+    </div>
+    <div class="input-row" id="finAssetInfo" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 12px;font-size:12px;color:#1e40af;line-height:1.7">
+      예금·주식·채권·펀드 + <b>상가월세·임대수익 등 수익이 나는 자산</b>을 모두 합한 금액. 이 자산만 투자수익률로 굴러가고, 은퇴 후 생활비로 인출됩니다. (살고 있는 집은 아래 칸에)
+    </div>
+    <div class="input-row">
+      <label>거주 주택 (원) <span class="info-btn" onclick="toggleHomeInfo()">ⓘ</span></label>
+      <input type="number" id="homeValue" value="0">
+    </div>
+    <div class="input-row" id="homeInfo" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 12px;font-size:12px;color:#1e40af;line-height:1.7">
+      <b>살고 있는 집</b>의 현재 시세. 수익이 나지 않고 깔고 사는 자산이라 <b>생활비로 쓰지 않습니다</b>(총자산엔 참고로 표시). 집값 상승률만큼만 따로 불어납니다. 없으면 0.
+    </div>
+    <div class="input-row">
+      <label>집값 상승률 (%) <span class="stat-sub">(보통 물가상승률 수준)</span></label>
+      <input type="number" id="homeGrowth" value="2.7" step="0.1">
     </div>
     <div class="input-row">
       <label>연 수입액 (원) <span class="stat-sub">(실수령 평균 5,040만)</span></label>
@@ -379,6 +393,10 @@
       <div class="stat-value" id="depletedAge">-</div>
       <div class="stat-sub">이 나이에 자산이 0원이 됩니다</div>
     </div>
+  </div>
+
+  <div id="homeNoteBox" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px 16px;margin-top:14px">
+    <div id="homeNote" style="font-size:13px;line-height:1.8;color:#166534"></div>
   </div>
 
   <div id="profitInfo" style="display:none;background:#fff8e8;border:1px solid #f0d896;border-radius:8px;padding:16px 18px;margin-top:14px;font-size:13.5px;line-height:1.8;color:#5a4a2a">
@@ -554,6 +572,16 @@ function toggleProfitInfo() {
   el.style.display = (el.style.display === 'none' || !el.style.display) ? 'block' : 'none';
 }
 
+function toggleFinAssetInfo() {
+  var el = document.getElementById('finAssetInfo');
+  el.style.display = (el.style.display === 'none' || !el.style.display) ? 'block' : 'none';
+}
+
+function toggleHomeInfo() {
+  var el = document.getElementById('homeInfo');
+  el.style.display = (el.style.display === 'none' || !el.style.display) ? 'block' : 'none';
+}
+
 function calculate() {
   const startYear = parseInt(document.getElementById('startYear').value) || new Date().getFullYear();
   const currentAge = parseInt(document.getElementById('currentAge').value) || 0;
@@ -581,7 +609,13 @@ function calculate() {
   let cumulativeNetFlow = 0;
   let retireAssetsNominal = 0, retireAssetsReal = 0, retireCumFlow = 0;
   let age100Nominal = 0, age100Real = 0, age100CumFlow = 0;
+  let retireTotalReal = 0, age100TotalReal = 0, retireHome = 0, age100Home = 0;
   let depletedAge = null;
+
+  // 거주 주택 (별도 굴림, 생활비에 안 씀)
+  const homeValue0 = parseFloat(document.getElementById('homeValue').value) || 0;
+  const homeGrowth = (parseFloat(document.getElementById('homeGrowth').value) || 0) / 100;
+  let homeValue = homeValue0;
 
   const annualPension = monthlyPension * 12;
 
@@ -599,8 +633,10 @@ function calculate() {
 
     if (yearsFromNow === 0) {
       assets = currentAssets + netFlow;
+      homeValue = homeValue0; // 시작 시점
     } else {
       assets = assets * (1 + returnRate) + netFlow;
+      homeValue = homeValue * (1 + homeGrowth); // 집값만 상승
     }
 
     cumulativeNetFlow += netFlow;
@@ -608,16 +644,22 @@ function calculate() {
     if (assets < 0 && depletedAge === null) depletedAge = age;
 
     const realValue = assets / Math.pow(1 + inflationRate, yearsFromNow);
+    const totalAssets = assets + homeValue; // 금융 + 주택
+    const totalReal = totalAssets / Math.pow(1 + inflationRate, yearsFromNow);
 
     if (age === retireAge) {
       retireAssetsNominal = assets;
       retireAssetsReal = realValue;
       retireCumFlow = cumulativeNetFlow;
+      retireTotalReal = totalReal;
+      retireHome = homeValue;
     }
     if (age === 100) {
       age100Nominal = assets;
       age100Real = realValue;
       age100CumFlow = cumulativeNetFlow;
+      age100TotalReal = totalReal;
+      age100Home = homeValue;
     }
 
     const row = document.createElement('tr');
@@ -658,13 +700,32 @@ function calculate() {
     depletedBox.style.display = 'none';
   }
 
+  // 거주주택 포함 총자산 안내 (집이 있을 때만)
+  const homeBox = document.getElementById('homeNoteBox');
+  if (homeBox) {
+    if (homeValue0 > 0) {
+      homeBox.style.display = 'block';
+      document.getElementById('homeNote').innerHTML =
+        '🏠 <b>거주 주택 포함 참고</b> — 위 은퇴·고갈 계산은 <b>금융·투자자산 기준</b>입니다(집은 생활비로 못 쓰므로 제외).<br>' +
+        '집값 상승률 반영 시, <b>은퇴 시점 총자산(집 포함, 현재가치) ≈ ' + fmtShort(retireTotalReal) + '원</b> ' +
+        '(그중 주택 ' + fmtShort(retireHome / Math.pow(1+inflationRate, retireAge-currentAge)) + '원). ' +
+        '<b>100세 시점 총자산 ≈ ' + fmtShort(age100TotalReal) + '원.</b><br>' +
+        '<span style="color:#888;font-size:12px">※ 집을 팔거나 줄여서 노후자금에 보태려면, 다음 단계의 "주택 갈아타기" 기능으로 시뮬레이션할 수 있습니다(추후 추가 예정).</span>';
+    } else {
+      homeBox.style.display = 'none';
+    }
+  }
+
   // 공유용 데이터 저장
   window._shareData = {
     curAge: parseInt(document.getElementById('currentAge') ? document.getElementById('currentAge').value : 0) || 0,
     retireAge: retireAge,
     retireReal: retireAssetsReal,
     age100Real: age100Real,
-    depletedAge: depletedAge
+    depletedAge: depletedAge,
+    hasHome: homeValue0 > 0,
+    retireTotalReal: retireTotalReal,
+    age100TotalReal: age100TotalReal
   };
 }
 
@@ -679,7 +740,7 @@ calculate();
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (function(){
-  var INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth'];
+  var INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth','homeValue','homeGrowth'];
   var PAGE_NAME = '경제적자유';
 
   function getDateStr(){
@@ -955,7 +1016,7 @@ onAuthStateChanged(auth, user=>{
 });
 
 // 입력값 수집/적용 (PDF 스크립트의 INPUT_IDS와 동일)
-const INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth'];
+const INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth','homeValue','homeGrowth'];
 
 function collectInputs(){
   const data = {};
