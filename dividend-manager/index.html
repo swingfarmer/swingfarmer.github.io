@@ -159,12 +159,15 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 
   <!-- 배당 성장 예측 -->
   <div class="panel" id="growthPanel">
-    <h2>📈 배당 성장 예측 <span class="sub">매년 배당이 늘어난다면 (재투자 제외, 단순 성장)</span></h2>
+    <h2>📈 배당 성장 예측 <span class="sub">매년 배당 증가 + 재투자(복리) 비교</span></h2>
     <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
       <div class="field" style="max-width:180px"><label>연 배당성장률 (%)</label><input type="number" id="growthRate" value="7" step="0.5"></div>
       <div class="field" style="max-width:160px"><label>예측 기간 (년)</label><input type="number" id="growthYears" value="10" step="1"></div>
-      <span style="font-size:12px;color:#888;align-self:center">배당귀족주 장기 성장률 약 6~10%. 종목마다 다름.</span>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#444;cursor:pointer;align-self:center">
+        <input type="checkbox" id="showReinvest" checked style="width:16px;height:16px"> 재투자(복리) 비교 표시
+      </label>
     </div>
+    <div style="font-size:12px;color:#888;margin-bottom:10px">배당귀족주 장기 성장률 약 6~10%. 재투자 = 받은 배당으로 같은 수익률의 주식을 다시 매수한다고 가정(세후 배당 재투자).</div>
     <div class="chart-wrap"><canvas id="growthChart" height="110"></canvas></div>
     <div id="growthMsg" style="font-size:13px;color:#444;line-height:1.7;margin-top:10px"></div>
   </div>
@@ -505,6 +508,7 @@ function comprehensiveBreakdown(domesticDividendKRW){
 $('goalMonthly').addEventListener('input',()=>{goalMonthly=parseFloat($('goalMonthly').value)||0;save();renderDashboard();});
 $('growthRate').addEventListener('input',()=>{growthRate=parseFloat($('growthRate').value)||0;save();renderDashboard();});
 $('growthYears').addEventListener('input',()=>{growthYears=parseInt($('growthYears').value)||10;save();renderDashboard();});
+$('showReinvest').addEventListener('change',()=>{renderDashboard();});
 
 function editHolding(id){
   const h=holdings.find(x=>x.id===id);if(!h)return;
@@ -695,7 +699,7 @@ function renderDashboard(){
   });
 
   renderGoal(totalAnnualKRW,totalValueKRW);
-  renderGrowth(totalAnnualKRW);
+  renderGrowth(totalAnnualKRW, totalAfterTax, totalValueKRW);
   renderTargetWeights(totalValueKRW);
   renderMonthTable();
 }
@@ -730,23 +734,65 @@ function renderGoal(totalAnnualKRW,totalValueKRW){
 }
 
 // 배당 성장 예측
-function renderGrowth(totalAnnualKRW){
+function renderGrowth(totalAnnualKRW, totalAfterTax, totalValueKRW){
   const years=Math.max(1,Math.min(50,growthYears));
   const g=growthRate/100;
-  const labels=[],data=[];
+  const showReinvest = $('showReinvest') ? $('showReinvest').checked : true;
   const nowYear=new Date().getFullYear();
+  const labels=[];
+  // ① 재투자 없음: 배당만 매년 g% 성장
+  const noReinvest=[];
+  // ② 재투자: 세후 배당으로 다시 매수 → 원금 증가 → 다음해 배당 증가
+  const reinvest=[];
+
+  // 세후 배당수익률 (세후배당 / 평가액)
+  const afterYield = (totalValueKRW>0 && totalAfterTax>0) ? (totalAfterTax/totalValueKRW) : 0;
+  let principal = totalValueKRW;       // 재투자 시 불어나는 원금
+  let baseYield = afterYield;          // 세후 수익률 (성장률만큼 배당도 늘어남)
+
   for(let i=0;i<=years;i++){
     labels.push((nowYear+i)+'년');
-    data.push(totalAnnualKRW*Math.pow(1+g,i));
+    // ① 단순 성장: 현재 세전 연배당이 g%씩
+    noReinvest.push(totalAnnualKRW*Math.pow(1+g,i));
+    // ② 재투자: 매년 (원금 × 세후수익률)을 원금에 더하고, 수익률도 g%씩 상승
+    if(i===0){
+      reinvest.push(totalAnnualKRW); // 시작점은 동일(세전 연배당)
+    } else {
+      const yieldThisYear = baseYield*Math.pow(1+g,i); // 배당 성장 반영
+      const divThisYear = principal*yieldThisYear;      // 올해 세후 배당
+      principal += divThisYear;                          // 재투자
+      // 표시는 세전 환산(비교 일관성 위해 세전배당 기준으로): 원금×세전수익률
+      const preYield = (totalValueKRW>0)?(totalAnnualKRW/totalValueKRW)*Math.pow(1+g,i):0;
+      reinvest.push(principal*preYield);
+    }
   }
+
+  const datasets=[{label:'배당 성장만',data:noReinvest,borderColor:'#059669',backgroundColor:'rgba(5,150,105,.08)',fill:true,tension:.3,pointRadius:2}];
+  if(showReinvest && afterYield>0){
+    datasets.push({label:'배당 성장 + 재투자',data:reinvest,borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.06)',fill:true,tension:.3,pointRadius:2,borderDash:[]});
+  }
+
   if(growthChart2)growthChart2.destroy();
   growthChart2=new Chart($('growthChart'),{
     type:'line',
-    data:{labels,datasets:[{label:'연 배당(원)',data,borderColor:'#059669',backgroundColor:'rgba(5,150,105,.1)',fill:true,tension:.3,pointRadius:3}]},
-    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},datalabels:{display:false},tooltip:{callbacks:{label:c=>fmt(c.parsed.y)+'원'}}},scales:{y:{ticks:{callback:v=>fmtShort(v)}}}}
+    data:{labels,datasets},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:showReinvest&&afterYield>0,position:'top'},datalabels:{display:false},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.parsed.y)+'원'}}},scales:{y:{ticks:{callback:v=>fmtShort(v)}}}}
   });
+
   const future=totalAnnualKRW*Math.pow(1+g,years);
-  $('growthMsg').innerHTML='현재 연 배당 <b>'+fmt(totalAnnualKRW)+'원</b>이 연 '+growthRate+'%씩 늘면, <b>'+years+'년 후 '+fmt(future)+'원</b> (월 '+fmt(future/12)+'원)이 됩니다. <span style="color:#888;font-size:12px">※ 배당 증가만 반영, 추가 매수·재투자 제외. 명목 기준(물가 미반영).</span>';
+  let msg='현재 연 배당 <b>'+fmt(totalAnnualKRW)+'원</b>이 연 '+growthRate+'%씩 늘면, <b>'+years+'년 후 '+fmt(future)+'원</b> (월 '+fmt(future/12)+'원)이 됩니다.';
+  if(showReinvest && afterYield>0){
+    const futureRe=reinvest[reinvest.length-1];
+    const diff=futureRe-future;
+    msg+='<br>🔴 <b>재투자</b> 시: 세후 배당을 매년 다시 매수하면 <b>'+years+'년 후 연 배당 '+fmt(futureRe)+'원</b> (월 '+fmt(futureRe/12)+'원).';
+    msg+=' 재투자로 <b style="color:#dc2626">+'+fmt(diff)+'원/년</b> 더 받습니다 (눈덩이 효과).';
+    msg+='<br><span style="color:#888;font-size:12px">※ 세후 배당수익률 '+(afterYield*100).toFixed(2)+'%로 같은 수익률 주식 매수 가정. 추가 납입·주가변동·세율변화 미반영. 명목 기준.</span>';
+  } else if(showReinvest && afterYield<=0){
+    msg+='<br><span style="color:#888;font-size:12px">※ 재투자 비교는 종목에 현재가가 입력되어 평가액·배당수익률이 계산될 때 표시됩니다.</span>';
+  } else {
+    msg+=' <span style="color:#888;font-size:12px">※ 배당 증가만 반영, 재투자 제외. 명목 기준.</span>';
+  }
+  $('growthMsg').innerHTML=msg;
 }
 
 // 목표 비중 비교
