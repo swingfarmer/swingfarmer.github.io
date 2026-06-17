@@ -101,7 +101,16 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
   <div class="toolbar">
     <input type="text" class="search-box" id="searchBox" placeholder="🔍 제목·내용 검색">
     <button class="btn btn-primary" id="btnNew">✏️ 새 메모</button>
+    <button class="btn btn-gray" id="btnSelectMode">☑️ 선택삭제</button>
     <button class="btn btn-red" id="btnDeleteAll">🗑 전체삭제</button>
+  </div>
+  <div id="selectBar" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:10px;align-items:center;gap:10px">
+    <label style="font-size:13px;font-weight:600;color:#991b1b;display:flex;align-items:center;gap:6px;cursor:pointer">
+      <input type="checkbox" id="checkAll" style="width:16px;height:16px"> 전체 선택
+    </label>
+    <span id="selectCount" style="font-size:13px;color:#991b1b;margin-right:auto">0개 선택됨</span>
+    <button class="btn btn-red btn-sm" id="btnDeleteSelected">선택 삭제</button>
+    <button class="btn btn-gray btn-sm" id="btnSelectCancel">취소</button>
   </div>
   <div class="note-list" id="noteList"></div>
 </div>
@@ -135,6 +144,7 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
         <option value="매매기록">💰 매매기록</option>
         <option value="시장관찰">🌐 시장관찰</option>
         <option value="부동산">🏢 부동산</option>
+        <option value="기타">📌 기타</option>
       </select>
     </div>
     <div class="field">
@@ -155,7 +165,7 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, updateDoc, doc, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, updateDoc, doc, query, orderBy, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
@@ -182,6 +192,7 @@ let currentUser = null;
 let notes = [];
 let currentNoteId = null;
 let editingId = null;
+let selectMode = false;
 
 function fmtDate(ts){
   if(!ts) return '';
@@ -272,24 +283,57 @@ function renderList(){
     return;
   }
   $('noteList').innerHTML = list.map(n=>`
-    <div class="note-row" onclick="window.openNote('${n.id}')">
+    <div class="note-row" onclick="window.rowClick(event,'${n.id}')">
+      <input type="checkbox" class="note-check" data-id="${n.id}" onclick="event.stopPropagation()" style="display:${selectMode?'inline-block':'none'};width:16px;height:16px;cursor:pointer">
       <span class="tag">${esc(n.category||'메모')}</span>
       <span class="title">${esc(n.title||'(제목없음)')}</span>
-      <span class="date">${fmtDate(n.createdAt)}</span>
+      <span class="date">조회 ${n.views||0} · ${fmtDate(n.createdAt)}</span>
     </div>`).join('');
 }
 $('searchBox').addEventListener('input', renderList);
 
 // === 상세 ===
-window.openNote = function(id){
+// 행 클릭: 선택모드면 체크, 아니면 열기
+window.rowClick = function(e, id){
+  if(selectMode){
+    const row = e.currentTarget;
+    const chk = row.querySelector('.note-check');
+    if(chk){ chk.checked = !chk.checked; updateSelectCount(); }
+  } else {
+    window.openNote(id);
+  }
+};
+// 선택모드 토글
+function setSelectMode(on){
+  selectMode = on;
+  $('selectBar').style.display = on ? 'flex' : 'none';
+  document.querySelectorAll('.note-check').forEach(c=>{ c.style.display = on?'inline-block':'none'; c.checked=false; });
+  $('checkAll').checked = false;
+  updateSelectCount();
+}
+function updateSelectCount(){
+  const n = document.querySelectorAll('.note-check:checked').length;
+  $('selectCount').textContent = n + '개 선택됨';
+}
+
+window.openNote = async function(id){
   const n = notes.find(x=>x.id===id);
   if(!n) return;
   currentNoteId = id;
   $('dTag').textContent = n.category||'메모';
   $('dTitle').textContent = n.title||'(제목없음)';
-  $('dMeta').textContent = fmtDate(n.createdAt) + (n.updatedAt ? ' (수정: '+fmtDate(n.updatedAt)+')' : '');
+  const views = n.views||0;
+  $('dMeta').textContent = fmtDate(n.createdAt) + (n.updatedAt ? ' (수정: '+fmtDate(n.updatedAt)+')' : '') + ' · 조회 ' + views;
   $('dBody').textContent = n.body||'';
   showView('detailView');
+  // 조회수: 내가 쓴 글이 아니면 +1
+  if(currentUser && n.uid && n.uid !== currentUser.uid){
+    try{
+      await updateDoc(doc(db,'notes',id), { views: increment(1) });
+      n.views = views + 1;
+      $('dMeta').textContent = fmtDate(n.createdAt) + (n.updatedAt ? ' (수정: '+fmtDate(n.updatedAt)+')' : '') + ' · 조회 ' + n.views;
+    }catch(e){}
+  }
 };
 $('btnBackList').addEventListener('click', ()=> showView('listView'));
 
@@ -351,6 +395,31 @@ $('btnDeleteAll').addEventListener('click', async ()=>{
     alert('전체 삭제 완료.');
   }catch(e){ alert('삭제 중 오류: '+e.message); }
   $('btnDeleteAll').disabled = false; $('btnDeleteAll').textContent = '🗑 전체삭제';
+});
+
+// === 선택삭제 ===
+$('btnSelectMode').addEventListener('click', ()=> setSelectMode(true));
+$('btnSelectCancel').addEventListener('click', ()=> setSelectMode(false));
+$('checkAll').addEventListener('change', ()=>{
+  const on = $('checkAll').checked;
+  document.querySelectorAll('.note-check').forEach(c=> c.checked = on);
+  updateSelectCount();
+});
+$('noteList').addEventListener('change', e=>{
+  if(e.target.classList.contains('note-check')) updateSelectCount();
+});
+$('btnDeleteSelected').addEventListener('click', async ()=>{
+  const ids = Array.from(document.querySelectorAll('.note-check:checked')).map(c=>c.dataset.id);
+  if(ids.length===0){ alert('선택된 메모가 없습니다.'); return; }
+  if(!confirm('선택한 '+ids.length+'개 메모를 삭제할까요?')) return;
+  $('btnDeleteSelected').disabled = true; $('btnDeleteSelected').textContent = '삭제 중...';
+  try{
+    for(const id of ids){ await deleteDoc(doc(db,'notes',id)); }
+    await loadNotes();
+    setSelectMode(false);
+    alert(ids.length+'개 삭제 완료.');
+  }catch(e){ alert('삭제 중 오류: '+e.message); }
+  $('btnDeleteSelected').disabled = false; $('btnDeleteSelected').textContent = '선택 삭제';
 });
 </script>
 
