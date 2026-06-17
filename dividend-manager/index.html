@@ -282,6 +282,7 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
       <div style="font-size:13px;color:#166534;font-weight:700;margin-right:auto">💾 저장 (서버 전송 없음 · 광고 없음)</div>
       <button class="btn btn-primary btn-sm" id="btnSaveJson">💾 데이터 저장 (JSON)</button>
       <label class="btn btn-green btn-sm" style="cursor:pointer">📂 불러오기<input type="file" id="fileLoad" accept=".json" style="display:none"></label>
+      <button class="btn btn-sm" id="btnShare" style="background:#7c3aed;color:white">📷 이미지로 공유</button>
       <button class="btn btn-red btn-sm" id="btnClearAll">🗑 전체 삭제</button>
     </div>
     <div class="save-note">
@@ -654,6 +655,14 @@ function renderDashboard(){
   const portYield=totalValueKRW>0?(totalAnnualKRW/totalValueKRW*100):0;
   $('sumYield').textContent='배당수익률 '+portYield.toFixed(2)+'%';
 
+  // 공유용 데이터 저장
+  window._shareData = {
+    annual: totalAnnualKRW, monthly: totalAnnualKRW/12,
+    after: totalAfterTax, value: totalValueKRW,
+    yield: portYield, count: holdings.length,
+    holdings: holdings.slice()
+  };
+
   // 월별 차트
   const monthLabels=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
   if(monthlyChart)monthlyChart.destroy();
@@ -938,12 +947,131 @@ $('btnClearAll').addEventListener('click',()=>{
   alert('전체 삭제 완료.');
 });
 
+// === 이미지 공유 ===
+function fmtShareWon(n){
+  n=Math.round(n);
+  if(Math.abs(n)>=1e8) return (n/1e8).toFixed(1).replace(/\.0$/,'')+'억원';
+  if(Math.abs(n)>=1e4) return Math.round(n/1e4).toLocaleString('ko-KR')+'만원';
+  return n.toLocaleString('ko-KR')+'원';
+}
+function fillShareCard(){
+  const d = window._shareData;
+  if(!d || d.count===0){ alert('먼저 종목을 입력하세요.'); return false; }
+  const hide = $('hideAmount').checked;
+  $('shareYield').textContent = '배당수익률 '+d.yield.toFixed(2)+'%';
+  if(hide){
+    // 금액 숨김: 수익률·비율·종목수만
+    $('shareAnnual').textContent = '••••';
+    $('shareMonthly').textContent = '••••';
+    $('shareAfter').textContent = '••••';
+  } else {
+    $('shareAnnual').textContent = fmtShareWon(d.annual);
+    $('shareMonthly').textContent = fmtShareWon(d.monthly);
+    $('shareAfter').textContent = fmtShareWon(d.after);
+  }
+  $('shareCount').textContent = d.count+'종목';
+  // 상위 종목 (비중)
+  const sorted = d.holdings.slice().map(h=>{
+    const px=(h.now&&h.now>0)?h.now:h.avg;
+    return {name:h.name, val:toKRW(h.qty*px,h.country)};
+  }).sort((a,b)=>b.val-a.val);
+  const totalV = sorted.reduce((s,x)=>s+x.val,0)||1;
+  const top3 = sorted.slice(0,3).map(x=>x.name+' '+(x.val/totalV*100).toFixed(0)+'%').join(' · ');
+  $('shareTop').textContent = top3 ? ('📊 비중 TOP: '+top3) : '';
+  return true;
+}
+$('btnShare').addEventListener('click', ()=>{
+  if(!window._shareData || window._shareData.count===0){ alert('먼저 종목을 입력하세요.'); return; }
+  $('hideAmount').checked=false;
+  if(fillShareCard()) $('shareModal').style.display='flex';
+});
+$('shareClose').addEventListener('click', ()=> $('shareModal').style.display='none');
+$('shareModal').addEventListener('click', e=>{ if(e.target===$('shareModal')) $('shareModal').style.display='none'; });
+$('hideAmount').addEventListener('change', fillShareCard);
+
+async function makeShareCanvas(){
+  if(typeof html2canvas==='undefined'){ alert('이미지 라이브러리 로딩 중입니다. 잠시 후 다시 시도하세요.'); return null; }
+  return await html2canvas($('shareCard'), {scale:2, backgroundColor:null, logging:false});
+}
+$('shareDownload').addEventListener('click', async ()=>{
+  const canvas = await makeShareCanvas();
+  if(!canvas) return;
+  const link=document.createElement('a');
+  link.download='배당포트폴리오_'+new Date().toISOString().slice(0,10)+'.png';
+  link.href=canvas.toDataURL('image/png');
+  link.click();
+});
+$('shareNative').addEventListener('click', async ()=>{
+  const canvas = await makeShareCanvas();
+  if(!canvas) return;
+  canvas.toBlob(async (blob)=>{
+    const file = new File([blob], 'dividend.png', {type:'image/png'});
+    if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file], title:'나의 배당 포트폴리오', text:'배당 포트폴리오 현황'}); }
+      catch(e){}
+    } else {
+      // 공유 미지원 → 다운로드로 대체
+      const link=document.createElement('a');
+      link.download='배당포트폴리오.png'; link.href=canvas.toDataURL('image/png'); link.click();
+      alert('이 기기는 직접 공유가 안 돼 이미지로 저장했어요. 저장된 이미지를 공유하세요.');
+    }
+  }, 'image/png');
+});
+
 // === 초기화 ===
 load();
 renderHoldings();
 renderDashboard();
 </script>
 
-<script src="/common.js?v=2"></script>
+<!-- 공유 이미지 모달 -->
+<div id="shareModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:16px;max-width:420px;width:100%;max-height:90vh;overflow:auto;padding:20px">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <h3 style="font-size:16px;color:#1F4E78;margin:0">📷 이미지로 공유</h3>
+      <button id="shareClose" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#444;margin-bottom:14px;cursor:pointer;background:#f8fafc;padding:10px 12px;border-radius:8px">
+      <input type="checkbox" id="hideAmount" style="width:16px;height:16px">
+      💰 실제 금액 숨기기 (비율·수익률만 표시)
+    </label>
+    <!-- 캡처 대상 공유 카드 -->
+    <div id="shareCard" style="background:linear-gradient(150deg,#1e293b,#0f172a);border-radius:16px;padding:24px;color:white;font-family:-apple-system,'Malgun Gothic',sans-serif">
+      <div style="font-size:13px;opacity:.7;margin-bottom:4px">💰 나의 배당 포트폴리오</div>
+      <div id="shareYield" style="font-size:13px;color:#34d399;font-weight:600;margin-bottom:18px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px">
+          <div style="font-size:11px;opacity:.7;margin-bottom:4px">연 배당 (세전)</div>
+          <div id="shareAnnual" style="font-size:18px;font-weight:800"></div>
+        </div>
+        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px">
+          <div style="font-size:11px;opacity:.7;margin-bottom:4px">월 평균 배당</div>
+          <div id="shareMonthly" style="font-size:18px;font-weight:800"></div>
+        </div>
+        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px">
+          <div style="font-size:11px;opacity:.7;margin-bottom:4px">연 배당 (세후)</div>
+          <div id="shareAfter" style="font-size:18px;font-weight:800;color:#fbbf24"></div>
+        </div>
+        <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:14px">
+          <div style="font-size:11px;opacity:.7;margin-bottom:4px">보유 종목</div>
+          <div id="shareCount" style="font-size:18px;font-weight:800"></div>
+        </div>
+      </div>
+      <div id="shareTop" style="font-size:12px;opacity:.85;line-height:1.7;margin-bottom:16px"></div>
+      <div style="display:flex;align-items:center;border-top:1px solid rgba(255,255,255,.15);padding-top:12px">
+        <span style="font-size:11px;opacity:.6">swingfarmer.github.io · 배당 포트폴리오 관리기</span>
+        <span style="margin-left:auto;font-size:18px">📈</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-primary" id="shareDownload" style="flex:1">📥 이미지 저장</button>
+      <button class="btn btn-green" id="shareNative" style="flex:1">📤 공유하기</button>
+    </div>
+    <p style="font-size:11px;color:#888;margin-top:10px;line-height:1.6">※ 이 이미지는 SNS·카톡 등에 공유할 수 있어요. "금액 숨기기"를 켜면 실제 금액 없이 비율·수익률만 나옵니다.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="/common.js?v=3"></script>
 </body>
 </html>
