@@ -49,14 +49,14 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:8px;margin-botto
 .items-table .del-btn{background:#dc2626;color:white;border:none;border-radius:4px;width:24px;height:24px;cursor:pointer;font-size:13px}
 
 /* === 인쇄용 명세표 === */
-.print-area{display:flex;gap:14px;flex-wrap:wrap}
-.statement{flex:1;min-width:440px;background:white;border:2px solid #000;font-size:11px;color:#000}
+.print-area{display:flex;gap:24px;flex-wrap:wrap;padding-right:8px}
+.statement{flex:1;min-width:440px;background:white;border:1.5px solid #000;font-size:11px;color:#000;font-family:'Malgun Gothic','맑은 고딕',sans-serif}
 .st-row{display:flex;border-bottom:1px solid #000}
 .st-row:last-child{border-bottom:none}
-.st-cell{border-right:1px solid #000;padding:3px 5px;display:flex;align-items:center}
+.st-cell{border-right:1px solid #000;padding:4px 6px;display:flex;align-items:center}
 .st-cell:last-child{border-right:none}
-.st-title{font-size:14px;font-weight:800;text-align:center;justify-content:center;flex:1;letter-spacing:2px}
-.st-label{background:#f0f0f0;font-weight:700;justify-content:center;text-align:center}
+.st-title{font-size:15px;font-weight:700;text-align:center;justify-content:center;flex:1;letter-spacing:3px}
+.st-label{background:#f5f5f5;font-weight:600;justify-content:center;text-align:center}
 .st-center{justify-content:center;text-align:center}
 .st-right{justify-content:flex-end;text-align:right}
 
@@ -64,18 +64,18 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:8px;margin-botto
 .supplier-box{display:flex}
 .supplier-left{width:42%;border-right:1px solid #000;display:flex;flex-direction:column}
 .supplier-right{width:58%;display:flex;flex-direction:column}
-.sup-head{text-align:center;font-weight:700;background:#f0f0f0;padding:3px;border-bottom:1px solid #000}
-.sup-line{display:flex;border-bottom:1px solid #000;min-height:24px}
+.sup-head{text-align:center;font-weight:600;background:#f5f5f5;padding:4px;border-bottom:1px solid #000}
+.sup-line{display:flex;border-bottom:1px solid #000;min-height:26px}
 .sup-line:last-child{border-bottom:none}
-.sup-line .lbl{width:64px;background:#f0f0f0;font-weight:700;text-align:center;display:flex;align-items:center;justify-content:center;border-right:1px solid #000;font-size:10px;flex-shrink:0}
-.sup-line .val{flex:1;padding:2px 5px;display:flex;align-items:center}
-.sup-line .lbl2{width:44px;background:#f0f0f0;font-weight:700;text-align:center;display:flex;align-items:center;justify-content:center;border-right:1px solid #000;border-left:1px solid #000;font-size:10px;flex-shrink:0}
+.sup-line .lbl{width:68px;background:#f5f5f5;font-weight:600;text-align:center;display:flex;align-items:center;justify-content:center;border-right:1px solid #000;font-size:10px;flex-shrink:0}
+.sup-line .val{flex:1;padding:2px 6px;display:flex;align-items:center}
+.sup-line .lbl2{width:46px;background:#f5f5f5;font-weight:600;text-align:center;display:flex;align-items:center;justify-content:center;border-right:1px solid #000;border-left:1px solid #000;font-size:10px;flex-shrink:0}
 
 /* 품목 인쇄 테이블 */
 .print-items{width:100%;border-collapse:collapse}
-.print-items th{border-right:1px solid #000;border-bottom:1px solid #000;background:#f0f0f0;padding:3px 2px;font-size:10px;font-weight:700}
+.print-items th{border-right:1px solid #000;border-bottom:1px solid #000;background:#f5f5f5;padding:4px 2px;font-size:10px;font-weight:600}
 .print-items th:last-child{border-right:none}
-.print-items td{border-right:1px solid #000;border-bottom:1px solid #000;padding:2px 4px;height:23px;font-size:10px}
+.print-items td{border-right:1px solid #000;border-bottom:1px solid #000;padding:2px 5px;height:23px;font-size:10px}
 .print-items td:last-child{border-right:none}
 .print-items .r{text-align:right}
 .print-items .c{text-align:center}
@@ -98,7 +98,7 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:8px;margin-botto
   .print-area{gap:6px;margin:0}
   .statement{border:2px solid #000;min-width:0}
 }
-@page{size:A4 landscape;margin:8mm}
+@page{size:A4 landscape;margin:6mm 8mm 10mm 8mm}
 body.portrait-print @page{size:A4 portrait}
 </style>
 </head>
@@ -125,6 +125,9 @@ body.portrait-print @page{size:A4 portrait}
     <button class="btn btn-red btn-sm" id="btnDelSupplier">삭제</button>
   </div>
   <button class="btn btn-primary" id="btnPrint" style="margin-left:auto">🖨️ 프린트</button>
+  <button class="btn btn-green" id="btnSaveJpg">🖼️ JPG 저장</button>
+  <button class="btn btn-gray" id="btnSaveJson">💾 파일저장</button>
+  <label class="btn btn-gray" style="cursor:pointer">📂 불러오기<input type="file" id="fileLoad" accept=".json" style="display:none"></label>
 </div>
 
 <!-- 공급자 등록/수정 폼 (토글) -->
@@ -160,6 +163,9 @@ body.portrait-print @page{size:A4 portrait}
         <label><input type="radio" name="taxType" value="free"> 면세</label>
       </div>
     </div>
+  </div>
+  <div class="form-row">
+    <div class="field" style="flex:1;min-width:300px"><label>비고</label><input type="text" id="iMemo" placeholder="비고 (출력물 하단에 표시)"></div>
   </div>
 </div>
 
@@ -336,7 +342,7 @@ window.delRow = function(i){ items.splice(i,1); renderItems(); save(); renderPri
 $('btnAddRow').addEventListener('click', ()=>{ addRow(); save(); });
 
 // 거래정보 입력 시 저장+갱신
-['iGwon','iHo','iDate','iBuyer'].forEach(id=>{
+['iGwon','iHo','iDate','iBuyer','iMemo'].forEach(id=>{
   $(id).addEventListener('input', ()=>{ save(); renderPrint(); });
 });
 // 과세/면세 변경
@@ -348,7 +354,7 @@ document.querySelectorAll('input[name="taxType"]').forEach(r=>{
 function save(){
   try{
     localStorage.setItem(AUTO_KEY, JSON.stringify({
-      gwon:$('iGwon').value, ho:$('iHo').value, date:$('iDate').value, buyer:$('iBuyer').value,
+      gwon:$('iGwon').value, ho:$('iHo').value, date:$('iDate').value, buyer:$('iBuyer').value, memo:$('iMemo').value,
       taxType:document.querySelector('input[name="taxType"]:checked').value,
       supplierIdx:$('supplierSelect').value, items
     }));
@@ -358,7 +364,7 @@ function load(){
   try{
     const d = JSON.parse(localStorage.getItem(AUTO_KEY));
     if(!d) return;
-    $('iGwon').value=d.gwon||''; $('iHo').value=d.ho||''; $('iDate').value=d.date||''; $('iBuyer').value=d.buyer||'';
+    $('iGwon').value=d.gwon||''; $('iHo').value=d.ho||''; $('iDate').value=d.date||''; $('iBuyer').value=d.buyer||''; $('iMemo').value=d.memo||'';
     if(d.taxType){ const r=document.querySelector('input[name="taxType"][value="'+d.taxType+'"]'); if(r) r.checked=true; }
     items = d.items || [];
     if(d.supplierIdx!==undefined) setTimeout(()=>{ $('supplierSelect').value=d.supplierIdx; renderPrint(); },0);
@@ -373,6 +379,7 @@ function renderPrint(){
   let y='',m='',dd='';
   if(date){ const p=date.split('-'); y=p[0]; m=p[1]; dd=p[2]; }
   const gwon=$('iGwon').value, ho=$('iHo').value, buyer=$('iBuyer').value;
+  const memo=$('iMemo').value;
 
   let totalAmt=0, totalTax=0;
   items.forEach(it=>{ const a=(parseFloat(it.qty)||0)*(parseFloat(it.price)||0); totalAmt+=a; totalTax+=itemTax(it); });
@@ -380,7 +387,7 @@ function renderPrint(){
   const koreanAmt = toKorean(grandTotal);
 
   $('printArea').innerHTML = ['공급자 보관용','공급받는자 보관용'].map(copyLabel =>
-    buildStatement(copyLabel, {y,m,dd,gwon,ho,buyer,sup,totalAmt,totalTax,grandTotal,koreanAmt})
+    buildStatement(copyLabel, {y,m,dd,gwon,ho,buyer,memo,sup,totalAmt,totalTax,grandTotal,koreanAmt})
   ).join('');
 }
 
@@ -417,21 +424,21 @@ function buildStatement(copyLabel, d){
     </div>
     <!-- 날짜/귀하 + 공급자 -->
     <div class="st-row">
-      <div style="width:42%;border-right:1px solid #000;display:flex;flex-direction:column">
-        <div class="st-cell" style="border-bottom:1px solid #000;border-right:none;min-height:26px">
-          <span style="font-weight:700">${d.y? d.y+' 년 '+d.m+' 월 '+d.dd+' 일' : '____ 년 __ 월 __ 일'}</span>
+      <div style="width:40%;border-right:1px solid #000;display:flex;flex-direction:column">
+        <div class="st-cell st-center" style="border-bottom:1px solid #000;border-right:none;min-height:28px;font-weight:600">
+          ${d.y? d.y+'. '+d.m+'. '+d.dd+'.' : '20__ . __ . __'}
         </div>
-        <div class="st-cell st-center" style="border-bottom:1px solid #000;border-right:none;min-height:40px;font-weight:700">
-          ${esc(d.buyer)||''} ${d.buyer?'':'귀하'}
+        <div class="st-cell st-center" style="border-bottom:1px solid #000;border-right:none;min-height:44px;font-weight:600;font-size:13px">
+          ${d.buyer? esc(d.buyer)+' 귀하' : '귀하'}
         </div>
-        <div class="st-cell st-center" style="border-right:none;flex:1;min-height:30px">아래와 같이 계산합니다.</div>
+        <div class="st-cell st-center" style="border-right:none;flex:1;min-height:30px;color:#333">아래와 같이 계산합니다.</div>
       </div>
-      <div style="width:58%;display:flex;flex-direction:column">
+      <div style="width:60%;display:flex;flex-direction:column">
         <div class="sup-head">공 급 자</div>
         <div class="sup-line"><div class="lbl">등록번호</div><div class="val" style="letter-spacing:1px">${esc(d.sup.regno)}</div></div>
-        <div class="sup-line"><div class="lbl">상호</div><div class="val">${esc(d.sup.name)}</div><div class="lbl2">성명</div><div class="val" style="flex:0 0 90px">${esc(d.sup.ceo)}</div></div>
+        <div class="sup-line"><div class="lbl">상호</div><div class="val">${esc(d.sup.name)}</div><div class="lbl2">성명</div><div class="val" style="flex:0 0 96px">${esc(d.sup.ceo)}</div></div>
         <div class="sup-line"><div class="lbl">사업장<br>주소</div><div class="val">${esc(d.sup.addr)}</div></div>
-        <div class="sup-line"><div class="lbl">업태</div><div class="val">${esc(d.sup.biz)}</div><div class="lbl2">종목</div><div class="val" style="flex:0 0 90px">${esc(d.sup.item)}</div></div>
+        <div class="sup-line"><div class="lbl">업태</div><div class="val">${esc(d.sup.biz)}</div><div class="lbl2">종목</div><div class="val" style="flex:0 0 96px">${esc(d.sup.item)}</div></div>
       </div>
     </div>
     <!-- 합계금액 -->
@@ -444,10 +451,10 @@ function buildStatement(copyLabel, d){
     <!-- 품목 테이블 -->
     <table class="print-items">
       <thead><tr>
-        <th style="width:24px">월</th><th style="width:24px">일</th>
-        <th>품 명</th><th style="width:50px">규격</th>
-        <th style="width:44px">수량</th><th style="width:60px">단가</th>
-        <th style="width:78px">공급가액</th><th style="width:66px">세액</th>
+        <th style="width:28px">월</th><th style="width:28px">일</th>
+        <th>품 명</th><th style="width:70px">규격</th>
+        <th style="width:56px">수량</th><th style="width:78px">단가</th>
+        <th style="width:96px">공급가액</th><th style="width:84px">세액</th>
       </tr></thead>
       <tbody>${rowsHtml}</tbody>
       <tfoot>
@@ -458,9 +465,9 @@ function buildStatement(copyLabel, d){
       </tfoot>
     </table>
     <!-- 비고 -->
-    <div class="st-row" style="border-top:1px solid #000;min-height:50px">
-      <div class="st-cell st-label" style="width:44px">비고</div>
-      <div class="st-cell" style="flex:1;border-right:none"></div>
+    <div class="st-row" style="border-top:1px solid #000;min-height:48px">
+      <div class="st-cell st-label" style="width:46px">비고</div>
+      <div class="st-cell" style="flex:1;border-right:none">${esc(d.memo||'')}</div>
     </div>
   </div>`;
 }
@@ -477,6 +484,61 @@ document.querySelectorAll('input[name="orient"]').forEach(r=>{
 });
 $('btnPrint').addEventListener('click', ()=> window.print());
 
+// JPG 저장 (완성본 이미지)
+$('btnSaveJpg').addEventListener('click', ()=>{
+  if(typeof html2canvas==='undefined'){ alert('이미지 라이브러리 로딩 중입니다. 잠시 후 다시 시도하세요.'); return; }
+  const area = $('printArea');
+  html2canvas(area, {scale:2, backgroundColor:'#ffffff'}).then(canvas=>{
+    const link = document.createElement('a');
+    const d = new Date();
+    const ymd = d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2);
+    link.download = '거래명세표_'+ymd+'.jpg';
+    link.href = canvas.toDataURL('image/jpeg', 0.92);
+    link.click();
+  }).catch(e=> alert('이미지 저장 실패: '+e.message));
+});
+
+// JSON 저장 (수정용 데이터)
+$('btnSaveJson').addEventListener('click', ()=>{
+  const data = {
+    app:'거래명세표', savedAt:new Date().toISOString(),
+    gwon:$('iGwon').value, ho:$('iHo').value, date:$('iDate').value, buyer:$('iBuyer').value, memo:$('iMemo').value,
+    taxType:document.querySelector('input[name="taxType"]:checked').value,
+    supplier: suppliers[parseInt($('supplierSelect').value)] || null,
+    items
+  };
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  const ymd = d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2);
+  a.href=url; a.download='거래명세표_'+ymd+'.json'; a.click();
+  URL.revokeObjectURL(url);
+});
+
+// JSON 불러오기
+$('fileLoad').addEventListener('change', e=>{
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    try{
+      const d = JSON.parse(ev.target.result);
+      $('iGwon').value=d.gwon||''; $('iHo').value=d.ho||''; $('iDate').value=d.date||''; $('iBuyer').value=d.buyer||''; $('iMemo').value=d.memo||'';
+      if(d.taxType){ const r=document.querySelector('input[name="taxType"][value="'+d.taxType+'"]'); if(r) r.checked=true; }
+      items = d.items || [];
+      // 불러온 공급자가 목록에 없으면 추가
+      if(d.supplier && d.supplier.name){
+        let idx = suppliers.findIndex(s=>s.name===d.supplier.name && s.regno===d.supplier.regno);
+        if(idx<0){ suppliers.push(d.supplier); saveSuppliers(); renderSupplierSelect(); idx=suppliers.length-1; }
+        $('supplierSelect').value = idx;
+      }
+      renderItems(); save(); renderPrint();
+      alert('✅ 불러오기 완료.');
+    }catch(err){ alert('❌ 파일 읽기 실패: '+err.message); }
+  };
+  reader.readAsText(file); e.target.value='';
+});
+
 // === 초기화 ===
 loadSuppliers();
 renderSupplierSelect();
@@ -486,6 +548,7 @@ renderItems();
 renderPrint();
 </script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="/common.js?v=3"></script>
 </body>
 </html>
