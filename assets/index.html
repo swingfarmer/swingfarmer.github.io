@@ -954,20 +954,16 @@ if(location.hash === '#admin' || location.hash === '#관리자' || _isStandalone
   gid('btnAdminLogin').style.display = 'inline-block';
 }
 gid('btnAdminLogin').addEventListener('click', async ()=>{
+  // 팝업 먼저 시도 (PWA에서도 대체로 작동). 실패하면 리디렉션 폴백.
   try{
-    if(_isStandalone){
-      // 설치된 앱: 리디렉션 (팝업 막힘)
-      await signInWithRedirect(auth, provider);
-    } else {
-      // 브라우저: 팝업
-      await signInWithPopup(auth, provider);
-    }
+    await signInWithPopup(auth, provider);
   }catch(e){
-    // 팝업 차단 등으로 실패하면 리디렉션 폴백
-    if(e && (e.code==='auth/popup-blocked' || e.code==='auth/cancelled-popup-request' || e.code==='auth/operation-not-supported-in-this-environment')){
-      try{ await signInWithRedirect(auth, provider); }catch(e2){ alert('로그인 실패: '+e2.message); }
+    const code = e && e.code;
+    if(code==='auth/popup-blocked' || code==='auth/cancelled-popup-request' || code==='auth/popup-closed-by-user' || code==='auth/operation-not-supported-in-this-environment'){
+      try{ await signInWithRedirect(auth, provider); }
+      catch(e2){ alert('로그인 실패: '+e2.message); }
     } else {
-      alert('로그인 실패: '+e.message);
+      alert('로그인 실패: '+(e.message||code));
     }
   }
 });
