@@ -944,20 +944,39 @@ async function saveSlots(slots){
   existing[CALC_KEY] = { slots: slots, updatedAt: new Date().toISOString() };
   await setDoc(ref, existing, {merge:true});
 }
+function slotItemHtml(s, realIdx){
+  const t=s.savedAt?new Date(s.savedAt).toLocaleString('ko-KR'):'';
+  const net = s.net!==undefined ? s.net : null;
+  const netTxt = net!==null ? ' · 순자산 '+(Math.abs(net)>=1e8?(net/1e8).toFixed(2)+'억':Math.round(net/1e4)+'만') : '';
+  const autoTxt = s.auto ? ' <span style="background:#dbeafe;color:#1e40af;font-size:9px;padding:1px 5px;border-radius:4px">자동</span>' : '';
+  return '<div style="display:flex;align-items:center;gap:6px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px">'+
+    '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.name||'(이름없음)')+autoTxt+'</div>'+
+    '<div style="font-size:11px;color:#999">'+t+netTxt+'</div></div>'+
+    '<button onclick="window._slotRename('+realIdx+')" title="이름 수정" style="background:#e5e7eb;color:#444;border:none;padding:6px 9px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">✏️</button>'+
+    '<button onclick="window._slotLoad('+realIdx+')" style="background:#0284c7;color:white;border:none;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button>'+
+    '<button onclick="window._slotDelete('+realIdx+')" style="background:#dc2626;color:white;border:none;padding:6px 9px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">삭제</button></div>';
+}
 function renderSlots(slots){
   const box=gid('slotList');
   if(!slots || slots.length===0){ box.innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 스냅샷이 없어요.<br>위에서 이름을 정해 저장해보세요.</div>'; return; }
-  box.innerHTML=slots.map((s,i)=>{
-    const t=s.savedAt?new Date(s.savedAt).toLocaleString('ko-KR'):'';
-    const net = s.net!==undefined ? s.net : null;
-    const netTxt = net!==null ? ' · 순자산 '+(Math.abs(net)>=1e8?(net/1e8).toFixed(2)+'억':Math.round(net/1e4)+'만') : '';
-    const autoTxt = s.auto ? ' <span style="background:#dbeafe;color:#1e40af;font-size:9px;padding:1px 5px;border-radius:4px">자동</span>' : '';
-    return '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px">'+
-      '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.name||'(이름없음)')+autoTxt+'</div>'+
-      '<div style="font-size:11px;color:#999">'+t+netTxt+'</div></div>'+
-      '<button onclick="window._slotLoad('+i+')" style="background:#0284c7;color:white;border:none;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button>'+
-      '<button onclick="window._slotDelete('+i+')" style="background:#dc2626;color:white;border:none;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">삭제</button></div>';
-  }).join('');
+  const dateRe = /^\d{4}-\d{2}/;
+  // 원본 인덱스 보존하며 분리
+  const dated = [], other = [];
+  slots.forEach((s,i)=>{ (dateRe.test(s.name||'') ? dated : other).push({s, i}); });
+  // 월별: 날짜순(내림차순=최신 먼저)
+  dated.sort((a,b)=> (a.s.name<b.s.name?1:-1));
+  // 기타: 저장순(최신 먼저)
+  other.sort((a,b)=> (new Date(b.s.savedAt||0)) - (new Date(a.s.savedAt||0)));
+  let html = '';
+  if(dated.length){
+    html += '<div style="font-size:11.5px;font-weight:700;color:#0369a1;margin:2px 0 6px">📅 월별 기록 (최신순)</div>';
+    html += dated.map(x=>slotItemHtml(x.s, x.i)).join('');
+  }
+  if(other.length){
+    html += '<div style="font-size:11.5px;font-weight:700;color:#888;margin:'+(dated.length?'14px':'2px')+' 0 6px">📝 기타 (저장순)</div>';
+    html += other.map(x=>slotItemHtml(x.s, x.i)).join('');
+  }
+  box.innerHTML = html;
 }
 let _slotsCache=[];
 async function refreshSlots(){ gid('slotList').innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>'; _slotsCache=await loadSlots(); renderSlots(_slotsCache); if(window.assetSetSnapshots) window.assetSetSnapshots(_slotsCache); }
@@ -997,7 +1016,23 @@ window._slotLoad=function(i){
 window._slotDelete=async function(i){
   const s=_slotsCache[i]; if(!s) return;
   if(!confirm('"'+s.name+'"을(를) 삭제할까요?')) return;
-  try{ _slotsCache.splice(i,1); await saveSlots(_slotsCache); renderSlots(_slotsCache); }catch(e){ alert('삭제 실패: '+e.message); }
+  try{ _slotsCache.splice(i,1); await saveSlots(_slotsCache); renderSlots(_slotsCache); if(window.assetSetSnapshots) window.assetSetSnapshots(_slotsCache); }catch(e){ alert('삭제 실패: '+e.message); }
+};
+window._slotRename=async function(i){
+  const s=_slotsCache[i]; if(!s) return;
+  const newName = prompt('스냅샷 이름을 수정하세요.\n(월별 추이에 넣으려면 "2026-06" 형식으로)', s.name||'');
+  if(newName===null) return;
+  const trimmed = newName.trim();
+  if(!trimmed){ alert('이름을 비울 수 없어요.'); return; }
+  if(trimmed===s.name) return;
+  // 같은 이름 중복 체크
+  if(_slotsCache.some((x,idx)=>idx!==i && x.name===trimmed)){ alert('같은 이름이 이미 있어요.'); return; }
+  try{
+    _slotsCache[i].name = trimmed;
+    await saveSlots(_slotsCache);
+    renderSlots(_slotsCache);
+    if(window.assetSetSnapshots) window.assetSetSnapshots(_slotsCache);
+  }catch(e){ alert('수정 실패: '+e.message); }
 };
 gid('btnCloudLogout').addEventListener('click', async ()=>{
   if(confirm('로그아웃 할까요?')){ try{ await signOut(auth); alert('로그아웃 됐어요.'); }catch(e){ alert('로그아웃 실패: '+e.message); } }
