@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>자산관리 — 내 순자산 대시보드 | 스윙파머</title>
 <meta name="description" content="현금·투자·부동산·연금·부채를 기록하고 순자산을 한눈에. 자산 구성·위험분석·평균 비교 대시보드.">
+<link rel="manifest" href="/assets/manifest.json">
+<meta name="theme-color" content="#1F4E78">
+<link rel="icon" type="image/png" href="/assets/icon-192.png">
+<link rel="apple-touch-icon" href="/assets/icon-192.png">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -171,10 +175,18 @@
     💾 입력값은 <b>이 브라우저(localStorage)에만</b> 저장됩니다. 서버로 전송되지 않고 광고도 없습니다. 다른 기기와 공유되지 않으니, 기기를 바꾸면 다시 입력하거나 JSON으로 내보내 옮기세요.
   </div>
 
-  <div id="backupAlert" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#92400e;margin-bottom:14px;line-height:1.6">
-    ⚠️ <b>백업한 지 한 달이 넘었어요.</b> 브라우저 데이터가 지워지면 입력이 사라질 수 있어요. "내보내기(JSON)"로 파일을 받아두면 안전합니다.
-    <button onclick="document.getElementById('btnSaveJson').click()" style="background:#f59e0b;color:white;border:none;border-radius:5px;padding:4px 10px;font-size:11.5px;font-weight:600;cursor:pointer;margin-left:6px">지금 백업</button>
-    <button onclick="hideBackupAlert(true)" style="background:none;border:none;color:#92400e;font-size:11.5px;cursor:pointer;margin-left:4px">나중에</button>
+  <!-- 카톡 등 인앱 브라우저 안내 -->
+  <div id="inappBar" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 14px;font-size:12.5px;color:#991b1b;margin-bottom:14px;line-height:1.7">
+    ⚠️ <b>카톡/네이버 등 인앱 브라우저</b>에서는 앱 설치가 안 돼요.<br>
+    <button onclick="window._openExternal()" style="background:#dc2626;color:white;border:none;border-radius:5px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;margin-top:6px">크롬으로 열기</button>
+    <button onclick="window._copyUrl()" style="background:#fff;color:#991b1b;border:1px solid #fca5a5;border-radius:5px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;margin-top:6px">주소 복사</button>
+  </div>
+
+  <!-- 앱 설치 안내 -->
+  <div id="installBox" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:14px">
+    <div style="font-size:13.5px;font-weight:700;color:#1e40af;margin-bottom:6px">📲 앱으로 설치하기</div>
+    <div id="installGuide" style="font-size:12.5px;color:#1e40af;line-height:1.7"></div>
+    <button id="btnInstall" style="display:none;background:#1F4E78;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px">홈 화면에 추가</button>
   </div>
 
   <!-- 관리자 클라우드 (로그인 시에만 노출) -->
@@ -718,8 +730,6 @@ $('btnSaveJson').addEventListener('click', ()=>{
   const d = new Date();
   a.href = url; a.download = `자산관리_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
   a.click(); URL.revokeObjectURL(url);
-  try{ localStorage.setItem('sf_assets_lastbackup', Date.now()); }catch(e){}
-  hideBackupAlert();
 });
 $('fileLoad').addEventListener('change', e=>{
   const file = e.target.files[0]; if(!file) return;
@@ -819,31 +829,59 @@ function drawTrend(){
   }
 }
 
-// === 백업 알림 ===
-function hideBackupAlert(snooze){
-  $('backupAlert').style.display = 'none';
-  if(snooze){ try{ localStorage.setItem('sf_assets_snooze', Date.now()); }catch(e){} }
-}
-function checkBackupAlert(){
-  const hasData = state.assets.some(a=>a.amount>0) || state.debts.some(d=>d.amount>0);
-  if(!hasData) return;
-  const MONTH = 30*24*60*60*1000;
-  let last = 0, snooze = 0;
-  try{ last = parseInt(localStorage.getItem('sf_assets_lastbackup'))||0; snooze = parseInt(localStorage.getItem('sf_assets_snooze'))||0; }catch(e){}
-  const now = Date.now();
-  // 마지막 백업 한 달 초과 + 스누즈 일주일 지남
-  if((now-last > MONTH) && (now-snooze > 7*24*60*60*1000)){
-    $('backupAlert').style.display = 'block';
-  }
-}
-
 // === 초기화 ===
 load();
 // 첫 방문이면 빈 항목 하나씩
 if(state.assets.length===0) state.assets.push({cat:'현금성',name:'',amount:0});
 if(state.debts.length===0) state.debts.push({cat:'주택담보',name:'',amount:0});
 renderAll();
-checkBackupAlert();
+
+// === PWA 설치 ===
+(function(){
+  // 서비스워커 등록
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('/assets/sw.js', {scope:'/assets/'}).catch(()=>{});
+  }
+  const ua = navigator.userAgent.toLowerCase();
+  const isInApp = /kakaotalk|naver|line|instagram|fban|fbav|band|everytimeapp/.test(ua);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  const isIOS = /iphone|ipad|ipod/.test(ua);
+  const isAndroid = /android/.test(ua);
+
+  if(isStandalone) return; // 이미 앱으로 실행 중
+
+  if(isInApp){
+    $('inappBar').style.display = 'block';
+    window._openExternal = function(){
+      const url = 'https://swingfarmer.github.io/assets/';
+      if(/android/.test(ua)){
+        location.href = 'intent://swingfarmer.github.io/assets/#Intent;scheme=https;package=com.android.chrome;end';
+      } else { window._copyUrl(); alert('Safari 등 기본 브라우저에서 주소를 붙여넣어 여세요.'); }
+    };
+    window._copyUrl = function(){
+      navigator.clipboard.writeText('https://swingfarmer.github.io/assets/').then(()=>alert('주소가 복사됐어요. 크롬/사파리에 붙여넣으세요.'));
+    };
+    return;
+  }
+
+  // 설치 안내
+  $('installBox').style.display = 'block';
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', e=>{
+    e.preventDefault(); deferredPrompt = e;
+    $('btnInstall').style.display = 'inline-block';
+  });
+  $('btnInstall').addEventListener('click', async ()=>{
+    if(deferredPrompt){ deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; $('btnInstall').style.display='none'; }
+  });
+  if(isIOS){
+    $('installGuide').innerHTML = '<b>아이폰:</b> 사파리 하단 <b>공유 버튼(⬆️)</b> → <b>"홈 화면에 추가"</b>를 누르세요.';
+  } else if(isAndroid){
+    $('installGuide').innerHTML = '아래 <b>"홈 화면에 추가"</b> 버튼을 누르거나, 크롬 메뉴(⋮) → <b>"앱 설치"</b>를 선택하세요.';
+  } else {
+    $('installGuide').innerHTML = '아래 버튼을 누르거나, 크롬 주소창 오른쪽 <b>설치 아이콘(⊕)</b>을 클릭하세요.';
+  }
+})();
 </script>
 <!-- 클라우드 스냅샷 모달 -->
 <div id="slotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:16px">
@@ -861,6 +899,15 @@ checkBackupAlert();
       </div>
     </div>
     <div style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px">📋 저장된 스냅샷</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <button class="tab active" id="slotTabMonth" onclick="window._slotSwitchTab('month')" style="font-size:12.5px;padding:7px 13px">📅 월별 <span id="cntMonth">0</span></button>
+      <button class="tab" id="slotTabOther" onclick="window._slotSwitchTab('other')" style="font-size:12.5px;padding:7px 13px">📝 기타 <span id="cntOther">0</span></button>
+    </div>
+    <div id="slotSelectBar" style="display:none;align-items:center;gap:8px;margin-bottom:8px;font-size:12px">
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:#555"><input type="checkbox" id="slotSelectAll" onclick="window._slotToggleAll(this.checked)"> 전체선택</label>
+      <span id="slotSelCount" style="color:#888"></span>
+      <button id="slotDelSelected" onclick="window._slotDeleteSelected()" style="margin-left:auto;background:#dc2626;color:white;border:none;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;display:none">선택 삭제</button>
+    </div>
     <div id="slotList" style="display:flex;flex-direction:column;gap:8px">
       <div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>
     </div>
@@ -950,34 +997,69 @@ function slotItemHtml(s, realIdx){
   const netTxt = net!==null ? ' · 순자산 '+(Math.abs(net)>=1e8?(net/1e8).toFixed(2)+'억':Math.round(net/1e4)+'만') : '';
   const autoTxt = s.auto ? ' <span style="background:#dbeafe;color:#1e40af;font-size:9px;padding:1px 5px;border-radius:4px">자동</span>' : '';
   return '<div style="display:flex;align-items:center;gap:6px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px">'+
+    '<input type="checkbox" class="slotChk" data-idx="'+realIdx+'" onclick="window._slotChkChange()" style="width:16px;height:16px;flex:0 0 auto">'+
     '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.name||'(이름없음)')+autoTxt+'</div>'+
     '<div style="font-size:11px;color:#999">'+t+netTxt+'</div></div>'+
     '<button onclick="window._slotRename('+realIdx+')" title="이름 수정" style="background:#e5e7eb;color:#444;border:none;padding:6px 9px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">✏️</button>'+
-    '<button onclick="window._slotLoad('+realIdx+')" style="background:#0284c7;color:white;border:none;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button>'+
-    '<button onclick="window._slotDelete('+realIdx+')" style="background:#dc2626;color:white;border:none;padding:6px 9px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">삭제</button></div>';
+    '<button onclick="window._slotLoad('+realIdx+')" style="background:#0284c7;color:white;border:none;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button></div>';
 }
+let _slotTab = 'month';
+window._slotSwitchTab = function(tab){
+  _slotTab = tab;
+  gid('slotTabMonth').classList.toggle('active', tab==='month');
+  gid('slotTabOther').classList.toggle('active', tab==='other');
+  renderSlots(_slotsCache);
+};
 function renderSlots(slots){
   const box=gid('slotList');
-  if(!slots || slots.length===0){ box.innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 스냅샷이 없어요.<br>위에서 이름을 정해 저장해보세요.</div>'; return; }
+  if(!slots || slots.length===0){
+    box.innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 스냅샷이 없어요.<br>위에서 이름을 정해 저장해보세요.</div>';
+    gid('cntMonth').textContent='0'; gid('cntOther').textContent='0';
+    gid('slotSelectBar').style.display='none';
+    return;
+  }
   const dateRe = /^\d{4}-\d{2}/;
-  // 원본 인덱스 보존하며 분리
   const dated = [], other = [];
   slots.forEach((s,i)=>{ (dateRe.test(s.name||'') ? dated : other).push({s, i}); });
-  // 월별: 날짜순(내림차순=최신 먼저)
-  dated.sort((a,b)=> (a.s.name<b.s.name?1:-1));
-  // 기타: 저장순(최신 먼저)
-  other.sort((a,b)=> (new Date(b.s.savedAt||0)) - (new Date(a.s.savedAt||0)));
-  let html = '';
-  if(dated.length){
-    html += '<div style="font-size:11.5px;font-weight:700;color:#0369a1;margin:2px 0 6px">📅 월별 기록 (최신순)</div>';
-    html += dated.map(x=>slotItemHtml(x.s, x.i)).join('');
+  dated.sort((a,b)=> (a.s.name<b.s.name?1:-1));          // 월별 최신 먼저
+  other.sort((a,b)=> (new Date(b.s.savedAt||0)) - (new Date(a.s.savedAt||0))); // 기타 저장순
+  gid('cntMonth').textContent = dated.length;
+  gid('cntOther').textContent = other.length;
+
+  const list = _slotTab==='month' ? dated : other;
+  if(list.length===0){
+    box.innerHTML = '<div style="color:#aaa;font-size:13px;text-align:center;padding:20px">'+(_slotTab==='month'?'날짜(2026-06) 이름으로 저장한 스냅샷이 여기 표시됩니다.':'기타 이름의 스냅샷이 여기 표시됩니다.')+'</div>';
+    gid('slotSelectBar').style.display='none';
+    return;
   }
-  if(other.length){
-    html += '<div style="font-size:11.5px;font-weight:700;color:#888;margin:'+(dated.length?'14px':'2px')+' 0 6px">📝 기타 (저장순)</div>';
-    html += other.map(x=>slotItemHtml(x.s, x.i)).join('');
-  }
-  box.innerHTML = html;
+  box.innerHTML = list.map(x=>slotItemHtml(x.s, x.i)).join('');
+  gid('slotSelectBar').style.display='flex';
+  gid('slotSelectAll').checked = false;
+  window._slotChkChange();
 }
+window._slotChkChange = function(){
+  const chks = Array.from(document.querySelectorAll('.slotChk'));
+  const sel = chks.filter(c=>c.checked);
+  gid('slotSelCount').textContent = sel.length>0 ? sel.length+'개 선택' : '';
+  gid('slotDelSelected').style.display = sel.length>0 ? 'inline-block' : 'none';
+  gid('slotSelectAll').checked = chks.length>0 && sel.length===chks.length;
+};
+window._slotToggleAll = function(checked){
+  document.querySelectorAll('.slotChk').forEach(c=>c.checked=checked);
+  window._slotChkChange();
+};
+window._slotDeleteSelected = async function(){
+  const idxs = Array.from(document.querySelectorAll('.slotChk:checked')).map(c=>parseInt(c.dataset.idx));
+  if(idxs.length===0) return;
+  if(!confirm(idxs.length+'개 스냅샷을 삭제할까요? 되돌릴 수 없어요.')) return;
+  try{
+    // 큰 인덱스부터 제거(인덱스 밀림 방지)
+    idxs.sort((a,b)=>b-a).forEach(i=>_slotsCache.splice(i,1));
+    await saveSlots(_slotsCache);
+    renderSlots(_slotsCache);
+    if(window.assetSetSnapshots) window.assetSetSnapshots(_slotsCache);
+  }catch(e){ alert('삭제 실패: '+e.message); }
+};
 let _slotsCache=[];
 async function refreshSlots(){ gid('slotList').innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>'; _slotsCache=await loadSlots(); renderSlots(_slotsCache); if(window.assetSetSnapshots) window.assetSetSnapshots(_slotsCache); }
 
