@@ -80,10 +80,10 @@
 
   /* 모바일: 2줄 — 위[분류·금액·삭제] / 아래[이름] */
   @media (max-width: 560px) {
-    .item-row { flex-wrap: wrap; gap: 6px; }
-    .item-row select { flex: 0 0 88px; order: 1; }
-    .item-row .iamt { flex: 1 1 auto; order: 2; }
-    .item-row .del { order: 3; }
+    .item-row { flex-wrap: wrap; gap: 6px; align-items: center; }
+    .item-row select { flex: 0 0 84px; order: 1; }
+    .item-row .iamt { flex: 1 1 0; min-width: 0; order: 2; }
+    .item-row .del { flex: 0 0 30px; order: 3; }
     .item-row .iname { flex: 1 1 100%; order: 4; min-width: 0; }
     .item-kor { padding-left: 0; }
   }
@@ -201,6 +201,7 @@
     <button id="btnCloudLogout" class="btn btn-gray" type="button" style="margin-left:auto">로그아웃</button>
   </div>
   <button id="btnAdminLogin" class="btn" type="button" style="display:none;background:#fff;color:#444;border:1px solid #ddd;margin-bottom:14px">🔑 관리자 로그인</button>
+  <div id="uidInfo" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:13px;color:#92400e;margin-bottom:14px;line-height:1.7"></div>
 
   <div class="tabs">
     <button class="tab active" id="tabInput" onclick="switchTab('input')">✏️ 입력</button>
@@ -940,6 +941,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ prompt: 'select_account' });
 const gid = id => document.getElementById(id);
 let currentUser = null;
 
@@ -948,7 +950,7 @@ const _isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
 // 리디렉션 후 돌아왔을 때 결과 처리
 getRedirectResult(auth).catch(e=>{ if(e && e.code && e.code!=='auth/no-auth-event') console.log('redirect:', e.message); });
 
-if(location.hash === '#admin' || location.hash === '#관리자'){
+if(location.hash === '#admin' || location.hash === '#관리자' || _isStandalone){
   gid('btnAdminLogin').style.display = 'inline-block';
 }
 gid('btnAdminLogin').addEventListener('click', async ()=>{
@@ -980,7 +982,6 @@ onAuthStateChanged(auth, user=>{
     loadSlots().then(async snaps=>{
       _slotsCache = snaps;
       if(window.assetSetSnapshots) window.assetSetSnapshots(snaps);
-      // 이번 달(YYYY-MM) 스냅샷이 없고, 입력된 자산이 있으면 자동 저장
       const now = new Date();
       const ym = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
       const hasThisMonth = snaps.some(s=>s.name===ym);
@@ -994,15 +995,25 @@ onAuthStateChanged(auth, user=>{
           _slotsCache.push(entry);
           await saveSlots(_slotsCache);
           if(window.assetSetSnapshots) window.assetSetSnapshots(_slotsCache);
-          console.log('이번 달('+ym+') 스냅샷 자동 저장됨');
         }catch(e){}
       }
     });
+  } else if(user && !isAdmin){
+    // 로그인은 됐지만 관리자 UID가 아님 → UID를 보여줘서 확인 가능하게
+    gid('cloudArea').style.display = 'none';
+    gid('btnAdminLogin').style.display = 'none';
+    const box = gid('uidInfo');
+    if(box){
+      box.style.display = 'block';
+      box.innerHTML = '로그인됨: <b>'+(user.email||user.displayName||'')+'</b><br>이 계정의 UID:<br><code style="font-size:11px;word-break:break-all;background:#fff;padding:2px 4px;border-radius:3px">'+user.uid+'</code><br>'+
+        '<span style="font-size:11.5px;color:#92400e">관리자 계정이 아니에요. 이 UID가 본인 것이면 알려주세요(ADMIN_UID 교체). 아니면 <button onclick="window._adminSignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer">로그아웃</button> 후 다른 계정으로.</span>';
+    }
   } else {
     gid('cloudArea').style.display = 'none';
-    if(user && !isAdmin){ signOut(auth); }
+    const box = gid('uidInfo'); if(box) box.style.display='none';
   }
 });
+window._adminSignout = ()=> signOut(auth);
 
 const docRef = () => doc(db, 'calc_data', ADMIN_UID);
 async function loadSlots(){
