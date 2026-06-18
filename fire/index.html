@@ -182,6 +182,7 @@
     font-weight: 600;
     margin-right: 4px;
   }
+  .won-kor { font-size: 12px; color: #1F4E78; font-weight: 600; margin-top: 3px; min-height: 15px; }
 </style>
 </head>
 <body>
@@ -251,15 +252,18 @@
     <div class="section-label">② 현재 자산 & 은퇴 전 현금흐름<button class="info-btn" onclick="sfShowInfo('cashflow')" title="설명 보기">i</button></div>
     <div class="input-row">
       <label>현재 자산 (원) <span class="stat-sub">(40대 평균 4.5억)</span></label>
-      <input type="number" id="currentAssets" value="450000000">
+      <input type="number" id="currentAssets" value="450000000" inputmode="numeric">
+      <div class="won-kor" id="currentAssets_kor"></div>
     </div>
     <div class="input-row">
-      <label>연 수입액 (원) <span class="stat-sub">(실수령 평균 5,040만)</span> <span class="stat-sub" id="incomeConv" style="color:#2563eb"></span></label>
-      <input type="number" id="annualIncome" value="50400000">
+      <label>연 수입액 (원) <span class="stat-sub">(실수령 평균 5,040만)</span></label>
+      <input type="number" id="annualIncome" value="50400000" inputmode="numeric">
+      <div class="won-kor" id="annualIncome_kor"></div>
     </div>
     <div class="input-row">
-      <label>연 지출액 (원) <span class="stat-sub">(평균 3,480만)</span> <span class="stat-sub" id="spendingConv" style="color:#2563eb"></span></label>
-      <input type="number" id="annualSpending" value="34800000">
+      <label>연 지출액 (원) <span class="stat-sub">(평균 3,480만)</span></label>
+      <input type="number" id="annualSpending" value="34800000" inputmode="numeric">
+      <div class="won-kor" id="annualSpending_kor"></div>
     </div>
     <div class="computed">
       자동 계산: <b>연 저축액 = <span id="autoSaving">15,600,000</span> 원</b>
@@ -272,18 +276,21 @@
       <input type="number" id="pensionStartAge" value="65">
     </div>
     <div class="input-row">
-      <label>월 연금 수령액 (원) <span class="stat-sub">(20년+ 가입자 평균 110만)</span> <span class="stat-sub" id="pensionConv" style="color:#2563eb"></span></label>
-      <input type="number" id="monthlyPension" value="1100000">
+      <label>월 연금 수령액 (원) <span class="stat-sub">(평균 110만)</span></label>
+      <input type="number" id="monthlyPension" value="1100000" inputmode="numeric">
+      <div class="won-kor" id="monthlyPension_kor"></div>
     </div>
 
     <div class="section-label">④ 은퇴 후 지출 & 상속 목표<button class="info-btn" onclick="sfShowInfo('goal')" title="설명 보기">i</button></div>
     <div class="input-row">
-      <label>월 소비액 (원, 오늘 기준) <span class="stat-sub">(평균 290만)</span> <span class="stat-sub" id="spendConv" style="color:#2563eb"></span></label>
-      <input type="number" id="monthlySpending" value="2900000">
+      <label>월 소비액 (원, 오늘 기준) <span class="stat-sub">(평균 290만)</span></label>
+      <input type="number" id="monthlySpending" value="2900000" inputmode="numeric">
+      <div class="won-kor" id="monthlySpending_kor"></div>
     </div>
     <div class="input-row">
       <label>사망 시 남길 금액 (원, 오늘 기준) <span class="stat-sub">(0=다 쓰고 감)</span></label>
-      <input type="number" id="legacy" value="0">
+      <input type="number" id="legacy" value="0" inputmode="numeric">
+      <div class="won-kor" id="legacy_kor"></div>
     </div>
 
     <div class="section-label">⑤ 변동률 (연 %) <span style="text-transform:none;font-weight:500;color:#888">— 2000년 이후 장기 평균</span><button class="info-btn" onclick="sfShowInfo('rates')" title="설명 보기">i</button></div>
@@ -326,6 +333,15 @@
     • 입력한 어떤 정보도 <b>서버로 전송되지 않습니다.</b> 광고도 없습니다.
   </div>
 </div>
+
+  <!-- 관리자 클라우드 (로그인 시에만 노출) -->
+  <div id="cloudArea" style="display:none;align-items:center;gap:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin-bottom:14px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:#0369a1">☁️ 관리자</span>
+    <button id="btnCloudOpen" type="button" style="background:#0ea5e9;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">클라우드 시나리오</button>
+    <span id="cloudWho" style="font-size:11px;color:#0369a1"></span>
+    <button id="btnCloudLogout" type="button" style="margin-left:auto;background:#9ca3af;color:white;border:none;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">로그아웃</button>
+  </div>
+  <button id="btnAdminLogin" type="button" style="display:none;background:#fff;color:#444;border:1px solid #ddd;padding:8px 16px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer;margin-bottom:14px">🔑 관리자 로그인</button>
 
 <div id="capture-area">
 <div class="hero">
@@ -461,6 +477,27 @@
   </ul>
 </div>
 
+<!-- 클라우드 슬롯 모달 -->
+<div id="slotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:16px;max-width:460px;width:100%;max-height:90vh;overflow:auto;padding:20px">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <h3 style="font-size:16px;color:#1F4E78;margin:0">☁️ 클라우드 시나리오</h3>
+      <button id="slotClose" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">💾 현재 입력값을 저장</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="slotName" placeholder="시나리오 이름 (예: 55세 파이어)" maxlength="30" style="flex:1;padding:9px;font-size:13px;border:1px solid #ccc;border-radius:6px">
+        <button id="slotSaveBtn" style="background:#0ea5e9;color:white;border:none;padding:9px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">저장</button>
+      </div>
+    </div>
+    <div style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px">📋 저장된 시나리오</div>
+    <div id="slotList" style="display:flex;flex-direction:column;gap:8px">
+      <div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>
+    </div>
+  </div>
+</div>
+
 <!-- 공유 이미지 모달 -->
 <div id="shareModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:16px">
   <div style="background:white;border-radius:16px;max-width:420px;width:100%;max-height:90vh;overflow:auto;padding:20px">
@@ -509,6 +546,29 @@ const fmtShort = n => {
   return Math.round(n).toLocaleString('ko-KR');
 };
 
+// 숫자 → 한글 금액
+function wonToKorean(n) {
+  n = Math.round(Math.abs(n));
+  if (n === 0) return '';
+  var eok = Math.floor(n / 100000000);
+  var man = Math.floor((n % 100000000) / 10000);
+  var won = n % 10000;
+  var parts = [];
+  if (eok > 0) parts.push(eok.toLocaleString('ko-KR') + '억');
+  if (man > 0) parts.push(man.toLocaleString('ko-KR') + '만');
+  if (won > 0) parts.push(won.toLocaleString('ko-KR'));
+  return parts.join(' ') + '원';
+}
+function updateKor(id) {
+  var input = document.getElementById(id);
+  var box = document.getElementById(id + '_kor');
+  if (!input || !box) return;
+  var v = parseFloat(input.value) || 0;
+  box.textContent = v > 0 ? wonToKorean(v) : '';
+}
+var KOR_FIELDS = ['currentAssets', 'annualIncome', 'annualSpending', 'monthlyPension', 'monthlySpending', 'legacy'];
+function updateAllKor() { KOR_FIELDS.forEach(updateKor); }
+
 document.getElementById('startYear').value = new Date().getFullYear();
 
 function calculate() {
@@ -534,10 +594,7 @@ function calculate() {
     ? (autoSaving / annualIncome * 100).toFixed(1)
     : '0';
 
-  document.getElementById('incomeConv').textContent = '· 월 환산 ≒ ' + fmtShort(annualIncome / 12) + '원';
-  document.getElementById('spendingConv').textContent = '· 월 환산 ≒ ' + fmtShort(annualSpending / 12) + '원';
-  document.getElementById('pensionConv').textContent = '· 연 환산 ≒ ' + fmtShort(monthlyPension * 12) + '원';
-  document.getElementById('spendConv').textContent = '· 연 환산 ≒ ' + fmtShort(monthlySpending * 12) + '원';
+  updateAllKor();
 
   document.getElementById('heroRetireAge').textContent = retireAge;
 
@@ -1055,6 +1112,113 @@ calculate();
     });
   });
 })();
+</script>
+
+<script type="module">
+// === 관리자 클라우드 저장 (Firebase) ===
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
+  authDomain: "swingfarmer-board01.firebaseapp.com",
+  projectId: "swingfarmer-board01",
+  storageBucket: "swingfarmer-board01.firebasestorage.app",
+  messagingSenderId: "312575044644",
+  appId: "1:312575044644:web:81d754eb1d90f25454fcb1"
+};
+const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1";
+const CALC_KEY = "fire";
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+const $ = id => document.getElementById(id);
+let currentUser = null;
+
+if(location.hash === '#admin' || location.hash === '#관리자'){
+  $('btnAdminLogin').style.display = 'inline-block';
+}
+$('btnAdminLogin').addEventListener('click', async ()=>{
+  try{ await signInWithPopup(auth, provider); }catch(e){ alert('로그인 실패: '+e.message); }
+});
+onAuthStateChanged(auth, user=>{
+  currentUser = user;
+  const isAdmin = user && user.uid === ADMIN_UID;
+  if(isAdmin){
+    $('cloudArea').style.display = 'inline-flex';
+    $('btnAdminLogin').style.display = 'none';
+    $('cloudWho').textContent = '☁️ ' + (user.displayName||user.email||'관리자');
+  } else {
+    $('cloudArea').style.display = 'none';
+    if(user && !isAdmin){ signOut(auth); }
+  }
+});
+
+const INPUT_IDS = ['startYear','currentAge','retireAge','deathAge','monthlySpending','legacy','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth'];
+function collectInputs(){ const data={}; INPUT_IDS.forEach(id=>{ const el=$(id); if(el) data[id]=el.value; }); return data; }
+function applyInputs(data){
+  INPUT_IDS.forEach(id=>{ const el=$(id); if(el && data[id]!==undefined){ el.value=data[id]; } });
+  const first=$('currentAge'); if(first){ first.dispatchEvent(new Event('input',{bubbles:true})); }
+}
+
+const docRef = () => doc(db, 'calc_data', ADMIN_UID);
+async function loadSlots(){
+  try{ const snap=await getDoc(docRef()); if(snap.exists() && snap.data()[CALC_KEY] && Array.isArray(snap.data()[CALC_KEY].slots)) return snap.data()[CALC_KEY].slots; }catch(e){}
+  return [];
+}
+async function saveSlots(slots){
+  const ref=docRef(); let existing={};
+  try{ const snap=await getDoc(ref); if(snap.exists()) existing=snap.data(); }catch(e){}
+  existing[CALC_KEY] = { slots: slots, updatedAt: new Date().toISOString() };
+  await setDoc(ref, existing, {merge:true});
+}
+function renderSlots(slots){
+  const box=$('slotList');
+  if(!slots || slots.length===0){ box.innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 시나리오가 없어요.<br>위에서 이름을 정해 저장해보세요.</div>'; return; }
+  box.innerHTML=slots.map((s,i)=>{
+    const t=s.savedAt?new Date(s.savedAt).toLocaleString('ko-KR'):'';
+    return '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px">'+
+      '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.name||'(이름없음)')+'</div>'+
+      '<div style="font-size:11px;color:#999">'+t+'</div></div>'+
+      '<button onclick="window._slotLoad('+i+')" style="background:#0284c7;color:white;border:none;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button>'+
+      '<button onclick="window._slotDelete('+i+')" style="background:#dc2626;color:white;border:none;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">삭제</button></div>';
+  }).join('');
+}
+let _slotsCache=[];
+async function refreshSlots(){ $('slotList').innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>'; _slotsCache=await loadSlots(); renderSlots(_slotsCache); }
+
+$('btnCloudOpen').addEventListener('click', async ()=>{
+  if(!currentUser || currentUser.uid!==ADMIN_UID){ alert('관리자 로그인이 필요합니다.'); return; }
+  $('slotName').value=''; $('slotModal').style.display='flex'; await refreshSlots();
+});
+$('slotClose').addEventListener('click', ()=> $('slotModal').style.display='none');
+$('slotModal').addEventListener('click', e=>{ if(e.target===$('slotModal')) $('slotModal').style.display='none'; });
+$('slotSaveBtn').addEventListener('click', async ()=>{
+  const name=$('slotName').value.trim();
+  if(!name){ alert('시나리오 이름을 입력하세요.'); return; }
+  const idx=_slotsCache.findIndex(s=>s.name===name);
+  if(idx>=0 && !confirm('"'+name+'" 시나리오가 이미 있어요. 덮어쓸까요?')) return;
+  $('slotSaveBtn').disabled=true; $('slotSaveBtn').textContent='저장 중...';
+  try{
+    const entry={ name, data: collectInputs(), savedAt: new Date().toISOString() };
+    if(idx>=0) _slotsCache[idx]=entry; else _slotsCache.push(entry);
+    await saveSlots(_slotsCache); renderSlots(_slotsCache); $('slotName').value='';
+    alert('✅ "'+name+'" 저장 완료.');
+  }catch(e){ alert('저장 실패: '+e.message); }
+  $('slotSaveBtn').disabled=false; $('slotSaveBtn').textContent='저장';
+});
+window._slotLoad=function(i){ const s=_slotsCache[i]; if(!s) return; applyInputs(s.data); $('slotModal').style.display='none'; alert('✅ "'+s.name+'" 불러왔어요.'); };
+window._slotDelete=async function(i){
+  const s=_slotsCache[i]; if(!s) return;
+  if(!confirm('"'+s.name+'" 시나리오를 삭제할까요?')) return;
+  try{ _slotsCache.splice(i,1); await saveSlots(_slotsCache); renderSlots(_slotsCache); }catch(e){ alert('삭제 실패: '+e.message); }
+};
+$('btnCloudLogout').addEventListener('click', async ()=>{
+  if(confirm('로그아웃 할까요?')){ try{ await signOut(auth); alert('로그아웃 됐어요.'); }catch(e){ alert('로그아웃 실패: '+e.message); } }
+});
 </script>
 
 <script src="/common.js?v=3"></script>
