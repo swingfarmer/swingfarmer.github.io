@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>자산관리 — 내 순자산 대시보드 | 스윙파머</title>
+<meta name="description" content="현금·투자·부동산·연금·부채를 기록하고 순자산을 한눈에. 자산 구성·위험분석·평균 비교 대시보드.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
+    background: #f5f7fa;
+    color: #333;
+    line-height: 1.5;
+    padding-bottom: 60px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 16px; }
+  header {
+    background: white;
+    border-bottom: 3px solid #1F4E78;
+    padding: 18px 16px;
+  }
+  header .wrap { padding: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  header h1 { font-size: 20px; color: #1F4E78; margin: 0; }
+  header .sub { font-size: 12px; color: #888; }
+  .backlink { margin-left: auto; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .backlink:hover { text-decoration: underline; }
+
+  .notice {
+    background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px;
+    padding: 10px 14px; font-size: 12.5px; color: #166534; margin-bottom: 16px; line-height: 1.7;
+  }
+
+  .panel {
+    background: white; border-radius: 12px; padding: 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px;
+  }
+  .panel h2 { font-size: 16px; color: #1F4E78; margin-bottom: 4px; }
+  .panel .desc { font-size: 12.5px; color: #888; margin-bottom: 14px; }
+
+  /* 입력 그룹 */
+  .group { margin-bottom: 18px; }
+  .group-head {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  }
+  .group-title { font-size: 14px; font-weight: 700; }
+  .group-total { margin-left: auto; font-size: 14px; font-weight: 700; }
+  .asset-title { color: #1F4E78; }
+  .debt-title { color: #dc2626; }
+  .spend-title { color: #b45309; }
+
+  .item-row {
+    display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: nowrap;
+  }
+  .item-row select {
+    flex: 0 0 96px; padding: 9px 6px; font-size: 12.5px; border: 1px solid #ccc;
+    border-radius: 6px; background: #fff; color: #444;
+  }
+  .item-row .iname {
+    flex: 1; min-width: 0; padding: 9px; font-size: 13px; border: 1px solid #ccc; border-radius: 6px;
+  }
+  .item-row .iamt {
+    flex: 0 0 120px; padding: 9px; font-size: 13px; border: 1px solid #ccc; border-radius: 6px;
+    background: #FFF2CC; color: #0000FF; font-weight: 600; text-align: right;
+  }
+  .item-row .del {
+    flex: 0 0 auto; background: #fee2e2; color: #dc2626; border: none; width: 30px; height: 34px;
+    border-radius: 6px; cursor: pointer; font-size: 16px; line-height: 1;
+  }
+  .item-kor { font-size: 11px; color: #1F4E78; font-weight: 600; padding-left: 104px; margin-top: -4px; margin-bottom: 6px; min-height: 14px; }
+  .add-btn {
+    background: #eff6ff; color: #1F4E78; border: 1px dashed #93c5fd; border-radius: 8px;
+    padding: 9px; width: 100%; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 2px;
+  }
+  .add-btn:hover { background: #dbeafe; }
+
+  @media (max-width: 560px) {
+    .item-row .iamt { flex: 0 0 96px; }
+    .item-row select { flex: 0 0 76px; }
+    .item-kor { padding-left: 84px; }
+  }
+
+  /* 대시보드 */
+  .net-hero {
+    background: linear-gradient(135deg, #1F4E78, #2d6da3); color: white;
+    border-radius: 14px; padding: 24px; text-align: center; margin-bottom: 16px;
+  }
+  .net-hero .label { font-size: 13px; opacity: .9; margin-bottom: 6px; }
+  .net-hero .value { font-size: 34px; font-weight: 800; letter-spacing: -1px; }
+  .net-hero .value.small { font-size: 26px; }
+  .net-hero .breakdown { font-size: 13px; opacity: .92; margin-top: 8px; }
+  .net-hero .kor { font-size: 13px; opacity: .85; margin-top: 4px; }
+
+  .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 700px) { .dash-grid { grid-template-columns: 1fr; } }
+  .chart-card {
+    background: white; border: 1px solid #eef0f3; border-radius: 12px; padding: 16px;
+  }
+  .chart-card h3 { font-size: 14px; color: #1F4E78; margin-bottom: 12px; }
+  .chart-wrap { position: relative; height: 220px; }
+
+  .legend { margin-top: 10px; }
+  .legend-item {
+    display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 3px 0;
+  }
+  .legend-dot { width: 11px; height: 11px; border-radius: 3px; flex: 0 0 auto; }
+  .legend-name { flex: 1; color: #444; }
+  .legend-val { font-weight: 600; color: #222; }
+  .legend-pct { color: #888; font-size: 11.5px; min-width: 42px; text-align: right; }
+
+  /* 항목 표 */
+  table.detail { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.detail th {
+    text-align: left; padding: 8px; background: #f8fafc; color: #555; font-weight: 600;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  table.detail td { padding: 8px; border-bottom: 1px solid #f0f0f0; }
+  table.detail td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.detail .barcell { width: 90px; }
+  table.detail .minibar { height: 8px; border-radius: 4px; background: #1F4E78; }
+
+  /* 분석 카드 */
+  .analysis-card {
+    border-radius: 12px; padding: 16px; margin-bottom: 12px; font-size: 13px; line-height: 1.7;
+  }
+  .analysis-card .a-title { font-weight: 700; font-size: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .a-good { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+  .a-warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+  .a-neutral { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+  .a-bar-track { background: #e5e7eb; border-radius: 6px; height: 22px; position: relative; margin: 8px 0; overflow: hidden; }
+  .a-bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 8px; color: white; font-size: 11px; font-weight: 600; }
+  .a-marker { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #111; }
+  .a-marker-label { position: absolute; font-size: 10px; color: #111; white-space: nowrap; transform: translateX(-50%); }
+
+  /* 저장 영역 */
+  .save-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+  .btn {
+    border: none; border-radius: 6px; padding: 8px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+  .btn-blue { background: #1F4E78; color: white; }
+  .btn-green { background: #10b981; color: white; }
+  .btn-purple { background: #7c3aed; color: white; }
+  .btn-red { background: #dc2626; color: white; }
+  .btn-gray { background: #9ca3af; color: white; }
+  .btn-sky { background: #0ea5e9; color: white; }
+
+  .empty-hint { color: #aaa; font-size: 13px; text-align: center; padding: 20px; }
+
+  /* 탭 */
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab {
+    padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+    background: #e8eef4; color: #1F4E78; border: none;
+  }
+  .tab.active { background: #1F4E78; color: white; }
+
+  .won-kor { font-size: 12px; color: #1F4E78; font-weight: 600; margin-top: 3px; min-height: 15px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>💰 자산관리</h1>
+    <span class="sub">내 순자산 대시보드</span>
+    <a href="/" class="backlink">← 메인으로</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="notice">
+    💾 입력값은 <b>이 브라우저(localStorage)에만</b> 저장됩니다. 서버로 전송되지 않고 광고도 없습니다. 다른 기기와 공유되지 않으니, 기기를 바꾸면 다시 입력하거나 JSON으로 내보내 옮기세요.
+  </div>
+
+  <!-- 관리자 클라우드 (로그인 시에만 노출) -->
+  <div id="cloudArea" style="display:none;align-items:center;gap:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin-bottom:14px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:#0369a1">☁️ 관리자</span>
+    <button id="btnCloudOpen" class="btn btn-sky" type="button">클라우드 스냅샷</button>
+    <span id="cloudWho" style="font-size:11px;color:#0369a1"></span>
+    <button id="btnCloudLogout" class="btn btn-gray" type="button" style="margin-left:auto">로그아웃</button>
+  </div>
+  <button id="btnAdminLogin" class="btn" type="button" style="display:none;background:#fff;color:#444;border:1px solid #ddd;margin-bottom:14px">🔑 관리자 로그인</button>
+
+  <div class="tabs">
+    <button class="tab active" id="tabInput" onclick="switchTab('input')">✏️ 입력</button>
+    <button class="tab" id="tabDash" onclick="switchTab('dash')">📊 대시보드</button>
+  </div>
+
+  <!-- ============ 입력 탭 ============ -->
+  <div id="inputView">
+    <!-- 자산 -->
+    <div class="panel">
+      <div class="group">
+        <div class="group-head">
+          <span class="group-title asset-title">💰 자산</span>
+          <span class="group-total asset-title" id="assetTotal">0원</span>
+        </div>
+        <div class="desc" style="margin-bottom:10px">현금·예금·주식·코인·부동산·연금 등 가진 것을 항목별로. 분류를 고르고 이름·금액을 적으세요.</div>
+        <div id="assetList"></div>
+        <button class="add-btn" onclick="addItem('asset')">+ 자산 항목 추가</button>
+      </div>
+    </div>
+
+    <!-- 부채 -->
+    <div class="panel">
+      <div class="group">
+        <div class="group-head">
+          <span class="group-title debt-title">💳 부채</span>
+          <span class="group-total debt-title" id="debtTotal">0원</span>
+        </div>
+        <div class="desc" style="margin-bottom:10px">주택담보·전세자금·신용대출·할부 등 갚아야 할 것.</div>
+        <div id="debtList"></div>
+        <button class="add-btn" onclick="addItem('debt')">+ 부채 항목 추가</button>
+      </div>
+    </div>
+
+    <!-- 지출 -->
+    <div class="panel">
+      <div class="group">
+        <div class="group-head">
+          <span class="group-title spend-title">💸 이번 달 지출 <span style="font-weight:500;color:#aaa;font-size:12px">(가계부)</span></span>
+          <span class="group-total spend-title" id="spendTotal">0원</span>
+        </div>
+        <div class="desc" style="margin-bottom:10px">이번 달 쓴 돈을 카테고리별로. 선택 사항이며, 대시보드에서 지출 구성을 볼 수 있어요.</div>
+        <div id="spendList"></div>
+        <button class="add-btn" onclick="addItem('spend')">+ 지출 항목 추가</button>
+      </div>
+    </div>
+
+    <!-- 저장 -->
+    <div class="panel">
+      <div style="font-size:13px;color:#166534;font-weight:700;margin-bottom:8px">💾 저장 (서버 전송 없음 · 광고 없음)</div>
+      <div class="save-row">
+        <button class="btn btn-blue" id="btnSaveJson">💾 내보내기 (JSON)</button>
+        <label class="btn btn-green" style="cursor:pointer">📂 불러오기<input type="file" id="fileLoad" accept=".json" style="display:none"></label>
+        <button class="btn btn-red" id="btnClearAll">🗑 전체 삭제</button>
+      </div>
+      <div style="font-size:11.5px;color:#999;margin-top:10px;line-height:1.6">※ 입력은 자동으로 이 브라우저에 저장됩니다. 다른 기기로 옮기려면 "내보내기"로 파일을 받아 옮긴 뒤 "불러오기" 하세요.</div>
+    </div>
+  </div>
+
+  <!-- ============ 대시보드 탭 ============ -->
+  <div id="dashView" style="display:none">
+    <div id="dashEmpty" class="panel" style="display:none">
+      <div class="empty-hint">아직 입력된 자산이 없어요.<br>"✏️ 입력" 탭에서 자산을 추가해보세요.</div>
+    </div>
+    <div id="dashContent">
+      <!-- 순자산 히어로 -->
+      <div class="net-hero">
+        <div class="label">순자산 (자산 − 부채)</div>
+        <div class="value" id="netWorth">0원</div>
+        <div class="kor" id="netWorthKor"></div>
+        <div class="breakdown" id="netBreakdown"></div>
+      </div>
+
+      <!-- 원형 차트 2개 -->
+      <div class="dash-grid">
+        <div class="chart-card">
+          <h3>자산 구성</h3>
+          <div class="chart-wrap"><canvas id="assetPie"></canvas></div>
+          <div class="legend" id="assetLegend"></div>
+        </div>
+        <div class="chart-card">
+          <h3>자산 vs 부채</h3>
+          <div class="chart-wrap"><canvas id="avdDonut"></canvas></div>
+          <div class="legend" id="avdLegend"></div>
+        </div>
+      </div>
+
+      <!-- 위험·안전 + 항목별 막대 -->
+      <div class="dash-grid" style="margin-top:16px">
+        <div class="chart-card">
+          <h3>위험자산 vs 안전자산</h3>
+          <div class="chart-wrap"><canvas id="riskDonut"></canvas></div>
+          <div class="legend" id="riskLegend"></div>
+          <div style="font-size:11.5px;color:#999;margin-top:8px;line-height:1.6">안전 = 현금성·연금 / 위험 = 투자(주식·코인). 부동산은 별도(준실물).</div>
+        </div>
+        <div class="chart-card">
+          <h3>항목별 금액 (큰 순)</h3>
+          <div class="chart-wrap" style="height:auto;min-height:220px"><canvas id="itemBar"></canvas></div>
+        </div>
+      </div>
+
+      <!-- 분석 카드 -->
+      <div class="panel" style="margin-top:16px">
+        <h2>📈 분석</h2>
+        <div class="desc">한국 가구 평균(2025 가계금융복지조사)과 비교 + 포트폴리오 진단.</div>
+        <div id="analysisCards"></div>
+      </div>
+
+      <!-- 지출 -->
+      <div class="panel" id="spendDashPanel" style="display:none">
+        <h2>💸 이번 달 지출</h2>
+        <div class="dash-grid">
+          <div class="chart-card" style="border:none;padding:0">
+            <div class="chart-wrap"><canvas id="spendPie"></canvas></div>
+          </div>
+          <div class="chart-card" style="border:none;padding:0">
+            <div class="legend" id="spendLegend"></div>
+            <div style="font-size:18px;font-weight:700;color:#b45309;margin-top:10px;padding-top:10px;border-top:1px solid #eee">합계 <span id="spendDashTotal">0원</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 전체 항목 표 -->
+      <div class="panel">
+        <h2>📋 전체 항목</h2>
+        <div style="overflow-x:auto">
+          <table class="detail" id="detailTable">
+            <thead><tr><th>분류</th><th>이름</th><th class="num">금액</th><th class="num">비중</th><th class="barcell"></th></tr></thead>
+            <tbody id="detailBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+const fmtShort = n => {
+  n = Math.round(n);
+  if (Math.abs(n) >= 1e8) return (n/1e8).toFixed(2).replace(/\.00$/,'') + '억';
+  if (Math.abs(n) >= 1e4) return Math.round(n/1e4).toLocaleString('ko-KR') + '만';
+  return n.toLocaleString('ko-KR');
+};
+function wonToKorean(n) {
+  n = Math.round(Math.abs(n));
+  if (n === 0) return '';
+  var eok = Math.floor(n/1e8), man = Math.floor((n%1e8)/1e4), won = n%1e4, p = [];
+  if (eok>0) p.push(eok.toLocaleString('ko-KR')+'억');
+  if (man>0) p.push(man.toLocaleString('ko-KR')+'만');
+  if (won>0) p.push(won.toLocaleString('ko-KR'));
+  return p.join(' ')+'원';
+}
+
+// 분류 정의
+const ASSET_CATS = ['현금성','투자','부동산','연금','기타'];
+const DEBT_CATS = ['주택담보','전세자금','신용대출','기타'];
+const SPEND_CATS = ['식비','교통','주거/통신','생활','문화/여가','의료','고정비','기타'];
+const CAT_COLORS = {
+  '현금성':'#22c55e','투자':'#3b82f6','부동산':'#f59e0b','연금':'#8b5cf6','기타':'#94a3b8',
+  '주택담보':'#dc2626','전세자금':'#ef4444','신용대출':'#f87171','기타부채':'#fca5a5',
+  '식비':'#f59e0b','교통':'#3b82f6','주거/통신':'#8b5cf6','생활':'#22c55e','문화/여가':'#ec4899','의료':'#ef4444','고정비':'#0ea5e9'
+};
+function catColor(cat, type){
+  if(type==='debt' && cat==='기타') return CAT_COLORS['기타부채'];
+  return CAT_COLORS[cat] || '#94a3b8';
+}
+
+// 위험/안전 분류
+const SAFE_CATS = ['현금성','연금'];
+const RISK_CATS = ['투자'];
+
+// 상태
+let state = { assets: [], debts: [], spends: [] };
+const STORE_KEY = 'sf_assets_v1';
+
+// === 항목 렌더 ===
+function catOptions(cats){ return cats.map(c=>`<option value="${c}">${c}</option>`).join(''); }
+
+function makeRow(type, item, idx){
+  const cats = type==='asset'?ASSET_CATS : type==='debt'?DEBT_CATS : SPEND_CATS;
+  const ph = type==='asset'?'예: 신한 예금' : type==='debt'?'예: 주택담보대출' : '예: 외식';
+  const div = document.createElement('div');
+  div.innerHTML =
+    `<div class="item-row">
+      <select onchange="updateItem('${type}',${idx},'cat',this.value)">${catOptions(cats)}</select>
+      <input class="iname" type="text" placeholder="${ph}" value="${(item.name||'').replace(/"/g,'&quot;')}" oninput="updateItem('${type}',${idx},'name',this.value)">
+      <input class="iamt" type="number" inputmode="numeric" placeholder="0" value="${item.amount||''}" oninput="updateItem('${type}',${idx},'amount',this.value)">
+      <button class="del" onclick="removeItem('${type}',${idx})" title="삭제">×</button>
+    </div>
+    <div class="item-kor" id="${type}_kor_${idx}"></div>`;
+  // 분류 선택값 세팅
+  const sel = div.querySelector('select');
+  sel.value = item.cat || cats[0];
+  return div;
+}
+
+function renderList(type){
+  const arr = type==='asset'?state.assets : type==='debt'?state.debts : state.spends;
+  const box = type==='asset'?$('assetList') : type==='debt'?$('debtList') : $('spendList');
+  box.innerHTML = '';
+  arr.forEach((item, idx)=>{
+    box.appendChild(makeRow(type, item, idx));
+    const korEl = $(`${type}_kor_${idx}`);
+    if(korEl) korEl.textContent = item.amount>0 ? wonToKorean(item.amount) : '';
+  });
+}
+
+function addItem(type){
+  const arr = type==='asset'?state.assets : type==='debt'?state.debts : state.spends;
+  const cats = type==='asset'?ASSET_CATS : type==='debt'?DEBT_CATS : SPEND_CATS;
+  arr.push({ cat: cats[0], name:'', amount:0 });
+  renderList(type); save(); updateTotals();
+}
+function removeItem(type, idx){
+  const arr = type==='asset'?state.assets : type==='debt'?state.debts : state.spends;
+  arr.splice(idx,1);
+  renderList(type); save(); updateTotals();
+}
+function updateItem(type, idx, field, val){
+  const arr = type==='asset'?state.assets : type==='debt'?state.debts : state.spends;
+  if(!arr[idx]) return;
+  if(field==='amount'){
+    arr[idx].amount = parseFloat(val)||0;
+    const korEl = $(`${type}_kor_${idx}`);
+    if(korEl) korEl.textContent = arr[idx].amount>0 ? wonToKorean(arr[idx].amount) : '';
+  } else {
+    arr[idx][field] = val;
+  }
+  save(); updateTotals();
+}
+
+function sumArr(arr){ return arr.reduce((s,x)=>s+(parseFloat(x.amount)||0),0); }
+function updateTotals(){
+  $('assetTotal').textContent = fmt(sumArr(state.assets))+'원';
+  $('debtTotal').textContent = fmt(sumArr(state.debts))+'원';
+  $('spendTotal').textContent = fmt(sumArr(state.spends))+'원';
+}
+
+// === 저장 ===
+function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){} }
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){ const d = JSON.parse(raw); state = { assets:d.assets||[], debts:d.debts||[], spends:d.spends||[] }; }
+  }catch(e){}
+}
+
+// === 탭 ===
+function switchTab(t){
+  $('tabInput').classList.toggle('active', t==='input');
+  $('tabDash').classList.toggle('active', t==='dash');
+  $('inputView').style.display = t==='input'?'block':'none';
+  $('dashView').style.display = t==='dash'?'block':'none';
+  if(t==='dash') renderDashboard();
+}
+
+// === 대시보드 ===
+let charts = {};
+function destroyCharts(){ Object.values(charts).forEach(c=>{ if(c) c.destroy(); }); charts = {}; }
+
+function groupByCat(arr, type){
+  const m = {};
+  arr.forEach(x=>{
+    const amt = parseFloat(x.amount)||0;
+    if(amt<=0) return;
+    const c = x.cat || '기타';
+    m[c] = (m[c]||0) + amt;
+  });
+  return m;
+}
+
+function renderDashboard(){
+  const totalAsset = sumArr(state.assets);
+  const totalDebt = sumArr(state.debts);
+  const net = totalAsset - totalDebt;
+
+  const hasData = state.assets.some(a=>a.amount>0) || state.debts.some(d=>d.amount>0);
+  $('dashEmpty').style.display = hasData?'none':'block';
+  $('dashContent').style.display = hasData?'block':'none';
+  if(!hasData){ destroyCharts(); return; }
+
+  // 순자산 히어로
+  const nw = $('netWorth');
+  nw.textContent = fmt(net)+'원';
+  nw.classList.toggle('small', Math.abs(net) >= 1e12);
+  $('netWorthKor').textContent = wonToKorean(net);
+  $('netBreakdown').textContent = `자산 ${fmtShort(totalAsset)}원  −  부채 ${fmtShort(totalDebt)}원`;
+
+  destroyCharts();
+
+  // ① 자산 구성 원형
+  const assetByCat = groupByCat(state.assets, 'asset');
+  drawPie('assetPie', 'assetLegend', assetByCat, 'asset', totalAsset);
+
+  // ② 자산 vs 부채 도넛
+  drawDonut('avdDonut', 'avdLegend', [
+    { name:'자산', value: totalAsset, color:'#1F4E78' },
+    { name:'부채', value: totalDebt, color:'#dc2626' }
+  ]);
+
+  // ③ 위험 vs 안전
+  let safe=0, risk=0, realty=0, etc=0;
+  Object.entries(assetByCat).forEach(([c,v])=>{
+    if(SAFE_CATS.includes(c)) safe+=v;
+    else if(RISK_CATS.includes(c)) risk+=v;
+    else if(c==='부동산') realty+=v;
+    else etc+=v;
+  });
+  const riskData = [
+    { name:'안전자산 (현금·연금)', value: safe, color:'#22c55e' },
+    { name:'위험자산 (투자)', value: risk, color:'#ef4444' },
+    { name:'부동산', value: realty, color:'#f59e0b' }
+  ];
+  if(etc>0) riskData.push({ name:'기타', value: etc, color:'#94a3b8' });
+  drawDonut('riskDonut', 'riskLegend', riskData.filter(d=>d.value>0));
+
+  // ④ 항목별 막대
+  drawItemBar();
+
+  // 분석 카드
+  renderAnalysis(totalAsset, totalDebt, net, assetByCat, safe, risk, realty);
+
+  // 지출
+  const totalSpend = sumArr(state.spends);
+  if(totalSpend>0){
+    $('spendDashPanel').style.display='block';
+    const spendByCat = groupByCat(state.spends,'spend');
+    drawPie('spendPie','spendLegend',spendByCat,'spend',totalSpend);
+    $('spendDashTotal').textContent = fmt(totalSpend)+'원';
+  } else {
+    $('spendDashPanel').style.display='none';
+  }
+
+  // 전체 항목 표
+  renderDetailTable(totalAsset);
+}
+
+function drawPie(canvasId, legendId, byCat, type, total){
+  const labels = Object.keys(byCat);
+  const values = labels.map(l=>byCat[l]);
+  const colors = labels.map(l=>catColor(l, type));
+  charts[canvasId] = new Chart($(canvasId), {
+    type:'doughnut',
+    data:{ labels, datasets:[{ data:values, backgroundColor:colors, borderWidth:2, borderColor:'#fff' }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'58%',
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>c.label+': '+fmtShort(c.parsed)+'원 ('+(c.parsed/total*100).toFixed(1)+'%)' } } } }
+  });
+  // 범례
+  const leg = $(legendId);
+  leg.innerHTML = labels.map((l,i)=>{
+    const pct = (values[i]/total*100).toFixed(1);
+    return `<div class="legend-item"><span class="legend-dot" style="background:${colors[i]}"></span><span class="legend-name">${l}</span><span class="legend-val">${fmtShort(values[i])}원</span><span class="legend-pct">${pct}%</span></div>`;
+  }).join('');
+}
+
+function drawDonut(canvasId, legendId, data){
+  const total = data.reduce((s,d)=>s+d.value,0);
+  charts[canvasId] = new Chart($(canvasId), {
+    type:'doughnut',
+    data:{ labels:data.map(d=>d.name), datasets:[{ data:data.map(d=>d.value), backgroundColor:data.map(d=>d.color), borderWidth:2, borderColor:'#fff' }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'58%',
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>c.label+': '+fmtShort(c.parsed)+'원 ('+(total>0?(c.parsed/total*100).toFixed(1):0)+'%)' } } } }
+  });
+  const leg = $(legendId);
+  leg.innerHTML = data.map(d=>{
+    const pct = total>0?(d.value/total*100).toFixed(1):0;
+    return `<div class="legend-item"><span class="legend-dot" style="background:${d.color}"></span><span class="legend-name">${d.name}</span><span class="legend-val">${fmtShort(d.value)}원</span><span class="legend-pct">${pct}%</span></div>`;
+  }).join('');
+}
+
+function drawItemBar(){
+  const items = state.assets.filter(a=>a.amount>0).map(a=>({ name:a.name||a.cat, amount:parseFloat(a.amount), cat:a.cat }))
+    .sort((a,b)=>b.amount-a.amount).slice(0,10);
+  if(items.length===0){ if(charts.itemBar){charts.itemBar.destroy();} return; }
+  charts.itemBar = new Chart($('itemBar'), {
+    type:'bar',
+    data:{ labels: items.map(i=>i.name), datasets:[{ data: items.map(i=>i.amount), backgroundColor: items.map(i=>catColor(i.cat,'asset')), borderRadius:5 }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>fmtShort(c.parsed.x)+'원' } } },
+      scales:{ x:{ ticks:{ callback:v=>fmtShort(v), font:{size:10} }, grid:{color:'#f0f0f0'} }, y:{ ticks:{font:{size:11}}, grid:{display:false} } } }
+  });
+  // 높이 동적
+  $('itemBar').parentElement.style.height = Math.max(220, items.length*34+40)+'px';
+}
+
+function renderDetailTable(totalAsset){
+  const rows = [];
+  state.assets.filter(a=>a.amount>0).forEach(a=>rows.push({ type:'자산', cat:a.cat, name:a.name||'-', amount:parseFloat(a.amount), color:catColor(a.cat,'asset') }));
+  state.debts.filter(d=>d.amount>0).forEach(d=>rows.push({ type:'부채', cat:d.cat, name:d.name||'-', amount:-parseFloat(d.amount), color:catColor(d.cat,'debt') }));
+  rows.sort((a,b)=>Math.abs(b.amount)-Math.abs(a.amount));
+  const maxAmt = Math.max(...rows.map(r=>Math.abs(r.amount)), 1);
+  $('detailBody').innerHTML = rows.map(r=>{
+    const pct = totalAsset>0 && r.amount>0 ? (r.amount/totalAsset*100).toFixed(1)+'%' : (r.amount<0?'부채':'-');
+    const barW = Math.abs(r.amount)/maxAmt*100;
+    const amtColor = r.amount<0?'#dc2626':'#1F4E78';
+    return `<tr>
+      <td><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${r.color};margin-right:5px"></span>${r.cat}</td>
+      <td>${r.name}</td>
+      <td class="num" style="color:${amtColor};font-weight:600">${r.amount<0?'−':''}${fmt(Math.abs(r.amount))}</td>
+      <td class="num" style="color:#888">${pct}</td>
+      <td class="barcell"><div class="minibar" style="width:${barW}%;background:${r.color}"></div></td>
+    </tr>`;
+  }).join('');
+}
+
+// === 분석 카드 (한국 평균 2025 + 진단) ===
+const AVG = { net: 471440000, asset: 566780000, debt: 95340000, seoulNet: 712880000,
+  finRatio: 24.2, realRatio: 75.8 };
+function renderAnalysis(totalAsset, totalDebt, net, assetByCat, safe, risk, realty){
+  const cards = [];
+
+  // 1. 평균 순자산 비교 (막대)
+  const ratio = net / AVG.net;
+  const pos = Math.min(100, Math.max(2, net/Math.max(AVG.net*2, net)*100));
+  const avgPos = AVG.net/Math.max(AVG.net*2, net)*100;
+  let cls = ratio>=1 ? 'a-good' : 'a-neutral';
+  cards.push(`<div class="analysis-card ${cls}">
+    <div class="a-title">🏆 순자산 — 전국 평균 비교</div>
+    내 순자산 <b>${fmtShort(net)}원</b> vs 전국 가구 평균 <b>4.71억원</b> (2025 가계금융복지조사)
+    <div class="a-bar-track">
+      <div class="a-bar-fill" style="width:${pos}%;background:${ratio>=1?'#16a34a':'#3b82f6'}">${fmtShort(net)}</div>
+      <div class="a-marker" style="left:${avgPos}%"></div>
+      <div class="a-marker-label" style="left:${avgPos}%;top:-16px">평균 4.71억</div>
+    </div>
+    ${ratio>=1 ? `전국 평균의 <b>${ratio.toFixed(1)}배</b>입니다. 서울 평균은 7.13억원.` : `전국 평균의 <b>${(ratio*100).toFixed(0)}%</b> 수준. 평균까지 ${fmtShort(AVG.net-net)}원 남았어요.`}
+  </div>`);
+
+  // 2. 자산 구성 (금융 vs 실물) 비교
+  const fin = (assetByCat['현금성']||0) + (assetByCat['투자']||0) + (assetByCat['연금']||0);
+  const real = (assetByCat['부동산']||0) + (assetByCat['기타']||0);
+  const finPct = totalAsset>0 ? (fin/totalAsset*100) : 0;
+  cards.push(`<div class="analysis-card a-neutral">
+    <div class="a-title">⚖️ 자산 구성 — 금융 vs 실물</div>
+    내 금융자산 비중 <b>${finPct.toFixed(0)}%</b> / 실물(부동산 등) <b>${(100-finPct).toFixed(0)}%</b><br>
+    전국 평균: 금융 <b>24.2%</b> / 실물 <b>75.8%</b>.
+    ${finPct>24.2 ? ' 평균보다 <b>금융자산 비중이 높아요</b> (현금흐름·유동성 양호).' : ' 평균보다 <b>실물(부동산) 비중이 높아요</b> (한국 가구 전형적).'}
+  </div>`);
+
+  // 3. 부채비율
+  const debtRatio = totalAsset>0 ? (totalDebt/totalAsset*100) : 0;
+  let dCls = debtRatio<=30 ? 'a-good' : debtRatio<=50 ? 'a-warn' : 'a-warn';
+  let dMsg = debtRatio<=30 ? '양호한 수준이에요 (총자산의 30% 이하).' : debtRatio<=50 ? '다소 높은 편 (30~50%). 관리가 필요해요.' : '높은 편 (50% 초과). 부채 축소를 고려하세요.';
+  cards.push(`<div class="analysis-card ${dCls}">
+    <div class="a-title">💳 부채비율</div>
+    총자산 대비 부채 <b>${debtRatio.toFixed(1)}%</b> (부채 ${fmtShort(totalDebt)} / 자산 ${fmtShort(totalAsset)}).<br>
+    ${dMsg} 전국 평균 부채비율은 약 <b>16.8%</b>입니다.
+  </div>`);
+
+  // 4. 위험 노출 (투자 비중)
+  const riskPct = totalAsset>0 ? (risk/totalAsset*100) : 0;
+  let rCls = 'a-neutral';
+  cards.push(`<div class="analysis-card ${rCls}">
+    <div class="a-title">📊 위험자산 노출</div>
+    투자(주식·코인) 비중 <b>${riskPct.toFixed(0)}%</b>, 안전자산(현금·연금) <b>${totalAsset>0?(safe/totalAsset*100).toFixed(0):0}%</b>.<br>
+    ${riskPct>=60 ? '공격적 포트폴리오예요. 변동성에 유의하세요.' : riskPct>=30 ? '균형 잡힌 편입니다.' : '보수적 포트폴리오. 장기 수익률을 위해 투자 비중을 검토해볼 수 있어요.'}
+    <span style="color:#888;font-size:11.5px">※ 부동산은 별도(준실물자산)로 봅니다.</span>
+  </div>`);
+
+  $('analysisCards').innerHTML = cards.join('');
+}
+
+// === JSON 내보내기/불러오기 ===
+$('btnSaveJson').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  a.href = url; a.download = `자산관리_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
+  a.click(); URL.revokeObjectURL(url);
+});
+$('fileLoad').addEventListener('change', e=>{
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    try{
+      const d = JSON.parse(ev.target.result);
+      state = { assets:d.assets||[], debts:d.debts||[], spends:d.spends||[] };
+      save(); renderAll();
+      alert('✅ 불러왔어요.');
+    }catch(err){ alert('파일을 읽을 수 없어요: '+err.message); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+$('btnClearAll').addEventListener('click', ()=>{
+  if(confirm('모든 입력을 삭제할까요? 되돌릴 수 없어요.')){
+    state = { assets:[], debts:[], spends:[] };
+    save(); renderAll();
+  }
+});
+
+function renderAll(){
+  renderList('asset'); renderList('debt'); renderList('spend');
+  updateTotals();
+  if($('dashView').style.display!=='none') renderDashboard();
+}
+
+// 클라우드용 노출
+window.assetGetState = ()=>state;
+window.assetSetState = (d)=>{ state = { assets:d.assets||[], debts:d.debts||[], spends:d.spends||[] }; save(); renderAll(); };
+
+// === 초기화 ===
+load();
+// 첫 방문이면 빈 항목 하나씩
+if(state.assets.length===0) state.assets.push({cat:'현금성',name:'',amount:0});
+if(state.debts.length===0) state.debts.push({cat:'주택담보',name:'',amount:0});
+renderAll();
+</script>
+<!-- 클라우드 스냅샷 모달 -->
+<div id="slotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:16px;max-width:460px;width:100%;max-height:90vh;overflow:auto;padding:20px">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <h3 style="font-size:16px;color:#1F4E78;margin:0">☁️ 클라우드 스냅샷</h3>
+      <button id="slotClose" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">💾 현재 자산 상태를 저장</div>
+      <div style="font-size:11.5px;color:#0369a1;margin-bottom:8px">날짜별로 저장하면 자산 변화를 추적할 수 있어요. (예: "2026-06")</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="slotName" placeholder="이름 (예: 2026-06 월말)" maxlength="30" style="flex:1;padding:9px;font-size:13px;border:1px solid #ccc;border-radius:6px">
+        <button id="slotSaveBtn" style="background:#0ea5e9;color:white;border:none;padding:9px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">저장</button>
+      </div>
+    </div>
+    <div style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px">📋 저장된 스냅샷</div>
+    <div id="slotList" style="display:flex;flex-direction:column;gap:8px">
+      <div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>
+    </div>
+  </div>
+</div>
+
+<script src="/common.js?v=3"></script>
+<script type="module">
+// === 관리자 클라우드 저장 (Firebase) ===
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
+  authDomain: "swingfarmer-board01.firebaseapp.com",
+  projectId: "swingfarmer-board01",
+  storageBucket: "swingfarmer-board01.firebasestorage.app",
+  messagingSenderId: "312575044644",
+  appId: "1:312575044644:web:81d754eb1d90f25454fcb1"
+};
+const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1";
+const CALC_KEY = "assets";
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+const gid = id => document.getElementById(id);
+let currentUser = null;
+
+if(location.hash === '#admin' || location.hash === '#관리자'){
+  gid('btnAdminLogin').style.display = 'inline-block';
+}
+gid('btnAdminLogin').addEventListener('click', async ()=>{
+  try{ await signInWithPopup(auth, provider); }catch(e){ alert('로그인 실패: '+e.message); }
+});
+onAuthStateChanged(auth, user=>{
+  currentUser = user;
+  const isAdmin = user && user.uid === ADMIN_UID;
+  if(isAdmin){
+    gid('cloudArea').style.display = 'inline-flex';
+    gid('btnAdminLogin').style.display = 'none';
+    gid('cloudWho').textContent = '☁️ ' + (user.displayName||user.email||'관리자');
+  } else {
+    gid('cloudArea').style.display = 'none';
+    if(user && !isAdmin){ signOut(auth); }
+  }
+});
+
+const docRef = () => doc(db, 'calc_data', ADMIN_UID);
+async function loadSlots(){
+  try{ const snap=await getDoc(docRef()); if(snap.exists() && snap.data()[CALC_KEY] && Array.isArray(snap.data()[CALC_KEY].slots)) return snap.data()[CALC_KEY].slots; }catch(e){}
+  return [];
+}
+async function saveSlots(slots){
+  const ref=docRef(); let existing={};
+  try{ const snap=await getDoc(ref); if(snap.exists()) existing=snap.data(); }catch(e){}
+  existing[CALC_KEY] = { slots: slots, updatedAt: new Date().toISOString() };
+  await setDoc(ref, existing, {merge:true});
+}
+function renderSlots(slots){
+  const box=gid('slotList');
+  if(!slots || slots.length===0){ box.innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 스냅샷이 없어요.<br>위에서 이름을 정해 저장해보세요.</div>'; return; }
+  box.innerHTML=slots.map((s,i)=>{
+    const t=s.savedAt?new Date(s.savedAt).toLocaleString('ko-KR'):'';
+    const net = s.net!==undefined ? s.net : null;
+    const netTxt = net!==null ? ' · 순자산 '+(Math.abs(net)>=1e8?(net/1e8).toFixed(2)+'억':Math.round(net/1e4)+'만') : '';
+    return '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px">'+
+      '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.name||'(이름없음)')+'</div>'+
+      '<div style="font-size:11px;color:#999">'+t+netTxt+'</div></div>'+
+      '<button onclick="window._slotLoad('+i+')" style="background:#0284c7;color:white;border:none;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button>'+
+      '<button onclick="window._slotDelete('+i+')" style="background:#dc2626;color:white;border:none;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">삭제</button></div>';
+  }).join('');
+}
+let _slotsCache=[];
+async function refreshSlots(){ gid('slotList').innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>'; _slotsCache=await loadSlots(); renderSlots(_slotsCache); }
+
+gid('btnCloudOpen').addEventListener('click', async ()=>{
+  if(!currentUser || currentUser.uid!==ADMIN_UID){ alert('관리자 로그인이 필요합니다.'); return; }
+  // 기본 이름: 이번 달
+  const now=new Date();
+  gid('slotName').value = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  gid('slotModal').style.display='flex'; await refreshSlots();
+});
+gid('slotClose').addEventListener('click', ()=> gid('slotModal').style.display='none');
+gid('slotModal').addEventListener('click', e=>{ if(e.target===gid('slotModal')) gid('slotModal').style.display='none'; });
+gid('slotSaveBtn').addEventListener('click', async ()=>{
+  const name=gid('slotName').value.trim();
+  if(!name){ alert('이름을 입력하세요.'); return; }
+  const idx=_slotsCache.findIndex(s=>s.name===name);
+  if(idx>=0 && !confirm('"'+name+'" 스냅샷이 이미 있어요. 덮어쓸까요?')) return;
+  gid('slotSaveBtn').disabled=true; gid('slotSaveBtn').textContent='저장 중...';
+  try{
+    const st = window.assetGetState();
+    const totalA = (st.assets||[]).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+    const totalD = (st.debts||[]).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+    const entry={ name, data: JSON.parse(JSON.stringify(st)), net: totalA-totalD, savedAt: new Date().toISOString() };
+    if(idx>=0) _slotsCache[idx]=entry; else _slotsCache.push(entry);
+    await saveSlots(_slotsCache); renderSlots(_slotsCache);
+    alert('✅ "'+name+'" 저장 완료.');
+  }catch(e){ alert('저장 실패: '+e.message); }
+  gid('slotSaveBtn').disabled=false; gid('slotSaveBtn').textContent='저장';
+});
+window._slotLoad=function(i){
+  const s=_slotsCache[i]; if(!s) return;
+  if(!confirm('"'+s.name+'"을(를) 불러올까요? 현재 입력이 교체됩니다.')) return;
+  window.assetSetState(s.data); gid('slotModal').style.display='none'; alert('✅ "'+s.name+'" 불러왔어요.');
+};
+window._slotDelete=async function(i){
+  const s=_slotsCache[i]; if(!s) return;
+  if(!confirm('"'+s.name+'"을(를) 삭제할까요?')) return;
+  try{ _slotsCache.splice(i,1); await saveSlots(_slotsCache); renderSlots(_slotsCache); }catch(e){ alert('삭제 실패: '+e.message); }
+};
+gid('btnCloudLogout').addEventListener('click', async ()=>{
+  if(confirm('로그아웃 할까요?')){ try{ await signOut(auth); alert('로그아웃 됐어요.'); }catch(e){ alert('로그아웃 실패: '+e.message); } }
+});
+</script>
+</body>
+</html>
