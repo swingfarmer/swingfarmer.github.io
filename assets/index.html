@@ -61,7 +61,7 @@
     border-radius: 6px; background: #fff; color: #444;
   }
   .item-row .iname {
-    flex: 1; min-width: 0; padding: 9px; font-size: 13px; border: 1px solid #ccc; border-radius: 6px;
+    flex: 1 1 auto; min-width: 80px; padding: 9px; font-size: 13px; border: 1px solid #ccc; border-radius: 6px;
   }
   .item-row .iamt {
     flex: 0 0 120px; padding: 9px; font-size: 13px; border: 1px solid #ccc; border-radius: 6px;
@@ -78,10 +78,14 @@
   }
   .add-btn:hover { background: #dbeafe; }
 
+  /* 모바일: 2줄 — 위[분류·금액·삭제] / 아래[이름] */
   @media (max-width: 560px) {
-    .item-row .iamt { flex: 0 0 96px; }
-    .item-row select { flex: 0 0 76px; }
-    .item-kor { padding-left: 84px; }
+    .item-row { flex-wrap: wrap; gap: 6px; }
+    .item-row select { flex: 0 0 88px; order: 1; }
+    .item-row .iamt { flex: 1 1 auto; order: 2; }
+    .item-row .del { order: 3; }
+    .item-row .iname { flex: 1 1 100%; order: 4; min-width: 0; }
+    .item-kor { padding-left: 0; }
   }
 
   /* 대시보드 */
@@ -918,7 +922,7 @@ renderAll();
 <script type="module">
 // === 관리자 클라우드 저장 (Firebase) ===
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -939,11 +943,31 @@ const provider = new GoogleAuthProvider();
 const gid = id => document.getElementById(id);
 let currentUser = null;
 
+// PWA(standalone)에선 팝업이 막히므로 리디렉션 방식 사용
+const _isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+// 리디렉션 후 돌아왔을 때 결과 처리
+getRedirectResult(auth).catch(e=>{ if(e && e.code && e.code!=='auth/no-auth-event') console.log('redirect:', e.message); });
+
 if(location.hash === '#admin' || location.hash === '#관리자'){
   gid('btnAdminLogin').style.display = 'inline-block';
 }
 gid('btnAdminLogin').addEventListener('click', async ()=>{
-  try{ await signInWithPopup(auth, provider); }catch(e){ alert('로그인 실패: '+e.message); }
+  try{
+    if(_isStandalone){
+      // 설치된 앱: 리디렉션 (팝업 막힘)
+      await signInWithRedirect(auth, provider);
+    } else {
+      // 브라우저: 팝업
+      await signInWithPopup(auth, provider);
+    }
+  }catch(e){
+    // 팝업 차단 등으로 실패하면 리디렉션 폴백
+    if(e && (e.code==='auth/popup-blocked' || e.code==='auth/cancelled-popup-request' || e.code==='auth/operation-not-supported-in-this-environment')){
+      try{ await signInWithRedirect(auth, provider); }catch(e2){ alert('로그인 실패: '+e2.message); }
+    } else {
+      alert('로그인 실패: '+e.message);
+    }
+  }
 });
 onAuthStateChanged(auth, user=>{
   currentUser = user;
