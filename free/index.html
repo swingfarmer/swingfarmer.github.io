@@ -395,9 +395,9 @@
   <div class="summary-grid">
 
     <div class="stat">
-      <div class="stat-label">은퇴 시점 자산 (명목)</div>
+      <div class="stat-label">은퇴 시점 자산</div>
       <div class="stat-value" id="retireNominal">-</div>
-      <div class="stat-sub" id="retireNominalSub">미래 시점 액수 그대로</div>
+      <div class="stat-sub" id="retireNominalSub">명목 · 미래 시점 액수</div>
     </div>
     <div class="stat profit">
       <div class="stat-label">은퇴 시점 총 운용수익 <span class="info-btn" onclick="toggleProfitInfo()">ⓘ</span></div>
@@ -406,16 +406,9 @@
     </div>
 
     <div class="stat">
-      <div class="stat-label">은퇴 시점 자산 (현재가치)</div>
-      <div class="stat-value" id="retireReal">-</div>
-      <div class="stat-sub">오늘 기준 구매력</div>
-    </div>
-    <div></div>
-
-    <div class="stat">
-      <div class="stat-label">100세 시점 자산 (명목)</div>
+      <div class="stat-label">100세 시점 자산</div>
       <div class="stat-value" id="age100Nominal">-</div>
-      <div class="stat-sub" id="age100NominalSub"></div>
+      <div class="stat-sub" id="age100NominalSub">명목 · 미래 시점 액수</div>
     </div>
     <div class="stat profit">
       <div class="stat-label">100세 시점 총 운용수익 <span class="info-btn" onclick="toggleProfitInfo()">ⓘ</span></div>
@@ -423,12 +416,26 @@
       <div class="stat-sub">은퇴 후 지출 − 연금 차액 + 운용수익</div>
     </div>
 
-    <div class="stat">
-      <div class="stat-label">100세 시점 자산 (현재가치)</div>
-      <div class="stat-value" id="age100Real">-</div>
-      <div class="stat-sub">오늘 기준 구매력</div>
+    <!-- 운용수익 설명 (ⓘ 누르면 이 줄에 펼침) -->
+    <div id="profitInfo" style="display:none;grid-column:1/-1;background:#fff8e8;border:1px solid #f0d896;border-radius:8px;padding:16px 18px;font-size:13.5px;line-height:1.8;color:#5a4a2a">
+      <b style="color:#b45309;font-size:14px">💡 운용수익이란? — "투자가 저절로 불려준 돈"</b><br><br>
+      운용수익은 한마디로 <b>내가 넣지도 않았는데 투자수익률로 저절로 불어난 부분</b>입니다.<br><br>
+      <div style="background:#fff;border-radius:6px;padding:12px 14px;margin:6px 0">
+        <b style="color:#b45309">공식</b><br>
+        운용수익 = 최종 자산 − 시작 자산 − 그동안 넣은 저축 전부<br>
+        = 최종 자산 − <b>내가 직접 넣은 모든 돈</b>
+      </div>
+      <b style="color:#b45309">쉬운 예시</b><br>
+      • 시작 자산 1억, 저축 없이 연 10%로 10년 굴리면 → 약 <b>2.59억</b><br>
+      • 내가 넣은 돈은 <b>1억뿐</b>인데 2.59억이 됨<br>
+      • 차액 <b>1.59억 = 운용수익</b> (복리로 저절로 불어난 돈)<br><br>
+      <b style="color:#b45309">은퇴 시점 vs 100세 시점 차이</b><br>
+      • <b>은퇴 시점</b>: 일하며 모으는 동안 투자로 불어난 것<br>
+      • <b>100세 시점</b>: 은퇴 후 돈을 까먹으면서도, 남은 자산이 계속 굴러서 불어난 것까지 합산. 그래서 보통 은퇴 시점보다 더 큼<br><br>
+      <span style="color:#888;font-size:12px">📌 운용수익 = 명목 기준. 물가 감안한 실제 가치는 위 자산의 (현재가치)를 참고하세요.</span>
     </div>
-    <div class="stat warn" id="depletedBox" style="display:none;">
+
+    <div class="stat warn" id="depletedBox" style="display:none;grid-column:1/-1">
       <div class="stat-label">⚠ 자산 고갈 경고</div>
       <div class="stat-value" id="depletedAge">-</div>
       <div class="stat-sub">이 나이에 자산이 0원이 됩니다</div>
@@ -453,29 +460,6 @@
     <div id="homeNote" style="font-size:13px;line-height:1.8;color:#166534"></div>
   </div>
 
-  <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin-top:14px">
-
-  <div id="profitInfo" style="display:none;background:#fff8e8;border:1px solid #f0d896;border-radius:8px;padding:16px 18px;margin-top:14px;font-size:13.5px;line-height:1.8;color:#5a4a2a">
-    <b style="color:#b45309;font-size:14px">💡 운용수익이란? — "투자가 저절로 불려준 돈"</b><br><br>
-    운용수익은 한마디로 <b>내가 넣지도 않았는데 투자수익률로 저절로 불어난 부분</b>입니다.<br><br>
-    <div style="background:#fff;border-radius:6px;padding:12px 14px;margin:6px 0">
-      <b style="color:#b45309">공식</b><br>
-      운용수익 = 최종 자산 − 시작 자산 − 그동안 넣은 저축 전부<br>
-      = 최종 자산 − <b>내가 직접 넣은 모든 돈</b>
-    </div>
-    <b style="color:#b45309">쉬운 예시</b><br>
-    • 시작 자산 1억, 저축 없이 연 10%로 10년 굴리면 → 약 <b>2.59억</b><br>
-    • 내가 넣은 돈은 <b>1억뿐</b>인데 2.59억이 됨<br>
-    • 차액 <b>1.59억 = 운용수익</b> (복리로 저절로 불어난 돈)<br><br>
-    <b style="color:#b45309">왜 따로 보여주나?</b><br>
-    자산이 5억이 됐을 때, 그중 얼마가 <b>내가 아껴서 모은 돈</b>이고 얼마가 <b>투자가 불려준 돈</b>인지 구분해줍니다.<br>
-    • 운용수익 크다 → 투자가 효자 노릇 (돈이 일을 잘함)<br>
-    • 운용수익 작다 → 대부분 아껴서 모은 것 (투자 비중 늘릴 여지)<br><br>
-    <b style="color:#b45309">은퇴 시점 vs 100세 시점 차이</b><br>
-    • <b>은퇴 시점</b>: 일하며 모으는 동안 투자로 불어난 것<br>
-    • <b>100세 시점</b>: 은퇴 후 돈을 까먹으면서도, 남은 자산이 계속 굴러서 불어난 것까지 합산. 그래서 보통 은퇴 시점보다 더 큼<br><br>
-    <span style="color:#888;font-size:12px">📌 운용수익 = 명목 기준(미래 시점 액수). 물가를 감안한 실제 가치가 궁금하면 위 '자산(현재가치)' 칸을 참고하세요.</span>
-  </div>
   </div><!-- /capture-area -->
 </div>
 
@@ -500,6 +484,7 @@
   </div>
 </div>
 
+  <div class="panel" style="margin-top:0">
     <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
       <div style="font-size:14px;font-weight:700;color:#1F4E78">📈 자산 성장 그래프</div>
       <span style="display:inline-flex;gap:4px;margin-left:auto">
@@ -530,7 +515,7 @@
 
   <h3>② 결과 해석</h3>
   <ul>
-    <li><span class="badge">명목 vs 현재가치</span> 명목 = 액면숫자. 현재가치 = 물가 감안한 오늘 기준 구매력. <b>실제 의사결정엔 현재가치가 더 중요.</b></li>
+    <li><span class="badge">명목 vs 현재가치</span> 자산 카드에 큰 글씨 = <b>명목</b>(미래 시점 액면), 괄호 안 = <b>현재가치</b>(물가 감안한 오늘 기준 구매력). <b>실제 의사결정엔 현재가치가 더 중요.</b></li>
     <li><span class="badge">🏠 총자산 (집 포함)</span> 금융자산 + 거주주택 합산. 거주주택을 입력하면 초록색 카드로 표시됨. 단, 집은 생활비로 못 쓰므로 <b>은퇴/고갈 판정은 금융자산 기준</b>.</li>
     <li><span class="badge">📈 자산 성장 그래프</span> 파랑 = 금융·투자자산, 초록 = 총자산(집 포함). 위 <b>명목/현재가치</b> 버튼으로 전환 가능.</li>
     <li><span class="badge">총 운용수익</span> = 최종자산 − 시작자산 − 순 현금흐름. 순수하게 투자로 불어난 부분.</li>
@@ -871,13 +856,11 @@ function calculate() {
   const age100Profit = age100Nominal - currentAssets - age100CumFlow;
 
   document.getElementById('retireNominal').textContent = fmt(retireAssetsNominal) + ' 원';
-  document.getElementById('retireNominalSub').textContent = '≈ ' + fmtShort(retireAssetsNominal) + '원 · 미래 시점 액수';
-  document.getElementById('retireReal').textContent = fmt(retireAssetsReal) + ' 원';
+  document.getElementById('retireNominalSub').innerHTML = '명목 <span style="color:#1F4E78">(현재가치 ' + fmtShort(retireAssetsReal) + '원)</span>';
   document.getElementById('retireProfit').textContent = fmt(retireProfit) + ' 원';
 
   document.getElementById('age100Nominal').textContent = fmt(age100Nominal) + ' 원';
-  document.getElementById('age100NominalSub').textContent = '≈ ' + fmtShort(age100Nominal) + '원 · 미래 시점 액수';
-  document.getElementById('age100Real').textContent = fmt(age100Real) + ' 원';
+  document.getElementById('age100NominalSub').innerHTML = '명목 <span style="color:#1F4E78">(현재가치 ' + fmtShort(age100Real) + '원)</span>';
   document.getElementById('age100Profit').textContent = fmt(age100Profit) + ' 원';
 
   const depletedBox = document.getElementById('depletedBox');
