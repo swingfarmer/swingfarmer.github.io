@@ -171,6 +171,12 @@
     💾 입력값은 <b>이 브라우저(localStorage)에만</b> 저장됩니다. 서버로 전송되지 않고 광고도 없습니다. 다른 기기와 공유되지 않으니, 기기를 바꾸면 다시 입력하거나 JSON으로 내보내 옮기세요.
   </div>
 
+  <div id="backupAlert" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#92400e;margin-bottom:14px;line-height:1.6">
+    ⚠️ <b>백업한 지 한 달이 넘었어요.</b> 브라우저 데이터가 지워지면 입력이 사라질 수 있어요. "내보내기(JSON)"로 파일을 받아두면 안전합니다.
+    <button onclick="document.getElementById('btnSaveJson').click()" style="background:#f59e0b;color:white;border:none;border-radius:5px;padding:4px 10px;font-size:11.5px;font-weight:600;cursor:pointer;margin-left:6px">지금 백업</button>
+    <button onclick="hideBackupAlert(true)" style="background:none;border:none;color:#92400e;font-size:11.5px;cursor:pointer;margin-left:4px">나중에</button>
+  </div>
+
   <!-- 관리자 클라우드 (로그인 시에만 노출) -->
   <div id="cloudArea" style="display:none;align-items:center;gap:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin-bottom:14px;flex-wrap:wrap">
     <span style="font-size:12px;font-weight:700;color:#0369a1">☁️ 관리자</span>
@@ -304,7 +310,7 @@
       <!-- 월별 추이 (클라우드 스냅샷) -->
       <div class="panel" id="trendPanel" style="display:none">
         <h2>📅 월별 추이</h2>
-        <div class="desc">클라우드에 저장한 스냅샷들로 자산 변화를 추적합니다. (관리자 전용 · 날짜별로 저장할수록 정확)</div>
+        <div class="desc">클라우드에 저장한 스냅샷들로 자산 변화를 추적합니다. <b>"2026-06"처럼 날짜(YYYY-MM) 이름으로 저장한 것만</b> 추이에 표시돼요. (테스트·메모용 이름은 저장만 되고 추이엔 안 나옴)</div>
         <div class="tabs" style="margin-bottom:12px">
           <button class="tab active" id="trendTabNet" onclick="setTrendMode('net')">순자산</button>
           <button class="tab" id="trendTabAsset" onclick="setTrendMode('asset')">자산구성</button>
@@ -712,6 +718,8 @@ $('btnSaveJson').addEventListener('click', ()=>{
   const d = new Date();
   a.href = url; a.download = `자산관리_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
   a.click(); URL.revokeObjectURL(url);
+  try{ localStorage.setItem('sf_assets_lastbackup', Date.now()); }catch(e){}
+  hideBackupAlert();
 });
 $('fileLoad').addEventListener('change', e=>{
   const file = e.target.files[0]; if(!file) return;
@@ -748,8 +756,9 @@ window.assetSetState = (d)=>{ state = { assets:d.assets||[], debts:d.debts||[], 
 let _snapshots = [];      // [{name, data, net, savedAt}]
 let _trendMode = 'net';
 window.assetSetSnapshots = (snaps)=>{
-  // 이름(날짜) 기준 정렬
-  _snapshots = (snaps||[]).slice().sort((a,b)=> (a.name>b.name?1:-1));
+  // 날짜 형식(YYYY-MM 또는 YYYY-MM-XX)만 추이에 사용, 이름순 정렬
+  const dateRe = /^\d{4}-\d{2}/;
+  _snapshots = (snaps||[]).filter(s=>dateRe.test(s.name||'')).slice().sort((a,b)=> (a.name>b.name?1:-1));
   const panel = $('trendPanel');
   if(panel){
     panel.style.display = _snapshots.length>=1 ? 'block' : 'none';
@@ -810,12 +819,31 @@ function drawTrend(){
   }
 }
 
+// === 백업 알림 ===
+function hideBackupAlert(snooze){
+  $('backupAlert').style.display = 'none';
+  if(snooze){ try{ localStorage.setItem('sf_assets_snooze', Date.now()); }catch(e){} }
+}
+function checkBackupAlert(){
+  const hasData = state.assets.some(a=>a.amount>0) || state.debts.some(d=>d.amount>0);
+  if(!hasData) return;
+  const MONTH = 30*24*60*60*1000;
+  let last = 0, snooze = 0;
+  try{ last = parseInt(localStorage.getItem('sf_assets_lastbackup'))||0; snooze = parseInt(localStorage.getItem('sf_assets_snooze'))||0; }catch(e){}
+  const now = Date.now();
+  // 마지막 백업 한 달 초과 + 스누즈 일주일 지남
+  if((now-last > MONTH) && (now-snooze > 7*24*60*60*1000)){
+    $('backupAlert').style.display = 'block';
+  }
+}
+
 // === 초기화 ===
 load();
 // 첫 방문이면 빈 항목 하나씩
 if(state.assets.length===0) state.assets.push({cat:'현금성',name:'',amount:0});
 if(state.debts.length===0) state.debts.push({cat:'주택담보',name:'',amount:0});
 renderAll();
+checkBackupAlert();
 </script>
 <!-- 클라우드 스냅샷 모달 -->
 <div id="slotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:16px">
@@ -877,8 +905,28 @@ onAuthStateChanged(auth, user=>{
     gid('cloudArea').style.display = 'inline-flex';
     gid('btnAdminLogin').style.display = 'none';
     gid('cloudWho').textContent = '☁️ ' + (user.displayName||user.email||'관리자');
-    // 추이용 스냅샷 미리 로드
-    loadSlots().then(snaps=>{ _slotsCache=snaps; if(window.assetSetSnapshots) window.assetSetSnapshots(snaps); });
+    // 추이용 스냅샷 미리 로드 + 이번 달 자동 스냅샷
+    loadSlots().then(async snaps=>{
+      _slotsCache = snaps;
+      if(window.assetSetSnapshots) window.assetSetSnapshots(snaps);
+      // 이번 달(YYYY-MM) 스냅샷이 없고, 입력된 자산이 있으면 자동 저장
+      const now = new Date();
+      const ym = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+      const hasThisMonth = snaps.some(s=>s.name===ym);
+      const st = window.assetGetState();
+      const hasData = (st.assets||[]).some(a=>a.amount>0) || (st.debts||[]).some(d=>d.amount>0);
+      if(!hasThisMonth && hasData){
+        try{
+          const totalA = (st.assets||[]).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+          const totalD = (st.debts||[]).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+          const entry = { name: ym, data: JSON.parse(JSON.stringify(st)), net: totalA-totalD, savedAt: new Date().toISOString(), auto: true };
+          _slotsCache.push(entry);
+          await saveSlots(_slotsCache);
+          if(window.assetSetSnapshots) window.assetSetSnapshots(_slotsCache);
+          console.log('이번 달('+ym+') 스냅샷 자동 저장됨');
+        }catch(e){}
+      }
+    });
   } else {
     gid('cloudArea').style.display = 'none';
     if(user && !isAdmin){ signOut(auth); }
@@ -903,8 +951,9 @@ function renderSlots(slots){
     const t=s.savedAt?new Date(s.savedAt).toLocaleString('ko-KR'):'';
     const net = s.net!==undefined ? s.net : null;
     const netTxt = net!==null ? ' · 순자산 '+(Math.abs(net)>=1e8?(net/1e8).toFixed(2)+'억':Math.round(net/1e4)+'만') : '';
+    const autoTxt = s.auto ? ' <span style="background:#dbeafe;color:#1e40af;font-size:9px;padding:1px 5px;border-radius:4px">자동</span>' : '';
     return '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px">'+
-      '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.name||'(이름없음)')+'</div>'+
+      '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.name||'(이름없음)')+autoTxt+'</div>'+
       '<div style="font-size:11px;color:#999">'+t+netTxt+'</div></div>'+
       '<button onclick="window._slotLoad('+i+')" style="background:#0284c7;color:white;border:none;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button>'+
       '<button onclick="window._slotDelete('+i+')" style="background:#dc2626;color:white;border:none;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">삭제</button></div>';
