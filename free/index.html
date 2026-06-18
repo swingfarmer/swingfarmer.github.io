@@ -279,7 +279,7 @@
       <b>자가</b>: 집 시세를 넣고 대출이 있으면 아래 대출금에 입력(순자산 = 시세 − 대출). <b>전세</b>: 전세보증금을 넣으면 상승률 0%로 가정됩니다. 거주 자산은 생활비로 쓰지 않고 총자산에만 참고로 표시됩니다. 없으면 0.
     </div>
     <div class="input-row">
-      <label>거주 주택 대출금 (원) <span class="stat-sub">(있으면 입력, 없으면 0)</span></label>
+      <label>주택 대출금 (원) <span class="stat-sub">(있으면 입력, 없으면 0)</span></label>
       <input type="number" id="homeDebt" value="0" inputmode="numeric">
       <div class="won-kor" id="homeDebt_kor"></div>
     </div>
@@ -428,20 +428,24 @@
       <div class="stat-value" id="age100Real">-</div>
       <div class="stat-sub">오늘 기준 구매력</div>
     </div>
-    <div class="stat" id="retireTotalBox" style="display:none;background:#f0fdf4;border:1px solid #86efac">
-      <div class="stat-label">🏠 은퇴 시점 총자산 <span style="font-weight:600">(집 포함)</span></div>
-      <div class="stat-value" id="retireTotalNominal" style="color:#16a34a">-</div>
-      <div class="stat-sub" id="retireTotalSub">금융 + 거주주택 · 명목</div>
-    </div>
-    <div class="stat" id="age100TotalBox" style="display:none;background:#f0fdf4;border:1px solid #86efac">
-      <div class="stat-label">🏠 100세 시점 총자산 <span style="font-weight:600">(집 포함)</span></div>
-      <div class="stat-value" id="age100TotalNominal" style="color:#16a34a">-</div>
-      <div class="stat-sub" id="age100TotalSub">금융 + 거주주택 · 명목</div>
-    </div>
     <div class="stat warn" id="depletedBox" style="display:none;">
       <div class="stat-label">⚠ 자산 고갈 경고</div>
       <div class="stat-value" id="depletedAge">-</div>
       <div class="stat-sub">이 나이에 자산이 0원이 됩니다</div>
+    </div>
+  </div>
+
+  <!-- 집 포함 총자산 (별도 그리드, 초록끼리) -->
+  <div class="summary-grid" id="totalGrid" style="display:none;margin-top:14px">
+    <div class="stat" id="retireTotalBox" style="background:#f0fdf4;border:1px solid #86efac">
+      <div class="stat-label">🏠 은퇴 시점 총자산 <span style="font-weight:600">(집 포함)</span></div>
+      <div class="stat-value" id="retireTotalNominal" style="color:#16a34a">-</div>
+      <div class="stat-sub" id="retireTotalSub">금융 + 거주주택 · 명목</div>
+    </div>
+    <div class="stat" id="age100TotalBox" style="background:#f0fdf4;border:1px solid #86efac">
+      <div class="stat-label">🏠 100세 시점 총자산 <span style="font-weight:600">(집 포함)</span></div>
+      <div class="stat-value" id="age100TotalNominal" style="color:#16a34a">-</div>
+      <div class="stat-sub" id="age100TotalSub">금융 + 거주주택 · 명목</div>
     </div>
   </div>
 
@@ -450,16 +454,6 @@
   </div>
 
   <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin-top:14px">
-    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
-      <div style="font-size:14px;font-weight:700;color:#1F4E78">📈 자산 성장 그래프</div>
-      <span style="display:inline-flex;gap:4px;margin-left:auto">
-        <button type="button" id="chartNominal" class="home-toggle active" onclick="setChartMode('nominal')">명목</button>
-        <button type="button" id="chartReal" class="home-toggle" onclick="setChartMode('real')">현재가치</button>
-      </span>
-    </div>
-    <div style="font-size:12px;color:#888;margin-bottom:10px" id="chartDesc">금융·투자자산(파랑)과 거주주택 포함 총자산(초록)의 명목 추이. 미래 시점 액수 그대로.</div>
-    <canvas id="assetChart" height="120"></canvas>
-  </div>
 
   <div id="profitInfo" style="display:none;background:#fff8e8;border:1px solid #f0d896;border-radius:8px;padding:16px 18px;margin-top:14px;font-size:13.5px;line-height:1.8;color:#5a4a2a">
     <b style="color:#b45309;font-size:14px">💡 운용수익이란? — "투자가 저절로 불려준 돈"</b><br><br>
@@ -505,6 +499,17 @@
     </table>
   </div>
 </div>
+
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+      <div style="font-size:14px;font-weight:700;color:#1F4E78">📈 자산 성장 그래프</div>
+      <span style="display:inline-flex;gap:4px;margin-left:auto">
+        <button type="button" id="chartNominal" class="home-toggle active" onclick="setChartMode('nominal')">명목</button>
+        <button type="button" id="chartReal" class="home-toggle" onclick="setChartMode('real')">현재가치</button>
+      </span>
+    </div>
+    <div style="font-size:12px;color:#888;margin-bottom:10px" id="chartDesc">금융·투자자산(파랑)과 거주주택 포함 총자산(초록)의 명목 추이. 미래 시점 액수 그대로.</div>
+    <canvas id="assetChart" height="120"></canvas>
+  </div>
 
 <div class="manual">
   <h3>📘 사용 설명서</h3>
@@ -885,18 +890,14 @@ function calculate() {
 
   // 거주주택 포함 총자산 (집이 있을 때만 카드·안내 표시)
   const hasHome = homeValue0 > 0;
-  const retireBox = document.getElementById('retireTotalBox');
-  const age100Box = document.getElementById('age100TotalBox');
+  const totalGrid = document.getElementById('totalGrid');
   const homeBox = document.getElementById('homeNoteBox');
 
   if (hasHome) {
-    if (retireBox) {
-      retireBox.style.display = '';
+    if (totalGrid) {
+      totalGrid.style.display = '';
       document.getElementById('retireTotalNominal').textContent = fmt(retireTotalNom) + ' 원';
       document.getElementById('retireTotalSub').innerHTML = '금융 + 주택 · 명목 <span style="color:#16a34a">(현재가치 ' + fmtShort(retireTotalReal) + '원)</span>';
-    }
-    if (age100Box) {
-      age100Box.style.display = '';
       document.getElementById('age100TotalNominal').textContent = fmt(age100TotalNom) + ' 원';
       document.getElementById('age100TotalSub').innerHTML = '금융 + 주택 · 명목 <span style="color:#16a34a">(현재가치 ' + fmtShort(age100TotalReal) + '원)</span>';
     }
@@ -907,8 +908,7 @@ function calculate() {
         '<span style="color:#888;font-size:12px">※ 집을 팔거나 줄여 노후자금에 보태는 시뮬레이션은 추후 "주택 갈아타기" 기능으로 추가 예정입니다.</span>';
     }
   } else {
-    if (retireBox) retireBox.style.display = 'none';
-    if (age100Box) age100Box.style.display = 'none';
+    if (totalGrid) totalGrid.style.display = 'none';
     if (homeBox) homeBox.style.display = 'none';
   }
 
