@@ -140,7 +140,7 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
 
 <footer>
   © 스윙파머 · GitHub Pages
-  <span id="adminEntry" style="display:none"> · <a href="/1808/" style="color:#bbb;text-decoration:none">⚙</a></span>
+  <span id="adminEntry" style="display:none"> · <span id="adminDot" style="color:#ccc;cursor:pointer;user-select:none">·</span></span>
 </footer>
 
 <script>
@@ -209,9 +209,20 @@ if('serviceWorker' in navigator){
   if(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone){
     var box = document.getElementById('installBox');
     if(box) box.style.display='none';
-    // 앱에선 주소창이 없어 /1808/로 직접 못 가므로, 푸터에 관리 진입점 노출
+    // 앱에선 주소창이 없어 /1808/로 직접 못 가므로, 푸터 점(·)을 5번 눌러 진입
     var ae = document.getElementById('adminEntry');
     if(ae) ae.style.display='inline';
+    var dot = document.getElementById('adminDot');
+    if(dot){
+      var taps = 0, lastTap = 0;
+      dot.addEventListener('click', function(){
+        var now = Date.now();
+        if(now - lastTap > 1500) taps = 0; // 1.5초 안에 연속으로
+        lastTap = now;
+        taps++;
+        if(taps >= 5){ taps = 0; location.href = '/1808/'; }
+      });
+    }
     return;
   }
 
