@@ -184,6 +184,28 @@
     user-select: none;
   }
   .info-btn:hover { color: #2d6ba3; }
+  .won-kor {
+    font-size: 12px;
+    color: #1F4E78;
+    font-weight: 600;
+    margin-top: 3px;
+    min-height: 15px;
+  }
+  .home-toggle {
+    font-size: 11px;
+    padding: 2px 9px;
+    border: 1px solid #bbb;
+    background: #fff;
+    color: #666;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .home-toggle.active {
+    background: #1F4E78;
+    color: #fff;
+    border-color: #1F4E78;
+  }
 </style>
 </head>
 <body>
@@ -237,29 +259,39 @@
     <div class="section-label">② 은퇴 전 현금흐름 (수입·지출)</div>
     <div class="input-row">
       <label>금융·투자자산 (원) <span class="info-btn" onclick="toggleFinAssetInfo()">ⓘ</span></label>
-      <input type="number" id="currentAssets" value="450000000">
+      <input type="number" id="currentAssets" value="450000000" inputmode="numeric">
+      <div class="won-kor" id="currentAssets_kor"></div>
     </div>
     <div class="input-row" id="finAssetInfo" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 12px;font-size:12px;color:#1e40af;line-height:1.7">
       예금·주식·채권·펀드 + <b>상가월세·임대수익 등 수익이 나는 자산</b>을 모두 합한 금액. 이 자산만 투자수익률로 굴러가고, 은퇴 후 생활비로 인출됩니다. (살고 있는 집은 아래 칸에)
     </div>
     <div class="input-row">
-      <label>거주 주택 (원) <span class="info-btn" onclick="toggleHomeInfo()">ⓘ</span></label>
-      <input type="number" id="homeValue" value="0">
+      <label>거주 주택 시세 (원) <span class="info-btn" onclick="toggleHomeInfo()">ⓘ</span>
+        <span style="display:inline-flex;gap:4px;margin-left:6px;vertical-align:middle">
+          <button type="button" id="btnOwn" class="home-toggle active" onclick="setHomeType('own')">자가</button>
+          <button type="button" id="btnJeonse" class="home-toggle" onclick="setHomeType('jeonse')">전세</button>
+        </span>
+      </label>
+      <input type="number" id="homeValue" value="0" inputmode="numeric">
+      <div class="won-kor" id="homeValue_kor"></div>
     </div>
     <div class="input-row" id="homeInfo" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 12px;font-size:12px;color:#1e40af;line-height:1.7">
-      <b>살고 있는 집</b>의 현재 시세. 수익이 나지 않고 깔고 사는 자산이라 <b>생활비로 쓰지 않습니다</b>(총자산엔 참고로 표시). 집값 상승률만큼만 따로 불어납니다. 없으면 0.
+      <b>자가</b>: 집 시세를 넣고 대출이 있으면 아래 대출금에 입력(순자산 = 시세 − 대출). <b>전세</b>: 전세보증금을 넣으면 상승률 0%로 가정됩니다. 거주 자산은 생활비로 쓰지 않고 총자산에만 참고로 표시됩니다. 없으면 0.
     </div>
     <div class="input-row">
-      <label>집값 상승률 (%) <span class="stat-sub">(보통 물가상승률 수준)</span></label>
-      <input type="number" id="homeGrowth" value="2.7" step="0.1">
+      <label>└ 주택 대출금 (원) <span class="stat-sub">(있으면 입력, 없으면 0)</span></label>
+      <input type="number" id="homeDebt" value="0" inputmode="numeric">
+      <div class="won-kor" id="homeDebt_kor"></div>
     </div>
     <div class="input-row">
       <label>연 수입액 (원) <span class="stat-sub">(실수령 평균 5,040만)</span></label>
-      <input type="number" id="annualIncome" value="50400000">
+      <input type="number" id="annualIncome" value="50400000" inputmode="numeric">
+      <div class="won-kor" id="annualIncome_kor"></div>
     </div>
     <div class="input-row">
       <label>연 지출액 (원) <span class="stat-sub">(평균 3,480만)</span></label>
-      <input type="number" id="annualSpending" value="34800000">
+      <input type="number" id="annualSpending" value="34800000" inputmode="numeric">
+      <div class="won-kor" id="annualSpending_kor"></div>
     </div>
     <div class="computed">
       자동 계산: <b>연 저축액 = <span id="autoSaving">15,600,000</span> 원</b>
@@ -292,6 +324,10 @@
     <div class="input-row">
       <label>지출 증가율 (%) <span class="stat-sub">(생활물가)</span></label>
       <input type="number" id="spendingGrowth" value="3" step="0.1">
+    </div>
+    <div class="input-row">
+      <label>집값 상승률 (%) <span class="stat-sub" id="homeGrowthHint">(전세는 0%)</span></label>
+      <input type="number" id="homeGrowth" value="2.7" step="0.1">
     </div>
 
     <div id="returnInfo" style="display:none;grid-column:1/-1;background:#f0f5fa;border:1px solid #c7d7e8;border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.7;color:#1a3a52;margin-top:4px">
@@ -330,13 +366,6 @@
       <div style="font-size:12px;color:#166534;font-weight:600;margin-right:auto">💾 저장 (서버 전송 없음 · 광고 없음)</div>
       <button id="btnSavePdf" type="button" style="background:#dc2626;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">📄 PDF로 저장</button>
       <button id="btnShare" type="button" style="background:#7c3aed;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">📷 이미지로 공유</button>
-      <!-- 관리자 클라우드 (로그인 시에만 노출) -->
-      <span id="cloudArea" style="display:none;align-items:center;gap:6px">
-        <button id="btnCloudOpen" type="button" style="background:#0ea5e9;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">☁️ 클라우드 시나리오</button>
-        <span id="cloudWho" style="font-size:11px;color:#0369a1"></span>
-        <button id="btnCloudLogout" type="button" style="background:#9ca3af;color:white;border:none;padding:7px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">로그아웃</button>
-      </span>
-      <button id="btnAdminLogin" type="button" style="display:none;background:#fff;color:#444;border:1px solid #ddd;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">🔑 관리자 로그인</button>
       <button id="btnSaveJson" type="button" style="background:#1F4E78;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">💾 입력값 저장 (JSON)</button>
       <label style="background:#10b981;color:white;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">
         📂 불러오기
@@ -351,6 +380,16 @@
       • 입력한 어떤 정보도 <b>서버로 전송되지 않습니다.</b> 광고도 없습니다.
     </div>
   </div>
+
+  <!-- 관리자 클라우드 (로그인 시에만 노출, 결과 보면서 저장) -->
+  <div id="cloudArea" style="display:none;align-items:center;gap:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin-bottom:14px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:#0369a1">☁️ 관리자</span>
+    <button id="btnCloudOpen" type="button" style="background:#0ea5e9;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">클라우드 시나리오</button>
+    <span id="cloudWho" style="font-size:11px;color:#0369a1"></span>
+    <button id="btnCloudLogout" type="button" style="margin-left:auto;background:#9ca3af;color:white;border:none;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">로그아웃</button>
+  </div>
+  <button id="btnAdminLogin" type="button" style="display:none;background:#fff;color:#444;border:1px solid #ddd;padding:8px 16px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer;margin-bottom:14px">🔑 관리자 로그인</button>
+
   <div id="capture-area">
   <div class="summary-grid">
 
@@ -582,6 +621,49 @@ function toggleHomeInfo() {
   el.style.display = (el.style.display === 'none' || !el.style.display) ? 'block' : 'none';
 }
 
+// 숫자 → 한글 금액 (예: 450000000 → "4억 5,000만원")
+function wonToKorean(n) {
+  n = Math.round(Math.abs(n));
+  if (n === 0) return '';
+  var eok = Math.floor(n / 100000000);
+  var man = Math.floor((n % 100000000) / 10000);
+  var won = n % 10000;
+  var parts = [];
+  if (eok > 0) parts.push(eok.toLocaleString('ko-KR') + '억');
+  if (man > 0) parts.push(man.toLocaleString('ko-KR') + '만');
+  if (won > 0) parts.push(won.toLocaleString('ko-KR'));
+  return parts.join(' ') + '원';
+}
+function updateKor(id) {
+  var input = document.getElementById(id);
+  var box = document.getElementById(id + '_kor');
+  if (!input || !box) return;
+  var v = parseFloat(input.value) || 0;
+  box.textContent = v > 0 ? wonToKorean(v) : '';
+}
+// 한글 표시 대상
+var KOR_FIELDS = ['currentAssets', 'homeValue', 'homeDebt', 'annualIncome', 'annualSpending'];
+function updateAllKor() { KOR_FIELDS.forEach(updateKor); }
+
+// 자가/전세 토글
+function setHomeType(type) {
+  var own = document.getElementById('btnOwn');
+  var jeonse = document.getElementById('btnJeonse');
+  var growth = document.getElementById('homeGrowth');
+  var debtRow = document.getElementById('homeDebt');
+  if (type === 'jeonse') {
+    jeonse.classList.add('active'); own.classList.remove('active');
+    growth.value = 0; growth.disabled = true;
+    document.getElementById('homeGrowthHint').textContent = '(전세 → 0% 고정)';
+  } else {
+    own.classList.add('active'); jeonse.classList.remove('active');
+    growth.disabled = false;
+    if (parseFloat(growth.value) === 0) growth.value = 2.7;
+    document.getElementById('homeGrowthHint').textContent = '(전세는 0%)';
+  }
+  if (typeof calculate === 'function') calculate();
+}
+
 function calculate() {
   const startYear = parseInt(document.getElementById('startYear').value) || new Date().getFullYear();
   const currentAge = parseInt(document.getElementById('currentAge').value) || 0;
@@ -612,8 +694,10 @@ function calculate() {
   let retireTotalReal = 0, age100TotalReal = 0, retireHome = 0, age100Home = 0;
   let depletedAge = null;
 
-  // 거주 주택 (별도 굴림, 생활비에 안 씀)
-  const homeValue0 = parseFloat(document.getElementById('homeValue').value) || 0;
+  // 거주 주택 (별도 굴림, 생활비에 안 씀). 순주택가치 = 시세 − 대출
+  const homeMarket = parseFloat(document.getElementById('homeValue').value) || 0;
+  const homeDebt = parseFloat(document.getElementById('homeDebt').value) || 0;
+  const homeValue0 = Math.max(0, homeMarket - homeDebt);
   const homeGrowth = (parseFloat(document.getElementById('homeGrowth').value) || 0) / 100;
   let homeValue = homeValue0;
 
@@ -716,6 +800,9 @@ function calculate() {
     }
   }
 
+  // 입력 한글 금액 표시 갱신
+  updateAllKor();
+
   // 공유용 데이터 저장
   window._shareData = {
     curAge: parseInt(document.getElementById('currentAge') ? document.getElementById('currentAge').value : 0) || 0,
@@ -740,7 +827,7 @@ calculate();
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (function(){
-  var INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth','homeValue','homeGrowth'];
+  var INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth','homeValue','homeDebt','homeGrowth'];
   var PAGE_NAME = '경제적자유';
 
   function getDateStr(){
@@ -1016,7 +1103,7 @@ onAuthStateChanged(auth, user=>{
 });
 
 // 입력값 수집/적용 (PDF 스크립트의 INPUT_IDS와 동일)
-const INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth','homeValue','homeGrowth'];
+const INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth','homeValue','homeDebt','homeGrowth'];
 
 function collectInputs(){
   const data = {};
