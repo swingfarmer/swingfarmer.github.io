@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전세 vs 매매 비교 | 스윙파머</title>
+<meta name="description" content="전세로 살 때와 집을 사서 살 때, 기회비용·대출이자·집값상승까지 반영해 N년 후 순자산으로 비교.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  header h1 { font-size: 20px; color: #1F4E78; margin: 0; }
+  .back-link { margin-left: auto; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
+  .panel { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .section-label { font-size: 14px; font-weight: 700; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #eef0f3; }
+  .buy-label { color: #1F4E78; }
+  .jeonse-label { color: #b45309; }
+  .common-label { color: #555; }
+  .input-row { margin-bottom: 12px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #333; }
+  .stat-sub { font-size: 11px; font-weight: 500; color: #888; }
+  input[type="number"] { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; background: #FFF2CC; font-weight: 600; color: #0000FF; }
+  input[type="number"]:focus { outline: 2px solid #1F4E78; background: #FFFACD; }
+  .won-kor { font-size: 12px; color: #1F4E78; font-weight: 600; margin-top: 3px; min-height: 15px; }
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; font-style: normal; cursor: pointer; margin-left: 4px; }
+  .info-box { display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #1e40af; line-height: 1.7; margin-top: 6px; }
+
+  .vs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .vs-card { border-radius: 14px; padding: 20px; text-align: center; color: white; }
+  .vs-buy { background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+  .vs-jeonse { background: linear-gradient(135deg, #b45309, #d97706); }
+  .vs-card .vlabel { font-size: 13px; opacity: .9; margin-bottom: 6px; }
+  .vs-card .vval { font-size: 22px; font-weight: 800; }
+  .vs-card .vkor { font-size: 11px; opacity: .85; margin-top: 4px; }
+  .winner { text-align: center; font-size: 15px; font-weight: 700; padding: 14px; border-radius: 10px; margin-bottom: 16px; }
+  .winner.buy { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+  .winner.jeonse { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+
+  table.breakdown { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.breakdown td { padding: 9px 6px; border-bottom: 1px solid #f0f0f0; }
+  table.breakdown td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  table.breakdown tr.group-head td { font-weight: 700; color: #1F4E78; padding-top: 14px; }
+  table.breakdown tr.total td { border-top: 2px solid #1F4E78; font-weight: 700; padding-top: 11px; }
+  .plus { color: #16a34a; } .minus { color: #dc2626; }
+
+  .warn-note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; line-height: 1.7; margin-top: 14px; }
+  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; margin-top: 8px; font-size: 13px; line-height: 1.8; color: #6b5618; }
+  .manual .badge { display: inline-block; background: #1F4E78; color: white; font-size: 11px; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>⚖️ 전세 vs 매매 비교</h1>
+    <a href="../" class="back-link">← 부동산 도구로</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc">같은 집에 <b>전세로 살 때</b>와 <b>사서 살 때</b>, N년 후 순자산이 어떻게 달라지는지 비교합니다. 집값 상승, 대출이자, 전세금의 기회비용(굴렸을 때 수익)까지 반영해요.</p>
+
+  <!-- 공통 -->
+  <div class="panel">
+    <div class="section-label common-label">⚙️ 공통 조건</div>
+    <div class="input-row">
+      <label>집값 (매매가) <span class="stat-sub">살 경우 가격</span></label>
+      <input type="number" id="housePrice" value="1000000000" inputmode="numeric">
+      <div class="won-kor" id="housePrice_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>보유/거주 기간 (년) <span class="stat-sub">몇 년 살지</span></label>
+      <input type="number" id="years" value="5" inputmode="numeric">
+    </div>
+    <div class="input-row">
+      <label>집값 연 상승률 (%) <span class="stat-sub">예상</span> <span class="info-btn" onclick="toggleInfo('priceInfo')">i</span></label>
+      <input type="number" id="priceGrowth" value="3" step="0.1" inputmode="decimal">
+      <div class="info-box" id="priceInfo">집값이 매년 오를 것으로 보는 비율. 장기 평균은 2~4% 정도지만 지역·시기에 따라 크게 다릅니다. 0이나 마이너스도 넣어보세요(하락장 가정).</div>
+    </div>
+    <div class="input-row">
+      <label>여유자금 운용수익률 (%) <span class="stat-sub">현금 굴리면</span> <span class="info-btn" onclick="toggleInfo('investInfo')">i</span></label>
+      <input type="number" id="investRate" value="4" step="0.1" inputmode="decimal">
+      <div class="info-box" id="investInfo">전세로 살면 매매가-전세금 만큼 현금이 남습니다. 그 돈을 예금·투자로 굴렸을 때 기대수익률. 이게 전세의 핵심 장점(기회비용)이에요.</div>
+    </div>
+  </div>
+
+  <!-- 매매 -->
+  <div class="panel">
+    <div class="section-label buy-label">🏡 살 경우 (매매)</div>
+    <div class="input-row">
+      <label>주택담보대출 (원) <span class="stat-sub">집 살 때 빌리는 돈</span></label>
+      <input type="number" id="buyLoan" value="400000000" inputmode="numeric">
+      <div class="won-kor" id="buyLoan_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>대출 금리 (%) <span class="stat-sub">주담대</span></label>
+      <input type="number" id="buyRate" value="4" step="0.1" inputmode="decimal">
+    </div>
+    <div class="input-row">
+      <label>취득세·비용 (원) <span class="stat-sub">살 때 드는 세금·중개비</span></label>
+      <input type="number" id="buyCost" value="35000000" inputmode="numeric">
+      <div class="won-kor" id="buyCost_kor"></div>
+    </div>
+  </div>
+
+  <!-- 전세 -->
+  <div class="panel">
+    <div class="section-label jeonse-label">🏠 전세로 살 경우</div>
+    <div class="input-row">
+      <label>전세 보증금 (원) <span class="stat-sub">같은 집 전세가</span></label>
+      <input type="number" id="jeonsePrice" value="600000000" inputmode="numeric">
+      <div class="won-kor" id="jeonsePrice_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>전세 대출 (원) <span class="stat-sub">전세금 중 빌리는 돈 (없으면 0)</span></label>
+      <input type="number" id="jeonseLoan" value="0" inputmode="numeric">
+      <div class="won-kor" id="jeonseLoan_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>전세 대출 금리 (%) <span class="stat-sub">전세자금대출</span></label>
+      <input type="number" id="jeonseRate" value="3.5" step="0.1" inputmode="decimal">
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="vs-grid">
+    <div class="vs-card vs-buy">
+      <div class="vlabel">🏡 매매 (순자산)</div>
+      <div class="vval" id="buyResult">-</div>
+      <div class="vkor" id="buyResultKor"></div>
+    </div>
+    <div class="vs-card vs-jeonse">
+      <div class="vlabel">🏠 전세 (순자산)</div>
+      <div class="vval" id="jeonseResult">-</div>
+      <div class="vkor" id="jeonseResultKor"></div>
+    </div>
+  </div>
+  <div class="winner" id="winnerBox">-</div>
+
+  <div class="panel">
+    <div class="section-label">📋 상세 비교 (N년 후)</div>
+    <table class="breakdown">
+      <tbody id="breakdownBody"></tbody>
+    </table>
+  </div>
+
+  <div class="warn-note">
+    ⚠️ <b>참고용 추정입니다.</b> 집값 상승률·운용수익률 같은 가정에 따라 결과가 크게 달라집니다. 특히 집값 상승률은 아무도 정확히 알 수 없으니, 여러 값(0%, 3%, 5%, 마이너스)을 넣어보며 시나리오를 비교하세요. 양도세·재산세·전세금 상승 등은 단순화했습니다.
+  </div>
+
+  <div class="manual">
+    <b>📘 계산 방법</b><br>
+    <span class="badge">매매</span> N년 후 집값(상승 반영) − 남은 대출 − 그동안 낸 이자 − 취득비용 = 순자산<br>
+    <span class="badge">전세</span> 전세보증금(돌려받음) + 여유자금 운용수익 − 전세대출 이자 = 순자산<br>
+    핵심은 <b>"집값 상승 vs 여유자금 운용수익"</b>의 대결이에요. 집값이 많이 오르면 매매, 여유돈을 잘 굴리면 전세가 유리합니다.
+  </div>
+</div>
+
+<script src="/common.js?v=3"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+function wonToKorean(n){ var neg=n<0; n=Math.round(Math.abs(n)); if(n===0)return '0원'; var eok=Math.floor(n/1e8),man=Math.floor((n%1e8)/1e4),won=n%1e4,p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(man>0)p.push(man.toLocaleString('ko-KR')+'만'); if(won>0)p.push(won.toLocaleString('ko-KR')); return (neg?'−':'')+p.join(' ')+'원'; }
+function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
+
+const KOR_FIELDS = ['housePrice','buyLoan','buyCost','jeonsePrice','jeonseLoan'];
+function updateKor(){ KOR_FIELDS.forEach(id=>{ var el=$(id), box=$(id+'_kor'); if(el&&box){ var v=parseFloat(el.value)||0; box.textContent=v>0?wonToKorean(v):''; } }); }
+
+function calculate(){
+  const housePrice = parseFloat($('housePrice').value)||0;
+  const years = parseFloat($('years').value)||0;
+  const priceGrowth = (parseFloat($('priceGrowth').value)||0)/100;
+  const investRate = (parseFloat($('investRate').value)||0)/100;
+  const buyLoan = parseFloat($('buyLoan').value)||0;
+  const buyRate = (parseFloat($('buyRate').value)||0)/100;
+  const buyCost = parseFloat($('buyCost').value)||0;
+  const jeonsePrice = parseFloat($('jeonsePrice').value)||0;
+  const jeonseLoan = parseFloat($('jeonseLoan').value)||0;
+  const jeonseRate = (parseFloat($('jeonseRate').value)||0)/100;
+
+  // === 매매 ===
+  // 초기 자기자본 = 집값 + 취득비용 − 대출
+  const buyEquity = housePrice + buyCost - buyLoan;
+  // N년 후 집값
+  const futureHouse = housePrice * Math.pow(1+priceGrowth, years);
+  // 대출 이자 (원금 유지 가정, 단순 누적)
+  const buyInterest = buyLoan * buyRate * years;
+  // 매매 순자산 = 미래집값 − 남은대출 − 누적이자 − 취득비용
+  const buyNet = futureHouse - buyLoan - buyInterest - buyCost;
+  // 투입 자본 대비 = buyNet 자체가 N년후 자산 가치 (초기 자기자본은 이미 집에 녹음)
+
+  // === 전세 ===
+  // 전세 자기자본 = 전세금 − 전세대출
+  const jeonseEquity = jeonsePrice - jeonseLoan;
+  // 매매 대비 여유자금 = 매매 시 자기자본 − 전세 자기자본 (전세가 덜 묶임)
+  const freeMoney = buyEquity - jeonseEquity;
+  // 여유자금 운용수익 (복리)
+  const investGain = freeMoney>0 ? freeMoney * (Math.pow(1+investRate, years) - 1) : 0;
+  // 전세대출 이자
+  const jeonseInterest = jeonseLoan * jeonseRate * years;
+  // 전세 순자산 = 전세금(돌려받음) + 여유자금 원금 + 운용수익 − 전세이자
+  // 비교 기준 통일: 전세는 "전세자기자본 + 여유자금(=매매자기자본과 동일 출발) + 운용수익 − 이자"
+  const jeonseNet = jeonseEquity + (freeMoney>0?freeMoney:0) + investGain - jeonseInterest;
+
+  // 표시
+  $('buyResult').textContent = fmt(buyNet);
+  $('buyResultKor').textContent = wonToKorean(buyNet);
+  $('jeonseResult').textContent = fmt(jeonseNet);
+  $('jeonseResultKor').textContent = wonToKorean(jeonseNet);
+
+  const diff = buyNet - jeonseNet;
+  const wb = $('winnerBox');
+  if(Math.abs(diff) < housePrice*0.005){
+    wb.className = 'winner'; wb.style.background='#f1f5f9'; wb.style.color='#475569';
+    wb.textContent = '⚖️ 거의 비슷해요 (차이 '+fmt(Math.abs(diff))+'원)';
+  } else if(diff > 0){
+    wb.className = 'winner buy';
+    wb.textContent = '🏡 매매가 '+fmt(diff)+'원 유리 ('+wonToKorean(diff)+')';
+  } else {
+    wb.className = 'winner jeonse';
+    wb.textContent = '🏠 전세가 '+fmt(-diff)+'원 유리 ('+wonToKorean(-diff)+')';
+  }
+
+  // 상세
+  const rows = [];
+  rows.push(`<tr class="group-head"><td colspan="2">🏡 매매</td></tr>`);
+  rows.push(`<tr><td>${years}년 후 집값 (상승 ${(priceGrowth*100).toFixed(1)}%)</td><td class="num plus">${fmt(futureHouse)}</td></tr>`);
+  rows.push(`<tr><td>− 남은 대출</td><td class="num minus">−${fmt(buyLoan)}</td></tr>`);
+  rows.push(`<tr><td>− 누적 대출이자 (${years}년)</td><td class="num minus">−${fmt(buyInterest)}</td></tr>`);
+  rows.push(`<tr><td>− 취득세·비용</td><td class="num minus">−${fmt(buyCost)}</td></tr>`);
+  rows.push(`<tr class="total"><td>매매 순자산</td><td class="num">${fmt(buyNet)}</td></tr>`);
+
+  rows.push(`<tr class="group-head"><td colspan="2">🏠 전세</td></tr>`);
+  rows.push(`<tr><td>전세 보증금 (돌려받음)</td><td class="num plus">${fmt(jeonseEquity)}</td></tr>`);
+  if(freeMoney>0){
+    rows.push(`<tr><td>여유자금 (매매 대비 덜 묶임)</td><td class="num plus">${fmt(freeMoney)}</td></tr>`);
+    rows.push(`<tr><td>+ 여유자금 운용수익 (${(investRate*100).toFixed(1)}%, ${years}년)</td><td class="num plus">+${fmt(investGain)}</td></tr>`);
+  } else {
+    rows.push(`<tr><td colspan="2" style="color:#888;font-size:12px">※ 전세 자기자본이 매매보다 커서 여유자금 없음</td></tr>`);
+  }
+  if(jeonseInterest>0) rows.push(`<tr><td>− 전세대출 이자</td><td class="num minus">−${fmt(jeonseInterest)}</td></tr>`);
+  rows.push(`<tr class="total"><td>전세 순자산</td><td class="num">${fmt(jeonseNet)}</td></tr>`);
+
+  $('breakdownBody').innerHTML = rows.join('');
+  updateKor();
+}
+
+document.querySelectorAll('input').forEach(el=>{ el.addEventListener('input', calculate); });
+calculate();
+</script>
+</body>
+</html>
