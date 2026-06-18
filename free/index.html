@@ -140,6 +140,8 @@
   tr.retired { background: #f2f2f2; color: #777; }
   tr.pension { background: #ecfdf5; }
   tr.negative td { color: #dc2626 !important; font-weight: 600; }
+  tr.moverow { background: #fef3c7 !important; }
+  tr.moverow td { font-weight: 600; border-top: 2px solid #f59e0b; border-bottom: 2px solid #f59e0b; }
   .table-wrap {
     max-height: 500px;
     overflow-y: auto;
@@ -296,20 +298,28 @@
       </div>
     </div>
     <div id="movePanel" style="display:none;grid-column:1/-1;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin-top:-4px">
-      <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:12px">
-        <div style="flex:0 0 auto"><label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:4px">1차 나이</label>
-          <input type="number" id="move1Age" placeholder="예: 60" inputmode="numeric" style="width:90px"></div>
-        <div style="flex:1;min-width:140px"><label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:4px">변경 후 주택가 (지금 기준)</label>
-          <input type="number" id="move1Value" placeholder="예: 600000000" inputmode="numeric" style="width:100%"></div>
+      <div style="font-size:12px;font-weight:700;color:#1F4E78;margin-bottom:8px">1차 갈아타기</div>
+      <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:4px">
+        <div style="flex:0 0 auto"><label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:4px">나이</label>
+          <input type="number" id="move1Age" placeholder="예: 60" inputmode="numeric" style="width:80px"></div>
+        <div style="flex:1;min-width:120px"><label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:4px">주택가 (지금 기준)</label>
+          <input type="number" id="move1Value" placeholder="예: 600000000" inputmode="numeric" style="width:100%">
+          <div class="won-kor" id="move1Value_kor"></div></div>
+        <div style="flex:1;min-width:120px"><label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:4px">대출금 (지금 기준)</label>
+          <input type="number" id="move1Debt" placeholder="없으면 0" inputmode="numeric" style="width:100%">
+          <div class="won-kor" id="move1Debt_kor"></div></div>
       </div>
-      <div class="won-kor" id="move1Value_kor" style="margin-top:-8px;margin-bottom:10px"></div>
+      <div style="font-size:12px;font-weight:700;color:#1F4E78;margin:14px 0 8px">2차 갈아타기 <span style="color:#aaa;font-weight:500">(선택)</span></div>
       <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
-        <div style="flex:0 0 auto"><label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:4px">2차 나이 <span style="color:#aaa">(선택)</span></label>
-          <input type="number" id="move2Age" placeholder="예: 75" inputmode="numeric" style="width:90px"></div>
-        <div style="flex:1;min-width:140px"><label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:4px">변경 후 주택가 (지금 기준)</label>
-          <input type="number" id="move2Value" placeholder="비우면 안 함" inputmode="numeric" style="width:100%"></div>
+        <div style="flex:0 0 auto"><label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:4px">나이</label>
+          <input type="number" id="move2Age" placeholder="예: 75" inputmode="numeric" style="width:80px"></div>
+        <div style="flex:1;min-width:120px"><label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:4px">주택가 (지금 기준)</label>
+          <input type="number" id="move2Value" placeholder="비우면 안 함" inputmode="numeric" style="width:100%">
+          <div class="won-kor" id="move2Value_kor"></div></div>
+        <div style="flex:1;min-width:120px"><label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:4px">대출금 (지금 기준)</label>
+          <input type="number" id="move2Debt" placeholder="없으면 0" inputmode="numeric" style="width:100%">
+          <div class="won-kor" id="move2Debt_kor"></div></div>
       </div>
-      <div class="won-kor" id="move2Value_kor" style="margin-top:6px"></div>
     </div>
     <div class="input-row">
       <label>연 수입액 (원) <span class="stat-sub">(실수령 평균 5,040만)</span></label>
@@ -549,7 +559,7 @@
     <li><span class="badge">📈 자산 성장 그래프</span> 파랑 = 금융·투자자산, 초록 = 총자산(집 포함). 위 <b>명목/현재가치</b> 버튼으로 전환 가능.</li>
     <li><span class="badge">총 운용수익</span> = 최종자산 − 시작자산 − 순 현금흐름. 순수하게 투자로 불어난 부분.</li>
     <li><span class="badge">자산 고갈 경고</span> 은퇴 후 지출이 (운용수익 + 연금)보다 크면 자산이 점점 줄어 0이 됨. 빨간 경고가 뜨면 수입↑ / 지출↓ / 수익률↑ / 은퇴 늦추기 / 연금 더 모으기 중 조정 필요.</li>
-    <li><span class="badge">표 색상</span> 회색 = 은퇴 이후. 연한 초록 = 연금 수령 중. 빨간 글씨 = 자산 마이너스(고갈).</li>
+    <li><span class="badge">표 색상</span> 회색 = 은퇴 이후. 연한 초록 = 연금 수령 중. 빨간 글씨 = 자산 마이너스(고갈). <b>노란 행 + 🔄 = 주택 갈아타기 시점</b>. 그래프엔 주황 점선으로 표시.</li>
   </ul>
 
   <h3>③ 계산 로직</h3>
@@ -698,11 +708,43 @@ function drawAssetChart() {
     return v;
   };
   if (_assetChart) _assetChart.destroy();
+  // 갈아타기 시점 세로선 플러그인
+  var moveLinePlugin = {
+    id: 'moveLines',
+    afterDraw: function(chart) {
+      if (!d.moveAges || d.moveAges.length === 0) return;
+      var ctx = chart.ctx;
+      var xAxis = chart.scales.x;
+      var yAxis = chart.scales.y;
+      d.moveAges.forEach(function(mAge){
+        var idx = mAge - d.startAge;
+        if (idx < 0 || idx >= d.ages.length) return;
+        var x = xAxis.getPixelForValue(idx);
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([5, 4]);
+        ctx.moveTo(x, yAxis.top);
+        ctx.lineTo(x, yAxis.bottom);
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#f59e0b';
+        ctx.stroke();
+        // 🔄 라벨
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#b45309';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🔄', x, yAxis.top - 2);
+        ctx.restore();
+      });
+    }
+  };
   _assetChart = new Chart(cv, {
     type: 'line',
     data: { labels: d.ages, datasets: datasets },
+    plugins: [moveLinePlugin],
     options: {
       responsive: true, maintainAspectRatio: true,
+      layout: { padding: { top: 14 } },
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: true, position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
@@ -747,7 +789,7 @@ function updateKor(id) {
   box.textContent = v > 0 ? wonToKorean(v) : '';
 }
 // 한글 표시 대상
-var KOR_FIELDS = ['currentAssets', 'homeValue', 'homeDebt', 'annualIncome', 'annualSpending', 'monthlyPension', 'move1Value', 'move2Value'];
+var KOR_FIELDS = ['currentAssets', 'homeValue', 'homeDebt', 'annualIncome', 'annualSpending', 'monthlyPension', 'move1Value', 'move1Debt', 'move2Value', 'move2Debt'];
 function updateAllKor() { KOR_FIELDS.forEach(updateKor); }
 
 // 주택 갈아타기 토글
@@ -824,10 +866,12 @@ function calculate() {
   if (moveOn) {
     const m1a = parseInt(document.getElementById('move1Age').value);
     const m1v = parseFloat(document.getElementById('move1Value').value);
-    if (m1a && m1v >= 0 && !isNaN(m1v)) moves.push({ age: m1a, value: m1v });
+    const m1d = parseFloat(document.getElementById('move1Debt').value) || 0;
+    if (m1a && m1v >= 0 && !isNaN(m1v)) moves.push({ age: m1a, value: m1v, debt: m1d });
     const m2a = parseInt(document.getElementById('move2Age').value);
     const m2v = parseFloat(document.getElementById('move2Value').value);
-    if (m2a && m2v >= 0 && !isNaN(m2v)) moves.push({ age: m2a, value: m2v });
+    const m2d = parseFloat(document.getElementById('move2Debt').value) || 0;
+    if (m2a && m2v >= 0 && !isNaN(m2v)) moves.push({ age: m2a, value: m2v, debt: m2d });
   }
   const moveLog = []; // 정산 기록
 
@@ -859,14 +903,17 @@ function calculate() {
     // 주택 갈아타기 정산 (해당 나이에)
     for (let mi = 0; mi < moves.length; mi++) {
       if (moves[mi].age === age) {
-        const oldHome = homeValue;       // 그동안 오른 현재 집값
-        // 입력은 "현재가격" → 그 나이까지 집값상승률로 환산 (다른 동네도 같이 오름)
+        const oldHome = homeValue;       // 그동안 오른 현재 순주택가치
+        // 입력은 "현재가격" → 그 나이까지 집값상승률로 환산 (집값·대출 모두)
         const yearsToMove = age - currentAge;
-        const newHome = moves[mi].value * Math.pow(1 + homeGrowth, yearsToMove);
-        const diff = oldHome - newHome;  // 양수=집줄임(금융+), 음수=집키움(금융−)
+        const factor = Math.pow(1 + homeGrowth, yearsToMove);
+        const newHomeMarket = moves[mi].value * factor;   // 새 집 시세(미래)
+        const newHomeDebt = moves[mi].debt * factor;      // 새 대출(미래)
+        const newHome = Math.max(0, newHomeMarket - newHomeDebt); // 새 순주택가치
+        const diff = oldHome - newHome;  // 양수=순자산 줄임(금융+), 음수=순자산 키움(금융−)
         assets += diff;                  // 차액을 금융자산과 정산
-        homeValue = newHome;             // 집값 교체
-        moveLog.push({ age: age, oldHome: oldHome, newHome: newHome, diff: diff, inputNow: moves[mi].value });
+        homeValue = newHome;             // 순주택가치 교체
+        moveLog.push({ age: age, oldHome: oldHome, newHome: newHome, diff: diff, inputNow: moves[mi].value, debtNow: moves[mi].debt });
       }
     }
 
@@ -902,13 +949,16 @@ function calculate() {
       age100Home = homeValue;
     }
 
+    const isMoveAge = moves.some(function(m){ return m.age === age; });
+
     const row = document.createElement('tr');
     if (isRetired && !isPension) row.className = 'retired';
     else if (isPension) row.className = 'pension';
     if (assets < 0) row.classList.add('negative');
+    if (isMoveAge) row.classList.add('moverow');
     row.innerHTML = `
       <td>${year}</td>
-      <td>${age}세</td>
+      <td>${age}세${isMoveAge ? ' 🔄' : ''}</td>
       <td>${thisIncome > 0 ? fmt(thisIncome) : '-'}</td>
       <td>${thisPension > 0 ? fmt(thisPension) : '-'}</td>
       <td>${fmt(thisSpending)}</td>
@@ -957,10 +1007,11 @@ function calculate() {
       if (moveLog.length > 0) {
         moveHtml = '<br><b style="color:#15803d">🔄 주택 갈아타기 정산</b><br>';
         moveLog.forEach(function(m){
+          var debtTxt = m.debtNow > 0 ? (', 대출 ' + fmtShort(m.debtNow) + '원') : '';
           if (m.diff >= 0) {
-            moveHtml += '• ' + m.age + '세: 집 ' + fmtShort(m.oldHome) + '원 → ' + fmtShort(m.newHome) + '원 <span style="color:#888">(지금기준 ' + fmtShort(m.inputNow) + '원짜리, 다운사이징)</span>. 차액 <b style="color:#16a34a">+' + fmtShort(m.diff) + '원</b>이 금융자산으로 들어옴<br>';
+            moveHtml += '• ' + m.age + '세: 순주택 ' + fmtShort(m.oldHome) + '원 → ' + fmtShort(m.newHome) + '원 <span style="color:#888">(지금기준 집 ' + fmtShort(m.inputNow) + '원' + debtTxt + ')</span>. 차액 <b style="color:#16a34a">+' + fmtShort(m.diff) + '원</b>이 금융자산으로<br>';
           } else {
-            moveHtml += '• ' + m.age + '세: 집 ' + fmtShort(m.oldHome) + '원 → ' + fmtShort(m.newHome) + '원 <span style="color:#888">(지금기준 ' + fmtShort(m.inputNow) + '원짜리, 업사이징)</span>. 금융자산에서 <b style="color:#dc2626">−' + fmtShort(-m.diff) + '원</b> 빠져나감<br>';
+            moveHtml += '• ' + m.age + '세: 순주택 ' + fmtShort(m.oldHome) + '원 → ' + fmtShort(m.newHome) + '원 <span style="color:#888">(지금기준 집 ' + fmtShort(m.inputNow) + '원' + debtTxt + ')</span>. 금융자산에서 <b style="color:#dc2626">−' + fmtShort(-m.diff) + '원</b><br>';
           }
         });
       }
@@ -975,7 +1026,7 @@ function calculate() {
   }
 
   // 자산 성장 그래프 (명목/현재가치 데이터 저장 후 그리기)
-  window._chartData = { ages: chartAges, fin: chartFin, total: chartTotal, finReal: chartFinReal, totalReal: chartTotalReal, hasHome: hasHome };
+  window._chartData = { ages: chartAges, fin: chartFin, total: chartTotal, finReal: chartFinReal, totalReal: chartTotalReal, hasHome: hasHome, moveAges: moves.map(function(m){ return m.age; }), startAge: currentAge };
   drawAssetChart();
 
   // 입력 한글 금액 표시 갱신
@@ -1006,7 +1057,7 @@ calculate();
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (function(){
-  var INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth','homeValue','homeDebt','homeGrowth','move1Age','move1Value','move2Age','move2Value'];
+  var INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth','homeValue','homeDebt','homeGrowth','move1Age','move1Value','move1Debt','move2Age','move2Value','move2Debt'];
   var PAGE_NAME = '경제적자유';
 
   function getDateStr(){
@@ -1287,7 +1338,7 @@ onAuthStateChanged(auth, user=>{
 });
 
 // 입력값 수집/적용 (PDF 스크립트의 INPUT_IDS와 동일)
-const INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth','homeValue','homeDebt','homeGrowth','move1Age','move1Value','move2Age','move2Value'];
+const INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth','homeValue','homeDebt','homeGrowth','move1Age','move1Value','move1Debt','move2Age','move2Value','move2Debt'];
 
 function collectInputs(){
   const data = {};
