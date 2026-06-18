@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>목표주가 역산 계산기 | 스윙파머</title>
+<meta name="description" content="매수가·수량·목표금액 중 아무거나 입력하면 나머지를 자동 역산. 종목별 목표 설정과 마일스톤 진행 추적.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  header h1 { font-size: 20px; color: #1F4E78; margin: 0; }
+  .back-link { margin-left: auto; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
+
+  /* 요약 카드 */
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  @media (max-width: 700px) { .summary-grid { grid-template-columns: 1fr 1fr; } }
+  .sum-card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .sum-card .s-label { font-size: 11.5px; color: #888; margin-bottom: 4px; }
+  .sum-card .s-val { font-size: 19px; font-weight: 800; color: #1F4E78; }
+  .sum-card .s-kor { font-size: 11px; color: #aaa; margin-top: 2px; }
+  .sum-card.profit .s-val { color: #16a34a; }
+
+  /* 전체 진행바 */
+  .total-progress { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .tp-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .tp-title { font-size: 14px; font-weight: 700; color: #1F4E78; }
+  .tp-pct { margin-left: auto; font-size: 20px; font-weight: 800; color: #1F4E78; }
+  .milestone-bar { position: relative; height: 40px; margin: 24px 0 8px; }
+  .mb-track { position: absolute; top: 16px; left: 0; right: 0; height: 8px; background: #e5e7eb; border-radius: 4px; }
+  .mb-fill { position: absolute; top: 16px; left: 0; height: 8px; background: linear-gradient(90deg, #1F4E78, #16a34a); border-radius: 4px; transition: width .4s; }
+  .mb-point { position: absolute; top: 10px; width: 20px; height: 20px; border-radius: 50%; background: white; border: 3px solid #cbd5e1; transform: translateX(-50%); transition: all .3s; }
+  .mb-point.reached { border-color: #16a34a; background: #16a34a; }
+  .mb-point.current { border-color: #1F4E78; background: #1F4E78; box-shadow: 0 0 0 4px rgba(31,78,120,.2); }
+  .mb-label { position: absolute; top: 34px; font-size: 10.5px; color: #666; transform: translateX(-50%); white-space: nowrap; text-align: center; }
+  .mb-label b { display: block; color: #333; font-size: 11px; }
+  .mb-current-marker { position: absolute; top: 6px; width: 2px; height: 28px; background: #dc2626; transform: translateX(-50%); z-index: 3; }
+  .mb-current-flag { position: absolute; top: -10px; font-size: 10px; color: #dc2626; font-weight: 700; transform: translateX(-50%); white-space: nowrap; }
+
+  /* 테이블 */
+  .table-wrap { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06); overflow-x: auto; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 860px; }
+  thead th { background: #f8fafc; color: #555; font-weight: 600; padding: 10px 8px; border-bottom: 2px solid #e5e7eb; text-align: right; white-space: nowrap; font-size: 12px; }
+  thead th.name-col { text-align: left; }
+  thead th.buy { color: #1F4E78; }
+  thead th.target { color: #dc2626; }
+  tbody td { padding: 6px; border-bottom: 1px solid #f0f0f0; text-align: right; }
+  tbody td.name-col { text-align: left; }
+  tbody input { width: 100%; padding: 7px 8px; font-size: 13px; border: 1px solid #ddd; border-radius: 5px; text-align: right; font-weight: 600; }
+  tbody input.name-input { text-align: left; background: #fff; color: #1F4E78; font-weight: 700; }
+  tbody input.editable { background: #FFF2CC; color: #0000FF; }
+  tbody input.computed { background: #f1f5f9; color: #475569; }
+  tbody input:focus { outline: 2px solid #1F4E78; }
+  tbody td.profit-cell { font-weight: 700; }
+  .row-progress { height: 5px; background: #e5e7eb; border-radius: 3px; overflow: hidden; margin-top: 4px; min-width: 60px; }
+  .row-progress-fill { height: 100%; background: linear-gradient(90deg, #1F4E78, #16a34a); border-radius: 3px; }
+  .del-btn { background: #fee2e2; color: #dc2626; border: none; width: 26px; height: 26px; border-radius: 5px; cursor: pointer; font-size: 14px; }
+  .add-row-btn { background: #eff6ff; color: #1F4E78; border: 1px dashed #93c5fd; border-radius: 8px; padding: 10px; width: 100%; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 16px; }
+  .add-row-btn:hover { background: #dbeafe; }
+
+  /* 차트 */
+  .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 700px) { .chart-grid { grid-template-columns: 1fr; } }
+  .chart-card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .chart-card h3 { font-size: 14px; color: #1F4E78; margin-bottom: 12px; }
+  .chart-wrap { position: relative; height: 240px; }
+
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .btn { border: none; border-radius: 6px; padding: 9px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .btn-blue { background: #1F4E78; color: white; }
+  .btn-green { background: #10b981; color: white; }
+  .btn-gray { background: #9ca3af; color: white; }
+
+  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; font-size: 13px; line-height: 1.8; color: #6b5618; }
+  .manual .badge { display: inline-block; background: #1F4E78; color: white; font-size: 11px; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
+  footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>🎯 목표주가 역산 계산기</h1>
+    <a href="/stock-tools/" class="back-link">← 주식 도구로</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc">매수가·수량·매수금액·목표가·목표금액 중 <b>아는 것만 입력</b>하면 나머지가 자동으로 채워집니다. "1억으로 만주 사서 2억 되려면 목표가 얼마?" 같은 계산을 종목별로. 현재가를 넣으면 <b>목표까지 진행 상황</b>도 보여요.</p>
+
+  <!-- 전체 마일스톤 진행 -->
+  <div class="total-progress">
+    <div class="tp-head">
+      <span class="tp-title">📊 전체 포트폴리오 진행</span>
+      <span class="tp-pct" id="totalPct">0%</span>
+    </div>
+    <div class="milestone-bar" id="totalMilestone"></div>
+  </div>
+
+  <!-- 요약 카드 -->
+  <div class="summary-grid">
+    <div class="sum-card">
+      <div class="s-label">총 매수금액 (원금)</div>
+      <div class="s-val" id="sumInvested">0</div>
+      <div class="s-kor" id="sumInvestedKor"></div>
+    </div>
+    <div class="sum-card">
+      <div class="s-label">총 목표금액</div>
+      <div class="s-val" id="sumTarget">0</div>
+      <div class="s-kor" id="sumTargetKor"></div>
+    </div>
+    <div class="sum-card profit">
+      <div class="s-label">예상 총 수익금</div>
+      <div class="s-val" id="sumProfit">0</div>
+      <div class="s-kor" id="sumProfitKor"></div>
+    </div>
+    <div class="sum-card">
+      <div class="s-label">목표 수익률</div>
+      <div class="s-val" id="sumRate">0%</div>
+      <div class="s-kor" id="sumCurrentRate"></div>
+    </div>
+  </div>
+
+  <!-- 테이블 -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="name-col">종목명</th>
+          <th class="buy">매수가</th>
+          <th>수량(주)</th>
+          <th class="buy">매수금액</th>
+          <th>현재가</th>
+          <th class="target">목표가</th>
+          <th class="target">목표금액</th>
+          <th>예상수익</th>
+          <th>진행</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <button class="add-row-btn" onclick="addRow()">+ 종목 추가</button>
+
+  <!-- 차트 -->
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h3>종목별 목표금액 비중</h3>
+      <div class="chart-wrap"><canvas id="weightChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>종목별 매수 → 목표</h3>
+      <div class="chart-wrap"><canvas id="growthChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-blue" onclick="saveJson()">💾 내보내기 (JSON)</button>
+    <label class="btn btn-green" style="cursor:pointer">📂 불러오기<input type="file" id="fileLoad" accept=".json" style="display:none" onchange="loadJson(event)"></label>
+    <button class="btn btn-gray" onclick="resetAll()">🔄 초기화</button>
+  </div>
+
+  <div class="manual">
+    <b>📘 사용법 — 역산 규칙</b><br>
+    <span class="badge">매수</span> 매수가 × 수량 = 매수금액. 셋 중 둘을 넣으면 나머지 자동. <b>매수금액을 고치면 매수가</b>가 따라 바뀝니다(수량 고정).<br>
+    <span class="badge">목표</span> 목표가 × 수량 = 목표금액. <b>목표금액을 고치면 목표가</b>가 따라 바뀝니다.<br>
+    <span class="badge">진행</span> 현재가를 넣으면 매수가 → 목표가 구간에서 <b>지금 몇 % 왔는지</b> 표시돼요.<br>
+    노란 칸이 입력칸, 회색 칸은 자동 계산값입니다. 어느 칸이든 직접 고칠 수 있어요.
+  </div>
+
+  <footer>© 스윙파머</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+function wonToKorean(n){ n=Math.round(Math.abs(n)); if(n===0)return ''; var eok=Math.floor(n/1e8),man=Math.floor((n%1e8)/1e4),won=n%1e4,p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(man>0)p.push(man.toLocaleString('ko-KR')+'만'); if(won>0)p.push(won.toLocaleString('ko-KR')); return p.join(' ')+'원'; }
+const fmtShort = n => { n=Math.round(n); if(Math.abs(n)>=1e8)return (n/1e8).toFixed(1)+'억'; if(Math.abs(n)>=1e4)return Math.round(n/1e4)+'만'; return n.toLocaleString('ko-KR'); };
+const STORE_KEY = 'sf_targetprice_v1';
+const COLORS = ['#1F4E78','#16a34a','#f59e0b','#8b5cf6','#ec4899','#0ea5e9','#ef4444','#14b8a6'];
+
+// 종목 데이터: { name, buyPrice, qty, buyAmount, curPrice, targetPrice, targetAmount }
+let rows = [];
+
+function blankRow(){ return { name:'', buyPrice:0, qty:0, buyAmount:0, curPrice:0, targetPrice:0, targetAmount:0 }; }
+
+function load(){
+  try{ const raw=localStorage.getItem(STORE_KEY); if(raw){ rows=JSON.parse(raw); } }catch(e){}
+  if(!rows || rows.length===0) rows=[ blankRow() ];
+}
+function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(rows)); }catch(e){} }
+
+// 역산 엔진: 예산(매수금액)·목표금액 고정축
+// - 매수가 변경 → 수량 자동 (예산 유지)
+// - 수량 변경 → 매수가 자동 (예산 유지)
+// - 매수금액(예산) 변경 → 수량 유지 시 매수가, 아니면 매수가 유지 시 수량
+// - 목표가 변경 → 목표금액 자동 (수량 공유)
+// - 목표금액 변경 → 목표가 자동 (수량 공유)
+function recalc(r, changed){
+  const num = v => parseFloat(v)||0;
+  r.buyPrice=num(r.buyPrice); r.qty=num(r.qty); r.buyAmount=num(r.buyAmount);
+  r.targetPrice=num(r.targetPrice); r.targetAmount=num(r.targetAmount); r.curPrice=num(r.curPrice);
+
+  // === 매수 영역 ===
+  if(changed==='buyPrice'){
+    // 매수가 바꿈 → 예산(매수금액) 유지하며 수량 재계산
+    if(r.buyAmount>0 && r.buyPrice>0) r.qty = r.buyAmount / r.buyPrice;
+    else if(r.buyPrice>0 && r.qty>0) r.buyAmount = r.buyPrice * r.qty;
+  } else if(changed==='qty'){
+    // 수량 바꿈 → 예산 유지하며 매수가 재계산
+    if(r.buyAmount>0 && r.qty>0) r.buyPrice = r.buyAmount / r.qty;
+    else if(r.buyPrice>0 && r.qty>0) r.buyAmount = r.buyPrice * r.qty;
+  } else if(changed==='buyAmount'){
+    // 예산 바꿈 → 매수가 있으면 수량 재계산, 아니면 수량 기준 매수가
+    if(r.buyPrice>0) r.qty = r.buyAmount / r.buyPrice;
+    else if(r.qty>0) r.buyPrice = r.buyAmount / r.qty;
+  } else {
+    // 초기/기타: 비어있는 것 채우기
+    if(r.buyPrice>0 && r.qty>0 && r.buyAmount===0) r.buyAmount = r.buyPrice * r.qty;
+    else if(r.buyAmount>0 && r.buyPrice>0 && r.qty===0) r.qty = r.buyAmount / r.buyPrice;
+    else if(r.buyAmount>0 && r.qty>0 && r.buyPrice===0) r.buyPrice = r.buyAmount / r.qty;
+  }
+
+  // === 목표 영역 (수량 공유) ===
+  if(changed==='targetPrice'){
+    if(r.qty>0) r.targetAmount = r.targetPrice * r.qty;
+  } else if(changed==='targetAmount'){
+    if(r.qty>0) r.targetPrice = r.targetAmount / r.qty;
+  } else {
+    // 수량이 바뀌었거나(위에서) 초기: 목표금액 우선 유지하며 목표가 재계산
+    if(changed==='buyPrice' || changed==='qty' || changed==='buyAmount'){
+      // 수량이 갱신됐을 수 있음 → 목표금액 고정 시 목표가 재계산
+      if(r.targetAmount>0 && r.qty>0) r.targetPrice = r.targetAmount / r.qty;
+      else if(r.targetPrice>0 && r.qty>0) r.targetAmount = r.targetPrice * r.qty;
+    } else {
+      if(r.targetPrice>0 && r.qty>0 && r.targetAmount===0) r.targetAmount = r.targetPrice * r.qty;
+      else if(r.targetAmount>0 && r.qty>0 && r.targetPrice===0) r.targetPrice = r.targetAmount / r.qty;
+    }
+  }
+}
+
+function render(){
+  const tb = $('tbody');
+  tb.innerHTML = rows.map((r,i)=>{
+    const profit = (r.targetAmount||0) - (r.buyAmount||0);
+    // 진행률 (현재가 기준): 매수가→목표가 구간
+    let prog = 0;
+    if(r.curPrice>0 && r.targetPrice>r.buyPrice && r.buyPrice>0){
+      prog = (r.curPrice - r.buyPrice) / (r.targetPrice - r.buyPrice) * 100;
+      prog = Math.max(0, Math.min(100, prog));
+    }
+    const profitColor = profit>=0 ? '#16a34a' : '#dc2626';
+    return `<tr>
+      <td class="name-col"><input class="name-input" type="text" placeholder="종목명" value="${(r.name||'').replace(/"/g,'&quot;')}" oninput="upd(${i},'name',this.value)"></td>
+      <td><input class="editable" type="number" inputmode="numeric" value="${r.buyPrice||''}" oninput="upd(${i},'buyPrice',this.value)"></td>
+      <td><input class="editable" type="number" inputmode="numeric" value="${r.qty?Math.round(r.qty):''}" oninput="upd(${i},'qty',this.value)"></td>
+      <td><input class="editable" type="number" inputmode="numeric" value="${r.buyAmount?Math.round(r.buyAmount):''}" oninput="upd(${i},'buyAmount',this.value)"></td>
+      <td><input class="editable" type="number" inputmode="numeric" placeholder="-" value="${r.curPrice||''}" oninput="upd(${i},'curPrice',this.value)"></td>
+      <td><input class="editable" type="number" inputmode="numeric" value="${r.targetPrice?Math.round(r.targetPrice):''}" oninput="upd(${i},'targetPrice',this.value)"></td>
+      <td><input class="editable" type="number" inputmode="numeric" value="${r.targetAmount?Math.round(r.targetAmount):''}" oninput="upd(${i},'targetAmount',this.value)"></td>
+      <td class="profit-cell" style="color:${profitColor}">${profit?(profit>0?'+':'')+fmtShort(profit):'-'}</td>
+      <td><div style="font-size:10px;color:#888">${r.curPrice>0?prog.toFixed(0)+'%':'-'}</div><div class="row-progress"><div class="row-progress-fill" style="width:${prog}%"></div></div></td>
+      <td><button class="del-btn" onclick="delRow(${i})">×</button></td>
+    </tr>`;
+  }).join('');
+  updateSummary();
+  drawCharts();
+}
+
+function upd(i, field, val){
+  if(field==='name'){ rows[i].name = val; save(); updateSummary(); return; }
+  rows[i][field] = parseFloat(val)||0;
+  recalc(rows[i], field);
+  save();
+  render();
+}
+
+function addRow(){ rows.push(blankRow()); save(); render(); }
+function delRow(i){ rows.splice(i,1); if(rows.length===0) rows.push(blankRow()); save(); render(); }
+
+function updateSummary(){
+  let inv=0, tgt=0, cur=0;
+  rows.forEach(r=>{
+    inv += r.buyAmount||0;
+    tgt += r.targetAmount||0;
+    cur += (r.curPrice>0 && r.qty>0) ? r.curPrice*r.qty : (r.buyAmount||0);
+  });
+  const profit = tgt - inv;
+  $('sumInvested').textContent = fmt(inv);
+  $('sumInvestedKor').textContent = wonToKorean(inv);
+  $('sumTarget').textContent = fmt(tgt);
+  $('sumTargetKor').textContent = wonToKorean(tgt);
+  $('sumProfit').textContent = (profit>=0?'+':'')+fmt(profit);
+  $('sumProfitKor').textContent = wonToKorean(profit);
+  const rate = inv>0 ? (profit/inv*100) : 0;
+  $('sumRate').textContent = (rate>=0?'+':'')+rate.toFixed(1)+'%';
+  // 현재 수익률
+  const curRate = inv>0 ? ((cur-inv)/inv*100) : 0;
+  $('sumCurrentRate').textContent = cur>0 && cur!==inv ? '현재 '+(curRate>=0?'+':'')+curRate.toFixed(1)+'%' : '';
+
+  drawTotalMilestone(inv, cur, tgt);
+}
+
+// 전체 마일스톤: 원금 → 현재 → 목표
+function drawTotalMilestone(inv, cur, tgt){
+  const box = $('totalMilestone');
+  if(inv<=0 || tgt<=inv){ box.innerHTML = '<div style="color:#bbb;font-size:12px;text-align:center;padding:14px">매수금액과 목표금액을 입력하면 진행 상황이 표시됩니다.</div>'; $('totalPct').textContent='-'; return; }
+  // 중간 마일스톤 = 원금과 목표의 중간
+  const mid = (inv+tgt)/2;
+  const pct = Math.max(0, Math.min(100, (cur-inv)/(tgt-inv)*100));
+  $('totalPct').textContent = pct.toFixed(0)+'%';
+  // 현재가 없으면 cur=inv라 0%
+  const points = [
+    { val: inv, label:'원금', pos:0 },
+    { val: mid, label:'중간', pos:50 },
+    { val: tgt, label:'목표', pos:100 }
+  ];
+  let html = '<div class="mb-track"></div><div class="mb-fill" style="width:'+pct+'%"></div>';
+  points.forEach(p=>{
+    let cls='mb-point';
+    if(pct>=p.pos) cls+=' reached';
+    html += `<div class="${cls}" style="left:${p.pos}%"></div>`;
+    html += `<div class="mb-label" style="left:${p.pos}%"><b>${fmtShort(p.val)}</b>${p.label}</div>`;
+  });
+  // 현재 위치 마커 (원금≠현재일 때만)
+  if(cur>inv && Math.abs(cur-inv)>1){
+    html += `<div class="mb-current-marker" style="left:${pct}%"></div>`;
+    html += `<div class="mb-current-flag" style="left:${pct}%">현재 ${fmtShort(cur)}</div>`;
+  }
+  box.innerHTML = html;
+}
+
+// 차트
+let weightChart=null, growthChart=null;
+function drawCharts(){
+  const valid = rows.filter(r=>(r.targetAmount||0)>0 && r.name);
+  // 비중 도넛
+  if(weightChart) weightChart.destroy();
+  if(valid.length>0){
+    weightChart = new Chart($('weightChart'), {
+      type:'doughnut',
+      data:{ labels: valid.map(r=>r.name), datasets:[{ data: valid.map(r=>r.targetAmount), backgroundColor: valid.map((r,i)=>COLORS[i%COLORS.length]), borderWidth:2, borderColor:'#fff' }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'bottom', labels:{font:{size:11},boxWidth:12}}, tooltip:{callbacks:{label:c=>c.label+': '+fmtShort(c.parsed)+'원'}} } }
+    });
+  }
+  // 매수→목표 막대
+  const valid2 = rows.filter(r=>(r.buyAmount||0)>0 && r.name);
+  if(growthChart) growthChart.destroy();
+  if(valid2.length>0){
+    growthChart = new Chart($('growthChart'), {
+      type:'bar',
+      data:{ labels: valid2.map(r=>r.name), datasets:[
+        { label:'매수금액', data: valid2.map(r=>r.buyAmount), backgroundColor:'#94a3b8', borderRadius:4 },
+        { label:'목표금액', data: valid2.map(r=>r.targetAmount), backgroundColor:'#1F4E78', borderRadius:4 }
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}}, tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtShort(c.parsed.y)+'원'}} }, scales:{ y:{ticks:{callback:v=>fmtShort(v),font:{size:10}}}, x:{ticks:{font:{size:10}}} } }
+    });
+  }
+}
+
+function saveJson(){
+  const blob = new Blob([JSON.stringify(rows,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob); const a=document.createElement('a');
+  const d=new Date(); a.href=url; a.download=`목표주가_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`; a.click(); URL.revokeObjectURL(url);
+}
+function loadJson(e){
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{ try{ rows=JSON.parse(ev.target.result); save(); render(); alert('✅ 불러왔어요.'); }catch(err){ alert('파일 오류: '+err.message); } };
+  reader.readAsText(file); e.target.value='';
+}
+function resetAll(){ if(confirm('모두 초기화할까요?')){ rows=[blankRow()]; save(); render(); } }
+
+load(); render();
+</script>
+<script src="/common.js?v=3"></script>
+</body>
+</html>
