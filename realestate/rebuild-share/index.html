@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>재건축 분담금 계산기 | 스윙파머</title>
+<meta name="description" content="감정가·비례율·조합원분양가로 재건축 추가 분담금(또는 환급금)을 계산. 비례율 직접 입력 또는 사업성으로 산출.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  header h1 { font-size: 20px; color: #1F4E78; margin: 0; }
+  .back-link { margin-left: auto; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
+  .panel { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .section-label { font-size: 14px; font-weight: 700; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #eef0f3; color: #1F4E78; }
+  .input-row { margin-bottom: 12px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #333; }
+  .stat-sub { font-size: 11px; font-weight: 500; color: #888; }
+  input[type="number"] { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; background: #FFF2CC; font-weight: 600; color: #0000FF; }
+  input[type="number"]:focus { outline: 2px solid #1F4E78; background: #FFFACD; }
+  .won-kor { font-size: 12px; color: #1F4E78; font-weight: 600; margin-top: 3px; min-height: 15px; }
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; font-style: normal; cursor: pointer; margin-left: 4px; }
+  .info-box { display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #1e40af; line-height: 1.7; margin-top: 6px; }
+
+  .mode-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+  .mode-tab { flex: 1; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; background: #e8eef4; color: #1F4E78; border: none; text-align: center; }
+  .mode-tab.active { background: #1F4E78; color: white; }
+
+  .result-hero { border-radius: 14px; padding: 22px; text-align: center; margin-bottom: 16px; color: white; }
+  .result-hero.pay { background: linear-gradient(135deg, #dc2626, #ef4444); }
+  .result-hero.refund { background: linear-gradient(135deg, #16a34a, #22c55e); }
+  .result-hero .label { font-size: 13px; opacity: .9; margin-bottom: 6px; }
+  .result-hero .value { font-size: 30px; font-weight: 800; }
+  .result-hero .kor { font-size: 13px; opacity: .9; margin-top: 5px; }
+
+  table.breakdown { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.breakdown td { padding: 9px 6px; border-bottom: 1px solid #f0f0f0; }
+  table.breakdown td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  table.breakdown tr.total td { border-top: 2px solid #1F4E78; font-weight: 700; padding-top: 11px; font-size: 14px; }
+  table.breakdown tr.hl td { color: #1F4E78; font-weight: 700; }
+
+  .warn-note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; line-height: 1.7; margin-top: 14px; }
+  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; margin-top: 8px; font-size: 13px; line-height: 1.8; color: #6b5618; }
+  .manual .badge { display: inline-block; background: #1F4E78; color: white; font-size: 11px; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>🏗️ 재건축 분담금 계산기</h1>
+    <a href="../" class="back-link">← 부동산 도구로</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc">재건축·재개발에서 새 아파트를 분양받을 때 추가로 내야 할 <b>분담금</b>(또는 돌려받을 환급금)을 계산합니다. 비례율을 알면 바로, 모르면 사업성으로 산출하세요.</p>
+
+  <div class="mode-tabs">
+    <button class="mode-tab active" id="tabSimple" onclick="setMode('simple')">① 비례율 알 때 (간편)</button>
+    <button class="mode-tab" id="tabFull" onclick="setMode('full')">② 사업성으로 비례율 계산</button>
+  </div>
+
+  <!-- 모드2: 비례율 산출 -->
+  <div class="panel hidden" id="fullPanel">
+    <div class="section-label">📊 사업성 (비례율 계산)</div>
+    <div class="input-row">
+      <label>총 분양수입 (종후자산) <span class="stat-sub">조합원+일반분양 총수입</span> <span class="info-btn" onclick="toggleInfo('incomeInfo')">i</span></label>
+      <input type="number" id="totalIncome" value="200000000000" inputmode="numeric">
+      <div class="won-kor" id="totalIncome_kor"></div>
+      <div class="info-box" id="incomeInfo">재건축 완료 후 모든 세대(조합원분+일반분양)를 판 총수입. 사업 전체 규모예요.</div>
+    </div>
+    <div class="input-row">
+      <label>총 사업비 <span class="stat-sub">공사비+기타비용</span></label>
+      <input type="number" id="totalCost" value="50000000000" inputmode="numeric">
+      <div class="won-kor" id="totalCost_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>종전자산 총 감정평가액 <span class="stat-sub">조합원 전체 기존자산 합</span></label>
+      <input type="number" id="totalAsset" value="100000000000" inputmode="numeric">
+      <div class="won-kor" id="totalAsset_kor"></div>
+    </div>
+    <div style="background:#eff6ff;border-radius:8px;padding:12px;font-size:13px;color:#1e40af;text-align:center">
+      계산된 비례율 = <b id="calcRatio" style="font-size:18px">-</b>
+    </div>
+  </div>
+
+  <!-- 공통: 내 자산 -->
+  <div class="panel">
+    <div class="section-label">🏠 내 조합원 정보</div>
+    <div class="input-row" id="ratioRow">
+      <label>비례율 (%) <span class="stat-sub">100% = 자산가치 유지</span> <span class="info-btn" onclick="toggleInfo('ratioInfo')">i</span></label>
+      <input type="number" id="ratio" value="100" step="0.1" inputmode="decimal">
+      <div class="info-box" id="ratioInfo">사업 수익성 지표. 100% 넘으면 내 자산가치가 커지고(분담금↓), 100% 미만이면 작아져요(분담금↑). 관리처분 전엔 추정치라 변동됩니다.</div>
+    </div>
+    <div class="input-row">
+      <label>내 종전자산 감정평가액 <span class="stat-sub">내 기존 집의 감정가</span></label>
+      <input type="number" id="myAsset" value="400000000" inputmode="numeric">
+      <div class="won-kor" id="myAsset_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>조합원 분양가 <span class="stat-sub">새로 받을 아파트 가격</span></label>
+      <input type="number" id="newPrice" value="600000000" inputmode="numeric">
+      <div class="won-kor" id="newPrice_kor"></div>
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="result-hero pay" id="resultHero">
+    <div class="label" id="resultLabel">추가 분담금</div>
+    <div class="value" id="result">-</div>
+    <div class="kor" id="resultKor"></div>
+  </div>
+
+  <div class="panel">
+    <div class="section-label">📋 상세 내역</div>
+    <table class="breakdown">
+      <tbody id="breakdownBody"></tbody>
+    </table>
+  </div>
+
+  <!-- 미래가치 (선택) -->
+  <div class="panel">
+    <div class="section-label">💡 투자 관점 (선택)</div>
+    <div class="input-row">
+      <label>예상 일반분양가 / 준공후 시세 <span class="stat-sub">완공 후 내 아파트 가치</span></label>
+      <input type="number" id="futureValue" value="800000000" inputmode="numeric">
+      <div class="won-kor" id="futureValue_kor"></div>
+    </div>
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;font-size:13px;color:#166534;line-height:1.8" id="profitBox"></div>
+  </div>
+
+  <div class="warn-note">
+    ⚠️ <b>참고용 추정입니다.</b> 비례율은 관리처분계획 시점 추정치로, <b>공사비 증가·미분양 등으로 사업 완료 시 크게 낮아지는 경우가 많습니다</b>. 종전자산 감정가도 시세와 차이날 수 있어요. 실제 분담금은 조합 관리처분계획·총회 자료를 확인하세요.
+  </div>
+
+  <div class="manual">
+    <b>📘 계산 공식</b><br>
+    <span class="badge">권리가액</span> 내 종전자산 감정가 × 비례율<br>
+    <span class="badge">분담금</span> 조합원 분양가 − 권리가액<br>
+    <span class="badge">비례율</span> (총 분양수입 − 총 사업비) ÷ 종전자산 총 감정가 × 100<br>
+    분담금이 <b>양수면 내가 더 내고</b>, 음수면 환급받아요. 비례율이 높을수록(사업성 좋을수록) 분담금이 줄어듭니다.
+  </div>
+</div>
+
+<script src="/common.js?v=3"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+function wonToKorean(n){ var neg=n<0; n=Math.round(Math.abs(n)); if(n===0)return '0원'; var eok=Math.floor(n/1e8),man=Math.floor((n%1e8)/1e4),won=n%1e4,p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(man>0)p.push(man.toLocaleString('ko-KR')+'만'); if(won>0)p.push(won.toLocaleString('ko-KR')); return (neg?'−':'')+p.join(' ')+'원'; }
+function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
+
+const KOR_FIELDS = ['totalIncome','totalCost','totalAsset','myAsset','newPrice','futureValue'];
+function updateKor(){ KOR_FIELDS.forEach(id=>{ var el=$(id), box=$(id+'_kor'); if(el&&box){ var v=parseFloat(el.value)||0; box.textContent=v>0?wonToKorean(v):''; } }); }
+
+let mode = 'simple';
+function setMode(m){
+  mode = m;
+  $('tabSimple').classList.toggle('active', m==='simple');
+  $('tabFull').classList.toggle('active', m==='full');
+  $('fullPanel').classList.toggle('hidden', m!=='full');
+  // 모드2면 비례율 입력칸을 읽기전용처럼 (계산값 사용)
+  $('ratioRow').style.opacity = (m==='full') ? '0.5' : '1';
+  $('ratio').readOnly = (m==='full');
+  calculate();
+}
+
+function calculate(){
+  let ratio = parseFloat($('ratio').value)||0;
+
+  // 모드2: 비례율 계산
+  if(mode==='full'){
+    const inc = parseFloat($('totalIncome').value)||0;
+    const cost = parseFloat($('totalCost').value)||0;
+    const asset = parseFloat($('totalAsset').value)||0;
+    if(asset>0){
+      ratio = (inc - cost) / asset * 100;
+      $('calcRatio').textContent = ratio.toFixed(1) + '%';
+      $('ratio').value = ratio.toFixed(1);
+    } else {
+      $('calcRatio').textContent = '-';
+    }
+  }
+
+  const myAsset = parseFloat($('myAsset').value)||0;
+  const newPrice = parseFloat($('newPrice').value)||0;
+
+  // 권리가액 = 종전자산 × 비례율
+  const rightValue = myAsset * ratio/100;
+  // 분담금 = 분양가 − 권리가액
+  const share = newPrice - rightValue;
+
+  // 결과
+  const hero = $('resultHero');
+  if(share >= 0){
+    hero.className = 'result-hero pay';
+    $('resultLabel').textContent = '추가 분담금 (내야 할 돈)';
+    $('result').textContent = fmt(share) + ' 원';
+    $('resultKor').textContent = wonToKorean(share);
+  } else {
+    hero.className = 'result-hero refund';
+    $('resultLabel').textContent = '환급금 (돌려받을 돈)';
+    $('result').textContent = fmt(-share) + ' 원';
+    $('resultKor').textContent = wonToKorean(-share);
+  }
+
+  // 상세
+  const rows = [];
+  rows.push(`<tr><td>내 종전자산 감정가</td><td class="num">${fmt(myAsset)}</td></tr>`);
+  rows.push(`<tr><td>× 비례율</td><td class="num">${ratio.toFixed(1)}%</td></tr>`);
+  rows.push(`<tr class="hl"><td>= 권리가액 (인정받는 가치)</td><td class="num">${fmt(rightValue)}</td></tr>`);
+  rows.push(`<tr><td>조합원 분양가</td><td class="num">${fmt(newPrice)}</td></tr>`);
+  rows.push(`<tr class="total"><td>${share>=0?'분담금 (분양가−권리가액)':'환급금'}</td><td class="num" style="color:${share>=0?'#dc2626':'#16a34a'}">${share>=0?'':'+'}${fmt(Math.abs(share))}</td></tr>`);
+  $('breakdownBody').innerHTML = rows.join('');
+
+  // 투자 관점
+  const futureValue = parseFloat($('futureValue').value)||0;
+  // 총 투입 = 종전자산(이미 가진 것) + 분담금
+  const totalInput = myAsset + Math.max(0, share);
+  const profit = futureValue - totalInput;
+  const pbox = $('profitBox');
+  if(futureValue>0){
+    const roi = totalInput>0 ? (profit/totalInput*100) : 0;
+    pbox.innerHTML = `완공 후 시세 <b>${fmt(futureValue)}원</b><br>` +
+      `총 투입 = 종전자산 ${fmt(myAsset)} + 분담금 ${fmt(Math.max(0,share))} = <b>${fmt(totalInput)}원</b><br>` +
+      `예상 차익 = <b style="color:${profit>=0?'#16a34a':'#dc2626'}">${profit>=0?'+':'−'}${fmt(Math.abs(profit))}원</b> (수익률 ${roi.toFixed(1)}%)`;
+  } else {
+    pbox.innerHTML = '완공 후 예상 시세를 넣으면 투자 수익을 계산해요.';
+  }
+
+  updateKor();
+}
+
+document.querySelectorAll('input').forEach(el=>{ el.addEventListener('input', calculate); });
+calculate();
+</script>
+</body>
+</html>
