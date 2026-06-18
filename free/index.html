@@ -283,6 +283,34 @@
       <input type="number" id="homeDebt" value="0" inputmode="numeric">
       <div class="won-kor" id="homeDebt_kor"></div>
     </div>
+    <div class="input-row" style="grid-column:1/-1">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="moveEnable" style="width:15px;height:15px" onchange="toggleMovePanel()">
+        🔄 주택 갈아타기 (다운/업사이징) <span class="info-btn" onclick="toggleMoveInfo()">ⓘ</span>
+      </label>
+      <div class="info-box" id="moveInfo" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 12px;font-size:12px;color:#1e40af;line-height:1.7;margin-top:6px">
+        특정 나이에 집을 줄이거나(다운사이징) 키우면(업사이징), 차액이 자동으로 금융·투자자산과 정산됩니다.<br>
+        • <b>집 줄이면</b> → 차액이 금융자산으로 들어와 생활비로 쓸 수 있게 됨<br>
+        • <b>집 키우면</b> → 금융자산에서 빠져나감<br>
+        💡 <b>새 주택가는 그 시점(미래) 가격으로, 취득세·중개비 등 거래비용을 포함해 입력하세요.</b> 예: 6억 집 + 비용 3천만 → 6.3억 입력. 최대 2회.
+      </div>
+    </div>
+    <div id="movePanel" style="display:none;grid-column:1/-1;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin-top:-4px">
+      <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:12px">
+        <div style="flex:0 0 auto"><label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:4px">1차 나이</label>
+          <input type="number" id="move1Age" placeholder="예: 60" inputmode="numeric" style="width:90px"></div>
+        <div style="flex:1;min-width:140px"><label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:4px">변경 후 주택가 (거래비용 포함)</label>
+          <input type="number" id="move1Value" placeholder="예: 600000000" inputmode="numeric" style="width:100%"></div>
+      </div>
+      <div class="won-kor" id="move1Value_kor" style="margin-top:-8px;margin-bottom:10px"></div>
+      <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+        <div style="flex:0 0 auto"><label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:4px">2차 나이 <span style="color:#aaa">(선택)</span></label>
+          <input type="number" id="move2Age" placeholder="예: 75" inputmode="numeric" style="width:90px"></div>
+        <div style="flex:1;min-width:140px"><label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:4px">변경 후 주택가 (거래비용 포함)</label>
+          <input type="number" id="move2Value" placeholder="비우면 안 함" inputmode="numeric" style="width:100%"></div>
+      </div>
+      <div class="won-kor" id="move2Value_kor" style="margin-top:6px"></div>
+    </div>
     <div class="input-row">
       <label>연 수입액 (원) <span class="stat-sub">(실수령 평균 5,040만)</span></label>
       <input type="number" id="annualIncome" value="50400000" inputmode="numeric">
@@ -506,6 +534,7 @@
     <li><span class="badge">거주 주택 (자가/전세)</span> 살고 있는 집 시세(자가) 또는 전세보증금(전세). <b>생활비로 쓰지 않고</b> 집값 상승률만큼만 따로 불어나, "총자산(집 포함)" 카드·그래프에만 반영됨. <b>전세</b> 버튼을 누르면 상승률 0%로 고정.</li>
     <li><span class="badge">거주 주택 대출금</span> 집에 낀 대출. <b>순주택가치 = 시세 − 대출</b>로 계산. 예) 5억 집에 2억 대출 → 순 3억.</li>
     <li><span class="badge">집값 상승률</span> 거주주택이 매년 오르는 비율. ④ 변동률 칸에 있음. 보통 물가상승률(2.7%) 수준. 전세면 0%.</li>
+    <li><span class="badge">🔄 주택 갈아타기</span> 특정 나이에 집을 줄이거나(다운사이징) 키우면(업사이징) 차액이 금융자산과 자동 정산됨. <b>집 줄이면 차액이 금융자산으로 들어와 생활비로 쓸 수 있음.</b> 새 주택가는 그 시점(미래) 가격으로 <b>거래비용(취득세·중개비) 포함</b>해 입력. 최대 2회.</li>
     <li><span class="badge">연 수입액</span> 실수령액(처분가능소득) 기준. <b>은퇴 나이까지만 적용.</b> 한국 가구 평균 5,040만.</li>
     <li><span class="badge">연 지출액</span> 1년 동안 쓰는 생활비. <b>평생 적용</b>(은퇴 후에도 계속). 평균 3,480만.</li>
     <li><span class="badge">연 저축액 (자동)</span> = 수입 − 지출. 은퇴 전에만 자산에 쌓임.</li>
@@ -718,8 +747,19 @@ function updateKor(id) {
   box.textContent = v > 0 ? wonToKorean(v) : '';
 }
 // 한글 표시 대상
-var KOR_FIELDS = ['currentAssets', 'homeValue', 'homeDebt', 'annualIncome', 'annualSpending', 'monthlyPension'];
+var KOR_FIELDS = ['currentAssets', 'homeValue', 'homeDebt', 'annualIncome', 'annualSpending', 'monthlyPension', 'move1Value', 'move2Value'];
 function updateAllKor() { KOR_FIELDS.forEach(updateKor); }
+
+// 주택 갈아타기 토글
+function toggleMoveInfo() {
+  var el = document.getElementById('moveInfo');
+  el.style.display = (el.style.display === 'none' || !el.style.display) ? 'block' : 'none';
+}
+function toggleMovePanel() {
+  var on = document.getElementById('moveEnable').checked;
+  document.getElementById('movePanel').style.display = on ? 'block' : 'none';
+  if (typeof calculate === 'function') calculate();
+}
 
 // 자가/전세 토글
 function setHomeType(type) {
@@ -778,6 +818,19 @@ function calculate() {
   const homeGrowth = (parseFloat(document.getElementById('homeGrowth').value) || 0) / 100;
   let homeValue = homeValue0;
 
+  // 주택 갈아타기 (최대 2회)
+  const moveOn = document.getElementById('moveEnable').checked;
+  const moves = [];
+  if (moveOn) {
+    const m1a = parseInt(document.getElementById('move1Age').value);
+    const m1v = parseFloat(document.getElementById('move1Value').value);
+    if (m1a && m1v >= 0 && !isNaN(m1v)) moves.push({ age: m1a, value: m1v });
+    const m2a = parseInt(document.getElementById('move2Age').value);
+    const m2v = parseFloat(document.getElementById('move2Value').value);
+    if (m2a && m2v >= 0 && !isNaN(m2v)) moves.push({ age: m2a, value: m2v });
+  }
+  const moveLog = []; // 정산 기록
+
   // 차트용 데이터
   const chartAges = [], chartFin = [], chartTotal = [], chartFinReal = [], chartTotalReal = [];
 
@@ -801,6 +854,18 @@ function calculate() {
     } else {
       assets = assets * (1 + returnRate) + netFlow;
       homeValue = homeValue * (1 + homeGrowth); // 집값만 상승
+    }
+
+    // 주택 갈아타기 정산 (해당 나이에)
+    for (let mi = 0; mi < moves.length; mi++) {
+      if (moves[mi].age === age) {
+        const oldHome = homeValue;       // 그동안 오른 현재 집값
+        const newHome = moves[mi].value; // 입력한 새 집값(거래비용 포함)
+        const diff = oldHome - newHome;  // 양수=집줄임(금융+), 음수=집키움(금융−)
+        assets += diff;                  // 차액을 금융자산과 정산
+        homeValue = newHome;             // 집값 교체
+        moveLog.push({ age: age, oldHome: oldHome, newHome: newHome, diff: diff });
+      }
     }
 
     cumulativeNetFlow += netFlow;
@@ -886,9 +951,21 @@ function calculate() {
     }
     if (homeBox) {
       homeBox.style.display = 'block';
+      var moveHtml = '';
+      if (moveLog.length > 0) {
+        moveHtml = '<br><b style="color:#15803d">🔄 주택 갈아타기 정산</b><br>';
+        moveLog.forEach(function(m){
+          if (m.diff >= 0) {
+            moveHtml += '• ' + m.age + '세: 집 ' + fmtShort(m.oldHome) + '원 → ' + fmtShort(m.newHome) + '원 (다운사이징). 차액 <b style="color:#16a34a">+' + fmtShort(m.diff) + '원</b>이 금융자산으로 들어옴<br>';
+          } else {
+            moveHtml += '• ' + m.age + '세: 집 ' + fmtShort(m.oldHome) + '원 → ' + fmtShort(m.newHome) + '원 (업사이징). 금융자산에서 <b style="color:#dc2626">−' + fmtShort(-m.diff) + '원</b> 빠져나감<br>';
+          }
+        });
+      }
       document.getElementById('homeNote').innerHTML =
-        '🏠 <b>거주 주택 포함 안내</b> — 위 "은퇴/100세 시점 자산"과 아래 연도별 표는 <b>금융·투자자산만</b> 보여줍니다(집은 생활비로 못 쓰므로 제외). 집을 더한 값은 위 초록 카드 <b>"총자산(집 포함)"</b>을 보세요.<br>' +
-        '<span style="color:#888;font-size:12px">※ 집을 팔거나 줄여 노후자금에 보태는 시뮬레이션은 추후 "주택 갈아타기" 기능으로 추가 예정입니다.</span>';
+        '🏠 <b>거주 주택 포함 안내</b> — 위 "은퇴/100세 시점 자산"과 아래 연도별 표는 <b>금융·투자자산만</b> 보여줍니다(집은 생활비로 못 쓰므로 제외). 집을 더한 값은 위 초록 카드 <b>"총자산(집 포함)"</b>을 보세요.' +
+        moveHtml +
+        (moveLog.length === 0 ? '<br><span style="color:#888;font-size:12px">※ "주택 갈아타기"를 켜면 특정 나이에 집을 줄여 노후자금에 보태는 시뮬레이션을 할 수 있습니다.</span>' : '');
     }
   } else {
     if (totalGrid) totalGrid.style.display = 'none';
@@ -927,7 +1004,7 @@ calculate();
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (function(){
-  var INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth','homeValue','homeDebt','homeGrowth'];
+  var INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth','homeValue','homeDebt','homeGrowth','move1Age','move1Value','move2Age','move2Value'];
   var PAGE_NAME = '경제적자유';
 
   function getDateStr(){
@@ -964,6 +1041,11 @@ calculate();
             if (el) el.value = data.inputs[id];
           }
         });
+        // 갈아타기 값 있으면 패널 켜기
+        if (data.inputs['move1Age'] || data.inputs['move1Value']) {
+          var mc = document.getElementById('moveEnable');
+          if (mc) { mc.checked = true; if (typeof toggleMovePanel === 'function') toggleMovePanel(); }
+        }
         if (typeof calculate === 'function') calculate();
         else if (typeof simulate === 'function') simulate();
         else {
@@ -1203,7 +1285,7 @@ onAuthStateChanged(auth, user=>{
 });
 
 // 입력값 수집/적용 (PDF 스크립트의 INPUT_IDS와 동일)
-const INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth','homeValue','homeDebt','homeGrowth'];
+const INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth','homeValue','homeDebt','homeGrowth','move1Age','move1Value','move2Age','move2Value'];
 
 function collectInputs(){
   const data = {};
@@ -1212,6 +1294,11 @@ function collectInputs(){
 }
 function applyInputs(data){
   INPUT_IDS.forEach(id=>{ const el=$(id); if(el && data[id]!==undefined){ el.value=data[id]; } });
+  // 갈아타기 값 있으면 패널 켜기
+  if (data['move1Age'] || data['move1Value']) {
+    const mc = $('moveEnable');
+    if (mc) { mc.checked = true; if (typeof toggleMovePanel === 'function') toggleMovePanel(); }
+  }
   // 재계산 트리거
   const first=$('currentAge'); if(first){ first.dispatchEvent(new Event('input',{bubbles:true})); }
 }
