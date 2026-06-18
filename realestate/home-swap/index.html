@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>갈아타기 손익 계산기 | 스윙파머</title>
+<meta name="description" content="집 팔고 다른 집 사는 갈아타기, 양도세·취득세·중개비까지 포함한 실제 드는 돈과 손익을 계산. (2026년 기준)">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  header h1 { font-size: 20px; color: #1F4E78; margin: 0; }
+  .back-link { margin-left: auto; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  .desc { font-size: 12.5px; color: #888; margin-top: 4px; }
+  .panel { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .section-label { font-size: 14px; font-weight: 700; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #eef0f3; }
+  .sell-label { color: #dc2626; }
+  .buy-label { color: #1F4E78; }
+  .input-row { margin-bottom: 12px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #333; }
+  .stat-sub { font-size: 11px; font-weight: 500; color: #888; }
+  input[type="number"] { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; background: #FFF2CC; font-weight: 600; color: #0000FF; }
+  input[type="number"]:focus { outline: 2px solid #1F4E78; background: #FFFACD; }
+  select { width: 100%; padding: 10px; font-size: 14px; border: 1px solid #ccc; border-radius: 6px; background: #fff; }
+  .won-kor { font-size: 12px; color: #1F4E78; font-weight: 600; margin-top: 3px; min-height: 15px; }
+  .checkrow { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .checkrow input { width: 16px; height: 16px; }
+  .checkrow label { margin: 0; font-weight: 500; cursor: pointer; }
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; font-style: normal; cursor: pointer; margin-left: 4px; }
+  .info-box { display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #1e40af; line-height: 1.7; margin-top: 6px; }
+
+  .result-hero { background: linear-gradient(135deg, #1F4E78, #2d6da3); color: white; border-radius: 14px; padding: 22px; text-align: center; margin-bottom: 16px; }
+  .result-hero .label { font-size: 13px; opacity: .9; margin-bottom: 6px; }
+  .result-hero .value { font-size: 30px; font-weight: 800; letter-spacing: -1px; }
+  .result-hero .kor { font-size: 13px; opacity: .9; margin-top: 5px; }
+  .result-hero .sub { font-size: 12.5px; opacity: .85; margin-top: 8px; line-height: 1.6; }
+
+  table.breakdown { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.breakdown td { padding: 9px 6px; border-bottom: 1px solid #f0f0f0; }
+  table.breakdown td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  table.breakdown tr.sub td { color: #888; font-size: 12px; padding-left: 18px; }
+  table.breakdown tr.total td { border-top: 2px solid #1F4E78; font-weight: 700; font-size: 14px; padding-top: 11px; }
+  table.breakdown .plus { color: #16a34a; }
+  table.breakdown .minus { color: #dc2626; }
+  table.breakdown .group-head td { font-weight: 700; color: #1F4E78; padding-top: 14px; }
+
+  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 18px; margin-top: 8px; }
+  .manual h3 { font-size: 15px; color: #8a6d1a; margin-bottom: 12px; }
+  .manual li { font-size: 13px; line-height: 1.9; margin-left: 4px; list-style: none; margin-bottom: 4px; }
+  .manual .badge { display: inline-block; background: #1F4E78; color: white; font-size: 11px; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
+  .warn-note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; line-height: 1.7; margin-top: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div>
+      <h1>🔄 갈아타기 손익 계산기</h1>
+    </div>
+    <a href="../" class="back-link">← 부동산 도구로</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc" style="margin:8px 0 16px">지금 집을 팔고 다른 집으로 갈아탈 때, <b>양도세·취득세·중개비</b>까지 포함해 실제로 드는(또는 남는) 돈을 계산합니다. 2026년 세율 기준.</p>
+
+  <!-- 기존 집 매도 -->
+  <div class="panel">
+    <div class="section-label sell-label">🏠 ① 지금 집 팔기 (매도)</div>
+    <div class="input-row">
+      <label>매도가 (현재 시세) <span class="stat-sub">팔 가격</span></label>
+      <input type="number" id="sellPrice" value="1000000000" inputmode="numeric">
+      <div class="won-kor" id="sellPrice_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>취득가 (살 때 가격) <span class="stat-sub">양도차익 계산용</span></label>
+      <input type="number" id="buyPriceOld" value="700000000" inputmode="numeric">
+      <div class="won-kor" id="buyPriceOld_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>보유 기간 (년) <span class="stat-sub">장기보유공제용</span></label>
+      <input type="number" id="holdYears" value="5" inputmode="numeric">
+    </div>
+    <div class="checkrow">
+      <input type="checkbox" id="oneHouse" checked onchange="calculate()">
+      <label for="oneHouse">1세대 1주택 (2년 이상 보유·거주) <span class="info-btn" onclick="toggleInfo('oneHouseInfo')">i</span></label>
+    </div>
+    <div class="info-box" id="oneHouseInfo">
+      1세대 1주택이고 2년 이상 보유(조정지역은 거주)했으면 <b>양도세 비과세</b>입니다. 단 매도가 <b>12억 초과</b>면 초과분에만 과세돼요. 체크 해제하면 다주택(중과 가능)으로 계산합니다.
+    </div>
+    <div class="checkrow">
+      <input type="checkbox" id="lived2y" checked onchange="calculate()">
+      <label for="lived2y">2년 이상 거주함 (장기보유공제 우대)</label>
+    </div>
+  </div>
+
+  <!-- 새 집 매수 -->
+  <div class="panel">
+    <div class="section-label buy-label">🏡 ② 새 집 사기 (매수)</div>
+    <div class="input-row">
+      <label>매수가 (새 집 가격) <span class="stat-sub">살 가격</span></label>
+      <input type="number" id="buyPriceNew" value="1500000000" inputmode="numeric">
+      <div class="won-kor" id="buyPriceNew_kor"></div>
+    </div>
+    <div class="checkrow">
+      <input type="checkbox" id="tempTwo" checked onchange="calculate()">
+      <label for="tempTwo">일시적 2주택 (기존 집 처분 예정 → 취득세 일반세율) <span class="info-btn" onclick="toggleInfo('tempTwoInfo')">i</span></label>
+    </div>
+    <div class="info-box" id="tempTwoInfo">
+      갈아타기는 보통 <b>일시적 2주택</b>이라 새 집 취득세가 일반세율(1~3%)로 적용됩니다(기존 집을 기한 내 처분 조건). 체크 해제하면 다주택 중과(8~12%)로 계산합니다.
+    </div>
+    <div class="checkrow" id="regulatedRow" style="display:none">
+      <input type="checkbox" id="regulated" onchange="calculate()">
+      <label for="regulated">조정대상지역 (다주택 중과 시 영향)</label>
+    </div>
+  </div>
+
+  <!-- 비용 -->
+  <div class="panel">
+    <div class="section-label">💸 ③ 부대 비용</div>
+    <div class="input-row">
+      <label>매도 중개수수료율 (%) <span class="stat-sub">기존 집 팔 때</span></label>
+      <input type="number" id="sellFeeRate" value="0.5" step="0.1" inputmode="decimal">
+    </div>
+    <div class="input-row">
+      <label>매수 중개수수료율 (%) <span class="stat-sub">새 집 살 때</span></label>
+      <input type="number" id="buyFeeRate" value="0.5" step="0.1" inputmode="decimal">
+    </div>
+    <div class="input-row">
+      <label>기타 비용 (이사·법무·수리 등) <span class="stat-sub">대략</span></label>
+      <input type="number" id="etcCost" value="10000000" inputmode="numeric">
+      <div class="won-kor" id="etcCost_kor"></div>
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="result-hero">
+    <div class="label" id="resultLabel">갈아타기에 추가로 필요한 돈</div>
+    <div class="value" id="netResult">-</div>
+    <div class="kor" id="netResultKor"></div>
+    <div class="sub" id="resultSub"></div>
+  </div>
+
+  <div class="panel">
+    <div class="section-label">📋 상세 내역</div>
+    <table class="breakdown">
+      <tbody id="breakdownBody"></tbody>
+    </table>
+  </div>
+
+  <div class="warn-note">
+    ⚠️ <b>이 계산은 참고용 추정치입니다.</b> 양도세는 1세대 1주택 비과세/12억 초과 과세/장기보유공제를 단순 반영한 것으로, 실제는 다주택·조정지역·거주요건·일시적2주택 처분기한 등에 따라 크게 달라집니다. 정확한 세액은 <b>세무사 상담 또는 홈택스 모의계산</b>을 이용하세요.
+  </div>
+
+  <div class="manual">
+    <h3>📘 계산 방법</h3>
+    <ul>
+      <li><span class="badge">매도 실수령</span> 매도가 − 양도세 − 매도 중개비</li>
+      <li><span class="badge">양도세</span> 1주택·2년보유면 비과세(12억 이하). 12억 초과분만 과세. 다주택이면 차익 전체에 기본세율(+중과 가능).</li>
+      <li><span class="badge">장기보유공제</span> 1주택 보유+거주 시 연 8%(최대 80%). 일반은 연 2%(최대 30%).</li>
+      <li><span class="badge">새집 총비용</span> 매수가 + 취득세 + 매수 중개비 + 기타</li>
+      <li><span class="badge">추가 필요 자금</span> 새집 총비용 − 매도 실수령. (음수면 오히려 돈이 남음)</li>
+    </ul>
+  </div>
+</div>
+
+<script src="/common.js?v=3"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+function wonToKorean(n){ n=Math.round(Math.abs(n)); if(n===0)return ''; var eok=Math.floor(n/1e8),man=Math.floor((n%1e8)/1e4),won=n%1e4,p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(man>0)p.push(man.toLocaleString('ko-KR')+'만'); if(won>0)p.push(won.toLocaleString('ko-KR')); return p.join(' ')+'원'; }
+function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
+
+const KOR_FIELDS = ['sellPrice','buyPriceOld','buyPriceNew','etcCost'];
+function updateKor(){ KOR_FIELDS.forEach(id=>{ var el=$(id), box=$(id+'_kor'); if(el&&box){ var v=parseFloat(el.value)||0; box.textContent=v>0?wonToKorean(v):''; } }); }
+
+// 양도세 누진세율 (2024~ 기본세율)
+function incomeTax(base){
+  if(base<=0) return 0;
+  const brackets = [
+    [12000000, 0.06, 0],
+    [46000000, 0.15, 1080000],
+    [88000000, 0.24, 5220000],
+    [150000000, 0.35, 14900000],
+    [300000000, 0.38, 19400000],
+    [500000000, 0.40, 25400000],
+    [1000000000, 0.42, 35400000],
+    [Infinity, 0.45, 65400000]
+  ];
+  for(const [limit, rate, deduct] of brackets){
+    if(base <= limit) return base*rate - deduct;
+  }
+  return 0;
+}
+
+// 취득세율 (주택 매매)
+function acqTax(price, isMulti, isRegulated){
+  let rate;
+  if(isMulti){
+    // 다주택 중과
+    rate = isRegulated ? 0.08 : 0.03; // 단순화: 조정 2주택 8%, 비조정은 일반
+    // 3주택+ 또는 법인 12%는 이 계산기 범위 밖 (갈아타기 가정)
+  } else {
+    if(price <= 600000000) rate = 0.01;
+    else if(price <= 900000000) rate = 0.01 + ((price-600000000)/300000000)*0.02;
+    else rate = 0.03;
+  }
+  const base = price*rate;
+  // 농특세(0.2%, 85㎡초과 가정 단순화는 생략) + 지방교육세(취득세의 10%)
+  const eduTax = base*0.1; // 지방교육세 대략
+  return { tax: base, edu: eduTax, total: base+eduTax, rate };
+}
+
+function calculate(){
+  const sellPrice = parseFloat($('sellPrice').value)||0;
+  const buyPriceOld = parseFloat($('buyPriceOld').value)||0;
+  const holdYears = parseFloat($('holdYears').value)||0;
+  const oneHouse = $('oneHouse').checked;
+  const lived2y = $('lived2y').checked;
+  const buyPriceNew = parseFloat($('buyPriceNew').value)||0;
+  const tempTwo = $('tempTwo').checked;
+  const isRegulated = $('regulated').checked;
+  const sellFeeRate = (parseFloat($('sellFeeRate').value)||0)/100;
+  const buyFeeRate = (parseFloat($('buyFeeRate').value)||0)/100;
+  const etcCost = parseFloat($('etcCost').value)||0;
+
+  // 조정지역 체크박스는 다주택일 때만 의미
+  $('regulatedRow').style.display = (!tempTwo) ? 'flex' : 'none';
+
+  // === 양도세 계산 ===
+  let gain = sellPrice - buyPriceOld; // 양도차익 (비용 단순화)
+  if(gain < 0) gain = 0;
+  let taxableGain = gain;
+  let exemptNote = '';
+
+  if(oneHouse){
+    // 1주택: 12억 이하 비과세, 초과분만 과세
+    if(sellPrice <= 1200000000){
+      taxableGain = 0;
+      exemptNote = '1주택 비과세 (12억 이하)';
+    } else {
+      // 12억 초과분 비율만 과세
+      const ratio = (sellPrice - 1200000000) / sellPrice;
+      taxableGain = gain * ratio;
+      exemptNote = '12억 초과분만 과세';
+    }
+  }
+
+  // 장기보유특별공제
+  let ltDeduction = 0, ltRate = 0;
+  if(taxableGain > 0 && holdYears >= 3){
+    if(oneHouse && lived2y){
+      // 1주택: 보유 연4% + 거주 연4%, 최대 80%
+      ltRate = Math.min(0.80, holdYears*0.04 + Math.min(holdYears,10)*0.04);
+    } else {
+      // 일반: 연2%, 최대 30% (15년)
+      ltRate = Math.min(0.30, (holdYears-2)*0.02);
+      if(ltRate<0) ltRate=0;
+    }
+    ltDeduction = taxableGain * ltRate;
+  }
+
+  const taxBase = Math.max(0, taxableGain - ltDeduction - 2500000); // 기본공제 250만
+  let transferTax = incomeTax(taxBase);
+  // 다주택 중과 (조정지역, 단순화: +20%p)
+  if(!oneHouse && isRegulated && taxBase > 0){
+    transferTax += taxBase * 0.20;
+  }
+  transferTax += transferTax * 0.1; // 지방소득세 10%
+
+  // === 취득세 (새 집) ===
+  const isMulti = !tempTwo;
+  const acq = acqTax(buyPriceNew, isMulti, isRegulated);
+
+  // === 중개비 ===
+  const sellFee = sellPrice * sellFeeRate;
+  const buyFee = buyPriceNew * buyFeeRate;
+
+  // === 정산 ===
+  const sellNet = sellPrice - transferTax - sellFee; // 매도 실수령
+  const buyTotal = buyPriceNew + acq.total + buyFee + etcCost; // 새집 총비용
+  const needed = buyTotal - sellNet; // 추가 필요 자금
+
+  // 결과 표시
+  if(needed >= 0){
+    $('resultLabel').textContent = '갈아타기에 추가로 필요한 돈';
+    $('netResult').textContent = fmt(needed) + ' 원';
+    $('netResultKor').textContent = wonToKorean(needed);
+    $('resultSub').textContent = '새 집(업사이징)으로 가려면 이만큼 더 필요해요.';
+  } else {
+    $('resultLabel').textContent = '갈아타기 후 남는 돈';
+    $('netResult').textContent = fmt(-needed) + ' 원';
+    $('netResultKor').textContent = wonToKorean(-needed);
+    $('resultSub').textContent = '집을 줄여서(다운사이징) 이만큼 현금이 생겨요.';
+  }
+
+  // 상세 내역
+  const rows = [];
+  rows.push(`<tr class="group-head"><td colspan="2">① 지금 집 매도</td></tr>`);
+  rows.push(`<tr><td>매도가</td><td class="num">${fmt(sellPrice)}</td></tr>`);
+  rows.push(`<tr class="sub"><td>양도차익 (매도−취득)</td><td class="num">${fmt(gain)}</td></tr>`);
+  if(exemptNote) rows.push(`<tr class="sub"><td>${exemptNote}</td><td class="num">${taxableGain>0?'과세 '+fmt(taxableGain):'비과세'}</td></tr>`);
+  if(ltRate>0) rows.push(`<tr class="sub"><td>장기보유공제 (${(ltRate*100).toFixed(0)}%)</td><td class="num minus">−${fmt(ltDeduction)}</td></tr>`);
+  rows.push(`<tr><td>양도세 (지방세 포함)</td><td class="num minus">−${fmt(transferTax)}</td></tr>`);
+  rows.push(`<tr><td>매도 중개비 (${(sellFeeRate*100).toFixed(2)}%)</td><td class="num minus">−${fmt(sellFee)}</td></tr>`);
+  rows.push(`<tr class="total"><td>매도 실수령</td><td class="num plus">${fmt(sellNet)}</td></tr>`);
+
+  rows.push(`<tr class="group-head"><td colspan="2">② 새 집 매수</td></tr>`);
+  rows.push(`<tr><td>매수가</td><td class="num">${fmt(buyPriceNew)}</td></tr>`);
+  rows.push(`<tr><td>취득세 (${(acq.rate*100).toFixed(1)}%, 교육세 포함)</td><td class="num minus">+${fmt(acq.total)}</td></tr>`);
+  rows.push(`<tr><td>매수 중개비 (${(buyFeeRate*100).toFixed(2)}%)</td><td class="num minus">+${fmt(buyFee)}</td></tr>`);
+  rows.push(`<tr><td>기타 비용</td><td class="num minus">+${fmt(etcCost)}</td></tr>`);
+  rows.push(`<tr class="total"><td>새 집 총비용</td><td class="num">${fmt(buyTotal)}</td></tr>`);
+
+  rows.push(`<tr class="group-head"><td colspan="2">③ 최종 정산</td></tr>`);
+  rows.push(`<tr class="total"><td>${needed>=0?'추가 필요 자금':'남는 돈'}</td><td class="num ${needed>=0?'minus':'plus'}">${needed>=0?'':'+'}${fmt(Math.abs(needed))}</td></tr>`);
+
+  $('breakdownBody').innerHTML = rows.join('');
+
+  updateKor();
+}
+
+// 입력 이벤트
+document.querySelectorAll('input').forEach(el=>{ el.addEventListener('input', calculate); });
+calculate();
+</script>
+</body>
+</html>
