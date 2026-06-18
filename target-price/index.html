@@ -56,6 +56,8 @@
   tbody input.editable { background: #FFF2CC; color: #0000FF; }
   tbody input.computed { background: #f1f5f9; color: #475569; }
   tbody input:focus { outline: 2px solid #1F4E78; }
+  tbody input.cur-input { color: #16a34a !important; }
+  .cell-kor { font-size: 10px; color: #1F4E78; margin-top: 2px; text-align: right; white-space: nowrap; }
   tbody td.profit-cell { font-weight: 700; }
   .row-progress { height: 5px; background: #e5e7eb; border-radius: 3px; overflow: hidden; margin-top: 4px; min-width: 60px; }
   .row-progress-fill { height: 100%; background: linear-gradient(90deg, #1F4E78, #16a34a); border-radius: 3px; }
@@ -83,9 +85,9 @@
 </head>
 <body>
 <header>
-  <div class="wrap">
+  <div class="wrap" style="display:block">
+    <a href="/" class="back-link" style="display:inline-block;margin-bottom:8px">← 메인으로</a>
     <h1>🎯 목표주가 역산 계산기</h1>
-    <a href="/stock-tools/" class="back-link">← 주식 도구로</a>
   </div>
 </header>
 
@@ -141,12 +143,12 @@
       <thead>
         <tr>
           <th class="name-col">종목명</th>
+          <th class="buy">매수금액</th>
           <th class="buy">매수가</th>
           <th>수량(주)</th>
-          <th class="buy">매수금액</th>
           <th>현재가</th>
-          <th class="target">목표가</th>
           <th class="target">목표금액</th>
+          <th class="target">목표가</th>
           <th>예상수익</th>
           <th>진행</th>
           <th></th>
@@ -176,11 +178,12 @@
   </div>
 
   <div class="manual">
-    <b>📘 사용법 — 역산 규칙</b><br>
-    <span class="badge">매수</span> 매수가 × 수량 = 매수금액. 셋 중 둘을 넣으면 나머지 자동. <b>매수금액을 고치면 매수가</b>가 따라 바뀝니다(수량 고정).<br>
-    <span class="badge">목표</span> 목표가 × 수량 = 목표금액. <b>목표금액을 고치면 목표가</b>가 따라 바뀝니다.<br>
-    <span class="badge">진행</span> 현재가를 넣으면 매수가 → 목표가 구간에서 <b>지금 몇 % 왔는지</b> 표시돼요.<br>
-    노란 칸이 입력칸, 회색 칸은 자동 계산값입니다. 어느 칸이든 직접 고칠 수 있어요.
+    <b>📘 이렇게 쓰세요 — 매수금액(예산) 기준 목표 맞추기</b><br>
+    이 계산기는 <b>"이 종목에 얼마(예산)를 넣어서, 얼마(목표금액)를 만들고 싶다"</b>를 정해놓고, <b>매수가를 이리저리 바꿔보며</b> 몇 주를 사야 하고 목표가가 얼마여야 하는지 찾는 도구예요. 정해진 한 가지 방법만 있는 게 아니라, 칸을 자유롭게 바꿔가며 다양하게 응용해 쓰는 걸 권장합니다.<br><br>
+    <span class="badge">예산 고정</span> 매수금액(예산)을 정하면, <b>매수가</b>를 바꿀 때마다 수량이 자동으로 맞춰집니다(예산 유지). 수량을 직접 바꾸면 매수가가 맞춰져요.<br>
+    <span class="badge">목표</span> 목표금액을 정하면, 그 수량 기준으로 <b>목표가</b>가 자동 계산됩니다. (예: 1억으로 만주 → 2억 되려면 목표가 2만 원)<br>
+    <span class="badge">진행</span> <b style="color:#16a34a">현재가</b>(초록 칸)를 넣으면 매수가 → 목표가 구간에서 지금 몇 % 왔는지, 마일스톤 진행바에 표시돼요.<br><br>
+    노란 칸이 입력칸입니다. 어느 칸이든 직접 고치면 나머지가 따라 바뀝니다.
   </div>
 
   <footer>© 스윙파머</footer>
@@ -268,12 +271,12 @@ function render(){
     const profitColor = profit>=0 ? '#16a34a' : '#dc2626';
     return `<tr>
       <td class="name-col"><input class="name-input" type="text" placeholder="종목명" value="${(r.name||'').replace(/"/g,'&quot;')}" oninput="upd(${i},'name',this.value)"></td>
+      <td><input class="editable" type="number" inputmode="numeric" value="${r.buyAmount?Math.round(r.buyAmount):''}" oninput="upd(${i},'buyAmount',this.value)"><div class="cell-kor">${r.buyAmount?wonToKorean(r.buyAmount):''}</div></td>
       <td><input class="editable" type="number" inputmode="numeric" value="${r.buyPrice||''}" oninput="upd(${i},'buyPrice',this.value)"></td>
       <td><input class="editable" type="number" inputmode="numeric" value="${r.qty?Math.round(r.qty):''}" oninput="upd(${i},'qty',this.value)"></td>
-      <td><input class="editable" type="number" inputmode="numeric" value="${r.buyAmount?Math.round(r.buyAmount):''}" oninput="upd(${i},'buyAmount',this.value)"></td>
-      <td><input class="editable" type="number" inputmode="numeric" placeholder="-" value="${r.curPrice||''}" oninput="upd(${i},'curPrice',this.value)"></td>
+      <td><input class="editable cur-input" type="number" inputmode="numeric" placeholder="-" value="${r.curPrice||''}" oninput="upd(${i},'curPrice',this.value)"></td>
+      <td><input class="editable" type="number" inputmode="numeric" value="${r.targetAmount?Math.round(r.targetAmount):''}" oninput="upd(${i},'targetAmount',this.value)"><div class="cell-kor">${r.targetAmount?wonToKorean(r.targetAmount):''}</div></td>
       <td><input class="editable" type="number" inputmode="numeric" value="${r.targetPrice?Math.round(r.targetPrice):''}" oninput="upd(${i},'targetPrice',this.value)"></td>
-      <td><input class="editable" type="number" inputmode="numeric" value="${r.targetAmount?Math.round(r.targetAmount):''}" oninput="upd(${i},'targetAmount',this.value)"></td>
       <td class="profit-cell" style="color:${profitColor}">${profit?(profit>0?'+':'')+fmtShort(profit):'-'}</td>
       <td><div style="font-size:10px;color:#888">${r.curPrice>0?prog.toFixed(0)+'%':'-'}</div><div class="row-progress"><div class="row-progress-fill" style="width:${prog}%"></div></div></td>
       <td><button class="del-btn" onclick="delRow(${i})">×</button></td>
@@ -299,22 +302,27 @@ function refreshRowInputs(i, skipField){
   const r = rows[i];
   const tr = $('tbody').children[i];
   if(!tr) return;
+  // 컬럼: 0종목명 1매수금액 2매수가 3수량 4현재가 5목표금액 6목표가
   const map = [
-    [1,'buyPrice', r.buyPrice?Math.round(r.buyPrice):''],
-    [2,'qty', r.qty?Math.round(r.qty):''],
-    [3,'buyAmount', r.buyAmount?Math.round(r.buyAmount):''],
-    [4,'curPrice', r.curPrice||''],
-    [5,'targetPrice', r.targetPrice?Math.round(r.targetPrice):''],
-    [6,'targetAmount', r.targetAmount?Math.round(r.targetAmount):'']
+    [1,'buyAmount', r.buyAmount?Math.round(r.buyAmount):'', true],
+    [2,'buyPrice', r.buyPrice?Math.round(r.buyPrice):'', false],
+    [3,'qty', r.qty?Math.round(r.qty):'', false],
+    [4,'curPrice', r.curPrice||'', false],
+    [5,'targetAmount', r.targetAmount?Math.round(r.targetAmount):'', true],
+    [6,'targetPrice', r.targetPrice?Math.round(r.targetPrice):'', false]
   ];
-  map.forEach(([col, fld, v])=>{
-    if(fld===skipField) return; // 입력 중인 칸은 그대로
+  map.forEach(([col, fld, v, hasKor])=>{
     const cell = tr.children[col];
     if(!cell) return;
     const inp = cell.querySelector('input');
-    if(inp && document.activeElement !== inp) inp.value = v;
+    if(fld!==skipField && inp && document.activeElement !== inp) inp.value = v;
+    // 한글금액 셀 갱신 (매수금액·목표금액)
+    if(hasKor){
+      const kor = cell.querySelector('.cell-kor');
+      if(kor){ const amt = fld==='buyAmount'?r.buyAmount:r.targetAmount; kor.textContent = amt?wonToKorean(amt):''; }
+    }
   });
-  // 수익·진행 셀 갱신
+  // 수익·진행 셀 갱신 (컬럼 7=수익, 8=진행)
   const profit = (r.targetAmount||0) - (r.buyAmount||0);
   let prog = 0;
   if(r.curPrice>0 && r.targetPrice>r.buyPrice && r.buyPrice>0){
@@ -337,11 +345,11 @@ function updateSummary(){
     cur += (r.curPrice>0 && r.qty>0) ? r.curPrice*r.qty : (r.buyAmount||0);
   });
   const profit = tgt - inv;
-  $('sumInvested').textContent = fmt(inv);
+  $('sumInvested').textContent = fmt(inv)+' 원';
   $('sumInvestedKor').textContent = wonToKorean(inv);
-  $('sumTarget').textContent = fmt(tgt);
+  $('sumTarget').textContent = fmt(tgt)+' 원';
   $('sumTargetKor').textContent = wonToKorean(tgt);
-  $('sumProfit').textContent = (profit>=0?'+':'')+fmt(profit);
+  $('sumProfit').textContent = (profit>=0?'+':'')+fmt(profit)+' 원';
   $('sumProfitKor').textContent = wonToKorean(profit);
   const rate = inv>0 ? (profit/inv*100) : 0;
   $('sumRate').textContent = (rate>=0?'+':'')+rate.toFixed(1)+'%';
@@ -383,6 +391,37 @@ function drawTotalMilestone(inv, cur, tgt){
 
 // 차트
 let weightChart=null, growthChart=null;
+// 도넛 조각 위에 종목명+비율 표시
+const sliceLabelPlugin = {
+  id:'sliceLabel',
+  afterDatasetsDraw(chart){
+    const ctx = chart.ctx;
+    const meta = chart.getDatasetMeta(0);
+    const data = chart.data.datasets[0].data;
+    const total = data.reduce((s,v)=>s+v,0);
+    if(total<=0) return;
+    meta.data.forEach((arc, i)=>{
+      const val = data[i];
+      const pct = val/total*100;
+      if(pct < 6) return; // 너무 작으면 생략
+      const ang = (arc.startAngle + arc.endAngle)/2;
+      const r = (arc.innerRadius + arc.outerRadius)/2;
+      const x = arc.x + Math.cos(ang)*r;
+      const y = arc.y + Math.sin(ang)*r;
+      const name = chart.data.labels[i]||'';
+      ctx.save();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 11px -apple-system,sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0,0,0,.4)'; ctx.shadowBlur = 3;
+      ctx.fillText(name, x, y-7);
+      ctx.font = '10px -apple-system,sans-serif';
+      ctx.fillText(pct.toFixed(0)+'%', x, y+7);
+      ctx.restore();
+    });
+  }
+};
 function drawCharts(){
   const valid = rows.filter(r=>(r.targetAmount||0)>0 && r.name);
   // 비중 도넛
@@ -391,7 +430,8 @@ function drawCharts(){
     weightChart = new Chart($('weightChart'), {
       type:'doughnut',
       data:{ labels: valid.map(r=>r.name), datasets:[{ data: valid.map(r=>r.targetAmount), backgroundColor: valid.map((r,i)=>COLORS[i%COLORS.length]), borderWidth:2, borderColor:'#fff' }] },
-      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'bottom', labels:{font:{size:11},boxWidth:12}}, tooltip:{callbacks:{label:c=>c.label+': '+fmtShort(c.parsed)+'원'}} } }
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'bottom', labels:{font:{size:11},boxWidth:12}}, tooltip:{callbacks:{label:c=>c.label+': '+fmtShort(c.parsed)+'원'}} } },
+      plugins:[sliceLabelPlugin]
     });
   }
   // 매수→목표 막대
