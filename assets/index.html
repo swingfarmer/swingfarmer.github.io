@@ -301,6 +301,19 @@
         </div>
       </div>
 
+      <!-- 월별 추이 (클라우드 스냅샷) -->
+      <div class="panel" id="trendPanel" style="display:none">
+        <h2>📅 월별 추이</h2>
+        <div class="desc">클라우드에 저장한 스냅샷들로 자산 변화를 추적합니다. (관리자 전용 · 날짜별로 저장할수록 정확)</div>
+        <div class="tabs" style="margin-bottom:12px">
+          <button class="tab active" id="trendTabNet" onclick="setTrendMode('net')">순자산</button>
+          <button class="tab" id="trendTabAsset" onclick="setTrendMode('asset')">자산구성</button>
+          <button class="tab" id="trendTabSpend" onclick="setTrendMode('spend')">지출</button>
+        </div>
+        <div class="chart-wrap" style="height:260px"><canvas id="trendChart"></canvas></div>
+        <div id="trendSummary" style="font-size:12.5px;color:#555;margin-top:10px;line-height:1.7"></div>
+      </div>
+
       <!-- 전체 항목 표 -->
       <div class="panel">
         <h2>📋 전체 항목</h2>
@@ -355,6 +368,7 @@ const RISK_CATS = ['투자'];
 
 // 상태
 let state = { assets: [], debts: [], spends: [] };
+let lastCat = { asset: ASSET_CATS[0], debt: DEBT_CATS[0], spend: SPEND_CATS[0] };
 const STORE_KEY = 'sf_assets_v1';
 
 // === 항목 렌더 ===
@@ -391,8 +405,7 @@ function renderList(type){
 
 function addItem(type){
   const arr = type==='asset'?state.assets : type==='debt'?state.debts : state.spends;
-  const cats = type==='asset'?ASSET_CATS : type==='debt'?DEBT_CATS : SPEND_CATS;
-  arr.push({ cat: cats[0], name:'', amount:0 });
+  arr.push({ cat: lastCat[type], name:'', amount:0 });
   renderList(type); save(); updateTotals();
 }
 function removeItem(type, idx){
@@ -409,6 +422,7 @@ function updateItem(type, idx, field, val){
     if(korEl) korEl.textContent = arr[idx].amount>0 ? wonToKorean(arr[idx].amount) : '';
   } else {
     arr[idx][field] = val;
+    if(field==='cat') lastCat[type] = val;
   }
   save(); updateTotals();
 }
@@ -441,6 +455,37 @@ function switchTab(t){
 // === 대시보드 ===
 let charts = {};
 function destroyCharts(){ Object.values(charts).forEach(c=>{ if(c) c.destroy(); }); charts = {}; }
+
+// 도넛 조각 위에 라벨 그리기 플러그인
+const sliceLabelPlugin = {
+  id: 'sliceLabel',
+  afterDraw(chart){
+    const meta = chart.getDatasetMeta(0);
+    const total = meta.total || (chart.data.datasets[0].data.reduce((a,b)=>a+b,0));
+    const ctx = chart.ctx;
+    ctx.save();
+    chart.data.labels.forEach((label, i)=>{
+      const arc = meta.data[i];
+      if(!arc) return;
+      const val = chart.data.datasets[0].data[i];
+      const pct = total>0 ? val/total*100 : 0;
+      if(pct < 7) return; // 너무 작은 조각은 라벨 생략
+      const pos = arc.tooltipPosition();
+      // 짧은 라벨만 (분류명)
+      const short = label.length > 6 ? label.slice(0,5)+'…' : label;
+      ctx.font = 'bold 11px -apple-system, sans-serif';
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0,0,0,.35)';
+      ctx.shadowBlur = 3;
+      ctx.fillText(short, pos.x, pos.y - 6);
+      ctx.font = '10px -apple-system, sans-serif';
+      ctx.fillText(pct.toFixed(0)+'%', pos.x, pos.y + 7);
+    });
+    ctx.restore();
+  }
+};
 
 function groupByCat(arr, type){
   const m = {};
@@ -526,8 +571,9 @@ function drawPie(canvasId, legendId, byCat, type, total){
   charts[canvasId] = new Chart($(canvasId), {
     type:'doughnut',
     data:{ labels, datasets:[{ data:values, backgroundColor:colors, borderWidth:2, borderColor:'#fff' }] },
-    options:{ responsive:true, maintainAspectRatio:false, cutout:'58%',
-      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>c.label+': '+fmtShort(c.parsed)+'원 ('+(c.parsed/total*100).toFixed(1)+'%)' } } } }
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'52%',
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>c.label+': '+fmtShort(c.parsed)+'원 ('+(c.parsed/total*100).toFixed(1)+'%)' } } } },
+    plugins:[sliceLabelPlugin]
   });
   // 범례
   const leg = $(legendId);
@@ -542,8 +588,9 @@ function drawDonut(canvasId, legendId, data){
   charts[canvasId] = new Chart($(canvasId), {
     type:'doughnut',
     data:{ labels:data.map(d=>d.name), datasets:[{ data:data.map(d=>d.value), backgroundColor:data.map(d=>d.color), borderWidth:2, borderColor:'#fff' }] },
-    options:{ responsive:true, maintainAspectRatio:false, cutout:'58%',
-      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>c.label+': '+fmtShort(c.parsed)+'원 ('+(total>0?(c.parsed/total*100).toFixed(1):0)+'%)' } } } }
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'52%',
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c=>c.label+': '+fmtShort(c.parsed)+'원 ('+(total>0?(c.parsed/total*100).toFixed(1):0)+'%)' } } } },
+    plugins:[sliceLabelPlugin]
   });
   const leg = $(legendId);
   leg.innerHTML = data.map(d=>{
@@ -640,6 +687,20 @@ function renderAnalysis(totalAsset, totalDebt, net, assetByCat, safe, risk, real
     <span style="color:#888;font-size:11.5px">※ 부동산은 별도(준실물자산)로 봅니다.</span>
   </div>`);
 
+  // 5. 순자산 분포 위치
+  let distMsg, distCls;
+  if(net >= 1e9){ distMsg='상위 약 <b>11.8%</b> 구간(10억 이상)에 듭니다.'; distCls='a-good'; }
+  else if(net >= 5e8){ distMsg='순자산 <b>5억~10억</b> 구간. 상위 30% 안쪽입니다.'; distCls='a-good'; }
+  else if(net >= 3e8){ distMsg='순자산 <b>3억~5억</b> 구간. 전국 중상위권입니다.'; distCls='a-neutral'; }
+  else if(net >= 1e8){ distMsg='순자산 <b>1억~3억</b> 구간. 전국 가구의 약 27%가 이 구간입니다.'; distCls='a-neutral'; }
+  else if(net >= 0){ distMsg='순자산 <b>1억 미만</b> 구간(전국 29.5%). 자산 형성기입니다.'; distCls='a-neutral'; }
+  else { distMsg='순자산이 <b>마이너스</b>예요. 부채 관리가 시급합니다.'; distCls='a-warn'; }
+  cards.push(`<div class="analysis-card ${distCls}">
+    <div class="a-title">📍 순자산 분포 위치</div>
+    ${distMsg}<br>
+    <span style="color:#888;font-size:11.5px">※ 2025 가계금융복지조사 순자산 분포: 3억 미만 57%, 10억 이상 11.8%, 1억 미만 29.5%.</span>
+  </div>`);
+
   $('analysisCards').innerHTML = cards.join('');
 }
 
@@ -682,6 +743,72 @@ function renderAll(){
 // 클라우드용 노출
 window.assetGetState = ()=>state;
 window.assetSetState = (d)=>{ state = { assets:d.assets||[], debts:d.debts||[], spends:d.spends||[] }; save(); renderAll(); };
+
+// === 월별 추이 (클라우드 스냅샷 기반) ===
+let _snapshots = [];      // [{name, data, net, savedAt}]
+let _trendMode = 'net';
+window.assetSetSnapshots = (snaps)=>{
+  // 이름(날짜) 기준 정렬
+  _snapshots = (snaps||[]).slice().sort((a,b)=> (a.name>b.name?1:-1));
+  const panel = $('trendPanel');
+  if(panel){
+    panel.style.display = _snapshots.length>=1 ? 'block' : 'none';
+    if(_snapshots.length>=1) drawTrend();
+  }
+};
+function setTrendMode(m){
+  _trendMode = m;
+  ['net','asset','spend'].forEach(k=>{
+    $('trendTab'+k.charAt(0).toUpperCase()+k.slice(1)).classList.toggle('active', k===m);
+  });
+  drawTrend();
+}
+function snapTotals(snap){
+  const a = (snap.data.assets||[]).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+  const d = (snap.data.debts||[]).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+  const sp = (snap.data.spends||[]).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+  return { asset:a, debt:d, net:a-d, spend:sp };
+}
+function snapCatSum(snap, cat){
+  return (snap.data.assets||[]).filter(x=>x.cat===cat).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+}
+function drawTrend(){
+  if(charts.trendChart){ charts.trendChart.destroy(); }
+  const labels = _snapshots.map(s=>s.name);
+  const fmtAxis = v => Math.abs(v)>=1e8 ? (v/1e8).toFixed(1)+'억' : Math.round(v/1e4)+'만';
+  let datasets = [];
+  if(_trendMode==='net'){
+    datasets = [
+      { label:'순자산', data:_snapshots.map(s=>snapTotals(s).net), borderColor:'#1F4E78', backgroundColor:'rgba(31,78,120,.08)', fill:true, tension:.25, borderWidth:2.5, pointRadius:3 },
+      { label:'총자산', data:_snapshots.map(s=>snapTotals(s).asset), borderColor:'#22c55e', borderDash:[4,3], tension:.25, borderWidth:1.5, pointRadius:2, fill:false },
+      { label:'총부채', data:_snapshots.map(s=>snapTotals(s).debt), borderColor:'#dc2626', borderDash:[4,3], tension:.25, borderWidth:1.5, pointRadius:2, fill:false }
+    ];
+  } else if(_trendMode==='asset'){
+    datasets = ASSET_CATS.map(cat=>({
+      label:cat, data:_snapshots.map(s=>snapCatSum(s,cat)), borderColor:catColor(cat,'asset'), tension:.25, borderWidth:2, pointRadius:2, fill:false
+    }));
+  } else {
+    datasets = [{ label:'월 지출', data:_snapshots.map(s=>snapTotals(s).spend), borderColor:'#b45309', backgroundColor:'rgba(180,83,9,.08)', fill:true, tension:.25, borderWidth:2.5, pointRadius:3 }];
+  }
+  charts.trendChart = new Chart($('trendChart'), {
+    type:'line',
+    data:{ labels, datasets },
+    options:{ responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{ legend:{display:true, position:'top', labels:{font:{size:11},boxWidth:12}},
+        tooltip:{ callbacks:{ label:c=>c.dataset.label+': '+fmt(c.parsed.y)+'원' } } },
+      scales:{ x:{ ticks:{font:{size:10}}, grid:{display:false} }, y:{ ticks:{callback:fmtAxis,font:{size:10}}, grid:{color:'#f0f0f0'} } } }
+  });
+  // 요약 (증감)
+  if(_snapshots.length>=2){
+    const first=snapTotals(_snapshots[0]), last=snapTotals(_snapshots[_snapshots.length-1]);
+    const netDiff = last.net-first.net;
+    const period = _snapshots[0].name+' → '+_snapshots[_snapshots.length-1].name;
+    $('trendSummary').innerHTML = `<b>${period}</b> 동안 순자산 <b style="color:${netDiff>=0?'#16a34a':'#dc2626'}">${netDiff>=0?'+':'−'}${fmtShort(Math.abs(netDiff))}원</b> ${netDiff>=0?'증가':'감소'}했어요. (${_snapshots.length}개 스냅샷)`;
+  } else {
+    $('trendSummary').innerHTML = '<span style="color:#888">스냅샷이 2개 이상이면 증감 추이가 표시됩니다. 매달 저장해보세요.</span>';
+  }
+}
 
 // === 초기화 ===
 load();
@@ -750,6 +877,8 @@ onAuthStateChanged(auth, user=>{
     gid('cloudArea').style.display = 'inline-flex';
     gid('btnAdminLogin').style.display = 'none';
     gid('cloudWho').textContent = '☁️ ' + (user.displayName||user.email||'관리자');
+    // 추이용 스냅샷 미리 로드
+    loadSlots().then(snaps=>{ _slotsCache=snaps; if(window.assetSetSnapshots) window.assetSetSnapshots(snaps); });
   } else {
     gid('cloudArea').style.display = 'none';
     if(user && !isAdmin){ signOut(auth); }
@@ -782,7 +911,7 @@ function renderSlots(slots){
   }).join('');
 }
 let _slotsCache=[];
-async function refreshSlots(){ gid('slotList').innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>'; _slotsCache=await loadSlots(); renderSlots(_slotsCache); }
+async function refreshSlots(){ gid('slotList').innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>'; _slotsCache=await loadSlots(); renderSlots(_slotsCache); if(window.assetSetSnapshots) window.assetSetSnapshots(_slotsCache); }
 
 gid('btnCloudOpen').addEventListener('click', async ()=>{
   if(!currentUser || currentUser.uid!==ADMIN_UID){ alert('관리자 로그인이 필요합니다.'); return; }
@@ -806,6 +935,7 @@ gid('slotSaveBtn').addEventListener('click', async ()=>{
     const entry={ name, data: JSON.parse(JSON.stringify(st)), net: totalA-totalD, savedAt: new Date().toISOString() };
     if(idx>=0) _slotsCache[idx]=entry; else _slotsCache.push(entry);
     await saveSlots(_slotsCache); renderSlots(_slotsCache);
+    if(window.assetSetSnapshots) window.assetSetSnapshots(_slotsCache);
     alert('✅ "'+name+'" 저장 완료.');
   }catch(e){ alert('저장 실패: '+e.message); }
   gid('slotSaveBtn').disabled=false; gid('slotSaveBtn').textContent='저장';
