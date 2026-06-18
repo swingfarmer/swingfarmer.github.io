@@ -56,7 +56,7 @@
   tbody input.editable { background: #FFF2CC; color: #0000FF; }
   tbody input.computed { background: #f1f5f9; color: #475569; }
   tbody input:focus { outline: 2px solid #1F4E78; }
-  tbody input.cur-input { color: #16a34a !important; }
+  thead th.cur-head { color: #16a34a; }
   .cell-kor { font-size: 10px; color: #1F4E78; margin-top: 2px; text-align: right; white-space: nowrap; }
   tbody td.profit-cell { font-weight: 700; }
   .row-progress { height: 5px; background: #e5e7eb; border-radius: 3px; overflow: hidden; margin-top: 4px; min-width: 60px; }
@@ -146,7 +146,7 @@
           <th class="buy">매수금액</th>
           <th class="buy">매수가</th>
           <th>수량(주)</th>
-          <th>현재가</th>
+          <th class="cur-head">현재가</th>
           <th class="target">목표금액</th>
           <th class="target">목표가</th>
           <th>예상수익</th>
@@ -194,6 +194,19 @@
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
 function wonToKorean(n){ n=Math.round(Math.abs(n)); if(n===0)return ''; var eok=Math.floor(n/1e8),man=Math.floor((n%1e8)/1e4),won=n%1e4,p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(man>0)p.push(man.toLocaleString('ko-KR')+'만'); if(won>0)p.push(won.toLocaleString('ko-KR')); return p.join(' ')+'원'; }
+// 수량 한글 (일만주·이천주·이백주, 십·백·천 앞 '일' 생략)
+function qtyToKorean(n){
+  n=Math.round(Math.abs(n)); if(n===0)return '';
+  const units=[[1e8,'억'],[1e4,'만'],[1e3,'천'],[1e2,'백'],[10,'십']];
+  const dig=['','일','이','삼','사','오','육','칠','팔','구'];
+  let s='', rem=n;
+  for(const [u,nm] of units){
+    const q=Math.floor(rem/u);
+    if(q>0){ s += ((q===1 && (nm==='천'||nm==='백'||nm==='십')) ? '' : dig[q]) + nm; rem%=u; }
+  }
+  if(rem>0) s+=dig[rem];
+  return s+'주';
+}
 const fmtShort = n => { n=Math.round(n); if(Math.abs(n)>=1e8)return (n/1e8).toFixed(1)+'억'; if(Math.abs(n)>=1e4)return Math.round(n/1e4)+'만'; return n.toLocaleString('ko-KR'); };
 const STORE_KEY = 'sf_targetprice_v1';
 const COLORS = ['#1F4E78','#16a34a','#f59e0b','#8b5cf6','#ec4899','#0ea5e9','#ef4444','#14b8a6'];
@@ -272,11 +285,11 @@ function render(){
     return `<tr>
       <td class="name-col"><input class="name-input" type="text" placeholder="종목명" value="${(r.name||'').replace(/"/g,'&quot;')}" oninput="upd(${i},'name',this.value)"></td>
       <td><input class="editable" type="number" inputmode="numeric" value="${r.buyAmount?Math.round(r.buyAmount):''}" oninput="upd(${i},'buyAmount',this.value)"><div class="cell-kor">${r.buyAmount?wonToKorean(r.buyAmount):''}</div></td>
-      <td><input class="editable" type="number" inputmode="numeric" value="${r.buyPrice||''}" oninput="upd(${i},'buyPrice',this.value)"></td>
-      <td><input class="editable" type="number" inputmode="numeric" value="${r.qty?Math.round(r.qty):''}" oninput="upd(${i},'qty',this.value)"></td>
-      <td><input class="editable cur-input" type="number" inputmode="numeric" placeholder="-" value="${r.curPrice||''}" oninput="upd(${i},'curPrice',this.value)"></td>
+      <td><input class="editable" type="number" inputmode="numeric" value="${r.buyPrice||''}" oninput="upd(${i},'buyPrice',this.value)"><div class="cell-kor">${r.buyPrice?wonToKorean(r.buyPrice):''}</div></td>
+      <td><input class="editable" type="number" inputmode="numeric" value="${r.qty?Math.round(r.qty):''}" oninput="upd(${i},'qty',this.value)"><div class="cell-kor">${r.qty?qtyToKorean(r.qty):''}</div></td>
+      <td><input class="editable" type="number" inputmode="numeric" placeholder="-" value="${r.curPrice||''}" oninput="upd(${i},'curPrice',this.value)"><div class="cell-kor">${r.curPrice?wonToKorean(r.curPrice):''}</div></td>
       <td><input class="editable" type="number" inputmode="numeric" value="${r.targetAmount?Math.round(r.targetAmount):''}" oninput="upd(${i},'targetAmount',this.value)"><div class="cell-kor">${r.targetAmount?wonToKorean(r.targetAmount):''}</div></td>
-      <td><input class="editable" type="number" inputmode="numeric" value="${r.targetPrice?Math.round(r.targetPrice):''}" oninput="upd(${i},'targetPrice',this.value)"></td>
+      <td><input class="editable" type="number" inputmode="numeric" value="${r.targetPrice?Math.round(r.targetPrice):''}" oninput="upd(${i},'targetPrice',this.value)"><div class="cell-kor">${r.targetPrice?wonToKorean(r.targetPrice):''}</div></td>
       <td class="profit-cell" style="color:${profitColor}">${profit?(profit>0?'+':'')+fmtShort(profit):'-'}</td>
       <td><div style="font-size:10px;color:#888">${r.curPrice>0?prog.toFixed(0)+'%':'-'}</div><div class="row-progress"><div class="row-progress-fill" style="width:${prog}%"></div></div></td>
       <td><button class="del-btn" onclick="delRow(${i})">×</button></td>
@@ -304,22 +317,23 @@ function refreshRowInputs(i, skipField){
   if(!tr) return;
   // 컬럼: 0종목명 1매수금액 2매수가 3수량 4현재가 5목표금액 6목표가
   const map = [
-    [1,'buyAmount', r.buyAmount?Math.round(r.buyAmount):'', true],
-    [2,'buyPrice', r.buyPrice?Math.round(r.buyPrice):'', false],
-    [3,'qty', r.qty?Math.round(r.qty):'', false],
-    [4,'curPrice', r.curPrice||'', false],
-    [5,'targetAmount', r.targetAmount?Math.round(r.targetAmount):'', true],
-    [6,'targetPrice', r.targetPrice?Math.round(r.targetPrice):'', false]
+    [1,'buyAmount', r.buyAmount?Math.round(r.buyAmount):'', 'won'],
+    [2,'buyPrice', r.buyPrice?Math.round(r.buyPrice):'', 'won'],
+    [3,'qty', r.qty?Math.round(r.qty):'', 'qty'],
+    [4,'curPrice', r.curPrice||'', 'won'],
+    [5,'targetAmount', r.targetAmount?Math.round(r.targetAmount):'', 'won'],
+    [6,'targetPrice', r.targetPrice?Math.round(r.targetPrice):'', 'won']
   ];
-  map.forEach(([col, fld, v, hasKor])=>{
+  map.forEach(([col, fld, v, korType])=>{
     const cell = tr.children[col];
     if(!cell) return;
     const inp = cell.querySelector('input');
     if(fld!==skipField && inp && document.activeElement !== inp) inp.value = v;
-    // 한글금액 셀 갱신 (매수금액·목표금액)
-    if(hasKor){
-      const kor = cell.querySelector('.cell-kor');
-      if(kor){ const amt = fld==='buyAmount'?r.buyAmount:r.targetAmount; kor.textContent = amt?wonToKorean(amt):''; }
+    // 한글 셀 갱신
+    const kor = cell.querySelector('.cell-kor');
+    if(kor){
+      const raw = r[fld]||0;
+      kor.textContent = raw ? (korType==='qty'?qtyToKorean(raw):wonToKorean(raw)) : '';
     }
   });
   // 수익·진행 셀 갱신 (컬럼 7=수익, 8=진행)
