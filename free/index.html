@@ -432,10 +432,26 @@
       <div class="stat-value" id="depletedAge">-</div>
       <div class="stat-sub">이 나이에 자산이 0원이 됩니다</div>
     </div>
+    <div class="stat" id="retireTotalBox" style="display:none;background:#f0fdf4;border:1px solid #86efac">
+      <div class="stat-label">🏠 은퇴 시점 총자산 <span style="font-weight:600">(집 포함)</span></div>
+      <div class="stat-value" id="retireTotalNominal" style="color:#16a34a">-</div>
+      <div class="stat-sub" id="retireTotalSub">금융 + 거주주택 · 명목</div>
+    </div>
+    <div class="stat" id="age100TotalBox" style="display:none;background:#f0fdf4;border:1px solid #86efac">
+      <div class="stat-label">🏠 100세 시점 총자산 <span style="font-weight:600">(집 포함)</span></div>
+      <div class="stat-value" id="age100TotalNominal" style="color:#16a34a">-</div>
+      <div class="stat-sub" id="age100TotalSub">금융 + 거주주택 · 명목</div>
+    </div>
   </div>
 
   <div id="homeNoteBox" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px 16px;margin-top:14px">
     <div id="homeNote" style="font-size:13px;line-height:1.8;color:#166534"></div>
+  </div>
+
+  <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin-top:14px">
+    <div style="font-size:14px;font-weight:700;color:#1F4E78;margin-bottom:4px">📈 자산 성장 그래프</div>
+    <div style="font-size:12px;color:#888;margin-bottom:10px">금융·투자자산(파랑)과 거주주택 포함 총자산(초록)의 명목 추이. 세로 점선은 은퇴 시점.</div>
+    <canvas id="assetChart" height="120"></canvas>
   </div>
 
   <div id="profitInfo" style="display:none;background:#fff8e8;border:1px solid #f0d896;border-radius:8px;padding:16px 18px;margin-top:14px;font-size:13.5px;line-height:1.8;color:#5a4a2a">
@@ -463,7 +479,7 @@
 </div>
 
 <div class="panel">
-  <h2>연도별 시뮬레이션</h2>
+  <h2>연도별 시뮬레이션 <span style="font-size:13px;font-weight:500;color:#888">(거주주택 제외 · 금융·투자자산 기준)</span></h2>
   <div class="table-wrap">
     <table>
       <thead>
@@ -611,6 +627,52 @@ function toggleProfitInfo() {
   el.style.display = (el.style.display === 'none' || !el.style.display) ? 'block' : 'none';
 }
 
+// 자산 성장 그래프
+var _assetChart = null;
+function drawAssetChart(ages, fin, total, retireIdx, hasHome) {
+  var cv = document.getElementById('assetChart');
+  if (!cv || typeof Chart === 'undefined') return;
+  var datasets = [{
+    label: '금융·투자자산',
+    data: fin,
+    borderColor: '#1F4E78',
+    backgroundColor: 'rgba(31,78,120,.08)',
+    fill: true, tension: .25, pointRadius: 0, borderWidth: 2
+  }];
+  if (hasHome) {
+    datasets.unshift({
+      label: '총자산 (집 포함)',
+      data: total,
+      borderColor: '#16a34a',
+      backgroundColor: 'rgba(22,163,74,.07)',
+      fill: true, tension: .25, pointRadius: 0, borderWidth: 2
+    });
+  }
+  var fmtAxis = function(v){
+    if (Math.abs(v) >= 1e8) return (v/1e8).toFixed(0) + '억';
+    if (Math.abs(v) >= 1e4) return Math.round(v/1e4) + '만';
+    return v;
+  };
+  if (_assetChart) _assetChart.destroy();
+  _assetChart = new Chart(cv, {
+    type: 'line',
+    data: { labels: ages, datasets: datasets },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: true, position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
+        tooltip: { callbacks: { label: function(c){ return c.dataset.label + ': ' + Math.round(c.parsed.y).toLocaleString('ko-KR') + '원'; } } },
+        annotation: false
+      },
+      scales: {
+        x: { ticks: { maxTicksLimit: 10, font: { size: 10 } }, grid: { display: false } },
+        y: { ticks: { callback: fmtAxis, font: { size: 10 } }, grid: { color: '#f0f0f0' } }
+      }
+    }
+  });
+}
+
 function toggleFinAssetInfo() {
   var el = document.getElementById('finAssetInfo');
   el.style.display = (el.style.display === 'none' || !el.style.display) ? 'block' : 'none';
@@ -692,6 +754,7 @@ function calculate() {
   let retireAssetsNominal = 0, retireAssetsReal = 0, retireCumFlow = 0;
   let age100Nominal = 0, age100Real = 0, age100CumFlow = 0;
   let retireTotalReal = 0, age100TotalReal = 0, retireHome = 0, age100Home = 0;
+  let retireTotalNom = 0, age100TotalNom = 0;
   let depletedAge = null;
 
   // 거주 주택 (별도 굴림, 생활비에 안 씀). 순주택가치 = 시세 − 대출
@@ -700,6 +763,9 @@ function calculate() {
   const homeValue0 = Math.max(0, homeMarket - homeDebt);
   const homeGrowth = (parseFloat(document.getElementById('homeGrowth').value) || 0) / 100;
   let homeValue = homeValue0;
+
+  // 차트용 데이터
+  const chartAges = [], chartFin = [], chartTotal = [];
 
   const annualPension = monthlyPension * 12;
 
@@ -731,11 +797,17 @@ function calculate() {
     const totalAssets = assets + homeValue; // 금융 + 주택
     const totalReal = totalAssets / Math.pow(1 + inflationRate, yearsFromNow);
 
+    // 차트 데이터 (명목)
+    chartAges.push(age + '세');
+    chartFin.push(Math.round(assets));
+    chartTotal.push(Math.round(totalAssets));
+
     if (age === retireAge) {
       retireAssetsNominal = assets;
       retireAssetsReal = realValue;
       retireCumFlow = cumulativeNetFlow;
       retireTotalReal = totalReal;
+      retireTotalNom = totalAssets;
       retireHome = homeValue;
     }
     if (age === 100) {
@@ -743,6 +815,7 @@ function calculate() {
       age100Real = realValue;
       age100CumFlow = cumulativeNetFlow;
       age100TotalReal = totalReal;
+      age100TotalNom = totalAssets;
       age100Home = homeValue;
     }
 
@@ -784,21 +857,37 @@ function calculate() {
     depletedBox.style.display = 'none';
   }
 
-  // 거주주택 포함 총자산 안내 (집이 있을 때만)
+  // 거주주택 포함 총자산 (집이 있을 때만 카드·안내 표시)
+  const hasHome = homeValue0 > 0;
+  const retireBox = document.getElementById('retireTotalBox');
+  const age100Box = document.getElementById('age100TotalBox');
   const homeBox = document.getElementById('homeNoteBox');
-  if (homeBox) {
-    if (homeValue0 > 0) {
+
+  if (hasHome) {
+    if (retireBox) {
+      retireBox.style.display = '';
+      document.getElementById('retireTotalNominal').textContent = fmt(retireTotalNom) + ' 원';
+      document.getElementById('retireTotalSub').innerHTML = '금융 + 주택 · 명목 <span style="color:#16a34a">(현재가치 ' + fmtShort(retireTotalReal) + '원)</span>';
+    }
+    if (age100Box) {
+      age100Box.style.display = '';
+      document.getElementById('age100TotalNominal').textContent = fmt(age100TotalNom) + ' 원';
+      document.getElementById('age100TotalSub').innerHTML = '금융 + 주택 · 명목 <span style="color:#16a34a">(현재가치 ' + fmtShort(age100TotalReal) + '원)</span>';
+    }
+    if (homeBox) {
       homeBox.style.display = 'block';
       document.getElementById('homeNote').innerHTML =
-        '🏠 <b>거주 주택 포함 참고</b> — 위 은퇴·고갈 계산은 <b>금융·투자자산 기준</b>입니다(집은 생활비로 못 쓰므로 제외).<br>' +
-        '집값 상승률 반영 시, <b>은퇴 시점 총자산(집 포함, 현재가치) ≈ ' + fmtShort(retireTotalReal) + '원</b> ' +
-        '(그중 주택 ' + fmtShort(retireHome / Math.pow(1+inflationRate, retireAge-currentAge)) + '원). ' +
-        '<b>100세 시점 총자산 ≈ ' + fmtShort(age100TotalReal) + '원.</b><br>' +
-        '<span style="color:#888;font-size:12px">※ 집을 팔거나 줄여서 노후자금에 보태려면, 다음 단계의 "주택 갈아타기" 기능으로 시뮬레이션할 수 있습니다(추후 추가 예정).</span>';
-    } else {
-      homeBox.style.display = 'none';
+        '🏠 <b>거주 주택 포함 안내</b> — 위 "은퇴/100세 시점 자산"과 아래 연도별 표는 <b>금융·투자자산만</b> 보여줍니다(집은 생활비로 못 쓰므로 제외). 집을 더한 값은 위 초록 카드 <b>"총자산(집 포함)"</b>을 보세요.<br>' +
+        '<span style="color:#888;font-size:12px">※ 집을 팔거나 줄여 노후자금에 보태는 시뮬레이션은 추후 "주택 갈아타기" 기능으로 추가 예정입니다.</span>';
     }
+  } else {
+    if (retireBox) retireBox.style.display = 'none';
+    if (age100Box) age100Box.style.display = 'none';
+    if (homeBox) homeBox.style.display = 'none';
   }
+
+  // 자산 성장 그래프
+  drawAssetChart(chartAges, chartFin, chartTotal, retireAge - currentAge, hasHome);
 
   // 입력 한글 금액 표시 갱신
   updateAllKor();
@@ -824,6 +913,7 @@ calculate();
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (function(){
