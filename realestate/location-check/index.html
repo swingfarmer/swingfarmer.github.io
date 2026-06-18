@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>입지 체크리스트 | 스윙파머</title>
+<meta name="description" content="역세권·학군·호재·환경 등 입지 요소를 가중치로 직접 평가해 점수화. 여러 매물을 같은 기준으로 비교.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  header h1 { font-size: 20px; color: #1F4E78; margin: 0; }
+  .back-link { margin-left: auto; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
+  .panel { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .panel h2 { font-size: 15px; color: #1F4E78; margin-bottom: 4px; }
+  .panel .ptext { font-size: 12.5px; color: #888; margin-bottom: 14px; }
+
+  .name-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+  .name-row input { flex: 1; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; background: #FFF2CC; font-weight: 600; color: #1F4E78; }
+
+  .item { border-bottom: 1px solid #f0f0f0; padding: 12px 0; }
+  .item:last-child { border-bottom: none; }
+  .item-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .item-name { font-size: 14px; font-weight: 600; flex: 1; }
+  .item-weight { font-size: 11px; color: #888; }
+  .weight-select { padding: 4px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 5px; background: #fff; }
+  .score-btns { display: flex; gap: 5px; }
+  .score-btn { flex: 1; padding: 8px 0; font-size: 13px; border: 1px solid #ddd; border-radius: 6px; background: #fff; cursor: pointer; color: #666; transition: all .1s; }
+  .score-btn.active { background: #1F4E78; color: white; border-color: #1F4E78; font-weight: 700; }
+  .score-labels { display: flex; justify-content: space-between; font-size: 10px; color: #aaa; margin-top: 3px; padding: 0 2px; }
+
+  .add-item { display: flex; gap: 8px; margin-top: 12px; }
+  .add-item input { flex: 1; padding: 9px; font-size: 13px; border: 1px solid #ccc; border-radius: 6px; }
+  .add-item button { background: #1F4E78; color: white; border: none; border-radius: 6px; padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .del-item { background: #fee2e2; color: #dc2626; border: none; width: 26px; height: 26px; border-radius: 5px; cursor: pointer; font-size: 14px; flex: 0 0 auto; }
+
+  .result-hero { background: linear-gradient(135deg, #1F4E78, #2d6da3); color: white; border-radius: 14px; padding: 22px; text-align: center; margin-bottom: 16px; }
+  .result-hero .label { font-size: 13px; opacity: .9; margin-bottom: 4px; }
+  .result-hero .value { font-size: 40px; font-weight: 800; }
+  .result-hero .value span { font-size: 18px; opacity: .8; }
+  .result-hero .grade { font-size: 15px; font-weight: 700; margin-top: 6px; }
+
+  .gauge { height: 14px; background: rgba(255,255,255,.25); border-radius: 7px; overflow: hidden; margin: 12px 0 4px; }
+  .gauge-fill { height: 100%; background: white; border-radius: 7px; transition: width .3s; }
+
+  table.detail { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 6px; }
+  table.detail th { text-align: left; padding: 8px; background: #f8fafc; color: #555; font-weight: 600; border-bottom: 2px solid #e5e7eb; }
+  table.detail td { padding: 8px; border-bottom: 1px solid #f0f0f0; }
+  table.detail td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .btn { border: none; border-radius: 6px; padding: 9px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .btn-blue { background: #1F4E78; color: white; }
+  .btn-gray { background: #9ca3af; color: white; }
+  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; margin-top: 8px; font-size: 13px; line-height: 1.8; color: #6b5618; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>📍 입지 체크리스트</h1>
+    <a href="../" class="back-link">← 부동산 도구로</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc">매물의 입지를 <b>항목별로 점수 매기고 가중치를 반영</b>해 총점을 냅니다. 같은 기준으로 여러 매물을 평가하면 객관적으로 비교할 수 있어요. 결과는 이 브라우저에만 저장됩니다.</p>
+
+  <div class="panel">
+    <div class="name-row">
+      <input type="text" id="placeName" placeholder="매물 이름 (예: 목동 7단지)" maxlength="30">
+    </div>
+    <div class="ptext">평가할 매물 이름을 적으세요.</div>
+
+    <div id="itemList"></div>
+
+    <div class="add-item">
+      <input type="text" id="newItemName" placeholder="항목 추가 (예: 공원 접근성)" maxlength="20" onkeydown="if(event.key==='Enter')addItem()">
+      <button onclick="addItem()">+ 항목</button>
+    </div>
+  </div>
+
+  <div class="result-hero">
+    <div class="label">입지 종합 점수</div>
+    <div class="value"><span id="scoreVal">0</span><span>/100</span></div>
+    <div class="gauge"><div class="gauge-fill" id="gaugeFill" style="width:0%"></div></div>
+    <div class="grade" id="gradeText">항목을 평가해보세요</div>
+  </div>
+
+  <div class="panel">
+    <h2>📋 항목별 점수</h2>
+    <div style="overflow-x:auto">
+      <table class="detail">
+        <thead><tr><th>항목</th><th class="num">점수</th><th class="num">가중치</th><th class="num">가중점수</th></tr></thead>
+        <tbody id="detailBody"></tbody>
+      </table>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-blue" onclick="saveJson()">💾 내보내기 (JSON)</button>
+      <label class="btn" style="background:#10b981;color:white;cursor:pointer">📂 불러오기<input type="file" id="fileLoad" accept=".json" style="display:none" onchange="loadJson(event)"></label>
+      <button class="btn btn-gray" onclick="resetAll()">🔄 초기화</button>
+    </div>
+  </div>
+
+  <div class="manual">
+    <b>📘 사용법</b><br>
+    각 항목을 <b>1~5점</b>으로 평가하고, 중요도에 따라 <b>가중치(×1~×3)</b>를 정하세요. 총점은 가중치를 반영해 <b>100점 만점</b>으로 환산됩니다.<br>
+    같은 항목·가중치로 여러 매물을 평가하면 공정하게 비교할 수 있어요. 항목은 자유롭게 추가·삭제하세요.
+  </div>
+</div>
+
+<script src="/common.js?v=3"></script>
+<script>
+const $ = id => document.getElementById(id);
+const STORE_KEY = 'sf_location_v1';
+
+// 기본 항목 (이름, 가중치, 점수)
+const DEFAULT_ITEMS = [
+  { name: '교통 (역세권·도로)', weight: 3, score: 0 },
+  { name: '학군 (초·중·고)', weight: 3, score: 0 },
+  { name: '상권·편의시설', weight: 2, score: 0 },
+  { name: '개발 호재 (재건축·교통)', weight: 3, score: 0 },
+  { name: '환경 (공원·조망·소음)', weight: 2, score: 0 },
+  { name: '단지 규모·연식', weight: 2, score: 0 },
+  { name: '가격 대비 가치', weight: 3, score: 0 }
+];
+
+let items = [];
+let placeName = '';
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){ const d = JSON.parse(raw); items = d.items||[]; placeName = d.placeName||''; }
+  }catch(e){}
+  if(items.length===0) items = JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+}
+function save(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify({items, placeName: $('placeName').value})); }catch(e){}
+}
+
+function render(){
+  $('placeName').value = placeName;
+  const box = $('itemList');
+  box.innerHTML = items.map((it, i)=>{
+    const btns = [1,2,3,4,5].map(s=>`<button class="score-btn ${it.score===s?'active':''}" onclick="setScore(${i},${s})">${s}</button>`).join('');
+    const wopts = [1,2,3].map(w=>`<option value="${w}" ${it.weight===w?'selected':''}>×${w}</option>`).join('');
+    return `<div class="item">
+      <div class="item-top">
+        <span class="item-name">${it.name}</span>
+        <select class="weight-select" onchange="setWeight(${i}, this.value)">${wopts}</select>
+        <button class="del-item" onclick="removeItem(${i})" title="삭제">×</button>
+      </div>
+      <div class="score-btns">${btns}</div>
+      <div class="score-labels"><span>나쁨</span><span>보통</span><span>좋음</span></div>
+    </div>`;
+  }).join('');
+  calculate();
+}
+
+function setScore(i, s){ items[i].score = s; save(); render(); }
+function setWeight(i, w){ items[i].weight = parseInt(w); save(); calculate(); renderDetail(); }
+function removeItem(i){ items.splice(i,1); save(); render(); }
+function addItem(){
+  const name = $('newItemName').value.trim();
+  if(!name) return;
+  items.push({ name, weight: 2, score: 0 });
+  $('newItemName').value = '';
+  save(); render();
+}
+
+function calculate(){
+  // 평가된 항목만 (score>0)
+  const rated = items.filter(it=>it.score>0);
+  let totalW = 0, gotW = 0;
+  items.forEach(it=>{
+    totalW += it.weight * 5; // 만점 = 가중치 × 5
+    gotW += it.weight * it.score;
+  });
+  const score = totalW>0 ? Math.round(gotW/totalW*100) : 0;
+  $('scoreVal').textContent = score;
+  $('gaugeFill').style.width = score + '%';
+
+  let grade, color;
+  if(score>=85){ grade='⭐ 최상급 입지'; color='#fbbf24'; }
+  else if(score>=70){ grade='👍 우수한 입지'; color='#34d399'; }
+  else if(score>=55){ grade='🆗 무난한 입지'; color='#60a5fa'; }
+  else if(score>=40){ grade='🤔 보통 이하'; color='#f59e0b'; }
+  else if(score>0){ grade='⚠️ 신중히 검토'; color='#f87171'; }
+  else { grade='항목을 평가해보세요'; color='#fff'; }
+  $('gradeText').textContent = grade;
+  $('gaugeFill').style.background = color;
+
+  renderDetail();
+}
+
+function renderDetail(){
+  $('detailBody').innerHTML = items.map(it=>{
+    const wScore = it.weight * it.score;
+    const maxW = it.weight * 5;
+    return `<tr>
+      <td>${it.name}</td>
+      <td class="num">${it.score>0?it.score+'점':'-'}</td>
+      <td class="num">×${it.weight}</td>
+      <td class="num" style="font-weight:600;color:#1F4E78">${wScore}/${maxW}</td>
+    </tr>`;
+  }).join('');
+}
+
+function saveJson(){
+  const data = { placeName: $('placeName').value, items };
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const nm = ($('placeName').value || '입지평가').replace(/[^가-힣a-zA-Z0-9]/g,'_');
+  a.href = url; a.download = `입지_${nm}.json`; a.click(); URL.revokeObjectURL(url);
+}
+function loadJson(e){
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    try{
+      const d = JSON.parse(ev.target.result);
+      items = d.items||[]; placeName = d.placeName||'';
+      save(); render(); alert('✅ 불러왔어요.');
+    }catch(err){ alert('파일을 읽을 수 없어요: '+err.message); }
+  };
+  reader.readAsText(file); e.target.value='';
+}
+function resetAll(){
+  if(confirm('모든 평가를 초기화할까요? (기본 항목으로 되돌아갑니다)')){
+    items = JSON.parse(JSON.stringify(DEFAULT_ITEMS)); placeName='';
+    save(); render();
+  }
+}
+
+$('placeName').addEventListener('input', save);
+
+// 초기화
+load();
+render();
+</script>
+</body>
+</html>
