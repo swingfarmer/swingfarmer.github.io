@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>포트폴리오 리스크 분석 | 스윙파머</title>
+<meta name="description" content="종목별 비중·변동성으로 집중도와 예상 최대낙폭(MDD)을 점검. 한 종목 몰빵 위험과 포트폴리오 방어력 확인.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; display: block; }
+  header h1 { font-size: 20px; color: #1F4E78; margin: 0; }
+  .back-link { display: inline-block; margin-bottom: 8px; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
+  .panel { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .panel h2 { font-size: 15px; color: #1F4E78; margin-bottom: 12px; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 16px; }
+  @media (max-width: 640px){ .stat-grid { grid-template-columns: 1fr; } }
+  .stat-card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); text-align: center; }
+  .stat-card .sc-label { font-size: 11.5px; color: #888; margin-bottom: 4px; }
+  .stat-card .sc-val { font-size: 22px; font-weight: 800; color: #1F4E78; }
+  .stat-card .sc-sub { font-size: 11px; color: #aaa; margin-top: 3px; }
+  .stat-card.good { background: #f0fdf4; border: 1px solid #bbf7d0; }
+  .stat-card.good .sc-val { color: #16a34a; }
+  .stat-card.warn { background: #fffbeb; border: 1px solid #fde68a; }
+  .stat-card.warn .sc-val { color: #d97706; }
+  .stat-card.bad { background: #fef2f2; border: 1px solid #fecaca; }
+  .stat-card.bad .sc-val { color: #dc2626; }
+
+  table.holdings { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.holdings th { background: #f8fafc; color: #555; font-weight: 600; padding: 8px; border-bottom: 2px solid #e5e7eb; font-size: 12px; text-align: right; }
+  table.holdings th.name-col { text-align: left; }
+  table.holdings td { padding: 6px; border-bottom: 1px solid #f0f0f0; text-align: right; }
+  table.holdings td.name-col { text-align: left; }
+  table.holdings input { width: 100%; padding: 7px; font-size: 13px; border: 1px solid #ddd; border-radius: 5px; text-align: right; font-weight: 600; }
+  table.holdings input.name-input { text-align: left; color: #1F4E78; font-weight: 700; background:#fff; }
+  table.holdings input.editable { background: #FFF2CC; color: #0000FF; }
+  table.holdings input:focus { outline: 2px solid #1F4E78; }
+  .weight-bar { height: 5px; background: #eef0f3; border-radius: 3px; overflow: hidden; margin-top: 3px; }
+  .weight-bar-fill { height: 100%; border-radius: 3px; }
+  .del-btn { background: #fee2e2; color: #dc2626; border: none; width: 26px; height: 26px; border-radius: 5px; cursor: pointer; font-size: 14px; }
+  .add-row-btn { background: #eff6ff; color: #1F4E78; border: 1px dashed #93c5fd; border-radius: 8px; padding: 10px; width: 100%; font-size: 13px; font-weight: 600; cursor: pointer; margin: 8px 0 16px; }
+
+  .chart-wrap { position: relative; height: 260px; }
+  .mdd-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f4f4f4; font-size: 13px; }
+  .mdd-scenario { width: 120px; font-weight: 600; color: #555; flex-shrink: 0; }
+  .mdd-bar-track { flex: 1; height: 22px; background: #f0f0f0; border-radius: 5px; overflow: hidden; position: relative; }
+  .mdd-bar-fill { height: 100%; background: linear-gradient(90deg, #f59e0b, #dc2626); border-radius: 5px; }
+  .mdd-val { width: 130px; text-align: right; font-weight: 700; color: #dc2626; flex-shrink: 0; font-size: 12.5px; }
+
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; font-style: normal; cursor: pointer; margin-left: 4px; }
+  .info-box { display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #1e40af; line-height: 1.7; margin-top: 8px; }
+  .alert-box { border-radius: 8px; padding: 12px 14px; font-size: 12.5px; line-height: 1.7; margin-top: 12px; }
+  .alert-warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+  .alert-ok { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; margin-top: 8px; font-size: 13px; line-height: 1.8; color: #6b5618; }
+  .manual .badge { display: inline-block; background: #1F4E78; color: white; font-size: 11px; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .btn { border: none; border-radius: 6px; padding: 9px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .btn-blue { background: #1F4E78; color: white; } .btn-green { background: #10b981; color: white; } .btn-gray { background: #9ca3af; color: white; }
+  footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a href="/risk/" class="back-link">← 리스크 관리로</a>
+    <h1>📊 포트폴리오 리스크 분석</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc">보유 종목의 <b>비중·집중도</b>와 시장 충격 시 <b>예상 낙폭(MDD)</b>을 점검합니다. 한 종목에 몰빵하고 있진 않은지, 하락장에서 얼마나 버틸 수 있는지 확인하세요.</p>
+
+  <!-- 요약 -->
+  <div class="stat-grid">
+    <div class="stat-card" id="hhiCard">
+      <div class="sc-label">집중도 (HHI) <span class="info-btn" onclick="toggleInfo('hhiInfo')">i</span></div>
+      <div class="sc-val" id="hhiVal">-</div>
+      <div class="sc-sub" id="hhiNote"></div>
+    </div>
+    <div class="stat-card" id="topCard">
+      <div class="sc-label">최대 비중 종목</div>
+      <div class="sc-val" id="topVal" style="font-size:18px">-</div>
+      <div class="sc-sub" id="topNote"></div>
+    </div>
+    <div class="stat-card">
+      <div class="sc-label">종목 수</div>
+      <div class="sc-val" id="countVal">-</div>
+      <div class="sc-sub">분산 정도</div>
+    </div>
+  </div>
+  <div class="info-box" id="hhiInfo">HHI(허핀달지수)는 집중도 지표예요. 각 종목 비중을 제곱해서 더합니다. <b>낮을수록 분산</b>, 높을수록 집중. 1종목 100%면 10000(최대), 10종목 균등이면 1000. 보통 2500 넘으면 집중도가 높다고 봐요.</div>
+
+  <!-- 보유 종목 -->
+  <div class="panel">
+    <h2>📁 보유 종목</h2>
+    <div style="overflow-x:auto">
+      <table class="holdings">
+        <thead>
+          <tr>
+            <th class="name-col">종목명</th>
+            <th>평가금액</th>
+            <th>비중</th>
+            <th>예상 변동성(%) <span class="info-btn" onclick="toggleInfo('volInfo')">i</span></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="info-box" id="volInfo">이 종목이 <b>나쁜 시장에서 빠질 수 있는 하락폭</b>을 %로 넣으세요(예: 대형주 30%, 성장주 50%, 코인 70%). 정확한 값이 아니라 보수적 추정이면 충분해요. 비워두면 기본값(40%)으로 계산합니다.</div>
+    <button class="add-row-btn" onclick="addRow()">+ 종목 추가</button>
+  </div>
+
+  <!-- 비중 차트 -->
+  <div class="panel">
+    <h2>🥧 비중 분포</h2>
+    <div class="chart-wrap"><canvas id="weightChart"></canvas></div>
+  </div>
+
+  <!-- MDD 시나리오 -->
+  <div class="panel">
+    <h2>📉 시장 충격 시 예상 낙폭 (MDD) <span class="info-btn" onclick="toggleInfo('mddInfo')">i</span></h2>
+    <div class="info-box" id="mddInfo">각 종목의 변동성에 비중을 곱해 더한 <b>포트폴리오 전체 예상 하락폭</b>이에요. 시장 충격 강도별로 보여줍니다. 실제론 종목 간 상관관계·분산효과로 이보다 작을 수 있지만, <b>최악의 경우(다 같이 빠질 때)</b>를 보수적으로 가정한 값입니다.</div>
+    <div id="mddList" style="margin-top:8px"></div>
+    <div class="alert-box" id="mddAlert" style="display:none"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-green" onclick="saveJson()">💾 내보내기</button>
+    <label class="btn btn-blue" style="cursor:pointer">📂 불러오기<input type="file" id="fileLoad" accept=".json" style="display:none" onchange="loadJson(event)"></label>
+    <button class="btn btn-gray" onclick="resetAll()">🔄 초기화</button>
+  </div>
+
+  <div class="manual">
+    <b>📘 보는 법</b><br>
+    <span class="badge">집중도(HHI)</span> 낮을수록 분산. 2500↑면 한쪽에 쏠림.<br>
+    <span class="badge">최대 비중</span> 한 종목이 너무 크면(예: 40%+) 그 종목 하나에 포트폴리오가 휘둘려요.<br>
+    <span class="badge">예상 낙폭</span> 시장이 빠질 때 내 포트폴리오가 얼마나 빠질지. 견딜 수 있는 수준인지 보세요.<br>
+    분산은 공짜 점심이라고 해요. 비슷한 섹터(예: 다 반도체)면 종목 수가 많아도 같이 빠지니 주의.
+  </div>
+
+  <footer>© 스윙파머</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="/common.js?v=3"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+const fmtShort = n => { n=Math.round(n); if(Math.abs(n)>=1e8)return (n/1e8).toFixed(1)+'억'; if(Math.abs(n)>=1e4)return Math.round(n/1e4)+'만'; return n.toLocaleString('ko-KR'); };
+function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
+const COLORS=['#1F4E78','#dc2626','#16a34a','#f59e0b','#8b5cf6','#0ea5e9','#ec4899','#14b8a6','#64748b','#a855f7'];
+const STORE_KEY='sf_portrisk_v1';
+
+let rows=[];
+function blankRow(){ return { name:'', amount:0, vol:40 }; }
+function load(){ try{ const raw=localStorage.getItem(STORE_KEY); if(raw)rows=JSON.parse(raw); }catch(e){} if(!rows||rows.length===0) rows=[{name:'삼성전자',amount:30000000,vol:35},{name:'현대건설',amount:20000000,vol:45},{name:'금호석유',amount:15000000,vol:50}]; }
+function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(rows)); }catch(e){} }
+
+function calc(){
+  const total = rows.reduce((s,r)=>s+(r.amount||0),0);
+  return { total, weights: rows.map(r=>total>0?(r.amount||0)/total:0) };
+}
+
+function render(){
+  const { total, weights } = calc();
+  // 테이블
+  $('tbody').innerHTML = rows.map((r,i)=>{
+    const w = weights[i]*100;
+    const color = COLORS[i%COLORS.length];
+    return `<tr>
+      <td class="name-col"><input class="name-input" type="text" placeholder="종목명" value="${(r.name||'').replace(/"/g,'&quot;')}" oninput="upd(${i},'name',this.value)"></td>
+      <td><input class="editable" type="number" inputmode="numeric" value="${r.amount||''}" oninput="upd(${i},'amount',this.value)"></td>
+      <td style="min-width:90px"><div style="font-weight:700;color:${color}">${w.toFixed(1)}%</div><div class="weight-bar"><div class="weight-bar-fill" style="width:${w}%;background:${color}"></div></div></td>
+      <td style="width:90px"><input class="editable" type="number" inputmode="numeric" value="${r.vol||''}" oninput="upd(${i},'vol',this.value)"></td>
+      <td><button class="del-btn" onclick="delRow(${i})">×</button></td>
+    </tr>`;
+  }).join('');
+
+  // HHI
+  const hhi = weights.reduce((s,w)=>s+Math.pow(w*100,2),0);
+  $('hhiVal').textContent = Math.round(hhi);
+  const hhiCard=$('hhiCard');
+  hhiCard.className='stat-card';
+  if(hhi>=4000){ hhiCard.classList.add('bad'); $('hhiNote').textContent='집중 높음'; }
+  else if(hhi>=2500){ hhiCard.classList.add('warn'); $('hhiNote').textContent='다소 집중'; }
+  else { hhiCard.classList.add('good'); $('hhiNote').textContent='잘 분산됨'; }
+
+  // 최대 비중
+  let maxW=0, maxName='-';
+  weights.forEach((w,i)=>{ if(w>maxW){ maxW=w; maxName=rows[i].name||'(이름없음)'; } });
+  $('topVal').textContent = (maxW*100).toFixed(1)+'%';
+  $('topNote').textContent = maxName;
+  const topCard=$('topCard');
+  topCard.className='stat-card';
+  if(maxW>=0.4) topCard.classList.add('bad');
+  else if(maxW>=0.25) topCard.classList.add('warn');
+  else topCard.classList.add('good');
+
+  // 종목수
+  $('countVal').textContent = rows.filter(r=>r.amount>0).length+'개';
+
+  drawChart(weights);
+  drawMdd(weights, total);
+  save();
+}
+
+let weightChart=null;
+function drawChart(weights){
+  const valid = rows.map((r,i)=>({name:r.name||'종목'+(i+1), w:weights[i], i})).filter(x=>x.w>0);
+  if(weightChart) weightChart.destroy();
+  if(valid.length===0) return;
+  weightChart = new Chart($('weightChart'), {
+    type:'doughnut',
+    data:{ labels: valid.map(x=>x.name), datasets:[{ data: valid.map(x=>x.w*100), backgroundColor: valid.map(x=>COLORS[x.i%COLORS.length]), borderWidth:2, borderColor:'#fff' }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{position:'bottom',labels:{font:{size:11},boxWidth:11,padding:7}}, tooltip:{callbacks:{label:c=>c.label+': '+c.parsed.toFixed(1)+'%'}} } }
+  });
+}
+
+function drawMdd(weights, total){
+  // 포트폴리오 가중 변동성 = Σ(비중 × 종목변동성)
+  let portVol = 0;
+  rows.forEach((r,i)=>{ portVol += weights[i] * (r.vol||40)/100; });
+  // 시나리오: 충격 강도 배수
+  const scenarios = [
+    { name:'조정 (약한 충격)', mult:0.5 },
+    { name:'하락장 (중간)', mult:0.75 },
+    { name:'폭락 (강한 충격)', mult:1.0 },
+    { name:'금융위기급', mult:1.3 }
+  ];
+  const maxDrop = portVol*1.3;
+  $('mddList').innerHTML = scenarios.map(s=>{
+    const drop = Math.min(0.95, portVol*s.mult);
+    const dropAmt = total*drop;
+    const barW = maxDrop>0 ? (drop/maxDrop*100) : 0;
+    return `<div class="mdd-row">
+      <span class="mdd-scenario">${s.name}</span>
+      <div class="mdd-bar-track"><div class="mdd-bar-fill" style="width:${barW}%"></div></div>
+      <span class="mdd-val">−${(drop*100).toFixed(0)}% (${fmtShort(dropAmt)})</span>
+    </div>`;
+  }).join('');
+
+  // 경고
+  const alert=$('mddAlert');
+  const crisisDrop = Math.min(0.95, portVol*1.3);
+  if(crisisDrop>=0.5){
+    alert.style.display='block'; alert.className='alert-box alert-warn';
+    alert.innerHTML = `⚠️ 금융위기급 충격 시 <b>약 ${(crisisDrop*100).toFixed(0)}%</b> 하락 가능성. 변동성 높은 종목 비중이 큽니다. 견딜 수 있는 수준인지, 현금 비중을 점검하세요.`;
+  } else {
+    alert.style.display='block'; alert.className='alert-box alert-ok';
+    alert.innerHTML = `✓ 극단 충격에도 약 ${(crisisDrop*100).toFixed(0)}% 수준. 상대적으로 방어적인 구성이에요. (단, 종목들이 같은 섹터면 실제론 더 같이 빠질 수 있어요)`;
+  }
+}
+
+function upd(i, field, val){
+  if(field==='name') rows[i].name=val;
+  else rows[i][field]=parseFloat(val)||0;
+  if(field==='name'){ save(); return; } // 이름은 리렌더 불필요
+  render();
+}
+function addRow(){ rows.push(blankRow()); save(); render(); }
+function delRow(i){ rows.splice(i,1); if(rows.length===0)rows.push(blankRow()); save(); render(); }
+
+function saveJson(){ const blob=new Blob([JSON.stringify(rows,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); const d=new Date(); a.href=url; a.download=`포트리스크_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`; a.click(); URL.revokeObjectURL(url); }
+function loadJson(e){ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{ try{ rows=JSON.parse(ev.target.result); save(); render(); alert('✅ 불러왔어요.'); }catch(err){ alert('파일 오류: '+err.message); } }; r.readAsText(f); e.target.value=''; }
+function resetAll(){ if(confirm('초기화할까요?')){ rows=[blankRow()]; save(); render(); } }
+
+load(); render();
+</script>
+</body>
+</html>
