@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>손익비 계산기 | 스윙파머</title>
+<meta name="description" content="매수가·손절가·목표가로 손익비(R:R)와 손익분기 승률을 계산. 이 매매가 들어갈 가치가 있는지 판단.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; display: block; }
+  header h1 { font-size: 20px; color: #1F4E78; margin: 0; }
+  .back-link { display: inline-block; margin-bottom: 8px; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
+  .panel { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .section-label { font-size: 14px; font-weight: 700; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #eef0f3; color: #1F4E78; }
+  .input-row { margin-bottom: 12px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #333; }
+  .stat-sub { font-size: 11px; font-weight: 500; color: #888; }
+  input[type="number"] { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; background: #FFF2CC; font-weight: 600; color: #0000FF; }
+  input[type="number"]:focus { outline: 2px solid #1F4E78; background: #FFFACD; }
+  .won-kor { font-size: 12px; color: #1F4E78; font-weight: 600; margin-top: 3px; min-height: 15px; }
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; font-style: normal; cursor: pointer; margin-left: 4px; }
+  .info-box { display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #1e40af; line-height: 1.7; margin-top: 6px; }
+
+  /* 시각 막대 */
+  .rr-visual { display: flex; height: 44px; border-radius: 10px; overflow: hidden; margin: 8px 0 4px; font-size: 13px; font-weight: 700; color: white; }
+  .rr-loss { background: #dc2626; display: flex; align-items: center; justify-content: center; }
+  .rr-win { background: #16a34a; display: flex; align-items: center; justify-content: center; }
+  .rr-labels { display: flex; justify-content: space-between; font-size: 11px; color: #888; }
+
+  .result-hero { border-radius: 14px; padding: 22px; text-align: center; margin-bottom: 16px; color: white; transition: background .3s; }
+  .result-hero.good { background: linear-gradient(135deg, #16a34a, #22c55e); }
+  .result-hero.ok { background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+  .result-hero.bad { background: linear-gradient(135deg, #d97706, #f59e0b); }
+  .result-hero .label { font-size: 13px; opacity: .9; margin-bottom: 6px; }
+  .result-hero .value { font-size: 34px; font-weight: 800; }
+  .result-hero .sub { font-size: 13px; opacity: .95; margin-top: 6px; line-height: 1.5; }
+
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .stat-card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); text-align: center; }
+  .stat-card .sc-label { font-size: 11.5px; color: #888; margin-bottom: 4px; }
+  .stat-card .sc-val { font-size: 19px; font-weight: 800; color: #1F4E78; }
+  .stat-card .sc-sub { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+  table.breakdown { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.breakdown td { padding: 9px 6px; border-bottom: 1px solid #f0f0f0; }
+  table.breakdown td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .plus { color: #16a34a; } .minus { color: #dc2626; }
+
+  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; margin-top: 8px; font-size: 13px; line-height: 1.8; color: #6b5618; }
+  .manual .badge { display: inline-block; background: #1F4E78; color: white; font-size: 11px; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
+  footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a href="/risk/" class="back-link">← 리스크 관리로</a>
+    <h1>⚖️ 손익비 계산기</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc">매수가·손절가·목표가를 넣으면 <b>손익비(R:R)</b>와 <b>손익분기 승률</b>을 계산합니다. "이 매매, 먹을 게 잃을 것보다 큰가? 승률이 얼마면 본전인가?"를 진입 전에 확인하세요.</p>
+
+  <div class="panel">
+    <div class="section-label">📊 가격 입력</div>
+    <div class="input-row">
+      <label>매수가 (진입) <span class="stat-sub">기준</span></label>
+      <input type="number" id="entry" value="50000" inputmode="numeric">
+      <div class="won-kor" id="entry_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>손절가 <span class="stat-sub">여기서 손절</span></label>
+      <input type="number" id="stop" value="45000" inputmode="numeric">
+      <div class="won-kor" id="stop_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>목표가 (익절) <span class="stat-sub">여기서 익절</span></label>
+      <input type="number" id="target" value="65000" inputmode="numeric">
+      <div class="won-kor" id="target_kor"></div>
+    </div>
+    <div class="rr-visual" id="rrVisual">
+      <div class="rr-loss" id="rrLoss" style="width:25%">손실 1R</div>
+      <div class="rr-win" id="rrWin" style="width:75%">수익 3R</div>
+    </div>
+    <div class="rr-labels"><span>손절가</span><span>매수가</span><span>목표가</span></div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="result-hero ok" id="hero">
+    <div class="label">손익비 (Risk : Reward)</div>
+    <div class="value" id="rrValue">-</div>
+    <div class="sub" id="rrJudge"></div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="sc-label">손익분기 승률</div>
+      <div class="sc-val" id="breakEven">-</div>
+      <div class="sc-sub">이 이상 맞혀야 본전</div>
+    </div>
+    <div class="stat-card">
+      <div class="sc-label">손절폭 / 목표폭</div>
+      <div class="sc-val" id="gaps" style="font-size:15px">-</div>
+      <div class="sc-sub" id="gapsPct"></div>
+    </div>
+  </div>
+
+  <!-- 수량 넣으면 금액 -->
+  <div class="panel">
+    <div class="section-label">💰 금액으로 보기 (선택)</div>
+    <div class="input-row">
+      <label>수량 (주) <span class="stat-sub">넣으면 손익 금액 계산</span></label>
+      <input type="number" id="qty" value="400" inputmode="numeric">
+    </div>
+    <table class="breakdown">
+      <tbody id="amountBody"></tbody>
+    </table>
+  </div>
+
+  <!-- 기대값 -->
+  <div class="panel">
+    <div class="section-label">🎲 기대값 (승률 가정)</div>
+    <div class="input-row">
+      <label>예상 승률 (%) <span class="stat-sub">내가 이길 확률 추정</span> <span class="info-btn" onclick="toggleInfo('winInfo')">i</span></label>
+      <input type="number" id="winRate" value="50" step="1" inputmode="numeric">
+      <div class="info-box" id="winInfo">이 매매가 목표가에 도달할 확률을 네 판단으로 넣어보세요. 손익비가 좋아도 승률이 너무 낮으면 기대값이 마이너스일 수 있고, 반대로 손익비가 1:1이라도 승률이 높으면 플러스예요. 손익비 × 승률을 함께 봐야 합니다.</div>
+    </div>
+    <div style="background:#f8fafc;border-radius:8px;padding:14px;font-size:13px;line-height:1.8" id="evBox"></div>
+  </div>
+
+  <div class="manual">
+    <b>📘 개념</b><br>
+    <span class="badge">손익비 1:3</span> 1을 잃을 위험으로 3을 먹는 구조. 클수록 좋아요(보통 1:2 이상 권장).<br>
+    <span class="badge">손익분기 승률</span> 1÷(1+손익비). 예: 1:3이면 25%만 맞혀도 본전. 손익비가 좋으면 승률이 낮아도 살아남아요.<br>
+    <span class="badge">기대값</span> (승률×수익) − (패율×손실). 플러스여야 장기적으로 돈을 법니다.<br>
+    손익비와 승률은 <b>같이</b> 봐야 해요. 어느 하나만으론 판단 못 합니다.
+  </div>
+
+  <footer>© 스윙파머</footer>
+</div>
+
+<script src="/common.js?v=3"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+function wonToKorean(n){ var neg=n<0; n=Math.round(Math.abs(n)); if(n===0)return ''; var eok=Math.floor(n/1e8),man=Math.floor((n%1e8)/1e4),won=n%1e4,p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(man>0)p.push(man.toLocaleString('ko-KR')+'만'); if(won>0)p.push(won.toLocaleString('ko-KR')); return (neg?'−':'')+p.join(' ')+'원'; }
+function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
+
+const KOR_FIELDS=['entry','stop','target'];
+function updateKor(){ KOR_FIELDS.forEach(id=>{ var el=$(id),box=$(id+'_kor'); if(el&&box){ var v=parseFloat(el.value)||0; box.textContent=v>0?wonToKorean(v):''; } }); }
+
+function calculate(){
+  const entry=parseFloat($('entry').value)||0;
+  const stop=parseFloat($('stop').value)||0;
+  const target=parseFloat($('target').value)||0;
+  const qty=parseFloat($('qty').value)||0;
+  const winRate=(parseFloat($('winRate').value)||0)/100;
+
+  const risk = entry-stop; // 손절폭
+  const reward = target-entry; // 목표폭
+
+  if(risk<=0 || reward<=0 || entry<=0){
+    $('rrValue').textContent='-';
+    $('rrJudge').textContent = '매수가는 손절가보다 높고, 목표가보다 낮아야 해요';
+    $('breakEven').textContent='-'; $('gaps').textContent='-'; $('gapsPct').textContent='';
+    $('amountBody').innerHTML=''; $('evBox').innerHTML='';
+    $('hero').className='result-hero bad';
+    updateKor(); return;
+  }
+
+  const rr = reward/risk; // 손익비
+  const breakEven = 1/(1+rr)*100; // 손익분기 승률
+
+  $('rrValue').textContent = '1 : '+rr.toFixed(2);
+  const hero=$('hero');
+  let judge='';
+  if(rr>=2){ hero.className='result-hero good'; judge='👍 좋은 손익비예요 (1:2 이상). '+breakEven.toFixed(0)+'%만 맞혀도 본전'; }
+  else if(rr>=1){ hero.className='result-hero ok'; judge='괜찮아요. 승률이 받쳐주면 OK. '+breakEven.toFixed(0)+'% 이상 맞혀야 본전'; }
+  else { hero.className='result-hero bad'; judge='⚠️ 손익비가 1:1 미만. 잃을 게 먹을 것보다 커요. '+breakEven.toFixed(0)+'% 넘게 맞혀야 본전'; }
+  $('rrJudge').textContent=judge;
+
+  $('breakEven').textContent = breakEven.toFixed(1)+'%';
+  $('gaps').innerHTML = `<span class="minus">−${fmt(risk)}</span> / <span class="plus">+${fmt(reward)}</span>`;
+  $('gapsPct').textContent = `−${(risk/entry*100).toFixed(1)}% / +${(reward/entry*100).toFixed(1)}%`;
+
+  // 시각 막대
+  const total=risk+reward;
+  $('rrLoss').style.width=(risk/total*100)+'%';
+  $('rrWin').style.width=(reward/total*100)+'%';
+  $('rrLoss').textContent='손실 1R';
+  $('rrWin').textContent='수익 '+rr.toFixed(1)+'R';
+
+  // 금액
+  if(qty>0){
+    const lossAmt=risk*qty, winAmt=reward*qty;
+    const rows=[];
+    rows.push(`<tr><td>익절 시 수익</td><td class="num plus">+${fmt(winAmt)}원</td></tr>`);
+    rows.push(`<tr><td>손절 시 손실</td><td class="num minus">−${fmt(lossAmt)}원</td></tr>`);
+    rows.push(`<tr><td>투입 금액</td><td class="num">${fmt(entry*qty)}원</td></tr>`);
+    $('amountBody').innerHTML=rows.join('');
+  } else { $('amountBody').innerHTML='<tr><td colspan="2" style="color:#aaa;font-size:12px">수량을 넣으면 손익 금액이 계산돼요.</td></tr>'; }
+
+  // 기대값
+  const lossR=1, winR=rr;
+  const ev = winRate*winR - (1-winRate)*lossR; // R 단위 기대값
+  const evColor = ev>=0?'#16a34a':'#dc2626';
+  let evAmt='';
+  if(qty>0){ const evMoney=ev*risk*qty; evAmt=`<br>1회 평균 기대 손익 ≈ <b style="color:${evColor}">${evMoney>=0?'+':'−'}${fmt(Math.abs(evMoney))}원</b> (수량 ${fmt(qty)}주 기준)`; }
+  $('evBox').innerHTML = `승률 <b>${(winRate*100).toFixed(0)}%</b> 가정 시 기대값 = <b style="color:${evColor};font-size:15px">${ev>=0?'+':''}${ev.toFixed(2)}R</b> ${ev>=0?'(장기적으로 플러스 ✓)':'(장기적으로 마이너스 ✗)'}` +
+    `<br><span style="font-size:11.5px;color:#888">계산: ${(winRate*100).toFixed(0)}%×${winR.toFixed(2)}R − ${((1-winRate)*100).toFixed(0)}%×1R</span>` + evAmt +
+    `<br><span style="font-size:11.5px;color:#888">손익분기 승률은 <b>${breakEven.toFixed(1)}%</b> — 이보다 높게 보면 들어갈 만해요.</span>`;
+
+  updateKor();
+}
+
+document.querySelectorAll('input').forEach(el=>el.addEventListener('input', calculate));
+calculate();
+</script>
+</body>
+</html>
