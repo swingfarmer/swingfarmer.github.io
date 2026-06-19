@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>포지션 사이징 계산기 | 스윙파머</title>
+<meta name="description" content="자산과 손절가를 정하면 '한 번에 X%만 잃는' 원칙에 맞는 매수 수량과 금액을 역산. 리스크 기반 포지션 관리.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; display: block; }
+  header h1 { font-size: 20px; color: #1F4E78; margin: 0; }
+  .back-link { display: inline-block; margin-bottom: 8px; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
+  .panel { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .section-label { font-size: 14px; font-weight: 700; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #eef0f3; color: #1F4E78; }
+  .input-row { margin-bottom: 12px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #333; }
+  .stat-sub { font-size: 11px; font-weight: 500; color: #888; }
+  input[type="number"] { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; background: #FFF2CC; font-weight: 600; color: #0000FF; }
+  input[type="number"]:focus { outline: 2px solid #1F4E78; background: #FFFACD; }
+  .won-kor { font-size: 12px; color: #1F4E78; font-weight: 600; margin-top: 3px; min-height: 15px; }
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; font-style: normal; cursor: pointer; margin-left: 4px; }
+  .info-box { display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #1e40af; line-height: 1.7; margin-top: 6px; }
+  .risk-presets { display: flex; gap: 6px; margin-top: 6px; }
+  .risk-preset { flex: 1; padding: 7px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; background: #eef2f7; color: #1F4E78; border: 1px solid transparent; text-align: center; }
+  .risk-preset.active { background: #1F4E78; color: white; }
+
+  .result-hero { background: linear-gradient(135deg, #1F4E78, #2d6da3); color: white; border-radius: 14px; padding: 22px; text-align: center; margin-bottom: 16px; }
+  .result-hero .label { font-size: 13px; opacity: .9; margin-bottom: 6px; }
+  .result-hero .value { font-size: 32px; font-weight: 800; }
+  .result-hero .sub { font-size: 13px; opacity: .9; margin-top: 6px; line-height: 1.6; }
+
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .stat-card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); text-align: center; }
+  .stat-card .sc-label { font-size: 11.5px; color: #888; margin-bottom: 4px; }
+  .stat-card .sc-val { font-size: 18px; font-weight: 800; color: #1F4E78; }
+  .stat-card .sc-kor { font-size: 10.5px; color: #aaa; margin-top: 2px; }
+  .stat-card.warn { background: #fffbeb; border: 1px solid #fde68a; }
+  .stat-card.warn .sc-val { color: #d97706; }
+
+  table.breakdown { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.breakdown td { padding: 9px 6px; border-bottom: 1px solid #f0f0f0; }
+  table.breakdown td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  table.breakdown tr.total td { border-top: 2px solid #1F4E78; font-weight: 700; padding-top: 11px; }
+
+  .warn-note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; line-height: 1.7; margin-top: 14px; }
+  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; margin-top: 8px; font-size: 13px; line-height: 1.8; color: #6b5618; }
+  .manual .badge { display: inline-block; background: #1F4E78; color: white; font-size: 11px; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
+  footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a href="/risk/" class="back-link">← 리스크 관리로</a>
+    <h1>🎯 포지션 사이징 계산기</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc">"한 번의 매매에서 내 자산의 <b>몇 %까지만 잃겠다</b>"는 원칙을 정하면, 손절가 기준으로 <b>몇 주를 사야 하는지</b> 역산합니다. 감이 아니라 규칙으로 베팅 크기를 정하는 도구예요.</p>
+
+  <div class="panel">
+    <div class="section-label">💰 내 자산 & 리스크 허용</div>
+    <div class="input-row">
+      <label>총 투자 자산 <span class="stat-sub">전체 운용 금액</span></label>
+      <input type="number" id="capital" value="100000000" inputmode="numeric">
+      <div class="won-kor" id="capital_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>1회 리스크 허용 (%) <span class="stat-sub">이 매매에서 잃을 각오</span> <span class="info-btn" onclick="toggleInfo('riskInfo')">i</span></label>
+      <input type="number" id="riskPct" value="2" step="0.1" inputmode="decimal">
+      <div class="risk-presets">
+        <div class="risk-preset" onclick="setRisk(1)">보수 1%</div>
+        <div class="risk-preset active" onclick="setRisk(2)">표준 2%</div>
+        <div class="risk-preset" onclick="setRisk(3)">공격 3%</div>
+      </div>
+      <div class="info-box" id="riskInfo">한 번의 매매가 손절에 걸렸을 때 <b>전체 자산의 몇 %를 잃을지</b>를 정합니다. 전문 트레이더들은 보통 1~2%를 권장해요(2% 룰). 이걸 지키면 연속으로 손절당해도 자산이 천천히 줄어 버틸 수 있어요.</div>
+    </div>
+    <div style="background:#eff6ff;border-radius:8px;padding:12px;font-size:13px;color:#1e40af;text-align:center">
+      이 매매에서 잃을 최대 금액 = <b id="riskAmount" style="font-size:16px">-</b>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="section-label">📊 매수가 & 손절가</div>
+    <div class="input-row">
+      <label>매수가 <span class="stat-sub">진입 가격</span></label>
+      <input type="number" id="entry" value="50000" inputmode="numeric">
+      <div class="won-kor" id="entry_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>손절가 <span class="stat-sub">여기 닿으면 손절</span> <span class="info-btn" onclick="toggleInfo('stopInfo')">i</span></label>
+      <input type="number" id="stop" value="45000" inputmode="numeric">
+      <div class="won-kor" id="stop_kor"></div>
+      <div class="info-box" id="stopInfo">손실을 확정하고 빠져나올 가격. 매수가보다 낮게 잡습니다(예: 지지선 아래, -10% 등). 매수가와 손절가의 <b>간격이 좁을수록 더 많이 살 수 있고</b>, 넓을수록 적게 사게 돼요(같은 리스크 한도 기준).</div>
+    </div>
+    <div class="input-row">
+      <label>손절폭 <span class="stat-sub">주당 잃는 금액 / 하락률</span></label>
+      <div style="display:flex;gap:10px;align-items:center;font-size:14px;font-weight:700;color:#dc2626">
+        <span id="stopGap">-</span>
+        <span style="color:#aaa;font-weight:400">|</span>
+        <span id="stopGapPct">-</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="result-hero">
+    <div class="label">살 수 있는 수량</div>
+    <div class="value" id="shares">-</div>
+    <div class="sub" id="sharesSub"></div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="sc-label">투입 금액</div>
+      <div class="sc-val" id="positionAmount">-</div>
+      <div class="sc-kor" id="positionAmountKor"></div>
+    </div>
+    <div class="stat-card" id="weightCard">
+      <div class="sc-label">자산 대비 비중</div>
+      <div class="sc-val" id="positionWeight">-</div>
+      <div class="sc-kor" id="weightNote"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="section-label">📋 상세 내역</div>
+    <table class="breakdown">
+      <tbody id="breakdownBody"></tbody>
+    </table>
+  </div>
+
+  <div class="warn-note">
+    ⚠️ <b>참고용입니다.</b> 실제로는 슬리피지(손절가에 정확히 못 팔고 더 아래에서 체결), 갭하락(장 시작부터 손절가 아래) 등으로 손실이 계산보다 커질 수 있어요. 또 한 종목 비중이 너무 크면(예: 30%+) 리스크 한도와 별개로 집중 위험이 있으니 주의하세요.
+  </div>
+
+  <div class="manual">
+    <b>📘 계산 방법</b><br>
+    <span class="badge">리스크 허용액</span> 총 자산 × 리스크 %<br>
+    <span class="badge">주당 리스크</span> 매수가 − 손절가<br>
+    <span class="badge">수량</span> 리스크 허용액 ÷ 주당 리스크<br>
+    <span class="badge">투입금액</span> 수량 × 매수가<br>
+    핵심은 "얼마를 살까"가 아니라 <b>"얼마를 잃어도 되나"에서 거꾸로</b> 수량을 정하는 거예요. 손절폭이 넓으면 자동으로 적게 사게 됩니다.
+  </div>
+
+  <footer>© 스윙파머</footer>
+</div>
+
+<script src="/common.js?v=3"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+function wonToKorean(n){ n=Math.round(Math.abs(n)); if(n===0)return ''; var eok=Math.floor(n/1e8),man=Math.floor((n%1e8)/1e4),won=n%1e4,p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(man>0)p.push(man.toLocaleString('ko-KR')+'만'); if(won>0)p.push(won.toLocaleString('ko-KR')); return p.join(' ')+'원'; }
+function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
+
+const KOR_FIELDS = ['capital','entry','stop'];
+function updateKor(){ KOR_FIELDS.forEach(id=>{ var el=$(id),box=$(id+'_kor'); if(el&&box){ var v=parseFloat(el.value)||0; box.textContent=v>0?wonToKorean(v):''; } }); }
+
+function setRisk(p){
+  $('riskPct').value=p;
+  document.querySelectorAll('.risk-preset').forEach(el=>el.classList.toggle('active', parseFloat(el.textContent.match(/[\d.]+/)[0])===p));
+  calculate();
+}
+
+function calculate(){
+  const capital = parseFloat($('capital').value)||0;
+  const riskPct = (parseFloat($('riskPct').value)||0)/100;
+  const entry = parseFloat($('entry').value)||0;
+  const stop = parseFloat($('stop').value)||0;
+
+  const riskAmount = capital * riskPct; // 잃을 최대 금액
+  $('riskAmount').textContent = fmt(riskAmount)+'원';
+
+  const stopGap = entry - stop; // 주당 리스크
+  const stopGapPct = entry>0 ? (stopGap/entry*100) : 0;
+  $('stopGap').textContent = stopGap>0 ? '−'+fmt(stopGap)+'원/주' : '손절가를 매수가보다 낮게';
+  $('stopGapPct').textContent = stopGap>0 ? '−'+stopGapPct.toFixed(1)+'%' : '';
+
+  // 프리셋 동기화
+  document.querySelectorAll('.risk-preset').forEach(el=>{ const v=parseFloat(el.textContent.match(/[\d.]+/)[0]); el.classList.toggle('active', Math.abs(v-(riskPct*100))<0.01); });
+
+  if(stopGap<=0 || entry<=0 || riskAmount<=0){
+    $('shares').textContent='-'; $('sharesSub').textContent='매수가 > 손절가로 입력하세요';
+    $('positionAmount').textContent='-'; $('positionAmountKor').textContent='';
+    $('positionWeight').textContent='-'; $('weightNote').textContent='';
+    $('breakdownBody').innerHTML='';
+    updateKor(); return;
+  }
+
+  const shares = Math.floor(riskAmount / stopGap); // 수량
+  const positionAmount = shares * entry; // 투입금액
+  const weight = capital>0 ? (positionAmount/capital*100) : 0;
+  const actualRisk = shares * stopGap; // 실제 리스크 (수량 내림 반영)
+
+  $('shares').textContent = fmt(shares)+'주';
+  $('sharesSub').textContent = `손절 시 약 ${fmt(actualRisk)}원 손실 (자산의 ${(actualRisk/capital*100).toFixed(2)}%)`;
+  $('positionAmount').textContent = fmt(positionAmount)+'원';
+  $('positionAmountKor').textContent = wonToKorean(positionAmount);
+  $('positionWeight').textContent = weight.toFixed(1)+'%';
+
+  // 비중 경고
+  const wcard = $('weightCard');
+  if(weight>30){ wcard.classList.add('warn'); $('weightNote').textContent='⚠️ 집중 주의'; }
+  else { wcard.classList.remove('warn'); $('weightNote').textContent=''; }
+
+  // 투입금액이 자산 초과 체크
+  let overNote = '';
+  if(positionAmount > capital){ overNote = `<tr><td colspan="2" style="color:#dc2626;font-size:12px">⚠️ 투입금액이 총 자산을 초과합니다. 손절폭이 너무 좁거나 리스크 %가 큽니다. (레버리지 필요)</td></tr>`; }
+
+  const rows = [];
+  rows.push(`<tr><td>총 자산</td><td class="num">${fmt(capital)}원</td></tr>`);
+  rows.push(`<tr><td>리스크 허용 (${(riskPct*100).toFixed(1)}%)</td><td class="num" style="color:#dc2626">${fmt(riskAmount)}원</td></tr>`);
+  rows.push(`<tr><td>주당 리스크 (매수가−손절가)</td><td class="num">${fmt(stopGap)}원</td></tr>`);
+  rows.push(`<tr class="total"><td>살 수 있는 수량</td><td class="num" style="color:#1F4E78">${fmt(shares)}주</td></tr>`);
+  rows.push(`<tr><td>투입 금액</td><td class="num">${fmt(positionAmount)}원</td></tr>`);
+  rows.push(`<tr><td>자산 대비 비중</td><td class="num">${weight.toFixed(1)}%</td></tr>`);
+  rows.push(`<tr><td>실제 손절 손실</td><td class="num" style="color:#dc2626">${fmt(actualRisk)}원</td></tr>`);
+  if(overNote) rows.push(overNote);
+  $('breakdownBody').innerHTML = rows.join('');
+
+  updateKor();
+}
+
+document.querySelectorAll('input').forEach(el=>el.addEventListener('input', calculate));
+calculate();
+</script>
+</body>
+</html>
