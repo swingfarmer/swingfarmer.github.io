@@ -124,6 +124,11 @@
     📈 경제지표 자동 표시 <span style="font-size:11px;color:#888;font-weight:400">(마녀의날·CPI·FOMC·옵션만기 등)</span>
   </label>
 
+  <label style="display:flex;align-items:center;gap:8px;background:white;border-radius:10px;padding:10px 14px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;font-size:13px;font-weight:600;color:#b45309">
+    <input type="checkbox" id="taxToggle" onchange="toggleTax()" style="width:18px;height:18px">
+    🧾 세금 일정 자동 표시 <span style="font-size:11px;color:#888;font-weight:400">(원천세·부가세·법인세·세금계산서 등)</span>
+  </label>
+
   <!-- 달력 모드 -->
   <div id="calMode">
     <div class="cal-nav">
@@ -315,6 +320,7 @@ let editingId = null;
 let pickedCat = '';
 let listFilter = 'all';
 let showEcon = false; // 경제지표 표시 여부
+let showTax = false; // 세금 일정 표시 여부
 
 // === 경제지표 자동 생성 ===
 // N번째 특정요일 날짜 구하기 (year, month0, weekday0=일~6, nth=1~4)
@@ -360,6 +366,46 @@ function getEconEvents(centerDate){
 }
 function econColor(cat){ return cat==='__econ_sure' ? '#0891b2' : '#94a3b8'; } // 확실=청록, 예상=회색
 
+// === 세금 일정 자동 생성 ===
+// 주말이면 다음 영업일(월)로 미루기
+function nextBizDay(d){
+  const x=new Date(d);
+  while(x.getDay()===0 || x.getDay()===6) x.setDate(x.getDate()+1);
+  return x;
+}
+function taxDate(y,m,day){ return fmtD(nextBizDay(new Date(y,m,day))); }
+
+// 특정 연·월의 세금 일정 생성
+function genTaxForMonth(y, m){
+  const list=[];
+  const M = m+1; // 1~12
+  // 매월 공통: 원천세 신고·납부 (다음달 10일 → 이 달 10일이 '전월분')
+  list.push({ date: taxDate(y,m,10), title:'원천세 신고·납부', cat:'__tax', memo:'전월 급여 원천징수분, 매월 10일 (주말이면 다음 영업일)' });
+  // 매월: 전월분 전자세금계산서 발행 기한 (다음달 10일)
+  list.push({ date: taxDate(y,m,10), title:'전자세금계산서 발행기한', cat:'__tax', memo:'전월 매출분, 다음달 10일까지' });
+  // 부가세
+  if(M===1) list.push({ date: taxDate(y,m,25), title:'부가세 2기 확정신고', cat:'__tax_big', memo:'전년 하반기(7~12월), 1/25 (개인·법인 공통 확정)' });
+  if(M===4) list.push({ date: taxDate(y,m,25), title:'부가세 1기 예정신고/고지', cat:'__tax', memo:'법인 예정신고·개인 예정고지, 4/25' });
+  if(M===7) list.push({ date: taxDate(y,m,25), title:'부가세 1기 확정신고', cat:'__tax_big', memo:'상반기(1~6월), 7/25' });
+  if(M===10) list.push({ date: taxDate(y,m,25), title:'부가세 2기 예정신고/고지', cat:'__tax', memo:'법인 예정신고·개인 예정고지, 10/25' });
+  // 법인세 (12월 결산 기준 3/31)
+  if(M===3) list.push({ date: taxDate(y,m,31), title:'법인세 신고·납부', cat:'__tax_big', memo:'12월 결산법인, 사업연도 종료 후 3개월(3/31)' });
+  // 종합소득세 (5월)
+  if(M===5) list.push({ date: taxDate(y,m,31), title:'종합소득세 신고·납부', cat:'__tax_big', memo:'전년 귀속, 5/31' });
+  // 간이지급명세서 (반기: 1월·7월 말) - 간단 표기
+  if(M===1 || M===7) list.push({ date: taxDate(y,m,31), title:'간이지급명세서 제출', cat:'__tax', memo:'반기별(상용근로·거주자 사업소득)' });
+  return list;
+}
+function getTaxEvents(centerDate){
+  let out=[];
+  for(let off=-2; off<=2; off++){
+    const d=new Date(centerDate.getFullYear(), centerDate.getMonth()+off, 1);
+    out = out.concat(genTaxForMonth(d.getFullYear(), d.getMonth()));
+  }
+  return out.map((e,i)=>({ ...e, id:'tax_'+e.date+'_'+i, done:false, isTax:true }));
+}
+function taxColor(cat){ return cat==='__tax_big' ? '#b45309' : '#d97706'; } // 큰 신고=진한주황, 일반=주황
+
 const DEFAULT_CATS = [
   { name:'실적', color:'#dc2626' },
   { name:'배당', color:'#16a34a' },
@@ -369,11 +415,12 @@ const DEFAULT_CATS = [
 ];
 
 function load(){
-  try{ const raw=localStorage.getItem(STORE_KEY); if(raw){ const d=JSON.parse(raw); events=d.events||[]; categories=d.categories||[]; showEcon=d.showEcon||false; } }catch(e){}
+  try{ const raw=localStorage.getItem(STORE_KEY); if(raw){ const d=JSON.parse(raw); events=d.events||[]; categories=d.categories||[]; showEcon=d.showEcon||false; showTax=d.showTax||false; } }catch(e){}
   if(categories.length===0) categories=JSON.parse(JSON.stringify(DEFAULT_CATS));
 }
-function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify({events, categories, showEcon})); }catch(e){} }
+function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify({events, categories, showEcon, showTax})); }catch(e){} }
 function toggleEcon(){ showEcon=$('econToggle').checked; save(); render(); }
+function toggleTax(){ showTax=$('taxToggle').checked; save(); render(); }
 
 function catColor(name){ const c=categories.find(x=>x.name===name); return c?c.color:'#9ca3af'; }
 function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -401,6 +448,7 @@ function renderCalendar(){
   const today=todayStr();
   // 경제지표 (토글 시)
   const econ = showEcon ? getEconEvents(viewDate) : [];
+  const tax = showTax ? getTaxEvents(viewDate) : [];
 
   let cells=[];
   // 이전달 채우기
@@ -414,12 +462,15 @@ function renderCalendar(){
     const dow=new Date(c.date).getDay();
     const userEv=events.filter(e=>e.date===c.date).sort((a,b)=>(a.done?1:0)-(b.done?1:0));
     const econEv=econ.filter(e=>e.date===c.date);
-    const dayEvents=userEv.concat(econEv);
+    const taxEv=tax.filter(e=>e.date===c.date);
+    const dayEvents=userEv.concat(econEv).concat(taxEv);
     const shown=dayEvents.slice(0,3);
     const more=dayEvents.length-shown.length;
     const evHtml=shown.map(e=>{
-      const col = e.isEcon ? econColor(e.cat) : catColor(e.cat);
-      const style = e.isEcon ? `background:${col};${e.cat==='__econ_est'?'border:1px dashed rgba(255,255,255,.6)':''}` : `background:${col}`;
+      let col, style;
+      if(e.isEcon){ col=econColor(e.cat); style=`background:${col};${e.cat==='__econ_est'?'border:1px dashed rgba(255,255,255,.6)':''}`; }
+      else if(e.isTax){ col=taxColor(e.cat); style=`background:${col}`; }
+      else { col=catColor(e.cat); style=`background:${col}`; }
       return `<div class="cal-ev ${e.done?'done':''}" style="${style}">${e.title.replace(/</g,'&lt;')}</div>`;
     }).join('') + (more>0?`<div class="cal-more">+${more}</div>`:'');
     return `<div class="cal-cell ${c.other?'other-month':''} ${c.date===today?'today':''} ${dow===0?'sun':''} ${dow===6?'sat':''}" onclick="openAddFor('${c.date}')">
@@ -435,10 +486,11 @@ function renderList(){
     categories.map(c=>`<div class="filter-chip ${listFilter===c.name?'active':''}" onclick="setFilter('${c.name}')" style="${listFilter===c.name?'background:'+c.color+';border-color:'+c.color:''}">${c.name}</div>`).join('');
 
   const today=todayStr();
-  // 경제지표 합치기 (토글 시, 전체 필터일 때만)
+  // 경제지표/세금 합치기 (토글 시, 전체 필터일 때만)
   let allEvents = events.slice();
-  if(showEcon && listFilter==='all'){
-    allEvents = allEvents.concat(getEconEvents(new Date()));
+  if(listFilter==='all'){
+    if(showEcon) allEvents = allEvents.concat(getEconEvents(new Date()));
+    if(showTax) allEvents = allEvents.concat(getTaxEvents(new Date()));
   }
   let evs = allEvents.filter(e=> listFilter==='all' || e.cat===listFilter);
   evs.sort((a,b)=> a.date<b.date?-1:a.date>b.date?1:0);
@@ -487,6 +539,21 @@ function listItemHtml(e, today){
         ${e.memo?`<div class="list-memo">${e.memo.replace(/</g,'&lt;')}</div>`:''}
       </div>
       <span class="list-cat" style="background:${col}">지표</span>
+      <span class="list-dday" style="color:${ddayColor}">${ddayText}</span>
+    </div>`;
+  }
+
+  // 세금 일정 (자동 생성) — 체크/삭제 없음
+  if(e.isTax){
+    const col=taxColor(e.cat);
+    return `<div class="list-item" style="border-left-color:${col};opacity:.92">
+      <div style="width:24px;flex-shrink:0;text-align:center;font-size:16px">🧾</div>
+      <div class="list-date"><b>${d.getDate()}</b>${WEEK[d.getDay()]}</div>
+      <div class="list-body">
+        <div class="list-title" style="font-weight:600">${e.title.replace(/</g,'&lt;')}</div>
+        ${e.memo?`<div class="list-memo">${e.memo.replace(/</g,'&lt;')}</div>`:''}
+      </div>
+      <span class="list-cat" style="background:${col}">세금</span>
       <span class="list-dday" style="color:${ddayColor}">${ddayText}</span>
     </div>`;
   }
@@ -566,6 +633,7 @@ window.scSetState = (d)=>{ events=d.events||[]; categories=d.categories||JSON.pa
 
 load();
 if($('econToggle')) $('econToggle').checked = showEcon;
+if($('taxToggle')) $('taxToggle').checked = showTax;
 render();
 </script>
 </body>
