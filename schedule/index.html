@@ -124,17 +124,27 @@
     📈 경제지표 자동 표시 <span style="font-size:11px;color:#888;font-weight:400">(마녀의날·CPI·FOMC·옵션만기 등)</span>
   </label>
 
-  <label style="display:flex;align-items:center;gap:8px;background:white;border-radius:10px;padding:10px 14px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;font-size:13px;font-weight:600;color:#b45309">
+  <label style="display:flex;align-items:center;gap:8px;background:white;border-radius:10px;padding:10px 14px;margin-bottom:6px;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;font-size:13px;font-weight:600;color:#b45309">
     <input type="checkbox" id="taxToggle" onchange="toggleTax()" style="width:18px;height:18px">
     🧾 세금 일정 자동 표시 <span style="font-size:11px;color:#888;font-weight:400">(원천세·부가세·법인세·세금계산서 등)</span>
   </label>
+  <div id="taxNote" style="display:none;font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;margin-bottom:14px;line-height:1.6">
+    ⚠️ 주말이면 다음 영업일로 자동 보정되지만, <b>공휴일(빨간날)은 반영되지 않습니다.</b> 신고일이 공휴일이면 실제 기한은 더 밀릴 수 있어요. 12월 결산 법인 기준이며, 큰 신고는 홈택스에서 확인하세요.
+  </div>
+
+  <!-- 오늘/이번주 요약 위젯 -->
+  <div id="summaryWidget" style="background:linear-gradient(135deg,#1F4E78,#2d6da3);color:white;border-radius:12px;padding:14px 16px;margin-bottom:14px;font-size:13px;line-height:1.6"></div>
 
   <!-- 달력 모드 -->
   <div id="calMode">
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <button class="mode-btn active" id="viewMonthBtn" onclick="setView('month')" style="padding:7px;font-size:13px">월</button>
+      <button class="mode-btn" id="viewWeekBtn" onclick="setView('week')" style="padding:7px;font-size:13px">주</button>
+    </div>
     <div class="cal-nav">
-      <button onclick="moveMonth(-1)">‹</button>
+      <button onclick="movePeriod(-1)">‹</button>
       <span class="cal-title" id="calTitle">-</span>
-      <button onclick="moveMonth(1)">›</button>
+      <button onclick="movePeriod(1)">›</button>
     </div>
     <div style="text-align:center;margin-bottom:10px"><button class="today-btn" onclick="goToday()">오늘로</button></div>
     <div class="calendar">
@@ -143,6 +153,8 @@
       </div>
       <div class="cal-grid" id="calGrid"></div>
     </div>
+    <!-- 범례 -->
+    <div id="calLegend" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;padding:10px 12px;background:white;border-radius:10px;font-size:11px;color:#666;box-shadow:0 1px 3px rgba(0,0,0,.06)"></div>
   </div>
 
   <!-- 리스트 모드 -->
@@ -177,6 +189,16 @@
     <div class="field">
       <label>카테고리</label>
       <div class="cat-picker" id="catPicker"></div>
+    </div>
+    <div class="field">
+      <label>반복</label>
+      <select id="evRepeat">
+        <option value="none">반복 없음</option>
+        <option value="weekly">매주</option>
+        <option value="monthly">매월 (같은 날짜)</option>
+        <option value="yearly">매년</option>
+      </select>
+      <div style="font-size:11px;color:#999;margin-top:3px">반복은 표시만 됩니다. 개별 완료 체크는 안 돼요.</div>
     </div>
     <div class="field">
       <label>메모 (선택)</label>
@@ -315,6 +337,7 @@ const WEEK = ['일','월','화','수','목','금','토'];
 let events = []; // {id, date:'YYYY-MM-DD', title, cat, memo, done}
 let categories = []; // {name, color}
 let viewDate = new Date();
+let calView = 'month'; // month | week
 let mode = 'cal';
 let editingId = null;
 let pickedCat = '';
@@ -420,7 +443,7 @@ function load(){
 }
 function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify({events, categories, showEcon, showTax})); }catch(e){} }
 function toggleEcon(){ showEcon=$('econToggle').checked; save(); render(); }
-function toggleTax(){ showTax=$('taxToggle').checked; save(); render(); }
+function toggleTax(){ showTax=$('taxToggle').checked; $('taxNote').style.display=showTax?'block':'none'; save(); render(); }
 
 function catColor(name){ const c=categories.find(x=>x.name===name); return c?c.color:'#9ca3af'; }
 function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -436,48 +459,144 @@ function setMode(m){
 }
 function moveMonth(d){ viewDate.setMonth(viewDate.getMonth()+d); render(); }
 function goToday(){ viewDate=new Date(); render(); }
+function setView(v){
+  calView=v;
+  $('viewMonthBtn').classList.toggle('active', v==='month');
+  $('viewWeekBtn').classList.toggle('active', v==='week');
+  render();
+}
+function movePeriod(d){
+  if(calView==='week') viewDate.setDate(viewDate.getDate()+d*7);
+  else viewDate.setMonth(viewDate.getMonth()+d);
+  render();
+}
 
-function render(){ if(mode==='cal') renderCalendar(); else renderList(); }
+function render(){ if(mode==='cal') renderCalendar(); else renderList(); renderSummary(); }
+
+// 반복 일정이 특정 날짜에 발생하는지 판정 → 발생하면 그 날짜용 가상 이벤트 반환(없으면 null)
+function repeatOccurrence(ev, dateStr){
+  if(!ev.repeat || ev.repeat==='none') return null;
+  const start=new Date(ev.date), target=new Date(dateStr);
+  if(target<start) return null;
+  if(ev.date===dateStr) return null; // 원본날은 따로 처리
+  let hit=false;
+  if(ev.repeat==='weekly'){ hit = (start.getDay()===target.getDay()); }
+  else if(ev.repeat==='monthly'){ hit = (start.getDate()===target.getDate()); }
+  else if(ev.repeat==='yearly'){ hit = (start.getDate()===target.getDate() && start.getMonth()===target.getMonth()); }
+  if(!hit) return null;
+  return { ...ev, id:ev.id+'__r_'+dateStr, date:dateStr, isRepeat:true, baseId:ev.id, done:false };
+}
+// 특정 날짜의 유저 이벤트 (반복 전개 포함)
+function userEventsOn(dateStr){
+  let arr = events.filter(e=>e.date===dateStr);
+  events.forEach(e=>{ const r=repeatOccurrence(e,dateStr); if(r) arr.push(r); });
+  return arr;
+}
+
+// 특정 날짜의 모든 이벤트(유저+토글된 지표/세금) 모으기
+function eventsOn(dateStr){
+  const center = new Date(dateStr);
+  let arr = userEventsOn(dateStr);
+  if(showEcon) arr = arr.concat(getEconEvents(center).filter(e=>e.date===dateStr));
+  if(showTax) arr = arr.concat(getTaxEvents(center).filter(e=>e.date===dateStr));
+  return arr;
+}
+// 자동(지표/세금) 이벤트를 id로 찾기 (클릭 상세용)
+function findAutoEvent(id){
+  const all = getEconEvents(viewDate).concat(getTaxEvents(viewDate))
+    .concat(getEconEvents(new Date())).concat(getTaxEvents(new Date()));
+  return all.find(e=>e.id===id);
+}
+// 자동 이벤트 상세 팝업
+function showAutoDetail(id){
+  const e = findAutoEvent(id);
+  if(!e) return;
+  const typeLabel = e.isEcon ? (e.cat==='__econ_est'?'경제지표 (예상)':'경제지표') : '세금 일정';
+  alert('📌 '+e.title+'\n\n['+typeLabel+']\n날짜: '+e.date+'\n'+(e.memo||''));
+}
+
+// 오늘/이번주 요약 위젯 (+ 임박 D-day)
+function renderSummary(){
+  const box=$('summaryWidget'); if(!box) return;
+  const today=todayStr();
+  const todayEvs = eventsOn(today);
+  // 앞으로 7일 내 (오늘 제외) 임박 일정
+  const upcoming=[];
+  for(let i=1;i<=7;i++){
+    const d=new Date(); d.setDate(d.getDate()+i);
+    eventsOn(fmtDate(d)).forEach(e=> upcoming.push({...e, dday:i}));
+  }
+  let html = `<div style="font-size:12px;opacity:.85;margin-bottom:4px">📍 오늘 (${today})</div>`;
+  if(todayEvs.length>0){
+    html += `<div style="font-weight:700;font-size:15px">${todayEvs.map(e=>e.title).slice(0,3).join(' · ')}${todayEvs.length>3?' 외 '+(todayEvs.length-3)+'건':''}</div>`;
+  } else {
+    html += `<div style="font-weight:600;font-size:14px;opacity:.8">오늘 일정 없음</div>`;
+  }
+  if(upcoming.length>0){
+    const u=upcoming.slice(0,3).map(e=>`<b>D-${e.dday}</b> ${e.title}`).join(' &nbsp;·&nbsp; ');
+    html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.25);font-size:12px;opacity:.95">⏳ 임박: ${u}${upcoming.length>3?' …':''}</div>`;
+  }
+  box.innerHTML = html;
+}
+
+function buildCell(c, today, econ, tax){
+  const dow=new Date(c.date).getDay();
+  const userEv=userEventsOn(c.date).sort((a,b)=>(a.done?1:0)-(b.done?1:0));
+  const econEv=econ.filter(e=>e.date===c.date);
+  const taxEv=tax.filter(e=>e.date===c.date);
+  const dayEvents=userEv.concat(econEv).concat(taxEv);
+  const limit = calView==='week' ? 8 : 3;
+  const shown=dayEvents.slice(0,limit);
+  const more=dayEvents.length-shown.length;
+  const evHtml=shown.map(e=>{
+    let col, style, click;
+    if(e.isEcon){ col=econColor(e.cat); style=`background:${col};${e.cat==='__econ_est'?'border:1px dashed rgba(255,255,255,.6)':''}`; click=`event.stopPropagation();showAutoDetail('${e.id}')`; }
+    else if(e.isTax){ col=taxColor(e.cat); style=`background:${col}`; click=`event.stopPropagation();showAutoDetail('${e.id}')`; }
+    else { col=catColor(e.cat); style=`background:${col}`; click=`event.stopPropagation();openEdit('${e.baseId||e.id}')`; }
+    const rep = e.isRepeat ? '🔁' : '';
+    return `<div class="cal-ev ${e.done?'done':''}" style="${style}" onclick="${click}">${rep}${e.title.replace(/</g,'&lt;')}</div>`;
+  }).join('') + (more>0?`<div class="cal-more">+${more}</div>`:'');
+  return `<div class="cal-cell ${c.other?'other-month':''} ${c.date===today?'today':''} ${dow===0?'sun':''} ${dow===6?'sat':''}" style="${calView==='week'?'min-height:120px':''}" onclick="openAddFor('${c.date}')">
+    <div class="cal-daynum">${c.day}${calView==='week'?' <span style="font-size:10px;color:#aaa">'+WEEK[dow]+'</span>':''}</div>
+    <div class="cal-events">${evHtml}</div>
+  </div>`;
+}
 
 function renderCalendar(){
-  const y=viewDate.getFullYear(), m=viewDate.getMonth();
-  $('calTitle').textContent = y+'년 '+(m+1)+'월';
-  const first=new Date(y,m,1), startDay=first.getDay();
-  const daysInMonth=new Date(y,m+1,0).getDate();
-  const prevDays=new Date(y,m,0).getDate();
   const today=todayStr();
-  // 경제지표 (토글 시)
   const econ = showEcon ? getEconEvents(viewDate) : [];
   const tax = showTax ? getTaxEvents(viewDate) : [];
-
   let cells=[];
-  // 이전달 채우기
-  for(let i=startDay-1;i>=0;i--) cells.push({day:prevDays-i, other:true, date:fmtDate(new Date(y,m-1,prevDays-i))});
-  // 이번달
-  for(let d=1;d<=daysInMonth;d++) cells.push({day:d, other:false, date:fmtDate(new Date(y,m,d))});
-  // 다음달 (6주 채우기)
-  let next=1; while(cells.length%7!==0 || cells.length<42){ cells.push({day:next, other:true, date:fmtDate(new Date(y,m+1,next))}); next++; if(cells.length>=42)break; }
 
-  $('calGrid').innerHTML = cells.map(c=>{
-    const dow=new Date(c.date).getDay();
-    const userEv=events.filter(e=>e.date===c.date).sort((a,b)=>(a.done?1:0)-(b.done?1:0));
-    const econEv=econ.filter(e=>e.date===c.date);
-    const taxEv=tax.filter(e=>e.date===c.date);
-    const dayEvents=userEv.concat(econEv).concat(taxEv);
-    const shown=dayEvents.slice(0,3);
-    const more=dayEvents.length-shown.length;
-    const evHtml=shown.map(e=>{
-      let col, style;
-      if(e.isEcon){ col=econColor(e.cat); style=`background:${col};${e.cat==='__econ_est'?'border:1px dashed rgba(255,255,255,.6)':''}`; }
-      else if(e.isTax){ col=taxColor(e.cat); style=`background:${col}`; }
-      else { col=catColor(e.cat); style=`background:${col}`; }
-      return `<div class="cal-ev ${e.done?'done':''}" style="${style}">${e.title.replace(/</g,'&lt;')}</div>`;
-    }).join('') + (more>0?`<div class="cal-more">+${more}</div>`:'');
-    return `<div class="cal-cell ${c.other?'other-month':''} ${c.date===today?'today':''} ${dow===0?'sun':''} ${dow===6?'sat':''}" onclick="openAddFor('${c.date}')">
-      <div class="cal-daynum">${c.day}</div>
-      <div class="cal-events">${evHtml}</div>
-    </div>`;
-  }).join('');
+  if(calView==='week'){
+    // 주간: viewDate가 속한 주(일~토)
+    const base=new Date(viewDate); base.setDate(base.getDate()-base.getDay());
+    for(let i=0;i<7;i++){ const d=new Date(base); d.setDate(base.getDate()+i); cells.push({day:d.getDate(), other:false, date:fmtDate(d)}); }
+    const endD=new Date(base); endD.setDate(base.getDate()+6);
+    $('calTitle').textContent = (base.getMonth()+1)+'/'+base.getDate()+' ~ '+(endD.getMonth()+1)+'/'+endD.getDate();
+  } else {
+    const y=viewDate.getFullYear(), m=viewDate.getMonth();
+    $('calTitle').textContent = y+'년 '+(m+1)+'월';
+    const startDay=new Date(y,m,1).getDay();
+    const daysInMonth=new Date(y,m+1,0).getDate();
+    const prevDays=new Date(y,m,0).getDate();
+    for(let i=startDay-1;i>=0;i--) cells.push({day:prevDays-i, other:true, date:fmtDate(new Date(y,m-1,prevDays-i))});
+    for(let d=1;d<=daysInMonth;d++) cells.push({day:d, other:false, date:fmtDate(new Date(y,m,d))});
+    let next=1; while(cells.length%7!==0 || cells.length<42){ cells.push({day:next, other:true, date:fmtDate(new Date(y,m+1,next))}); next++; if(cells.length>=42)break; }
+  }
+
+  $('calGrid').innerHTML = cells.map(c=>buildCell(c, today, econ, tax)).join('');
+  renderLegend();
+}
+
+function renderLegend(){
+  const box=$('calLegend'); if(!box) return;
+  let items=[];
+  // 카테고리
+  categories.forEach(c=> items.push(`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:${c.color}"></span>${c.name}</span>`));
+  if(showEcon){ items.push(`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:#0891b2"></span>📈 지표</span>`); items.push(`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:#94a3b8;border:1px dashed #666"></span>예상</span>`); }
+  if(showTax){ items.push(`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:#b45309"></span>🧾 세금</span>`); }
+  box.innerHTML = '<span style="font-weight:700;color:#888">범례:</span> ' + items.join(' ');
 }
 
 function renderList(){
@@ -488,6 +607,12 @@ function renderList(){
   const today=todayStr();
   // 경제지표/세금 합치기 (토글 시, 전체 필터일 때만)
   let allEvents = events.slice();
+  // 반복 일정 전개 (오늘부터 90일)
+  events.forEach(e=>{
+    if(e.repeat && e.repeat!=='none'){
+      for(let i=0;i<=90;i++){ const d=new Date(); d.setDate(d.getDate()+i); const r=repeatOccurrence(e, fmtDate(d)); if(r) allEvents.push(r); }
+    }
+  });
   if(listFilter==='all'){
     if(showEcon) allEvents = allEvents.concat(getEconEvents(new Date()));
     if(showTax) allEvents = allEvents.concat(getTaxEvents(new Date()));
@@ -559,15 +684,15 @@ function listItemHtml(e, today){
   }
 
   return `<div class="list-item ${e.done?'done':''}" style="border-left-color:${catColor(e.cat)}">
-    <div class="list-check" onclick="event.stopPropagation();toggleDone('${e.id}')">${e.done?'✓':''}</div>
+    <div class="list-check" onclick="event.stopPropagation();toggleDone('${e.baseId||e.id}')">${e.done?'✓':''}</div>
     <div class="list-date"><b>${d.getDate()}</b>${WEEK[d.getDay()]}</div>
-    <div class="list-body" onclick="openEdit('${e.id}')">
-      <div class="list-title">${e.title.replace(/</g,'&lt;')}</div>
+    <div class="list-body" onclick="openEdit('${e.baseId||e.id}')">
+      <div class="list-title">${e.isRepeat?'🔁 ':''}${e.title.replace(/</g,'&lt;')}</div>
       ${e.memo?`<div class="list-memo">${e.memo.replace(/</g,'&lt;')}</div>`:''}
     </div>
     <span class="list-cat" style="background:${catColor(e.cat)}">${e.cat||'-'}</span>
     <span class="list-dday" style="color:${ddayColor}">${ddayText}</span>
-    <button class="list-del" onclick="event.stopPropagation();delEventDirect('${e.id}')">×</button>
+    ${e.isRepeat?'':`<button class="list-del" onclick="event.stopPropagation();delEventDirect('${e.id}')">×</button>`}
   </div>`;
 }
 
@@ -581,12 +706,12 @@ function renderCatPicker(){
 }
 function pickCat(name){ pickedCat=name; renderCatPicker(); }
 
-function openAdd(){ editingId=null; pickedCat=categories[0]?.name||''; $('modalTitle').textContent='일정 추가'; $('evDate').value=todayStr(); $('evTitle').value=''; $('evMemo').value=''; $('delBtn').style.display='none'; renderCatPicker(); $('evModal').classList.add('show'); }
+function openAdd(){ editingId=null; pickedCat=categories[0]?.name||''; $('modalTitle').textContent='일정 추가'; $('evDate').value=todayStr(); $('evTitle').value=''; $('evMemo').value=''; $('evRepeat').value='none'; $('delBtn').style.display='none'; renderCatPicker(); $('evModal').classList.add('show'); }
 function openAddFor(date){ openAdd(); $('evDate').value=date; }
 function openEdit(id){
   const e=events.find(x=>x.id===id); if(!e)return;
   editingId=id; pickedCat=e.cat; $('modalTitle').textContent='일정 수정';
-  $('evDate').value=e.date; $('evTitle').value=e.title; $('evMemo').value=e.memo||'';
+  $('evDate').value=e.date; $('evTitle').value=e.title; $('evMemo').value=e.memo||''; $('evRepeat').value=e.repeat||'none';
   $('delBtn').style.display='block'; renderCatPicker(); $('evModal').classList.add('show');
 }
 function closeModal(){ $('evModal').classList.remove('show'); }
@@ -595,11 +720,12 @@ function saveEvent(){
   if(!date){ alert('날짜를 선택하세요.'); return; }
   if(!title){ alert('제목을 입력하세요.'); return; }
   const memo=$('evMemo').value.trim();
+  const repeat=$('evRepeat').value;
   if(editingId){
     const e=events.find(x=>x.id===editingId);
-    if(e){ e.date=date; e.title=title; e.cat=pickedCat; e.memo=memo; }
+    if(e){ e.date=date; e.title=title; e.cat=pickedCat; e.memo=memo; e.repeat=repeat; }
   } else {
-    events.push({ id:'ev'+Date.now()+Math.random().toString(36).slice(2,6), date, title, cat:pickedCat, memo, done:false });
+    events.push({ id:'ev'+Date.now()+Math.random().toString(36).slice(2,6), date, title, cat:pickedCat, memo, repeat, done:false });
   }
   save(); closeModal(); render();
 }
@@ -633,7 +759,7 @@ window.scSetState = (d)=>{ events=d.events||[]; categories=d.categories||JSON.pa
 
 load();
 if($('econToggle')) $('econToggle').checked = showEcon;
-if($('taxToggle')) $('taxToggle').checked = showTax;
+if($('taxToggle')){ $('taxToggle').checked = showTax; $('taxNote').style.display = showTax?'block':'none'; }
 render();
 </script>
 </body>
