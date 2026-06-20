@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<title>아침 운동 루틴 | 스윙파머</title>
-<meta name="description" content="입문자용 아침 맨몸운동 루틴. 3단계 단계별 체크리스트, 동작 그림, 운동·휴식 타이머.">
+<title>가벼운 운동 루틴 | 스윙파머</title>
+<meta name="description" content="입문자용 가벼운 맨몸운동 루틴. 3단계 단계별 체크리스트, 밤 스트레칭, 동작 그림, 운동·휴식 타이머. 아침/저녁 어디든.">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 80px; }
@@ -21,6 +21,7 @@
   .stage-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
   .stage-tab { flex: 1; padding: 10px 6px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; background: white; color: #1F4E78; border: 2px solid #e5e7eb; text-align: center; line-height: 1.3; }
   .stage-tab.active { background: #1F4E78; color: white; border-color: #1F4E78; }
+  .stage-tab[data-stage="3"].active { background: #7c3aed; border-color: #7c3aed; }
   .stage-tab small { display: block; font-size: 10px; font-weight: 500; opacity: .8; margin-top: 2px; }
 
   /* 진행률 */
@@ -82,18 +83,19 @@
 <header>
   <div class="wrap">
     <a href="/" class="back-link">← 메인으로</a>
-    <h1>🌅 아침 운동 루틴</h1>
+    <h1>🤸 가벼운 운동 루틴</h1>
   </div>
 </header>
 
 <div class="wrap">
-  <p class="desc">입문자용 전신 맨몸운동. <b>한 달에 걸쳐 3단계로</b> 천천히 늘려가세요. 동작을 체크하며 진행하고, 버티기·휴식은 타이머를 쓰세요. 체크는 오늘 날짜로 저장됩니다.</p>
+  <p class="desc">입문자용 전신 맨몸운동. <b>한 달에 걸쳐 3단계로</b> 천천히 늘려가세요. 동작을 체크하며 진행하고, 버티기·휴식은 타이머를 쓰세요. <b>🌙 밤 탭</b>은 자기 전 이완 스트레칭이에요. 체크는 오늘 날짜로 저장됩니다.</p>
 
   <!-- 단계 탭 -->
   <div class="stage-tabs">
     <button class="stage-tab active" data-stage="0" onclick="setStage(0)">1단계<small>몸 깨우기 · 10분</small></button>
     <button class="stage-tab" data-stage="1" onclick="setStage(1)">2단계<small>기초 근력 · 15~20분</small></button>
     <button class="stage-tab" data-stage="2" onclick="setStage(2)">3단계<small>전신 완성 · 25~30분</small></button>
+    <button class="stage-tab" data-stage="3" onclick="setStage(3)">🌙 밤<small>스트레칭</small></button>
   </div>
 
   <!-- 진행률 -->
@@ -177,7 +179,13 @@ const SVG = {
   plank: `<svg viewBox="0 0 100 100"><circle cx="20" cy="48" r="8" fill="none" stroke="#1F4E78" stroke-width="3"/><path d="M28 50 L78 62 M40 53 L36 70 M78 62 L82 50 M78 62 L78 74 M36 70 L34 76" fill="none" stroke="#1F4E78" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><line x1="14" y1="78" x2="90" y2="78" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="3 3"/></svg>`,
   superman: `<svg viewBox="0 0 100 100"><circle cx="24" cy="42" r="8" fill="none" stroke="#1F4E78" stroke-width="3"/><path d="M32 44 Q55 50 78 42 M40 46 L26 34 M70 45 L84 36 M60 47 L74 58" fill="none" stroke="#1F4E78" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M50 48 Q50 58 56 60" fill="none" stroke="#1F4E78" stroke-width="3" stroke-linecap="round"/><line x1="14" y1="72" x2="90" y2="72" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="3 3"/></svg>`,
   jumpingjack: `<svg viewBox="0 0 100 100"><circle cx="50" cy="20" r="9" fill="none" stroke="#1F4E78" stroke-width="3"/><path d="M50 29 L50 56 M50 34 L30 22 M50 34 L70 22 M50 56 L34 80 M50 56 L66 80" fill="none" stroke="#1F4E78" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  mountain: `<svg viewBox="0 0 100 100"><circle cx="22" cy="46" r="8" fill="none" stroke="#1F4E78" stroke-width="3"/><path d="M30 48 L74 58 M44 51 L40 68 M62 55 L80 50 M74 58 L78 70 M40 68 L52 64 L58 80" fill="none" stroke="#1F4E78" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="80" x2="90" y2="80" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="3 3"/></svg>`
+  mountain: `<svg viewBox="0 0 100 100"><circle cx="22" cy="46" r="8" fill="none" stroke="#1F4E78" stroke-width="3"/><path d="M30 48 L74 58 M44 51 L40 68 M62 55 L80 50 M74 58 L78 70 M40 68 L52 64 L58 80" fill="none" stroke="#1F4E78" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="80" x2="90" y2="80" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="3 3"/></svg>`,
+  childpose: `<svg viewBox="0 0 100 100"><circle cx="76" cy="56" r="8" fill="none" stroke="#7c3aed" stroke-width="3"/><path d="M68 58 Q50 64 30 60 L16 56 M30 60 L34 72 M50 62 L52 72" fill="none" stroke="#7c3aed" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="74" x2="88" y2="74" stroke="#cbd5e1" stroke-width="2"/></svg>`,
+  twist: `<svg viewBox="0 0 100 100"><circle cx="50" cy="60" r="8" fill="none" stroke="#7c3aed" stroke-width="3"/><path d="M50 60 L50 40 M50 46 L34 40 M50 46 L66 52 M50 40 L38 30 M50 40 L64 34" fill="none" stroke="#7c3aed" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="76" x2="84" y2="76" stroke="#cbd5e1" stroke-width="2"/></svg>`,
+  forward: `<svg viewBox="0 0 100 100"><circle cx="50" cy="30" r="8" fill="none" stroke="#7c3aed" stroke-width="3"/><path d="M50 38 Q50 56 50 70 M50 50 L42 66 M50 50 L58 66 M50 70 L44 86 M50 70 L56 86" fill="none" stroke="#7c3aed" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  catcow: `<svg viewBox="0 0 100 100"><circle cx="26" cy="44" r="8" fill="none" stroke="#7c3aed" stroke-width="3"/><path d="M34 46 Q50 36 70 46 M42 48 L40 66 M70 46 L72 66 M70 46 L80 40" fill="none" stroke="#7c3aed" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="70" x2="90" y2="70" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="3 3"/></svg>`,
+  legup: `<svg viewBox="0 0 100 100"><circle cx="22" cy="64" r="8" fill="none" stroke="#7c3aed" stroke-width="3"/><path d="M30 64 L62 68 M40 65 L60 40 M62 68 L64 44 M44 66 L42 76" fill="none" stroke="#7c3aed" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><line x1="14" y1="78" x2="76" y2="78" stroke="#cbd5e1" stroke-width="2"/></svg>`,
+  breathe: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="22" fill="none" stroke="#7c3aed" stroke-width="2.5"/><circle cx="50" cy="50" r="13" fill="none" stroke="#a78bfa" stroke-width="2.5"/><circle cx="50" cy="50" r="5" fill="#a78bfa"/></svg>`
 };
 
 // 3단계 루틴 데이터
@@ -220,6 +228,19 @@ const STAGES = [
       { svg:'mountain', name:'마운틴 클라이머', amount:'20회 (좌우 합)', tip:'빠르게, 코어 유지' },
       { svg:'superman', name:'슈퍼맨', amount:'12회', tip:'2~3세트 순환' },
       { svg:'stretch', name:'마무리 스트레칭', amount:'3분', tip:'전신 천천히', timer:180 }
+    ]
+  },
+  {
+    title: '🌙 밤 스트레칭 (자기 전)',
+    note: '심박수를 올리지 않고 몸을 푸는 동작들. 자기 전 굳은 몸을 이완하고 잠을 돕습니다. 각 동작 천천히, 호흡과 함께. 매일 해도 좋아요.',
+    items: [
+      { svg:'breathe', name:'심호흡으로 시작', amount:'5회', tip:'코로 4초 들이마시고 6초 내쉬기', timer:60 },
+      { svg:'catcow', name:'고양이-소 자세', amount:'10회', tip:'엎드려 등 둥글렸다 폈다, 호흡 맞춰' },
+      { svg:'childpose', name:'아기 자세', amount:'30초~1분', tip:'무릎 꿇고 팔 앞으로 뻗어 등·허리 이완', timer:45 },
+      { svg:'forward', name:'서서 앞으로 숙이기', amount:'30초', tip:'무릎 살짝 굽혀도 OK, 햄스트링·등', timer:30 },
+      { svg:'twist', name:'누워서 척추 비틀기', amount:'좌우 각 30초', tip:'누워서 무릎을 한쪽으로, 허리 이완', timer:30 },
+      { svg:'legup', name:'다리 벽에 올리기', amount:'2~3분', tip:'엉덩이 벽에 붙이고 다리 위로, 혈액순환·이완', timer:180 },
+      { svg:'breathe', name:'마무리 복식호흡', amount:'1~2분', tip:'배로 천천히 숨 쉬며 몸 풀기', timer:90 }
     ]
   }
 ];
