@@ -145,6 +145,25 @@
     <div style="background:#f8fafc;border-radius:8px;padding:10px;font-size:12.5px;color:#555;margin-top:10px" id="vatResult"></div>
   </div>
 
+  <!-- 취득 부대비용 -->
+  <div class="panel">
+    <div class="section-label">🏷️ 취득세·부대비용 <span class="info-btn" onclick="toggleInfo('acqInfo')">i</span></div>
+    <div class="input-row">
+      <label>취득세율 (%) <span class="stat-sub">업무용 상가·오피스텔 기본 4.6%</span></label>
+      <input type="number" id="acqRate" value="4.6" step="0.1" inputmode="decimal">
+      <div class="preset-row">
+        <div class="preset active" onclick="setAcq(4.6)">업무용 4.6%</div>
+        <div class="preset" onclick="setAcq(4.0)">취득세만 4.0%</div>
+      </div>
+    </div>
+    <div class="input-row">
+      <label>기타 부대비용 (%) <span class="stat-sub">중개수수료·법무비·채권 등</span></label>
+      <input type="number" id="etcRate" value="1.0" step="0.1" inputmode="decimal">
+    </div>
+    <div class="info-box" id="acqInfo">업무용 상가·오피스텔 취득세는 <b>4.6%</b>(취득세 4% + 농특세 0.2% + 지방교육세 0.4%)예요. 주택 수와 무관하게 중과 없이 단일 세율입니다. 여기에 중개수수료(법정 상한 0.9% 내외), 법무사 등기비, 국민주택채권 등이 더 붙어요. 이 부대비용은 <b>실제로 더 내는 돈</b>이라, 진짜 손익분기 매수가를 따질 때 반드시 반영해야 합니다.</div>
+    <div style="background:#f8fafc;border-radius:8px;padding:10px;font-size:12.5px;color:#555;margin-top:10px" id="acqResult"></div>
+  </div>
+
   <!-- 대출 -->
   <div class="panel">
     <div class="section-label">🏦 대출 (선택)</div>
@@ -179,6 +198,19 @@
     <div class="vh-label">판정</div>
     <div class="vh-verdict" id="verdictText">-</div>
     <div class="vh-detail" id="verdictDetail"></div>
+  </div>
+
+  <!-- 매수 vs 월세 분기점 -->
+  <div class="panel">
+    <div class="section-label">⚖️ 매수 vs 월세 분기점 (본전 매수가) <span class="info-btn" onclick="toggleInfo('breakInfo')">i</span></div>
+    <div class="info-box" id="breakInfo">"지금 월세로 사는(임차) 것과, 사버리는 것 중 뭐가 이득이냐"의 분기점이에요. <b>실효금리</b>를 씁니다 — 대출이자나 기회비용은 세금을 줄여주므로(경비처리), 실제 부담은 명목금리 × (1−세율)로 낮아져요. 또 취득세·부대비용은 실제로 더 내는 돈이라, 이걸 빼고 <b>순수 건물값 기준</b> 분기점을 역산합니다.</div>
+    <div style="background:linear-gradient(135deg,#1F4E78,#2d6da3);color:white;border-radius:12px;padding:20px;text-align:center">
+      <div style="font-size:13px;opacity:.9;margin-bottom:4px">이 가격 이하로 사면 매수가 이득 (순수 매매가 기준)</div>
+      <div style="font-size:28px;font-weight:800" id="breakEvenPrice2">-</div>
+      <div style="font-size:12px;opacity:.85;margin-top:6px" id="breakEvenKor"></div>
+      <div style="font-size:11.5px;opacity:.8;margin-top:8px;line-height:1.6" id="breakEvenFormula"></div>
+    </div>
+    <div style="font-size:11.5px;color:#888;margin-top:10px;line-height:1.6" id="effRateNote"></div>
   </div>
 
   <div class="stat-grid">
@@ -231,6 +263,7 @@ const KOR_FIELDS=['deposit','monthlyRent','buyPrice'];
 function updateKor(){ KOR_FIELDS.forEach(id=>{ var el=$(id),box=$(id+'_kor'); if(el&&box){ var v=parseFloat(el.value)||0; box.textContent=v>0?wonToKorean(v):''; } }); }
 
 function setTarget(r){ $('targetRate').value=r; document.querySelectorAll('#targetRate ~ .preset-row .preset').forEach(el=>el.classList.toggle('active', parseFloat(el.textContent)===r)); calculate(); }
+function setAcq(r){ $('acqRate').value=r; document.querySelectorAll('#acqRate ~ .preset-row .preset').forEach(el=>el.classList.toggle('active', parseFloat(el.textContent.match(/[\d.]+/)[0])===r)); calculate(); }
 function setIndiv(r){ $('indivRate').value=r; document.querySelectorAll('#indivRate ~ .preset-row .preset').forEach(el=>el.classList.toggle('active', parseFloat(el.textContent)===r)); calculate(); }
 function setVat(m){ vatMode=m; document.querySelectorAll('[data-vat]').forEach(el=>el.classList.toggle('active', el.dataset.vat===m)); calculate(); }
 
@@ -243,6 +276,8 @@ function calculate(){
   const ltv=(parseFloat($('ltv').value)||0)/100;
   const loanRate=(parseFloat($('loanRate').value)||0)/100;
   const indivRate=(parseFloat($('indivRate').value)||0)/100;
+  const acqRate=(parseFloat($('acqRate').value)||0)/100;
+  const etcRate=(parseFloat($('etcRate').value)||0)/100;
 
   const annualRent = monthlyRent*12;
   $('annualRent').textContent = fmt(annualRent)+'원 (월 '+fmt(monthlyRent)+'원)';
@@ -322,6 +357,27 @@ function calculate(){
   verdict.className='verdict-hero '+vClass;
   $('verdictText').textContent=vText;
   $('verdictDetail').innerHTML=vDetail;
+
+  // === 취득세·부대비용 ===
+  const acqTax = buyPrice*acqRate;
+  const etcCost = buyPrice*etcRate;
+  const totalAcqCost = acqTax+etcCost;
+  $('acqResult').innerHTML = `취득세 ${fmt(acqTax)}원 + 부대비용 ${fmt(etcCost)}원 = <b>총 ${fmt(totalAcqCost)}원</b> 추가 부담 (매수가의 ${((acqRate+etcRate)*100).toFixed(1)}%)`;
+
+  // === 매수 vs 월세 분기점 (실효금리 + 취득세 반영) ===
+  // 실효금리 = 목표(기준)금리 × (1 − 세율). 이자/기회비용은 경비라 세금 줄여줌
+  const effRate = targetRate * (1 - indivRate);
+  // 실질 연간 임차비용 = 월세 (면세면 부가세 더함)
+  const vatMonthly = vatMode==='exempt' ? (monthlyRent*0.1) : 0; // 면세는 월세 부가세도 손실
+  const annualRentCost = (monthlyRent + vatMonthly)*12;
+  // 총 본전 예산 = (연 임차비용 / 실효금리) + 보증금
+  const totalBudget = effRate>0 ? annualRentCost/effRate + deposit : 0;
+  // 순수 매매가 = 총 예산 / (1 + 취득세율 + 부대비용율) ← 취득세 빼고 건물값만
+  const pureBreakEven = totalBudget / (1 + acqRate + etcRate);
+  $('breakEvenPrice2').textContent = fmt(pureBreakEven)+'원';
+  $('breakEvenKor').textContent = wonToKorean(pureBreakEven);
+  $('breakEvenFormula').innerHTML = `(연 실질임차료 ${fmt(annualRentCost)} ÷ 실효금리 ${(effRate*100).toFixed(2)}%) + 보증금 ${fmt(deposit)}<br>÷ (1 + 취득·부대 ${((acqRate+etcRate)*100).toFixed(1)}%) = 순수 매매가`;
+  $('effRateNote').innerHTML = `💡 <b>실효금리 ${(effRate*100).toFixed(2)}%</b> = 기준금리 ${(targetRate*100).toFixed(1)}% × (1 − 세율 ${(indivRate*100).toFixed(1)}%). 이자·기회비용이 경비처리되어 실제 부담이 낮아진 금리예요.` + (vatMode==='exempt'?' 면세라 월세 부가세도 손실에 포함했어요.':'');
 
   // 레버리지 노트
   const lnote=$('leverageNote');
