@@ -87,6 +87,15 @@
 <div class="wrap">
   <p class="desc">업무용 오피스텔을 <b>개인사업자 / 일반법인 / 면세법인</b> 중 어느 명의로 사야 유리한지, 세율·부가세·건보료를 반영해 <b>세후 순수익으로 비교</b>합니다. 특히 "내 면세법인에 임대 줄 때" 같은 겸업 시나리오를 분석해요.</p>
 
+  <div id="cloudArea" style="display:none;align-items:center;gap:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin-bottom:14px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:#0369a1">☁️ 관리자</span>
+    <button id="btnCloudOpen" type="button" style="background:#0ea5e9;color:white;border:none;border-radius:6px;padding:9px 14px;font-size:12.5px;font-weight:600;cursor:pointer">클라우드 저장/불러오기</button>
+    <span id="cloudWho" style="font-size:11px;color:#0369a1"></span>
+    <button id="btnCloudLogout" type="button" style="margin-left:auto;background:#9ca3af;color:white;border:none;border-radius:6px;padding:9px 14px;font-size:12.5px;font-weight:600;cursor:pointer">로그아웃</button>
+  </div>
+  <button id="btnAdminLogin" type="button" style="display:none;background:#fff;color:#444;border:1px solid #ddd;border-radius:6px;padding:9px 14px;font-size:12.5px;font-weight:600;cursor:pointer;margin-bottom:14px">🔑 관리자 로그인</button>
+  <div id="uidInfo" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:13px;color:#92400e;margin-bottom:14px;line-height:1.7"></div>
+
   <div class="warn-strong">
     ⚠️ <b>세무 대원칙:</b> 부동산 임대업은 <b>무조건 과세사업</b>입니다. 면세사업자(병원·학원)라도 임대를 주려면 <b>일반과세 개인사업자(부동산임대업)</b>를 따로 내야 해요. 즉 "면세 개인이 임대" 개념은 없고, 임대인은 무조건 일반과세입니다. 이 계산기의 "면세법인"은 <b>법인이 직접 매수해 사용</b>하는 경우를 뜻합니다.
   </div>
@@ -102,6 +111,14 @@
     <div class="input-row">
       <label>건물분 비율 (%) <span class="stat-sub">부가세 대상, 토지 제외</span></label>
       <input type="number" id="buildingRatio" value="50" step="1" inputmode="numeric">
+    </div>
+    <div class="input-row">
+      <label>취득세율 (%) <span class="stat-sub">업무용 4.6%</span></label>
+      <input type="number" id="acqRate" value="4.6" step="0.1" inputmode="decimal">
+    </div>
+    <div class="input-row">
+      <label>기타 부대비용 (%) <span class="stat-sub">중개·법무비 등</span></label>
+      <input type="number" id="etcRate" value="1.0" step="0.1" inputmode="decimal">
     </div>
     <div class="input-row">
       <label>보증금</label>
@@ -147,6 +164,14 @@
         <option value="employee" selected>직장가입자 (근로소득 있음)</option>
         <option value="other">지역가입자/기타</option>
       </select>
+    </div>
+    <div class="input-row">
+      <label>법인 수익 처리 <span class="stat-sub">법인에 쌓인 돈을 어떻게?</span> <span class="info-btn" onclick="toggleInfo('divInfo')">i</span></label>
+      <div class="toggle-row">
+        <div class="toggle-opt active" data-div="retain" onclick="setDiv('retain')">법인에 재투자</div>
+        <div class="toggle-opt" data-div="payout" onclick="setDiv('payout')">개인 통장으로 인출</div>
+      </div>
+      <div class="info-box" id="divInfo">법인세(9.9%)만 내면 끝이 아니에요. 법인에 쌓인 돈을 <b>내 통장으로 빼려면 배당소득세를 또 냅니다.</b><br>• <b>재투자</b>: 안 빼고 법인에서 굴리면 배당세 없음 → 법인세만. 재투자·자산증식 목적이면 법인이 유리.<br>• <b>인출</b>: 배당으로 빼면 배당세 추가. 2천만원 이하는 15.4% 분리과세, 초과분은 다른 소득과 합산해 종합과세돼요. 이걸 넣으면 법인의 실제 이점이 줄어듭니다.<br>실제로 쓸 돈이면 인출, 자산 불리기면 재투자로 보세요.</div>
     </div>
   </div>
 
@@ -237,6 +262,23 @@ function marginalRate(base){
   return 0.495;
 }
 
+let divMode = 'retain';
+function setDiv(m){ divMode=m; document.querySelectorAll('[data-div]').forEach(el=>el.classList.toggle('active', el.dataset.div===m)); calculate(); }
+
+// 배당소득세 (지급액 기준). 2천만 이하 15.4% 분리, 초과분은 기존소득에 합산 종합과세
+function dividendTax(payout, existingBase){
+  if(payout<=0) return 0;
+  if(payout<=20000000){
+    return payout*0.154; // 15.4% 분리과세
+  } else {
+    // 2천만까지 15.4%, 초과분은 종합과세(기존 과표에 얹어 한계)
+    const flat = 20000000*0.154;
+    const excess = payout-20000000;
+    const addTax = incomeTax(existingBase+excess) - incomeTax(existingBase);
+    return flat + addTax;
+  }
+}
+
 const KOR_FIELDS=['buyPrice','deposit','monthlyRent'];
 function updateKor(){ KOR_FIELDS.forEach(id=>{ var el=$(id),box=$(id+'_kor'); if(el&&box){ var v=parseFloat(el.value)||0; box.textContent=v>0?wonToKorean(v):''; } }); }
 
@@ -252,6 +294,8 @@ function renderRateRef(activeBase){
 function calculate(){
   const buyPrice=parseFloat($('buyPrice').value)||0;
   const buildingRatio=(parseFloat($('buildingRatio').value)||0)/100;
+  const acqRate=(parseFloat($('acqRate').value)||0)/100;
+  const etcRate=(parseFloat($('etcRate').value)||0)/100;
   const deposit=parseFloat($('deposit').value)||0;
   const monthlyRent=parseFloat($('monthlyRent').value)||0;
   const incomeBase=parseFloat($('incomeBase').value)||0;
@@ -281,21 +325,22 @@ function calculate(){
   // === 일반법인 === 법인세 9.9%(2억이하), 부가세 환급 O
   const corpRate = netIncome<=200000000 ? 0.099 : 0.209;
   const genTax = netIncome*corpRate;
-  const genNet = netIncome - genTax;
-  // 법인은 건보료 임대소득 영향 없음(법인 귀속)
+  const genAfterCorp = netIncome - genTax; // 법인세 후
+  // 배당 인출 시 배당세 추가
+  const genDivTax = divMode==='payout' ? dividendTax(genAfterCorp, incomeBase) : 0;
+  const genNet = genAfterCorp - genDivTax;
 
-  // === 면세법인(직접사용) === 임대 안 함, 부가세 환급 X
-  // "직접 사용" 시나리오: 월세를 내 법인이 안 내도 됨(자가사용) → 월세 절약액이 이득
-  // 하지만 부가세 환급 못 받음. 비교 위해: 면세법인이 직접 사용 시 '월세 안 나가는 이득' = annualRent 상당
-  // 단순화: 면세법인 임대순익도 법인세 9.9% 적용하되 부가세는 취득원가(별도표)
+  // === 면세법인(직접사용) === 부가세 환급 X
   const exemptTax = netIncome*corpRate;
-  const exemptNet = netIncome - exemptTax;
+  const exemptAfterCorp = netIncome - exemptTax;
+  const exemptDivTax = divMode==='payout' ? dividendTax(exemptAfterCorp, incomeBase) : 0;
+  const exemptNet = exemptAfterCorp - exemptDivTax;
 
   // 카드 렌더 (세후 순수익 기준 순위)
   const entities = [
     { key:'indiv', name:'개인사업자', net:indivFinal, vatRefund:true, detail:`임대소득 ${fmt(netIncome)}원에 한계세율 ${(marginalRate(incomeBase+netIncome)*100).toFixed(1)}% 적용<br>세금 −${fmt(indivTax)}${indivHealth>0?`<br>건보료 −${fmt(indivHealth)}`:''}<br>부가세 <b style="color:#16a34a">환급 O</b>` },
-    { key:'gen', name:'일반법인', net:genNet, vatRefund:true, detail:`법인세 ${(corpRate*100).toFixed(1)}% −${fmt(genTax)}<br>부가세 <b style="color:#16a34a">환급 O</b><br><span style="color:#999">단, 인출 시 배당세 별도</span>` },
-    { key:'exempt', name:'면세법인', net:exemptNet, vatRefund:false, detail:`법인세 ${(corpRate*100).toFixed(1)}% −${fmt(exemptTax)}<br>부가세 <b style="color:#dc2626">환급 X</b> (취득원가 +${fmt(vat)})<br><span style="color:#999">고소득자 소득세 회피용</span>` }
+    { key:'gen', name:'일반법인', net:genNet, vatRefund:true, detail:`법인세 ${(corpRate*100).toFixed(1)}% −${fmt(genTax)}${genDivTax>0?`<br>배당세 −${fmt(genDivTax)}`:'<br><span style="color:#16a34a">재투자(배당세 0)</span>'}<br>부가세 <b style="color:#16a34a">환급 O</b>` },
+    { key:'exempt', name:'면세법인', net:exemptNet, vatRefund:false, detail:`법인세 ${(corpRate*100).toFixed(1)}% −${fmt(exemptTax)}${exemptDivTax>0?`<br>배당세 −${fmt(exemptDivTax)}`:'<br><span style="color:#16a34a">재투자(배당세 0)</span>'}<br>부가세 <b style="color:#dc2626">환급 X</b> (+${fmt(vat)})` }
   ];
   // 부가세 손실을 연 환산(취득원가 증가→감가상각 단순화)하지 않고, 세후순익으로만 순위
   const sorted = [...entities].sort((a,b)=>b.net-a.net);
@@ -319,6 +364,7 @@ function calculate(){
     <tr><td class="label">적용 세율</td><td class="num">${(marginalRate(incomeBase+netIncome)*100).toFixed(1)}%<br><span style="font-size:10px;color:#888">한계</span></td><td class="num">${(corpRate*100).toFixed(1)}%</td><td class="num">${(corpRate*100).toFixed(1)}%</td></tr>
     <tr><td class="label">소득/법인세</td><td class="num col-indiv">−${fmt(indivTax)}</td><td class="num col-gen">−${fmt(genTax)}</td><td class="num col-exempt">−${fmt(exemptTax)}</td></tr>
     <tr><td class="label">건강보험료</td><td class="num col-indiv">${indivHealth>0?'−'+fmt(indivHealth):'-'}</td><td class="num">-</td><td class="num">-</td></tr>
+    <tr><td class="label">배당세 ${divMode==='payout'?'<span style="font-size:10px;color:#888">(인출)</span>':'<span style="font-size:10px;color:#16a34a">(재투자=0)</span>'}</td><td class="num">-</td><td class="num col-gen">${genDivTax>0?'−'+fmt(genDivTax):'-'}</td><td class="num col-exempt">${exemptDivTax>0?'−'+fmt(exemptDivTax):'-'}</td></tr>
     <tr><td class="label">부가세 환급</td><td class="num col-indiv">O</td><td class="num col-gen">O</td><td class="num col-exempt" style="color:#dc2626">X</td></tr>
     <tr class="highlight"><td class="label">연 세후 순수익</td><td class="num">${fmt(indivFinal)}</td><td class="num">${fmt(genNet)}</td><td class="num">${fmt(exemptNet)}</td></tr>
   `;
@@ -326,11 +372,13 @@ function calculate(){
   renderRateRef(incomeBase+netIncome);
 
   // 부가세 박스
-  const vatYears = vat>0 && netIncome>0 ? (vat/(exemptNet>0?exemptNet*0.3:1)) : 0;
-  $('vatBox').innerHTML = `건물분 부가세 = 매수가 ${fmt(buyPrice)} × 건물 ${(buildingRatio*100)}% × 10% = <b>${fmt(vat)}원</b><br>
+  const acqTax = buyPrice*acqRate;
+  const etcCost = buyPrice*etcRate;
+  $('vatBox').innerHTML = `<b>취득세·부대비용</b> = 취득세 ${fmt(acqTax)} + 부대 ${fmt(etcCost)} = <b>${fmt(acqTax+etcCost)}원</b> (3명의 공통 부담)<br>
+    <br><b>건물분 부가세</b> = 매수가 ${fmt(buyPrice)} × 건물 ${(buildingRatio*100)}% × 10% = <b>${fmt(vat)}원</b><br>
     • 개인사업자·일반법인: <b style="color:#16a34a">전액 환급</b> (실부담 0, 일시 자금만 묶임)<br>
     • 면세법인 직접사용: <b style="color:#dc2626">환급 불가</b> → ${fmt(vat)}원이 취득원가에 포함 (감가상각으로 장기 회수)<br>
-    <span style="font-size:11.5px;color:#888">※ 면세법인은 이 부가세 손실을, 매년 아끼는 소득세로 몇 년에 걸쳐 회수하는 구조예요.</span>`;
+    <span style="font-size:11.5px;color:#888">※ 취득세는 셋 다 똑같이 내고, 부가세 환급만 면세법인이 손해예요. 면세법인은 이 부가세 손실을 매년 아끼는 소득세로 회수합니다.</span>`;
 
   // 추천 판정
   const best = sorted[0];
@@ -353,7 +401,78 @@ function calculate(){
 }
 
 document.querySelectorAll('input, select').forEach(el=>el.addEventListener('input', calculate));
+
+// 상태 저장/복원 (input + select + divMode)
+function ecGetState(){
+  const s={divMode};
+  document.querySelectorAll('input[id], select[id]').forEach(el=>{ s[el.id]=el.value; });
+  return s;
+}
+function ecSetState(d){
+  if(!d) return;
+  if(d.divMode){ divMode=d.divMode; document.querySelectorAll('[data-div]').forEach(el=>el.classList.toggle('active', el.dataset.div===d.divMode)); }
+  document.querySelectorAll('input[id], select[id]').forEach(el=>{ if(d[el.id]!==undefined) el.value=d[el.id]; });
+  calculate();
+}
+function ecSaveLocal(){ try{ localStorage.setItem('sf_entitychoice_v1', JSON.stringify(ecGetState())); }catch(e){} }
+function ecLoadLocal(){ try{ const r=localStorage.getItem('sf_entitychoice_v1'); if(r) ecSetState(JSON.parse(r)); }catch(e){} }
+document.querySelectorAll('input, select').forEach(el=>el.addEventListener('input', ecSaveLocal));
+window.ecGetState=ecGetState; window.ecSetState=ecSetState;
+
+ecLoadLocal();
 calculate();
+</script>
+
+<!-- 클라우드 슬롯 모달 -->
+<div id="slotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:16px;max-width:440px;width:100%;padding:20px;max-height:90vh;overflow:auto">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <h3 style="margin:0;font-size:16px;color:#1F4E78">☁️ 클라우드 저장</h3>
+      <button onclick="document.getElementById('slotModal').style.display='none'" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">💾 현재 입력값 저장</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="slotName" placeholder="이름 (예: 시나리오 A)" maxlength="30" style="flex:1;padding:9px;font-size:13px;border:1px solid #ccc;border-radius:6px;background:white;color:#333">
+        <button id="slotSaveBtn" style="background:#0ea5e9;color:white;border:none;padding:9px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">저장</button>
+      </div>
+    </div>
+    <div style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px">📋 저장된 시나리오</div>
+    <div id="slotList" style="display:flex;flex-direction:column;gap:8px"><div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div></div>
+  </div>
+</div>
+
+<script src="/common.js?v=3"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+const firebaseConfig = { apiKey:"AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY", authDomain:"swingfarmer-board01.firebaseapp.com", projectId:"swingfarmer-board01", storageBucket:"swingfarmer-board01.firebasestorage.app", messagingSenderId:"312575044644", appId:"1:312575044644:web:81d754eb1d90f25454fcb1" };
+const ADMIN_UID="1JrHgD2bpTRjrS2jw7MbpHciBph1", CALC_KEY="entitychoice";
+const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
+const provider=new GoogleAuthProvider(); provider.setCustomParameters({prompt:'select_account'});
+const gid=id=>document.getElementById(id); let currentUser=null;
+getRedirectResult(auth).catch(()=>{});
+if(location.hash==='#admin'||location.hash==='#관리자'){ gid('btnAdminLogin').style.display='inline-block'; }
+gid('btnAdminLogin').addEventListener('click', async()=>{ try{ await signInWithPopup(auth,provider); }catch(e){ const code=e&&e.code; if(code==='auth/popup-blocked'||code==='auth/cancelled-popup-request'||code==='auth/popup-closed-by-user'||code==='auth/operation-not-supported-in-this-environment'){ try{ await signInWithRedirect(auth,provider); }catch(e2){ alert('로그인 실패: '+e2.message); } } else { alert('로그인 실패: '+(e.message||code)); } } });
+onAuthStateChanged(auth, user=>{ currentUser=user; const isAdmin=user&&user.uid===ADMIN_UID;
+  if(isAdmin){ gid('cloudArea').style.display='inline-flex'; gid('btnAdminLogin').style.display='none'; gid('cloudWho').textContent='☁️ '+(user.displayName||user.email||'관리자'); gid('uidInfo').style.display='none'; }
+  else if(user&&!isAdmin){ gid('cloudArea').style.display='none'; gid('btnAdminLogin').style.display='none'; gid('uidInfo').style.display='block'; gid('uidInfo').innerHTML='로그인됨: <b>'+(user.email||'')+'</b><br>이 계정 UID:<br><code style="font-size:11px;word-break:break-all">'+user.uid+'</code><br><button onclick="window._ecSignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer;margin-top:4px">로그아웃</button>'; }
+  else { gid('cloudArea').style.display='none'; gid('uidInfo').style.display='none'; } });
+window._ecSignout=()=>signOut(auth);
+const docRef=()=>doc(db,'calc_data',ADMIN_UID);
+async function loadSlots(){ try{ const s=await getDoc(docRef()); if(s.exists()&&s.data()[CALC_KEY]&&Array.isArray(s.data()[CALC_KEY].slots))return s.data()[CALC_KEY].slots; }catch(e){} return []; }
+async function saveSlots(slots){ const ref=docRef(); let ex={}; try{ const s=await getDoc(ref); if(s.exists())ex=s.data(); }catch(e){} ex[CALC_KEY]={slots,updatedAt:new Date().toISOString()}; await setDoc(ref,ex,{merge:true}); }
+let _slots=[];
+function renderSlots(){ const box=gid('slotList'); if(!_slots.length){ box.innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 시나리오가 없어요.</div>'; return; }
+  box.innerHTML=_slots.map((s,i)=>{ const t=s.savedAt?new Date(s.savedAt).toLocaleString('ko-KR'):''; return '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.name||'(이름없음)')+'</div><div style="font-size:11px;color:#999">'+t+'</div></div><button onclick="window._ecRename('+i+')" style="background:#e5e7eb;color:#444;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">✏️</button><button onclick="window._ecLoad('+i+')" style="background:#0284c7;color:white;border:none;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button><button onclick="window._ecDel('+i+')" style="background:#fee2e2;color:#dc2626;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">🗑️</button></div>'; }).join(''); }
+async function refresh(){ gid('slotList').innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>'; _slots=await loadSlots(); renderSlots(); }
+gid('btnCloudOpen').addEventListener('click', async()=>{ if(!currentUser||currentUser.uid!==ADMIN_UID){ alert('관리자 로그인이 필요합니다.'); return; } gid('slotName').value=''; gid('slotModal').style.display='flex'; await refresh(); });
+gid('slotSaveBtn').addEventListener('click', async()=>{ const name=gid('slotName').value.trim(); if(!name){ alert('이름을 입력하세요.'); return; } const idx=_slots.findIndex(s=>s.name===name); if(idx>=0&&!confirm('"'+name+'" 덮어쓸까요?'))return; gid('slotSaveBtn').disabled=true; gid('slotSaveBtn').textContent='저장 중...'; try{ const entry={name,data:window.ecGetState(),savedAt:new Date().toISOString()}; if(idx>=0)_slots[idx]=entry; else _slots.push(entry); await saveSlots(_slots); renderSlots(); alert('✅ 저장 완료.'); }catch(e){ alert('저장 실패: '+e.message); } gid('slotSaveBtn').disabled=false; gid('slotSaveBtn').textContent='저장'; });
+window._ecLoad=function(i){ const s=_slots[i]; if(!s)return; if(!confirm('"'+s.name+'" 불러올까요? 현재 입력값이 바뀝니다.'))return; window.ecSetState(s.data); gid('slotModal').style.display='none'; };
+window._ecDel=async function(i){ if(!confirm('삭제할까요?'))return; try{ _slots.splice(i,1); await saveSlots(_slots); renderSlots(); }catch(e){ alert('실패: '+e.message); } };
+window._ecRename=async function(i){ const nn=prompt('이름 수정', _slots[i].name||''); if(nn===null)return; const t=nn.trim(); if(!t)return; try{ _slots[i].name=t; await saveSlots(_slots); renderSlots(); }catch(e){ alert('실패: '+e.message); } };
+gid('btnCloudLogout').addEventListener('click', async()=>{ if(confirm('로그아웃 할까요?')){ try{ await signOut(auth); alert('로그아웃 됐어요.'); }catch(e){} } });
 </script>
 </body>
 </html>
