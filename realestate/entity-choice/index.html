@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>오피스텔 매수 명의 선택 계산기 | 스윙파머</title>
+<meta name="description" content="개인사업자·일반법인·면세법인 중 어느 명의로 사야 유리한지 세율·부가세·건보료까지 비교. 겸업 면세법인 보유자의 임대 전략 분석.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; display: block; }
+  header h1 { font-size: 19px; color: #1F4E78; margin: 0; }
+  .back-link { display: inline-block; margin-bottom: 8px; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
+  .panel { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .section-label { font-size: 14px; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #eef0f3; color: #1F4E78; }
+  .input-row { margin-bottom: 13px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #333; }
+  .stat-sub { font-size: 11px; font-weight: 500; color: #888; }
+  input[type="number"], select { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; }
+  input[type="number"] { background: #FFF2CC; font-weight: 600; color: #0000FF; }
+  select { background: white; }
+  input:focus, select:focus { outline: 2px solid #1F4E78; }
+  .won-kor { font-size: 12px; color: #1F4E78; font-weight: 600; margin-top: 3px; min-height: 15px; }
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; font-style: normal; cursor: pointer; margin-left: 4px; }
+  .info-box { display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #1e40af; line-height: 1.7; margin-top: 6px; }
+
+  /* 명의 비교 카드 */
+  .entity-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 8px; }
+  @media (max-width: 640px){ .entity-grid { grid-template-columns: 1fr; } }
+  .entity-card { border-radius: 12px; padding: 16px; border: 2px solid #e5e7eb; background: #fafbfc; }
+  .entity-card.best { border-color: #16a34a; background: #f0fdf4; box-shadow: 0 2px 8px rgba(22,163,74,.15); }
+  .entity-card.worst { border-color: #fca5a5; background: #fef2f2; opacity: .85; }
+  .entity-name { font-size: 14px; font-weight: 800; color: #1F4E78; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .entity-card.best .entity-name { color: #16a34a; }
+  .entity-rank { font-size: 10px; padding: 2px 7px; border-radius: 10px; background: #16a34a; color: white; }
+  .entity-rank.r2 { background: #f59e0b; } .entity-rank.r3 { background: #dc2626; }
+  .entity-net { font-size: 22px; font-weight: 800; color: #1F4E78; margin: 4px 0; }
+  .entity-card.best .entity-net { color: #16a34a; }
+  .entity-detail { font-size: 11px; color: #666; line-height: 1.7; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,.06); }
+  .entity-detail b { color: #333; }
+
+  table.tax-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.tax-table th { background: #f8fafc; padding: 8px 6px; border-bottom: 2px solid #e5e7eb; font-size: 11.5px; color: #555; }
+  table.tax-table td { padding: 8px 6px; border-bottom: 1px solid #f0f0f0; }
+  table.tax-table td.label { color: #666; font-weight: 600; text-align: left; }
+  table.tax-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.tax-table tr.highlight td { background: #f0fdf4; font-weight: 700; }
+  .col-indiv { color: #1F4E78; } .col-gen { color: #16a34a; } .col-exempt { color: #d97706; }
+
+  .verdict-box { border-radius: 12px; padding: 18px; margin-bottom: 16px; color: white; background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+  .verdict-box .vb-title { font-size: 13px; opacity: .9; margin-bottom: 4px; }
+  .verdict-box .vb-main { font-size: 17px; font-weight: 800; line-height: 1.4; }
+  .verdict-box .vb-sub { font-size: 12.5px; opacity: .95; margin-top: 8px; line-height: 1.6; }
+
+  /* 세율표 참고 */
+  .rate-ref { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+  .rate-ref th, .rate-ref td { padding: 7px 8px; border: 1px solid #e5e7eb; text-align: center; }
+  .rate-ref th { background: #f8fafc; color: #555; }
+  .rate-ref td.bracket { text-align: left; }
+  .rate-ref tr.active-bracket { background: #fef9c3; font-weight: 700; }
+
+  .toggle-row { display: flex; gap: 8px; margin-bottom: 13px; flex-wrap: wrap; }
+  .toggle-opt { flex: 1; min-width: 100px; padding: 9px; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; background: #eef2f7; color: #1F4E78; border: 2px solid transparent; text-align: center; }
+  .toggle-opt.active { background: #1F4E78; color: white; }
+
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; line-height: 1.7; margin-top: 14px; }
+  .warn-strong { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #991b1b; line-height: 1.7; margin-top: 12px; }
+  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; margin-top: 8px; font-size: 12.5px; line-height: 1.8; color: #6b5618; }
+  details { margin-top: 12px; }
+  summary { cursor: pointer; font-weight: 600; color: #1F4E78; font-size: 13px; padding: 6px 0; }
+  footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a href="/realestate/" class="back-link">← 부동산 도구로</a>
+    <h1>🏛️ 오피스텔 매수 명의 선택 계산기</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc">업무용 오피스텔을 <b>개인사업자 / 일반법인 / 면세법인</b> 중 어느 명의로 사야 유리한지, 세율·부가세·건보료를 반영해 <b>세후 순수익으로 비교</b>합니다. 특히 "내 면세법인에 임대 줄 때" 같은 겸업 시나리오를 분석해요.</p>
+
+  <div class="warn-strong">
+    ⚠️ <b>세무 대원칙:</b> 부동산 임대업은 <b>무조건 과세사업</b>입니다. 면세사업자(병원·학원)라도 임대를 주려면 <b>일반과세 개인사업자(부동산임대업)</b>를 따로 내야 해요. 즉 "면세 개인이 임대" 개념은 없고, 임대인은 무조건 일반과세입니다. 이 계산기의 "면세법인"은 <b>법인이 직접 매수해 사용</b>하는 경우를 뜻합니다.
+  </div>
+
+  <!-- 매물 조건 -->
+  <div class="panel">
+    <div class="section-label">📋 매물·임대 조건</div>
+    <div class="input-row">
+      <label>매수 예정가 <span class="stat-sub">건물+토지, 부가세 별도</span></label>
+      <input type="number" id="buyPrice" value="200000000" inputmode="numeric">
+      <div class="won-kor" id="buyPrice_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>건물분 비율 (%) <span class="stat-sub">부가세 대상, 토지 제외</span></label>
+      <input type="number" id="buildingRatio" value="50" step="1" inputmode="numeric">
+    </div>
+    <div class="input-row">
+      <label>보증금</label>
+      <input type="number" id="deposit" value="10000000" inputmode="numeric">
+      <div class="won-kor" id="deposit_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>월세 <span class="stat-sub">부가세 별도</span></label>
+      <input type="number" id="monthlyRent" value="800000" inputmode="numeric">
+      <div class="won-kor" id="monthlyRent_kor"></div>
+    </div>
+  </div>
+
+  <!-- 내 상황 -->
+  <div class="panel">
+    <div class="section-label">👤 내 소득 상황</div>
+    <div class="input-row">
+      <label>개인 기존 과세표준 (이미 있는 소득) <span class="stat-sub">근로·사업·배당 등 합산 후 과세표준</span> <span class="info-btn" onclick="toggleInfo('baseInfo')">i</span></label>
+      <select id="incomeBase" onchange="calculate()">
+        <option value="0">거의 없음 (임대소득만)</option>
+        <option value="14000000">1,400만 이하 (6%)</option>
+        <option value="50000000">1,400~5,000만 (15%)</option>
+        <option value="88000000" selected>5,000~8,800만 (24%)</option>
+        <option value="150000000">8,800만~1.5억 (35%)</option>
+        <option value="300000000">1.5억~3억 (38%)</option>
+        <option value="500000000">3억~5억 (40%)</option>
+        <option value="1000000000">5억~10억 (42%)</option>
+        <option value="1500000000">10억 초과 (45%)</option>
+      </select>
+      <div class="info-box" id="baseInfo">이미 벌고 있는 소득의 과세표준 구간이에요. 임대소득은 여기에 <b>얹어서</b> 누진세율이 적용되므로, 기존 소득이 높을수록 임대소득에 붙는 세율(한계세율)도 높아집니다. 이게 개인 명의의 핵심 약점이에요.</div>
+    </div>
+    <div class="input-row">
+      <label>대출 비율 (LTV, %) <span class="stat-sub">이자는 경비처리·건보료 방어</span></label>
+      <input type="number" id="ltv" value="0" step="1" inputmode="numeric">
+    </div>
+    <div class="input-row">
+      <label>대출 금리 (연 %)</label>
+      <input type="number" id="loanRate" value="4.5" step="0.1" inputmode="decimal">
+    </div>
+    <div class="input-row">
+      <label>직장가입자 여부 <span class="stat-sub">건보료 추가 부과 판정용</span></label>
+      <select id="insured" onchange="calculate()">
+        <option value="employee" selected>직장가입자 (근로소득 있음)</option>
+        <option value="other">지역가입자/기타</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 최종 추천 -->
+  <div class="verdict-box" id="verdict">
+    <div class="vb-title">🏆 추천 명의</div>
+    <div class="vb-main" id="verdictMain">-</div>
+    <div class="vb-sub" id="verdictSub"></div>
+  </div>
+
+  <!-- 명의별 비교 -->
+  <div class="panel">
+    <div class="section-label">⚖️ 명의별 연간 세후 순수익 비교</div>
+    <div class="entity-grid" id="entityGrid"></div>
+    <div style="font-size:11px;color:#888;margin-top:10px;line-height:1.6">※ 연 임대 순수익(월세−이자) 기준 1년치 세후 비교입니다. 부가세 환급 손익은 별도 표에서 확인하세요.</div>
+  </div>
+
+  <!-- 상세 표 -->
+  <div class="panel">
+    <div class="section-label">📊 상세 비교</div>
+    <div style="overflow-x:auto">
+      <table class="tax-table">
+        <thead>
+          <tr><th style="text-align:left">항목</th><th class="col-indiv">개인사업자</th><th class="col-gen">일반법인</th><th class="col-exempt">면세법인</th></tr>
+        </thead>
+        <tbody id="taxBody"></tbody>
+      </table>
+    </div>
+    <details>
+      <summary>📖 종합소득세율 표 (2026, 지방세 포함)</summary>
+      <table class="rate-ref" id="rateRef">
+        <thead><tr><th>과세표준</th><th>세율</th><th>지방세 포함</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </details>
+  </div>
+
+  <!-- 부가세 손익 -->
+  <div class="panel">
+    <div class="section-label">🧾 부가세 환급 손익 (1회성)</div>
+    <div id="vatBox" style="font-size:13px;line-height:1.8;color:#444"></div>
+  </div>
+
+  <div class="manual">
+    <b>📘 핵심 판단 로직</b><br>
+    • <b>개인사업자</b>: 부가세 환급 O, 하지만 임대소득이 기존 소득에 합산돼 누진세율 직격. 소득 낮을 때만 유리.<br>
+    • <b>일반법인</b>: 부가세 환급 O + 법인세 9.9%. 임대·투자 목적의 정석. 단 돈 인출이 자유롭지 않음.<br>
+    • <b>면세법인(직접사용)</b>: 부가세 환급 X(비용), 하지만 법인세 9.9%로 고소득자의 소득세 폭탄 회피. 매월 월세+부가세를 허공에 날리는 것보다 나음.<br>
+    핵심은 <b>"부가세 환급 이득" vs "낮은 법인세로 아끼는 소득세"</b>의 줄다리기예요. 소득이 높을수록 후자가 커져 면세법인이 역전합니다.
+  </div>
+
+  <div class="note">
+    ⚠️ 이 계산기는 <b>의사결정 참고용</b>입니다. 실제는 취득세·감가상각·간주임대료·법인 인출 시점의 배당세·가지급금 등 변수가 많아, 큰 거래 전 반드시 <b>세무사 상담</b>을 받으세요. 특히 특수관계인(내 법인) 임대는 <b>시가(시세) 원칙</b>을 지켜야 부당행위계산부인을 피합니다.
+  </div>
+
+  <footer>© 스윙파머</footer>
+</div>
+
+<script src="/common.js?v=3"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+function wonToKorean(n){ var neg=n<0; n=Math.round(Math.abs(n)); if(n===0)return ''; var eok=Math.floor(n/1e8),man=Math.floor((n%1e8)/1e4),won=n%1e4,p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(man>0)p.push(man.toLocaleString('ko-KR')+'만'); if(won>0)p.push(won.toLocaleString('ko-KR')); return (neg?'−':'')+p.join(' ')+'원'; }
+function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
+
+// 2026 종합소득세 누진세율 (지방세 10% 별도 → 표시는 지방세 포함)
+// [상한, 세율, 누진공제]
+const BRACKETS = [
+  [14000000, 0.06, 0],
+  [50000000, 0.15, 1260000],
+  [88000000, 0.24, 5760000],
+  [150000000, 0.35, 15440000],
+  [300000000, 0.38, 19940000],
+  [500000000, 0.40, 25940000],
+  [1000000000, 0.42, 35940000],
+  [Infinity, 0.45, 65940000]
+];
+// 과세표준에 대한 종합소득세 (지방세 포함 ×1.1)
+function incomeTax(base){
+  if(base<=0) return 0;
+  let rate, deduct;
+  for(const [cap,r,d] of BRACKETS){ if(base<=cap){ rate=r; deduct=d; break; } }
+  return (base*rate - deduct) * 1.1; // 지방세 포함
+}
+// 한계세율 (지방세 포함)
+function marginalRate(base){
+  for(const [cap,r,d] of BRACKETS){ if(base<=cap) return r*1.1; }
+  return 0.495;
+}
+
+const KOR_FIELDS=['buyPrice','deposit','monthlyRent'];
+function updateKor(){ KOR_FIELDS.forEach(id=>{ var el=$(id),box=$(id+'_kor'); if(el&&box){ var v=parseFloat(el.value)||0; box.textContent=v>0?wonToKorean(v):''; } }); }
+
+function renderRateRef(activeBase){
+  const labels=['1,400만 이하','1,400~5,000만','5,000~8,800만','8,800만~1.5억','1.5억~3억','3억~5억','5억~10억','10억 초과'];
+  const rows=BRACKETS.map((b,i)=>{
+    const active = activeBase>(i===0?0:BRACKETS[i-1][0]) && activeBase<=b[0];
+    return `<tr class="${active?'active-bracket':''}"><td class="bracket">${labels[i]}</td><td>${(b[1]*100)}%</td><td>${(b[1]*110).toFixed(1)}%</td></tr>`;
+  }).join('');
+  $('rateRef').querySelector('tbody').innerHTML = rows;
+}
+
+function calculate(){
+  const buyPrice=parseFloat($('buyPrice').value)||0;
+  const buildingRatio=(parseFloat($('buildingRatio').value)||0)/100;
+  const deposit=parseFloat($('deposit').value)||0;
+  const monthlyRent=parseFloat($('monthlyRent').value)||0;
+  const incomeBase=parseFloat($('incomeBase').value)||0;
+  const ltv=(parseFloat($('ltv').value)||0)/100;
+  const loanRate=(parseFloat($('loanRate').value)||0)/100;
+  const insured=$('insured').value;
+
+  const annualRent = monthlyRent*12;
+  const loanAmount = buyPrice*ltv;
+  const annualInterest = loanAmount*loanRate;
+  const netIncome = Math.max(0, annualRent - annualInterest); // 임대 순소득(경비=이자만 단순화)
+
+  // 부가세 (건물분 10%)
+  const vat = buyPrice*buildingRatio*0.1;
+
+  // === 개인사업자 ===
+  // 기존 과세표준에 임대순소득 얹어 한계 증가분 = 전체세금 - 기존세금
+  const taxWithRent = incomeTax(incomeBase + netIncome);
+  const taxBase = incomeTax(incomeBase);
+  const indivTax = taxWithRent - taxBase;
+  const indivNet = netIncome - indivTax;
+  // 건보료 (직장가입자, 임대 소득금액 2000만 초과분 7.09%)
+  let indivHealth = 0;
+  if(insured==='employee' && netIncome>20000000){ indivHealth = (netIncome-20000000)*0.0709; }
+  const indivFinal = indivNet - indivHealth;
+
+  // === 일반법인 === 법인세 9.9%(2억이하), 부가세 환급 O
+  const corpRate = netIncome<=200000000 ? 0.099 : 0.209;
+  const genTax = netIncome*corpRate;
+  const genNet = netIncome - genTax;
+  // 법인은 건보료 임대소득 영향 없음(법인 귀속)
+
+  // === 면세법인(직접사용) === 임대 안 함, 부가세 환급 X
+  // "직접 사용" 시나리오: 월세를 내 법인이 안 내도 됨(자가사용) → 월세 절약액이 이득
+  // 하지만 부가세 환급 못 받음. 비교 위해: 면세법인이 직접 사용 시 '월세 안 나가는 이득' = annualRent 상당
+  // 단순화: 면세법인 임대순익도 법인세 9.9% 적용하되 부가세는 취득원가(별도표)
+  const exemptTax = netIncome*corpRate;
+  const exemptNet = netIncome - exemptTax;
+
+  // 카드 렌더 (세후 순수익 기준 순위)
+  const entities = [
+    { key:'indiv', name:'개인사업자', net:indivFinal, vatRefund:true, detail:`임대소득 ${fmt(netIncome)}원에 한계세율 ${(marginalRate(incomeBase+netIncome)*100).toFixed(1)}% 적용<br>세금 −${fmt(indivTax)}${indivHealth>0?`<br>건보료 −${fmt(indivHealth)}`:''}<br>부가세 <b style="color:#16a34a">환급 O</b>` },
+    { key:'gen', name:'일반법인', net:genNet, vatRefund:true, detail:`법인세 ${(corpRate*100).toFixed(1)}% −${fmt(genTax)}<br>부가세 <b style="color:#16a34a">환급 O</b><br><span style="color:#999">단, 인출 시 배당세 별도</span>` },
+    { key:'exempt', name:'면세법인', net:exemptNet, vatRefund:false, detail:`법인세 ${(corpRate*100).toFixed(1)}% −${fmt(exemptTax)}<br>부가세 <b style="color:#dc2626">환급 X</b> (취득원가 +${fmt(vat)})<br><span style="color:#999">고소득자 소득세 회피용</span>` }
+  ];
+  // 부가세 손실을 연 환산(취득원가 증가→감가상각 단순화)하지 않고, 세후순익으로만 순위
+  const sorted = [...entities].sort((a,b)=>b.net-a.net);
+  const rank = {}; sorted.forEach((e,i)=>rank[e.key]=i+1);
+
+  $('entityGrid').innerHTML = entities.map(e=>{
+    const r=rank[e.key];
+    const cls = r===1?'best':(r===3?'worst':'');
+    const rankCls = r===1?'':(r===2?'r2':'r3');
+    return `<div class="entity-card ${cls}">
+      <div class="entity-name">${e.name} <span class="entity-rank ${rankCls}">${r}위</span></div>
+      <div class="entity-net">${fmt(e.net)}</div>
+      <div style="font-size:11px;color:#888">연 세후 순수익</div>
+      <div class="entity-detail">${e.detail}</div>
+    </div>`;
+  }).join('');
+
+  // 상세표
+  $('taxBody').innerHTML = `
+    <tr><td class="label">연 임대 순소득(월세−이자)</td><td class="num">${fmt(netIncome)}</td><td class="num">${fmt(netIncome)}</td><td class="num">${fmt(netIncome)}</td></tr>
+    <tr><td class="label">적용 세율</td><td class="num">${(marginalRate(incomeBase+netIncome)*100).toFixed(1)}%<br><span style="font-size:10px;color:#888">한계</span></td><td class="num">${(corpRate*100).toFixed(1)}%</td><td class="num">${(corpRate*100).toFixed(1)}%</td></tr>
+    <tr><td class="label">소득/법인세</td><td class="num col-indiv">−${fmt(indivTax)}</td><td class="num col-gen">−${fmt(genTax)}</td><td class="num col-exempt">−${fmt(exemptTax)}</td></tr>
+    <tr><td class="label">건강보험료</td><td class="num col-indiv">${indivHealth>0?'−'+fmt(indivHealth):'-'}</td><td class="num">-</td><td class="num">-</td></tr>
+    <tr><td class="label">부가세 환급</td><td class="num col-indiv">O</td><td class="num col-gen">O</td><td class="num col-exempt" style="color:#dc2626">X</td></tr>
+    <tr class="highlight"><td class="label">연 세후 순수익</td><td class="num">${fmt(indivFinal)}</td><td class="num">${fmt(genNet)}</td><td class="num">${fmt(exemptNet)}</td></tr>
+  `;
+
+  renderRateRef(incomeBase+netIncome);
+
+  // 부가세 박스
+  const vatYears = vat>0 && netIncome>0 ? (vat/(exemptNet>0?exemptNet*0.3:1)) : 0;
+  $('vatBox').innerHTML = `건물분 부가세 = 매수가 ${fmt(buyPrice)} × 건물 ${(buildingRatio*100)}% × 10% = <b>${fmt(vat)}원</b><br>
+    • 개인사업자·일반법인: <b style="color:#16a34a">전액 환급</b> (실부담 0, 일시 자금만 묶임)<br>
+    • 면세법인 직접사용: <b style="color:#dc2626">환급 불가</b> → ${fmt(vat)}원이 취득원가에 포함 (감가상각으로 장기 회수)<br>
+    <span style="font-size:11.5px;color:#888">※ 면세법인은 이 부가세 손실을, 매년 아끼는 소득세로 몇 년에 걸쳐 회수하는 구조예요.</span>`;
+
+  // 추천 판정
+  const best = sorted[0];
+  const margRate = marginalRate(incomeBase+netIncome);
+  let vMain, vSub;
+  if(best.key==='indiv'){
+    vMain = '개인사업자 매수 + (필요시) 내 법인에 임대';
+    vSub = `현재 소득 구간에선 임대소득 한계세율(${(margRate*100).toFixed(1)}%)이 법인세(9.9%)와 격차가 크지 않아, <b>부가세 환급 이득이 더 큽니다.</b> 부가세 전액 환급받고 시작하세요. 소득이 더 커지면 법인 전환을 검토하세요.`;
+  } else if(best.key==='gen'){
+    vMain = '일반법인 신규 설립 후 매수·임대';
+    vSub = `부가세 환급 + 낮은 법인세(9.9%)로 가장 깔끔한 정석입니다. 임대소득이 개인 소득과 분리돼 누진을 피합니다. 단 법인 잉여금 인출 시 배당세를 고려하세요.`;
+  } else {
+    vMain = '면세법인 직접 매수 (자가 사용)';
+    vSub = `소득이 높아(한계세율 ${(margRate*100).toFixed(1)}%) 개인 임대는 세금 폭탄입니다. 부가세 환급을 포기하더라도 <b>법인세 9.9%로 소득세 누진을 회피</b>하는 게 유리해요. 어차피 월세로 있어도 매월 부가세가 나가니, 직접 매수가 장기적으로 낫습니다.`;
+  }
+  $('verdictMain').innerHTML = vMain;
+  $('verdictSub').innerHTML = vSub;
+
+  updateKor();
+}
+
+document.querySelectorAll('input, select').forEach(el=>el.addEventListener('input', calculate));
+calculate();
+</script>
+</body>
+</html>
