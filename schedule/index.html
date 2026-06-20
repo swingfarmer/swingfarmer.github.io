@@ -533,8 +533,10 @@ function renderSummary(){
     html += `<div style="font-weight:600;font-size:14px;opacity:.8">오늘 일정 없음</div>`;
   }
   if(upcoming.length>0){
-    const u=upcoming.slice(0,3).map(e=>`<b>D-${e.dday}</b> ${e.title}`).join(' &nbsp;·&nbsp; ');
-    html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.25);font-size:12px;opacity:.95">⏳ 임박: ${u}${upcoming.length>3?' …':''}</div>`;
+    const u=upcoming.slice(0,3).map(e=>`<span style="background:rgba(255,255,255,.2);padding:1px 7px;border-radius:10px;white-space:nowrap"><b>D-${e.dday}</b> ${e.title}</span>`).join(' ');
+    html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.25);font-size:12px;opacity:.95"><span style="opacity:.8">⏳ 다가오는 일정 (7일내)</span><br><div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap">${u}${upcoming.length>3?'<span style="opacity:.7;padding:1px 4px">외 '+(upcoming.length-3)+'건</span>':''}</div></div>`;
+  } else {
+    html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.25);font-size:12px;opacity:.7">⏳ 7일 내 일정 없음</div>`;
   }
   box.innerHTML = html;
 }
@@ -582,7 +584,8 @@ function renderCalendar(){
     const prevDays=new Date(y,m,0).getDate();
     for(let i=startDay-1;i>=0;i--) cells.push({day:prevDays-i, other:true, date:fmtDate(new Date(y,m-1,prevDays-i))});
     for(let d=1;d<=daysInMonth;d++) cells.push({day:d, other:false, date:fmtDate(new Date(y,m,d))});
-    let next=1; while(cells.length%7!==0 || cells.length<42){ cells.push({day:next, other:true, date:fmtDate(new Date(y,m+1,next))}); next++; if(cells.length>=42)break; }
+    // 마지막 날이 포함된 주의 토요일까지만 채움 (다음달 날짜 과다 표시 방지)
+    let next=1; while(cells.length%7!==0){ cells.push({day:next, other:true, date:fmtDate(new Date(y,m+1,next))}); next++; }
   }
 
   $('calGrid').innerHTML = cells.map(c=>buildCell(c, today, econ, tax)).join('');
