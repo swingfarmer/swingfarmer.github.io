@@ -119,6 +119,11 @@
     <button class="mode-btn" id="modeListBtn" onclick="setMode('list')">📋 리스트</button>
   </div>
 
+  <label style="display:flex;align-items:center;gap:8px;background:white;border-radius:10px;padding:10px 14px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;font-size:13px;font-weight:600;color:#1F4E78">
+    <input type="checkbox" id="econToggle" onchange="toggleEcon()" style="width:18px;height:18px">
+    📈 경제지표 자동 표시 <span style="font-size:11px;color:#888;font-weight:400">(마녀의날·CPI·FOMC·옵션만기 등)</span>
+  </label>
+
   <!-- 달력 모드 -->
   <div id="calMode">
     <div class="cal-nav">
@@ -309,6 +314,51 @@ let mode = 'cal';
 let editingId = null;
 let pickedCat = '';
 let listFilter = 'all';
+let showEcon = false; // 경제지표 표시 여부
+
+// === 경제지표 자동 생성 ===
+// N번째 특정요일 날짜 구하기 (year, month0, weekday0=일~6, nth=1~4)
+function nthWeekday(y, m, weekday, nth){
+  const first=new Date(y,m,1); const firstDow=first.getDay();
+  let day = 1 + ((weekday - firstDow + 7)%7) + (nth-1)*7;
+  return new Date(y, m, day);
+}
+function fmtD(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+// 특정 연·월의 경제지표 일정 생성
+function genEconForMonth(y, m){
+  const list = [];
+  // 1=월요일 기준 아님, 0=일 1=월 2=화 3=수 4=목 5=금 6=토
+  // NFP 미국 고용보고서: 첫째 주 금요일 (확실)
+  list.push({ date: fmtD(nthWeekday(y,m,5,1)), title:'미국 고용보고서(NFP)', cat:'__econ_sure', memo:'매월 첫째 주 금요일' });
+  // 미국 CPI: 둘째 주 화요일 근처 (예상)
+  list.push({ date: fmtD(nthWeekday(y,m,2,2)), title:'미국 CPI (예상)', cat:'__econ_est', memo:'보통 둘째 주 화요일~, 실제 10~15일 사이 변동' });
+  // PPI: CPI 다음날(수) 근처 (예상)
+  list.push({ date: fmtD(nthWeekday(y,m,3,2)), title:'미국 PPI (예상)', cat:'__econ_est', memo:'보통 CPI 다음날 전후' });
+  // 미국 옵션만기: 셋째 주 금요일 (확실)
+  list.push({ date: fmtD(nthWeekday(y,m,5,3)), title:'미국 옵션만기', cat:'__econ_sure', memo:'매월 셋째 주 금요일' });
+  // 네 마녀의 날: 3·6·9·12월 둘째 주 목요일 (한국, 확실)
+  if([2,5,8,11].includes(m)){
+    list.push({ date: fmtD(nthWeekday(y,m,4,2)), title:'네 마녀의 날 (선물·옵션 동시만기)', cat:'__econ_sure', memo:'3·6·9·12월 둘째 주 목요일 (한국)' });
+  }
+  // FOMC: 분기말 대표월 (1·3·4·6·7·9·10·12월 중 점도표는 3·6·9·12) — 예상
+  // 간단히 3·6·9·12월 셋째 주 수요일로 표기 (예상)
+  if([2,5,8,11].includes(m)){
+    list.push({ date: fmtD(nthWeekday(y,m,3,3)), title:'FOMC 금리결정 (예상·점도표)', cat:'__econ_est', memo:'분기말, 실제 일정은 연준 공지 확인' });
+  }
+  return list;
+}
+
+// 보이는 범위(앞뒤 3개월)의 경제지표 생성
+function getEconEvents(centerDate){
+  let out=[];
+  for(let off=-2; off<=2; off++){
+    const d=new Date(centerDate.getFullYear(), centerDate.getMonth()+off, 1);
+    out = out.concat(genEconForMonth(d.getFullYear(), d.getMonth()));
+  }
+  return out.map((e,i)=>({ ...e, id:'econ_'+e.date+'_'+i, done:false, isEcon:true }));
+}
+function econColor(cat){ return cat==='__econ_sure' ? '#0891b2' : '#94a3b8'; } // 확실=청록, 예상=회색
 
 const DEFAULT_CATS = [
   { name:'실적', color:'#dc2626' },
@@ -319,10 +369,11 @@ const DEFAULT_CATS = [
 ];
 
 function load(){
-  try{ const raw=localStorage.getItem(STORE_KEY); if(raw){ const d=JSON.parse(raw); events=d.events||[]; categories=d.categories||[]; } }catch(e){}
+  try{ const raw=localStorage.getItem(STORE_KEY); if(raw){ const d=JSON.parse(raw); events=d.events||[]; categories=d.categories||[]; showEcon=d.showEcon||false; } }catch(e){}
   if(categories.length===0) categories=JSON.parse(JSON.stringify(DEFAULT_CATS));
 }
-function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify({events, categories})); }catch(e){} }
+function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify({events, categories, showEcon})); }catch(e){} }
+function toggleEcon(){ showEcon=$('econToggle').checked; save(); render(); }
 
 function catColor(name){ const c=categories.find(x=>x.name===name); return c?c.color:'#9ca3af'; }
 function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -348,6 +399,8 @@ function renderCalendar(){
   const daysInMonth=new Date(y,m+1,0).getDate();
   const prevDays=new Date(y,m,0).getDate();
   const today=todayStr();
+  // 경제지표 (토글 시)
+  const econ = showEcon ? getEconEvents(viewDate) : [];
 
   let cells=[];
   // 이전달 채우기
@@ -359,11 +412,16 @@ function renderCalendar(){
 
   $('calGrid').innerHTML = cells.map(c=>{
     const dow=new Date(c.date).getDay();
-    const dayEvents=events.filter(e=>e.date===c.date).sort((a,b)=>(a.done?1:0)-(b.done?1:0));
+    const userEv=events.filter(e=>e.date===c.date).sort((a,b)=>(a.done?1:0)-(b.done?1:0));
+    const econEv=econ.filter(e=>e.date===c.date);
+    const dayEvents=userEv.concat(econEv);
     const shown=dayEvents.slice(0,3);
     const more=dayEvents.length-shown.length;
-    const evHtml=shown.map(e=>`<div class="cal-ev ${e.done?'done':''}" style="background:${catColor(e.cat)}">${e.title.replace(/</g,'&lt;')}</div>`).join('')
-      + (more>0?`<div class="cal-more">+${more}</div>`:'');
+    const evHtml=shown.map(e=>{
+      const col = e.isEcon ? econColor(e.cat) : catColor(e.cat);
+      const style = e.isEcon ? `background:${col};${e.cat==='__econ_est'?'border:1px dashed rgba(255,255,255,.6)':''}` : `background:${col}`;
+      return `<div class="cal-ev ${e.done?'done':''}" style="${style}">${e.title.replace(/</g,'&lt;')}</div>`;
+    }).join('') + (more>0?`<div class="cal-more">+${more}</div>`:'');
     return `<div class="cal-cell ${c.other?'other-month':''} ${c.date===today?'today':''} ${dow===0?'sun':''} ${dow===6?'sat':''}" onclick="openAddFor('${c.date}')">
       <div class="cal-daynum">${c.day}</div>
       <div class="cal-events">${evHtml}</div>
@@ -377,20 +435,21 @@ function renderList(){
     categories.map(c=>`<div class="filter-chip ${listFilter===c.name?'active':''}" onclick="setFilter('${c.name}')" style="${listFilter===c.name?'background:'+c.color+';border-color:'+c.color:''}">${c.name}</div>`).join('');
 
   const today=todayStr();
-  let evs = events.filter(e=> listFilter==='all' || e.cat===listFilter);
-  // 다가오는 것 우선: 미완료 + 날짜순, 지난 건 뒤로
+  // 경제지표 합치기 (토글 시, 전체 필터일 때만)
+  let allEvents = events.slice();
+  if(showEcon && listFilter==='all'){
+    allEvents = allEvents.concat(getEconEvents(new Date()));
+  }
+  let evs = allEvents.filter(e=> listFilter==='all' || e.cat===listFilter);
   evs.sort((a,b)=> a.date<b.date?-1:a.date>b.date?1:0);
 
-  // 미래/오늘 vs 과거 분리
   const upcoming = evs.filter(e=>e.date>=today);
   const past = evs.filter(e=>e.date<today).reverse();
 
   if(evs.length===0){ $('listContent').innerHTML='<div class="empty">일정이 없어요. + 버튼으로 추가하세요.</div>'; return; }
 
   let html='';
-  if(upcoming.length>0){
-    html += groupByMonth(upcoming, today);
-  }
+  if(upcoming.length>0){ html += groupByMonth(upcoming, today); }
   if(past.length>0){
     html += `<div class="list-month-label" style="color:#aaa;margin-top:20px">지난 일정</div>`;
     html += past.map(e=>listItemHtml(e, today)).join('');
@@ -415,6 +474,23 @@ function listItemHtml(e, today){
   if(dday===0){ ddayText='D-DAY'; ddayColor='#dc2626'; }
   else if(dday>0){ ddayText='D-'+dday; ddayColor= dday<=7?'#f59e0b':'#888'; }
   else { ddayText='D+'+(-dday); ddayColor='#ccc'; }
+
+  // 경제지표 (자동 생성) — 체크/삭제 없음, 색 다름
+  if(e.isEcon){
+    const col=econColor(e.cat);
+    const estTag = e.cat==='__econ_est' ? '<span style="font-size:9px;background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:3px;margin-left:4px">예상</span>' : '';
+    return `<div class="list-item" style="border-left-color:${col};opacity:.92">
+      <div style="width:24px;flex-shrink:0;text-align:center;font-size:16px">📈</div>
+      <div class="list-date"><b>${d.getDate()}</b>${WEEK[d.getDay()]}</div>
+      <div class="list-body">
+        <div class="list-title" style="font-weight:600">${e.title.replace(/</g,'&lt;')}${estTag}</div>
+        ${e.memo?`<div class="list-memo">${e.memo.replace(/</g,'&lt;')}</div>`:''}
+      </div>
+      <span class="list-cat" style="background:${col}">지표</span>
+      <span class="list-dday" style="color:${ddayColor}">${ddayText}</span>
+    </div>`;
+  }
+
   return `<div class="list-item ${e.done?'done':''}" style="border-left-color:${catColor(e.cat)}">
     <div class="list-check" onclick="event.stopPropagation();toggleDone('${e.id}')">${e.done?'✓':''}</div>
     <div class="list-date"><b>${d.getDate()}</b>${WEEK[d.getDay()]}</div>
@@ -488,7 +564,9 @@ $('catModal').addEventListener('click', e=>{ if(e.target===$('catModal')) $('cat
 window.scGetState = ()=>({events, categories});
 window.scSetState = (d)=>{ events=d.events||[]; categories=d.categories||JSON.parse(JSON.stringify(DEFAULT_CATS)); save(); render(); };
 
-load(); render();
+load();
+if($('econToggle')) $('econToggle').checked = showEcon;
+render();
 </script>
 </body>
 </html>
