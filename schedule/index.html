@@ -584,8 +584,11 @@ function renderCalendar(){
     const prevDays=new Date(y,m,0).getDate();
     for(let i=startDay-1;i>=0;i--) cells.push({day:prevDays-i, other:true, date:fmtDate(new Date(y,m-1,prevDays-i))});
     for(let d=1;d<=daysInMonth;d++) cells.push({day:d, other:false, date:fmtDate(new Date(y,m,d))});
-    // 마지막 날이 포함된 주의 토요일까지만 채움 (다음달 날짜 과다 표시 방지)
+    // 마지막 날이 포함된 주의 토요일까지 채움
     let next=1; while(cells.length%7!==0){ cells.push({day:next, other:true, date:fmtDate(new Date(y,m+1,next))}); next++; }
+    // 마지막 날이 토요일이면(=다음달 칸이 안 붙음) 다음 주 한 줄을 더 보여줌
+    const lastDow = new Date(y,m,daysInMonth).getDay();
+    if(lastDow===6){ for(let k=0;k<7;k++){ cells.push({day:next, other:true, date:fmtDate(new Date(y,m+1,next))}); next++; } }
   }
 
   $('calGrid').innerHTML = cells.map(c=>buildCell(c, today, econ, tax)).join('');
