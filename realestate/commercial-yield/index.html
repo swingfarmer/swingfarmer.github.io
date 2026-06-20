@@ -1,1 +1,342 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>상가·오피스텔 적정 매수가 계산기 | 스윙파머</title>
+<meta name="description" content="보증금·월세로 목표 수익률 기준 적정 매수가를 역산. 부가세 환급/면세, 대출 레버리지, 개인 vs 법인 세후 수익률까지 비교해 이익·본전·손해를 판정.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; display: block; }
+  header h1 { font-size: 20px; color: #1F4E78; margin: 0; }
+  .back-link { display: inline-block; margin-bottom: 8px; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
+  .panel { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .section-label { font-size: 14px; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #eef0f3; color: #1F4E78; }
+  .input-row { margin-bottom: 13px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #333; }
+  .stat-sub { font-size: 11px; font-weight: 500; color: #888; }
+  input[type="number"] { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; background: #FFF2CC; font-weight: 600; color: #0000FF; }
+  input[type="number"]:focus { outline: 2px solid #1F4E78; background: #FFFACD; }
+  .won-kor { font-size: 12px; color: #1F4E78; font-weight: 600; margin-top: 3px; min-height: 15px; }
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; font-style: normal; cursor: pointer; margin-left: 4px; }
+  .info-box { display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #1e40af; line-height: 1.7; margin-top: 6px; }
 
+  .toggle-row { display: flex; gap: 8px; margin-bottom: 13px; flex-wrap: wrap; }
+  .toggle-opt { flex: 1; min-width: 110px; padding: 9px; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; background: #eef2f7; color: #1F4E78; border: 2px solid transparent; text-align: center; }
+  .toggle-opt.active { background: #1F4E78; color: white; }
+
+  .preset-row { display: flex; gap: 6px; margin-top: 6px; }
+  .preset { flex: 1; padding: 7px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; background: #eef2f7; color: #1F4E78; border: 1px solid transparent; text-align: center; }
+  .preset.active { background: #1F4E78; color: white; }
+
+  /* 적정가 역산 결과 */
+  .target-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+  @media (max-width: 600px){ .target-grid { grid-template-columns: 1fr; } }
+  .target-card { background: #f8fafc; border-radius: 10px; padding: 14px; text-align: center; border: 1px solid #eef0f3; }
+  .target-card .tc-rate { font-size: 12px; color: #888; font-weight: 600; }
+  .target-card .tc-price { font-size: 18px; font-weight: 800; color: #1F4E78; margin: 4px 0; }
+  .target-card .tc-kor { font-size: 10.5px; color: #aaa; }
+
+  /* 판정 hero */
+  .verdict-hero { border-radius: 14px; padding: 22px; text-align: center; margin-bottom: 16px; color: white; transition: background .3s; }
+  .verdict-hero.profit { background: linear-gradient(135deg, #16a34a, #22c55e); }
+  .verdict-hero.even { background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+  .verdict-hero.loss { background: linear-gradient(135deg, #dc2626, #ef4444); }
+  .verdict-hero .vh-label { font-size: 13px; opacity: .9; margin-bottom: 4px; }
+  .verdict-hero .vh-verdict { font-size: 28px; font-weight: 800; }
+  .verdict-hero .vh-detail { font-size: 13px; opacity: .95; margin-top: 8px; line-height: 1.6; }
+
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .stat-card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); text-align: center; }
+  .stat-card .sc-label { font-size: 11.5px; color: #888; margin-bottom: 4px; }
+  .stat-card .sc-val { font-size: 20px; font-weight: 800; color: #1F4E78; }
+  .stat-card .sc-sub { font-size: 11px; color: #aaa; margin-top: 2px; }
+
+  table.compare { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.compare th { background: #f8fafc; padding: 9px 8px; border-bottom: 2px solid #e5e7eb; font-size: 12px; color: #555; }
+  table.compare th.indiv { color: #1F4E78; } table.compare th.corp { color: #16a34a; }
+  table.compare td { padding: 9px 8px; border-bottom: 1px solid #f0f0f0; }
+  table.compare td.label { color: #666; font-weight: 600; }
+  table.compare td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  table.compare tr.highlight td { background: #f0fdf4; font-weight: 700; }
+
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; line-height: 1.7; margin-top: 14px; }
+  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; margin-top: 8px; font-size: 13px; line-height: 1.8; color: #6b5618; }
+  .manual .badge { display: inline-block; background: #1F4E78; color: white; font-size: 11px; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
+  footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a href="/realestate/" class="back-link">← 부동산 도구로</a>
+    <h1>🏢 상가·오피스텔 적정 매수가</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc">보증금·월세가 정해진 매물에서 <b>목표 수익률 기준 적정 매수가를 역산</b>하고, 실제 매수가를 넣으면 <b>이익·본전·손해</b>를 판정합니다. 부가세(환급/면세), 대출 레버리지, 개인 vs 법인 세후 수익률까지 비교해요.</p>
+
+  <!-- 임대 조건 -->
+  <div class="panel">
+    <div class="section-label">📋 임대 조건 (확정값)</div>
+    <div class="input-row">
+      <label>보증금</label>
+      <input type="number" id="deposit" value="10000000" inputmode="numeric">
+      <div class="won-kor" id="deposit_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>월세 <span class="stat-sub">부가세 별도, 순수 월세</span></label>
+      <input type="number" id="monthlyRent" value="800000" inputmode="numeric">
+      <div class="won-kor" id="monthlyRent_kor"></div>
+    </div>
+    <div style="background:#eff6ff;border-radius:8px;padding:10px;font-size:13px;color:#1e40af;text-align:center">
+      연 월세 수입 = <b id="annualRent">-</b>
+    </div>
+  </div>
+
+  <!-- 적정가 역산 -->
+  <div class="panel">
+    <div class="section-label">🎯 적정 매수가 역산 (목표 수익률 기준)</div>
+    <div class="target-grid" id="targetGrid"></div>
+    <div style="font-size:11.5px;color:#888;margin-top:10px;line-height:1.6">※ 적정 매매가 = (연 월세 ÷ 목표 수익률) + 보증금. 이 가격 <b>이하</b>로 사면 해당 수익률 이상이 나옵니다.</div>
+  </div>
+
+  <!-- 실제 매수가 입력 -->
+  <div class="panel">
+    <div class="section-label">💰 실제 매수가로 판정</div>
+    <div class="input-row">
+      <label>매수 예정가 <span class="stat-sub">건물+토지, 부가세 별도</span></label>
+      <input type="number" id="buyPrice" value="200000000" inputmode="numeric">
+      <div class="won-kor" id="buyPrice_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>내 목표(기준) 수익률 (%) <span class="stat-sub">이것보다 높으면 이익</span> <span class="info-btn" onclick="toggleInfo('targetInfo')">i</span></label>
+      <input type="number" id="targetRate" value="5" step="0.1" inputmode="decimal">
+      <div class="preset-row">
+        <div class="preset" onclick="setTarget(4)">4%</div>
+        <div class="preset active" onclick="setTarget(5)">5%</div>
+        <div class="preset" onclick="setTarget(6)">6%</div>
+        <div class="preset" onclick="setTarget(7)">7%</div>
+      </div>
+      <div class="info-box" id="targetInfo">"이 정도는 나와야 살 가치가 있다"는 기준 수익률이에요. 은행 예금 금리, 대출 금리, 또는 이 돈을 다른 곳에 투자했을 때 기대수익(기회비용)을 넣으세요. 실현 수익률이 이보다 높으면 이익, 낮으면 손해로 판정합니다.</div>
+    </div>
+  </div>
+
+  <!-- 부가세 -->
+  <div class="panel">
+    <div class="section-label">🧾 부가세 처리 <span class="info-btn" onclick="toggleInfo('vatInfo')">i</span></div>
+    <div class="toggle-row">
+      <div class="toggle-opt active" data-vat="refund" onclick="setVat('refund')">일반과세 (환급)</div>
+      <div class="toggle-opt" data-vat="exempt" onclick="setVat('exempt')">면세사업자 (환급 불가)</div>
+      <div class="toggle-opt" data-vat="none" onclick="setVat('none')">부가세 무시</div>
+    </div>
+    <div class="input-row">
+      <label>건물분 비율 (%) <span class="stat-sub">매매가 중 건물 비중 (토지 제외)</span></label>
+      <input type="number" id="buildingRatio" value="50" step="1" inputmode="numeric">
+    </div>
+    <div class="info-box" id="vatInfo">상가 등 업무용 부동산은 <b>건물분에만 부가세 10%</b>가 붙어요(토지는 면세). <b>일반과세자</b>로 매수하면 이 부가세를 나중에 <b>환급</b>받아 실부담이 거의 0이에요(일시적으로 자금만 묶임). 하지만 <b>면세사업자</b>(병원·학원 등)는 환급을 못 받아 부가세가 그대로 비용이 됩니다. 매도자가 면세/간이라 세금계산서 발행이 안 되는 경우에도 환급이 어려울 수 있어요.</div>
+    <div style="background:#f8fafc;border-radius:8px;padding:10px;font-size:12.5px;color:#555;margin-top:10px" id="vatResult"></div>
+  </div>
+
+  <!-- 대출 -->
+  <div class="panel">
+    <div class="section-label">🏦 대출 (선택)</div>
+    <div class="input-row">
+      <label>대출 비율 (LTV, %) <span class="stat-sub">매수가 대비, 0이면 전액 현금</span></label>
+      <input type="number" id="ltv" value="0" step="1" inputmode="numeric">
+    </div>
+    <div class="input-row">
+      <label>대출 금리 (연 %)</label>
+      <input type="number" id="loanRate" value="4.5" step="0.1" inputmode="decimal">
+    </div>
+  </div>
+
+  <!-- 세금 -->
+  <div class="panel">
+    <div class="section-label">💸 세율 (세후 수익률 비교용)</div>
+    <div class="input-row">
+      <label>개인 한계세율 (%) <span class="stat-sub">종합소득세, 지방세 포함</span> <span class="info-btn" onclick="toggleInfo('rateInfo')">i</span></label>
+      <input type="number" id="indivRate" value="38.5" step="0.1" inputmode="decimal">
+      <div class="preset-row">
+        <div class="preset" onclick="setIndiv(16.5)">16.5%</div>
+        <div class="preset" onclick="setIndiv(26.4)">26.4%</div>
+        <div class="preset active" onclick="setIndiv(38.5)">38.5%</div>
+        <div class="preset" onclick="setIndiv(46.2)">46.2%</div>
+      </div>
+      <div class="info-box" id="rateInfo">월세 수입에 적용될 <b>한계세율</b>(가장 높은 구간의 세율)을 넣으세요. 다른 소득과 합산되므로, 이미 소득이 많으면 높은 구간이 적용돼요. 지방소득세 포함: 6.6 / 16.5 / 26.4 / 38.5 / 41.8 / 44 / 46.2 / 49.5%. 법인은 2억 이하 9.9%(지방세 포함)로 자동 계산됩니다.</div>
+    </div>
+  </div>
+
+  <!-- 판정 결과 -->
+  <div class="verdict-hero even" id="verdict">
+    <div class="vh-label">판정</div>
+    <div class="vh-verdict" id="verdictText">-</div>
+    <div class="vh-detail" id="verdictDetail"></div>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="sc-label">표면 수익률</div>
+      <div class="sc-val" id="grossYield">-</div>
+      <div class="sc-sub">연 월세 ÷ (매수가−보증금)</div>
+    </div>
+    <div class="stat-card">
+      <div class="sc-label">실질 수익률 (부가세 반영)</div>
+      <div class="sc-val" id="netYield">-</div>
+      <div class="sc-sub" id="netYieldSub">세전</div>
+    </div>
+  </div>
+
+  <!-- 개인 vs 법인 -->
+  <div class="panel">
+    <div class="section-label">⚖️ 개인 vs 법인 세후 비교</div>
+    <table class="compare">
+      <thead>
+        <tr><th class="label" style="text-align:left">항목</th><th class="indiv">개인</th><th class="corp">법인</th></tr>
+      </thead>
+      <tbody id="compareBody"></tbody>
+    </table>
+    <div class="note" id="leverageNote" style="display:none"></div>
+  </div>
+
+  <div class="manual">
+    <b>📘 계산 방법</b><br>
+    <span class="badge">적정 매수가</span> (연 월세 ÷ 목표 수익률) + 보증금<br>
+    <span class="badge">표면 수익률</span> 연 월세 ÷ (매수가 − 보증금) × 100<br>
+    <span class="badge">실질 수익률</span> 부가세·대출이자 반영 후, 실투자금 대비<br>
+    <span class="badge">세후</span> 월세에서 이자(경비) 빼고 세금 적용. 법인은 9.9%(2억 이하), 개인은 한계세율<br>
+    실현 수익률이 목표보다 <b>높으면 이익, 같으면 본전, 낮으면 손해</b>로 판정합니다.
+  </div>
+
+  <footer>© 스윙파머</footer>
+</div>
+
+<script src="/common.js?v=3"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+function wonToKorean(n){ var neg=n<0; n=Math.round(Math.abs(n)); if(n===0)return ''; var eok=Math.floor(n/1e8),man=Math.floor((n%1e8)/1e4),won=n%1e4,p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(man>0)p.push(man.toLocaleString('ko-KR')+'만'); if(won>0)p.push(won.toLocaleString('ko-KR')); return (neg?'−':'')+p.join(' ')+'원'; }
+function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
+
+let vatMode = 'refund';
+
+const KOR_FIELDS=['deposit','monthlyRent','buyPrice'];
+function updateKor(){ KOR_FIELDS.forEach(id=>{ var el=$(id),box=$(id+'_kor'); if(el&&box){ var v=parseFloat(el.value)||0; box.textContent=v>0?wonToKorean(v):''; } }); }
+
+function setTarget(r){ $('targetRate').value=r; document.querySelectorAll('#targetRate ~ .preset-row .preset').forEach(el=>el.classList.toggle('active', parseFloat(el.textContent)===r)); calculate(); }
+function setIndiv(r){ $('indivRate').value=r; document.querySelectorAll('#indivRate ~ .preset-row .preset').forEach(el=>el.classList.toggle('active', parseFloat(el.textContent)===r)); calculate(); }
+function setVat(m){ vatMode=m; document.querySelectorAll('[data-vat]').forEach(el=>el.classList.toggle('active', el.dataset.vat===m)); calculate(); }
+
+function calculate(){
+  const deposit=parseFloat($('deposit').value)||0;
+  const monthlyRent=parseFloat($('monthlyRent').value)||0;
+  const buyPrice=parseFloat($('buyPrice').value)||0;
+  const targetRate=(parseFloat($('targetRate').value)||0)/100;
+  const buildingRatio=(parseFloat($('buildingRatio').value)||0)/100;
+  const ltv=(parseFloat($('ltv').value)||0)/100;
+  const loanRate=(parseFloat($('loanRate').value)||0)/100;
+  const indivRate=(parseFloat($('indivRate').value)||0)/100;
+
+  const annualRent = monthlyRent*12;
+  $('annualRent').textContent = fmt(annualRent)+'원 (월 '+fmt(monthlyRent)+'원)';
+
+  // 적정가 역산 (4/5/6/7%)
+  const rates=[4,5,6,7];
+  $('targetGrid').innerHTML = rates.map(r=>{
+    const price = annualRent/(r/100) + deposit;
+    const isTarget = Math.abs(r-targetRate*100)<0.01;
+    return `<div class="target-card" style="${isTarget?'border-color:#1F4E78;background:#eff6ff':''}">
+      <div class="tc-rate">수익률 ${r}%</div>
+      <div class="tc-price">${fmt(price)}</div>
+      <div class="tc-kor">${wonToKorean(price)} 이하</div>
+    </div>`;
+  }).join('');
+
+  // 부가세 계산 (건물분 10%)
+  const vatAmount = buyPrice * buildingRatio * 0.1;
+  let vatCost = 0; // 실부담
+  let vatText = '';
+  if(vatMode==='refund'){ vatCost=0; vatText=`건물분 부가세 ${fmt(vatAmount)}원 → <b style="color:#16a34a">환급 (실부담 0)</b>. 단 매수 시 일시 납부 후 환급까지 자금이 묶여요.`; }
+  else if(vatMode==='exempt'){ vatCost=vatAmount; vatText=`건물분 부가세 ${fmt(vatAmount)}원 → <b style="color:#dc2626">환급 불가, 전액 비용</b>. 면세사업자라 매입세액 공제가 안 됩니다.`; }
+  else { vatCost=0; vatText='부가세를 계산에서 제외합니다.'; }
+  $('vatResult').innerHTML = vatText;
+
+  // 실투자금 = 매수가 - 보증금 + 부가세실부담 (대출 전)
+  const totalCost = buyPrice + vatCost; // 총 취득(부가세 실부담 포함)
+  const netInvestBeforeLoan = totalCost - deposit;
+
+  // 대출
+  const loanAmount = buyPrice * ltv;
+  const annualInterest = loanAmount * loanRate;
+  const selfCapital = netInvestBeforeLoan - loanAmount; // 실제 내 돈
+
+  // 표면 수익률 = 연월세 / (매수가 - 보증금)
+  const grossYield = (buyPrice-deposit)>0 ? annualRent/(buyPrice-deposit)*100 : 0;
+  $('grossYield').textContent = grossYield.toFixed(2)+'%';
+
+  // 실질 수익률 (부가세 반영, 대출이자 차감, 자기자본 대비) - 세전
+  const netIncomeBeforeTax = annualRent - annualInterest;
+  const netYield = selfCapital>0 ? netIncomeBeforeTax/selfCapital*100 : (ltv>0?Infinity:0);
+  $('netYield').textContent = isFinite(netYield)? netYield.toFixed(2)+'%' : '∞';
+  $('netYieldSub').textContent = (ltv>0?'대출이자 차감, ':'') + (vatMode==='exempt'?'부가세 비용, ':'') + '자기자본 대비, 세전';
+
+  // === 세후 (개인 vs 법인) ===
+  // 과세소득 = 월세 - 이자(경비). (간단화: 감가상각 등 제외)
+  const taxableIncome = Math.max(0, annualRent - annualInterest);
+  // 개인
+  const indivTax = taxableIncome * indivRate;
+  const indivNet = netIncomeBeforeTax - indivTax;
+  const indivYield = selfCapital>0 ? indivNet/selfCapital*100 : 0;
+  // 법인 (2억 이하 9.9%, 초과분 단순화)
+  const corpRate = 0.099;
+  const corpTax = taxableIncome * corpRate;
+  const corpNet = netIncomeBeforeTax - corpTax;
+  const corpYield = selfCapital>0 ? corpNet/selfCapital*100 : 0;
+
+  $('compareBody').innerHTML = `
+    <tr><td class="label">연 월세 수입</td><td class="num">${fmt(annualRent)}</td><td class="num">${fmt(annualRent)}</td></tr>
+    ${annualInterest>0?`<tr><td class="label">− 대출이자(경비)</td><td class="num" style="color:#dc2626">−${fmt(annualInterest)}</td><td class="num" style="color:#dc2626">−${fmt(annualInterest)}</td></tr>`:''}
+    <tr><td class="label">과세 대상 소득</td><td class="num">${fmt(taxableIncome)}</td><td class="num">${fmt(taxableIncome)}</td></tr>
+    <tr><td class="label">− 세금</td><td class="num" style="color:#dc2626">−${fmt(indivTax)}<br><span style="font-size:10px;color:#888">(${(indivRate*100).toFixed(1)}%)</span></td><td class="num" style="color:#dc2626">−${fmt(corpTax)}<br><span style="font-size:10px;color:#888">(9.9%)</span></td></tr>
+    <tr class="highlight"><td class="label">세후 순수익</td><td class="num">${fmt(indivNet)}</td><td class="num">${fmt(corpNet)}</td></tr>
+    <tr><td class="label">세후 수익률</td><td class="num">${indivYield.toFixed(2)}%</td><td class="num">${corpYield.toFixed(2)}%</td></tr>
+  `;
+
+  // 판정 (표면 수익률 vs 목표)
+  const verdict=$('verdict');
+  const diff = grossYield - targetRate*100;
+  let vText, vDetail, vClass;
+  if(Math.abs(diff)<0.15){ vClass='even'; vText='⚖️ 본전'; vDetail=`표면 수익률 ${grossYield.toFixed(2)}%가 목표 ${(targetRate*100).toFixed(1)}%와 거의 같아요. 딱 기준선이에요.`; }
+  else if(diff>0){ vClass='profit'; vText='✅ 이익'; vDetail=`표면 수익률 ${grossYield.toFixed(2)}%로 목표 ${(targetRate*100).toFixed(1)}%보다 <b>${diff.toFixed(2)}%p 높아요.</b> 이 가격이면 살 만해요.`; }
+  else { vClass='loss'; vText='❌ 손해'; vDetail=`표면 수익률 ${grossYield.toFixed(2)}%로 목표 ${(targetRate*100).toFixed(1)}%보다 <b>${Math.abs(diff).toFixed(2)}%p 낮아요.</b> 더 싸게 사야 해요.`; }
+  // 목표 수익률 달성 매수가
+  const breakEvenPrice = annualRent/targetRate + deposit;
+  vDetail += `<br><span style="font-size:12px;opacity:.85">목표 ${(targetRate*100).toFixed(1)}% 맞추려면 <b>${fmt(breakEvenPrice)}원</b> 이하 매수</span>`;
+  verdict.className='verdict-hero '+vClass;
+  $('verdictText').textContent=vText;
+  $('verdictDetail').innerHTML=vDetail;
+
+  // 레버리지 노트
+  const lnote=$('leverageNote');
+  if(ltv>0){
+    lnote.style.display='block';
+    const spread = grossYield - loanRate*100;
+    if(spread>0) lnote.innerHTML=`💡 표면 수익률(${grossYield.toFixed(2)}%)이 대출 금리(${(loanRate*100).toFixed(1)}%)보다 <b>${spread.toFixed(2)}%p 높아</b>, 대출이 수익률을 높이는 <b>positive 레버리지</b>예요. 자기자본 ${fmt(selfCapital)}원 투입.`;
+    else lnote.innerHTML=`⚠️ 표면 수익률(${grossYield.toFixed(2)}%)이 대출 금리(${(loanRate*100).toFixed(1)}%)보다 낮아, 대출할수록 수익이 깎이는 <b>negative 레버리지</b>예요. 대출 비중을 줄이세요.`;
+  } else { lnote.style.display='none'; }
+
+  updateKor();
+}
+
+document.querySelectorAll('input').forEach(el=>el.addEventListener('input', calculate));
+calculate();
+</script>
+</body>
+</html>
