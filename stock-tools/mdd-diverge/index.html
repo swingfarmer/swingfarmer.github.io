@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>MDD·이격도 계산기 | 스윙파머</title>
+<meta name="description" content="최대낙폭(MDD)과 이격도를 계산. 고점·저점 직접 입력 또는 지수 시계열을 붙여넣어 자동으로 최대 낙폭 구간·회복기간·이동평균 이격도를 산출.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; display: block; }
+  header h1 { font-size: 19px; color: #1F4E78; margin: 0; }
+  .back-link { display: inline-block; margin-bottom: 8px; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
+  .panel { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .section-label { font-size: 14px; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #eef0f3; color: #1F4E78; }
+  .input-row { margin-bottom: 13px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #333; }
+  .stat-sub { font-size: 11px; font-weight: 500; color: #888; }
+  input[type="number"], textarea { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; }
+  input[type="number"] { background: #FFF2CC; font-weight: 600; color: #0000FF; }
+  textarea { background: #fcfcfc; font-family: monospace; font-size: 13px; min-height: 110px; resize: vertical; line-height: 1.5; }
+  input:focus, textarea:focus { outline: 2px solid #1F4E78; }
+
+  /* 탭 */
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .tab { flex: 1; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; background: #eef2f7; color: #1F4E78; border: 2px solid transparent; text-align: center; }
+  .tab.active { background: #1F4E78; color: white; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* 입력 방식 토글 */
+  .mode-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
+  .mode-btn { flex: 1; padding: 9px; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; background: #f1f5f9; color: #555; border: 2px solid transparent; text-align: center; }
+  .mode-btn.active { background: #e0edf7; color: #1F4E78; border-color: #1F4E78; }
+  .mode-content { display: none; }
+  .mode-content.active { display: block; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px){ .two-col { grid-template-columns: 1fr; } }
+
+  /* 결과 hero */
+  .result-hero { border-radius: 14px; padding: 22px; text-align: center; margin-bottom: 16px; color: white; }
+  .result-hero.mdd { background: linear-gradient(135deg, #dc2626, #ef4444); }
+  .result-hero.normal { background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+  .result-hero .rh-label { font-size: 13px; opacity: .9; margin-bottom: 4px; }
+  .result-hero .rh-val { font-size: 34px; font-weight: 800; }
+  .result-hero .rh-sub { font-size: 12.5px; opacity: .92; margin-top: 6px; line-height: 1.6; }
+
+  table.breakdown { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.breakdown td { padding: 9px 8px; border-bottom: 1px solid #f0f0f0; }
+  table.breakdown td.label { color: #555; font-weight: 600; }
+  table.breakdown td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+
+  .gauge-row { display: flex; gap: 10px; margin: 8px 0 4px; }
+  .gauge-box { flex: 1; border-radius: 10px; padding: 12px 8px; text-align: center; border: 2px solid #e5e7eb; }
+  .gauge-box .gb-label { font-size: 11px; color: #888; }
+  .gauge-box .gb-val { font-size: 18px; font-weight: 800; margin-top: 2px; }
+  .gauge-box.hot { border-color: #fca5a5; background: #fef2f2; } .gauge-box.hot .gb-val { color: #dc2626; }
+  .gauge-box.cold { border-color: #93c5fd; background: #eff6ff; } .gauge-box.cold .gb-val { color: #2563eb; }
+  .gauge-box.neutral .gb-val { color: #1F4E78; }
+
+  .badge-state { display: inline-block; padding: 4px 12px; border-radius: 14px; font-size: 13px; font-weight: 700; }
+  .bs-hot { background: #fef2f2; color: #dc2626; } .bs-cold { background: #eff6ff; color: #2563eb; } .bs-neutral { background: #f0fdf4; color: #16a34a; }
+
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; font-style: normal; cursor: pointer; margin-left: 4px; }
+  .info-box { display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #1e40af; line-height: 1.7; margin-top: 8px; }
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; line-height: 1.7; margin-top: 14px; }
+  .warn-strong { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #991b1b; line-height: 1.7; margin-top: 12px; }
+  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; margin-top: 8px; font-size: 12.5px; line-height: 1.8; color: #6b5618; }
+  .manual .badge { display: inline-block; background: #1F4E78; color: white; font-size: 11px; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
+  footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a href="/stock-tools/" class="back-link">← 주식 도구로</a>
+    <h1>📉 MDD·이격도 계산기</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc"><b>최대낙폭(MDD)</b>과 <b>이격도</b>를 계산합니다. 고점·저점을 직접 넣거나, 지수 시계열을 붙여넣으면 자동으로 최대 낙폭 구간·회복기간·이동평균 이격도를 구해요. 수익률만큼 "중간에 얼마나 흔들렸나"를 보는 도구예요.</p>
+
+  <!-- 탭 -->
+  <div class="tabs">
+    <div class="tab active" data-tab="mdd" onclick="setTab('mdd')">📉 MDD</div>
+    <div class="tab" data-tab="diverge" onclick="setTab('diverge')">📏 이격도</div>
+  </div>
+
+  <!-- ===== MDD 탭 ===== -->
+  <div class="tab-panel active" id="panel-mdd">
+    <div class="panel">
+      <div class="section-label">입력 방식</div>
+      <div class="mode-toggle">
+        <div class="mode-btn active" data-mmode="manual" onclick="setMddMode('manual')">고점·저점 직접</div>
+        <div class="mode-btn" data-mmode="series" onclick="setMddMode('series')">시계열 붙여넣기</div>
+      </div>
+
+      <div class="mode-content active" id="mddManual">
+        <div class="two-col">
+          <div class="input-row">
+            <label>직전 고점</label>
+            <input type="number" id="peak" value="3500" step="0.01" inputmode="decimal">
+          </div>
+          <div class="input-row">
+            <label>저점 (최저)</label>
+            <input type="number" id="trough" value="2800" step="0.01" inputmode="decimal">
+          </div>
+        </div>
+        <div class="input-row">
+          <label>현재가 (선택) <span class="stat-sub">회복률 계산용, 비우면 생략</span></label>
+          <input type="number" id="curMdd" value="" step="0.01" inputmode="decimal">
+        </div>
+      </div>
+
+      <div class="mode-content" id="mddSeries">
+        <div class="input-row">
+          <label>지수/주가 시계열 <span class="stat-sub">한 줄에 하나씩, 또는 쉼표·공백 구분 (오래된→최신 순)</span> <span class="info-btn" onclick="toggleInfo('seriesInfo')">i</span></label>
+          <textarea id="mddSeriesInput" placeholder="예시:&#10;3200&#10;3350&#10;3500&#10;3100&#10;2800&#10;3050"></textarea>
+          <div class="info-box" id="seriesInfo">네이버금융·인베스팅 등에서 종가를 복사해 붙여넣으세요. 숫자만 인식하고, 쉼표·공백·줄바꿈 다 구분자로 처리해요. 순서는 <b>과거→현재</b>로 넣어야 회복 구간 계산이 맞아요. 종가 50~250개 정도면 충분합니다.</div>
+        </div>
+        <div style="font-size:11.5px;color:#888" id="seriesCount"></div>
+      </div>
+    </div>
+
+    <div class="result-hero mdd" id="mddHero">
+      <div class="rh-label">최대 낙폭 (MDD)</div>
+      <div class="rh-val" id="mddVal">-</div>
+      <div class="rh-sub" id="mddSub"></div>
+    </div>
+
+    <div class="panel">
+      <div class="section-label">📋 상세</div>
+      <table class="breakdown" id="mddDetail"></table>
+    </div>
+  </div>
+
+  <!-- ===== 이격도 탭 ===== -->
+  <div class="tab-panel" id="panel-diverge">
+    <div class="panel">
+      <div class="section-label">입력 방식</div>
+      <div class="mode-toggle">
+        <div class="mode-btn active" data-dmode="manual" onclick="setDivMode('manual')">현재가·이평 직접</div>
+        <div class="mode-btn" data-dmode="series" onclick="setDivMode('series')">시계열 붙여넣기</div>
+      </div>
+
+      <div class="mode-content active" id="divManual">
+        <div class="input-row">
+          <label>현재가</label>
+          <input type="number" id="divCur" value="3400" step="0.01" inputmode="decimal">
+        </div>
+        <div class="two-col">
+          <div class="input-row">
+            <label>20일 이동평균</label>
+            <input type="number" id="ma20" value="3300" step="0.01" inputmode="decimal">
+          </div>
+          <div class="input-row">
+            <label>60일 이동평균</label>
+            <input type="number" id="ma60" value="3150" step="0.01" inputmode="decimal">
+          </div>
+        </div>
+        <div class="input-row">
+          <label>120일 이동평균 (선택)</label>
+          <input type="number" id="ma120" value="3000" step="0.01" inputmode="decimal">
+        </div>
+      </div>
+
+      <div class="mode-content" id="divSeries">
+        <div class="input-row">
+          <label>지수/주가 시계열 <span class="stat-sub">과거→현재 순, 이동평균 자동 계산</span></label>
+          <textarea id="divSeriesInput" placeholder="종가를 과거→현재 순으로 붙여넣으세요 (120일 이격도까지 보려면 120개 이상)"></textarea>
+          <div style="font-size:11.5px;color:#888;margin-top:4px" id="divSeriesCount"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-hero normal" id="divHero">
+      <div class="rh-label">20일 이격도</div>
+      <div class="rh-val" id="divVal">-</div>
+      <div class="rh-sub" id="divSub"></div>
+    </div>
+
+    <div class="panel">
+      <div class="section-label">📏 이격도 (현재가 ÷ 이평 × 100)</div>
+      <div class="gauge-row" id="divGauges"></div>
+      <div style="font-size:11.5px;color:#888;margin-top:10px;line-height:1.6">100 = 이평선과 일치. 100 초과 = 이평 위(과열 가능), 미만 = 이평 아래(침체 가능). 통상 20일 기준 ±5~8%를 과열·침체 참고선으로 봐요.</div>
+    </div>
+  </div>
+
+  <div class="manual">
+    <b>📘 개념</b><br>
+    <span class="badge">MDD</span> (저점 ÷ 직전고점 − 1) × 100. 고점 대비 최대 하락폭. 클수록 심리적으로 버티기 힘들어요.<br>
+    <span class="badge">이격도</span> (현재가 ÷ 이동평균) × 100. 주가가 평균에서 얼마나 떨어졌나. 단기 과열·침체 참고.<br>
+    수익률이 같아도 MDD가 작은 전략이 "버틸 수 있는" 좋은 전략이에요.
+  </div>
+
+  <div class="warn-strong">
+    ⚠️ <b>예측 도구가 아닙니다.</b> MDD·이격도는 <b>지나간 변동성과 현재 위치</b>를 보여줄 뿐, 조정 시점을 맞히지 못해요. "강세장에서 MDD가 잦다"는 경향은 있어도, 그것으로 하락 시점을 계산할 수는 없습니다. 상승 각도(tan θ)로 조정을 예측한다는 식의 방법은 근거가 약해 넣지 않았어요. 참고 지표로만 쓰고 단정하지 마세요.
+  </div>
+
+  <footer>© 스윙파머</footer>
+</div>
+
+<script src="/common.js?v=3"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+const fmt2 = n => n.toLocaleString('ko-KR', {minimumFractionDigits:2, maximumFractionDigits:2});
+function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
+
+let curTab='mdd', mddMode='manual', divMode='manual';
+function setTab(t){ curTab=t; document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active', el.dataset.tab===t)); document.querySelectorAll('.tab-panel').forEach(el=>el.classList.remove('active')); $('panel-'+t).classList.add('active'); saveLocal(); }
+function setMddMode(m){ mddMode=m; document.querySelectorAll('[data-mmode]').forEach(el=>el.classList.toggle('active', el.dataset.mmode===m)); $('mddManual').classList.toggle('active', m==='manual'); $('mddSeries').classList.toggle('active', m==='series'); calcMdd(); saveLocal(); }
+function setDivMode(m){ divMode=m; document.querySelectorAll('[data-dmode]').forEach(el=>el.classList.toggle('active', el.dataset.dmode===m)); $('divManual').classList.toggle('active', m==='manual'); $('divSeries').classList.toggle('active', m==='series'); calcDiv(); saveLocal(); }
+
+// 시계열 파싱: 숫자만 추출
+function parseSeries(text){
+  if(!text) return [];
+  return text.split(/[\s,]+/).map(x=>parseFloat(x.replace(/[^0-9.\-]/g,''))).filter(x=>!isNaN(x)&&x>0);
+}
+
+// ===== MDD =====
+function calcMdd(){
+  let peak, trough, cur, peakIdx=-1, troughIdx=-1, recovered=false, recoverIdx=-1, fromSeries=false;
+  if(mddMode==='manual'){
+    peak = parseFloat($('peak').value)||0;
+    trough = parseFloat($('trough').value)||0;
+    cur = parseFloat($('curMdd').value)||0;
+  } else {
+    const arr = parseSeries($('mddSeriesInput').value);
+    $('seriesCount').textContent = arr.length>0 ? arr.length+'개 데이터 인식' : '데이터를 붙여넣으세요';
+    if(arr.length<2){ $('mddVal').textContent='-'; $('mddSub').textContent=''; $('mddDetail').innerHTML=''; return; }
+    fromSeries=true;
+    // 최대 낙폭 구간 탐색: 각 지점에서 그때까지의 최고점 대비 낙폭
+    let runMax=arr[0], runMaxIdx=0, maxDD=0;
+    for(let i=1;i<arr.length;i++){
+      if(arr[i]>runMax){ runMax=arr[i]; runMaxIdx=i; }
+      const dd=(arr[i]/runMax-1);
+      if(dd<maxDD){ maxDD=dd; peak=runMax; peakIdx=runMaxIdx; trough=arr[i]; troughIdx=i; }
+    }
+    cur=arr[arr.length-1];
+    // 회복: 저점 이후 고점 회복 여부
+    for(let i=troughIdx+1;i<arr.length;i++){ if(arr[i]>=peak){ recovered=true; recoverIdx=i; break; } }
+  }
+
+  if(peak<=0||trough<=0||trough>peak){ $('mddVal').textContent='-'; $('mddSub').textContent='고점>저점 확인'; $('mddDetail').innerHTML=''; return; }
+
+  const mdd = (trough/peak-1)*100;
+  $('mddVal').textContent = mdd.toFixed(1)+'%';
+
+  // 회복률
+  let rows = `<tr><td class="label">직전 고점</td><td class="num">${fmt2(peak)}</td></tr>
+    <tr><td class="label">저점</td><td class="num">${fmt2(trough)}</td></tr>
+    <tr><td class="label">MDD (최대 낙폭)</td><td class="num" style="color:#dc2626">${mdd.toFixed(2)}%</td></tr>`;
+
+  // 저점에서 고점 회복하려면 필요한 상승률
+  const needUp = (peak/trough-1)*100;
+  rows += `<tr><td class="label">고점 회복에 필요한 반등</td><td class="num">+${needUp.toFixed(1)}%</td></tr>`;
+
+  let sub='';
+  if(fromSeries){
+    rows += `<tr><td class="label">고점→저점 구간</td><td class="num">${peakIdx+1}번째 → ${troughIdx+1}번째 (${troughIdx-peakIdx}칸)</td></tr>`;
+    if(recovered){
+      rows += `<tr><td class="label">회복 완료</td><td class="num" style="color:#16a34a">저점 후 ${recoverIdx-troughIdx}칸 만에 회복</td></tr>`;
+      sub = `최대 낙폭 ${mdd.toFixed(1)}% 후 회복 완료`;
+    } else {
+      const curRecover = (cur/peak-1)*100;
+      rows += `<tr><td class="label">현재 (${cur.toFixed(0)})</td><td class="num">고점 대비 ${curRecover.toFixed(1)}%</td></tr>`;
+      sub = curRecover>=0 ? '고점 회복함' : `아직 고점 대비 ${curRecover.toFixed(1)}% (미회복)`;
+    }
+  } else {
+    if(cur>0){
+      const curRecover = (cur/peak-1)*100;
+      const recoverPct = (cur-trough)/(peak-trough)*100;
+      rows += `<tr><td class="label">현재가</td><td class="num">${fmt2(cur)}</td></tr>
+        <tr><td class="label">낙폭 회복률</td><td class="num">${recoverPct.toFixed(0)}% 회복 (고점 대비 ${curRecover.toFixed(1)}%)</td></tr>`;
+      sub = curRecover>=0 ? '고점 회복함' : `저점에서 ${recoverPct.toFixed(0)}% 회복`;
+    } else {
+      sub = `고점 대비 최대 ${Math.abs(mdd).toFixed(1)}% 하락`;
+    }
+  }
+  $('mddSub').textContent = sub;
+  $('mddDetail').innerHTML = rows;
+}
+
+// ===== 이격도 =====
+function sma(arr, n){ if(arr.length<n) return null; const slice=arr.slice(arr.length-n); return slice.reduce((a,b)=>a+b,0)/n; }
+function divState(d){ if(d>=108) return ['과열','hot']; if(d>=105) return ['다소 과열','hot']; if(d<=92) return ['침체','cold']; if(d<=95) return ['다소 침체','cold']; return ['중립','neutral']; }
+
+function calcDiv(){
+  let cur, m20, m60, m120;
+  if(divMode==='manual'){
+    cur = parseFloat($('divCur').value)||0;
+    m20 = parseFloat($('ma20').value)||0;
+    m60 = parseFloat($('ma60').value)||0;
+    m120 = parseFloat($('ma120').value)||0;
+  } else {
+    const arr = parseSeries($('divSeriesInput').value);
+    $('divSeriesCount').textContent = arr.length>0 ? arr.length+'개 인식 (20일:'+(arr.length>=20?'O':'X')+' 60일:'+(arr.length>=60?'O':'X')+' 120일:'+(arr.length>=120?'O':'X')+')' : '데이터를 붙여넣으세요';
+    if(arr.length<1){ $('divVal').textContent='-'; $('divGauges').innerHTML=''; return; }
+    cur = arr[arr.length-1];
+    m20 = sma(arr,20)||0; m60 = sma(arr,60)||0; m120 = sma(arr,120)||0;
+  }
+  if(cur<=0){ $('divVal').textContent='-'; $('divGauges').innerHTML=''; $('divSub').textContent=''; return; }
+
+  const gauges = [];
+  const d20 = m20>0 ? cur/m20*100 : null;
+  const d60 = m60>0 ? cur/m60*100 : null;
+  const d120 = m120>0 ? cur/m120*100 : null;
+
+  [[d20,'20일'],[d60,'60일'],[d120,'120일']].forEach(([d,label])=>{
+    if(d===null){ gauges.push(`<div class="gauge-box neutral"><div class="gb-label">${label}</div><div class="gb-val">-</div></div>`); return; }
+    const [st,cls]=divState(d);
+    gauges.push(`<div class="gauge-box ${cls}"><div class="gb-label">${label} 이격도</div><div class="gb-val">${d.toFixed(1)}</div><div style="font-size:10px;color:#888;margin-top:2px">${st}</div></div>`);
+  });
+  $('divGauges').innerHTML = gauges.join('');
+
+  // hero = 20일 기준
+  if(d20!==null){
+    $('divVal').textContent = d20.toFixed(1);
+    const [st,cls]=divState(d20);
+    $('divHero').className = 'result-hero '+(cls==='neutral'?'normal':(cls==='hot'?'mdd':'normal'));
+    $('divSub').innerHTML = `현재가 ${fmt2(cur)} vs 20일 이평 ${fmt2(m20)} · <span class="badge-state bs-${cls}">${st}</span>`;
+  } else {
+    $('divVal').textContent = '-';
+    $('divSub').textContent = '20일 이평 데이터 부족';
+  }
+}
+
+function calculate(){ calcMdd(); calcDiv(); }
+
+// 저장/복원
+function getState(){
+  const s={ curTab, mddMode, divMode };
+  document.querySelectorAll('input[id], textarea[id]').forEach(el=>{ s[el.id]=el.value; });
+  return s;
+}
+function setState(d){
+  if(!d) return;
+  document.querySelectorAll('input[id], textarea[id]').forEach(el=>{ if(d[el.id]!==undefined) el.value=d[el.id]; });
+  if(d.mddMode) setMddMode(d.mddMode);
+  if(d.divMode) setDivMode(d.divMode);
+  if(d.curTab) setTab(d.curTab);
+  calculate();
+}
+function saveLocal(){ try{ localStorage.setItem('sf_mdddiv_state_v1', JSON.stringify(getState())); }catch(e){} }
+function loadLocal(){ try{ const r=localStorage.getItem('sf_mdddiv_state_v1'); if(r){ setState(JSON.parse(r)); return true; } }catch(e){} return false; }
+document.querySelectorAll('input, textarea').forEach(el=>el.addEventListener('input', ()=>{ calculate(); saveLocal(); }));
+window.mdGetState=getState; window.mdSetState=setState;
+
+if(!loadLocal()){ calculate(); }
+</script>
+
+<!-- 클라우드 슬롯 모달 -->
+<div id="slotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:16px;max-width:440px;width:100%;padding:20px;max-height:90vh;overflow:auto">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <h3 style="margin:0;font-size:16px;color:#1F4E78">☁️ 클라우드 저장</h3>
+      <button onclick="document.getElementById('slotModal').style.display='none'" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">💾 현재 입력 저장</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="slotName" placeholder="이름 (예: 코스피 6월)" maxlength="30" style="flex:1;padding:9px;font-size:13px;border:1px solid #ccc;border-radius:6px;background:white;color:#333">
+        <button id="slotSaveBtn" style="background:#0ea5e9;color:white;border:none;padding:9px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">저장</button>
+      </div>
+    </div>
+    <div style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px">📋 저장된 항목</div>
+    <div id="slotList" style="display:flex;flex-direction:column;gap:8px"><div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div></div>
+  </div>
+</div>
+
+<div id="cloudFab" style="position:fixed;right:16px;bottom:16px;z-index:900;display:flex;flex-direction:column;gap:8px;align-items:flex-end"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+const firebaseConfig = { apiKey:"AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY", authDomain:"swingfarmer-board01.firebaseapp.com", projectId:"swingfarmer-board01", storageBucket:"swingfarmer-board01.firebasestorage.app", messagingSenderId:"312575044644", appId:"1:312575044644:web:81d754eb1d90f25454fcb1" };
+const ADMIN_UID="1JrHgD2bpTRjrS2jw7MbpHciBph1", CALC_KEY="mdddiverge";
+const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
+const provider=new GoogleAuthProvider(); provider.setCustomParameters({prompt:'select_account'});
+const gid=id=>document.getElementById(id); let currentUser=null;
+getRedirectResult(auth).catch(()=>{});
+const fab=gid('cloudFab');
+function setFab(html){ fab.innerHTML=html; }
+if(location.hash==='#admin'||location.hash==='#\uad00\ub9ac\uc790'){ setFab('<button id="btnAdminLogin" style="background:#fff;color:#444;border:1px solid #ccc;border-radius:20px;padding:10px 16px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)">\ud83d\udd11 \uad00\ub9ac\uc790 \ub85c\uadf8\uc778</button>'); }
+document.addEventListener('click',e=>{ if(e.target&&e.target.id==='btnAdminLogin') login(); if(e.target&&e.target.id==='btnCloudOpen') openModal(); if(e.target&&e.target.id==='btnLogout') signOut(auth); });
+async function login(){ try{ await signInWithPopup(auth,provider); }catch(e){ const code=e&&e.code; if(code==='auth/popup-blocked'||code==='auth/cancelled-popup-request'||code==='auth/popup-closed-by-user'||code==='auth/operation-not-supported-in-this-environment'){ try{ await signInWithRedirect(auth,provider); }catch(e2){ alert('\ub85c\uadf8\uc778 \uc2e4\ud328: '+e2.message); } } else { alert('\ub85c\uadf8\uc778 \uc2e4\ud328: '+(e.message||code)); } } }
+onAuthStateChanged(auth, user=>{ currentUser=user; const isAdmin=user&&user.uid===ADMIN_UID;
+  if(isAdmin){ setFab('<button id="btnCloudOpen" style="background:#0ea5e9;color:white;border:none;border-radius:20px;padding:10px 16px;font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)">\u2601\ufe0f \uc800\uc7a5/\ubd88\ub7ec\uc624\uae30</button>'); }
+  else if(user&&!isAdmin){ setFab('<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px 12px;font-size:11px;color:#92400e;max-width:200px">\ube44\uad00\ub9ac\uc790 \uacc4\uc815<br><button id="btnLogout" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11px;cursor:pointer;margin-top:4px">\ub85c\uadf8\uc544\uc6c3</button></div>'); }
+  else { setFab(''); if(location.hash==='#admin'){ setFab('<button id="btnAdminLogin" style="background:#fff;color:#444;border:1px solid #ccc;border-radius:20px;padding:10px 16px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)">\ud83d\udd11 \uad00\ub9ac\uc790 \ub85c\uadf8\uc778</button>'); } }
+});
+const docRef=()=>doc(db,'calc_data',ADMIN_UID);
+async function loadSlots(){ try{ const s=await getDoc(docRef()); if(s.exists()&&s.data()[CALC_KEY]&&Array.isArray(s.data()[CALC_KEY].slots))return s.data()[CALC_KEY].slots; }catch(e){} return []; }
+async function saveSlots(slots){ const ref=docRef(); let ex={}; try{ const s=await getDoc(ref); if(s.exists())ex=s.data(); }catch(e){} ex[CALC_KEY]={slots,updatedAt:new Date().toISOString()}; await setDoc(ref,ex,{merge:true}); }
+let _slots=[];
+function renderSlots(){ const box=gid('slotList'); if(!_slots.length){ box.innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">\uc800\uc7a5\ub41c \ud56d\ubaa9\uc774 \uc5c6\uc5b4\uc694.</div>'; return; }
+  box.innerHTML=_slots.map((s,i)=>{ const t=s.savedAt?new Date(s.savedAt).toLocaleString('ko-KR'):''; return '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.name||'(\uc774\ub984\uc5c6\uc74c)')+'</div><div style="font-size:11px;color:#999">'+t+'</div></div><button onclick="window._mdRename('+i+')" style="background:#e5e7eb;color:#444;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">\u270f\ufe0f</button><button onclick="window._mdLoad('+i+')" style="background:#0284c7;color:white;border:none;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">\ubd88\ub7ec\uc624\uae30</button><button onclick="window._mdDel('+i+')" style="background:#fee2e2;color:#dc2626;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">\ud83d\uddd1\ufe0f</button></div>'; }).join(''); }
+async function openModal(){ if(!currentUser||currentUser.uid!==ADMIN_UID){ alert('\uad00\ub9ac\uc790 \ub85c\uadf8\uc778\uc774 \ud544\uc694\ud569\ub2c8\ub2e4.'); return; } gid('slotName').value=''; gid('slotModal').style.display='flex'; gid('slotList').innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">\ubd88\ub7ec\uc624\ub294 \uc911...</div>'; _slots=await loadSlots(); renderSlots(); }
+gid('slotSaveBtn').addEventListener('click', async()=>{ const name=gid('slotName').value.trim(); if(!name){ alert('\uc774\ub984\uc744 \uc785\ub825\ud558\uc138\uc694.'); return; } const idx=_slots.findIndex(s=>s.name===name); if(idx>=0&&!confirm('"'+name+'" \ub36e\uc5b4\uc4f8\uae4c\uc694?'))return; gid('slotSaveBtn').disabled=true; gid('slotSaveBtn').textContent='\uc800\uc7a5 \uc911...'; try{ const entry={name,data:window.mdGetState(),savedAt:new Date().toISOString()}; if(idx>=0)_slots[idx]=entry; else _slots.push(entry); await saveSlots(_slots); renderSlots(); alert('\u2705 \uc800\uc7a5 \uc644\ub8cc.'); }catch(e){ alert('\uc800\uc7a5 \uc2e4\ud328: '+e.message); } gid('slotSaveBtn').disabled=false; gid('slotSaveBtn').textContent='\uc800\uc7a5'; });
+window._mdLoad=function(i){ const s=_slots[i]; if(!s)return; if(!confirm('"'+s.name+'" \ubd88\ub7ec\uc62c\uae4c\uc694? \ud604\uc7ac \uc785\ub825\uc774 \ubc14\ub01d\ub2c8\ub2e4.'))return; window.mdSetState(s.data); gid('slotModal').style.display='none'; };
+window._mdDel=async function(i){ if(!confirm('\uc0ad\uc81c\ud560\uae4c\uc694?'))return; try{ _slots.splice(i,1); await saveSlots(_slots); renderSlots(); }catch(e){ alert('\uc2e4\ud328: '+e.message); } };
+window._mdRename=async function(i){ const nn=prompt('\uc774\ub984 \uc218\uc815', _slots[i].name||''); if(nn===null)return; const t=nn.trim(); if(!t)return; try{ _slots[i].name=t; await saveSlots(_slots); renderSlots(); }catch(e){ alert('\uc2e4\ud328: '+e.message); } };
+</script>
+</body>
+</html>
