@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>연봉 실수령액 계산기 (2026) | 스윙파머</title>
+<meta name="description" content="2026년 4대보험·소득세 반영 연봉 실수령액 계산기. 국민연금 9.5%·건강보험 7.19%·장기요양 13.14%·고용보험 0.9% 최신 요율. 월 실수령액과 공제 내역을 한눈에.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; display: block; }
+  header h1 { font-size: 20px; color: #1F4E78; margin: 0; }
+  .back-link { display: inline-block; margin-bottom: 8px; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
+  .panel { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .section-label { font-size: 14px; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #eef0f3; color: #1F4E78; }
+  .input-row { margin-bottom: 13px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #333; }
+  .stat-sub { font-size: 11px; font-weight: 500; color: #888; }
+  input[type="number"], select { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; }
+  input[type="number"] { background: #FFF2CC; font-weight: 600; color: #0000FF; }
+  select { background: white; }
+  input:focus, select:focus { outline: 2px solid #1F4E78; }
+  .won-kor { font-size: 12px; color: #1F4E78; font-weight: 600; margin-top: 3px; min-height: 15px; }
+  .toggle-row { display: flex; gap: 8px; margin-bottom: 13px; }
+  .toggle-opt { flex: 1; padding: 9px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; background: #eef2f7; color: #1F4E78; border: 2px solid transparent; text-align: center; }
+  .toggle-opt.active { background: #1F4E78; color: white; }
+
+  /* 결과 hero */
+  .result-hero { border-radius: 14px; padding: 24px; text-align: center; margin-bottom: 16px; color: white; background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+  .result-hero .rh-label { font-size: 13px; opacity: .9; margin-bottom: 4px; }
+  .result-hero .rh-month { font-size: 34px; font-weight: 800; }
+  .result-hero .rh-year { font-size: 13px; opacity: .9; margin-top: 6px; }
+
+  table.breakdown { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.breakdown td { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; }
+  table.breakdown td.label { color: #555; }
+  table.breakdown td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  table.breakdown td.minus { color: #dc2626; }
+  table.breakdown tr.total td { border-top: 2px solid #1F4E78; font-weight: 800; font-size: 15px; color: #1F4E78; padding-top: 12px; }
+  table.breakdown tr.subtotal td { background: #f8fafc; font-weight: 700; }
+
+  .bar-wrap { margin-top: 16px; }
+  .bar { height: 28px; border-radius: 6px; overflow: hidden; display: flex; font-size: 11px; color: white; font-weight: 600; }
+  .bar-net { background: #16a34a; display: flex; align-items: center; justify-content: center; }
+  .bar-tax { background: #f59e0b; display: flex; align-items: center; justify-content: center; }
+  .bar-ins { background: #dc2626; display: flex; align-items: center; justify-content: center; }
+  .bar-legend { display: flex; gap: 14px; margin-top: 8px; font-size: 11.5px; color: #666; flex-wrap: wrap; }
+  .bar-legend span { display: flex; align-items: center; gap: 4px; }
+  .dot { width: 10px; height: 10px; border-radius: 2px; }
+
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; font-style: normal; cursor: pointer; margin-left: 4px; }
+  .info-box { display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #1e40af; line-height: 1.7; margin-top: 8px; }
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; line-height: 1.7; margin-top: 14px; }
+  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; margin-top: 8px; font-size: 12.5px; line-height: 1.8; color: #6b5618; }
+  footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a href="/" class="back-link">← 메인으로</a>
+    <h1>💰 연봉 실수령액 계산기</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc"><b>2026년 최신 4대보험·소득세</b>를 반영해 월 실수령액을 계산합니다. 국민연금 9.5%·건강보험 7.19%·장기요양 13.14%·고용보험 0.9% 적용. 연봉 협상이나 급여명세서 확인에 쓰세요.</p>
+
+  <!-- 입력 -->
+  <div class="panel">
+    <div class="section-label">📥 입력</div>
+    <div class="toggle-row">
+      <div class="toggle-opt active" data-mode="year" onclick="setMode('year')">연봉으로</div>
+      <div class="toggle-opt" data-mode="month" onclick="setMode('month')">월급으로</div>
+    </div>
+    <div class="input-row" id="yearRow">
+      <label>연봉 (세전, 원)</label>
+      <input type="number" id="annualSalary" value="50000000" inputmode="numeric">
+      <div class="won-kor" id="annualSalary_kor"></div>
+    </div>
+    <div class="input-row" id="monthRow" style="display:none">
+      <label>월급 (세전, 원)</label>
+      <input type="number" id="monthlySalary" value="4166667" inputmode="numeric">
+      <div class="won-kor" id="monthlySalary_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>비과세액 (월, 원) <span class="stat-sub">식대 등, 보통 20만원</span> <span class="info-btn" onclick="toggleInfo('taxFreeInfo')">i</span></label>
+      <input type="number" id="taxFree" value="200000" inputmode="numeric">
+      <div class="info-box" id="taxFreeInfo">식대(월 20만원까지), 자가운전보조금, 출산·보육수당 등은 비과세예요. 비과세액은 4대보험·소득세 계산에서 제외됩니다. 보통 식대 20만원이 기본이에요.</div>
+    </div>
+    <div class="input-row">
+      <label>부양가족 수 (본인 포함) <span class="stat-sub">소득세 간이세액표 기준</span></label>
+      <input type="number" id="dependents" value="1" inputmode="numeric" min="1">
+    </div>
+    <div class="input-row">
+      <label>20세 이하 자녀 수 <span class="stat-sub">추가 공제</span></label>
+      <input type="number" id="children" value="0" inputmode="numeric" min="0">
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="result-hero">
+    <div class="rh-label">월 실수령액</div>
+    <div class="rh-month" id="netMonth">-</div>
+    <div class="rh-year" id="netYear"></div>
+  </div>
+
+  <!-- 막대 -->
+  <div class="panel">
+    <div class="section-label">📊 월급 구성</div>
+    <div class="bar-wrap">
+      <div class="bar" id="bar"></div>
+      <div class="bar-legend">
+        <span><span class="dot" style="background:#16a34a"></span>실수령</span>
+        <span><span class="dot" style="background:#dc2626"></span>4대보험</span>
+        <span><span class="dot" style="background:#f59e0b"></span>세금</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 상세 -->
+  <div class="panel">
+    <div class="section-label">📋 공제 내역 (월 기준)</div>
+    <table class="breakdown">
+      <tr class="subtotal"><td class="label">세전 월급</td><td class="num" id="grossM">-</td></tr>
+      <tr><td class="label">− 국민연금 (4.75%)</td><td class="num minus" id="pension">-</td></tr>
+      <tr><td class="label">− 건강보험 (3.595%)</td><td class="num minus" id="health">-</td></tr>
+      <tr><td class="label">− 장기요양 (건보의 13.14%)</td><td class="num minus" id="care">-</td></tr>
+      <tr><td class="label">− 고용보험 (0.9%)</td><td class="num minus" id="employ">-</td></tr>
+      <tr class="subtotal"><td class="label">4대보험 합계</td><td class="num minus" id="insTotal">-</td></tr>
+      <tr><td class="label">− 소득세 (간이세액)</td><td class="num minus" id="incomeTax">-</td></tr>
+      <tr><td class="label">− 지방소득세 (소득세의 10%)</td><td class="num minus" id="localTax">-</td></tr>
+      <tr class="subtotal"><td class="label">세금 합계</td><td class="num minus" id="taxTotal">-</td></tr>
+      <tr class="total"><td class="label">월 실수령액</td><td class="num" id="netM2">-</td></tr>
+    </table>
+  </div>
+
+  <div class="note">
+    ⚠️ <b>참고용 추정치</b>입니다. 소득세는 국세청 간이세액표를 <b>근사식</b>으로 계산해 실제와 수만원 차이날 수 있어요. 회사·개인 상황(추가 공제, 상여 분리 등)에 따라 달라지며, 연말정산으로 정산됩니다. 4대보험 요율은 2026년 기준입니다.
+  </div>
+
+  <div class="manual">
+    <b>📘 계산 방법</b><br>
+    • <b>4대보험</b>: (월급−비과세)에 요율 적용. 국민연금은 기준소득월액 상한 637만원.<br>
+    • <b>소득세</b>: 간이세액표 근사. 부양가족·자녀 수로 공제 반영.<br>
+    • <b>지방소득세</b>: 소득세의 10%.<br>
+    • 실수령 = 세전 − 4대보험 − 소득세 − 지방세
+  </div>
+
+  <footer>© 스윙파머</footer>
+</div>
+
+<script src="/common.js?v=3"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+function wonToKorean(n){ var neg=n<0; n=Math.round(Math.abs(n)); if(n===0)return ''; var eok=Math.floor(n/1e8),man=Math.floor((n%1e8)/1e4),won=n%1e4,p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(man>0)p.push(man.toLocaleString('ko-KR')+'만'); if(won>0)p.push(won.toLocaleString('ko-KR')); return (neg?'−':'')+p.join(' ')+'원'; }
+function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
+
+let inputMode='year';
+function setMode(m){
+  inputMode=m;
+  document.querySelectorAll('[data-mode]').forEach(el=>el.classList.toggle('active', el.dataset.mode===m));
+  $('yearRow').style.display = m==='year'?'block':'none';
+  $('monthRow').style.display = m==='month'?'block':'none';
+  // 동기화
+  if(m==='month'){ $('monthlySalary').value = Math.round((parseFloat($('annualSalary').value)||0)/12); }
+  else { $('annualSalary').value = Math.round((parseFloat($('monthlySalary').value)||0)*12); }
+  calculate();
+}
+
+// 2026 4대보험 요율 (근로자 부담)
+const RATE = {
+  pension: 0.045,      // 국민연금 4.5% (근로자), 총9.5%의 절반은 4.75? → 근로자 4.5%가 표준
+  pensionCap: 6370000, // 기준소득월액 상한
+  pensionFloor: 400000,
+  health: 0.03595,     // 건강보험 3.595%
+  care: 0.1314,        // 장기요양 = 건보료 × 13.14%
+  employ: 0.009        // 고용보험 0.9%
+};
+
+// 간이세액표 근사: 과세표준(월) 기반 누진 근사 + 부양가족 공제
+function approxIncomeTax(monthlyTaxable, dependents, children){
+  // 연 환산 후 근로소득공제·인적공제 대략 반영하는 근사
+  const annual = monthlyTaxable*12;
+  // 근로소득공제 (대략)
+  let earnedDeduct;
+  if(annual<=5000000) earnedDeduct=annual*0.7;
+  else if(annual<=15000000) earnedDeduct=3500000+(annual-5000000)*0.4;
+  else if(annual<=45000000) earnedDeduct=7500000+(annual-15000000)*0.15;
+  else if(annual<=100000000) earnedDeduct=12000000+(annual-45000000)*0.05;
+  else earnedDeduct=14750000+(annual-100000000)*0.02;
+  // 인적공제: 1인당 150만
+  const personalDeduct = dependents*1500000;
+  // 표준세액공제 등 대략
+  let taxBase = annual - earnedDeduct - personalDeduct;
+  if(taxBase<=0) return 0;
+  // 종합소득세 누진 (지방세 제외)
+  let tax;
+  if(taxBase<=14000000) tax=taxBase*0.06;
+  else if(taxBase<=50000000) tax=taxBase*0.15-1260000;
+  else if(taxBase<=88000000) tax=taxBase*0.24-5760000;
+  else if(taxBase<=150000000) tax=taxBase*0.35-15440000;
+  else if(taxBase<=300000000) tax=taxBase*0.38-19940000;
+  else if(taxBase<=500000000) tax=taxBase*0.40-25940000;
+  else tax=taxBase*0.42-35940000;
+  // 근로소득세액공제 (대략 산출세액의 일부)
+  let taxCredit = Math.min(tax*0.55, 740000);
+  // 자녀세액공제 (1명 15만, 2명 35만 등 대략 연)
+  let childCredit = 0;
+  if(children===1) childCredit=150000;
+  else if(children===2) childCredit=350000;
+  else if(children>=3) childCredit=350000+(children-2)*300000;
+  let annualTax = Math.max(0, tax - taxCredit - childCredit);
+  return annualTax/12; // 월
+}
+
+function calculate(){
+  let grossMonth;
+  if(inputMode==='year') grossMonth = (parseFloat($('annualSalary').value)||0)/12;
+  else grossMonth = parseFloat($('monthlySalary').value)||0;
+  const taxFree = parseFloat($('taxFree').value)||0;
+  const dependents = Math.max(1, parseFloat($('dependents').value)||1);
+  const children = Math.max(0, parseFloat($('children').value)||0);
+
+  const taxableMonth = Math.max(0, grossMonth - taxFree); // 과세 대상
+
+  // 4대보험 (과세 기준)
+  const pensionBase = Math.min(RATE.pensionCap, Math.max(RATE.pensionFloor, taxableMonth));
+  const pension = pensionBase*RATE.pension;
+  const health = taxableMonth*RATE.health;
+  const care = health*RATE.care;
+  const employ = taxableMonth*RATE.employ;
+  const insTotal = pension+health+care+employ;
+
+  // 소득세
+  const incomeTax = approxIncomeTax(taxableMonth, dependents, children);
+  const localTax = incomeTax*0.1;
+  const taxTotal = incomeTax+localTax;
+
+  const net = grossMonth - insTotal - taxTotal;
+
+  $('netMonth').textContent = fmt(net)+'원';
+  $('netYear').textContent = '연 환산 약 '+fmt(net*12)+'원 ('+wonToKorean(net*12)+')';
+  $('grossM').textContent = fmt(grossMonth)+'원';
+  $('pension').textContent = '−'+fmt(pension);
+  $('health').textContent = '−'+fmt(health);
+  $('care').textContent = '−'+fmt(care);
+  $('employ').textContent = '−'+fmt(employ);
+  $('insTotal').textContent = '−'+fmt(insTotal);
+  $('incomeTax').textContent = '−'+fmt(incomeTax);
+  $('localTax').textContent = '−'+fmt(localTax);
+  $('taxTotal').textContent = '−'+fmt(taxTotal);
+  $('netM2').textContent = fmt(net)+'원';
+
+  // 막대
+  const total = grossMonth>0?grossMonth:1;
+  const netPct = net/total*100, insPct = insTotal/total*100, taxPct = taxTotal/total*100;
+  $('bar').innerHTML =
+    `<div class="bar-net" style="width:${netPct}%">${netPct>12?Math.round(netPct)+'%':''}</div>`+
+    `<div class="bar-ins" style="width:${insPct}%">${insPct>10?Math.round(insPct)+'%':''}</div>`+
+    `<div class="bar-tax" style="width:${taxPct}%">${taxPct>8?Math.round(taxPct)+'%':''}</div>`;
+
+  // 한글
+  ['annualSalary','monthlySalary'].forEach(id=>{ var el=$(id),box=$(id+'_kor'); if(el&&box){ var v=parseFloat(el.value)||0; box.textContent=v>0?wonToKorean(v):''; } });
+}
+
+document.querySelectorAll('input').forEach(el=>el.addEventListener('input', calculate));
+calculate();
+</script>
+</body>
+</html>
