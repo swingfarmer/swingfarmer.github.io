@@ -191,9 +191,20 @@
   <div class="panel">
     <div class="section-label">📈 현재 시총 대비</div>
     <div class="input-row">
-      <label>현재 시가총액 (억원) <span class="stat-sub">비교용, 현재 약 10조=100,000억</span></label>
-      <input type="number" id="curMktCap" value="100000" inputmode="numeric">
-      <div class="unit-suffix" id="curMktCap_disp"></div>
+      <label>현재가 (원) <span class="stat-sub">쉽게 수정</span></label>
+      <input type="number" id="curPrice" value="30000" inputmode="numeric">
+    </div>
+    <div class="input-row">
+      <label>발행 주식수 (주) <span class="stat-sub">합병 시 증가 가능 — 수정하려면 잠금 해제</span> <span class="info-btn" onclick="toggleInfo('shareInfo')">i</span></label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="shares" value="368220661" inputmode="numeric" readonly style="background:#eef2f7;color:#666;flex:1">
+        <button type="button" id="shareLockBtn" onclick="toggleShareLock()" style="white-space:nowrap;background:#1F4E78;color:white;border:none;border-radius:6px;padding:10px 14px;font-size:12.5px;font-weight:600;cursor:pointer">🔒 수정</button>
+      </div>
+      <div class="info-box" id="shareInfo">현재 대한항공 발행주식수는 약 3억 6,822만주예요. 아시아나 흡수합병이 완료되면 신주 발행으로 <b>약 5.5% 증가</b>(약 3억 8,850만주)할 전망이라, 합병 후 시총 계산 시 주식수를 늘려 넣으세요. 실수로 안 바뀌게 평소엔 잠겨 있어요.</div>
+    </div>
+    <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;font-size:13px;color:#444;margin-bottom:4px">
+      현재 시가총액 = 현재가 × 주식수 = <b id="curMktCapAuto" style="color:#1F4E78">-</b>
+      <span id="curMktCap_disp" style="color:#888;font-size:12px"></span>
     </div>
     <div class="compare-row">
       <div class="compare-box">
@@ -228,6 +239,18 @@
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
 function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
+function toggleShareLock(){
+  const inp=$('shares'), btn=$('shareLockBtn');
+  if(inp.readOnly){
+    if(!confirm('주식수를 수정할까요? (합병 등으로 주식수가 바뀔 때만 변경하세요)')) return;
+    inp.readOnly=false; inp.style.background='#FFF2CC'; inp.style.color='#0000FF';
+    btn.textContent='🔓 잠금'; btn.style.background='#dc2626';
+    inp.focus();
+  } else {
+    inp.readOnly=true; inp.style.background='#eef2f7'; inp.style.color='#666';
+    btn.textContent='🔒 수정'; btn.style.background='#1F4E78';
+  }
+}
 // 억원 → 조/억 표시
 function eokToKorean(eok){ eok=Math.round(eok); if(eok===0) return ''; const jo=Math.floor(eok/10000), rest=eok%10000; let p=[]; if(jo>0)p.push(jo.toLocaleString('ko-KR')+'조'); if(rest>0)p.push(rest.toLocaleString('ko-KR')+'억'); return p.join(' ')+'원'; }
 
@@ -285,7 +308,9 @@ function calculate(){
   const mPax = parseFloat($('m_pax').value)||0;
   const mCargo = parseFloat($('m_cargo').value)||0;
   const mAero = parseFloat($('m_aero').value)||0;
-  const curMktCap = parseFloat($('curMktCap').value)||0;
+  const curPrice = parseFloat($('curPrice').value)||0;
+  const shares = parseFloat($('shares').value)||0;
+  const curMktCap = curPrice*shares/100000000; // 원→억원
 
   const wSum = wPax+wCargo+wAero;
   // 부문 순이익
@@ -321,6 +346,7 @@ function calculate(){
 
   $('totalNI_disp').textContent = totalNI>0 ? '= '+eokToKorean(totalNI) : '';
   $('curMktCap_disp').textContent = curMktCap>0 ? '= '+eokToKorean(curMktCap) : '';
+  $('curMktCapAuto').textContent = curMktCap>0 ? fmt(curMktCap)+'억' : '-';
 
   // 막대
   const total = vSum>0?vSum:1;
