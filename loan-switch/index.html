@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>대출 갈아타기·중도상환 계산기 | 스윙파머</title>
+<meta name="description" content="기존 대출 유지 vs 갈아타기를 비교. 중도상환수수료를 감안해 갈아탔을 때 실제로 이득인지, 손익분기까지 몇 개월 걸리는지 계산.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; display: block; }
+  header h1 { font-size: 19px; color: #1F4E78; margin: 0; }
+  .back-link { display: inline-block; margin-bottom: 8px; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
+  .panel { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .section-label { font-size: 14px; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #eef0f3; color: #1F4E78; }
+  .input-row { margin-bottom: 13px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #333; }
+  .stat-sub { font-size: 11px; font-weight: 500; color: #888; }
+  input[type="number"], select { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; }
+  input[type="number"] { background: #FFF2CC; font-weight: 600; color: #0000FF; }
+  select { background: white; }
+  input:focus, select:focus { outline: 2px solid #1F4E78; }
+  .won-kor { font-size: 12px; color: #1F4E78; font-weight: 600; margin-top: 3px; min-height: 15px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px){ .two-col { grid-template-columns: 1fr; } }
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; font-style: normal; cursor: pointer; margin-left: 4px; }
+  .info-box { display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #1e40af; line-height: 1.7; margin-top: 8px; }
+
+  .verdict-hero { border-radius: 14px; padding: 22px; text-align: center; margin-bottom: 16px; color: white; }
+  .verdict-hero.good { background: linear-gradient(135deg, #16a34a, #22c55e); }
+  .verdict-hero.bad { background: linear-gradient(135deg, #dc2626, #ef4444); }
+  .verdict-hero.even { background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+  .verdict-hero .vh-verdict { font-size: 26px; font-weight: 800; }
+  .verdict-hero .vh-detail { font-size: 13.5px; opacity: .95; margin-top: 8px; line-height: 1.6; }
+
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .compare-card { border-radius: 12px; padding: 16px; border: 2px solid #e5e7eb; background: #fafbfc; }
+  .compare-card.win { border-color: #16a34a; background: #f0fdf4; }
+  .compare-card .cc-name { font-size: 13px; font-weight: 700; color: #666; margin-bottom: 8px; }
+  .compare-card.win .cc-name { color: #16a34a; }
+  .compare-card .cc-pay { font-size: 19px; font-weight: 800; color: #1F4E78; }
+  .compare-card .cc-sub { font-size: 11px; color: #888; margin-top: 4px; line-height: 1.5; }
+
+  table.breakdown { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.breakdown td { padding: 9px 8px; border-bottom: 1px solid #f0f0f0; }
+  table.breakdown td.label { color: #555; }
+  table.breakdown td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  table.breakdown tr.total td { border-top: 2px solid #1F4E78; font-weight: 800; color: #1F4E78; }
+
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; line-height: 1.7; margin-top: 14px; }
+  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; margin-top: 8px; font-size: 12.5px; line-height: 1.8; color: #6b5618; }
+  .manual .badge { display: inline-block; background: #1F4E78; color: white; font-size: 11px; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
+  footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a href="/" class="back-link">← 메인으로</a>
+    <h1>🔄 대출 갈아타기 계산기</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc">금리가 더 낮은 대출로 <b>갈아타는 게 이득인지</b> 계산합니다. 중도상환수수료를 감안해도 절약되는지, <b>손익분기까지 몇 개월</b> 걸리는지 알려줘요.</p>
+
+  <!-- 현재 대출 -->
+  <div class="panel">
+    <div class="section-label">📋 현재 대출</div>
+    <div class="input-row">
+      <label>남은 대출 원금 (원)</label>
+      <input type="number" id="balance" value="200000000" inputmode="numeric">
+      <div class="won-kor" id="balance_kor"></div>
+    </div>
+    <div class="two-col">
+      <div class="input-row">
+        <label>현재 금리 (연 %)</label>
+        <input type="number" id="curRate" value="4.5" step="0.1" inputmode="decimal">
+      </div>
+      <div class="input-row">
+        <label>남은 기간 (개월)</label>
+        <input type="number" id="months" value="240" inputmode="numeric">
+      </div>
+    </div>
+    <div class="input-row">
+      <label>상환 방식</label>
+      <select id="repayType" onchange="calculate()">
+        <option value="equal" selected>원리금균등 (매달 같은 금액)</option>
+        <option value="principal">원금균등 (원금 일정, 이자 감소)</option>
+        <option value="bullet">만기일시 (이자만 내다 만기에 원금)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 갈아탈 대출 -->
+  <div class="panel">
+    <div class="section-label">🆕 갈아탈 대출</div>
+    <div class="two-col">
+      <div class="input-row">
+        <label>새 금리 (연 %)</label>
+        <input type="number" id="newRate" value="3.8" step="0.1" inputmode="decimal">
+      </div>
+      <div class="input-row">
+        <label>새 기간 (개월) <span class="stat-sub">보통 동일</span></label>
+        <input type="number" id="newMonths" value="240" inputmode="numeric">
+      </div>
+    </div>
+    <div class="input-row">
+      <label>중도상환수수료율 (%) <span class="stat-sub">현재 대출 해지 시</span> <span class="info-btn" onclick="toggleInfo('feeInfo')">i</span></label>
+      <input type="number" id="prepayFeeRate" value="1.2" step="0.1" inputmode="decimal">
+      <div class="info-box" id="feeInfo">대출 받은 지 3년 안에 갚으면 보통 중도상환수수료가 붙어요(보통 0.5~1.5%). 3년 지나면 면제되는 경우가 많아요. 수수료 = 남은 원금 × 수수료율(보통 잔존기간에 따라 감소). 정확한 율은 대출 약정서를 확인하세요.</div>
+    </div>
+    <div class="input-row">
+      <label>기타 부대비용 (원) <span class="stat-sub">인지세·등기 등, 갈아탈 때</span></label>
+      <input type="number" id="switchCost" value="0" inputmode="numeric">
+      <div class="won-kor" id="switchCost_kor"></div>
+    </div>
+  </div>
+
+  <!-- 판정 -->
+  <div class="verdict-hero even" id="verdict">
+    <div class="vh-verdict" id="verdictText">-</div>
+    <div class="vh-detail" id="verdictDetail"></div>
+  </div>
+
+  <!-- 비교 -->
+  <div class="compare-grid">
+    <div class="compare-card" id="curCard">
+      <div class="cc-name">현재 유지</div>
+      <div class="cc-pay" id="curPay">-</div>
+      <div class="cc-sub">월 상환액 / 총이자 <span id="curTotal"></span></div>
+    </div>
+    <div class="compare-card" id="newCard">
+      <div class="cc-name">갈아타기</div>
+      <div class="cc-pay" id="newPay">-</div>
+      <div class="cc-sub">월 상환액 / 총이자 <span id="newTotal"></span></div>
+    </div>
+  </div>
+
+  <!-- 상세 -->
+  <div class="panel">
+    <div class="section-label">📊 비교 상세</div>
+    <table class="breakdown">
+      <tr><td class="label">현재 총이자 (남은 기간)</td><td class="num" id="d_curInt">-</td></tr>
+      <tr><td class="label">갈아탄 후 총이자</td><td class="num" id="d_newInt">-</td></tr>
+      <tr><td class="label">이자 절약액</td><td class="num" id="d_saveInt" style="color:#16a34a">-</td></tr>
+      <tr><td class="label">− 중도상환수수료</td><td class="num" id="d_fee" style="color:#dc2626">-</td></tr>
+      <tr><td class="label">− 기타 부대비용</td><td class="num" id="d_switch" style="color:#dc2626">-</td></tr>
+      <tr class="total"><td class="label">순 절약액</td><td class="num" id="d_net">-</td></tr>
+    </table>
+  </div>
+
+  <div class="note">
+    ⚠️ <b>참고용</b>입니다. 실제 중도상환수수료는 <b>잔존기간에 따라 줄어들고</b>(슬라이딩), 대출마다 계산식이 달라요. 새 대출의 한도·자격 조건도 별도예요. 정확한 건 은행에 문의하세요. <b>대환대출 플랫폼</b>(주택담보·신용)에서 비교도 가능합니다.
+  </div>
+
+  <div class="manual">
+    <b>📘 보는 법</b><br>
+    <span class="badge">순 절약액</span> 이자 절약 − 중도상환수수료 − 부대비용. <b>플러스면 갈아타기 이득.</b><br>
+    <span class="badge">손익분기</span> 수수료를 절약액으로 회수하는 데 걸리는 개월. 이 기간보다 오래 보유하면 이득.<br>
+    금리차가 클수록, 남은 기간이 길수록, 수수료가 낮을수록(3년 경과 등) 갈아타기가 유리해요.
+  </div>
+
+  <footer>© 스윙파머</footer>
+</div>
+
+<script src="/common.js?v=3"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+function wonToKorean(n){ var neg=n<0; n=Math.round(Math.abs(n)); if(n===0)return ''; var eok=Math.floor(n/1e8),man=Math.floor((n%1e8)/1e4),won=n%1e4,p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(man>0)p.push(man.toLocaleString('ko-KR')+'만'); if(won>0)p.push(won.toLocaleString('ko-KR')); return (neg?'−':'')+p.join(' ')+'원'; }
+function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
+
+// 월 상환액 + 총이자 계산
+function loanCalc(principal, annualRate, months, type){
+  const r = annualRate/100/12;
+  if(months<=0||principal<=0) return {monthly:0, totalInterest:0};
+  if(type==='bullet'){
+    const monthly = principal*r; // 매달 이자만
+    return { monthly, totalInterest: monthly*months };
+  } else if(type==='principal'){
+    // 원금균등: 첫달이 가장 큼. 총이자 = 원금 × r × (months+1)/2
+    const principalPart = principal/months;
+    const totalInterest = principal*r*(months+1)/2;
+    const firstMonthly = principalPart + principal*r;
+    return { monthly: firstMonthly, totalInterest, isFirst:true };
+  } else {
+    // 원리금균등
+    if(r===0) return { monthly: principal/months, totalInterest:0 };
+    const monthly = principal*r*Math.pow(1+r,months)/(Math.pow(1+r,months)-1);
+    const totalInterest = monthly*months - principal;
+    return { monthly, totalInterest };
+  }
+}
+
+function calculate(){
+  const balance=parseFloat($('balance').value)||0;
+  const curRate=parseFloat($('curRate').value)||0;
+  const months=parseFloat($('months').value)||0;
+  const repayType=$('repayType').value;
+  const newRate=parseFloat($('newRate').value)||0;
+  const newMonths=parseFloat($('newMonths').value)||months;
+  const prepayFeeRate=(parseFloat($('prepayFeeRate').value)||0)/100;
+  const switchCost=parseFloat($('switchCost').value)||0;
+
+  const cur = loanCalc(balance, curRate, months, repayType);
+  const nw = loanCalc(balance, newRate, newMonths, repayType);
+
+  const fee = balance*prepayFeeRate;
+  const saveInt = cur.totalInterest - nw.totalInterest;
+  const netSave = saveInt - fee - switchCost;
+
+  // 손익분기 개월: 월 이자 절감액으로 (수수료+부대) 회수
+  const monthlyIntSave = (cur.monthly - nw.monthly);
+  let breakEvenMonths = monthlyIntSave>0 ? (fee+switchCost)/monthlyIntSave : Infinity;
+
+  // 카드
+  $('curPay').textContent = fmt(cur.monthly)+'원';
+  $('newPay').textContent = fmt(nw.monthly)+'원';
+  $('curTotal').textContent = '/ '+fmt(cur.totalInterest);
+  $('newTotal').textContent = '/ '+fmt(nw.totalInterest);
+  $('curCard').classList.toggle('win', netSave<=0);
+  $('newCard').classList.toggle('win', netSave>0);
+
+  // 상세
+  $('d_curInt').textContent = fmt(cur.totalInterest)+'원';
+  $('d_newInt').textContent = fmt(nw.totalInterest)+'원';
+  $('d_saveInt').textContent = '+'+fmt(saveInt)+'원';
+  $('d_fee').textContent = '−'+fmt(fee)+'원';
+  $('d_switch').textContent = '−'+fmt(switchCost)+'원';
+  $('d_net').textContent = (netSave>=0?'+':'−')+fmt(Math.abs(netSave))+'원';
+  $('d_net').style.color = netSave>=0?'#16a34a':'#dc2626';
+
+  // 판정
+  const v=$('verdict');
+  if(netSave>500000){
+    v.className='verdict-hero good';
+    $('verdictText').textContent='✅ 갈아타기 이득';
+    $('verdictDetail').innerHTML=`수수료·비용 빼고도 <b>${fmt(netSave)}원</b> 절약돼요.`+(isFinite(breakEvenMonths)?`<br>손익분기 약 <b>${Math.ceil(breakEvenMonths)}개월</b> — 그보다 오래 쓰면 이득.`:'');
+  } else if(netSave<-100000){
+    v.className='verdict-hero bad';
+    $('verdictText').textContent='❌ 갈아타기 손해';
+    $('verdictDetail').innerHTML=`수수료·비용이 이자 절약보다 커서 <b>${fmt(Math.abs(netSave))}원</b> 손해예요. 금리차가 더 벌어지거나 수수료가 면제될 때(3년 경과) 다시 보세요.`;
+  } else {
+    v.className='verdict-hero even';
+    $('verdictText').textContent='⚖️ 비슷함';
+    $('verdictDetail').innerHTML=`절약액이 ${fmt(netSave)}원으로 거의 본전이에요. 큰 차이 없으니 신중히.`;
+  }
+
+  ['balance','switchCost'].forEach(id=>{ var el=$(id),box=$(id+'_kor'); if(el&&box){ var val=parseFloat(el.value)||0; box.textContent=val>0?wonToKorean(val):''; } });
+}
+
+document.querySelectorAll('input').forEach(el=>el.addEventListener('input', calculate));
+calculate();
+</script>
+</body>
+</html>
