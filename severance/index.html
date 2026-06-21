@@ -1,1 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>퇴직금 계산기 | 스윙파머</title>
+<meta name="description" content="평균임금(퇴직 전 3개월) 기반 법정 퇴직금 계산. 근속기간·월급·상여·연차수당 반영해 예상 퇴직금을 산출.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; display: block; }
+  header h1 { font-size: 20px; color: #1F4E78; margin: 0; }
+  .back-link { display: inline-block; margin-bottom: 8px; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
+  .panel { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .section-label { font-size: 14px; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #eef0f3; color: #1F4E78; }
+  .input-row { margin-bottom: 13px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #333; }
+  .stat-sub { font-size: 11px; font-weight: 500; color: #888; }
+  input[type="number"], input[type="date"] { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; }
+  input[type="number"] { background: #FFF2CC; font-weight: 600; color: #0000FF; }
+  input[type="date"] { background: white; }
+  input:focus { outline: 2px solid #1F4E78; }
+  .won-kor { font-size: 12px; color: #1F4E78; font-weight: 600; margin-top: 3px; min-height: 15px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px){ .two-col { grid-template-columns: 1fr; } }
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; font-style: normal; cursor: pointer; margin-left: 4px; }
+  .info-box { display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #1e40af; line-height: 1.7; margin-top: 8px; }
 
+  .result-hero { border-radius: 14px; padding: 24px; text-align: center; margin-bottom: 16px; color: white; background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+  .result-hero .rh-label { font-size: 13px; opacity: .9; margin-bottom: 4px; }
+  .result-hero .rh-amount { font-size: 32px; font-weight: 800; }
+  .result-hero .rh-sub { font-size: 12.5px; opacity: .9; margin-top: 6px; }
+
+  table.breakdown { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.breakdown td { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; }
+  table.breakdown td.label { color: #555; }
+  table.breakdown td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  table.breakdown tr.total td { border-top: 2px solid #1F4E78; font-weight: 800; color: #1F4E78; font-size: 15px; padding-top: 12px; }
+
+  .stat-row { display: flex; gap: 12px; margin-bottom: 16px; }
+  .stat-box { flex: 1; background: white; border-radius: 12px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); text-align: center; }
+  .stat-box .sb-label { font-size: 11.5px; color: #888; }
+  .stat-box .sb-val { font-size: 17px; font-weight: 800; color: #1F4E78; margin-top: 3px; }
+
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; line-height: 1.7; margin-top: 14px; }
+  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; margin-top: 8px; font-size: 12.5px; line-height: 1.8; color: #6b5618; }
+  .manual .badge { display: inline-block; background: #1F4E78; color: white; font-size: 11px; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
+  footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a href="/" class="back-link">← 메인으로</a>
+    <h1>🧳 퇴직금 계산기</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc"><b>평균임금(퇴직 전 3개월)</b> 기준으로 법정 퇴직금을 계산합니다. 근속 1년 이상이면 받을 수 있고, 1년에 약 한 달치 월급이 쌓여요. 상여·연차수당도 반영합니다.</p>
+
+  <div id="cloudArea" style="display:none;align-items:center;gap:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin:0 0 14px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:#0369a1">☁️ 관리자</span>
+    <button id="btnCloudOpen" type="button" style="background:#0ea5e9;color:white;border:none;border-radius:6px;padding:9px 14px;font-size:12.5px;font-weight:600;cursor:pointer">클라우드 저장/불러오기</button>
+    <span id="cloudWho" style="font-size:11px;color:#0369a1"></span>
+    <button id="btnCloudLogout" type="button" style="margin-left:auto;background:#9ca3af;color:white;border:none;border-radius:6px;padding:9px 14px;font-size:12.5px;font-weight:600;cursor:pointer">로그아웃</button>
+  </div>
+  <button id="btnAdminLogin" type="button" style="display:none;background:#fff;color:#444;border:1px solid #ddd;border-radius:6px;padding:9px 14px;font-size:12.5px;font-weight:600;cursor:pointer;margin-bottom:14px">🔑 관리자 로그인</button>
+  <div id="uidInfo" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:13px;color:#92400e;margin-bottom:14px;line-height:1.7"></div>
+
+
+  <!-- 근속 -->
+  <div class="panel">
+    <div class="section-label">📅 근속 기간</div>
+    <div class="two-col">
+      <div class="input-row">
+        <label>입사일</label>
+        <input type="date" id="joinDate" value="2020-03-02">
+      </div>
+      <div class="input-row">
+        <label>퇴사일 <span class="stat-sub">마지막 근무 다음날</span></label>
+        <input type="date" id="leaveDate" value="2026-06-30">
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="sb-label">총 근속</div><div class="sb-val" id="totalDays">-</div></div>
+      <div class="stat-box"><div class="sb-label">근속 연수</div><div class="sb-val" id="serviceYears">-</div></div>
+    </div>
+  </div>
+
+  <!-- 임금 -->
+  <div class="panel">
+    <div class="section-label">💵 평균임금 산정 <span class="info-btn" onclick="toggleInfo('avgInfo')">i</span></div>
+    <div class="input-row">
+      <label>월 기본급+고정수당 (세전, 원) <span class="stat-sub">퇴직 전 3개월 평균 월급</span></label>
+      <input type="number" id="monthlyWage" value="3500000" inputmode="numeric">
+      <div class="won-kor" id="monthlyWage_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>연간 상여금 총액 (원) <span class="stat-sub">없으면 0</span></label>
+      <input type="number" id="annualBonus" value="0" inputmode="numeric">
+      <div class="won-kor" id="annualBonus_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>연차수당 (퇴직 전 받은, 원) <span class="stat-sub">없으면 0</span></label>
+      <input type="number" id="annualLeave" value="0" inputmode="numeric">
+      <div class="won-kor" id="annualLeave_kor"></div>
+    </div>
+    <div class="info-box" id="avgInfo">퇴직금은 <b>평균임금</b>으로 계산해요. 평균임금 = (퇴직 전 3개월 임금 총액) ÷ (그 기간의 총일수). 여기에 연간 상여금의 3/12, 연차수당의 3/12을 더해요. 이 계산기는 월급을 3개월치로 환산해 근사합니다. 통상임금이 평균임금보다 높으면 통상임금으로 계산해요(여기선 평균임금 기준).</div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="result-hero">
+    <div class="rh-label">예상 퇴직금 (세전)</div>
+    <div class="rh-amount" id="severance">-</div>
+    <div class="rh-sub" id="severanceKor"></div>
+  </div>
+
+  <!-- 상세 -->
+  <div class="panel">
+    <div class="section-label">📋 계산 상세</div>
+    <table class="breakdown">
+      <tr><td class="label">1일 평균임금</td><td class="num" id="d_avgDaily">-</td></tr>
+      <tr><td class="label">근속일수</td><td class="num" id="d_days">-</td></tr>
+      <tr><td class="label">계산식</td><td class="num" style="font-size:11.5px;color:#888" id="d_formula">-</td></tr>
+      <tr class="total"><td class="label">퇴직금</td><td class="num" id="d_result">-</td></tr>
+    </table>
+  </div>
+
+  <div class="note">
+    ⚠️ <b>참고용 추정치</b>입니다. 실제 평균임금은 퇴직 전 3개월의 실제 지급액·일수로 계산되며, 통상임금이 더 높으면 통상임금 기준이에요. <b>근속 1년 미만은 퇴직금이 없어요.</b> 퇴직소득세는 별도로 떼며(근속연수 공제로 보통 낮음), 이 계산기엔 미반영입니다. 정확한 건 회사·노무사에 확인하세요.
+  </div>
+
+  <div class="manual">
+    <b>📘 계산 방법</b><br>
+    <span class="badge">법정 퇴직금</span> 1일 평균임금 × 30일 × (근속일수 ÷ 365)<br>
+    <span class="badge">평균임금</span> (3개월 임금 + 상여 3/12 + 연차수당 3/12) ÷ 3개월 일수<br>
+    1년 일하면 약 한 달치 월급이 퇴직금으로 쌓여요. 5년이면 약 5달치.
+  </div>
+
+  <footer>© 스윙파머</footer>
+</div>
+
+<script src="/common.js?v=3"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+function wonToKorean(n){ var neg=n<0; n=Math.round(Math.abs(n)); if(n===0)return ''; var eok=Math.floor(n/1e8),man=Math.floor((n%1e8)/1e4),won=n%1e4,p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(man>0)p.push(man.toLocaleString('ko-KR')+'만'); if(won>0)p.push(won.toLocaleString('ko-KR')); return (neg?'−':'')+p.join(' ')+'원'; }
+function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
+
+function calculate(){
+  const join = new Date($('joinDate').value);
+  const leave = new Date($('leaveDate').value);
+  const monthlyWage = parseFloat($('monthlyWage').value)||0;
+  const annualBonus = parseFloat($('annualBonus').value)||0;
+  const annualLeave = parseFloat($('annualLeave').value)||0;
+
+  if(isNaN(join)||isNaN(leave)||leave<=join){
+    $('severance').textContent='날짜 확인';
+    $('totalDays').textContent='-'; $('serviceYears').textContent='-';
+    return;
+  }
+
+  const days = Math.round((leave-join)/(1000*60*60*24));
+  const years = days/365;
+  $('totalDays').textContent = days.toLocaleString()+'일';
+  $('serviceYears').textContent = Math.floor(years)+'년 '+Math.round((years-Math.floor(years))*12)+'개월';
+
+  // 평균임금: 3개월 임금 + 상여 3/12 + 연차 3/12, ÷ 3개월 일수(약 91.25)
+  const threeMonthDays = 365/4; // 91.25
+  const threeMonthWage = monthlyWage*3 + annualBonus*(3/12) + annualLeave*(3/12);
+  const avgDaily = threeMonthWage/threeMonthDays;
+
+  // 근속 1년 미만이면 퇴직금 없음
+  let severance = 0;
+  if(years>=1){
+    severance = avgDaily * 30 * (days/365);
+  }
+
+  $('severance').textContent = years>=1 ? fmt(severance)+'원' : '0원 (1년 미만)';
+  $('severanceKor').textContent = years>=1 ? wonToKorean(severance) : '근속 1년 이상부터 발생';
+  $('d_avgDaily').textContent = fmt(avgDaily)+'원';
+  $('d_days').textContent = days.toLocaleString()+'일';
+  $('d_formula').textContent = fmt(avgDaily)+' × 30 × ('+days+'÷365)';
+  $('d_result').textContent = fmt(severance)+'원';
+
+  ['monthlyWage','annualBonus','annualLeave'].forEach(id=>{ var el=$(id),box=$(id+'_kor'); if(el&&box){ var v=parseFloat(el.value)||0; box.textContent=v>0?wonToKorean(v):''; } });
+}
+
+document.querySelectorAll('input').forEach(el=>el.addEventListener('input', calculate));
+// 상태 저장/복원 (input + select)
+function svGetState(){
+  const s={};
+  
+  document.querySelectorAll('input[id], select[id]').forEach(el=>{ s[el.id]=el.value; });
+  return s;
+}
+function svSetState(d){
+  if(!d) return;
+  
+  document.querySelectorAll('input[id], select[id]').forEach(el=>{ if(d[el.id]!==undefined) el.value=d[el.id]; });
+  calculate();
+}
+function svSaveLocal(){ try{ localStorage.setItem('sf_sv_state_v1', JSON.stringify(svGetState())); }catch(e){} }
+function svLoadLocal(){ try{ const r=localStorage.getItem('sf_sv_state_v1'); if(r) svSetState(JSON.parse(r)); }catch(e){} }
+document.querySelectorAll('input, select').forEach(el=>el.addEventListener('input', svSaveLocal));
+document.querySelectorAll('select').forEach(el=>el.addEventListener('change', svSaveLocal));
+window.svGetState=svGetState; window.svSetState=svSetState;
+svLoadLocal();
+calculate();
+</script>
+
+<!-- 클라우드 슬롯 모달 -->
+<div id="slotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:16px;max-width:440px;width:100%;padding:20px;max-height:90vh;overflow:auto">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <h3 style="margin:0;font-size:16px;color:#1F4E78">☁️ 클라우드 저장</h3>
+      <button onclick="document.getElementById('slotModal').style.display='none'" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">💾 현재 입력값 저장</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="slotName" placeholder="이름 (예: 시나리오 A)" maxlength="30" style="flex:1;padding:9px;font-size:13px;border:1px solid #ccc;border-radius:6px;background:white;color:#333">
+        <button id="slotSaveBtn" style="background:#0ea5e9;color:white;border:none;padding:9px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">저장</button>
+      </div>
+    </div>
+    <div style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px">📋 저장된 항목</div>
+    <div id="slotList" style="display:flex;flex-direction:column;gap:8px"><div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+const firebaseConfig = { apiKey:"AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY", authDomain:"swingfarmer-board01.firebaseapp.com", projectId:"swingfarmer-board01", storageBucket:"swingfarmer-board01.firebasestorage.app", messagingSenderId:"312575044644", appId:"1:312575044644:web:81d754eb1d90f25454fcb1" };
+const ADMIN_UID="1JrHgD2bpTRjrS2jw7MbpHciBph1", CALC_KEY="severance";
+const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
+const provider=new GoogleAuthProvider(); provider.setCustomParameters({prompt:'select_account'});
+const gid=id=>document.getElementById(id); let currentUser=null;
+getRedirectResult(auth).catch(()=>{});
+if(location.hash==='#admin'||location.hash==='#\uad00\ub9ac\uc790'){ gid('btnAdminLogin').style.display='inline-block'; }
+gid('btnAdminLogin').addEventListener('click', async()=>{ try{ await signInWithPopup(auth,provider); }catch(e){ const code=e&&e.code; if(code==='auth/popup-blocked'||code==='auth/cancelled-popup-request'||code==='auth/popup-closed-by-user'||code==='auth/operation-not-supported-in-this-environment'){ try{ await signInWithRedirect(auth,provider); }catch(e2){ alert('\ub85c\uadf8\uc778 \uc2e4\ud328: '+e2.message); } } else { alert('\ub85c\uadf8\uc778 \uc2e4\ud328: '+(e.message||code)); } } });
+onAuthStateChanged(auth, user=>{ currentUser=user; const isAdmin=user&&user.uid===ADMIN_UID;
+  if(isAdmin){ gid('cloudArea').style.display='inline-flex'; gid('btnAdminLogin').style.display='none'; gid('cloudWho').textContent='\u2601\ufe0f '+(user.displayName||user.email||'\uad00\ub9ac\uc790'); gid('uidInfo').style.display='none'; }
+  else if(user&&!isAdmin){ gid('cloudArea').style.display='none'; gid('btnAdminLogin').style.display='none'; gid('uidInfo').style.display='block'; gid('uidInfo').innerHTML='\ub85c\uadf8\uc778\ub428: <b>'+(user.email||'')+'</b><br>\uc774 \uacc4\uc815 UID:<br><code style="font-size:11px;word-break:break-all">'+user.uid+'</code><br><button onclick="window._svSignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer;margin-top:4px">\ub85c\uadf8\uc544\uc6c3</button>'; }
+  else { gid('cloudArea').style.display='none'; gid('uidInfo').style.display='none'; } });
+window._svSignout=()=>signOut(auth);
+const docRef=()=>doc(db,'calc_data',ADMIN_UID);
+async function loadSlots(){ try{ const s=await getDoc(docRef()); if(s.exists()&&s.data()[CALC_KEY]&&Array.isArray(s.data()[CALC_KEY].slots))return s.data()[CALC_KEY].slots; }catch(e){} return []; }
+async function saveSlots(slots){ const ref=docRef(); let ex={}; try{ const s=await getDoc(ref); if(s.exists())ex=s.data(); }catch(e){} ex[CALC_KEY]={slots,updatedAt:new Date().toISOString()}; await setDoc(ref,ex,{merge:true}); }
+let _slots=[];
+function renderSlots(){ const box=gid('slotList'); if(!_slots.length){ box.innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">\uc800\uc7a5\ub41c \ud56d\ubaa9\uc774 \uc5c6\uc5b4\uc694.</div>'; return; }
+  box.innerHTML=_slots.map((s,i)=>{ const t=s.savedAt?new Date(s.savedAt).toLocaleString('ko-KR'):''; return '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.name||'(\uc774\ub984\uc5c6\uc74c)')+'</div><div style="font-size:11px;color:#999">'+t+'</div></div><button onclick="window._svRename('+i+')" style="background:#e5e7eb;color:#444;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">\u270f\ufe0f</button><button onclick="window._svLoad('+i+')" style="background:#0284c7;color:white;border:none;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">\ubd88\ub7ec\uc624\uae30</button><button onclick="window._svDel('+i+')" style="background:#fee2e2;color:#dc2626;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">\ud83d\uddd1\ufe0f</button></div>'; }).join(''); }
+async function refresh(){ gid('slotList').innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">\ubd88\ub7ec\uc624\ub294 \uc911...</div>'; _slots=await loadSlots(); renderSlots(); }
+gid('btnCloudOpen').addEventListener('click', async()=>{ if(!currentUser||currentUser.uid!==ADMIN_UID){ alert('\uad00\ub9ac\uc790 \ub85c\uadf8\uc778\uc774 \ud544\uc694\ud569\ub2c8\ub2e4.'); return; } gid('slotName').value=''; gid('slotModal').style.display='flex'; await refresh(); });
+gid('slotSaveBtn').addEventListener('click', async()=>{ const name=gid('slotName').value.trim(); if(!name){ alert('\uc774\ub984\uc744 \uc785\ub825\ud558\uc138\uc694.'); return; } const idx=_slots.findIndex(s=>s.name===name); if(idx>=0&&!confirm('"'+name+'" \ub36e\uc5b4\uc4f8\uae4c\uc694?'))return; gid('slotSaveBtn').disabled=true; gid('slotSaveBtn').textContent='\uc800\uc7a5 \uc911...'; try{ const entry={name,data:window.svGetState(),savedAt:new Date().toISOString()}; if(idx>=0)_slots[idx]=entry; else _slots.push(entry); await saveSlots(_slots); renderSlots(); alert('\u2705 \uc800\uc7a5 \uc644\ub8cc.'); }catch(e){ alert('\uc800\uc7a5 \uc2e4\ud328: '+e.message); } gid('slotSaveBtn').disabled=false; gid('slotSaveBtn').textContent='\uc800\uc7a5'; });
+window._svLoad=function(i){ const s=_slots[i]; if(!s)return; if(!confirm('"'+s.name+'" \ubd88\ub7ec\uc62c\uae4c\uc694? \ud604\uc7ac \uc785\ub825\uac12\uc774 \ubc14\ub01d\ub2c8\ub2e4.'))return; window.svSetState(s.data); gid('slotModal').style.display='none'; };
+window._svDel=async function(i){ if(!confirm('\uc0ad\uc81c\ud560\uae4c\uc694?'))return; try{ _slots.splice(i,1); await saveSlots(_slots); renderSlots(); }catch(e){ alert('\uc2e4\ud328: '+e.message); } };
+window._svRename=async function(i){ const nn=prompt('\uc774\ub984 \uc218\uc815', _slots[i].name||''); if(nn===null)return; const t=nn.trim(); if(!t)return; try{ _slots[i].name=t; await saveSlots(_slots); renderSlots(); }catch(e){ alert('\uc2e4\ud328: '+e.message); } };
+gid('btnCloudLogout').addEventListener('click', async()=>{ if(confirm('\ub85c\uadf8\uc544\uc6c3 \ud560\uae4c\uc694?')){ try{ await signOut(auth); alert('\ub85c\uadf8\uc544\uc6c3 \ub410\uc5b4\uc694.'); }catch(e){} } });
+</script>
+
+</body>
+</html>
