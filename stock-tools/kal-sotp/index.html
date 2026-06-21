@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>대한항공 SOTP 기업가치 계산기 | 스윙파머</title>
+<meta name="description" content="대한항공을 여객·화물·항공우주 3개 사업부로 쪼개 SOTP(부분별 합산) 방식으로 적정 시가총액을 추정. 순이익·비중·멀티플을 조정해 보수/중립/강세 시나리오 비교.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; display: block; }
+  header h1 { font-size: 18px; color: #1F4E78; margin: 0; }
+  .back-link { display: inline-block; margin-bottom: 8px; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
+  .panel { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .section-label { font-size: 14px; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #eef0f3; color: #1F4E78; }
+  .input-row { margin-bottom: 13px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #333; }
+  .stat-sub { font-size: 11px; font-weight: 500; color: #888; }
+  input[type="number"] { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; background: #FFF2CC; font-weight: 600; color: #0000FF; }
+  input:focus { outline: 2px solid #1F4E78; }
+  .unit-suffix { font-size: 12px; color: #888; margin-top: 3px; }
+
+  .toggle-row { display: flex; gap: 8px; margin-bottom: 6px; }
+  .toggle-opt { flex: 1; padding: 9px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; background: #eef2f7; color: #1F4E78; border: 2px solid transparent; text-align: center; }
+  .toggle-opt.active { background: #1F4E78; color: white; }
+
+  .preset-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .preset-btn { flex: 1; padding: 11px 6px; border-radius: 9px; font-size: 13px; font-weight: 700; cursor: pointer; border: 2px solid #e5e7eb; background: white; text-align: center; line-height: 1.3; }
+  .preset-btn small { display: block; font-size: 10px; font-weight: 500; opacity: .75; margin-top: 2px; }
+  .preset-btn.cons { color: #16a34a; } .preset-btn.cons.active { background: #16a34a; color: white; border-color: #16a34a; }
+  .preset-btn.neut { color: #1F4E78; } .preset-btn.neut.active { background: #1F4E78; color: white; border-color: #1F4E78; }
+  .preset-btn.bull { color: #dc2626; } .preset-btn.bull.active { background: #dc2626; color: white; border-color: #dc2626; }
+
+  /* 사업부 테이블 */
+  table.seg { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.seg th { background: #f8fafc; padding: 8px 6px; border-bottom: 2px solid #e5e7eb; font-size: 11.5px; color: #555; }
+  table.seg td { padding: 8px 6px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+  table.seg td.seg-name { font-weight: 700; color: #1F4E78; text-align: left; }
+  table.seg input { width: 72px; padding: 7px 6px; font-size: 13px; border: 1px solid #ddd; border-radius: 5px; text-align: right; font-weight: 600; background: #FFF2CC; color: #0000FF; }
+  table.seg td.val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: #1F4E78; }
+  table.seg tr.sum td { border-top: 2px solid #1F4E78; font-weight: 800; }
+  .seg-pax { border-left: 3px solid #3b82f6; } .seg-cargo { border-left: 3px solid #f59e0b; } .seg-aero { border-left: 3px solid #8b5cf6; }
+  .weight-warn { font-size: 11.5px; color: #dc2626; margin-top: 6px; font-weight: 600; display: none; }
+
+  /* 결과 hero */
+  .result-hero { border-radius: 14px; padding: 22px; text-align: center; margin-bottom: 16px; color: white; background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+  .result-hero .rh-label { font-size: 13px; opacity: .9; margin-bottom: 4px; }
+  .result-hero .rh-mktcap { font-size: 32px; font-weight: 800; }
+  .result-hero .rh-multiple { font-size: 13px; opacity: .95; margin-top: 6px; }
+
+  .compare-row { display: flex; gap: 12px; margin-bottom: 16px; }
+  .compare-box { flex: 1; background: white; border-radius: 12px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); text-align: center; }
+  .compare-box .cb-label { font-size: 11.5px; color: #888; }
+  .compare-box .cb-val { font-size: 19px; font-weight: 800; margin-top: 3px; }
+  .compare-box.up .cb-val { color: #16a34a; } .compare-box.down .cb-val { color: #dc2626; }
+
+  .bar-wrap { margin: 12px 0; }
+  .seg-bar { height: 30px; border-radius: 6px; overflow: hidden; display: flex; font-size: 11px; color: white; font-weight: 700; }
+  .bar-pax { background: #3b82f6; } .bar-cargo { background: #f59e0b; } .bar-aero { background: #8b5cf6; }
+  .bar-seg { display: flex; align-items: center; justify-content: center; }
+  .bar-legend { display: flex; gap: 14px; margin-top: 8px; font-size: 11.5px; color: #666; flex-wrap: wrap; }
+  .bar-legend span { display: flex; align-items: center; gap: 4px; }
+  .dot { width: 10px; height: 10px; border-radius: 2px; }
+
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; font-style: normal; cursor: pointer; margin-left: 4px; }
+  .info-box { display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #1e40af; line-height: 1.7; margin-top: 8px; }
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; line-height: 1.7; margin-top: 14px; }
+  .warn-strong { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #991b1b; line-height: 1.7; margin-bottom: 16px; }
+  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; margin-top: 8px; font-size: 12.5px; line-height: 1.8; color: #6b5618; }
+  .manual .badge { display: inline-block; background: #1F4E78; color: white; font-size: 11px; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
+  footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a href="/stock-tools/" class="back-link">← 주식 도구로</a>
+    <h1>✈️ 대한항공 SOTP 기업가치 계산기</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc">대한항공을 <b>여객·화물·항공우주</b> 3개 사업부로 쪼개, 각 부문 순이익에 업종별 멀티플을 곱해 <b>적정 시가총액을 추정(SOTP)</b>합니다. 순이익·비중·멀티플을 조정해 보수/중립/강세 시나리오를 비교하세요.</p>
+
+  <div class="warn-strong">
+    ⚠️ <b>이 도구는 가정에 매우 민감합니다.</b> 부문별 순이익은 회사가 공개하지 않아 <b>전부 추정</b>이고, 화물·항공우주는 페덱스·방산 같은 순수 전문기업이 아니라 항공사 내 사업부라 그 멀티플을 100% 적용하기 어렵습니다. 결과는 "이런 가정이면 이 정도"라는 <b>참고 범위</b>일 뿐, 목표주가가 아닙니다.
+  </div>
+
+  <!-- 총 순이익 -->
+  <div class="panel">
+    <div class="section-label">💰 전체 순이익</div>
+    <div class="input-row">
+      <label>연간 순이익 (억원) <span class="stat-sub">기본 1조 = 10,000억</span> <span class="info-btn" onclick="toggleInfo('niInfo')">i</span></label>
+      <input type="number" id="totalNI" value="10000" inputmode="numeric">
+      <div class="unit-suffix" id="totalNI_disp"></div>
+      <div class="info-box" id="niInfo">SOTP의 출발점인 전체 연간 순이익이에요. 기본 1조(10,000억)는 보수적 가정입니다. 참고: 한투 리포트 기준 2026F 연결 지배순이익은 3,430억(2Q 트로프 반영), 2027F는 1.2조 수준. 1분기 별도 순이익은 2,427억이었어요. 정상화 국면의 연간 순이익을 넣으세요.</div>
+    </div>
+  </div>
+
+  <!-- 비중 모드 -->
+  <div class="panel">
+    <div class="section-label">📊 사업부 비중 기준 <span class="info-btn" onclick="toggleInfo('modeInfo')">i</span></div>
+    <div class="toggle-row">
+      <div class="toggle-opt active" data-mode="revenue" onclick="setMode('revenue')">매출 비중</div>
+      <div class="toggle-opt" data-mode="profit" onclick="setMode('profit')">순이익 비중</div>
+    </div>
+    <div class="info-box" id="modeInfo">전체 순이익을 사업부별로 나누는 기준이에요.<br>• <b>매출 비중</b>: 2026년 1분기 실제 매출 비중(여객 66 / 화물 28 / 항공우주 6%). 객관적이지만, 마진 차이를 무시해 고마진 부문(화물·우주) 가치가 과소평가될 수 있어요.<br>• <b>순이익 비중</b>: 마진을 반영한 추정. 화물·우주가 여객보다 마진이 높아 이익 비중이 매출 비중보다 커요(예: 50/40/10). 근거는 약하니 직접 조정하세요.</div>
+    <div style="font-size:11.5px;color:#888;margin-top:4px" id="modeNote"></div>
+  </div>
+
+  <!-- 멀티플 프리셋 -->
+  <div class="panel">
+    <div class="section-label">🎚️ 멀티플 시나리오</div>
+    <div class="preset-row">
+      <div class="preset-btn cons" id="preset_cons" onclick="applyPreset('cons')">보수<small>하단 멀티플</small></div>
+      <div class="preset-btn neut active" id="preset_neut" onclick="applyPreset('neut')">중립<small>중단 멀티플</small></div>
+      <div class="preset-btn bull" id="preset_bull" onclick="applyPreset('bull')">강세<small>상단 멀티플</small></div>
+    </div>
+    <div style="font-size:11.5px;color:#888;line-height:1.6">버튼으로 멀티플 세트를 한 번에 바꾸거나, 아래 표에서 <b>각 칸을 직접 수정</b>할 수 있어요. 직접 수정하면 프리셋 선택이 해제됩니다.</div>
+  </div>
+
+  <!-- 사업부 표 -->
+  <div class="panel">
+    <div class="section-label">🏢 사업부별 계산</div>
+    <div style="overflow-x:auto">
+      <table class="seg">
+        <thead>
+          <tr><th style="text-align:left">사업부</th><th>비중(%)</th><th>순이익(억)</th><th>멀티플(배)</th><th>가치(억)</th></tr>
+        </thead>
+        <tbody>
+          <tr class="seg-pax">
+            <td class="seg-name">여객</td>
+            <td><input type="number" id="w_pax" inputmode="decimal"></td>
+            <td class="val" id="ni_pax">-</td>
+            <td><input type="number" id="m_pax" step="0.5" inputmode="decimal"></td>
+            <td class="val" id="v_pax">-</td>
+          </tr>
+          <tr class="seg-cargo">
+            <td class="seg-name">화물</td>
+            <td><input type="number" id="w_cargo" inputmode="decimal"></td>
+            <td class="val" id="ni_cargo">-</td>
+            <td><input type="number" id="m_cargo" step="0.5" inputmode="decimal"></td>
+            <td class="val" id="v_cargo">-</td>
+          </tr>
+          <tr class="seg-aero">
+            <td class="seg-name">항공우주</td>
+            <td><input type="number" id="w_aero" inputmode="decimal"></td>
+            <td class="val" id="ni_aero">-</td>
+            <td><input type="number" id="m_aero" step="0.5" inputmode="decimal"></td>
+            <td class="val" id="v_aero">-</td>
+          </tr>
+          <tr class="sum">
+            <td class="seg-name">합계</td>
+            <td id="w_sum">-</td>
+            <td class="val" id="ni_sum">-</td>
+            <td>-</td>
+            <td class="val" id="v_sum">-</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="weight-warn" id="weightWarn">⚠️ 비중 합이 100%가 아니에요. (현재 <span id="weightSum">-</span>%)</div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="result-hero">
+    <div class="rh-label">SOTP 적정 시가총액</div>
+    <div class="rh-mktcap" id="totalMktCap">-</div>
+    <div class="rh-multiple" id="impliedMultiple"></div>
+  </div>
+
+  <!-- 비중 막대 -->
+  <div class="panel">
+    <div class="section-label">📊 가치 구성</div>
+    <div class="bar-wrap">
+      <div class="seg-bar" id="segBar"></div>
+      <div class="bar-legend">
+        <span><span class="dot" style="background:#3b82f6"></span>여객</span>
+        <span><span class="dot" style="background:#f59e0b"></span>화물</span>
+        <span><span class="dot" style="background:#8b5cf6"></span>항공우주</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 현재 시총 비교 -->
+  <div class="panel">
+    <div class="section-label">📈 현재 시총 대비</div>
+    <div class="input-row">
+      <label>현재 시가총액 (억원) <span class="stat-sub">비교용, 현재 약 10조=100,000억</span></label>
+      <input type="number" id="curMktCap" value="100000" inputmode="numeric">
+      <div class="unit-suffix" id="curMktCap_disp"></div>
+    </div>
+    <div class="compare-row">
+      <div class="compare-box">
+        <div class="cb-label">현재 시총</div>
+        <div class="cb-val" id="cb_cur">-</div>
+      </div>
+      <div class="compare-box" id="cb_upBox">
+        <div class="cb-label">상승 여력</div>
+        <div class="cb-val" id="cb_up">-</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="manual">
+    <b>📘 계산 방법 (SOTP)</b><br>
+    <span class="badge">부문 순이익</span> 전체 순이익 × 부문 비중<br>
+    <span class="badge">부문 가치</span> 부문 순이익 × 부문 멀티플<br>
+    <span class="badge">적정 시총</span> 세 부문 가치의 합<br>
+    <span class="badge">종합 멀티플</span> 적정 시총 ÷ 전체 순이익 (역산)<br>
+    멀티플 기준: 여객=델타항공급, 화물=페덱스·UPS급(사업부 디스카운트), 항공우주=방산급(규모 디스카운트).
+  </div>
+
+  <div class="note">
+    ⚠️ SOTP는 <b>강세론에서 자주 쓰는 방식</b>이라 결과가 후하게 나오기 쉬워요. 부문별 순이익 분리가 불가능해 추정에 의존하고, 사업부 멀티플을 전문기업 수준으로 주면 과대평가됩니다. 통합 부채·1회성 비용·지주 디스카운트도 빠져 있어요. <b>여러 시나리오의 범위로</b> 보고, 단일 숫자를 맹신하지 마세요. 투자 판단·권유가 아닙니다.
+  </div>
+
+  <footer>© 스윙파머</footer>
+</div>
+
+<script src="/common.js?v=3"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
+// 억원 → 조/억 표시
+function eokToKorean(eok){ eok=Math.round(eok); if(eok===0) return ''; const jo=Math.floor(eok/10000), rest=eok%10000; let p=[]; if(jo>0)p.push(jo.toLocaleString('ko-KR')+'조'); if(rest>0)p.push(rest.toLocaleString('ko-KR')+'억'); return p.join(' ')+'원'; }
+
+// 멀티플 프리셋 (보수/중립/강세 = 하단/중단/상단)
+const PRESETS = {
+  cons: { pax:7,    cargo:11, aero:15 },
+  neut: { pax:9,    cargo:14, aero:20 },
+  bull: { pax:11.5, cargo:17, aero:25 }
+};
+// 비중 기본값
+const WEIGHTS = {
+  revenue: { pax:66, cargo:28, aero:6 },   // 1분기 실제 매출 비중
+  profit:  { pax:50, cargo:40, aero:10 }   // 마진 반영 추정 (자료값)
+};
+
+let weightMode = 'revenue';
+let activePreset = 'neut';
+
+function setMode(m){
+  weightMode = m;
+  document.querySelectorAll('[data-mode]').forEach(el=>el.classList.toggle('active', el.dataset.mode===m));
+  // 비중 기본값 채우기
+  const w = WEIGHTS[m];
+  $('w_pax').value = w.pax; $('w_cargo').value = w.cargo; $('w_aero').value = w.aero;
+  $('modeNote').textContent = m==='revenue'
+    ? '2026년 1분기 실제 매출 비중(여객 2.6조 / 화물 1.1조 / 항공우주 2,522억). 객관적이지만 마진 차이 미반영.'
+    : '마진 반영 추정 비중. 화물·항공우주가 고마진이라 매출 비중보다 큼. 근거 약하니 직접 조정하세요.';
+  calculate();
+}
+
+function applyPreset(p){
+  activePreset = p;
+  document.querySelectorAll('.preset-btn').forEach(el=>el.classList.remove('active'));
+  $('preset_'+p).classList.add('active');
+  const m = PRESETS[p];
+  $('m_pax').value = m.pax; $('m_cargo').value = m.cargo; $('m_aero').value = m.aero;
+  calculate();
+}
+
+// 멀티플 직접 수정 시 프리셋 해제
+['m_pax','m_cargo','m_aero'].forEach(id=>{
+  document.addEventListener('input', e=>{
+    if(e.target && e.target.id===id){
+      activePreset = null;
+      document.querySelectorAll('.preset-btn').forEach(el=>el.classList.remove('active'));
+    }
+  });
+});
+
+function calculate(){
+  const totalNI = parseFloat($('totalNI').value)||0;
+  const wPax = parseFloat($('w_pax').value)||0;
+  const wCargo = parseFloat($('w_cargo').value)||0;
+  const wAero = parseFloat($('w_aero').value)||0;
+  const mPax = parseFloat($('m_pax').value)||0;
+  const mCargo = parseFloat($('m_cargo').value)||0;
+  const mAero = parseFloat($('m_aero').value)||0;
+  const curMktCap = parseFloat($('curMktCap').value)||0;
+
+  const wSum = wPax+wCargo+wAero;
+  // 부문 순이익
+  const niPax = totalNI*wPax/100;
+  const niCargo = totalNI*wCargo/100;
+  const niAero = totalNI*wAero/100;
+  // 부문 가치
+  const vPax = niPax*mPax;
+  const vCargo = niCargo*mCargo;
+  const vAero = niAero*mAero;
+  const vSum = vPax+vCargo+vAero;
+  const niSum = niPax+niCargo+niAero;
+
+  // 테이블
+  $('ni_pax').textContent = fmt(niPax);
+  $('ni_cargo').textContent = fmt(niCargo);
+  $('ni_aero').textContent = fmt(niAero);
+  $('v_pax').textContent = fmt(vPax);
+  $('v_cargo').textContent = fmt(vCargo);
+  $('v_aero').textContent = fmt(vAero);
+  $('w_sum').textContent = wSum.toFixed(0)+'%';
+  $('ni_sum').textContent = fmt(niSum);
+  $('v_sum').textContent = fmt(vSum);
+
+  // 비중 합 경고
+  if(Math.abs(wSum-100)>0.5){ $('weightWarn').style.display='block'; $('weightSum').textContent=wSum.toFixed(0); }
+  else { $('weightWarn').style.display='none'; }
+
+  // 결과
+  $('totalMktCap').textContent = fmt(vSum)+'억';
+  const impliedMult = totalNI>0 ? vSum/totalNI : 0;
+  $('impliedMultiple').innerHTML = eokToKorean(vSum) + ' · 역산 종합멀티플 <b>'+impliedMult.toFixed(1)+'배</b>';
+
+  $('totalNI_disp').textContent = totalNI>0 ? '= '+eokToKorean(totalNI) : '';
+  $('curMktCap_disp').textContent = curMktCap>0 ? '= '+eokToKorean(curMktCap) : '';
+
+  // 막대
+  const total = vSum>0?vSum:1;
+  const pPax = vPax/total*100, pCargo = vCargo/total*100, pAero = vAero/total*100;
+  $('segBar').innerHTML =
+    `<div class="bar-seg bar-pax" style="width:${pPax}%">${pPax>10?Math.round(pPax)+'%':''}</div>`+
+    `<div class="bar-seg bar-cargo" style="width:${pCargo}%">${pCargo>10?Math.round(pCargo)+'%':''}</div>`+
+    `<div class="bar-seg bar-aero" style="width:${pAero}%">${pAero>8?Math.round(pAero)+'%':''}</div>`;
+
+  // 현재 시총 대비
+  $('cb_cur').textContent = fmt(curMktCap)+'억';
+  const upside = curMktCap>0 ? (vSum/curMktCap-1)*100 : 0;
+  const upBox = $('cb_upBox');
+  $('cb_up').textContent = (upside>=0?'+':'')+upside.toFixed(0)+'%';
+  upBox.classList.toggle('up', upside>=0);
+  upBox.classList.toggle('down', upside<0);
+}
+
+// 초기화
+function initDefaults(){
+  setMode('revenue');     // 비중 기본 매출
+  applyPreset('neut');    // 멀티플 기본 중립
+}
+initDefaults();
+
+// 상태 저장/복원
+function ksGetState(){
+  const s={ weightMode, activePreset };
+  document.querySelectorAll('input[id]').forEach(el=>{ s[el.id]=el.value; });
+  return s;
+}
+function ksSetState(d){
+  if(!d) return;
+  if(d.weightMode){ weightMode=d.weightMode; document.querySelectorAll('[data-mode]').forEach(el=>el.classList.toggle('active', el.dataset.mode===d.weightMode)); $('modeNote').textContent = d.weightMode==='revenue' ? '2026년 1분기 실제 매출 비중(여객 2.6조 / 화물 1.1조 / 항공우주 2,522억). 객관적이지만 마진 차이 미반영.' : '마진 반영 추정 비중. 화물·항공우주가 고마진이라 매출 비중보다 큼. 근거 약하니 직접 조정하세요.'; }
+  document.querySelectorAll('input[id]').forEach(el=>{ if(d[el.id]!==undefined) el.value=d[el.id]; });
+  // 프리셋 표시 복원 (값은 위에서 복원됨)
+  activePreset = d.activePreset||null;
+  document.querySelectorAll('.preset-btn').forEach(el=>el.classList.remove('active'));
+  if(activePreset) $('preset_'+activePreset).classList.add('active');
+  calculate();
+}
+function ksSaveLocal(){ try{ localStorage.setItem('sf_kalsotp_state_v1', JSON.stringify(ksGetState())); }catch(e){} }
+function ksLoadLocal(){ try{ const r=localStorage.getItem('sf_kalsotp_state_v1'); if(r){ ksSetState(JSON.parse(r)); return true; } }catch(e){} return false; }
+document.querySelectorAll('input').forEach(el=>el.addEventListener('input', calculate));
+document.querySelectorAll('input').forEach(el=>el.addEventListener('input', ksSaveLocal));
+window.ksGetState=ksGetState; window.ksSetState=ksSetState;
+
+ksLoadLocal();
+calculate();
+</script>
+
+<!-- 클라우드 슬롯 모달 -->
+<div id="slotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:16px;max-width:440px;width:100%;padding:20px;max-height:90vh;overflow:auto">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <h3 style="margin:0;font-size:16px;color:#1F4E78">☁️ 클라우드 저장</h3>
+      <button onclick="document.getElementById('slotModal').style.display='none'" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">💾 현재 시나리오 저장</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="slotName" placeholder="이름 (예: 보수 시나리오)" maxlength="30" style="flex:1;padding:9px;font-size:13px;border:1px solid #ccc;border-radius:6px;background:white;color:#333">
+        <button id="slotSaveBtn" style="background:#0ea5e9;color:white;border:none;padding:9px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">저장</button>
+      </div>
+    </div>
+    <div style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px">📋 저장된 시나리오</div>
+    <div id="slotList" style="display:flex;flex-direction:column;gap:8px"><div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div></div>
+  </div>
+</div>
+
+<div id="cloudFab" style="position:fixed;right:16px;bottom:16px;z-index:900;display:flex;flex-direction:column;gap:8px;align-items:flex-end"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+const firebaseConfig = { apiKey:"AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY", authDomain:"swingfarmer-board01.firebaseapp.com", projectId:"swingfarmer-board01", storageBucket:"swingfarmer-board01.firebasestorage.app", messagingSenderId:"312575044644", appId:"1:312575044644:web:81d754eb1d90f25454fcb1" };
+const ADMIN_UID="1JrHgD2bpTRjrS2jw7MbpHciBph1", CALC_KEY="kalsotp";
+const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
+const provider=new GoogleAuthProvider(); provider.setCustomParameters({prompt:'select_account'});
+const gid=id=>document.getElementById(id); let currentUser=null;
+getRedirectResult(auth).catch(()=>{});
+const fab=gid('cloudFab');
+function setFab(html){ fab.innerHTML=html; }
+if(location.hash==='#admin'||location.hash==='#\uad00\ub9ac\uc790'){ setFab('<button id="btnAdminLogin" style="background:#fff;color:#444;border:1px solid #ccc;border-radius:20px;padding:10px 16px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)">\ud83d\udd11 \uad00\ub9ac\uc790 \ub85c\uadf8\uc778</button>'); document.addEventListener('click',e=>{ if(e.target&&e.target.id==='btnAdminLogin') login(); }); }
+async function login(){ try{ await signInWithPopup(auth,provider); }catch(e){ const code=e&&e.code; if(code==='auth/popup-blocked'||code==='auth/cancelled-popup-request'||code==='auth/popup-closed-by-user'||code==='auth/operation-not-supported-in-this-environment'){ try{ await signInWithRedirect(auth,provider); }catch(e2){ alert('\ub85c\uadf8\uc778 \uc2e4\ud328: '+e2.message); } } else { alert('\ub85c\uadf8\uc778 \uc2e4\ud328: '+(e.message||code)); } } }
+onAuthStateChanged(auth, user=>{ currentUser=user; const isAdmin=user&&user.uid===ADMIN_UID;
+  if(isAdmin){ setFab('<button id="btnCloudOpen" style="background:#0ea5e9;color:white;border:none;border-radius:20px;padding:10px 16px;font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)">\u2601\ufe0f \uc800\uc7a5/\ubd88\ub7ec\uc624\uae30</button>'); }
+  else if(user&&!isAdmin){ setFab('<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px 12px;font-size:11px;color:#92400e;max-width:200px">\ube44\uad00\ub9ac\uc790 \uacc4\uc815<br><button id="btnLogout" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11px;cursor:pointer;margin-top:4px">\ub85c\uadf8\uc544\uc6c3</button></div>'); }
+  else { setFab(''); if(location.hash==='#admin'){ setFab('<button id="btnAdminLogin" style="background:#fff;color:#444;border:1px solid #ccc;border-radius:20px;padding:10px 16px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)">\ud83d\udd11 \uad00\ub9ac\uc790 \ub85c\uadf8\uc778</button>'); } }
+});
+document.addEventListener('click', e=>{ if(!e.target)return; if(e.target.id==='btnCloudOpen') openModal(); if(e.target.id==='btnLogout') signOut(auth); });
+const docRef=()=>doc(db,'calc_data',ADMIN_UID);
+async function loadSlots(){ try{ const s=await getDoc(docRef()); if(s.exists()&&s.data()[CALC_KEY]&&Array.isArray(s.data()[CALC_KEY].slots))return s.data()[CALC_KEY].slots; }catch(e){} return []; }
+async function saveSlots(slots){ const ref=docRef(); let ex={}; try{ const s=await getDoc(ref); if(s.exists())ex=s.data(); }catch(e){} ex[CALC_KEY]={slots,updatedAt:new Date().toISOString()}; await setDoc(ref,ex,{merge:true}); }
+let _slots=[];
+function renderSlots(){ const box=gid('slotList'); if(!_slots.length){ box.innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">\uc800\uc7a5\ub41c \uc2dc\ub098\ub9ac\uc624\uac00 \uc5c6\uc5b4\uc694.</div>'; return; }
+  box.innerHTML=_slots.map((s,i)=>{ const t=s.savedAt?new Date(s.savedAt).toLocaleString('ko-KR'):''; return '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.name||'(\uc774\ub984\uc5c6\uc74c)')+'</div><div style="font-size:11px;color:#999">'+t+'</div></div><button onclick="window._ksRename('+i+')" style="background:#e5e7eb;color:#444;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">\u270f\ufe0f</button><button onclick="window._ksLoad('+i+')" style="background:#0284c7;color:white;border:none;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">\ubd88\ub7ec\uc624\uae30</button><button onclick="window._ksDel('+i+')" style="background:#fee2e2;color:#dc2626;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">\ud83d\uddd1\ufe0f</button></div>'; }).join(''); }
+async function openModal(){ if(!currentUser||currentUser.uid!==ADMIN_UID){ alert('\uad00\ub9ac\uc790 \ub85c\uadf8\uc778\uc774 \ud544\uc694\ud569\ub2c8\ub2e4.'); return; } gid('slotName').value=''; gid('slotModal').style.display='flex'; gid('slotList').innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">\ubd88\ub7ec\uc624\ub294 \uc911...</div>'; _slots=await loadSlots(); renderSlots(); }
+gid('slotSaveBtn').addEventListener('click', async()=>{ const name=gid('slotName').value.trim(); if(!name){ alert('\uc774\ub984\uc744 \uc785\ub825\ud558\uc138\uc694.'); return; } const idx=_slots.findIndex(s=>s.name===name); if(idx>=0&&!confirm('"'+name+'" \ub36e\uc5b4\uc4f8\uae4c\uc694?'))return; gid('slotSaveBtn').disabled=true; gid('slotSaveBtn').textContent='\uc800\uc7a5 \uc911...'; try{ const entry={name,data:window.ksGetState(),savedAt:new Date().toISOString()}; if(idx>=0)_slots[idx]=entry; else _slots.push(entry); await saveSlots(_slots); renderSlots(); alert('\u2705 \uc800\uc7a5 \uc644\ub8cc.'); }catch(e){ alert('\uc800\uc7a5 \uc2e4\ud328: '+e.message); } gid('slotSaveBtn').disabled=false; gid('slotSaveBtn').textContent='\uc800\uc7a5'; });
+window._ksLoad=function(i){ const s=_slots[i]; if(!s)return; if(!confirm('"'+s.name+'" \ubd88\ub7ec\uc62c\uae4c\uc694? \ud604\uc7ac \uc785\ub825\uac12\uc774 \ubc14\ub01d\ub2c8\ub2e4.'))return; window.ksSetState(s.data); gid('slotModal').style.display='none'; };
+window._ksDel=async function(i){ if(!confirm('\uc0ad\uc81c\ud560\uae4c\uc694?'))return; try{ _slots.splice(i,1); await saveSlots(_slots); renderSlots(); }catch(e){ alert('\uc2e4\ud328: '+e.message); } };
+window._ksRename=async function(i){ const nn=prompt('\uc774\ub984 \uc218\uc815', _slots[i].name||''); if(nn===null)return; const t=nn.trim(); if(!t)return; try{ _slots[i].name=t; await saveSlots(_slots); renderSlots(); }catch(e){ alert('\uc2e4\ud328: '+e.message); } };
+</script>
+</body>
+</html>
