@@ -172,6 +172,11 @@
     <div class="rh-label">SOTP 적정 시가총액</div>
     <div class="rh-mktcap" id="totalMktCap">-</div>
     <div class="rh-multiple" id="impliedMultiple"></div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.25)">
+      <div style="font-size:13px;opacity:.9;margin-bottom:2px">적정 주가 (적정시총 ÷ 주식수)</div>
+      <div style="font-size:26px;font-weight:800" id="fairPrice">-</div>
+      <div style="font-size:12.5px;opacity:.9;margin-top:4px" id="fairPriceVs"></div>
+    </div>
   </div>
 
   <!-- 비중 막대 -->
@@ -363,14 +368,17 @@ function calculate(){
   $('cb_up').textContent = (upside>=0?'+':'')+upside.toFixed(0)+'%';
   upBox.classList.toggle('up', upside>=0);
   upBox.classList.toggle('down', upside<0);
-}
 
-// 초기화
-function initDefaults(){
-  setMode('revenue');     // 비중 기본 매출
-  applyPreset('neut');    // 멀티플 기본 중립
+  // 적정 주가 = 적정시총(억원→원) ÷ 주식수
+  const fairPrice = shares>0 ? (vSum*100000000)/shares : 0;
+  $('fairPrice').textContent = fairPrice>0 ? fmt(fairPrice)+'원' : '-';
+  if(fairPrice>0 && curPrice>0){
+    const gap = (fairPrice/curPrice-1)*100;
+    $('fairPriceVs').innerHTML = '현재가 '+fmt(curPrice)+'원 대비 <b>'+(gap>=0?'+':'')+gap.toFixed(0)+'%</b> ('+(gap>=0?'상승여력':'하락')+')';
+  } else {
+    $('fairPriceVs').textContent='';
+  }
 }
-initDefaults();
 
 // 상태 저장/복원
 function ksGetState(){
@@ -385,16 +393,28 @@ function ksSetState(d){
   // 프리셋 표시 복원 (값은 위에서 복원됨)
   activePreset = d.activePreset||null;
   document.querySelectorAll('.preset-btn').forEach(el=>el.classList.remove('active'));
-  if(activePreset) $('preset_'+activePreset).classList.add('active');
+  if(activePreset && $('preset_'+activePreset)) $('preset_'+activePreset).classList.add('active');
   calculate();
 }
 function ksSaveLocal(){ try{ localStorage.setItem('sf_kalsotp_state_v1', JSON.stringify(ksGetState())); }catch(e){} }
 function ksLoadLocal(){ try{ const r=localStorage.getItem('sf_kalsotp_state_v1'); if(r){ ksSetState(JSON.parse(r)); return true; } }catch(e){} return false; }
-document.querySelectorAll('input').forEach(el=>el.addEventListener('input', calculate));
-document.querySelectorAll('input').forEach(el=>el.addEventListener('input', ksSaveLocal));
+
+// 초기화: 저장값 있으면 복원, 없으면 기본값
+function initDefaults(){
+  setMode('revenue');     // 비중 기본 매출
+  applyPreset('neut');    // 멀티플 기본 중립
+}
+if(!ksLoadLocal()){ initDefaults(); }
+
+// 입력·모드·프리셋 변경 모두 저장
+document.querySelectorAll('input').forEach(el=>el.addEventListener('input', ()=>{ calculate(); ksSaveLocal(); }));
+// 모드/프리셋 버튼 클릭 후에도 저장 (setMode/applyPreset 끝에서 호출되게 래핑)
+const _setMode = setMode; setMode = function(m){ _setMode(m); ksSaveLocal(); };
+const _applyPreset = applyPreset; applyPreset = function(p){ _applyPreset(p); ksSaveLocal(); };
+// 멀티플 직접수정으로 프리셋 해제될 때도 저장됨(input 이벤트가 위에서 처리)
+
 window.ksGetState=ksGetState; window.ksSetState=ksSetState;
 
-ksLoadLocal();
 calculate();
 </script>
 
