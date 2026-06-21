@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>자동차 구입 vs 리스 vs 장기렌트 비교 | 스윙파머</title>
+<meta name="description" content="자동차 현금구입·할부·리스·장기렌트 중 어느 게 유리한지 총비용으로 비교. 감가·이자·잔존가치·기회비용을 따져 실질 부담을 계산.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; display: block; }
+  header h1 { font-size: 18px; color: #1F4E78; margin: 0; }
+  .back-link { display: inline-block; margin-bottom: 8px; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
+  .panel { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .section-label { font-size: 14px; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #eef0f3; color: #1F4E78; }
+  .input-row { margin-bottom: 13px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #333; }
+  .stat-sub { font-size: 11px; font-weight: 500; color: #888; }
+  input[type="number"] { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; background: #FFF2CC; font-weight: 600; color: #0000FF; }
+  input:focus { outline: 2px solid #1F4E78; }
+  .won-kor { font-size: 12px; color: #1F4E78; font-weight: 600; margin-top: 3px; min-height: 15px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px){ .two-col { grid-template-columns: 1fr; } }
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; font-style: normal; cursor: pointer; margin-left: 4px; }
+  .info-box { display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #1e40af; line-height: 1.7; margin-top: 8px; }
+
+  .verdict-hero { border-radius: 14px; padding: 20px; text-align: center; margin-bottom: 16px; color: white; background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+  .verdict-hero .vh-verdict { font-size: 22px; font-weight: 800; }
+  .verdict-hero .vh-detail { font-size: 13px; opacity: .95; margin-top: 8px; line-height: 1.6; }
+
+  .method-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+  @media (max-width: 640px){ .method-grid { grid-template-columns: 1fr; } }
+  .method-card { border-radius: 12px; padding: 14px; border: 2px solid #e5e7eb; background: #fafbfc; text-align: center; }
+  .method-card.win { border-color: #16a34a; background: #f0fdf4; }
+  .method-card .mc-name { font-size: 13px; font-weight: 700; color: #666; margin-bottom: 4px; }
+  .method-card.win .mc-name { color: #16a34a; }
+  .method-card .mc-rank { font-size: 10px; padding: 1px 7px; border-radius: 10px; background: #16a34a; color: white; }
+  .method-card .mc-rank.r2 { background: #f59e0b; } .method-card .mc-rank.r3 { background: #94a3b8; }
+  .method-card .mc-cost { font-size: 18px; font-weight: 800; color: #1F4E78; margin: 5px 0; }
+  .method-card .mc-sub { font-size: 10.5px; color: #888; line-height: 1.5; }
+
+  table.breakdown { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.breakdown th { background: #f8fafc; padding: 8px 6px; border-bottom: 2px solid #e5e7eb; font-size: 11.5px; color: #555; }
+  table.breakdown td { padding: 8px 6px; border-bottom: 1px solid #f0f0f0; }
+  table.breakdown td.label { color: #555; font-weight: 600; text-align: left; }
+  table.breakdown td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  table.breakdown tr.total td { border-top: 2px solid #1F4E78; font-weight: 800; color: #1F4E78; }
+
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; line-height: 1.7; margin-top: 14px; }
+  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; margin-top: 8px; font-size: 12.5px; line-height: 1.8; color: #6b5618; }
+  .manual .badge { display: inline-block; background: #1F4E78; color: white; font-size: 11px; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
+  footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a href="/" class="back-link">← 메인으로</a>
+    <h1>🚗 자동차 구입 vs 리스 vs 렌트</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc">자동차를 <b>현금구입·할부·장기렌트</b> 중 어떻게 타는 게 유리한지 <b>총 보유비용</b>으로 비교합니다. 감가상각·이자·잔존가치·기회비용을 따져 실질 부담을 계산해요.</p>
+
+  <!-- 차량 -->
+  <div class="panel">
+    <div class="section-label">🚙 차량 기본</div>
+    <div class="input-row">
+      <label>차량 가격 (원)</label>
+      <input type="number" id="carPrice" value="40000000" inputmode="numeric">
+      <div class="won-kor" id="carPrice_kor"></div>
+    </div>
+    <div class="two-col">
+      <div class="input-row">
+        <label>보유 기간 (년)</label>
+        <input type="number" id="years" value="4" step="1" inputmode="numeric">
+      </div>
+      <div class="input-row">
+        <label>기회비용 금리 (연 %) <span class="stat-sub">목돈의 기회비용</span></label>
+        <input type="number" id="oppRate" value="3.0" step="0.1" inputmode="decimal">
+      </div>
+    </div>
+  </div>
+
+  <!-- 구입(현금/할부) -->
+  <div class="panel">
+    <div class="section-label">💰 구입 (현금/할부)</div>
+    <div class="input-row">
+      <label>보유 후 잔존가치 (원) <span class="stat-sub">중고로 팔 때 예상가</span> <span class="info-btn" onclick="toggleInfo('resInfo')">i</span></label>
+      <input type="number" id="resaleValue" value="20000000" inputmode="numeric">
+      <div class="won-kor" id="resaleValue_kor"></div>
+    </div>
+    <div class="info-box" id="resInfo">구입은 차가 내 자산이라, 보유 후 팔면 잔존가치를 회수해요. 보통 신차는 첫해 20~30%, 이후 매년 10% 안팎 감가돼요. 4년 후 보통 신차가의 50~55% 수준. 이 잔존가치가 클수록 구입이 유리해요.</div>
+    <div class="two-col">
+      <div class="input-row">
+        <label>할부 금액 (원) <span class="stat-sub">현금이면 0</span></label>
+        <input type="number" id="loanAmount" value="0" inputmode="numeric">
+        <div class="won-kor" id="loanAmount_kor"></div>
+      </div>
+      <div class="input-row">
+        <label>할부 금리 (연 %)</label>
+        <input type="number" id="loanRate" value="5.0" step="0.1" inputmode="decimal">
+      </div>
+    </div>
+  </div>
+
+  <!-- 장기렌트 -->
+  <div class="panel">
+    <div class="section-label">🔑 장기렌트/리스</div>
+    <div class="two-col">
+      <div class="input-row">
+        <label>월 렌트료 (원)</label>
+        <input type="number" id="rentMonthly" value="700000" inputmode="numeric">
+        <div class="won-kor" id="rentMonthly_kor"></div>
+      </div>
+      <div class="input-row">
+        <label>보증금/선납금 (원) <span class="stat-sub">없으면 0</span></label>
+        <input type="number" id="rentDeposit" value="0" inputmode="numeric">
+        <div class="won-kor" id="rentDeposit_kor"></div>
+      </div>
+    </div>
+    <div style="font-size:11.5px;color:#888;line-height:1.6">※ 장기렌트는 보험·세금·정비가 포함된 경우가 많아요. 구입과 공정 비교하려면 구입 쪽에도 보험·세금을 더해야 하지만, 여기선 차량 본체 비용 중심으로 비교합니다.</div>
+  </div>
+
+  <!-- 판정 -->
+  <div class="verdict-hero" id="verdict">
+    <div class="vh-verdict" id="verdictText">-</div>
+    <div class="vh-detail" id="verdictDetail"></div>
+  </div>
+
+  <!-- 방식별 카드 -->
+  <div class="method-grid" id="methodGrid"></div>
+
+  <!-- 상세 -->
+  <div class="panel">
+    <div class="section-label">📊 총비용 상세 (보유기간 전체)</div>
+    <div style="overflow-x:auto">
+      <table class="breakdown">
+        <thead><tr><th style="text-align:left">항목</th><th>구입</th><th>장기렌트</th></tr></thead>
+        <tbody id="detailBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="note">
+    ⚠️ <b>참고용</b>입니다. 장기렌트는 보험·자동차세·정비가 포함된 경우가 많아 단순 비교가 어려워요(구입은 이것들이 별도 비용). 사업자는 렌트료 경비처리·부가세 혜택이 있을 수 있고, 렌트는 중도해지 위약금이 큽니다. 실제 견적으로 비교하세요.
+  </div>
+
+  <div class="manual">
+    <b>📘 비교 방법</b><br>
+    <span class="badge">구입 총비용</span> (차값 − 잔존가치) + 할부이자 + 자기돈 기회비용<br>
+    <span class="badge">렌트 총비용</span> 월렌트료 × 개월 + 보증금 기회비용<br>
+    구입은 <b>감가(차값−잔존가치)</b>가 실제 비용이에요. 잔존가치가 높게 유지되는 차일수록 구입이 유리해요. 짧게 타고 바꿀수록 렌트가 유리할 수 있어요.
+  </div>
+
+  <footer>© 스윙파머</footer>
+</div>
+
+<script src="/common.js?v=3"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+function wonToKorean(n){ var neg=n<0; n=Math.round(Math.abs(n)); if(n===0)return ''; var eok=Math.floor(n/1e8),man=Math.floor((n%1e8)/1e4),won=n%1e4,p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(man>0)p.push(man.toLocaleString('ko-KR')+'만'); if(won>0)p.push(won.toLocaleString('ko-KR')); return (neg?'−':'')+p.join(' ')+'원'; }
+function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
+
+function calculate(){
+  const carPrice=parseFloat($('carPrice').value)||0;
+  const years=parseFloat($('years').value)||1;
+  const oppRate=(parseFloat($('oppRate').value)||0)/100;
+  const resaleValue=parseFloat($('resaleValue').value)||0;
+  const loanAmount=parseFloat($('loanAmount').value)||0;
+  const loanRate=(parseFloat($('loanRate').value)||0)/100;
+  const rentMonthly=parseFloat($('rentMonthly').value)||0;
+  const rentDeposit=parseFloat($('rentDeposit').value)||0;
+  const months = years*12;
+
+  // === 구입 ===
+  // 감가 = 차값 - 잔존가치
+  const depreciation = carPrice - resaleValue;
+  // 할부이자 (원리금균등 총이자 근사)
+  let loanInterest = 0;
+  if(loanAmount>0 && loanRate>0){
+    const r=loanRate/12;
+    const monthly = loanAmount*r*Math.pow(1+r,months)/(Math.pow(1+r,months)-1);
+    loanInterest = monthly*months - loanAmount;
+  }
+  // 자기돈(현금투입분=차값-할부) 기회비용
+  const ownMoney = carPrice - loanAmount;
+  const buyOpp = ownMoney*oppRate*years; // 단순 단리 근사
+  const buyTotal = depreciation + loanInterest + buyOpp;
+
+  // === 장기렌트 ===
+  const rentTotal = rentMonthly*months + rentDeposit*oppRate*years;
+
+  // 카드 (총비용 낮은 순)
+  const methods = [
+    { key:'buy', name:'구입', total:buyTotal, sub:`감가 ${fmt(depreciation)}<br>${loanInterest>0?'할부이자 '+fmt(loanInterest)+'<br>':''}기회비용 ${fmt(buyOpp)}` },
+    { key:'rent', name:'장기렌트', total:rentTotal, sub:`월 ${fmt(rentMonthly)} × ${months}개월` }
+  ];
+  const sorted=[...methods].sort((a,b)=>a.total-b.total);
+  const rank={}; sorted.forEach((m,i)=>rank[m.key]=i+1);
+  $('methodGrid').innerHTML = methods.map(m=>{
+    const r=rank[m.key];
+    return `<div class="method-card ${r===1?'win':''}">
+      <div class="mc-name">${m.name} <span class="mc-rank ${r===1?'':'r'+r}">${r===1?'유리':r+'위'}</span></div>
+      <div class="mc-cost">${fmt(m.total)}</div>
+      <div class="mc-sub">${m.sub}</div>
+    </div>`;
+  }).join('');
+  // method-grid를 2개라 grid 조정
+  $('methodGrid').style.gridTemplateColumns='1fr 1fr';
+
+  // 상세
+  $('detailBody').innerHTML = `
+    <tr><td class="label">감가상각 (차값−잔존)</td><td class="num">${fmt(depreciation)}</td><td class="num">-</td></tr>
+    <tr><td class="label">할부이자</td><td class="num">${fmt(loanInterest)}</td><td class="num">-</td></tr>
+    <tr><td class="label">렌트료 총액</td><td class="num">-</td><td class="num">${fmt(rentMonthly*months)}</td></tr>
+    <tr><td class="label">기회비용</td><td class="num">${fmt(buyOpp)}</td><td class="num">${fmt(rentDeposit*oppRate*years)}</td></tr>
+    <tr class="total"><td class="label">${years}년 총비용</td><td class="num">${fmt(buyTotal)}</td><td class="num">${fmt(rentTotal)}</td></tr>
+    <tr><td class="label">월 환산</td><td class="num">${fmt(buyTotal/months)}</td><td class="num">${fmt(rentTotal/months)}</td></tr>
+  `;
+
+  // 판정
+  const diff = rentTotal - buyTotal;
+  const v=$('verdict');
+  if(Math.abs(diff)<1000000){
+    $('verdictText').textContent='⚖️ 비슷함';
+    $('verdictDetail').innerHTML=`총비용이 거의 같아요 (차이 ${fmt(Math.abs(diff))}원). 편의성·세금혜택으로 정하세요.`;
+  } else if(diff>0){
+    $('verdictText').textContent='💰 구입이 유리';
+    $('verdictDetail').innerHTML=`${years}년 기준 <b>${fmt(diff)}원</b> 덜 들어요. 오래 탈수록 구입이 유리해요.`;
+  } else {
+    $('verdictText').textContent='🔑 장기렌트가 유리';
+    $('verdictDetail').innerHTML=`${years}년 기준 <b>${fmt(Math.abs(diff))}원</b> 덜 들어요. 보험·정비 포함이면 더 유리할 수 있어요.`;
+  }
+
+  ['carPrice','resaleValue','loanAmount','rentMonthly','rentDeposit'].forEach(id=>{ var el=$(id),box=$(id+'_kor'); if(el&&box){ var val=parseFloat(el.value)||0; box.textContent=val>0?wonToKorean(val):''; } });
+}
+
+document.querySelectorAll('input').forEach(el=>el.addEventListener('input', calculate));
+calculate();
+</script>
+</body>
+</html>
