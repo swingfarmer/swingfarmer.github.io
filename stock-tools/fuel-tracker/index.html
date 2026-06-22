@@ -82,6 +82,12 @@
   .manual .badge { display: inline-block; background: #1F4E78; color: white; font-size: 11px; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
   footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
   a.src { color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .source-guide { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; font-size: 12px; line-height: 1.7; color: #0c4a6e; }
+  .source-guide .sg-title { font-weight: 700; color: #0369a1; margin-bottom: 6px; font-size: 12.5px; }
+  .source-guide a { display: inline-block; background: #0ea5e9; color: white; padding: 4px 10px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 11.5px; margin: 2px 4px 2px 0; }
+  .source-guide a:hover { background: #0284c7; }
+  .source-guide .sg-step { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #bae6fd; }
+  .source-guide b { color: #075985; }
 </style>
 </head>
 <body>
@@ -120,6 +126,16 @@
     </div>
     <div class="panel" id="adminInput" style="display:none">
       <div class="section-label">✏️ 데이터 입력 (관리자)</div>
+      <div class="source-guide">
+        <div class="sg-title">📍 어디서 값을 보고 넣나요?</div>
+        <a href="https://www.iata.org/en/publications/economics/fuel-monitor/" target="_blank" rel="noopener">IATA Fuel Monitor ↗</a>
+        <a href="https://www.cmegroup.com/markets/energy/refined-products/singapore-jet-kerosene-swap-futures.html" target="_blank" rel="noopener">CME 싱가포르 제트유 선물 ↗</a>
+        <div class="sg-step">
+          • <b>IATA $/bbl</b>: IATA 페이지 상단 "The global average jet fuel price..."의 <b>$XXX.XX/bbl</b> 숫자를 IATA 칸에.<br>
+          • <b>MOPS ¢/gal</b>: 유류할증료 발표 기사나 항공사 공지의 "MOPS 평균 갤런당 <b>XXX센트</b>"를 MOPS 칸에. (CME 선물은 방향·급등락 참고용 — 단위가 달라 직접 못 넣어요)<br>
+          • <b>단계</b>: 비워두면 MOPS로 자동 계산돼요.
+        </div>
+      </div>
       <div class="input-grid">
         <div class="input-row"><label>기준 날짜</label><input type="date" id="inDate"></div>
         <div class="input-row"><label>IATA ($/bbl)</label><input type="number" id="inIata" step="0.01" inputmode="decimal" placeholder="138.86"></div>
@@ -137,6 +153,16 @@
   <div class="tab-panel" id="panel-stage">
     <div class="panel">
       <div class="section-label">입력 방식</div>
+      <div class="source-guide">
+        <div class="sg-title">📍 MOPS 값은 어디서?</div>
+        <a href="https://www.cmegroup.com/markets/energy/refined-products/singapore-jet-kerosene-swap-futures.html" target="_blank" rel="noopener">CME 선물(실시간 추세) ↗</a>
+        <a href="https://www.iata.org/en/publications/economics/fuel-monitor/" target="_blank" rel="noopener">IATA(주간) ↗</a>
+        <div class="sg-step">
+          • <b>오늘 급등락 빠르게</b>: CME 선물 — 10~15분 지연으로 거의 실시간. 트레이더들이 보는 싱가포르 항공유 가치. (단, 선물값은 $/톤이라 단계 계산엔 ¢/gal 환산 필요)<br>
+          • <b>정확한 ¢/gal 평균</b>: 유류할증료 발표 기사·항공사 공지의 "MOPS 갤런당 <b>XXX센트</b>". 이걸 아래에 넣으면 단계가 바로 나와요.<br>
+          • <b>정밀 모드</b>: 산정기간(전월16~당월15) 동안 매일 본 MOPS 값을 쌓아 넣으면 평균·잠정단계 자동.
+        </div>
+      </div>
       <div class="mode-toggle">
         <div class="mode-btn active" data-smode="simple" onclick="setStageMode('simple')">간단 (평균 직접)</div>
         <div class="mode-btn" data-smode="detail" onclick="setStageMode('detail')">정밀 (일별 입력)</div>
