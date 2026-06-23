@@ -154,13 +154,14 @@
     <div class="panel">
       <div class="section-label">입력 방식</div>
       <div class="source-guide">
-        <div class="sg-title">📍 MOPS 값은 어디서?</div>
-        <a href="https://www.cmegroup.com/markets/energy/refined-products/singapore-jet-kerosene-swap-futures.html" target="_blank" rel="noopener">CME 선물(실시간 추세) ↗</a>
-        <a href="https://www.iata.org/en/publications/economics/fuel-monitor/" target="_blank" rel="noopener">IATA(주간) ↗</a>
+        <div class="sg-title">📍 MOPS 값은 어디서 보나요? (솔직히 정확한 ¢/gal은 유료라 좀 까다로워요)</div>
+        <a href="https://www.cmegroup.com/markets/energy/refined-products/singapore-jet-kerosene-swap-futures.html" target="_blank" rel="noopener">CME 싱가포르 제트유 선물 ↗</a>
+        <a href="https://www.iata.org/en/publications/economics/fuel-monitor/" target="_blank" rel="noopener">IATA Fuel Monitor ↗</a>
+        <a href="https://www.opinet.co.kr/gloptotSelect.do" target="_blank" rel="noopener">오피넷 국제유가 ↗</a>
         <div class="sg-step">
-          • <b>오늘 급등락 빠르게</b>: CME 선물 — 10~15분 지연으로 거의 실시간. 트레이더들이 보는 싱가포르 항공유 가치. (단, 선물값은 $/톤이라 단계 계산엔 ¢/gal 환산 필요)<br>
-          • <b>정확한 ¢/gal 평균</b>: 유류할증료 발표 기사·항공사 공지의 "MOPS 갤런당 <b>XXX센트</b>". 이걸 아래에 넣으면 단계가 바로 나와요.<br>
-          • <b>정밀 모드</b>: 산정기간(전월16~당월15) 동안 매일 본 MOPS 값을 쌓아 넣으면 평균·잠정단계 자동.
+          ① <b>가장 정확(월 1회)</b>: 매달 중순 유류할증료 발표 기사의 "<b>MOPS 갤런당 XXX센트</b>"를 그대로 아래 ¢/gal에 입력 → 확정 단계. (예: 7월분 338.3¢)<br>
+          ② <b>실시간 추세(무료)</b>: CME 선물에서 현재가($/bbl 또는 $/톤)를 봐요. 단위가 달라 아래 <b>$/bbl 모드</b>로 바꿔 넣으면 ¢/gal로 자동 환산해 근사 단계를 보여줘요.<br>
+          ③ MOPS 정확한 일별 ¢/gal은 S&P Platts 유료라 무료 공개가 없어요. CME·IATA로 방향 잡고, 월 1회 기사값으로 확정하는 게 현실적이에요.
         </div>
       </div>
       <div class="mode-toggle">
@@ -168,7 +169,12 @@
         <div class="mode-btn" data-smode="detail" onclick="setStageMode('detail')">정밀 (일별 입력)</div>
       </div>
       <div class="mode-content active" id="stageSimple">
-        <div class="input-row"><label>MOPS 평균 (¢/gal) <span class="stat-sub">산정기간 평균</span></label><input type="number" id="mopsAvg" value="338.3" step="0.1" inputmode="decimal"></div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <div class="mode-btn active" data-unit="gal" onclick="setUnit('gal')" style="flex:1;font-size:12px">¢/gal 직접</div>
+          <div class="mode-btn" data-unit="bbl" onclick="setUnit('bbl')" style="flex:1;font-size:12px">$/bbl → 환산</div>
+        </div>
+        <div class="input-row" id="rowGal"><label>MOPS 평균 (¢/gal) <span class="stat-sub">기사·공지의 "갤런당 XXX센트"</span></label><input type="number" id="mopsAvg" value="338.3" step="0.1" inputmode="decimal"></div>
+        <div class="input-row" id="rowBbl" style="display:none"><label>배럴당 가격 ($/bbl) <span class="stat-sub">CME 선물 등 — ¢/gal로 자동 환산</span></label><input type="number" id="mopsBbl" value="142" step="0.1" inputmode="decimal"><div style="font-size:12px;color:#0369a1;margin-top:6px" id="bblConv"></div></div>
       </div>
       <div class="mode-content" id="stageDetail">
         <div class="input-row"><label>산정기간 MOPS 일별값 <span class="stat-sub">전월16~당월15, 쉼표·줄바꿈</span> <span class="info-btn" onclick="toggleInfo('detailInfo')">i</span></label><textarea id="mopsDaily" placeholder="예: 340, 338, 342, 335"></textarea><div class="info-box" id="detailInfo">유류할증료는 전월 16일~당월 15일의 싱가포르 MOPS 평균으로 다음 달 단계가 정해져요. 일별(또는 주별) 값을 넣으면 평균과 단계를 자동 계산해요. 기간이 안 끝났어도 지금까지 값으로 잠정 단계를 봐요.</div></div>
@@ -308,10 +314,20 @@ function setChart(c){ curChart=c; document.querySelectorAll('.chart-tab').forEac
 
 // ===== 탭2: 단계 계산 =====
 function setStageMode(m){ stageMode=m; document.querySelectorAll('[data-smode]').forEach(el=>el.classList.toggle('active', el.dataset.smode===m)); $('stageSimple').classList.toggle('active', m==='simple'); $('stageDetail').classList.toggle('active', m==='detail'); calcStageTab(); }
+let stageUnit='gal';
+function setUnit(u){ stageUnit=u; document.querySelectorAll('[data-unit]').forEach(el=>el.classList.toggle('active', el.dataset.unit===u)); $('rowGal').style.display=(u==='gal')?'block':'none'; $('rowBbl').style.display=(u==='bbl')?'block':'none'; calcStageTab(); }
+// 환산: $/bbl → ¢/gal (1배럴=42갤런)
+function bblToGal(bbl){ return bbl*100/42; }
 function calcStageTab(){
   let avg=0, count=0, complete=false;
   if(stageMode==='simple'){
-    avg=parseFloat($('mopsAvg').value)||0;
+    if(stageUnit==='bbl'){
+      const bbl=parseFloat($('mopsBbl').value)||0;
+      avg=bblToGal(bbl);
+      $('bblConv').textContent = bbl>0 ? '→ '+avg.toFixed(1)+'¢/gal 로 환산 (1배럴=42갤런)' : '';
+    } else {
+      avg=parseFloat($('mopsAvg').value)||0;
+    }
   } else {
     const arr=($('mopsDaily').value||'').split(/[\s,]+/).map(x=>parseFloat(x)).filter(x=>!isNaN(x)&&x>0);
     count=arr.length;
@@ -443,6 +459,7 @@ if(!loadLocal()){ DATA=SEED.slice(); }
 $('inDate').value=new Date().toISOString().slice(0,10);
 $('addBtn').addEventListener('click', addEntry);
 $('mopsAvg').addEventListener('input', calcStageTab);
+$('mopsBbl').addEventListener('input', calcStageTab);
 $('mopsDaily').addEventListener('input', calcStageTab);
 refreshAll(); calcStageTab();
 </script>
