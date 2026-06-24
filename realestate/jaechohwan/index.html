@@ -70,7 +70,7 @@
     <div class="section-label">1️⃣ 초과이익 산정 <span class="info-btn" onclick="toggleInfo('exInfo')">i</span></div>
     <div class="info-box" id="exInfo">초과이익 = A 종료시점 주택가액 − (B 개시시점 주택가액 + C 정상 주택가격 상승분 + D 개발비용). 모두 조합원 1인당 기준이며, 현실화율(시세반영률)은 개시·종료를 동일하게 맞추는 게 개정 취지예요. 부과 개시 시점은 조합설립 인가일 기준입니다.</div>
     <div class="input-row">
-      <label>A. 종료시점 주택가액 (준공 시 가치) <span class="stat-sub">신축 예상시세 × 현실화율 · 만원</span></label>
+      <label>A. 종료시점 주택가액 (준공 시 가치) <span class="stat-sub">준공 후 예상 시세(분양가 아님) · 만원</span></label>
       <input type="number" id="valEnd" value="350000" inputmode="numeric">
       <div class="unit-suffix" id="valEnd_disp"></div>
     </div>
@@ -88,8 +88,8 @@
     </div>
     <div class="op">−</div>
     <div class="input-row" style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:0">
-      <label style="margin-bottom:10px">D. 개발비용 (세분화) <span class="info-btn" onclick="toggleInfo('costInfo')">i</span></label>
-      <div class="info-box" id="costInfo">개발비용을 공사비와 기타사업비로 나눠 계산해요. 공사비 = 평당 단가 × 분양 평형. 기타사업비(설계·감리·금융비·이주비 이자·조합운영비·제세공과금)는 통상 공사비의 25~35%. 목동 6단지 기본값은 평당 950만원(DL이앤씨 입찰 기준)이에요. 일반분양 수입으로 실제 조합원 부담은 줄 수 있으니, 그만큼 '차감' 칸에서 빼세요.</div>
+      <label style="margin-bottom:10px">D. 개발비용 (공사비 + 기타) <span class="info-btn" onclick="toggleInfo('costInfo')">i</span></label>
+      <div class="info-box" id="costInfo">재초환 산식에서 빼주는 '정상 개발비용'이에요. 공사비 = 평당 단가 × 분양 평형, 기타사업비(설계·감리·금융비·이주비 이자·조합운영비·제세공과금)는 통상 공사비의 25~35%. 목동 6단지 기본값은 평당 950만원(DL이앤씨 입찰)이에요. 공사비 단가나 평형을 바꾸면 자동 재계산돼요.</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
         <div>
           <label style="font-size:12px">공사비 단가 (만원/평)</label>
@@ -100,28 +100,11 @@
           <input type="number" id="costArea" value="34" step="0.1" inputmode="decimal">
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <div>
-          <label style="font-size:12px">기타사업비 (공사비 %)</label>
-          <input type="number" id="costEtcPct" value="30" step="1" inputmode="numeric">
-        </div>
-        <div>
-          <label style="font-size:12px">일반분양가 (만원/평) <span class="stat-sub">0이면 미반영</span></label>
-          <input type="number" id="ilbanPrice" value="0" inputmode="numeric">
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <div>
-          <label style="font-size:12px">조합원/일반 가구수 <span class="stat-sub">예: 1362/811</span></label>
-          <input type="text" id="gaguRatio" value="1362/811" inputmode="text">
-        </div>
-        <div>
-          <label style="font-size:12px">일반분양 차감 (만원) <span class="stat-sub">위 입력시 자동</span></label>
-          <input type="number" id="costDeduct" value="0" inputmode="numeric">
-        </div>
+      <div class="input-row" style="margin-bottom:8px">
+        <label style="font-size:12px">기타사업비 (공사비 %)</label>
+        <input type="number" id="costEtcPct" value="30" step="1" inputmode="numeric">
       </div>
       <div style="font-size:12.5px;color:#1F4E78;font-weight:700;background:white;border-radius:6px;padding:8px 10px" id="costBreakdown"></div>
-      <div style="font-size:11.5px;color:#888;margin-top:6px" id="ilbanNote"></div>
       <input type="hidden" id="valCost" value="0">
     </div>
   </div>
@@ -195,32 +178,15 @@ function calcBurden(excess){
   return {total, rows};
 }
 function calc(){
-  // D 개발비용 세분화 계산
+  // D 개발비용 = 공사비 + 기타사업비
   const costUnit=parseFloat($('costUnit').value)||0;
   const costArea=parseFloat($('costArea').value)||0;
   const costEtcPct=parseFloat($('costEtcPct').value)||0;
   const gongsabi=costUnit*costArea;
   const gita=gongsabi*costEtcPct/100;
-  // 일반분양 기여 자동계산 (일반분양가 입력시)
-  const ilbanPrice=parseFloat($('ilbanPrice').value)||0;
-  let autoDeduct=0, ilbanNote='';
-  if(ilbanPrice>0){
-    // 가구수 비율 파싱 (조합원/일반)
-    const gr=($('gaguRatio').value||'').split('/').map(x=>parseFloat(x));
-    const johapG=gr[0]||1362, ilbanG=gr[1]||811;
-    // 일반분양 순수익 = (일반분양가 - 공사비) × 평형. 단 대지지분·기타비용 고려해 50%만 기여로 보수 반영
-    const ilbanProfitPerGagu=(ilbanPrice-costUnit)*costArea;
-    const contribRate=0.5; // 보수적: 순수익의 50%만 조합원 부담 경감에 기여
-    autoDeduct=Math.max(0, ilbanProfitPerGagu*ilbanG/johapG*contribRate);
-    $('costDeduct').value=Math.round(autoDeduct);
-    const johapPrice=ilbanPrice*0.9;
-    ilbanNote=`일반분양가 ${fmt(ilbanPrice)}만/평 · 조합원분양가(90%) ${fmt(johapPrice)}만/평 · 일반 ${ilbanG}가구 순수익의 50%(보수)를 조합원 ${johapG}명에 배분 → 1인당 ${manToKorean(autoDeduct)} 차감. ⚠️ 대지지분·세부 사업비 미반영 근사치라 과대평가 주의.`;
-  }
-  const costDeduct=parseFloat($('costDeduct').value)||0;
-  const Dval=Math.max(0, gongsabi+gita-costDeduct);
+  const Dval=gongsabi+gita;
   $('valCost').value=Dval;
-  $('costBreakdown').innerHTML=`공사비 ${fmt(gongsabi)}만 (${fmt(costUnit)}×${costArea}평) + 기타 ${fmt(gita)}만 ${costDeduct>0?'− 일반분양기여 '+fmt(costDeduct)+'만 ':''}= <b>${manToKorean(Dval)}</b>`;
-  $('ilbanNote').textContent=ilbanNote;
+  $('costBreakdown').innerHTML=`공사비 ${fmt(gongsabi)}만 (${fmt(costUnit)}×${costArea}평) + 기타사업비 ${fmt(gita)}만 = <b>${manToKorean(Dval)}</b>`;
 
   const A=parseFloat($('valEnd').value)||0, B=parseFloat($('valStart').value)||0, C=parseFloat($('valNormal').value)||0, D=Dval;
   const excess=A-(B+C+D);
@@ -281,7 +247,7 @@ document.querySelectorAll('input,select').forEach(el=>el.addEventListener('input
 if(!loadLocal()){ calc(); }
 
 // 기본값 초기화 (목동 6단지)
-const DEFAULTS={ valEnd:'350000', valStart:'220000', valNormal:'35000', costUnit:'950', costArea:'34', costEtcPct:'30', ilbanPrice:'0', gaguRatio:'1362/811', costDeduct:'0', discount:'0' };
+const DEFAULTS={ valEnd:'350000', valStart:'220000', valNormal:'35000', costUnit:'950', costArea:'34', costEtcPct:'30', discount:'0' };
 document.getElementById('resetBtn').addEventListener('click', function(){
   if(!confirm('모든 값을 목동 6단지 기본값으로 되돌릴까요? (저장된 입력이 지워집니다)')) return;
   Object.keys(DEFAULTS).forEach(id=>{ const el=document.getElementById(id); if(el) el.value=DEFAULTS[id]; });
