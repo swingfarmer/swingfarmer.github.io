@@ -84,8 +84,44 @@
       <div class="unit-suffix" id="jongjeon_disp"></div>
     </div>
     <div class="input-row">
+      <label>비례율 입력 방식 <span class="info-btn" onclick="toggleInfo('biryeInfo')">i</span></label>
+      <div class="info-box" id="biryeInfo"><b>간단</b>: 조합이 발표한 추정비례율을 그대로 입력 (6단지 공식 100.92%).<br><b>고급(자동 산출)</b>: 공사비·일반분양가 등 단지 총량을 넣으면 비례율을 직접 계산해요. <b>공사비가 오르면 비례율이 떨어져 분담금이 늘고</b>, 일반분양가가 오르면 비례율이 올라 분담금이 줄어요. "공사비 950만·분양가 8천만 오르면?" 같은 시뮬레이션에 써요.<br><br>비례율 = (총분양수입 − 총사업비) ÷ 종전자산총액 × 100</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <div class="mode-btn" data-bmode="simple" onclick="setBiryeMode('simple')" style="flex:1;padding:9px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;background:#1F4E78;color:white;text-align:center">간단 (직접 입력)</div>
+        <div class="mode-btn" data-bmode="adv" onclick="setBiryeMode('adv')" style="flex:1;padding:9px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;background:#f1f5f9;color:#555;text-align:center">고급 (자동 산출)</div>
+      </div>
+    </div>
+    <div class="input-row" id="biryeSimpleRow">
       <label>비례율 (%) <span class="stat-sub">6단지 공식 100.92%</span></label>
       <input type="number" id="birye" value="100.92" step="0.01" inputmode="decimal">
+    </div>
+    <div id="biryeAdvRow" style="display:none;background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:8px">
+      <div style="font-size:12px;color:#666;margin-bottom:10px">단지 전체 총량을 입력하면 비례율이 자동 계산돼요. (단위: 억원)</div>
+      <div class="input-row" style="margin-bottom:8px">
+        <label style="font-size:12px">① 종전자산 총액 (조합원 전체) <span class="stat-sub">6단지 약 25,149억</span></label>
+        <input type="number" id="advJongjeon" value="25149" inputmode="numeric">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div>
+          <label style="font-size:12px">② 조합원분양 수입</label>
+          <input type="number" id="advJohapSuip" value="22000" inputmode="numeric">
+        </div>
+        <div>
+          <label style="font-size:12px">③ 일반분양 수입</label>
+          <input type="number" id="advIlbanSuip" value="17200" inputmode="numeric">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div>
+          <label style="font-size:12px">④ 공사비 총액</label>
+          <input type="number" id="advGongsa" value="10500" inputmode="numeric">
+        </div>
+        <div>
+          <label style="font-size:12px">⑤ 기타사업비 (공사비 %)</label>
+          <input type="number" id="advGitaPct" value="25" inputmode="numeric">
+        </div>
+      </div>
+      <div style="font-size:12.5px;color:#1F4E78;font-weight:700;background:white;border-radius:6px;padding:10px 12px" id="advBiryeCalc"></div>
     </div>
     <div style="font-size:11.5px;color:#888;margin-top:-6px">권리가액 = 종전감정가 × 비례율 (자동 계산 ↓)</div>
   </div>
@@ -219,9 +255,35 @@ function setIlbanMode(m){
 function applyJongjeon(){ const v=$('jongjeonSel').value; if(v){ $('jongjeon').value=v; } calc(); }
 function applyJohap(){ const v=$('johapSel').value; if(v){ setIlbanMode('total'); $('johap').value=v; } calc(); }
 
+// 비례율 간단/고급 모드
+let biryeMode='simple';
+function setBiryeMode(m){
+  biryeMode=m;
+  document.querySelectorAll('[data-bmode]').forEach(el=>{ const on=el.dataset.bmode===m; el.style.background=on?'#1F4E78':'#f1f5f9'; el.style.color=on?'white':'#555'; });
+  $('biryeSimpleRow').style.display=(m==='simple')?'block':'none';
+  $('biryeAdvRow').style.display=(m==='adv')?'block':'none';
+  calc();
+}
+
 function calc(){
   const jongjeon=parseFloat($('jongjeon').value)||0;
-  const birye=parseFloat($('birye').value)||0;
+  // 비례율: 모드에 따라
+  let birye;
+  if(biryeMode==='adv'){
+    const aj=parseFloat($('advJongjeon').value)||0;
+    const js=parseFloat($('advJohapSuip').value)||0;
+    const is=parseFloat($('advIlbanSuip').value)||0;
+    const gs=parseFloat($('advGongsa').value)||0;
+    const gitaPct=parseFloat($('advGitaPct').value)||0;
+    const totalAfter=js+is;
+    const totalCost=gs*(1+gitaPct/100);
+    birye = aj>0 ? (totalAfter-totalCost)/aj*100 : 0;
+    $('birye').value=birye.toFixed(2);
+    const biryeColor = birye>=100?'#16a34a':'#dc2626';
+    $('advBiryeCalc').innerHTML=`총분양수입 ${fmt(totalAfter)}억 − 총사업비 ${fmt(Math.round(totalCost))}억 ÷ 종전 ${fmt(aj)}억<br>→ 비례율 <span style="color:${biryeColor};font-size:15px">${birye.toFixed(2)}%</span> ${birye>=100?'(자산보전)':'(자산감소·분담금↑)'}`;
+  } else {
+    birye=parseFloat($('birye').value)||0;
+  }
   // 조합원분양가: 모드에 따라
   let johap;
   if(ilbanMode==='unit'){
@@ -280,7 +342,7 @@ window.bgGetState=getState; window.bgSetState=setState;
 document.querySelectorAll('input,select').forEach(el=>el.addEventListener('input', calc));
 if(!loadLocal()){ calc(); }
 
-const DEFAULTS={ jongjeonSel:'155500', jongjeon:'155500', birye:'100.92', johapSel:'157360', johap:'157360', ilbanUnit:'5000', ilbanArea:'34' };
+const DEFAULTS={ jongjeonSel:'155500', jongjeon:'155500', birye:'100.92', johapSel:'157360', johap:'157360', ilbanUnit:'5000', ilbanArea:'34', advJongjeon:'25149', advJohapSuip:'22000', advIlbanSuip:'17200', advGongsa:'10500', advGitaPct:'25' };
 $('resetBtn').addEventListener('click', function(){
   if(!confirm('목동 6단지 기본값으로 되돌릴까요? (저장된 입력이 지워집니다)')) return;
   Object.keys(DEFAULTS).forEach(id=>{ const el=$(id); if(el)el.value=DEFAULTS[id]; });
