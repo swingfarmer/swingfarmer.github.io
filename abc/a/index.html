@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>재건축 분담금 계산기 (목동 6단지) | 스윙파머</title>
+<meta name="description" content="재건축 조합원 분담금 계산기. 비례율·종전감정가·조합원분양가로 권리가액과 추가 분담금(또는 환급금)을 계산. 목동 6단지 기준 기본값.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; display: block; }
+  header h1 { font-size: 18px; color: #1F4E78; margin: 0; }
+  .back-link { display: inline-block; margin-bottom: 8px; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
+  .panel { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .section-label { font-size: 14px; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #eef0f3; color: #1F4E78; }
+  .input-row { margin-bottom: 13px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #333; }
+  .stat-sub { font-size: 11px; font-weight: 500; color: #888; }
+  input[type="number"], select { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; }
+  input[type="number"] { background: #FFF2CC; font-weight: 600; color: #0000FF; }
+  select { background: white; font-weight: 600; }
+  .unit-suffix { font-size: 12px; color: #888; margin-top: 3px; }
+  .op { text-align: center; font-size: 13px; color: #888; font-weight: 700; margin: 2px 0; }
+  .result-hero { border-radius: 14px; padding: 22px; text-align: center; margin-bottom: 16px; color: white; }
+  .result-hero.pay { background: linear-gradient(135deg, #dc2626, #ef4444); }
+  .result-hero.refund { background: linear-gradient(135deg, #16a34a, #22c55e); }
+  .result-hero .rh-label { font-size: 13px; opacity: .9; margin-bottom: 4px; }
+  .result-hero .rh-val { font-size: 30px; font-weight: 800; }
+  .result-hero .rh-sub { font-size: 12.5px; opacity: .92; margin-top: 6px; line-height: 1.6; }
+  .mid-box { border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: center; background: #eff6ff; border: 1px solid #bfdbfe; }
+  .mid-box .mb-label { font-size: 12px; color: #1e40af; font-weight: 600; }
+  .mid-box .mb-val { font-size: 22px; font-weight: 800; color: #1F4E78; margin-top: 3px; }
+  table.calc { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.calc td { padding: 9px 8px; border-bottom: 1px solid #f0f0f0; }
+  table.calc td.label { color: #555; font-weight: 600; }
+  table.calc td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+  table.calc tr.total td { border-top: 2px solid #1F4E78; font-weight: 800; color: #1F4E78; }
+  table.bracket { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.bracket th { background: #f8fafc; padding: 8px 6px; border-bottom: 2px solid #e5e7eb; font-size: 11px; color: #555; }
+  table.bracket td { padding: 7px 6px; border-bottom: 1px solid #f0f0f0; text-align: right; }
+  table.bracket td.rng { text-align: left; }
+  table.bracket tr.hit { background: #eff6ff; font-weight: 700; }
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; cursor: pointer; margin-left: 4px; }
+  .info-box { display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #1e40af; line-height: 1.7; margin-top: 8px; }
+  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; margin-top: 8px; font-size: 12.5px; line-height: 1.8; color: #6b5618; }
+  .manual .badge { display: inline-block; background: #1F4E78; color: white; font-size: 11px; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; line-height: 1.7; margin-top: 14px; }
+  footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a href="/" class="back-link">← 메인으로</a>
+    <h1>🏠 재건축 분담금 계산기 (목동 6단지)</h1>
+  </div>
+</header>
+<div class="wrap">
+  <p class="desc">재건축 조합원이 새 아파트를 받기 위해 추가로 내야 하는 <b>분담금</b>(또는 받을 <b>환급금</b>)을 계산합니다. 비례율·종전 감정가·조합원분양가로 권리가액을 구하고, 분양가와의 차액을 산출해요.</p>
+  <div class="info-box" style="display:block;margin-bottom:16px">📍 <b>기본값 = 목동 6단지 65㎡ → 84㎡</b> 기준 추정. 비례율은 인근 단지(100~102%) 참고치, 종전감정가·분양가는 시세 기반 추정이에요. 6단지는 아직 관리처분 전이라 <b>비례율 미확정</b>이니 본인 조건으로 바꿔 쓰세요.</div>
+  <button id="resetBtn" style="width:100%;margin-bottom:16px;background:#64748b;color:white;border:none;border-radius:8px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">🔄 기본값으로 초기화 (목동 6단지)</button>
+
+  <div class="panel">
+    <div class="section-label">1️⃣ 비례율 · 권리가액 <span class="info-btn" onclick="toggleInfo('grInfo')">i</span></div>
+    <div class="info-box" id="grInfo">권리가액 = 종전자산 감정평가액 × 비례율. 비례율은 사업성 지표로, (종후자산총액−총사업비)÷종전자산총액×100. 100% 이상이면 자산가치 보전, 미만이면 줄어듦. 비례율을 직접 알면 입력하고, 모르면 종후·총사업비·종전 총액으로 자동계산 탭을 쓰세요. 목동 인근 단지 비례율은 100~102% 수준이에요.</div>
+    <div class="input-row">
+      <label>종전자산 감정평가액 (내 기존 집) <span class="stat-sub">실거래보다 보수적. 만원</span></label>
+      <input type="number" id="jongjeon" value="200000" inputmode="numeric">
+      <div class="unit-suffix" id="jongjeon_disp"></div>
+    </div>
+    <div class="input-row">
+      <label>비례율 (%) <span class="stat-sub">모르면 100 (인근 100~102%)</span></label>
+      <input type="number" id="birye" value="100" step="0.1" inputmode="decimal">
+    </div>
+    <div style="font-size:11.5px;color:#888;margin-top:-6px">권리가액 = 종전감정가 × 비례율 (자동 계산 ↓)</div>
+  </div>
+
+  <div class="mid-box">
+    <div class="mb-label">내 권리가액 (인정받는 자산)</div>
+    <div class="mb-val" id="gwonriVal">-</div>
+  </div>
+
+  <div class="panel">
+    <div class="section-label">2️⃣ 조합원 분양가 <span class="info-btn" onclick="toggleInfo('jbInfo')">i</span></div>
+    <div class="info-box" id="jbInfo">조합원분양가 = 일반분양가 × 조합원 할인율(보통 90%). 조합원은 일반인보다 싸게 받아요(도매가 개념). 일반분양가를 모르면 종후 예상시세의 80~85% 수준으로 잡으면 비슷해요. 평형이 커질수록(예: 65→84㎡) 분양가가 올라가 분담금이 늘어요.</div>
+    <div class="input-row">
+      <label>일반분양가 (받을 평형) <span class="stat-sub">새 아파트 일반분양 가격. 만원</span></label>
+      <input type="number" id="ilban" value="300000" inputmode="numeric">
+      <div class="unit-suffix" id="ilban_disp"></div>
+    </div>
+    <div class="input-row">
+      <label>조합원 할인율 (%) <span class="stat-sub">보통 90 (70~90%)</span></label>
+      <input type="number" id="discount" value="90" step="1" inputmode="numeric">
+    </div>
+    <div style="font-size:11.5px;color:#888;margin-top:-6px">조합원분양가 = 일반분양가 × 할인율 (자동 ↓)</div>
+  </div>
+
+  <div class="mid-box">
+    <div class="mb-label">조합원 분양가 (내가 살 가격)</div>
+    <div class="mb-val" id="johapVal">-</div>
+  </div>
+
+  <div id="captureArea" style="background:#f5f7fa;padding:2px">
+    <div class="result-hero pay" id="resultHero">
+      <div class="rh-label" id="resultLabel">추가 분담금</div>
+      <div class="rh-val" id="bundamVal">-</div>
+      <div class="rh-sub" id="bundamSub"></div>
+      <div id="captureBrand" style="display:none;font-size:11px;opacity:.8;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.25)">재건축 분담금 계산 · swingfarmer.github.io</div>
+    </div>
+    <div class="panel" style="margin-bottom:0">
+      <div class="section-label" style="margin-bottom:10px">📊 비례율별 분담금</div>
+      <table class="bracket" id="scenarioTable"></table>
+    </div>
+  </div>
+  <button id="shareBtn" style="width:100%;margin:14px 0 16px;background:#1F4E78;color:white;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer">📸 결과 이미지로 저장</button>
+
+  <div class="panel">
+    <div class="section-label">📋 계산 상세</div>
+    <table class="calc" id="detailTable"></table>
+  </div>
+
+  <div class="manual">
+    <b>📘 계산 방법</b><br>
+    <span class="badge">권리가액</span> 종전자산 감정평가액 × 비례율<br>
+    <span class="badge">조합원분양가</span> 일반분양가 × 조합원 할인율(보통 90%)<br>
+    <span class="badge">분담금</span> 조합원분양가 − 권리가액 (양수=납부, 음수=환급)<br>
+    <span class="badge">비례율</span> (종후자산총액 − 총사업비) ÷ 종전자산총액 × 100
+  </div>
+
+  <div class="note">⚠️ <b>추정 계산</b>입니다. 비례율·감정가는 관리처분계획 인가 때 확정되며 그 전엔 바뀔 수 있어요. 목동 6단지는 아직 시공사 선정 단계라 모든 수치가 잠정입니다. 실제 분담금은 조합 공식 통지를 따르세요. 재건축 분담금과 재초환 부담금은 별개로, 둘 다 발생할 수 있습니다.</div>
+
+  <footer>© 스윙파머</footer>
+</div>
+<div id="cloudFab" style="position:fixed;right:16px;bottom:16px;z-index:900;display:flex;flex-direction:column;gap:8px;align-items:flex-end"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="/common.js?v=3"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
+function manToKorean(man){ man=Math.round(man); if(man===0)return'0원'; const neg=man<0; man=Math.abs(man); const eok=Math.floor(man/10000), rest=man%10000; let p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(rest>0)p.push(rest.toLocaleString('ko-KR')+'만'); return (neg?'-':'')+p.join(' ')+'원'; }
+
+function calc(){
+  const jongjeon=parseFloat($('jongjeon').value)||0;
+  const birye=parseFloat($('birye').value)||0;
+  const ilban=parseFloat($('ilban').value)||0;
+  const disc=parseFloat($('discount').value)||0;
+  const gwonri=jongjeon*birye/100;
+  const johap=ilban*disc/100;
+  const bundam=johap-gwonri;
+
+  $('jongjeon_disp').textContent='= '+manToKorean(jongjeon);
+  $('ilban_disp').textContent='= '+manToKorean(ilban);
+  $('gwonriVal').textContent=manToKorean(gwonri);
+  $('johapVal').textContent=manToKorean(johap);
+
+  const hero=$('resultHero');
+  if(bundam>=0){
+    hero.className='result-hero pay';
+    $('resultLabel').textContent='💸 추가 분담금 (내야 할 돈)';
+    $('bundamVal').textContent=manToKorean(bundam);
+    $('bundamSub').innerHTML=`조합원분양가 ${manToKorean(johap)} − 권리가액 ${manToKorean(gwonri)}`;
+  } else {
+    hero.className='result-hero refund';
+    $('resultLabel').textContent='💰 환급금 (받을 돈)';
+    $('bundamVal').textContent=manToKorean(Math.abs(bundam));
+    $('bundamSub').innerHTML=`권리가액 ${manToKorean(gwonri)} − 조합원분양가 ${manToKorean(johap)}`;
+  }
+
+  $('detailTable').innerHTML=`
+    <tr><td class="label">종전자산 감정평가액</td><td class="num">${manToKorean(jongjeon)}</td></tr>
+    <tr><td class="label">비례율</td><td class="num">${birye}%</td></tr>
+    <tr><td class="label">권리가액</td><td class="num">${manToKorean(gwonri)}</td></tr>
+    <tr><td class="label">일반분양가</td><td class="num">${manToKorean(ilban)}</td></tr>
+    <tr><td class="label">조합원 할인율</td><td class="num">${disc}%</td></tr>
+    <tr><td class="label">조합원분양가</td><td class="num">${manToKorean(johap)}</td></tr>
+    <tr class="total"><td class="label">${bundam>=0?'분담금':'환급금'}</td><td class="num">${manToKorean(Math.abs(bundam))}</td></tr>`;
+
+  // 비례율별 시나리오
+  const johapF=johap;
+  let html='<tr><th class="rng">비례율</th><th>권리가액</th><th>분담금/환급</th></tr>';
+  [birye-10,birye-5,birye,birye+5,birye+10].filter(b=>b>0).forEach(b=>{
+    const g=jongjeon*b/100;
+    const bd=johapF-g;
+    const isCur=Math.abs(b-birye)<0.1;
+    html+=`<tr class="${isCur?'hit':''}"><td class="rng">${b.toFixed(1)}%${isCur?' ◀':''}</td><td>${manToKorean(g)}</td><td style="color:${bd>=0?'#dc2626':'#16a34a'}">${bd>=0?'납부 ':'환급 '}${manToKorean(Math.abs(bd))}</td></tr>`;
+  });
+  $('scenarioTable').innerHTML=html;
+  saveLocal();
+}
+
+function getState(){ const s={}; document.querySelectorAll('input[id]').forEach(el=>s[el.id]=el.value); return s; }
+function setState(d){ if(!d)return; document.querySelectorAll('input[id]').forEach(el=>{ if(d[el.id]!==undefined)el.value=d[el.id]; }); calc(); }
+function saveLocal(){ try{ localStorage.setItem('sf_bundamgum_v1', JSON.stringify(getState())); }catch(e){} }
+function loadLocal(){ try{ const r=localStorage.getItem('sf_bundamgum_v1'); if(r){ setState(JSON.parse(r)); return true; } }catch(e){} return false; }
+window.bgGetState=getState; window.bgSetState=setState;
+document.querySelectorAll('input').forEach(el=>el.addEventListener('input', calc));
+if(!loadLocal()){ calc(); }
+
+const DEFAULTS={ jongjeon:'200000', birye:'100', ilban:'300000', discount:'90' };
+$('resetBtn').addEventListener('click', function(){
+  if(!confirm('목동 6단지 기본값으로 되돌릴까요? (저장된 입력이 지워집니다)')) return;
+  Object.keys(DEFAULTS).forEach(id=>{ const el=$(id); if(el)el.value=DEFAULTS[id]; });
+  try{ localStorage.removeItem('sf_bundamgum_v1'); }catch(e){}
+  calc();
+});
+
+$('shareBtn').addEventListener('click', function(){
+  const btn=this, area=$('captureArea'), brand=$('captureBrand');
+  if(typeof html2canvas==='undefined'){ alert('이미지 라이브러리 로드 실패. 새로고침 후 시도하세요.'); return; }
+  btn.disabled=true; const orig=btn.textContent; btn.textContent='이미지 생성 중...'; brand.style.display='block';
+  html2canvas(area,{scale:2,backgroundColor:'#f5f7fa',logging:false}).then(function(canvas){
+    brand.style.display='none';
+    canvas.toBlob(function(blob){
+      const url=URL.createObjectURL(blob), a=document.createElement('a');
+      a.href=url; a.download='재건축분담금_'+new Date().toISOString().slice(0,10)+'.png';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+      btn.disabled=false; btn.textContent=orig;
+    },'image/png');
+  }).catch(function(e){ brand.style.display='none'; alert('이미지 생성 실패: '+e.message); btn.disabled=false; btn.textContent=orig; });
+});
+</script>
+
+
+<div id="slotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:16px;max-width:440px;width:100%;padding:20px;max-height:90vh;overflow:auto">
+    <div style="display:flex;align-items:center;margin-bottom:14px"><h3 style="margin:0;font-size:16px;color:#1F4E78">☁️ 클라우드 저장</h3><button onclick="document.getElementById('slotModal').style.display='none'" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button></div>
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">💾 현재 시나리오 저장</div>
+      <div style="display:flex;gap:8px"><input type="text" id="slotName" placeholder="이름 (예: 6단지 65→84)" maxlength="30" style="flex:1;padding:9px;font-size:13px;border:1px solid #ccc;border-radius:6px;background:white;color:#333"><button id="slotSaveBtn" style="background:#0ea5e9;color:white;border:none;padding:9px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">저장</button></div>
+    </div>
+    <div style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px">📋 저장된 시나리오</div>
+    <div id="slotList" style="display:flex;flex-direction:column;gap:8px"><div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+const firebaseConfig = { apiKey:"AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY", authDomain:"swingfarmer-board01.firebaseapp.com", projectId:"swingfarmer-board01", storageBucket:"swingfarmer-board01.firebasestorage.app", messagingSenderId:"312575044644", appId:"1:312575044644:web:81d754eb1d90f25454fcb1" };
+const ADMIN_UID="1JrHgD2bpTRjrS2jw7MbpHciBph1", CALC_KEY="bundamgum";
+const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
+const provider=new GoogleAuthProvider(); provider.setCustomParameters({prompt:'select_account'});
+const gid=id=>document.getElementById(id); let currentUser=null;
+getRedirectResult(auth).catch(()=>{});
+const fab=gid('cloudFab');
+const loginBtn='<button id="btnAdminLogin" style="background:#fff;color:#444;border:1px solid #ccc;border-radius:20px;padding:10px 16px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)">🔑 관리자 로그인</button>';
+if(location.hash==='#admin'){ fab.innerHTML=loginBtn; }
+document.addEventListener('click',e=>{ if(!e.target)return; if(e.target.id==='btnAdminLogin')login(); if(e.target.id==='btnCloudOpen')openModal(); if(e.target.id==='btnLogout')signOut(auth); });
+async function login(){ try{ await signInWithPopup(auth,provider); }catch(e){ const code=e&&e.code; if(code==='auth/popup-blocked'||code==='auth/cancelled-popup-request'||code==='auth/popup-closed-by-user'||code==='auth/operation-not-supported-in-this-environment'){ try{ await signInWithRedirect(auth,provider); }catch(e2){ alert('로그인 실패: '+e2.message); } } else { alert('로그인 실패: '+(e.message||code)); } } }
+onAuthStateChanged(auth, user=>{ currentUser=user; const isAdmin=user&&user.uid===ADMIN_UID;
+  if(isAdmin){ fab.innerHTML='<button id="btnCloudOpen" style="background:#0ea5e9;color:white;border:none;border-radius:20px;padding:10px 16px;font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)">☁️ 저장/불러오기</button>'; }
+  else if(user&&!isAdmin){ fab.innerHTML='<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px 12px;font-size:11px;color:#92400e">비관리자<br><button id="btnLogout" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11px;cursor:pointer;margin-top:4px">로그아웃</button></div>'; }
+  else { fab.innerHTML=''; if(location.hash==='#admin')fab.innerHTML=loginBtn; }
+});
+const docRef=()=>doc(db,'calc_data',ADMIN_UID);
+async function loadSlots(){ try{ const s=await getDoc(docRef()); if(s.exists()&&s.data()[CALC_KEY]&&Array.isArray(s.data()[CALC_KEY].slots))return s.data()[CALC_KEY].slots; }catch(e){} return []; }
+async function saveSlots(slots){ const ref=docRef(); let ex={}; try{ const s=await getDoc(ref); if(s.exists())ex=s.data(); }catch(e){} ex[CALC_KEY]={slots,updatedAt:new Date().toISOString()}; await setDoc(ref,ex,{merge:true}); }
+let _slots=[];
+function renderSlots(){ const box=gid('slotList'); if(!_slots.length){ box.innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 시나리오가 없어요.</div>'; return; }
+  box.innerHTML=_slots.map((s,i)=>{ const t=s.savedAt?new Date(s.savedAt).toLocaleString('ko-KR'):''; return '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.name||'(이름없음)')+'</div><div style="font-size:11px;color:#999">'+t+'</div></div><button onclick="window._bgRename('+i+')" style="background:#e5e7eb;color:#444;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">✏️</button><button onclick="window._bgLoad('+i+')" style="background:#0284c7;color:white;border:none;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button><button onclick="window._bgDel('+i+')" style="background:#fee2e2;color:#dc2626;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">🗑️</button></div>'; }).join(''); }
+async function openModal(){ if(!currentUser||currentUser.uid!==ADMIN_UID){ alert('관리자 로그인이 필요합니다.'); return; } gid('slotName').value=''; gid('slotModal').style.display='flex'; gid('slotList').innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>'; _slots=await loadSlots(); renderSlots(); }
+gid('slotSaveBtn').addEventListener('click', async()=>{ const name=gid('slotName').value.trim(); if(!name){ alert('이름을 입력하세요.'); return; } const idx=_slots.findIndex(s=>s.name===name); if(idx>=0&&!confirm('"'+name+'" 덮어쓸까요?'))return; gid('slotSaveBtn').disabled=true; gid('slotSaveBtn').textContent='저장 중...'; try{ const entry={name,data:window.bgGetState(),savedAt:new Date().toISOString()}; if(idx>=0)_slots[idx]=entry; else _slots.push(entry); await saveSlots(_slots); renderSlots(); alert('✅ 저장 완료.'); }catch(e){ alert('저장 실패: '+e.message); } gid('slotSaveBtn').disabled=false; gid('slotSaveBtn').textContent='저장'; });
+window._bgLoad=function(i){ const s=_slots[i]; if(!s)return; if(!confirm('"'+s.name+'" 불러오기CONFIRM'))return; window.bgSetState(s.data); gid('slotModal').style.display='none'; };
+window._bgDel=async function(i){ if(!confirm('🗑️CONFIRM'))return; try{ _slots.splice(i,1); await saveSlots(_slots); renderSlots(); }catch(e){ alert('실패: '+e.message); } };
+window._bgRename=async function(i){ const nn=prompt('이름 수정', _slots[i].name||''); if(nn===null)return; const t=nn.trim(); if(!t)return; try{ _slots[i].name=t; await saveSlots(_slots); renderSlots(); }catch(e){ alert('실패: '+e.message); } };
+</script>
+
+
+<div id="slotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:16px;max-width:440px;width:100%;padding:20px;max-height:90vh;overflow:auto">
+    <div style="display:flex;align-items:center;margin-bottom:14px"><h3 style="margin:0;font-size:16px;color:#1F4E78">☁️ 클라우드 저장</h3><button onclick="document.getElementById('slotModal').style.display='none'" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button></div>
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">💾 현재 시나리오 저장</div>
+      <div style="display:flex;gap:8px"><input type="text" id="slotName" placeholder="이름 (예: 6단지 65→84)" maxlength="30" style="flex:1;padding:9px;font-size:13px;border:1px solid #ccc;border-radius:6px;background:white;color:#333"><button id="slotSaveBtn" style="background:#0ea5e9;color:white;border:none;padding:9px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">저장</button></div>
+    </div>
+    <div style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px">📋 저장된 시나리오</div>
+    <div id="slotList" style="display:flex;flex-direction:column;gap:8px"><div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+const firebaseConfig = { apiKey:"AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY", authDomain:"swingfarmer-board01.firebaseapp.com", projectId:"swingfarmer-board01", storageBucket:"swingfarmer-board01.firebasestorage.app", messagingSenderId:"312575044644", appId:"1:312575044644:web:81d754eb1d90f25454fcb1" };
+const ADMIN_UID="1JrHgD2bpTRjrS2jw7MbpHciBph1", CALC_KEY="bundamgum";
+const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
+const provider=new GoogleAuthProvider(); provider.setCustomParameters({prompt:'select_account'});
+const gid=id=>document.getElementById(id); let currentUser=null;
+getRedirectResult(auth).catch(()=>{});
+const fab=gid('cloudFab');
+const loginBtn='<button id="btnAdminLogin" style="background:#fff;color:#444;border:1px solid #ccc;border-radius:20px;padding:10px 16px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)">🔑 관리자 로그인</button>';
+if(location.hash==='#admin'){ fab.innerHTML=loginBtn; }
+document.addEventListener('click',e=>{ if(!e.target)return; if(e.target.id==='btnAdminLogin')login(); if(e.target.id==='btnCloudOpen')openModal(); if(e.target.id==='btnLogout')signOut(auth); });
+async function login(){ try{ await signInWithPopup(auth,provider); }catch(e){ const code=e&&e.code; if(code==='auth/popup-blocked'||code==='auth/cancelled-popup-request'||code==='auth/popup-closed-by-user'||code==='auth/operation-not-supported-in-this-environment'){ try{ await signInWithRedirect(auth,provider); }catch(e2){ alert('로그인 실패: '+e2.message); } } else { alert('로그인 실패: '+(e.message||code)); } } }
+onAuthStateChanged(auth, user=>{ currentUser=user; const isAdmin=user&&user.uid===ADMIN_UID;
+  if(isAdmin){ fab.innerHTML='<button id="btnCloudOpen" style="background:#0ea5e9;color:white;border:none;border-radius:20px;padding:10px 16px;font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)">☁️ 저장/불러오기</button>'; }
+  else if(user&&!isAdmin){ fab.innerHTML='<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px 12px;font-size:11px;color:#92400e">비관리자<br><button id="btnLogout" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11px;cursor:pointer;margin-top:4px">로그아웃</button></div>'; }
+  else { fab.innerHTML=''; if(location.hash==='#admin')fab.innerHTML=loginBtn; }
+});
+const docRef=()=>doc(db,'calc_data',ADMIN_UID);
+async function loadSlots(){ try{ const s=await getDoc(docRef()); if(s.exists()&&s.data()[CALC_KEY]&&Array.isArray(s.data()[CALC_KEY].slots))return s.data()[CALC_KEY].slots; }catch(e){} return []; }
+async function saveSlots(slots){ const ref=docRef(); let ex={}; try{ const s=await getDoc(ref); if(s.exists())ex=s.data(); }catch(e){} ex[CALC_KEY]={slots,updatedAt:new Date().toISOString()}; await setDoc(ref,ex,{merge:true}); }
+let _slots=[];
+function renderSlots(){ const box=gid('slotList'); if(!_slots.length){ box.innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 시나리오가 없어요.</div>'; return; }
+  box.innerHTML=_slots.map((s,i)=>{ const t=s.savedAt?new Date(s.savedAt).toLocaleString('ko-KR'):''; return '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.name||'(이름없음)')+'</div><div style="font-size:11px;color:#999">'+t+'</div></div><button onclick="window._bgRename('+i+')" style="background:#e5e7eb;color:#444;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">✏️</button><button onclick="window._bgLoad('+i+')" style="background:#0284c7;color:white;border:none;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button><button onclick="window._bgDel('+i+')" style="background:#fee2e2;color:#dc2626;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">🗑️</button></div>'; }).join(''); }
+async function openModal(){ if(!currentUser||currentUser.uid!==ADMIN_UID){ alert('관리자 로그인이 필요합니다.'); return; } gid('slotName').value=''; gid('slotModal').style.display='flex'; gid('slotList').innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>'; _slots=await loadSlots(); renderSlots(); }
+gid('slotSaveBtn').addEventListener('click', async()=>{ const name=gid('slotName').value.trim(); if(!name){ alert('이름을 입력하세요.'); return; } const idx=_slots.findIndex(s=>s.name===name); if(idx>=0&&!confirm('"'+name+'" 덮어쓸까요?'))return; gid('slotSaveBtn').disabled=true; gid('slotSaveBtn').textContent='저장 중...'; try{ const entry={name,data:window.bgGetState(),savedAt:new Date().toISOString()}; if(idx>=0)_slots[idx]=entry; else _slots.push(entry); await saveSlots(_slots); renderSlots(); alert('✅ 저장 완료.'); }catch(e){ alert('저장 실패: '+e.message); } gid('slotSaveBtn').disabled=false; gid('slotSaveBtn').textContent='저장'; });
+window._bgLoad=function(i){ const s=_slots[i]; if(!s)return; if(!confirm('"'+s.name+'" 불러오기CONFIRM'))return; window.bgSetState(s.data); gid('slotModal').style.display='none'; };
+window._bgDel=async function(i){ if(!confirm('🗑️CONFIRM'))return; try{ _slots.splice(i,1); await saveSlots(_slots); renderSlots(); }catch(e){ alert('실패: '+e.message); } };
+window._bgRename=async function(i){ const nn=prompt('이름 수정', _slots[i].name||''); if(nn===null)return; const t=nn.trim(); if(!t)return; try{ _slots[i].name=t; await saveSlots(_slots); renderSlots(); }catch(e){ alert('실패: '+e.message); } };
+</script>
+
+</body>
+</html>
