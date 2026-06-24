@@ -61,20 +61,30 @@
 </header>
 <div class="wrap">
   <p class="desc">재건축 조합원이 새 아파트를 받기 위해 추가로 내야 하는 <b>분담금</b>(또는 받을 <b>환급금</b>)을 계산합니다. 비례율·종전 감정가·조합원분양가로 권리가액을 구하고, 분양가와의 차액을 산출해요.</p>
-  <div class="info-box" style="display:block;margin-bottom:16px">📍 <b>기본값 = 목동 6단지 공식 추정치</b> (2025.2 정비계획). 추정비례율 <b>103.73%</b>(총수입 3.9조−총사업비 1.3조÷종전 2.5조), 84㎡ 조합원분양가 <b>17.75억</b>(일반분양가 19.7억의 90%). 종전감정가는 조합원 평균(2.5조÷1362명≈18.5억)으로 잡았어요. <b>개별 감정가·비례율은 관리처분 때 확정</b>되니 본인 조건으로 바꿔 쓰세요.</div>
+  <div class="info-box" style="display:block;margin-bottom:16px">📍 <b>기본값 = 목동 6단지 27평→34평</b> (하우징타임즈·아시아경제 공식). 추정비례율 <b>100.73%</b>(공식), 새 34평 조합원분양가 <b>17억</b>. 종전감정가는 27평 시세 22억의 75%(≈16.5억)로 추정. → 분담금 약 <b>+0.38억</b>(거의 균형). 개별 감정가·비례율은 관리처분 때 확정되니 본인 조건으로 바꿔 쓰세요.</div>
   <button id="resetBtn" style="width:100%;margin-bottom:16px;background:#64748b;color:white;border:none;border-radius:8px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">🔄 기본값으로 초기화 (목동 6단지)</button>
 
   <div class="panel">
-    <div class="section-label">1️⃣ 비례율 · 권리가액 <span class="info-btn" onclick="toggleInfo('grInfo')">i</span></div>
-    <div class="info-box" id="grInfo">권리가액 = 종전자산 감정평가액 × 비례율. 비례율은 사업성 지표로, (종후자산총액−총사업비)÷종전자산총액×100. 100% 이상이면 자산가치 보전, 미만이면 줄어듦. 비례율을 직접 알면 입력하고, 모르면 종후·총사업비·종전 총액으로 자동계산 탭을 쓰세요. 목동 인근 단지 비례율은 100~102% 수준이에요.</div>
+    <div class="section-label">1️⃣ 종전자산 · 비례율 → 권리가액 <span class="info-btn" onclick="toggleInfo('grInfo')">i</span></div>
+    <div class="info-box" id="grInfo"><b>무엇을 입력하나요?</b><br>• <b>종전자산 감정평가액</b> = 재건축 전 내가 가진 집의 감정가. 실거래·호가가 아니라 감정평가사가 정한 값으로, 보통 시세의 70~80% 수준이에요.<br>• <b>비례율</b> = 사업성 지표. (종후자산총액−총사업비)÷종전자산총액×100. 100% 이상이면 자산가치 보전, 미만이면 줄어듦.<br>• <b>권리가액</b> = 종전감정가 × 비례율. 내가 새 아파트에서 인정받는 금액이에요.<br><br><b>6단지 실데이터</b>: 비례율 100.73%(공식), 평형별 감정가는 현 시세의 75%로 추정. 아래 평형을 고르면 자동 입력돼요.</div>
     <div class="input-row">
-      <label>종전자산 감정평가액 (내 기존 집) <span class="stat-sub">실거래보다 보수적. 만원</span></label>
-      <input type="number" id="jongjeon" value="185000" inputmode="numeric">
+      <label>현재 보유 평형 <span class="stat-sub">6단지 시세 기준 — 고르면 감정가 자동</span></label>
+      <select id="jongjeonSel" onchange="applyJongjeon()">
+        <option value="">직접 입력</option>
+        <option value="127500">20평 (현 시세 17억 → 감정 12.75억)</option>
+        <option value="165000" selected>27평 (현 시세 22억 → 감정 16.5억)</option>
+        <option value="210000">35평 (현 시세 28억 → 감정 21억)</option>
+        <option value="262500">54평 (현 시세 35억 → 감정 26.25억)</option>
+      </select>
+    </div>
+    <div class="input-row">
+      <label>종전자산 감정평가액 <span class="stat-sub">시세의 70~80%. 만원</span></label>
+      <input type="number" id="jongjeon" value="165000" inputmode="numeric">
       <div class="unit-suffix" id="jongjeon_disp"></div>
     </div>
     <div class="input-row">
-      <label>비례율 (%) <span class="stat-sub">모르면 100 (인근 100~102%)</span></label>
-      <input type="number" id="birye" value="103.73" step="0.1" inputmode="decimal">
+      <label>비례율 (%) <span class="stat-sub">6단지 공식 100.73%</span></label>
+      <input type="number" id="birye" value="100.73" step="0.01" inputmode="decimal">
     </div>
     <div style="font-size:11.5px;color:#888;margin-top:-6px">권리가액 = 종전감정가 × 비례율 (자동 계산 ↓)</div>
   </div>
@@ -85,25 +95,35 @@
   </div>
 
   <div class="panel">
-    <div class="section-label">2️⃣ 조합원 분양가 <span class="info-btn" onclick="toggleInfo('jbInfo')">i</span></div>
-    <div class="info-box" id="jbInfo">조합원분양가 = 일반분양가 × 조합원 할인율(보통 90%). 조합원은 일반인보다 싸게 받아요(도매가 개념). 6단지 84㎡ 조합원분양가는 17.75억(일반분양가 약 19.7억의 90%)로 추정됐어요. 평형이 커질수록 분양가가 올라가 분담금이 늘어요. 평단가를 알면 평단가×평형으로 총액이 자동 계산돼요.</div>
+    <div class="section-label">2️⃣ 새로 받을 평형 → 조합원분양가 <span class="info-btn" onclick="toggleInfo('jbInfo')">i</span></div>
+    <div class="info-box" id="jbInfo"><b>무엇을 입력하나요?</b><br>• <b>조합원분양가</b> = 재건축 후 내가 분양받을 새 아파트 가격. 일반인보다 싸게 받아요(보통 일반분양가의 80~90%, 도매가 개념).<br>• 평형이 커질수록 분양가가 올라가 분담금이 늘어요.<br><br><b>6단지 실데이터</b>(조합원분양가): 25평 12.5억 / 34평 17억 / 39평 19.5억 / 45평 22.5억. 아래 평형을 고르면 자동 입력돼요. 평단가로 직접 계산도 가능해요.</div>
     <div class="input-row">
-      <label>일반분양가 입력 방식</label>
+      <label>새로 받을 평형 <span class="stat-sub">6단지 조합원분양가 — 고르면 자동</span></label>
+      <select id="johapSel" onchange="applyJohap()">
+        <option value="">직접 입력</option>
+        <option value="125000">새 25평 (12.5억)</option>
+        <option value="170000" selected>새 34평 (17억)</option>
+        <option value="195000">새 39평 (19.5억)</option>
+        <option value="225000">새 45평 (22.5억)</option>
+      </select>
+    </div>
+    <div class="input-row">
+      <label>입력 방식</label>
       <div style="display:flex;gap:8px;margin-bottom:10px">
-        <div class="mode-btn" data-imode="total" onclick="setIlbanMode('total')" style="flex:1;padding:9px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;background:#1F4E78;color:white;border:2px solid transparent;text-align:center">총액 직접</div>
+        <div class="mode-btn" data-imode="total" onclick="setIlbanMode('total')" style="flex:1;padding:9px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;background:#1F4E78;color:white;border:2px solid transparent;text-align:center">조합원분양가 직접</div>
         <div class="mode-btn" data-imode="unit" onclick="setIlbanMode('unit')" style="flex:1;padding:9px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;background:#f1f5f9;color:#555;border:2px solid transparent;text-align:center">평단가 × 평형</div>
       </div>
     </div>
     <div class="input-row" id="ilbanTotalRow">
-      <label>일반분양가 총액 <span class="stat-sub">받을 평형. 만원</span></label>
-      <input type="number" id="ilban" value="197000" inputmode="numeric">
-      <div class="unit-suffix" id="ilban_disp"></div>
+      <label>조합원분양가 (총액) <span class="stat-sub">새 아파트 분양가. 만원</span></label>
+      <input type="number" id="johap" value="170000" inputmode="numeric">
+      <div class="unit-suffix" id="johap_disp"></div>
     </div>
     <div class="input-row" id="ilbanUnitRow" style="display:none">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div>
-          <label style="font-size:12px">평단가 (만원/평)</label>
-          <input type="number" id="ilbanUnit" value="5800" inputmode="numeric">
+          <label style="font-size:12px">조합원 평단가 (만원/평)</label>
+          <input type="number" id="ilbanUnit" value="5000" inputmode="numeric">
         </div>
         <div>
           <label style="font-size:12px">분양 평형 (평)</label>
@@ -112,11 +132,6 @@
       </div>
       <div style="font-size:12px;color:#1F4E78;font-weight:700;background:#f8fafc;border-radius:6px;padding:8px 10px;margin-top:8px" id="ilbanUnitCalc"></div>
     </div>
-    <div class="input-row">
-      <label>조합원 할인율 (%) <span class="stat-sub">보통 90 (70~90%)</span></label>
-      <input type="number" id="discount" value="90" step="1" inputmode="numeric">
-    </div>
-    <div style="font-size:11.5px;color:#888;margin-top:-6px">조합원분양가 = 일반분양가 × 할인율 (자동 ↓)</div>
   </div>
 
   <div class="mid-box">
@@ -146,12 +161,32 @@
   <div class="manual">
     <b>📘 계산 방법</b><br>
     <span class="badge">권리가액</span> 종전자산 감정평가액 × 비례율<br>
-    <span class="badge">조합원분양가</span> 일반분양가 × 조합원 할인율(보통 90%)<br>
     <span class="badge">분담금</span> 조합원분양가 − 권리가액 (양수=납부, 음수=환급)<br>
-    <span class="badge">비례율</span> (종후자산총액 − 총사업비) ÷ 종전자산총액 × 100
+    <span class="badge">비례율</span> (종후자산총액 − 총사업비) ÷ 종전자산총액 × 100<br>
+    <span class="badge">감정가</span> 보통 현 시세의 70~80% (감정평가사가 산정)
   </div>
 
-  <div class="note">⚠️ <b>추정 계산</b>입니다. 비례율·감정가는 관리처분계획 인가 때 확정되며 그 전엔 바뀔 수 있어요. 목동 6단지는 아직 시공사 선정 단계라 모든 수치가 잠정입니다. 실제 분담금은 조합 공식 통지를 따르세요. 재건축 분담금과 재초환 부담금은 별개로, 둘 다 발생할 수 있습니다.</div>
+  <div class="panel">
+    <div class="section-label">📋 목동 6단지 실데이터 (참고)</div>
+    <div style="font-size:11.5px;color:#888;margin-bottom:10px">출처: 하우징타임즈·아시아경제(2025.5). 비례율 100.73%·일반분양가·공사비는 공식, 평형별 호당 감정가는 시세 75% 추정.</div>
+    <table class="bracket">
+      <tr><th class="rng">현 평형</th><th>현 시세</th><th>감정가(75%)</th><th>권리가액</th></tr>
+      <tr><td class="rng">20평</td><td>17억</td><td>12.75억</td><td>12.84억</td></tr>
+      <tr class="hit"><td class="rng">27평</td><td>22억</td><td>16.5억</td><td>16.62억</td></tr>
+      <tr><td class="rng">35평</td><td>28억</td><td>21억</td><td>21.15억</td></tr>
+      <tr><td class="rng">54평</td><td>35억</td><td>26.25억</td><td>26.44억</td></tr>
+    </table>
+    <table class="bracket" style="margin-top:10px">
+      <tr><th class="rng">새 평형</th><th>조합원분양가</th></tr>
+      <tr><td class="rng">새 25평</td><td>12.5억</td></tr>
+      <tr class="hit"><td class="rng">새 34평</td><td>17억</td></tr>
+      <tr><td class="rng">새 39평</td><td>19.5억</td></tr>
+      <tr><td class="rng">새 45평</td><td>22.5억</td></tr>
+    </table>
+    <div style="font-size:11.5px;color:#1F4E78;font-weight:600;margin-top:10px">💡 27평→34평 = +0.38억 (거의 균형, "또이또이"). 작은 평형이 큰 평형 받으면 분담금, 큰 평형이 작은 평형 받으면 환급.</div>
+  </div>
+
+  <div class="note">⚠️ <b>추정 계산</b>입니다. 비례율·감정가는 관리처분계획 인가 때 확정되며 그 전엔 바뀔 수 있어요. 목동 6단지는 시공사 선정 단계라 모든 수치가 잠정이고, 비례율 100.73%는 빠듯해서 <b>공사비 상승 시 마이너스(분담금 증가) 전환 위험</b>이 있어요. 실제 분담금은 조합 공식 통지를 따르세요. 재건축 분담금과 재초환 부담금은 별개로, 둘 다 발생할 수 있습니다.</div>
 
   <footer>© 스윙파머</footer>
 </div>
@@ -172,27 +207,28 @@ function setIlbanMode(m){
   $('ilbanUnitRow').style.display=(m==='unit')?'block':'none';
   calc();
 }
+// 드롭다운 → 입력칸 자동
+function applyJongjeon(){ const v=$('jongjeonSel').value; if(v){ $('jongjeon').value=v; } calc(); }
+function applyJohap(){ const v=$('johapSel').value; if(v){ setIlbanMode('total'); $('johap').value=v; } calc(); }
 
 function calc(){
   const jongjeon=parseFloat($('jongjeon').value)||0;
   const birye=parseFloat($('birye').value)||0;
-  // 일반분양가: 모드에 따라
-  let ilban;
+  // 조합원분양가: 모드에 따라
+  let johap;
   if(ilbanMode==='unit'){
     const u=parseFloat($('ilbanUnit').value)||0, a=parseFloat($('ilbanArea').value)||0;
-    ilban=u*a;
-    $('ilban').value=Math.round(ilban);
-    $('ilbanUnitCalc').textContent=`${fmt(u)}만/평 × ${a}평 = ${manToKorean(ilban)}`;
+    johap=u*a;
+    $('johap').value=Math.round(johap);
+    $('ilbanUnitCalc').textContent=`${fmt(u)}만/평 × ${a}평 = ${manToKorean(johap)}`;
   } else {
-    ilban=parseFloat($('ilban').value)||0;
+    johap=parseFloat($('johap').value)||0;
   }
-  const disc=parseFloat($('discount').value)||0;
   const gwonri=jongjeon*birye/100;
-  const johap=ilban*disc/100;
   const bundam=johap-gwonri;
 
   $('jongjeon_disp').textContent='= '+manToKorean(jongjeon);
-  $('ilban_disp').textContent='= '+manToKorean(ilban);
+  $('johap_disp').textContent='= '+manToKorean(johap);
   $('gwonriVal').textContent=manToKorean(gwonri);
   $('johapVal').textContent=manToKorean(johap);
 
@@ -212,34 +248,31 @@ function calc(){
   $('detailTable').innerHTML=`
     <tr><td class="label">종전자산 감정평가액</td><td class="num">${manToKorean(jongjeon)}</td></tr>
     <tr><td class="label">비례율</td><td class="num">${birye}%</td></tr>
-    <tr><td class="label">권리가액</td><td class="num">${manToKorean(gwonri)}</td></tr>
-    <tr><td class="label">일반분양가</td><td class="num">${manToKorean(ilban)}</td></tr>
-    <tr><td class="label">조합원 할인율</td><td class="num">${disc}%</td></tr>
-    <tr><td class="label">조합원분양가</td><td class="num">${manToKorean(johap)}</td></tr>
-    <tr class="total"><td class="label">${bundam>=0?'분담금':'환급금'}</td><td class="num">${manToKorean(Math.abs(bundam))}</td></tr>`;
+    <tr><td class="label">권리가액 (감정가×비례율)</td><td class="num">${manToKorean(gwonri)}</td></tr>
+    <tr><td class="label">조합원분양가 (새 평형)</td><td class="num">${manToKorean(johap)}</td></tr>
+    <tr class="total"><td class="label">${bundam>=0?'추가 분담금':'환급금'}</td><td class="num">${manToKorean(Math.abs(bundam))}</td></tr>`;
 
   // 비례율별 시나리오
-  const johapF=johap;
   let html='<tr><th class="rng">비례율</th><th>권리가액</th><th>분담금/환급</th></tr>';
-  [birye-10,birye-5,birye,birye+5,birye+10].filter(b=>b>0).forEach(b=>{
+  [birye-5,birye-2,birye,birye+2,birye+5].filter(b=>b>0).forEach(b=>{
     const g=jongjeon*b/100;
-    const bd=johapF-g;
-    const isCur=Math.abs(b-birye)<0.1;
-    html+=`<tr class="${isCur?'hit':''}"><td class="rng">${b.toFixed(1)}%${isCur?' ◀':''}</td><td>${manToKorean(g)}</td><td style="color:${bd>=0?'#dc2626':'#16a34a'}">${bd>=0?'납부 ':'환급 '}${manToKorean(Math.abs(bd))}</td></tr>`;
+    const bd=johap-g;
+    const isCur=Math.abs(b-birye)<0.01;
+    html+=`<tr class="${isCur?'hit':''}"><td class="rng">${b.toFixed(2)}%${isCur?' ◀':''}</td><td>${manToKorean(g)}</td><td style="color:${bd>=0?'#dc2626':'#16a34a'}">${bd>=0?'납부 ':'환급 '}${manToKorean(Math.abs(bd))}</td></tr>`;
   });
   $('scenarioTable').innerHTML=html;
   saveLocal();
 }
 
-function getState(){ const s={}; document.querySelectorAll('input[id]').forEach(el=>s[el.id]=el.value); return s; }
-function setState(d){ if(!d)return; document.querySelectorAll('input[id]').forEach(el=>{ if(d[el.id]!==undefined)el.value=d[el.id]; }); calc(); }
+function getState(){ const s={}; document.querySelectorAll('input[id],select[id]').forEach(el=>s[el.id]=el.value); return s; }
+function setState(d){ if(!d)return; document.querySelectorAll('input[id],select[id]').forEach(el=>{ if(d[el.id]!==undefined)el.value=d[el.id]; }); calc(); }
 function saveLocal(){ try{ localStorage.setItem('sf_bundamgum_v1', JSON.stringify(getState())); }catch(e){} }
 function loadLocal(){ try{ const r=localStorage.getItem('sf_bundamgum_v1'); if(r){ setState(JSON.parse(r)); return true; } }catch(e){} return false; }
 window.bgGetState=getState; window.bgSetState=setState;
-document.querySelectorAll('input').forEach(el=>el.addEventListener('input', calc));
+document.querySelectorAll('input,select').forEach(el=>el.addEventListener('input', calc));
 if(!loadLocal()){ calc(); }
 
-const DEFAULTS={ jongjeon:'185000', birye:'103.73', ilban:'197000', ilbanUnit:'5800', ilbanArea:'34', discount:'90' };
+const DEFAULTS={ jongjeonSel:'165000', jongjeon:'165000', birye:'100.73', johapSel:'170000', johap:'170000', ilbanUnit:'5000', ilbanArea:'34' };
 $('resetBtn').addEventListener('click', function(){
   if(!confirm('목동 6단지 기본값으로 되돌릴까요? (저장된 입력이 지워집니다)')) return;
   Object.keys(DEFAULTS).forEach(id=>{ const el=$(id); if(el)el.value=DEFAULTS[id]; });
