@@ -61,30 +61,31 @@
 </header>
 <div class="wrap">
   <p class="desc">재건축 조합원이 새 아파트를 받기 위해 추가로 내야 하는 <b>분담금</b>(또는 받을 <b>환급금</b>)을 계산합니다. 비례율·종전 감정가·조합원분양가로 권리가액을 구하고, 분양가와의 차액을 산출해요.</p>
-  <div class="info-box" style="display:block;margin-bottom:16px">📍 <b>기본값 = 목동 6단지 27평→34평</b> (하우징타임즈·아시아경제 공식). 추정비례율 <b>100.73%</b>(공식), 새 34평 조합원분양가 <b>17억</b>. 종전감정가는 27평 시세 22억의 75%(≈16.5억)로 추정. → 분담금 약 <b>+0.38억</b>(거의 균형). 개별 감정가·비례율은 관리처분 때 확정되니 본인 조건으로 바꿔 쓰세요.</div>
+  <div class="info-box" style="display:block;margin-bottom:16px">📍 <b>기본값 = 목동 6단지 공식 정비계획</b> (서울시 고시 2024-401호). 추정비례율 <b>100.92%</b>, 종전·분양가 모두 <b>공식 추정액</b>이에요. 기존 65.10㎡ → 전용 84.95㎡ 분양 시 분담금 약 <b>+430만원</b>(사실상 균형). 개별 감정가는 관리처분 때 확정되니 본인 조건으로 바꿔 쓰세요.</div>
   <button id="resetBtn" style="width:100%;margin-bottom:16px;background:#64748b;color:white;border:none;border-radius:8px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">🔄 기본값으로 초기화 (목동 6단지)</button>
 
   <div class="panel">
     <div class="section-label">1️⃣ 종전자산 · 비례율 → 권리가액 <span class="info-btn" onclick="toggleInfo('grInfo')">i</span></div>
-    <div class="info-box" id="grInfo"><b>무엇을 입력하나요?</b><br>• <b>종전자산 감정평가액</b> = 재건축 전 내가 가진 집의 감정가. 실거래·호가가 아니라 감정평가사가 정한 값으로, 보통 시세의 70~80% 수준이에요.<br>• <b>비례율</b> = 사업성 지표. (종후자산총액−총사업비)÷종전자산총액×100. 100% 이상이면 자산가치 보전, 미만이면 줄어듦.<br>• <b>권리가액</b> = 종전감정가 × 비례율. 내가 새 아파트에서 인정받는 금액이에요.<br><br><b>6단지 실데이터</b>: 비례율 100.73%(공식), 평형별 감정가는 현 시세의 75%로 추정. 아래 평형을 고르면 자동 입력돼요.</div>
+    <div class="info-box" id="grInfo"><b>무엇을 입력하나요?</b><br>• <b>종전자산 감정평가액</b> = 재건축 전 내가 가진 집의 감정가. 실거래·호가가 아니라 감정평가사가 정한 값으로, 보통 시세의 70~80% 수준이에요.<br>• <b>비례율</b> = 사업성 지표. (종후자산총액−총사업비)÷종전자산총액×100. 100% 이상이면 자산가치 보전, 미만이면 줄어듦.<br>• <b>권리가액</b> = 종전감정가 × 비례율. 내가 새 아파트에서 인정받는 금액이에요.<br><br><b>6단지 실데이터</b>: 비례율 100.92%(공식 정비계획), 평형별 종전자산 추정가격도 공식값. 아래 평형을 고르면 자동 입력돼요.</div>
     <div class="input-row">
       <label>현재 보유 평형 <span class="stat-sub">6단지 시세 기준 — 고르면 감정가 자동</span></label>
       <select id="jongjeonSel" onchange="applyJongjeon()">
         <option value="">직접 입력</option>
-        <option value="127500">20평 (현 시세 17억 → 감정 12.75억)</option>
-        <option value="165000" selected>27평 (현 시세 22억 → 감정 16.5억)</option>
-        <option value="210000">35평 (현 시세 28억 → 감정 21억)</option>
-        <option value="262500">54평 (현 시세 35억 → 감정 26.25억)</option>
+        <option value="121400">기존 47.94㎡ (종전 12.14억)</option>
+        <option value="155500" selected>기존 65.10㎡ (종전 15.55억)</option>
+        <option value="193100">기존 95.03㎡ (종전 19.31억)</option>
+        <option value="235000">기존 115.19㎡ (종전 23.5억)</option>
+        <option value="254800">기존 142.39㎡ (종전 25.48억)</option>
       </select>
     </div>
     <div class="input-row">
       <label>종전자산 감정평가액 <span class="stat-sub">시세의 70~80%. 만원</span></label>
-      <input type="number" id="jongjeon" value="165000" inputmode="numeric">
+      <input type="number" id="jongjeon" value="155500" inputmode="numeric">
       <div class="unit-suffix" id="jongjeon_disp"></div>
     </div>
     <div class="input-row">
-      <label>비례율 (%) <span class="stat-sub">6단지 공식 100.73%</span></label>
-      <input type="number" id="birye" value="100.73" step="0.01" inputmode="decimal">
+      <label>비례율 (%) <span class="stat-sub">6단지 공식 100.92%</span></label>
+      <input type="number" id="birye" value="100.92" step="0.01" inputmode="decimal">
     </div>
     <div style="font-size:11.5px;color:#888;margin-top:-6px">권리가액 = 종전감정가 × 비례율 (자동 계산 ↓)</div>
   </div>
@@ -96,15 +97,18 @@
 
   <div class="panel">
     <div class="section-label">2️⃣ 새로 받을 평형 → 조합원분양가 <span class="info-btn" onclick="toggleInfo('jbInfo')">i</span></div>
-    <div class="info-box" id="jbInfo"><b>무엇을 입력하나요?</b><br>• <b>조합원분양가</b> = 재건축 후 내가 분양받을 새 아파트 가격. 일반인보다 싸게 받아요(보통 일반분양가의 80~90%, 도매가 개념).<br>• 평형이 커질수록 분양가가 올라가 분담금이 늘어요.<br><br><b>6단지 실데이터</b>(조합원분양가): 25평 12.5억 / 34평 17억 / 39평 19.5억 / 45평 22.5억. 아래 평형을 고르면 자동 입력돼요. 평단가로 직접 계산도 가능해요.</div>
+    <div class="info-box" id="jbInfo"><b>무엇을 입력하나요?</b><br>• <b>조합원분양가</b> = 재건축 후 내가 분양받을 새 아파트 가격. 일반인보다 싸게 받아요(보통 일반분양가의 80~90%, 도매가 개념).<br>• 평형이 커질수록 분양가가 올라가 분담금이 늘어요.<br><br><b>6단지 공식 분양가</b>: 59.95㎡ 12.34억 / 84.95㎡ 15.74억 / 99.95㎡ 18.03억 / 120㎡ 20.61억. 아래 평형을 고르면 자동 입력돼요. 평단가로 직접 계산도 가능해요.</div>
     <div class="input-row">
       <label>새로 받을 평형 <span class="stat-sub">6단지 조합원분양가 — 고르면 자동</span></label>
       <select id="johapSel" onchange="applyJohap()">
         <option value="">직접 입력</option>
-        <option value="125000">새 25평 (12.5억)</option>
-        <option value="170000" selected>새 34평 (17억)</option>
-        <option value="195000">새 39평 (19.5억)</option>
-        <option value="225000">새 45평 (22.5억)</option>
+        <option value="123380">전용 59.95㎡ (분양 12.34억)</option>
+        <option value="157360" selected>전용 84.95㎡ (분양 15.74억)</option>
+        <option value="180270">전용 99.95㎡ (분양 18.03억)</option>
+        <option value="206060">전용 120㎡ (분양 20.61억)</option>
+        <option value="210620">전용 134㎡ (분양 21.06억)</option>
+        <option value="217780">전용 145㎡ (분양 21.78억)</option>
+        <option value="233970">전용 164㎡ (분양 23.4억)</option>
       </select>
     </div>
     <div class="input-row">
@@ -116,7 +120,7 @@
     </div>
     <div class="input-row" id="ilbanTotalRow">
       <label>조합원분양가 (총액) <span class="stat-sub">새 아파트 분양가. 만원</span></label>
-      <input type="number" id="johap" value="170000" inputmode="numeric">
+      <input type="number" id="johap" value="157360" inputmode="numeric">
       <div class="unit-suffix" id="johap_disp"></div>
     </div>
     <div class="input-row" id="ilbanUnitRow" style="display:none">
@@ -167,26 +171,30 @@
   </div>
 
   <div class="panel">
-    <div class="section-label">📋 목동 6단지 실데이터 (참고)</div>
-    <div style="font-size:11.5px;color:#888;margin-bottom:10px">출처: 하우징타임즈·아시아경제(2025.5). 비례율 100.73%·일반분양가·공사비는 공식, 평형별 호당 감정가는 시세 75% 추정.</div>
+    <div class="section-label">📋 목동 6단지 공식 정비계획 데이터</div>
+    <div style="font-size:11.5px;color:#888;margin-bottom:10px">출처: 서울시고시 제2024-401호(2024.8.16). 비례율 100.92%, 종전·분양가 모두 공식 추정액. 관리처분 인가 시 개별 감정평가로 변경될 수 있어요.</div>
     <table class="bracket">
-      <tr><th class="rng">현 평형</th><th>현 시세</th><th>감정가(75%)</th><th>권리가액</th></tr>
-      <tr><td class="rng">20평</td><td>17억</td><td>12.75억</td><td>12.84억</td></tr>
-      <tr class="hit"><td class="rng">27평</td><td>22억</td><td>16.5억</td><td>16.62억</td></tr>
-      <tr><td class="rng">35평</td><td>28억</td><td>21억</td><td>21.15억</td></tr>
-      <tr><td class="rng">54평</td><td>35억</td><td>26.25억</td><td>26.44억</td></tr>
+      <tr><th class="rng">기존 평형</th><th>종전 추정가</th><th>권리가액<br>(×100.92%)</th></tr>
+      <tr><td class="rng">47.94㎡</td><td>12.14억</td><td>12.25억</td></tr>
+      <tr class="hit"><td class="rng">65.10㎡</td><td>15.55억</td><td>15.69억</td></tr>
+      <tr><td class="rng">95.03㎡</td><td>19.31억</td><td>19.49억</td></tr>
+      <tr><td class="rng">115.19㎡</td><td>23.5억</td><td>23.72억</td></tr>
+      <tr><td class="rng">142.39㎡</td><td>25.48억</td><td>25.71억</td></tr>
     </table>
     <table class="bracket" style="margin-top:10px">
-      <tr><th class="rng">새 평형</th><th>조합원분양가</th></tr>
-      <tr><td class="rng">새 25평</td><td>12.5억</td></tr>
-      <tr class="hit"><td class="rng">새 34평</td><td>17억</td></tr>
-      <tr><td class="rng">새 39평</td><td>19.5억</td></tr>
-      <tr><td class="rng">새 45평</td><td>22.5억</td></tr>
+      <tr><th class="rng">전용 분양</th><th>분양가 추정</th></tr>
+      <tr><td class="rng">59.95㎡</td><td>12.34억</td></tr>
+      <tr class="hit"><td class="rng">84.95㎡</td><td>15.74억</td></tr>
+      <tr><td class="rng">99.95㎡</td><td>18.03억</td></tr>
+      <tr><td class="rng">120㎡</td><td>20.61억</td></tr>
+      <tr><td class="rng">134㎡</td><td>21.06억</td></tr>
+      <tr><td class="rng">145㎡</td><td>21.78억</td></tr>
+      <tr><td class="rng">164㎡</td><td>23.4억</td></tr>
     </table>
-    <div style="font-size:11.5px;color:#1F4E78;font-weight:600;margin-top:10px">💡 27평→34평 = +0.38억 (거의 균형, "또이또이"). 작은 평형이 큰 평형 받으면 분담금, 큰 평형이 작은 평형 받으면 환급.</div>
+    <div style="font-size:11.5px;color:#1F4E78;font-weight:600;margin-top:10px">💡 65.10㎡ → 84.95㎡ = +430만원 (사실상 균형). 같은·작은 평형 가면 환급, 큰 평형 가면 분담금. 6단지는 비례율 100.92%로 빠듯해 공사비 오르면 분담금 늘어요.</div>
   </div>
 
-  <div class="note">⚠️ <b>추정 계산</b>입니다. 비례율·감정가는 관리처분계획 인가 때 확정되며 그 전엔 바뀔 수 있어요. 목동 6단지는 시공사 선정 단계라 모든 수치가 잠정이고, 비례율 100.73%는 빠듯해서 <b>공사비 상승 시 마이너스(분담금 증가) 전환 위험</b>이 있어요. 실제 분담금은 조합 공식 통지를 따르세요. 재건축 분담금과 재초환 부담금은 별개로, 둘 다 발생할 수 있습니다.</div>
+  <div class="note">⚠️ <b>추정 계산</b>입니다. 비례율·감정가는 관리처분계획 인가 때 확정되며 그 전엔 바뀔 수 있어요. 목동 6단지는 시공사 선정 단계라 모든 수치가 잠정이고, 비례율 100.92%는 빠듯해서 <b>공사비 상승 시 마이너스(분담금 증가) 전환 위험</b>이 있어요. 실제 분담금은 조합 공식 통지를 따르세요. 재건축 분담금과 재초환 부담금은 별개로, 둘 다 발생할 수 있습니다.</div>
 
   <footer>© 스윙파머</footer>
 </div>
@@ -272,7 +280,7 @@ window.bgGetState=getState; window.bgSetState=setState;
 document.querySelectorAll('input,select').forEach(el=>el.addEventListener('input', calc));
 if(!loadLocal()){ calc(); }
 
-const DEFAULTS={ jongjeonSel:'165000', jongjeon:'165000', birye:'100.73', johapSel:'170000', johap:'170000', ilbanUnit:'5000', ilbanArea:'34' };
+const DEFAULTS={ jongjeonSel:'155500', jongjeon:'155500', birye:'100.92', johapSel:'157360', johap:'157360', ilbanUnit:'5000', ilbanArea:'34' };
 $('resetBtn').addEventListener('click', function(){
   if(!confirm('목동 6단지 기본값으로 되돌릴까요? (저장된 입력이 지워집니다)')) return;
   Object.keys(DEFAULTS).forEach(id=>{ const el=$(id); if(el)el.value=DEFAULTS[id]; });
