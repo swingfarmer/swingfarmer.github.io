@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>재건축 초과이익부담금(재초환) 계산기 | 스윙파머</title>
+<meta name="description" content="재건축초과이익환수제(재초환) 부담금 시뮬레이터. 종료/개시 주택가액·정상상승분·개발비용으로 초과이익을 구하고, 누진 부과율과 장기보유 감면을 적용한 최종 납부액을 계산.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; display: block; }
+  header h1 { font-size: 18px; color: #1F4E78; margin: 0; }
+  .back-link { display: inline-block; margin-bottom: 8px; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
+  .panel { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+  .section-label { font-size: 14px; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #eef0f3; color: #1F4E78; }
+  .input-row { margin-bottom: 13px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #333; }
+  .stat-sub { font-size: 11px; font-weight: 500; color: #888; }
+  input[type="number"], select { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; }
+  input[type="number"] { background: #FFF2CC; font-weight: 600; color: #0000FF; }
+  select { background: white; font-weight: 600; }
+  .unit-suffix { font-size: 12px; color: #888; margin-top: 3px; }
+  .op { text-align: center; font-size: 13px; color: #888; font-weight: 700; margin: 2px 0; }
+  .result-hero { border-radius: 14px; padding: 22px; text-align: center; margin-bottom: 16px; color: white; background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+  .result-hero .rh-label { font-size: 13px; opacity: .9; margin-bottom: 4px; }
+  .result-hero .rh-val { font-size: 30px; font-weight: 800; }
+  .result-hero .rh-sub { font-size: 12.5px; opacity: .92; margin-top: 6px; line-height: 1.6; }
+  .excess-box { border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: center; background: #f0fdf4; border: 1px solid #bbf7d0; }
+  .excess-box.zero { background: #f8fafc; border-color: #e5e7eb; }
+  .excess-box .eb-label { font-size: 12px; color: #16a34a; font-weight: 600; }
+  .excess-box.zero .eb-label { color: #888; }
+  .excess-box .eb-val { font-size: 24px; font-weight: 800; color: #15803d; margin-top: 3px; }
+  .excess-box.zero .eb-val { color: #888; }
+  table.bracket { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.bracket th { background: #f8fafc; padding: 8px 6px; border-bottom: 2px solid #e5e7eb; font-size: 11px; color: #555; }
+  table.bracket td { padding: 7px 6px; border-bottom: 1px solid #f0f0f0; text-align: right; }
+  table.bracket td.rng { text-align: left; }
+  table.bracket tr.hit { background: #eff6ff; font-weight: 700; }
+  table.bracket tr.total td { border-top: 2px solid #1F4E78; font-weight: 800; }
+  .discount-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media (max-width: 560px){ .discount-grid { grid-template-columns: 1fr; } }
+  .disc-card { border: 2px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; font-size: 12.5px; }
+  .disc-card.active { border-color: #1F4E78; background: #eff6ff; }
+  .disc-card .dc-label { color: #555; font-weight: 600; }
+  .disc-card .dc-val { font-size: 16px; font-weight: 800; color: #1F4E78; margin-top: 2px; }
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; cursor: pointer; margin-left: 4px; }
+  .info-box { display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #1e40af; line-height: 1.7; margin-top: 8px; }
+  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; margin-top: 8px; font-size: 12.5px; line-height: 1.8; color: #6b5618; }
+  .manual .badge { display: inline-block; background: #1F4E78; color: white; font-size: 11px; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; line-height: 1.7; margin-top: 14px; }
+  footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a href="/realestate/" class="back-link">← 부동산 도구로</a>
+    <h1>🏗️ 재건축 초과이익부담금(재초환) 계산기</h1>
+  </div>
+</header>
+<div class="wrap">
+  <p class="desc">재건축초과이익환수제(재초환) <b>조합원 1인당 부담금</b>을 추정합니다. 종료·개시 주택가액과 정상상승분·개발비용으로 초과이익을 구하고, 누진 부과율과 장기보유 1주택 감면을 적용해 최종 납부액을 계산해요. 기본값은 목동 6단지 시뮬레이션 기준이며 모두 수정 가능합니다.</p>
+  <div class="panel">
+    <div class="section-label">1️⃣ 초과이익 산정 <span class="info-btn" onclick="toggleInfo('exInfo')">i</span></div>
+    <div class="info-box" id="exInfo">초과이익 = A 종료시점 주택가액 − (B 개시시점 주택가액 + C 정상 주택가격 상승분 + D 개발비용). 모두 조합원 1인당 기준이며, 현실화율(시세반영률)은 개시·종료를 동일하게 맞추는 게 개정 취지예요. 부과 개시 시점은 조합설립 인가일 기준입니다.</div>
+    <div class="input-row">
+      <label>A. 종료시점 주택가액 (준공 시 가치) <span class="stat-sub">신축 예상시세 × 현실화율 · 만원</span></label>
+      <input type="number" id="valEnd" value="300000" inputmode="numeric">
+      <div class="unit-suffix" id="valEnd_disp"></div>
+    </div>
+    <div class="op">−</div>
+    <div class="input-row">
+      <label>B. 개시시점 주택가액 (조합설립 기준) <span class="stat-sub">설립 당시 시세 × 현실화율 · 만원</span></label>
+      <input type="number" id="valStart" value="180000" inputmode="numeric">
+      <div class="unit-suffix" id="valStart_disp"></div>
+    </div>
+    <div class="op">−</div>
+    <div class="input-row">
+      <label>C. 정상 주택가격 상승분 <span class="stat-sub">사업기간 지역 평균 상승액 · 만원</span></label>
+      <input type="number" id="valNormal" value="30000" inputmode="numeric">
+      <div class="unit-suffix" id="valNormal_disp"></div>
+    </div>
+    <div class="op">−</div>
+    <div class="input-row">
+      <label>D. 개발비용 (분담금·경비) <span class="stat-sub">공사비+분담금+이자+운영비+기부채납 · 만원</span></label>
+      <input type="number" id="valCost" value="50000" inputmode="numeric">
+      <div class="unit-suffix" id="valCost_disp"></div>
+    </div>
+  </div>
+  <div class="excess-box" id="excessBox">
+    <div class="eb-label">조합원 1인당 순수 초과이익</div>
+    <div class="eb-val" id="excessVal">-</div>
+  </div>
+  <div class="panel">
+    <div class="section-label">2️⃣ 누진 부과율별 부담금 <span class="info-btn" onclick="toggleInfo('brInfo')">i</span></div>
+    <div class="info-box" id="brInfo">2024년 3월 개정 기준. 초과이익 8,000만원 이하는 면제, 이후 5,000만원 구간마다 부과율이 10%씩 올라 최대 50%. 구간별로 쪼개서 누진 적용해요. (8천만 이하 0% / ~1.3억 10% / ~1.8억 20% / ~2.3억 30% / ~2.8억 40% / 2.8억 초과 50%)</div>
+    <table class="bracket" id="bracketTable"></table>
+  </div>
+  <div class="panel">
+    <div class="section-label">3️⃣ 장기보유 1주택 감면 후 최종액 <span class="info-btn" onclick="toggleInfo('dcInfo')">i</span></div>
+    <div class="info-box" id="dcInfo">1세대 1주택자가 장기보유 시 보유기간에 따라 감면. 6년 10%부터 시작해 20년 이상이면 최대 70%. 다주택자·단기보유자는 감면 0%. 보유기간을 선택하면 해당 감면이 적용된 최종 납부액이 결과에 반영돼요.</div>
+    <div class="input-row">
+      <label>보유기간 / 감면율</label>
+      <select id="discount" onchange="calc()">
+        <option value="0">단기보유·다주택 (감면 0%)</option>
+        <option value="10">6년 이상~7년 미만 (10%)</option>
+        <option value="20">7년 이상~8년 미만 (20%)</option>
+        <option value="30">8년 이상~9년 미만 (30%)</option>
+        <option value="40">9년 이상~10년 미만 (40%)</option>
+        <option value="50">10년 이상~15년 미만 (50%)</option>
+        <option value="60">15년 이상~20년 미만 (60%)</option>
+        <option value="70">20년 이상 원주민 (70%)</option>
+      </select>
+    </div>
+    <div class="discount-grid" id="discountGrid"></div>
+  </div>
+  <div class="result-hero">
+    <div class="rh-label">최종 납부 예상액 (감면 적용)</div>
+    <div class="rh-val" id="finalVal">-</div>
+    <div class="rh-sub" id="finalSub"></div>
+  </div>
+  <div class="manual">
+    <b>📘 계산 방법</b><br>
+    <span class="badge">초과이익</span> A − (B + C + D)<br>
+    <span class="badge">부담금</span> 초과이익을 누진 구간에 쪼개 부과율 적용 (8천만 면제, 최대 50%)<br>
+    <span class="badge">최종액</span> 부담금 × (1 − 장기보유 감면율)<br>
+    <span class="badge">납부</span> 준공 후 4개월 내 고지, 6개월 내 납부 · 최장 10년 분납·고령자 유예·물납 가능
+  </div>
+  <div class="note">⚠️ <b>추정 시뮬레이션</b>입니다. 실제 부담금은 감정평가액·조합원 수·개발비용 확정치·현실화율 적용 방식에 따라 달라지며, 재초환 폐지·완화 논의가 진행 중이라 제도 자체가 바뀔 수 있어요. 종료시점 주택가액은 준공 시점에야 확정돼 가장 불확실합니다. 법적 효력 없는 참고용이며, 정확한 산정은 조합·구청 고지 기준을 따르세요.</div>
+  <footer>© 스윙파머</footer>
+</div>
+<div id="cloudFab" style="position:fixed;right:16px;bottom:16px;z-index:900;display:flex;flex-direction:column;gap:8px;align-items:flex-end"></div>
+<script src="/common.js?v=3"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
+function manToKorean(man){ man=Math.round(man); if(man===0)return'0원'; const neg=man<0; man=Math.abs(man); const eok=Math.floor(man/10000), rest=man%10000; let p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(rest>0)p.push(rest.toLocaleString('ko-KR')+'만'); return (neg?'-':'')+p.join(' ')+'원'; }
+const BRACKETS = [[8000,13000,0.1],[13000,18000,0.2],[18000,23000,0.3],[23000,28000,0.4],[28000,Infinity,0.5]];
+function calcBurden(excess){
+  let total=0; const rows=[];
+  rows.push({rng:'0 ~ 8,000만 (면제)', amt:Math.min(excess,8000), rate:0, tax:0, hit:false});
+  for(const[lo,hi,rate] of BRACKETS){
+    if(excess>lo){ const taxable=Math.min(excess,hi)-lo; const tax=taxable*rate; total+=tax;
+      rows.push({ rng:`${fmt(lo)}만 ${hi===Infinity?'초과':'~ '+fmt(hi)+'만'} (${rate*100}%)`, amt:taxable, rate, tax, hit:true });
+    } else { rows.push({ rng:`${fmt(lo)}만 ${hi===Infinity?'초과':'~ '+fmt(hi)+'만'} (${rate*100}%)`, amt:0, rate, tax:0, hit:false }); }
+  }
+  return {total, rows};
+}
+function calc(){
+  const A=parseFloat($('valEnd').value)||0, B=parseFloat($('valStart').value)||0, C=parseFloat($('valNormal').value)||0, D=parseFloat($('valCost').value)||0;
+  const excess=A-(B+C+D);
+  $('valEnd_disp').textContent='= '+manToKorean(A);
+  $('valStart_disp').textContent='= '+manToKorean(B);
+  $('valNormal_disp').textContent='= '+manToKorean(C);
+  $('valCost_disp').textContent='= '+manToKorean(D);
+  const eb=$('excessBox');
+  if(excess<=0){
+    eb.className='excess-box zero';
+    $('excessVal').textContent=manToKorean(excess)+' (부담금 없음)';
+    $('bracketTable').innerHTML='<tr><td style="padding:14px;color:#888;text-align:center">초과이익이 0 이하라 부담금이 없어요.</td></tr>';
+    renderDiscounts(0);
+    $('finalVal').textContent='0원'; $('finalSub').textContent='초과이익 없음';
+    saveLocal(); return;
+  }
+  eb.className='excess-box';
+  $('excessVal').textContent=manToKorean(excess);
+  const {total, rows}=calcBurden(excess);
+  let html='<tr><th class="rng">구간</th><th>해당액(만)</th><th>부과율</th><th>세액(만)</th></tr>';
+  rows.forEach(r=>{ html+=`<tr class="${r.hit&&r.tax>0?'hit':''}"><td class="rng">${r.rng}</td><td>${r.amt>0?fmt(r.amt):'-'}</td><td>${r.rate*100}%</td><td>${r.tax>0?fmt(r.tax):'-'}</td></tr>`; });
+  html+=`<tr class="total"><td class="rng">감면 전 부담금</td><td></td><td></td><td>${fmt(total)}</td></tr>`;
+  $('bracketTable').innerHTML=html;
+  renderDiscounts(total);
+  const dc=parseFloat($('discount').value)||0;
+  const final=total*(1-dc/100);
+  $('finalVal').textContent=manToKorean(final);
+  $('finalSub').innerHTML=`감면 전 ${manToKorean(total)} · 감면 ${dc}% 적용`;
+  saveLocal();
+}
+function renderDiscounts(total){
+  const opts=[[0,'단기·다주택'],[10,'6년+'],[20,'7년+'],[30,'8년+'],[40,'9년+'],[50,'10년+'],[60,'15년+'],[70,'20년+']];
+  const cur=parseFloat($('discount').value)||0;
+  $('discountGrid').innerHTML=opts.map(([rate,label])=>`<div class="disc-card ${rate===cur?'active':''}"><div class="dc-label">${label} (감면 ${rate}%)</div><div class="dc-val">${manToKorean(total*(1-rate/100))}</div></div>`).join('');
+}
+function getState(){ const s={}; document.querySelectorAll('input[id],select[id]').forEach(el=>s[el.id]=el.value); return s; }
+function setState(d){ if(!d)return; document.querySelectorAll('input[id],select[id]').forEach(el=>{ if(d[el.id]!==undefined)el.value=d[el.id]; }); calc(); }
+function saveLocal(){ try{ localStorage.setItem('sf_jaechohwan_v1', JSON.stringify(getState())); }catch(e){} }
+function loadLocal(){ try{ const r=localStorage.getItem('sf_jaechohwan_v1'); if(r){ setState(JSON.parse(r)); return true; } }catch(e){} return false; }
+window.jcGetState=getState; window.jcSetState=setState;
+document.querySelectorAll('input,select').forEach(el=>el.addEventListener('input', calc));
+if(!loadLocal()){ calc(); }
+</script>
+
+<div id="slotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:16px;max-width:440px;width:100%;padding:20px;max-height:90vh;overflow:auto">
+    <div style="display:flex;align-items:center;margin-bottom:14px"><h3 style="margin:0;font-size:16px;color:#1F4E78">☁️ 클라우드 저장</h3><button onclick="document.getElementById('slotModal').style.display='none'" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button></div>
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">💾 현재 시나리오 저장</div>
+      <div style="display:flex;gap:8px"><input type="text" id="slotName" placeholder="이름 (예: 목동6단지 84제곱)" maxlength="30" style="flex:1;padding:9px;font-size:13px;border:1px solid #ccc;border-radius:6px;background:white;color:#333"><button id="slotSaveBtn" style="background:#0ea5e9;color:white;border:none;padding:9px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">저장</button></div>
+    </div>
+    <div style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px">📋 저장된 시나리오</div>
+    <div id="slotList" style="display:flex;flex-direction:column;gap:8px"><div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+const firebaseConfig = { apiKey:"AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY", authDomain:"swingfarmer-board01.firebaseapp.com", projectId:"swingfarmer-board01", storageBucket:"swingfarmer-board01.firebasestorage.app", messagingSenderId:"312575044644", appId:"1:312575044644:web:81d754eb1d90f25454fcb1" };
+const ADMIN_UID="1JrHgD2bpTRjrS2jw7MbpHciBph1", CALC_KEY="jaechohwan";
+const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
+const provider=new GoogleAuthProvider(); provider.setCustomParameters({prompt:'select_account'});
+const gid=id=>document.getElementById(id); let currentUser=null;
+getRedirectResult(auth).catch(()=>{});
+const fab=gid('cloudFab');
+const loginBtn='<button id="btnAdminLogin" style="background:#fff;color:#444;border:1px solid #ccc;border-radius:20px;padding:10px 16px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)">🔑 관리자 로그인</button>';
+if(location.hash==='#admin'){ fab.innerHTML=loginBtn; }
+document.addEventListener('click',e=>{ if(!e.target)return; if(e.target.id==='btnAdminLogin')login(); if(e.target.id==='btnCloudOpen')openModal(); if(e.target.id==='btnLogout')signOut(auth); });
+async function login(){ try{ await signInWithPopup(auth,provider); }catch(e){ const code=e&&e.code; if(code==='auth/popup-blocked'||code==='auth/cancelled-popup-request'||code==='auth/popup-closed-by-user'||code==='auth/operation-not-supported-in-this-environment'){ try{ await signInWithRedirect(auth,provider); }catch(e2){ alert('로그인 실패: '+e2.message); } } else { alert('로그인 실패: '+(e.message||code)); } } }
+onAuthStateChanged(auth, user=>{ currentUser=user; const isAdmin=user&&user.uid===ADMIN_UID;
+  if(isAdmin){ fab.innerHTML='<button id="btnCloudOpen" style="background:#0ea5e9;color:white;border:none;border-radius:20px;padding:10px 16px;font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)">☁️ 저장/불러오기</button>'; }
+  else if(user&&!isAdmin){ fab.innerHTML='<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px 12px;font-size:11px;color:#92400e">비관리자<br><button id="btnLogout" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11px;cursor:pointer;margin-top:4px">로그아웃</button></div>'; }
+  else { fab.innerHTML=''; if(location.hash==='#admin')fab.innerHTML=loginBtn; }
+});
+const docRef=()=>doc(db,'calc_data',ADMIN_UID);
+async function loadSlots(){ try{ const s=await getDoc(docRef()); if(s.exists()&&s.data()[CALC_KEY]&&Array.isArray(s.data()[CALC_KEY].slots))return s.data()[CALC_KEY].slots; }catch(e){} return []; }
+async function saveSlots(slots){ const ref=docRef(); let ex={}; try{ const s=await getDoc(ref); if(s.exists())ex=s.data(); }catch(e){} ex[CALC_KEY]={slots,updatedAt:new Date().toISOString()}; await setDoc(ref,ex,{merge:true}); }
+let _slots=[];
+function renderSlots(){ const box=gid('slotList'); if(!_slots.length){ box.innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 시나리오가 없어요.</div>'; return; }
+  box.innerHTML=_slots.map((s,i)=>{ const t=s.savedAt?new Date(s.savedAt).toLocaleString('ko-KR'):''; return '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.name||'(이름없음)')+'</div><div style="font-size:11px;color:#999">'+t+'</div></div><button onclick="window._jcRename('+i+')" style="background:#e5e7eb;color:#444;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">✏️</button><button onclick="window._jcLoad('+i+')" style="background:#0284c7;color:white;border:none;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button><button onclick="window._jcDel('+i+')" style="background:#fee2e2;color:#dc2626;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">🗑️</button></div>'; }).join(''); }
+async function openModal(){ if(!currentUser||currentUser.uid!==ADMIN_UID){ alert('관리자 로그인이 필요합니다.'); return; } gid('slotName').value=''; gid('slotModal').style.display='flex'; gid('slotList').innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>'; _slots=await loadSlots(); renderSlots(); }
+gid('slotSaveBtn').addEventListener('click', async()=>{ const name=gid('slotName').value.trim(); if(!name){ alert('이름을 입력하세요.'); return; } const idx=_slots.findIndex(s=>s.name===name); if(idx>=0&&!confirm('"'+name+'" 덮어쓸까요?'))return; gid('slotSaveBtn').disabled=true; gid('slotSaveBtn').textContent='저장 중...'; try{ const entry={name,data:window.jcGetState(),savedAt:new Date().toISOString()}; if(idx>=0)_slots[idx]=entry; else _slots.push(entry); await saveSlots(_slots); renderSlots(); alert('✅ 저장 완료.'); }catch(e){ alert('저장 실패: '+e.message); } gid('slotSaveBtn').disabled=false; gid('slotSaveBtn').textContent='저장'; });
+window._jcLoad=function(i){ const s=_slots[i]; if(!s)return; if(!confirm('"'+s.name+'" 불러오기CONFIRM'))return; window.jcSetState(s.data); gid('slotModal').style.display='none'; };
+window._jcDel=async function(i){ if(!confirm('🗑️CONFIRM'))return; try{ _slots.splice(i,1); await saveSlots(_slots); renderSlots(); }catch(e){ alert('실패: '+e.message); } };
+window._jcRename=async function(i){ const nn=prompt('이름 수정', _slots[i].name||''); if(nn===null)return; const t=nn.trim(); if(!t)return; try{ _slots[i].name=t; await saveSlots(_slots); renderSlots(); }catch(e){ alert('실패: '+e.message); } };
+</script>
+
+</body>
+</html>
