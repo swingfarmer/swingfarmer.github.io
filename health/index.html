@@ -2,125 +2,193 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>40대 남성 건강관리 체크리스트 | 고지혈증·고혈압·간수치</title>
-<meta name="description" content="고지혈증·고혈압 경계·간수치 정상상단 40대 남성을 위한 식단·운동 가이드와 데일리 체크리스트.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1F4E78">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="건강관리">
+<link rel="manifest" href="/health/manifest.json">
+<link rel="apple-touch-icon" href="/health/icon-192.png">
+<title>건강관리 체크리스트</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.6; padding-bottom: 60px; }
-  .wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
-  header { background: linear-gradient(135deg, #1F4E78, #2d6da3); color: white; padding: 24px 16px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.6; padding-bottom: 80px; }
+  .wrap { max-width: 600px; margin: 0 auto; padding: 14px; }
+  header { background: linear-gradient(135deg, #1F4E78, #2d6da3); color: white; padding: 20px 16px; }
   header .wrap { padding: 0; }
-  header h1 { font-size: 20px; margin: 0 0 6px; }
-  header p { font-size: 13px; opacity: .92; line-height: 1.6; }
-  .status-bar { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
-  .status-chip { background: rgba(255,255,255,.18); border-radius: 20px; padding: 5px 12px; font-size: 12px; font-weight: 600; }
-  .tabs { display: flex; gap: 6px; margin: 16px 0; overflow-x: auto; padding-bottom: 4px; }
-  .tab { flex-shrink: 0; padding: 9px 16px; border-radius: 20px; font-size: 13px; font-weight: 700; cursor: pointer; background: white; color: #555; border: 1px solid #e5e7eb; }
+  header h1 { font-size: 19px; margin: 0 0 6px; }
+  header p { font-size: 12.5px; opacity: .92; }
+  .status-bar { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+  .status-chip { background: rgba(255,255,255,.18); border-radius: 20px; padding: 5px 11px; font-size: 11.5px; font-weight: 600; }
+  .install-bar { background: #fef3c7; border-bottom: 1px solid #fde68a; padding: 10px 14px; font-size: 12.5px; color: #92400e; display: none; align-items: center; gap: 10px; }
+  .install-bar.show { display: flex; }
+  .install-bar button { margin-left: auto; background: #1F4E78; color: white; border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .tabs { display: flex; gap: 5px; margin: 14px 0; overflow-x: auto; padding-bottom: 4px; }
+  .tab { flex-shrink: 0; padding: 8px 14px; border-radius: 20px; font-size: 12.5px; font-weight: 700; cursor: pointer; background: white; color: #555; border: 1px solid #e5e7eb; }
   .tab.active { background: #1F4E78; color: white; border-color: #1F4E78; }
-  .panel { background: white; border-radius: 14px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
-  .panel h2 { font-size: 15px; color: #1F4E78; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #eef0f3; }
-  .panel h3 { font-size: 13.5px; color: #333; margin: 14px 0 8px; }
+  .panel { background: white; border-radius: 14px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 14px; }
+  .panel h2 { font-size: 14.5px; color: #1F4E78; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #eef0f3; }
+  .panel h3 { font-size: 13px; color: #333; margin: 14px 0 8px; }
   .tab-content { display: none; }
   .tab-content.active { display: block; }
-  .check-item { display: flex; align-items: flex-start; gap: 10px; padding: 11px 12px; border-radius: 10px; margin-bottom: 7px; background: #f8fafc; cursor: pointer; transition: background .12s; }
-  .check-item:hover { background: #eef4fb; }
+  .check-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border-radius: 10px; margin-bottom: 8px; background: #f8fafc; cursor: pointer; }
   .check-item.done { background: #ecfdf5; }
-  .check-item .box { width: 22px; height: 22px; border-radius: 6px; border: 2px solid #cbd5e1; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; color: white; margin-top: 1px; }
+  .check-item .box { width: 24px; height: 24px; border-radius: 7px; border: 2px solid #cbd5e1; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; color: white; margin-top: 1px; }
   .check-item.done .box { background: #16a34a; border-color: #16a34a; }
   .check-item .txt { font-size: 13.5px; flex: 1; }
-  .check-item .txt .sub { font-size: 11.5px; color: #888; display: block; margin-top: 2px; }
-  .check-item.done .txt { color: #555; }
-  .cat-label { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; display: inline-block; margin-bottom: 8px; }
+  .check-item .txt .head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .check-item .txt .pri { font-size: 10px; font-weight: 800; padding: 1px 7px; border-radius: 8px; color: white; }
+  .pri-1 { background: #dc2626; }
+  .pri-2 { background: #ea580c; }
+  .pri-3 { background: #ca8a04; }
+  .check-item .txt .detail { font-size: 12px; color: #666; display: block; margin-top: 5px; line-height: 1.65; }
+  .check-item .txt .detail .ok { color: #16a34a; font-weight: 600; }
+  .check-item .txt .detail .no { color: #dc2626; font-weight: 600; }
+  .check-item.done .txt .head .label { color: #999; }
+  .cat-label { font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 8px; }
   .cat-common { background: #dbeafe; color: #1e40af; }
   .cat-lipid { background: #fef3c7; color: #92400e; }
   .cat-bp { background: #fee2e2; color: #991b1b; }
   .cat-liver { background: #d1fae5; color: #065f46; }
-  .progress-box { background: white; border-radius: 14px; padding: 16px 18px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .progress-box { background: white; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
   .progress-box .pb-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .progress-box .pb-label { font-size: 13px; font-weight: 700; color: #1F4E78; }
   .progress-box .pb-count { font-size: 13px; color: #666; }
   .bar { height: 12px; background: #eef0f3; border-radius: 6px; overflow: hidden; }
   .bar-fill { height: 100%; background: linear-gradient(90deg, #16a34a, #22c55e); border-radius: 6px; transition: width .3s; width: 0; }
-  .reset-btn { width: 100%; margin-top: 12px; background: #f1f5f9; color: #64748b; border: none; border-radius: 8px; padding: 10px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
-  table.food { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
-  table.food th { background: #f8fafc; padding: 8px; font-size: 12px; color: #555; text-align: left; border-bottom: 2px solid #e5e7eb; }
+  .date-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 14px; }
+  .date-nav button { background: white; border: 1px solid #e5e7eb; border-radius: 8px; width: 38px; height: 38px; font-size: 16px; cursor: pointer; color: #1F4E78; }
+  .date-nav .cur { font-size: 14px; font-weight: 700; color: #1F4E78; min-width: 130px; text-align: center; }
+  .reset-btn { width: 100%; margin-top: 10px; background: #f1f5f9; color: #64748b; border: none; border-radius: 8px; padding: 9px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  table.food { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 6px; }
+  table.food th { background: #f8fafc; padding: 8px; font-size: 11.5px; color: #555; text-align: left; border-bottom: 2px solid #e5e7eb; }
   table.food td { padding: 8px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
   table.food .good { color: #16a34a; font-weight: 600; }
   table.food .bad { color: #dc2626; font-weight: 600; }
-  .tip { background: #eff6ff; border-left: 3px solid #1F4E78; border-radius: 6px; padding: 10px 14px; font-size: 12.5px; color: #1e40af; margin: 10px 0; line-height: 1.7; }
-  .warn { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; line-height: 1.7; margin-top: 14px; }
+  .tip { background: #eff6ff; border-left: 3px solid #1F4E78; border-radius: 6px; padding: 10px 13px; font-size: 12px; color: #1e40af; margin: 10px 0; line-height: 1.7; }
+  .warn { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 11.5px; color: #92400e; line-height: 1.7; margin-top: 14px; }
   ul.clean { list-style: none; padding: 0; }
-  ul.clean li { padding: 6px 0 6px 22px; position: relative; font-size: 13.5px; border-bottom: 1px solid #f5f5f5; }
-  ul.clean li:before { content: "•"; position: absolute; left: 6px; color: #1F4E78; font-weight: 700; }
-  footer { text-align: center; margin-top: 30px; color: #999; font-size: 12px; }
+  ul.clean li { padding: 6px 0 6px 20px; position: relative; font-size: 13px; border-bottom: 1px solid #f5f5f5; }
+  ul.clean li:before { content: "•"; position: absolute; left: 4px; color: #1F4E78; font-weight: 700; }
+  /* 몸무게 */
+  .weight-input-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 14px; }
+  .weight-input-row .fld { flex: 1; }
+  .weight-input-row label { font-size: 12px; font-weight: 600; color: #555; display: block; margin-bottom: 4px; }
+  .weight-input-row input { width: 100%; padding: 11px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; background: #FFF2CC; font-weight: 600; color: #0000FF; }
+  .weight-input-row button { background: #1F4E78; color: white; border: none; border-radius: 8px; padding: 12px 18px; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .weight-stat { display: flex; gap: 10px; margin-bottom: 14px; }
+  .weight-stat .ws { flex: 1; background: #f8fafc; border-radius: 10px; padding: 12px; text-align: center; }
+  .weight-stat .ws .v { font-size: 18px; font-weight: 800; color: #1F4E78; }
+  .weight-stat .ws .l { font-size: 11px; color: #888; margin-top: 2px; }
+  .weight-list { margin-top: 10px; }
+  .weight-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .weight-row .wdate { color: #666; min-width: 92px; }
+  .weight-row .wval { font-weight: 700; color: #1F4E78; }
+  .weight-row .wdel { margin-left: auto; background: #fee2e2; color: #dc2626; border: none; border-radius: 5px; padding: 4px 9px; font-size: 11px; cursor: pointer; }
+  .promise-item { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 10px; margin-bottom: 8px; background: #f8fafc; }
+  .promise-item input[type=text] { flex: 1; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px; font-size: 13px; }
+  .promise-item .pcheck { width: 26px; height: 26px; border-radius: 7px; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 15px; color: white; cursor: pointer; flex-shrink: 0; }
+  .promise-item.kept .pcheck { background: #16a34a; border-color: #16a34a; }
+  .promise-add { width: 100%; background: #eff6ff; color: #1F4E78; border: 1px dashed #93c5fd; border-radius: 8px; padding: 10px; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 6px; }
+  footer { text-align: center; margin-top: 24px; color: #999; font-size: 11.5px; }
 </style>
 </head>
 <body>
+<div class="install-bar" id="installBar">
+  📲 홈 화면에 추가하면 앱처럼 쓸 수 있어요
+  <button id="installBtn">설치</button>
+</div>
 <header>
   <div class="wrap">
-    <h1>🩺 40대 남성 건강관리</h1>
-    <p>고지혈증·고혈압 경계·간수치 정상상단을 함께 잡는 식단·운동·데일리 체크리스트</p>
+    <h1>🩺 건강관리</h1>
+    <p>고지혈증·고혈압·간수치 통합 관리 · 40대 남성</p>
     <div class="status-bar">
-      <span class="status-chip">🔴 고지혈증 (높음)</span>
-      <span class="status-chip">🟡 고혈압 (경계)</span>
-      <span class="status-chip">🟢 간수치 (정상 상단)</span>
+      <span class="status-chip">🔴 고지혈증 높음</span>
+      <span class="status-chip">🟡 고혈압 경계</span>
+      <span class="status-chip">🟢 간수치 상단</span>
     </div>
   </div>
 </header>
 <div class="wrap">
   <div class="tabs">
-    <div class="tab active" onclick="showTab('check')">✅ 데일리 체크</div>
-    <div class="tab" onclick="showTab('diet')">🍽️ 식단</div>
-    <div class="tab" onclick="showTab('exercise')">🏃 운동</div>
-    <div class="tab" onclick="showTab('avoid')">🚫 피할 것</div>
+    <div class="tab active" data-tab="check" onclick="showTab('check')">✅ 데일리</div>
+    <div class="tab" data-tab="weight" onclick="showTab('weight')">⚖️ 몸무게</div>
+    <div class="tab" data-tab="diet" onclick="showTab('diet')">🍽️ 식단</div>
+    <div class="tab" data-tab="exercise" onclick="showTab('exercise')">🏃 운동</div>
+    <div class="tab" data-tab="avoid" onclick="showTab('avoid')">🚫 피할것</div>
   </div>
 
-  <!-- 데일리 체크 -->
+  <!-- 데일리 -->
   <div class="tab-content active" id="tab-check">
+    <div class="date-nav">
+      <button onclick="changeDate(-1)">‹</button>
+      <span class="cur" id="curDate"></span>
+      <button onclick="changeDate(1)" id="nextBtn">›</button>
+    </div>
     <div class="progress-box">
       <div class="pb-top">
-        <span class="pb-label">오늘의 실천</span>
+        <span class="pb-label">실천 현황</span>
         <span class="pb-count"><span id="doneCount">0</span> / <span id="totalCount">0</span></span>
       </div>
       <div class="bar"><div class="bar-fill" id="barFill"></div></div>
-      <button class="reset-btn" onclick="resetToday()">오늘 체크 초기화</button>
+      <button class="reset-btn" onclick="resetToday()">이 날짜 체크 초기화</button>
     </div>
     <div class="panel">
-      <h2>매일 실천 체크리스트</h2>
+      <h2>오늘의 실천 (우선순위 순)</h2>
       <div id="checkList"></div>
     </div>
-    <div class="tip">💡 세 가지 수치는 뿌리가 같아요. <b>체중 5~10% 감량 + 유산소 + 절주</b>만 꾸준히 해도 LDL·혈압·간수치가 동시에 좋아집니다. 매일 다 못 채워도 괜찮으니 꾸준함이 핵심이에요.</div>
+    <div class="panel">
+      <h2>🤝 오늘의 약속 지킴</h2>
+      <div id="promiseList"></div>
+      <button class="promise-add" onclick="addPromise()">+ 약속 추가</button>
+      <div class="tip" style="margin-top:12px">개인적인 다짐(예: "오늘 저녁 회식 술 안 마시기", "야식 안 먹기")을 적고 지켰는지 체크하세요. 날짜별로 저장됩니다.</div>
+    </div>
+  </div>
+
+  <!-- 몸무게 -->
+  <div class="tab-content" id="tab-weight">
+    <div class="panel">
+      <h2>⚖️ 몸무게 기록</h2>
+      <div class="weight-input-row">
+        <div class="fld">
+          <label>오늘 몸무게 (kg)</label>
+          <input type="number" id="weightInput" step="0.1" inputmode="decimal" placeholder="예: 78.5">
+        </div>
+        <button onclick="saveWeight()">기록</button>
+      </div>
+      <div class="weight-stat">
+        <div class="ws"><div class="v" id="wCur">-</div><div class="l">최근</div></div>
+        <div class="ws"><div class="v" id="wChange">-</div><div class="l">시작 대비</div></div>
+        <div class="ws"><div class="v" id="wTarget">-</div><div class="l">5% 감량 목표</div></div>
+      </div>
+      <canvas id="weightChart" style="width:100%;height:200px;margin-top:8px"></canvas>
+      <div class="weight-list" id="weightList"></div>
+    </div>
+    <div class="tip">💡 <b>체중 5~10% 감량</b>이 세 수치를 동시에 개선하는 가장 강력한 레버예요. 매일 같은 시간(아침 공복)에 재면 추세가 정확해요.</div>
   </div>
 
   <!-- 식단 -->
   <div class="tab-content" id="tab-diet">
     <div class="panel">
       <h2>🍽️ 식단 핵심 원칙</h2>
-      <span class="cat-label cat-common">공통</span>
-      <ul class="clean">
-        <li>매 끼 <b>채소 먼저</b>, 정제 탄수화물·당류 줄이기</li>
-        <li>흰쌀밥 → <b>잡곡·현미·귀리</b>로 일부 대체</li>
-        <li>튀김·가공육(소시지·베이컨) 줄이고 <b>삶기·찌기·굽기</b></li>
-        <li>물 충분히, 단 음료·과일주스 대신 <b>물·차</b></li>
-      </ul>
       <h3>🔴 고지혈증 (LDL·중성지방)</h3>
       <table class="food">
-        <tr><th>늘리기</th><th>줄이기</th></tr>
-        <tr><td class="good">등푸른생선(고등어·연어), 견과류, 올리브유, 귀리·콩, 채소</td><td class="bad">삼겹살·곱창, 버터·치즈, 튀김, 과자·빵, 가당음료</td></tr>
+        <tr><th>먹어도 되는 것</th><th>피할 것</th></tr>
+        <tr><td class="good">등푸른생선(고등어·연어·정어리), 견과류 한 줌, 올리브유, 귀리·현미·콩, 채소·해조류</td><td class="bad">삼겹살·곱창·갈비, 버터·치즈·생크림, 튀김·페이스트리, 과자·흰빵, 가당음료</td></tr>
       </table>
-      <h3>🟡 고혈압 경계 (DASH식)</h3>
+      <div class="tip">포화지방을 전체 열량의 6~7% 미만으로. 같은 고기여도 <b>기름기 적은 부위(안심·닭가슴살)</b> 선택, <b>삶기·찌기·굽기</b>로 조리.</div>
+      <h3>🟡 고혈압 경계 (DASH식·저염)</h3>
       <table class="food">
-        <tr><th>늘리기</th><th>줄이기</th></tr>
-        <tr><td class="good">칼륨 풍부 채소·과일(바나나·시금치·감자), 저지방 유제품, 통곡물</td><td class="bad">나트륨(국물·찌개·젓갈·라면·가공식품), 소금·간장 과다</td></tr>
+        <tr><th>먹어도 되는 것</th><th>피할 것</th></tr>
+        <tr><td class="good">칼륨 풍부 채소·과일(바나나·시금치·감자·토마토), 저지방 우유·요거트, 통곡물</td><td class="bad">국물·찌개·라면, 젓갈·장아찌, 가공육(햄·소시지), 과한 소금·간장</td></tr>
       </table>
       <div class="tip">나트륨 하루 <b>2,000mg(소금 약 5g)</b> 목표. 국물은 남기고, 외식 시 "덜 짜게" 요청. 칼륨이 나트륨 배출을 도와요.</div>
       <h3>🟢 간수치 (지방간 관리)</h3>
       <table class="food">
-        <tr><th>늘리기</th><th>줄이기</th></tr>
-        <tr><td class="good">단백질(닭가슴살·두부·생선), 채소, 커피(블랙)</td><td class="bad">술(1순위), 과당(액상과당·탄산), 정제탄수, 튀김</td></tr>
+        <tr><th>먹어도 되는 것</th><th>피할 것</th></tr>
+        <tr><td class="good">단백질(닭가슴살·두부·달걀흰자·생선), 채소, 블랙커피, 물</td><td class="bad">술(최우선), 액상과당·탄산·과일주스, 정제탄수(흰쌀·면·떡), 튀김·인스턴트</td></tr>
       </table>
-      <div class="tip">📌 <b>하루 한 끼 예시</b>: 잡곡밥 1/2공기 + 구운 고등어 + 나물 2종 + 두부된장국(싱겁게) + 샐러드(올리브유). 세 가지 다 잡는 식단이에요.</div>
+      <div class="tip">📌 <b>한 끼 모범 예시</b>: 잡곡밥 ½공기 + 구운 고등어 + 나물 2종 + 두부된장국(싱겁게) + 샐러드(올리브유). 세 가지를 한 번에 잡는 식단이에요.</div>
     </div>
   </div>
 
@@ -129,102 +197,206 @@
     <div class="panel">
       <h2>🏃 운동 처방</h2>
       <div class="tip">핵심은 <b>유산소</b>예요. 고지혈증·고혈압·지방간 모두 유산소가 직접 개선합니다. 근력은 보조(근육량·기초대사 유지).</div>
-      <h3>주간 운동 플랜</h3>
       <table class="food">
         <tr><th>구분</th><th>내용</th></tr>
-        <tr><td class="good">유산소 (핵심)</td><td>주 5회 이상, 1회 30분+<br>빠르게 걷기·조깅·자전거·계단. 최대심박 40~70% 중강도</td></tr>
-        <tr><td class="good">근력 (보조)</td><td>주 2~3회. 스쿼트·푸시업·전신 위주. 큰 근육 중심</td></tr>
-        <tr><td>활동량</td><td>하루 7,000~8,000보. 엘리베이터 대신 계단</td></tr>
+        <tr><td class="good">유산소 (핵심)</td><td>주 5회 이상, 1회 30분+<br>빠르게 걷기·조깅·자전거·계단. 대화 가능한 정도의 숨참(중강도)</td></tr>
+        <tr><td class="good">근력 (보조)</td><td>주 2~3회. 스쿼트·푸시업 등 큰 근육 위주</td></tr>
       </table>
+      <div class="tip">💡 <b>"유산소 30분"에 걸음 수가 포함돼요.</b> 빠르게 30분 걸으면 그날 활동량(7천 보 안팎)은 대체로 채워져요. 그래서 둘을 따로 세지 않고 <b>"유산소 30분"</b> 하나로 관리합니다.</div>
       <h3>40대 남성 팁</h3>
       <ul class="clean">
-        <li><b>강도보다 시간</b>을 먼저 늘리기 (부상·심장 부담 줄이기)</li>
-        <li>운동 전후 <b>준비·정리운동 5~10분</b> (스트레칭)</li>
-        <li>유산소는 <b>대화 가능한 정도</b>의 숨참이 적정 강도</li>
+        <li><b>강도보다 시간</b>을 먼저 늘리기 (부상·심장 부담 ↓)</li>
+        <li>운동 전후 <b>준비·정리운동 5~10분</b></li>
         <li>주말 몰아서보다 <b>주중 분산</b>이 효과적</li>
       </ul>
-      <div class="warn">⚠️ 간수치가 높을 땐 <b>갑작스러운 고강도 근력운동</b>이 일시적으로 AST를 더 올릴 수 있어요. 중강도 유산소 위주로 시작하세요. 고혈압이 있으면 무거운 중량 들 때 호흡 참기(발살바)를 피하세요.</div>
+      <div class="warn">⚠️ 간수치 높을 땐 <b>갑작스러운 고강도 근력운동</b>이 일시적으로 AST를 올릴 수 있어요. 중강도 유산소로 시작하세요. 고혈압이 있으면 무거운 중량에서 호흡 참기(발살바)를 피하세요.</div>
     </div>
   </div>
 
-  <!-- 피할 것 -->
+  <!-- 피할것 -->
   <div class="tab-content" id="tab-avoid">
     <div class="panel">
-      <h2>🚫 반드시 피하거나 줄일 것</h2>
-      <h3>술 (세 가지 다 악화 - 최우선)</h3>
+      <h2>🚫 피하거나 줄일 것 (우선순위)</h2>
+      <h3>1순위 — 술 (세 가지 다 악화)</h3>
       <ul class="clean">
-        <li>중성지방 급상승, 간수치 직접 손상, 혈압 상승 — <b>한 번에 다 나빠짐</b></li>
-        <li>회식 잦은 40대의 <b>가장 큰 변수</b>. 주 음주 횟수부터 줄이기</li>
+        <li>중성지방 급상승 + 간수치 직접 손상 + 혈압 상승 — <b>한 번에 다 나빠짐</b></li>
+        <li>회식 잦은 40대의 <b>가장 큰 변수.</b> 마셔도 1~2잔 이내</li>
       </ul>
-      <h3>나트륨 (혈압)</h3>
-      <ul class="clean">
-        <li>국물·찌개·라면·젓갈·가공육·인스턴트</li>
-      </ul>
-      <h3>포화·트랜스지방 (고지혈증)</h3>
-      <ul class="clean">
-        <li>삼겹살·곱창·튀김·버터·마가린·페이스트리</li>
-      </ul>
-      <h3>과당·정제탄수 (간·중성지방)</h3>
-      <ul class="clean">
-        <li>탄산·과일주스·과자·흰빵·떡·믹스커피</li>
-      </ul>
-      <div class="warn">⚠️ <b>약물·건기식 주의</b>: 진통소염제(NSAIDs)나 일부 간독성 건강기능식품의 장기 복용은 간에 부담. 복용 전 의료진과 상의하세요. 특히 간수치가 경계라면 더 주의.</div>
+      <h3>2순위 — 나트륨 (혈압)</h3>
+      <ul class="clean"><li>국물·찌개·라면·젓갈·가공육·인스턴트</li></ul>
+      <h3>3순위 — 포화·트랜스지방 (고지혈증)</h3>
+      <ul class="clean"><li>삼겹살·곱창·튀김·버터·마가린·페이스트리</li></ul>
+      <h3>4순위 — 과당·정제탄수 (간·중성지방)</h3>
+      <ul class="clean"><li>탄산·과일주스·과자·흰빵·떡·믹스커피</li></ul>
+      <div class="warn">⚠️ <b>약물·건기식 주의</b>: 진통소염제(NSAIDs)나 일부 간독성 건강기능식품의 장기 복용은 간에 부담. 복용 전 의료진과 상의하세요.</div>
     </div>
   </div>
 
   <div class="warn">
-    ⚠️ <b>의학적 면책</b>: 이 페이지는 일반적인 생활습관 정보로, 진료·처방을 대체하지 않습니다. 고지혈증이 높은 수준이면 <b>스타틴 등 약물치료</b>가 필요할 수 있으니 반드시 의사와 상담하세요. 수치·복용약·동반질환에 따라 권고가 달라집니다. 황달·심한 복통·가슴통증 등이 있으면 즉시 진료받으세요.
+    ⚠️ <b>의학적 면책</b>: 일반적인 생활습관 정보로 진료·처방을 대체하지 않습니다. 고지혈증이 높은 수준이면 <b>스타틴 등 약물치료</b>가 필요할 수 있으니 반드시 의사와 상담하세요. 황달·심한 복통·가슴통증이 있으면 즉시 진료받으세요.
   </div>
-  <footer>건강관리 체크리스트 · 매일 기록은 자동 저장됩니다</footer>
+  <footer>건강관리 · 모든 기록은 기기에 자동 저장됩니다</footer>
 </div>
 <script>
-// 체크리스트 데이터 (cat: common/lipid/bp/liver)
+// ===== 체크리스트 데이터 (우선순위·상세 포함) =====
 const ITEMS = [
-  {id:'walk', cat:'common', txt:'유산소 30분 이상', sub:'빠르게 걷기·조깅·자전거 (가장 중요)'},
-  {id:'noalcohol', cat:'common', txt:'오늘 금주 / 절주', sub:'세 수치 모두에 1순위'},
-  {id:'veg', cat:'common', txt:'채소 먼저 먹기 (매 끼)', sub:'식이섬유로 지질·혈당 관리'},
-  {id:'water', cat:'common', txt:'물 충분히 (단 음료 X)', sub:'과당 음료 대신 물·차'},
-  {id:'fish', cat:'lipid', txt:'불포화지방 챙기기', sub:'등푸른생선·견과·올리브유'},
-  {id:'nofry', cat:'lipid', txt:'튀김·삼겹살·가공육 피하기', sub:'포화·트랜스지방 줄이기'},
-  {id:'lowsalt', cat:'bp', txt:'싱겁게 먹기 (국물 남기기)', sub:'나트륨 2000mg 목표'},
-  {id:'potassium', cat:'bp', txt:'칼륨 채소·과일', sub:'바나나·시금치·감자'},
-  {id:'nosugar', cat:'liver', txt:'정제탄수·과당 줄이기', sub:'탄산·과자·흰빵 → 지방간'},
-  {id:'protein', cat:'liver', txt:'양질의 단백질', sub:'닭가슴살·두부·생선'},
-  {id:'steps', cat:'common', txt:'7,000보 이상 걷기', sub:'계단 이용·활동량 늘리기'},
-  {id:'sleep', cat:'common', txt:'7시간 이상 수면', sub:'대사·혈압 관리에 필수'},
+  {id:'noalcohol', cat:'common', pri:1, txt:'금주 / 절주', detail:'<b>세 수치 모두에 1순위.</b> 마셔도 <span class="ok">맥주 1잔·소주 1~2잔 이내.</span> <span class="no">폭음·매일 음주 금지.</span> 회식날이 가장 큰 고비.'},
+  {id:'cardio', cat:'common', pri:1, txt:'유산소 30분 이상', detail:'<span class="ok">빠르게 걷기·조깅·자전거·계단.</span> 대화 가능한 정도의 숨참. <b>이 안에 하루 걸음 수(7천 보)도 대체로 포함</b>돼서 따로 안 세도 돼요.'},
+  {id:'veg', cat:'common', pri:2, txt:'채소 먼저 먹기 (매 끼)', detail:'<span class="ok">식사 시작을 채소·나물·샐러드로.</span> 식이섬유가 지질·혈당·콜레스테롤 흡수를 늦춰요. 매 끼 채소 한 줌 이상.'},
+  {id:'lowsalt', cat:'bp', pri:2, txt:'싱겁게 먹기 (국물 남기기)', detail:'<span class="ok">"덜 짜게" 요청, 국물 남기기.</span> <span class="no">라면 국물·찌개·젓갈·장아찌 줄이기.</span> 나트륨 하루 2,000mg(소금 5g) 목표.'},
+  {id:'nofry', cat:'lipid', pri:2, txt:'포화지방 피하기', detail:'<span class="no">삼겹살·곱창·튀김·버터·치즈 줄이기.</span> <span class="ok">대신 등푸른생선·견과·올리브유·기름기 적은 부위.</span> 삶기·찌기·굽기로 조리.'},
+  {id:'nosugar', cat:'liver', pri:2, txt:'과당·정제탄수 줄이기', detail:'<span class="no">탄산·과일주스·과자·흰빵·떡·믹스커피 줄이기.</span> 액상과당이 간 지방을 직접 늘려요. <span class="ok">물·블랙커피·잡곡으로 대체.</span>'},
+  {id:'protein', cat:'liver', pri:3, txt:'양질의 단백질', detail:'<span class="ok">닭가슴살·두부·달걀흰자·생선.</span> 근육량 유지로 기초대사 보전. <span class="no">가공육(햄·소시지)·튀긴 단백질은 제외.</span>'},
+  {id:'potassium', cat:'bp', pri:3, txt:'칼륨 채소·과일', detail:'<span class="ok">바나나·시금치·감자·토마토·아보카도.</span> 칼륨이 나트륨 배출을 도와 혈압을 낮춰요. (단 신장질환 있으면 의사와 상담)'},
+  {id:'water', cat:'common', pri:3, txt:'물 충분히 (단 음료 X)', detail:'<span class="ok">하루 1.5~2L 물·차.</span> <span class="no">탄산·주스·이온음료 대신.</span> 갈증을 단 음료로 풀면 과당이 쌓여요.'},
+  {id:'sleep', cat:'common', pri:3, txt:'7시간 이상 수면', detail:'수면 부족은 혈압·식욕호르몬·대사를 망가뜨려요. <span class="ok">규칙적인 취침·기상.</span> 자기 전 음주는 수면의 질을 떨어뜨립니다.'},
 ];
 const CAT = {common:['공통','cat-common'], lipid:['고지혈증','cat-lipid'], bp:['고혈압','cat-bp'], liver:['간수치','cat-liver']};
+const PRI = {1:'1순위', 2:'2순위', 3:'3순위'};
 
-function todayKey(){ const d=new Date(); return 'sf_health_'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
-let state = {};
-function load(){ try{ const r=localStorage.getItem(todayKey()); if(r) state=JSON.parse(r); }catch(e){ state={}; } }
-function save(){ try{ localStorage.setItem(todayKey(), JSON.stringify(state)); }catch(e){} }
+// ===== 날짜 관리 =====
+let viewDate = new Date();
+function dateStr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function checkKey(){ return 'sf_health_check_'+dateStr(viewDate); }
+function promiseKey(){ return 'sf_health_promise_'+dateStr(viewDate); }
+function isToday(){ return dateStr(viewDate)===dateStr(new Date()); }
 
-function render(){
-  const box=document.getElementById('checkList');
-  box.innerHTML=ITEMS.map(it=>{
-    const done=state[it.id]?'done':'';
-    const cat=CAT[it.cat];
-    return `<div class="check-item ${done}" onclick="toggle('${it.id}')">
-      <div class="box">${state[it.id]?'✓':''}</div>
-      <div class="txt"><span class="cat-label ${cat[1]}" style="margin-bottom:0;font-size:10px">${cat[0]}</span> ${it.txt}<span class="sub">${it.sub}</span></div>
-    </div>`;
+let checkState = {};
+let promiseState = [];
+function loadDay(){
+  try{ checkState = JSON.parse(localStorage.getItem(checkKey())) || {}; }catch(e){ checkState={}; }
+  try{ promiseState = JSON.parse(localStorage.getItem(promiseKey())) || []; }catch(e){ promiseState=[]; }
+}
+function saveCheck(){ try{ localStorage.setItem(checkKey(), JSON.stringify(checkState)); }catch(e){} }
+function savePromise(){ try{ localStorage.setItem(promiseKey(), JSON.stringify(promiseState)); }catch(e){} }
+
+function renderDate(){
+  const d=viewDate, days=['일','월','화','수','목','금','토'];
+  $('curDate').textContent = isToday() ? '오늘 ('+(d.getMonth()+1)+'/'+d.getDate()+' '+days[d.getDay()]+')' : (d.getMonth()+1)+'월 '+d.getDate()+'일 ('+days[d.getDay()]+')';
+  $('nextBtn').style.visibility = isToday() ? 'hidden' : 'visible';
+}
+function changeDate(n){ viewDate.setDate(viewDate.getDate()+n); if(viewDate>new Date()) viewDate=new Date(); loadDay(); renderAll(); }
+
+function $(id){ return document.getElementById(id); }
+
+function renderCheck(){
+  $('checkList').innerHTML = ITEMS.map(it=>{
+    const done = checkState[it.id]?'done':'';
+    const cat = CAT[it.cat];
+    return '<div class="check-item '+done+'" onclick="toggleCheck(\''+it.id+'\')">'
+      +'<div class="box">'+(checkState[it.id]?'✓':'')+'</div>'
+      +'<div class="txt"><div class="head"><span class="pri pri-'+it.pri+'">'+PRI[it.pri]+'</span><span class="cat-label '+cat[1]+'">'+cat[0]+'</span> <span class="label">'+it.txt+'</span></div>'
+      +'<span class="detail">'+it.detail+'</span></div></div>';
   }).join('');
-  const done=ITEMS.filter(it=>state[it.id]).length;
-  document.getElementById('doneCount').textContent=done;
-  document.getElementById('totalCount').textContent=ITEMS.length;
-  document.getElementById('barFill').style.width=(done/ITEMS.length*100)+'%';
+  const done = ITEMS.filter(it=>checkState[it.id]).length;
+  $('doneCount').textContent=done;
+  $('totalCount').textContent=ITEMS.length;
+  $('barFill').style.width=(done/ITEMS.length*100)+'%';
 }
-function toggle(id){ state[id]=!state[id]; save(); render(); }
-function resetToday(){ if(confirm('오늘 체크를 모두 초기화할까요?')){ state={}; save(); render(); } }
+function toggleCheck(id){ checkState[id]=!checkState[id]; saveCheck(); renderCheck(); }
+function resetToday(){ if(confirm('이 날짜 체크를 모두 초기화할까요?')){ checkState={}; saveCheck(); renderCheck(); } }
 
+function renderPromise(){
+  $('promiseList').innerHTML = promiseState.map((p,i)=>
+    '<div class="promise-item '+(p.kept?'kept':'')+'">'
+    +'<div class="pcheck" onclick="togglePromise('+i+')">'+(p.kept?'✓':'')+'</div>'
+    +'<input type="text" value="'+(p.text||'').replace(/"/g,'&quot;')+'" oninput="editPromise('+i+',this.value)" placeholder="약속 내용">'
+    +'<button class="wdel" onclick="delPromise('+i+')">삭제</button></div>'
+  ).join('');
+}
+function addPromise(){ promiseState.push({text:'',kept:false}); savePromise(); renderPromise(); }
+function togglePromise(i){ promiseState[i].kept=!promiseState[i].kept; savePromise(); renderPromise(); }
+function editPromise(i,v){ promiseState[i].text=v; savePromise(); }
+function delPromise(i){ promiseState.splice(i,1); savePromise(); renderPromise(); }
+
+// ===== 몸무게 =====
+function loadWeights(){ try{ return JSON.parse(localStorage.getItem('sf_health_weight'))||[]; }catch(e){ return []; } }
+function saveWeights(arr){ try{ localStorage.setItem('sf_health_weight', JSON.stringify(arr)); }catch(e){} }
+function saveWeight(){
+  const v=parseFloat($('weightInput').value);
+  if(!v||v<=0){ alert('몸무게를 입력하세요.'); return; }
+  const arr=loadWeights();
+  const today=dateStr(new Date());
+  const idx=arr.findIndex(w=>w.date===today);
+  if(idx>=0){ arr[idx].kg=v; } else { arr.push({date:today, kg:v}); }
+  arr.sort((a,b)=>a.date.localeCompare(b.date));
+  saveWeights(arr);
+  $('weightInput').value='';
+  renderWeight();
+}
+function delWeight(date){ if(!confirm(date+' 기록을 삭제할까요?'))return; let arr=loadWeights().filter(w=>w.date!==date); saveWeights(arr); renderWeight(); }
+function renderWeight(){
+  const arr=loadWeights();
+  if(arr.length===0){
+    $('wCur').textContent='-'; $('wChange').textContent='-'; $('wTarget').textContent='-';
+    $('weightList').innerHTML='<div style="text-align:center;color:#999;padding:16px;font-size:13px">아직 기록이 없어요. 위에서 몸무게를 기록해보세요.</div>';
+    drawChart([]); return;
+  }
+  const cur=arr[arr.length-1].kg, start=arr[0].kg;
+  $('wCur').textContent=cur+'kg';
+  const diff=(cur-start).toFixed(1);
+  $('wChange').textContent=(diff>0?'+':'')+diff+'kg';
+  $('wChange').style.color = diff>0?'#dc2626':(diff<0?'#16a34a':'#1F4E78');
+  $('wTarget').textContent=(start*0.95).toFixed(1)+'kg';
+  $('weightList').innerHTML=[...arr].reverse().map(w=>
+    '<div class="weight-row"><span class="wdate">'+w.date.slice(5)+'</span><span class="wval">'+w.kg+'kg</span><button class="wdel" onclick="delWeight(\''+w.date+'\')">삭제</button></div>'
+  ).join('');
+  drawChart(arr);
+}
+function drawChart(arr){
+  const cv=$('weightChart'); const ctx=cv.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  const W=cv.clientWidth, H=200;
+  cv.width=W*dpr; cv.height=H*dpr; ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,W,H);
+  if(arr.length<1) return;
+  const pad={l:38,r:12,t:14,b:24};
+  const kgs=arr.map(w=>w.kg);
+  let min=Math.min(...kgs), max=Math.max(...kgs);
+  if(min===max){ min-=1; max+=1; } else { const m=(max-min)*0.2; min-=m; max+=m; }
+  const plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
+  const x=i=>arr.length===1?pad.l+plotW/2:pad.l+plotW*i/(arr.length-1);
+  const y=kg=>pad.t+plotH*(1-(kg-min)/(max-min));
+  // grid + y labels
+  ctx.strokeStyle='#eef0f3'; ctx.fillStyle='#999'; ctx.font='10px sans-serif'; ctx.textAlign='right';
+  for(let i=0;i<=3;i++){ const kg=min+(max-min)*i/3, yy=y(kg);
+    ctx.beginPath(); ctx.moveTo(pad.l,yy); ctx.lineTo(W-pad.r,yy); ctx.stroke();
+    ctx.fillText(kg.toFixed(1), pad.l-5, yy+3);
+  }
+  // line
+  ctx.strokeStyle='#1F4E78'; ctx.lineWidth=2; ctx.beginPath();
+  arr.forEach((w,i)=>{ const xx=x(i),yy=y(w.kg); i===0?ctx.moveTo(xx,yy):ctx.lineTo(xx,yy); });
+  ctx.stroke();
+  // points + last label
+  arr.forEach((w,i)=>{ const xx=x(i),yy=y(w.kg); ctx.fillStyle='#1F4E78'; ctx.beginPath(); ctx.arc(xx,yy,3.5,0,7); ctx.fill(); });
+  // x labels (first, last)
+  ctx.fillStyle='#999'; ctx.textAlign='center'; ctx.font='10px sans-serif';
+  ctx.fillText(arr[0].date.slice(5), x(0), H-8);
+  if(arr.length>1) ctx.fillText(arr[arr.length-1].date.slice(5), x(arr.length-1), H-8);
+}
+
+// ===== 탭 =====
 function showTab(t){
-  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active', el.textContent.includes({check:'데일리',diet:'식단',exercise:'운동',avoid:'피할'}[t])));
+  document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active', el.dataset.tab===t));
   document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
-  document.getElementById('tab-'+t).classList.add('active');
+  $('tab-'+t).classList.add('active');
+  if(t==='weight') renderWeight();
 }
+function renderAll(){ renderDate(); renderCheck(); renderPromise(); }
 
-load(); render();
+// ===== PWA 설치 =====
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; $('installBar').classList.add('show'); });
+$('installBtn').addEventListener('click', async()=>{
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt(); await deferredPrompt.userChoice;
+  deferredPrompt=null; $('installBar').classList.remove('show');
+});
+window.addEventListener('appinstalled', ()=>$('installBar').classList.remove('show'));
+
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('/health/sw.js').catch(()=>{}); }
+
+loadDay(); renderAll();
 </script>
 </body>
 </html>
