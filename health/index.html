@@ -161,7 +161,7 @@
         <div class="ws"><div class="v" id="wChange">-</div><div class="l">시작 대비</div></div>
         <div class="ws"><div class="v" id="wTarget">-</div><div class="l">5% 감량 목표</div></div>
       </div>
-      <canvas id="weightChart" style="width:100%;height:200px;margin-top:8px"></canvas>
+      <canvas id="weightChart" height="200" style="width:100%;height:200px;margin-top:8px"></canvas>
       <div class="weight-list" id="weightList"></div>
     </div>
     <div class="tip">💡 <b>체중 5~10% 감량</b>이 세 수치를 동시에 개선하는 가장 강력한 레버예요. 매일 같은 시간(아침 공복)에 재면 추세가 정확해요.</div>
@@ -358,11 +358,18 @@ function renderWeight(){
 function drawChart(arr){
   const cv=$('weightChart'); const ctx=cv.getContext('2d');
   const dpr=window.devicePixelRatio||1;
-  const W=cv.clientWidth, H=200;
-  cv.width=W*dpr; cv.height=H*dpr; ctx.scale(dpr,dpr);
+  // clientWidth가 0이면(숨겨진 탭 등) 부모 너비로 폴백, 그래도 0이면 잠시 후 재시도
+  let W=cv.clientWidth;
+  if(!W){ W=cv.parentElement?cv.parentElement.clientWidth-32:0; }
+  if(!W || W<10){ setTimeout(()=>drawChart(arr), 80); return; }
+  const H=200;
+  cv.width=W*dpr; cv.height=H*dpr;
+  cv.style.width=W+'px'; cv.style.height=H+'px';
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(dpr,dpr);
   ctx.clearRect(0,0,W,H);
   if(arr.length<1) return;
-  const pad={l:38,r:12,t:14,b:24};
+  const pad={l:42,r:14,t:14,b:24};
   const kgs=arr.map(w=>w.kg);
   let min=Math.min(...kgs), max=Math.max(...kgs);
   if(min===max){ min-=1; max+=1; } else { const m=(max-min)*0.2; min-=m; max+=m; }
@@ -370,7 +377,7 @@ function drawChart(arr){
   const x=i=>arr.length===1?pad.l+plotW/2:pad.l+plotW*i/(arr.length-1);
   const y=kg=>pad.t+plotH*(1-(kg-min)/(max-min));
   // grid + y labels
-  ctx.strokeStyle='#eef0f3'; ctx.fillStyle='#999'; ctx.font='10px sans-serif'; ctx.textAlign='right';
+  ctx.strokeStyle='#eef0f3'; ctx.fillStyle='#999'; ctx.font='10px sans-serif'; ctx.textAlign='right'; ctx.lineWidth=1;
   for(let i=0;i<=3;i++){ const kg=min+(max-min)*i/3, yy=y(kg);
     ctx.beginPath(); ctx.moveTo(pad.l,yy); ctx.lineTo(W-pad.r,yy); ctx.stroke();
     ctx.fillText(kg.toFixed(1), pad.l-5, yy+3);
@@ -379,8 +386,8 @@ function drawChart(arr){
   ctx.strokeStyle='#1F4E78'; ctx.lineWidth=2; ctx.beginPath();
   arr.forEach((w,i)=>{ const xx=x(i),yy=y(w.kg); i===0?ctx.moveTo(xx,yy):ctx.lineTo(xx,yy); });
   ctx.stroke();
-  // points + last label
-  arr.forEach((w,i)=>{ const xx=x(i),yy=y(w.kg); ctx.fillStyle='#1F4E78'; ctx.beginPath(); ctx.arc(xx,yy,3.5,0,7); ctx.fill(); });
+  // points
+  arr.forEach((w,i)=>{ const xx=x(i),yy=y(w.kg); ctx.fillStyle='#1F4E78'; ctx.beginPath(); ctx.arc(xx,yy,3.5,0,Math.PI*2); ctx.fill(); });
   // x labels (first, last)
   ctx.fillStyle='#999'; ctx.textAlign='center'; ctx.font='10px sans-serif';
   ctx.fillText(arr[0].date.slice(5), x(0), H-8);
