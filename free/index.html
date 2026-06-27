@@ -534,6 +534,52 @@
     <canvas id="assetChart" height="120"></canvas>
   </div>
 
+  <!-- 순자산 추적 (실제 기록) -->
+  <div class="card" style="background:white;border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:16px">
+    <h2 style="font-size:16px;color:#1F4E78;margin:0 0 6px">📈 내 순자산 추적</h2>
+    <p style="font-size:12.5px;color:#888;margin-bottom:14px;line-height:1.7">위 계산은 <b>미래 예측</b>이고, 여기는 <b>실제 순자산을 기록</b>하는 곳이에요. 주기적으로(매달·분기) 현재 순자산을 저장하면 그래프로 진짜 변화를 볼 수 있어요. <b>날짜별 저장</b>은 시간 추이, <b>이름 저장</b>은 시나리오 비교용이에요.</p>
+
+    <div style="display:flex;gap:6px;margin-bottom:12px">
+      <div class="ntab-btn" data-ntab="date" onclick="setNetTab('date')" style="flex:1;padding:9px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;background:#1F4E78;color:white;text-align:center">📅 날짜별 기록</div>
+      <div class="ntab-btn" data-ntab="name" onclick="setNetTab('name')" style="flex:1;padding:9px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;background:#f1f5f9;color:#555;text-align:center">🏷️ 이름(시나리오) 저장</div>
+    </div>
+
+    <!-- 순자산 입력 -->
+    <div style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div>
+          <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px">금융·투자자산 (원)</label>
+          <input type="number" id="netFin" inputmode="numeric" placeholder="예: 300000000" style="width:100%;padding:9px;font-size:14px;border:1px solid #ccc;border-radius:6px;background:#FFF2CC;font-weight:600;color:#0000FF">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px">주택 시세 − 대출 (원)</label>
+          <input type="number" id="netHome" inputmode="numeric" placeholder="예: 500000000" style="width:100%;padding:9px;font-size:14px;border:1px solid #ccc;border-radius:6px;background:#FFF2CC;font-weight:600;color:#0000FF">
+        </div>
+      </div>
+      <button id="netFromCalc" type="button" style="width:100%;background:#e0f2fe;color:#0369a1;border:none;border-radius:6px;padding:7px;font-size:12px;font-weight:600;cursor:pointer;margin-bottom:8px">↑ 위 계산기 입력값에서 자동 채우기</button>
+      <div style="font-size:13px;color:#1F4E78;font-weight:700;text-align:center;padding:6px 0" id="netTotalDisp">순자산 합계: -</div>
+      <div id="netDateRow">
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <div style="flex:1"><label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px">기록 날짜</label>
+          <input type="date" id="netDate" style="width:100%;padding:9px;font-size:14px;border:1px solid #ccc;border-radius:6px"></div>
+          <button id="netSaveDate" type="button" style="background:#1F4E78;color:white;border:none;border-radius:6px;padding:11px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">날짜로 저장</button>
+        </div>
+      </div>
+      <div id="netNameRow" style="display:none">
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <div style="flex:1"><label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px">시나리오 이름</label>
+          <input type="text" id="netName" maxlength="20" placeholder="예: 보수, 낙관, 이직후" style="width:100%;padding:9px;font-size:14px;border:1px solid #ccc;border-radius:6px"></div>
+          <button id="netSaveName" type="button" style="background:#7c3aed;color:white;border:none;border-radius:6px;padding:11px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">이름으로 저장</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 그래프 -->
+    <canvas id="netChart" height="120" style="margin-bottom:10px"></canvas>
+    <!-- 목록 -->
+    <div id="netList"></div>
+  </div>
+
 <div class="manual">
   <h3>📘 사용 설명서</h3>
 
@@ -1159,6 +1205,108 @@ calculate();
   });
   // 페이지 로드 시 자동 복원
   autoLoad();
+
+  // ===== 순자산 추적 (날짜별 + 이름 시나리오) =====
+  (function(){
+    var DATE_KEY='sf_free_networth_date', NAME_KEY='sf_free_networth_name';
+    var netTab='date', _netChart=null;
+    function $n(id){ return document.getElementById(id); }
+    function loadArr(k){ try{ return JSON.parse(localStorage.getItem(k))||[]; }catch(e){ return []; } }
+    function saveArr(k,a){ try{ localStorage.setItem(k, JSON.stringify(a)); }catch(e){} }
+    function fmtWon(v){
+      v=Math.round(v);
+      if(Math.abs(v)>=100000000){ return (v/100000000).toFixed(2).replace(/\.00$/,'')+'억'; }
+      if(Math.abs(v)>=10000){ return Math.round(v/10000).toLocaleString()+'만'; }
+      return v.toLocaleString()+'원';
+    }
+    function getNet(){ return (parseFloat($n('netFin').value)||0)+(parseFloat($n('netHome').value)||0); }
+    function updTotal(){ $n('netTotalDisp').textContent='순자산 합계: '+fmtWon(getNet()); }
+    $n('netFin').addEventListener('input', updTotal);
+    $n('netHome').addEventListener('input', updTotal);
+
+    // 오늘 날짜 기본
+    (function(){ var d=new Date(); $n('netDate').value=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
+
+    // 위 계산기에서 자동 채우기
+    $n('netFromCalc').addEventListener('click', function(){
+      var fin=parseFloat(document.getElementById('currentAssets').value)||0;
+      var hv=parseFloat(document.getElementById('homeValue').value)||0;
+      var hd=parseFloat(document.getElementById('homeDebt').value)||0;
+      $n('netFin').value=fin; $n('netHome').value=Math.max(0,hv-hd);
+      updTotal();
+    });
+
+    function setNetTab(t){
+      netTab=t;
+      document.querySelectorAll('[data-ntab]').forEach(function(el){ var on=el.dataset.ntab===t; el.style.background=on?(t==='date'?'#1F4E78':'#7c3aed'):'#f1f5f9'; el.style.color=on?'white':'#555'; });
+      $n('netDateRow').style.display=(t==='date')?'block':'none';
+      $n('netNameRow').style.display=(t==='name')?'block':'none';
+      render();
+    }
+    window.setNetTab=setNetTab;
+
+    $n('netSaveDate').addEventListener('click', function(){
+      var net=getNet(); if(net<=0){ alert('금융자산이나 주택 순자산을 입력하세요.'); return; }
+      var date=$n('netDate').value; if(!date){ alert('날짜를 선택하세요.'); return; }
+      var arr=loadArr(DATE_KEY);
+      var idx=arr.findIndex(function(x){ return x.date===date; });
+      var entry={date:date, fin:parseFloat($n('netFin').value)||0, home:parseFloat($n('netHome').value)||0, net:net};
+      if(idx>=0){ if(!confirm(date+' 기록을 덮어쓸까요?'))return; arr[idx]=entry; } else { arr.push(entry); }
+      arr.sort(function(a,b){ return a.date.localeCompare(b.date); });
+      saveArr(DATE_KEY,arr); render();
+    });
+    $n('netSaveName').addEventListener('click', function(){
+      var net=getNet(); if(net<=0){ alert('금융자산이나 주택 순자산을 입력하세요.'); return; }
+      var name=($n('netName').value||'').trim(); if(!name){ alert('시나리오 이름을 입력하세요.'); return; }
+      var arr=loadArr(NAME_KEY);
+      var idx=arr.findIndex(function(x){ return x.name===name; });
+      var entry={name:name, fin:parseFloat($n('netFin').value)||0, home:parseFloat($n('netHome').value)||0, net:net, ts:new Date().toISOString()};
+      if(idx>=0){ if(!confirm('"'+name+'" 덮어쓸까요?'))return; arr[idx]=entry; } else { arr.push(entry); }
+      saveArr(NAME_KEY,arr); $n('netName').value=''; render();
+    });
+
+    window._netDel=function(k,key){
+      var arr=loadArr(k).filter(function(x){ return (x.date||x.name)!==key; });
+      saveArr(k,arr); render();
+    };
+
+    function render(){
+      var k = netTab==='date'?DATE_KEY:NAME_KEY;
+      var arr=loadArr(k);
+      // 목록
+      var box=$n('netList');
+      if(arr.length===0){
+        box.innerHTML='<div style="text-align:center;color:#999;font-size:13px;padding:16px">아직 기록이 없어요. 위에서 저장해보세요.</div>';
+      } else {
+        var rows = netTab==='date' ? arr.slice().reverse() : arr.slice();
+        box.innerHTML=rows.map(function(x){
+          var label = netTab==='date'?x.date.slice(2):x.name;
+          var key = netTab==='date'?x.date:x.name;
+          return '<div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-bottom:1px solid #f0f0f0;font-size:13px">'
+            +'<span style="color:#666;min-width:78px">'+label+'</span>'
+            +'<span style="font-weight:700;color:#1F4E78">'+fmtWon(x.net)+'</span>'
+            +'<span style="font-size:11px;color:#aaa;margin-left:4px">금융 '+fmtWon(x.fin)+' + 주택 '+fmtWon(x.home)+'</span>'
+            +'<button onclick="_netDel(\''+k+'\',\''+key+'\')" style="margin-left:auto;background:#fee2e2;color:#dc2626;border:none;border-radius:5px;padding:4px 9px;font-size:11px;cursor:pointer">삭제</button></div>';
+        }).join('');
+      }
+      drawNet(arr);
+    }
+    function drawNet(arr){
+      var cv=$n('netChart');
+      if(_netChart){ _netChart.destroy(); _netChart=null; }
+      if(arr.length===0){ var ctx=cv.getContext('2d'); ctx.clearRect(0,0,cv.width,cv.height); return; }
+      var labels = arr.map(function(x){ return netTab==='date'?x.date.slice(5):x.name; });
+      var data = arr.map(function(x){ return Math.round(x.net/10000); }); // 만원
+      _netChart=new Chart(cv,{
+        type: netTab==='date'?'line':'bar',
+        data:{ labels:labels, datasets:[{ label:'순자산(만원)', data:data, borderColor:'#1F4E78', backgroundColor: netTab==='date'?'rgba(31,78,120,0.08)':'rgba(124,58,237,0.5)', fill:true, tension:0.2, pointRadius:3 }] },
+        options:{ responsive:true, plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:function(c){ return fmtWon(c.parsed.y*10000); } } } },
+          scales:{ y:{ ticks:{ callback:function(v){ return v>=10000?(v/10000).toFixed(1)+'억':v+'만'; }, font:{size:10} } }, x:{ ticks:{font:{size:10}} } } }
+      });
+    }
+    render();
+  })();
+
 
   document.getElementById('btnSavePdf').addEventListener('click', function(){
     var allPanels = document.querySelectorAll('.panel');
