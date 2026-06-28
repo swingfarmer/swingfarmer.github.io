@@ -166,6 +166,10 @@
 
   /* 다크 토글된 헤더 표시 */
   body.sf-dark #sf-header { background: #11151b; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+
+  /* === 금액 한글표기 (data-won 마커) === */
+  .sf-won-kor { font-size: 12px; color: #1F4E78; font-weight: 600; margin-top: 3px; min-height: 15px; line-height: 1.4; }
+  body.sf-dark .sf-won-kor { color: #6ba3e0; }
   `;
 
   var styleEl = document.createElement('style');
@@ -256,6 +260,61 @@
     });
   }
 
+  // ---------- 4-B. 금액 한글표기 엔진 (data-won 마커) ----------
+  // 사용법: 금액 input에 data-won 만 추가하면 바로 아래에 "1억 2,000만원" 자동 표기.
+  //   - 원 단위 입력:   <input ... data-won>
+  //   - 만원 단위 입력: <input ... data-won="man">
+  //   - 위치를 직접 지정하려면: <div class="sf-won-kor" data-won-for="입력칸id"></div>
+  function wonToKorean(n) {
+    n = Math.round(Math.abs(n));
+    if (!n) return '';
+    var eok = Math.floor(n / 100000000);
+    var man = Math.floor((n % 100000000) / 10000);
+    var won = n % 10000;
+    var parts = [];
+    if (eok > 0) parts.push(eok.toLocaleString('ko-KR') + '억');
+    if (man > 0) parts.push(man.toLocaleString('ko-KR') + '만');
+    if (won > 0) parts.push(won.toLocaleString('ko-KR'));
+    return parts.join(' ') + '원';
+  }
+  function sfReadVal(input) {
+    var raw = (input.value || '').replace(/[^0-9.\-]/g, '');
+    var v = parseFloat(raw);
+    if (isNaN(v)) return 0;
+    if (input.getAttribute('data-won') === 'man') v *= 10000; // 만원 단위
+    return v;
+  }
+  function sfHintFor(input) {
+    // 1) 명시적 위치 지정(data-won-for) 우선
+    if (input.id) {
+      var ex = document.querySelector('.sf-won-kor[data-won-for="' + input.id + '"]');
+      if (ex) return ex;
+    }
+    // 2) 이미 만든 것 재사용
+    if (input.__sfHint) return input.__sfHint;
+    // 3) input 바로 뒤에 자동 생성
+    var hint = document.createElement('div');
+    hint.className = 'sf-won-kor';
+    if (input.nextSibling) input.parentNode.insertBefore(hint, input.nextSibling);
+    else input.parentNode.appendChild(hint);
+    input.__sfHint = hint;
+    return hint;
+  }
+  function sfAttachWon(input) {
+    if (input.__sfWonBound) return;
+    input.__sfWonBound = true;
+    var upd = function () { sfHintFor(input).textContent = wonToKorean(sfReadVal(input)); };
+    input.addEventListener('input', upd);
+    input.addEventListener('change', upd);
+    upd();
+  }
+  function initWonReadout() {
+    document.querySelectorAll('input[data-won]').forEach(sfAttachWon);
+  }
+  // 동적으로 input을 추가하는 페이지는 새 input 생긴 뒤 window.sfRefreshWon() 호출
+  window.sfRefreshWon = initWonReadout;
+  window.wonToKorean = wonToKorean;
+
   // ---------- 5. 초기화 + 이벤트 ----------
   function init() {
     buildHeader();
@@ -272,6 +331,9 @@
 
     // 글자크기 적용 (저장값 또는 기본). 콘텐츠 로딩 후 측정되도록 지연.
     setTimeout(function () { applyFontSize(savedSize); }, 300);
+
+    // 금액 한글표기 (data-won 마커가 있는 페이지만 작동)
+    initWonReadout();
 
     // 다크모드 토글
     var darkBtn = document.getElementById('sf-dark-toggle');
