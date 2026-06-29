@@ -66,6 +66,10 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
   <p class="subtitle">개인 재무 시뮬레이션 & 분석 모음</p>
 </header>
 
+<div id="adminMenuBar" style="display:none;max-width:1000px;margin:0 auto 18px;padding:0 16px">
+  <a href="/1808/" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#1F4E78;color:#fff;border-radius:12px;padding:14px;font-weight:700;text-decoration:none;font-size:15px;box-shadow:0 2px 10px rgba(31,78,120,.25)">🔓 전체 메뉴 (관리자) →</a>
+</div>
+
 <!-- 전체 카드 (PC 3칸 / 모바일 2칸 자동) -->
 <div class="row auto">
   <a href="news/" class="card">
@@ -160,6 +164,11 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
 <footer>
   © 스윙파머 · GitHub Pages
   <span id="adminEntry" style="display:none"> · <span id="adminDot" style="color:#ccc;cursor:pointer;user-select:none">·</span></span>
+  <div style="margin-top:10px">
+    <button id="siteLogin" style="background:transparent;border:1px solid #ddd;color:#aaa;border-radius:6px;padding:4px 11px;font-size:11px;cursor:pointer">로그인</button>
+    <span id="siteWho" style="display:none;font-size:11px;color:#1F4E78;font-weight:600"></span>
+    <button id="siteLogout" style="display:none;background:transparent;border:1px solid #ddd;color:#aaa;border-radius:6px;padding:4px 11px;font-size:11px;cursor:pointer">로그아웃</button>
+  </div>
 </footer>
 
 <script>
@@ -283,6 +292,57 @@ if('serviceWorker' in navigator){
 })();
 </script>
 
-<script src="/common.js?v=3"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
+  authDomain: "swingfarmer-board01.firebaseapp.com",
+  projectId: "swingfarmer-board01",
+  storageBucket: "swingfarmer-board01.firebasestorage.app",
+  messagingSenderId: "312575044644",
+  appId: "1:312575044644:web:81d754eb1d90f25454fcb1"
+};
+const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1";
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ prompt: 'select_account' });
+const gid = id => document.getElementById(id);
+
+getRedirectResult(auth).catch(()=>{});
+
+gid('siteLogin').addEventListener('click', async ()=>{
+  try{ await signInWithPopup(auth, provider); }
+  catch(e){
+    const c=e&&e.code;
+    if(c==='auth/popup-blocked'||c==='auth/cancelled-popup-request'||c==='auth/popup-closed-by-user'||c==='auth/operation-not-supported-in-this-environment'){
+      try{ await signInWithRedirect(auth, provider); }catch(_){ alert('로그인 실패: '+(e.message||e)); }
+    } else { alert('로그인 실패: '+(e.message||e)); }
+  }
+});
+gid('siteLogout').addEventListener('click', ()=> signOut(auth));
+
+onAuthStateChanged(auth, user=>{
+  const isAdmin = user && user.uid===ADMIN_UID;
+  if(isAdmin){
+    gid('adminMenuBar').style.display='block';
+    gid('adminEntry').style.display='inline';
+    gid('siteLogin').style.display='none';
+    gid('siteLogout').style.display='inline-block';
+    gid('siteWho').style.display='inline-block';
+    gid('siteWho').textContent='☁️ '+(user.displayName||user.email||'관리자');
+  } else {
+    gid('adminMenuBar').style.display='none';
+    gid('siteLogin').style.display='inline-block';
+    gid('siteLogout').style.display='none';
+    gid('siteWho').style.display='none';
+    if(user){ alert('관리자 계정이 아닙니다.'); signOut(auth); }
+  }
+});
+</script>
+<script src="/common.js?v=4"></script>
 </body>
 </html>
