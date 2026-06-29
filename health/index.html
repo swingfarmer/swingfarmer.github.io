@@ -107,6 +107,11 @@
       <span class="status-chip">🟡 고혈압 경계</span>
       <span class="status-chip">🟢 간수치 상단</span>
     </div>
+    <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button id="hcLogin" style="background:#fff;color:#1F4E78;border:1px solid #1F4E78;border-radius:8px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer">☁️ 로그인하고 저장</button>
+      <span id="hcWho" style="display:none;font-size:12px;color:#1F4E78;font-weight:600"></span>
+      <button id="hcLogout" style="display:none;background:transparent;color:#888;border:1px solid #ddd;border-radius:8px;padding:5px 10px;font-size:11.5px;cursor:pointer">로그아웃</button>
+    </div>
   </div>
 </header>
 <div class="wrap">
@@ -548,8 +553,8 @@ function loadDay(){
   try{ checkState = JSON.parse(localStorage.getItem(checkKey())) || {}; }catch(e){ checkState={}; }
   try{ promiseState = JSON.parse(localStorage.getItem(promiseKey())) || []; }catch(e){ promiseState=[]; }
 }
-function saveCheck(){ try{ localStorage.setItem(checkKey(), JSON.stringify(checkState)); }catch(e){} }
-function savePromise(){ try{ localStorage.setItem(promiseKey(), JSON.stringify(promiseState)); }catch(e){} }
+function saveCheck(){ try{ localStorage.setItem(checkKey(), JSON.stringify(checkState)); }catch(e){} if(window.__hcPush)window.__hcPush(); }
+function savePromise(){ try{ localStorage.setItem(promiseKey(), JSON.stringify(promiseState)); }catch(e){} if(window.__hcPush)window.__hcPush(); }
 
 function renderDate(){
   const d=viewDate, days=['일','월','화','수','목','금','토'];
@@ -592,7 +597,7 @@ function delPromise(i){ promiseState.splice(i,1); savePromise(); renderPromise()
 
 // ===== 몸무게 =====
 function loadWeights(){ try{ return JSON.parse(localStorage.getItem('sf_health_weight'))||[]; }catch(e){ return []; } }
-function saveWeights(arr){ try{ localStorage.setItem('sf_health_weight', JSON.stringify(arr)); }catch(e){} }
+function saveWeights(arr){ try{ localStorage.setItem('sf_health_weight', JSON.stringify(arr)); }catch(e){} if(window.__hcPush)window.__hcPush(); }
 function saveWeight(){
   const v=parseFloat($('weightInput').value);
   if(!v||v<=0){ alert('몸무게를 입력하세요.'); return; }
@@ -685,6 +690,105 @@ window.addEventListener('appinstalled', ()=>$('installBar').classList.remove('sh
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('/health/sw.js').catch(()=>{}); }
 
 loadDay(); renderAll();
+</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
+  authDomain: "swingfarmer-board01.firebaseapp.com",
+  projectId: "swingfarmer-board01",
+  storageBucket: "swingfarmer-board01.firebasestorage.app",
+  messagingSenderId: "312575044644",
+  appId: "1:312575044644:web:81d754eb1d90f25454fcb1"
+};
+const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1";
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ prompt: 'select_account' });
+const ref = () => doc(db, 'calc_data', ADMIN_UID);
+const gid = id => document.getElementById(id);
+
+getRedirectResult(auth).catch(()=>{});
+
+gid('hcLogin').addEventListener('click', async ()=>{
+  try{ await signInWithPopup(auth, provider); }
+  catch(e){
+    const c=e&&e.code;
+    if(c==='auth/popup-blocked'||c==='auth/cancelled-popup-request'||c==='auth/popup-closed-by-user'||c==='auth/operation-not-supported-in-this-environment'){
+      try{ await signInWithRedirect(auth, provider); }catch(_){ alert('로그인 실패: '+(e.message||e)); }
+    } else { alert('로그인 실패: '+(e.message||e)); }
+  }
+});
+gid('hcLogout').addEventListener('click', ()=> signOut(auth));
+
+function collectLocal(){
+  const out={ check:{}, promise:{}, weight:[] };
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(!k) continue;
+    if(k.startsWith('sf_health_check_')){ try{ out.check[k.slice(16)]=JSON.parse(localStorage.getItem(k)); }catch(e){} }
+    else if(k.startsWith('sf_health_promise_')){ try{ out.promise[k.slice(18)]=JSON.parse(localStorage.getItem(k)); }catch(e){} }
+  }
+  try{ out.weight=JSON.parse(localStorage.getItem('sf_health_weight'))||[]; }catch(e){ out.weight=[]; }
+  return out;
+}
+function mergeMaps(local, cloud){ const o=Object.assign({}, local||{}); for(const d in (cloud||{})) o[d]=cloud[d]; return o; }
+function mergeWeights(local, cloud){ const m={}; (local||[]).forEach(w=>m[w.date]=w); (cloud||[]).forEach(w=>m[w.date]=w); return Object.values(m).sort((a,b)=>a.date.localeCompare(b.date)); }
+function applyToLocal(h){
+  if(!h) return;
+  if(h.check) for(const d in h.check){ try{ localStorage.setItem('sf_health_check_'+d, JSON.stringify(h.check[d])); }catch(e){} }
+  if(h.promise) for(const d in h.promise){ try{ localStorage.setItem('sf_health_promise_'+d, JSON.stringify(h.promise[d])); }catch(e){} }
+  if(h.weight){ try{ localStorage.setItem('sf_health_weight', JSON.stringify(h.weight)); }catch(e){} }
+}
+
+let cloudReady=false, pushTimer=null;
+async function cloudPush(){
+  if(!cloudReady) return;
+  try{
+    await setDoc(ref(), { health: collectLocal() }, { merge:true });
+    gid('hcWho').textContent='☁️ 저장됨 · '+(auth.currentUser&&(auth.currentUser.displayName||auth.currentUser.email)||'');
+  }catch(e){ console.log('push fail:', e.message); }
+}
+window.__hcPush=()=>{ clearTimeout(pushTimer); pushTimer=setTimeout(cloudPush, 800); };
+
+onAuthStateChanged(auth, async user=>{
+  const isAdmin = user && user.uid===ADMIN_UID;
+  if(isAdmin){
+    gid('hcLogin').style.display='none';
+    gid('hcWho').style.display='inline-block';
+    gid('hcLogout').style.display='inline-block';
+    gid('hcWho').textContent='☁️ '+(user.displayName||user.email||'로그인됨');
+    try{
+      const snap=await getDoc(ref());
+      const cloud=(snap.exists()&&snap.data().health)?snap.data().health:null;
+      const local=collectLocal();
+      const merged={
+        check: mergeMaps(local.check, cloud?cloud.check:{}),
+        promise: mergeMaps(local.promise, cloud?cloud.promise:{}),
+        weight: mergeWeights(local.weight, cloud?cloud.weight:[])
+      };
+      applyToLocal(merged);
+      cloudReady=true;
+      if(window.loadDay) window.loadDay();
+      if(window.renderAll) window.renderAll();
+      cloudPush();
+    }catch(e){ console.log('load fail:', e.message); cloudReady=true; }
+  } else if(user){
+    alert('이 계정은 저장 권한이 없어요. 본인 구글 계정으로 로그인하세요.');
+    signOut(auth);
+  } else {
+    cloudReady=false;
+    gid('hcLogin').style.display='inline-block';
+    gid('hcWho').style.display='none';
+    gid('hcLogout').style.display='none';
+  }
+});
 </script>
 </body>
 </html>
