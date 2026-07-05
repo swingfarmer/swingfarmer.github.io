@@ -190,6 +190,37 @@
 <a href="../" class="back-link">← 메인으로</a>
 
 <h1>파이어족 계산기</h1>
+<div class="panel" style="background:linear-gradient(135deg,#1F4E78 0%,#2d6da3 100%);color:#fff;margin-bottom:14px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+    <h2 style="color:#fff;margin:0;font-size:16px">💰 3% 룰 요약 <span style="font-size:11px;font-weight:400;opacity:.8">(세금·건보 감안 안전선)</span></h2>
+    <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
+      <input type="radio" name="swrRate" value="0.03" checked style="accent-color:#fff"> 3%
+      <input type="radio" name="swrRate" value="0.035" style="accent-color:#fff;margin-left:6px"> 3.5%
+      <input type="radio" name="swrRate" value="0.04" style="accent-color:#fff;margin-left:6px"> 4%
+    </label>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
+    <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:10px">
+      <div style="font-size:11px;opacity:.85;margin-bottom:4px">지금 은퇴하면 쓸 수 있는 돈 (연)</div>
+      <div id="swrSustain" style="font-size:18px;font-weight:700">—</div>
+      <div id="swrSustainMon" style="font-size:11px;opacity:.8;margin-top:2px">월 —</div>
+    </div>
+    <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:10px">
+      <div style="font-size:11px;opacity:.85;margin-bottom:4px">필요 목표 자산 (연 지출 ÷ 룰)</div>
+      <div id="swrTarget" style="font-size:18px;font-weight:700">—</div>
+      <div id="swrTargetHint" style="font-size:11px;opacity:.8;margin-top:2px">—</div>
+    </div>
+    <div style="background:rgba(255,255,255,.12);border-radius:8px;padding:10px">
+      <div style="font-size:11px;opacity:.85;margin-bottom:4px">현재 자산 vs 목표</div>
+      <div id="swrGap" style="font-size:18px;font-weight:700">—</div>
+      <div id="swrGapPct" style="font-size:11px;opacity:.8;margin-top:2px">—</div>
+    </div>
+  </div>
+  <div style="margin-top:10px;font-size:11px;opacity:.8;line-height:1.6">
+    * 3% = 세금(배당/이자 15.4%)·건보료·인플레 감안 한국형 안전 인출률. 4%는 미국 원조 룰. / 계산 근거: 아래 <b>현재 자산</b>과 <b>연 지출액</b> 입력값.
+  </div>
+</div>
+
 <p class="desc">월 소비액과 사망 시 남길 금액을 입력하면 <b>은퇴 시점에 얼마가 필요한지</b> 자동 계산. 연금 소득도 반영. 기본값은 <b>2000년 이후 장기 평균</b> 기준.</p>
 
 <!-- 🆕 명목/현재가치 안내 (간결) -->
@@ -571,7 +602,30 @@ function updateAllKor() { KOR_FIELDS.forEach(updateKor); }
 
 document.getElementById('startYear').value = new Date().getFullYear();
 
+function updateSwrCard() {
+  const rateEl = document.querySelector('input[name="swrRate"]:checked');
+  const rate = rateEl ? parseFloat(rateEl.value) : 0.03;
+  const assets = parseFloat(document.getElementById('currentAssets').value) || 0;
+  const annSpend = parseFloat(document.getElementById('annualSpending').value) || 0;
+  const sustain = assets * rate;
+  const target = annSpend / rate;
+  const gap = assets - target;
+  const fmt = n => (typeof wonToKorean === 'function' ? wonToKorean(Math.round(n)) : Math.round(n).toLocaleString('ko-KR')+'원');
+  document.getElementById('swrSustain').textContent = sustain>0 ? fmt(sustain) : '—';
+  document.getElementById('swrSustainMon').textContent = sustain>0 ? ('월 ' + fmt(sustain/12)) : '월 —';
+  document.getElementById('swrTarget').textContent = target>0 ? fmt(target) : '—';
+  document.getElementById('swrTargetHint').textContent = annSpend>0 ? ('연 지출 ' + fmt(annSpend) + ' ÷ ' + (rate*100).toFixed(1) + '%') : '연 지출 입력 필요';
+  const gapEl = document.getElementById('swrGap');
+  if(target<=0 || annSpend<=0){ gapEl.textContent='—'; document.getElementById('swrGapPct').textContent='—'; return; }
+  const pct = (assets/target*100);
+  gapEl.textContent = (gap>=0 ? '✅ 여유 ' : '⚠️ 부족 ') + fmt(Math.abs(gap));
+  document.getElementById('swrGapPct').textContent = '목표 달성률 ' + pct.toFixed(1) + '%';
+}
+document.querySelectorAll('input[name="swrRate"]').forEach(el => el.addEventListener('change', updateSwrCard));
+
 function calculate() {
+  updateSwrCard();
+
   const startYear = parseInt(document.getElementById('startYear').value) || new Date().getFullYear();
   const currentAge = parseInt(document.getElementById('currentAge').value) || 0;
   const retireAge = parseInt(document.getElementById('retireAge').value) || 0;
@@ -1222,6 +1276,8 @@ $('btnCloudLogout').addEventListener('click', async ()=>{
 });
 </script>
 
-<script src="/common.js?v=3"></script>
+<script src="/common.js?v=4">
+window.addEventListener('load', function(){ if(typeof updateSwrCard==='function') updateSwrCard(); });
+</script>
 </body>
 </html>
