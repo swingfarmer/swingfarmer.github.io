@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="robots" content="noindex, nofollow">
+<title>현금흐름 트래커 | 스윙파머</title>
+<meta name="description" content="월별 수입·지출 카테고리 관리. 순증감·저축률 자동. 파이어족 벤치마크 사례 포함.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; display: block; }
+  header h1 { font-size: 20px; color: #1F4E78; margin: 0; }
+  .back-link { display: inline-block; margin-bottom: 8px; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
+  .panel { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 14px; }
+  .panel h2 { font-size: 15px; color: #1F4E78; margin-bottom: 10px; }
+  .btn { border: none; border-radius: 6px; padding: 8px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn-blue { background: #1F4E78; color: white; }
+  .btn-green { background: #10b981; color: white; }
+  .btn-gray { background: #9ca3af; color: white; }
+  input, select { font-size: 13px; border: 1px solid #ccc; border-radius: 6px; padding: 7px 9px; font-family: inherit; }
+  input:focus, select:focus { outline: 2px solid #1F4E78; }
+
+  /* Controls */
+  .controls-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: #444; }
+  .controls-row label { font-weight: 600; }
+  input.threshold-input { width: 110px; text-align: right; background: #FFF2CC; color: #0000FF; font-weight: 700; }
+
+  /* Tabs */
+  .tab-bar { display: flex; gap: 4px; border-bottom: 2px solid #e5e7eb; margin-bottom: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .tab-btn { background: transparent; border: none; padding: 10px 14px; font-size: 13px; font-weight: 600; color: #888; cursor: pointer; white-space: nowrap; border-bottom: 3px solid transparent; margin-bottom: -2px; font-family: inherit; }
+  .tab-btn.active { color: #1F4E78; border-bottom-color: #1F4E78; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Summary cards */
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .summary-card { background: white; border-radius: 10px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); border-top: 3px solid #1F4E78; }
+  .summary-card.pos { border-top-color: #10b981; }
+  .summary-card.neg { border-top-color: #dc2626; }
+  .summary-card .lbl { font-size: 11px; color: #888; margin-bottom: 4px; font-weight: 600; }
+  .summary-card .val { font-size: 17px; font-weight: 700; color: #1F4E78; }
+  .summary-card.pos .val { color: #059669; }
+  .summary-card.neg .val { color: #dc2626; }
+
+  /* Tables */
+  .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 640px; }
+  table th, table td { padding: 6px 8px; text-align: right; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
+  table th:first-child, table td:first-child { text-align: left; position: sticky; left: 0; background: #fff; z-index: 1; min-width: 44px; font-weight: 600; }
+  table th { background: #eef2f7; color: #1F4E78; font-weight: 700; font-size: 11.5px; }
+  table th:first-child { background: #eef2f7; z-index: 3; }
+  table tbody tr:hover td { background: #f9fafb; }
+  table tbody tr:hover td:first-child { background: #f9fafb; }
+  table tfoot td { font-weight: 700; border-top: 2px solid #ccc; background: #f4f6f8; }
+  table tfoot td:first-child { background: #f4f6f8; }
+  input.cell { width: 100%; min-width: 90px; border: 1px solid transparent; background: transparent; padding: 3px 5px; font-size: 12.5px; text-align: right; color: #1F4E78; font-family: inherit; border-radius: 3px; font-weight: 600; }
+  input.cell:hover { border-color: #e5e7eb; background: #fafbfc; }
+  input.cell:focus { outline: none; border-color: #1F4E78; background: #FFF2CC; color: #0000FF; }
+  td.pos-cell { color: #059669; font-weight: 600; }
+  td.neg-cell { color: #dc2626; font-weight: 600; }
+  /* 다크모드: sticky 첫 열 배경 보정 (common.js는 일반 td/th만 커버) */
+  body.sf-dark table th:first-child { background: #2a4a6e !important; }
+  body.sf-dark table td:first-child { background: #1e242e !important; }
+  body.sf-dark table tfoot td { background: #232a35 !important; }
+  body.sf-dark input.cell { color: #6ba3e0 !important; }
+  body.sf-dark input.cell:focus { background: #2a3548 !important; color: #fff !important; }
+
+  /* Ref note */
+  .ref-note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 14px; font-size: 12.5px; color: #92400e; margin-bottom: 14px; line-height: 1.6; }
+
+  /* Cloud area */
+  .cloud-area { display: none; align-items: center; gap: 8px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; flex-wrap: wrap; }
+  .cloud-area.on { display: flex; }
+  .cloud-lbl { font-size: 12px; font-weight: 700; color: #0369a1; }
+  #cloudWho { font-size: 11.5px; color: #0369a1; }
+  #saveStatus { font-size: 11.5px; color: #0369a1; margin-left: 4px; }
+  #saveStatus.dirty { color: #b45309; }
+  #saveStatus.saving { color: #0369a1; }
+  #saveStatus.error { color: #dc2626; }
+
+  footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+  @media (max-width: 640px) {
+    .summary-card .val { font-size: 15px; }
+    .wrap { padding: 12px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a href="/" class="back-link">← 메인으로</a>
+    <h1>💵 현금흐름 트래커</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc">월별 수입·지출을 카테고리별로 기록하고 <b>연간 순증감·저축률</b>을 확인. 유튜브 파이어족 사례가 <b>참고사례</b> 탭에 벤치마크로 들어있습니다. 데이터는 이 브라우저에 저장되며, 관리자 로그인 시 클라우드 자동 동기화(800ms 디바운스).</p>
+
+  <!-- Cloud status (admin only) -->
+  <div id="cloudArea" class="cloud-area">
+    <span class="cloud-lbl">☁️ 관리자</span>
+    <span id="cloudWho"></span>
+    <span id="saveStatus"></span>
+    <button id="btnCloudLogout" class="btn btn-gray" type="button" style="margin-left:auto">로그아웃</button>
+  </div>
+  <button id="btnAdminLogin" class="btn" type="button" style="display:none;background:#fff;color:#444;border:1px solid #ddd;margin-bottom:12px">🔑 관리자 로그인</button>
+  <div id="uidInfo" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:13px;color:#92400e;margin-bottom:12px;line-height:1.7"></div>
+
+  <!-- Controls -->
+  <div class="panel">
+    <div class="controls-row">
+      <label>연도</label>
+      <select id="yearSelect"></select>
+      <span style="color:#ccc">|</span>
+      <label>월 정기지출 통제 기준</label>
+      <input type="text" id="threshold" class="threshold-input" value="2,000,000" inputmode="numeric">
+      <span style="color:#888;font-size:12px">원 (고정+변동)</span>
+      <button id="btnClearYear" class="btn btn-gray" style="margin-left:auto" type="button">이 연도 초기화</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="dashboard">📊 대시보드</button>
+    <button class="tab-btn" data-tab="income">💰 수입</button>
+    <button class="tab-btn" data-tab="regular">💳 정기지출</button>
+    <button class="tab-btn" data-tab="irregular">🏠 비정기지출</button>
+    <button class="tab-btn" data-tab="reference">📚 참고사례</button>
+  </div>
+
+  <div id="tab-dashboard" class="tab-content active">
+    <div class="summary-grid" id="summaryGrid"></div>
+    <div class="panel">
+      <h2>월별 현금흐름 <span id="dashYearLbl" style="font-size:12px;color:#888;font-weight:400"></span></h2>
+      <div class="tbl-wrap"><table id="dashTable"></table></div>
+    </div>
+  </div>
+
+  <div id="tab-income" class="tab-content">
+    <div class="panel">
+      <h2>수입 <span style="font-size:11.5px;color:#888;font-weight:400">· 월세 순수입 / 파킹통장 이자 / 배당금 / 유튜브 / 기타</span></h2>
+      <div class="tbl-wrap"><table id="incomeTable"></table></div>
+    </div>
+  </div>
+
+  <div id="tab-regular" class="tab-content">
+    <div class="panel">
+      <h2>고정비 <span style="font-size:11.5px;color:#888;font-weight:400">· 매달 거의 같은 금액</span></h2>
+      <div class="tbl-wrap"><table id="fixedTable"></table></div>
+    </div>
+    <div class="panel">
+      <h2>변동비 <span style="font-size:11.5px;color:#888;font-weight:400">· 매달 사용액이 다른 지출</span></h2>
+      <div class="tbl-wrap"><table id="variableTable"></table></div>
+    </div>
+  </div>
+
+  <div id="tab-irregular" class="tab-content">
+    <div class="panel">
+      <h2>부동산 관련 비용</h2>
+      <div class="tbl-wrap"><table id="realestateTable"></table></div>
+    </div>
+    <div class="panel">
+      <h2>세금</h2>
+      <div class="tbl-wrap"><table id="taxTable"></table></div>
+    </div>
+    <div class="panel">
+      <h2>해외여행 · 기타</h2>
+      <div class="tbl-wrap"><table id="miscTable"></table></div>
+    </div>
+  </div>
+
+  <div id="tab-reference" class="tab-content">
+    <div class="ref-note">
+      <b>📚 유튜브 파이어족 사례</b> (읽기 전용, 편집 불가). 연 수입 <b>31,820,376원</b> / 연 지출 <b>39,875,803원</b> / 순증감 <b style="color:#dc2626">−8,055,427원</b>. 12개월 중 10개월 월 200만 정기지출 초과. 카테고리 참고용.
+    </div>
+    <div id="referenceContent"></div>
+  </div>
+
+  <footer>© 스윙파머 · 현금흐름</footer>
+</div>
+
+<script type="module">
+// ============= Firebase =============
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
+  authDomain: "swingfarmer-board01.firebaseapp.com",
+  projectId: "swingfarmer-board01",
+  storageBucket: "swingfarmer-board01.firebasestorage.app",
+  messagingSenderId: "312575044644",
+  appId: "1:312575044644:web:81d754eb1d90f25454fcb1"
+};
+const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1";
+const CALC_KEY = "cashflow";
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ prompt: 'select_account' });
+const gid = id => document.getElementById(id);
+
+let currentUser = null;
+let cloudReady = false;
+let pushTimer = null;
+
+getRedirectResult(auth).catch(()=>{});
+if (location.hash === '#admin' || location.hash === '#관리자') {
+  gid('btnAdminLogin').style.display = 'inline-block';
+}
+
+gid('btnAdminLogin').addEventListener('click', async () => {
+  try { await signInWithPopup(auth, provider); }
+  catch (e) {
+    const code = e && e.code;
+    if (code === 'auth/popup-blocked' || code === 'auth/cancelled-popup-request' || code === 'auth/popup-closed-by-user' || code === 'auth/operation-not-supported-in-this-environment') {
+      try { await signInWithRedirect(auth, provider); } catch (e2) { alert('로그인 실패: ' + e2.message); }
+    } else { alert('로그인 실패: ' + (e.message || code)); }
+  }
+});
+gid('btnCloudLogout').addEventListener('click', async () => {
+  if (confirm('로그아웃 하시겠어요?')) { try { await signOut(auth); } catch (e) {} }
+});
+window._cfSignout = () => signOut(auth);
+
+const docRef = () => doc(db, 'calc_data', ADMIN_UID);
+
+async function cloudPull() {
+  try {
+    const snap = await getDoc(docRef());
+    if (snap.exists() && snap.data()[CALC_KEY]) {
+      const cloud = snap.data()[CALC_KEY];
+      if (cloud.years && typeof cloud.years === 'object') {
+        state.years = Object.assign({}, state.years, cloud.years);
+      }
+      if (typeof cloud.threshold === 'number') state.threshold = cloud.threshold;
+      saveLocal();
+    }
+  } catch (e) { console.log('cloud pull fail:', e.message); }
+}
+
+async function cloudPush() {
+  if (!cloudReady) return;
+  setSaveStatus('saving');
+  try {
+    await setDoc(docRef(), { [CALC_KEY]: { years: state.years, threshold: state.threshold, updatedAt: new Date().toISOString() } }, { merge: true });
+    setSaveStatus('saved');
+  } catch (e) {
+    console.log('cloud push fail:', e.message);
+    setSaveStatus('error');
+  }
+}
+
+function schedulePush() {
+  if (!cloudReady) return;
+  setSaveStatus('dirty');
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(cloudPush, 800);
+}
+
+function setSaveStatus(status) {
+  const el = gid('saveStatus');
+  if (!el) return;
+  el.className = '';
+  if (status === 'dirty') { el.textContent = '· 저장 대기'; el.className = 'dirty'; }
+  else if (status === 'saving') { el.textContent = '· 저장 중...'; el.className = 'saving'; }
+  else if (status === 'saved') { el.textContent = '· ☁️ 동기화됨'; }
+  else if (status === 'error') { el.textContent = '· ⚠️ 저장 실패'; el.className = 'error'; }
+  else { el.textContent = ''; }
+}
+
+onAuthStateChanged(auth, async user => {
+  currentUser = user;
+  const isAdmin = user && user.uid === ADMIN_UID;
+  if (isAdmin) {
+    gid('cloudArea').classList.add('on');
+    gid('btnAdminLogin').style.display = 'none';
+    gid('cloudWho').textContent = '☁️ ' + (user.displayName || user.email || '관리자');
+    if (gid('uidInfo')) gid('uidInfo').style.display = 'none';
+    await cloudPull();
+    thresholdInput.value = fmt(state.threshold);
+    renderAll();
+    cloudReady = true;
+    setSaveStatus('saved');
+    cloudPush(); // 로그인 전 로컬 편집분이 있으면 함께 올려둠
+  } else if (user && !isAdmin) {
+    gid('cloudArea').classList.remove('on');
+    gid('btnAdminLogin').style.display = 'none';
+    const box = gid('uidInfo');
+    if (box) {
+      box.style.display = 'block';
+      box.innerHTML = '로그인됨: <b>' + (user.email || '') + '</b><br>이 계정 UID:<br><code style="font-size:11px;word-break:break-all">' + user.uid + '</code><br><button onclick="window._cfSignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer;margin-top:4px">로그아웃</button>';
+    }
+    cloudReady = false;
+  } else {
+    cloudReady = false;
+    gid('cloudArea').classList.remove('on');
+    if (gid('uidInfo')) gid('uidInfo').style.display = 'none';
+  }
+});
+
+// ============= Schema =============
+const STORE_KEY = 'sf_cashflow_v1';
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const SCHEMA = {
+  income: [
+    { key: 'rent_net', label: '오피스텔 월세 순수입' },
+    { key: 'parking_interest', label: '파킹통장 이자' },
+    { key: 'dividend', label: '배당금' },
+    { key: 'youtube', label: '유튜브수익' },
+    { key: 'etc', label: '기타' }
+  ],
+  fixed: [
+    { key: 'housing_telecom', label: '주거통신' },
+    { key: 'insurance_4', label: '4대보험' },
+    { key: 'insurance', label: '보험료' },
+    { key: 'subscription', label: '구독료' },
+    { key: 'family_fee', label: '가족회비' },
+    { key: 'nephew', label: '조카 학원비' }
+  ],
+  variable: [
+    { key: 'food', label: '식비' },
+    { key: 'transport', label: '교통비' },
+    { key: 'shopping', label: '생활&쇼핑' },
+    { key: 'cafe', label: '카페/간식' },
+    { key: 'culture', label: '문화여가' },
+    { key: 'travel_stay', label: '여행숙박' },
+    { key: 'gift', label: '경조/선물' },
+    { key: 'medical', label: '의료건강' },
+    { key: 'etc', label: '기타' }
+  ],
+  realestate: [
+    { key: 'agent_fee', label: '중개수수료' },
+    { key: 'deposit_insurance', label: '보증보험료' },
+    { key: 'cleaning_repair', label: '청소/수리비' },
+    { key: 'etc', label: '기타비용' }
+  ],
+  tax: [
+    { key: 'property_tax', label: '재산세' },
+    { key: 'income_tax', label: '소득세' },
+    { key: 'etc', label: '기타' }
+  ],
+  misc: [
+    { key: 'overseas_travel', label: '해외여행경비' },
+    { key: 'etc', label: '기타' }
+  ]
+};
+
+const REFERENCE_DATA = {
+  income: {
+    rent_net: [1083825,1653590,1732985,1668595,1774603,1686000,1762564,1762564,1762564,1957214,1913469,1950648],
+    parking_interest: [74388,812334,969235,567767,174400,104673,87842,81532,81937,72781,71753,73801],
+    dividend: [32424,1867,0,427141,60752,106334,1012519,8941,952462,319514,604086,1753242],
+    youtube: [0,159000,206653,0,159645,0,405087,325602,149979,164356,69481,90227],
+    etc: [700000,0,230000,0,0,0,0,0,0,0,0,0]
+  },
+  fixed: {
+    housing_telecom: [92050,111000,148000,160850,152310,142910,136320,155870,107070,126750,134570,141750],
+    insurance_4: [304450,304450,304450,304450,304450,304450,304450,304450,304450,304450,304450,304450],
+    insurance: [96603,96603,96603,96603,96603,96603,96603,96603,96603,96603,96603,96603],
+    subscription: [28190,28190,28190,28190,28190,28190,28190,28190,28190,28190,28190,28190],
+    family_fee: [50000,50000,50000,50000,50000,50000,50000,50000,50000,50000,50000,50000],
+    nephew: [140000,140000,140000,140000,140000,140000,140000,140000,140000,140000,140000,140000]
+  },
+  variable: {
+    food: [74466,569000,572780,702200,605512,403310,361650,984040,1469875,765289,823380,577560],
+    transport: [123800,65300,96550,2500,21500,2900,2900,85000,100000,57067,103000,61160],
+    shopping: [89666,804059,238037,227409,328813,393608,630426,50700,70860,126041,640940,663650],
+    cafe: [149511,38900,63900,97800,151300,110815,239000,85100,146000,283505,219647,178800],
+    culture: [100000,30000,73000,111000,203000,73000,103550,10000,309000,137000,352473,126500],
+    travel_stay: [0,0,0,50000,0,0,0,508700,154750,212800,327700,491312],
+    gift: [50000,29800,71960,0,362000,79870,81200,382000,70000,215000,290600,29000],
+    medical: [0,0,116500,0,0,0,0,0,0,0,0,84100],
+    etc: [10000,10000,10000,10000,16600,200000,10000,10000,10000,10000,10000,10000]
+  },
+  realestate: {
+    agent_fee: [0,448360,0,0,0,0,0,0,0,272000,55000,55000],
+    deposit_insurance: [426000,0,348830,0,0,0,0,0,0,0,0,0],
+    cleaning_repair: [0,50000,0,0,0,0,0,0,0,585000,35000,0],
+    etc: [0,62970,0,0,0,0,0,0,0,50470,0,0]
+  },
+  tax: {
+    property_tax: [0,0,0,0,0,0,176409,0,176410,0,0,0],
+    income_tax: [0,0,0,0,4012530,0,0,0,0,0,0,0],
+    etc: [60400,0,0,0,0,0,0,0,0,0,0,0]
+  },
+  misc: {
+    overseas_travel: [2120874,703543,0,0,0,0,0,0,0,0,0,0],
+    etc: [0,1200000,0,0,0,0,0,0,0,0,0,0]
+  }
+};
+
+// ============= State =============
+let state = { years: {}, threshold: 2000000 };
+let currentYear = new Date().getFullYear();
+
+function createEmptyYear() {
+  const y = {};
+  for (const section of Object.keys(SCHEMA)) {
+    y[section] = {};
+    for (const item of SCHEMA[section]) y[section][item.key] = new Array(12).fill(0);
+  }
+  return y;
+}
+function ensureYear(y) {
+  if (!state.years[y]) state.years[y] = createEmptyYear();
+  // 스키마 확장 시 누락된 카테고리 채워두기 (기존 데이터 보존)
+  const yd = state.years[y];
+  for (const section of Object.keys(SCHEMA)) {
+    if (!yd[section]) yd[section] = {};
+    for (const item of SCHEMA[section]) {
+      if (!Array.isArray(yd[section][item.key]) || yd[section][item.key].length !== 12) {
+        const arr = Array.isArray(yd[section][item.key]) ? yd[section][item.key].slice(0,12) : [];
+        while (arr.length < 12) arr.push(0);
+        yd[section][item.key] = arr;
+      }
+    }
+  }
+  return yd;
+}
+function activeYear() { return ensureYear(currentYear); }
+
+// ============= Utils =============
+function fmt(n) { if (!n) return ''; return Math.round(n).toLocaleString('ko-KR'); }
+function fmtZero(n) { return Math.round(n||0).toLocaleString('ko-KR'); }
+function parseNum(s) {
+  if (!s) return 0;
+  const clean = String(s).replace(/[,\s원]/g, '');
+  const n = parseFloat(clean);
+  return isNaN(n) ? 0 : n;
+}
+
+// ============= LocalStorage =============
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const d = JSON.parse(raw);
+      if (d.years && typeof d.years === 'object') state.years = d.years;
+      if (typeof d.threshold === 'number') state.threshold = d.threshold;
+    }
+  } catch (e) {}
+}
+function saveLocal() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+// ============= Aggregations =============
+function catSum(src, section, key) {
+  const arr = src[section] && src[section][key];
+  return Array.isArray(arr) ? arr.reduce((a,b)=>a+(b||0),0) : 0;
+}
+function sectionSum(src, section) { return SCHEMA[section].reduce((s,item)=>s+catSum(src,section,item.key),0); }
+function monthSum(src, section, m) {
+  return SCHEMA[section].reduce((s,item)=>{
+    const arr = src[section] && src[section][item.key];
+    return s + ((Array.isArray(arr) ? arr[m] : 0) || 0);
+  }, 0);
+}
+function monthlyIncome(y,m) { return monthSum(y,'income',m); }
+function monthlyRegular(y,m) { return monthSum(y,'fixed',m) + monthSum(y,'variable',m); }
+function monthlyIrregular(y,m) { return monthSum(y,'realestate',m) + monthSum(y,'tax',m) + monthSum(y,'misc',m); }
+function annualIncome(y) { return sectionSum(y,'income'); }
+function annualRegular(y) { return sectionSum(y,'fixed') + sectionSum(y,'variable'); }
+function annualIrregular(y) { return sectionSum(y,'realestate') + sectionSum(y,'tax') + sectionSum(y,'misc'); }
+function annualExpense(y) { return annualRegular(y) + annualIrregular(y); }
+function annualNet(y) { return annualIncome(y) - annualExpense(y); }
+
+// ============= Render input table =============
+function renderInputTable(tableId, section, source, readonly) {
+  source = source || activeYear();
+  readonly = !!readonly;
+  const table = gid(tableId);
+  const items = SCHEMA[section];
+  let html = '<thead><tr><th>월</th>';
+  for (const item of items) html += `<th>${item.label}</th>`;
+  html += '<th>합계</th></tr></thead><tbody>';
+  for (let m = 0; m < 12; m++) {
+    html += `<tr><td>${MONTHS[m]}</td>`;
+    let rowSum = 0;
+    for (const item of items) {
+      const arr = source[section] && source[section][item.key];
+      const val = (Array.isArray(arr) ? arr[m] : 0) || 0;
+      rowSum += val;
+      if (readonly) html += `<td>${fmt(val)}</td>`;
+      else html += `<td><input class="cell" type="text" inputmode="numeric" data-section="${section}" data-key="${item.key}" data-month="${m}" value="${fmt(val)}"></td>`;
+    }
+    html += `<td class="row-total">${fmt(rowSum)}</td></tr>`;
+  }
+  html += '</tbody><tfoot><tr><td>합계</td>';
+  for (const item of items) html += `<td class="col-total">${fmt(catSum(source,section,item.key))}</td>`;
+  html += `<td class="grand-total">${fmt(sectionSum(source,section))}</td></tr></tfoot>`;
+  table.innerHTML = html;
+
+  if (readonly) return;
+
+  table.querySelectorAll('input.cell').forEach(input => {
+    input.addEventListener('focus', e => {
+      e.target.value = e.target.value.replace(/,/g, '');
+      e.target.select();
+    });
+    input.addEventListener('blur', e => {
+      const n = parseNum(e.target.value);
+      const sec = e.target.dataset.section;
+      const key = e.target.dataset.key;
+      const month = parseInt(e.target.dataset.month);
+      const y = activeYear();
+      if (y[sec][key][month] !== n) {
+        y[sec][key][month] = n;
+        onChange();
+      }
+      e.target.value = fmt(n);
+      updateTableTotals(table, section);
+      renderDashboard();
+    });
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
+  });
+}
+
+function updateTableTotals(table, section) {
+  const items = SCHEMA[section];
+  const y = activeYear();
+  const rows = table.querySelectorAll('tbody tr');
+  rows.forEach((row, m) => {
+    const sum = items.reduce((s,item)=>s+(y[section][item.key][m]||0), 0);
+    row.querySelector('.row-total').textContent = fmt(sum);
+  });
+  const foot = table.querySelector('tfoot tr');
+  const cols = foot.querySelectorAll('.col-total');
+  items.forEach((item,i) => { cols[i].textContent = fmt(catSum(y,section,item.key)); });
+  foot.querySelector('.grand-total').textContent = fmt(sectionSum(y,section));
+}
+
+// ============= Render dashboard =============
+function renderDashboard() {
+  const y = activeYear();
+  const income = annualIncome(y);
+  const expense = annualExpense(y);
+  const net = income - expense;
+  const savingsRate = income > 0 ? Math.round((net/income)*100) : 0;
+  let overshoot = 0;
+  for (let m = 0; m < 12; m++) if (monthlyRegular(y,m) > state.threshold) overshoot++;
+
+  gid('summaryGrid').innerHTML = `
+    <div class="summary-card pos"><div class="lbl">연간 수입</div><div class="val">${fmtZero(income)}원</div></div>
+    <div class="summary-card neg"><div class="lbl">연간 지출</div><div class="val">${fmtZero(expense)}원</div></div>
+    <div class="summary-card ${net>=0?'pos':'neg'}"><div class="lbl">순증감</div><div class="val">${fmtZero(net)}원</div></div>
+    <div class="summary-card ${savingsRate>=0?'pos':'neg'}"><div class="lbl">저축률</div><div class="val">${savingsRate}%</div></div>
+    <div class="summary-card ${overshoot>0?'neg':'pos'}"><div class="lbl">정기지출 초과 월</div><div class="val">${overshoot} / 12</div></div>
+  `;
+  gid('dashYearLbl').textContent = '(' + currentYear + '년)';
+
+  let html = '<thead><tr><th>월</th><th>수입</th><th>정기지출</th><th>비정기지출</th><th>총지출</th><th>순증감</th><th>통제여유</th></tr></thead><tbody>';
+  for (let m = 0; m < 12; m++) {
+    const inc = monthlyIncome(y,m);
+    const reg = monthlyRegular(y,m);
+    const irr = monthlyIrregular(y,m);
+    const tot = reg + irr;
+    const nt = inc - tot;
+    const ctrl = state.threshold - reg;
+    html += `<tr>
+      <td>${MONTHS[m]}</td>
+      <td class="pos-cell">${fmt(inc)}</td>
+      <td>${fmt(reg)}</td>
+      <td>${fmt(irr)}</td>
+      <td>${fmt(tot)}</td>
+      <td class="${nt>=0?'pos-cell':'neg-cell'}">${fmt(nt)}</td>
+      <td class="${ctrl>=0?'pos-cell':'neg-cell'}">${fmt(ctrl)}</td>
+    </tr>`;
+  }
+  const tReg = annualRegular(y);
+  const tIrr = annualIrregular(y);
+  const tCtrl = state.threshold*12 - tReg;
+  html += `</tbody><tfoot><tr>
+    <td>합계</td>
+    <td>${fmtZero(income)}</td>
+    <td>${fmtZero(tReg)}</td>
+    <td>${fmtZero(tIrr)}</td>
+    <td>${fmtZero(expense)}</td>
+    <td class="${net>=0?'pos-cell':'neg-cell'}">${fmtZero(net)}</td>
+    <td class="${tCtrl>=0?'pos-cell':'neg-cell'}">${fmtZero(tCtrl)}</td>
+  </tr></tfoot>`;
+  gid('dashTable').innerHTML = html;
+}
+
+// ============= Reference =============
+function renderReference() {
+  const container = gid('referenceContent');
+  if (container.dataset.rendered) return;
+  const sections = [
+    ['💰 수입', 'refIncome', 'income'],
+    ['💳 고정비', 'refFixed', 'fixed'],
+    ['🛒 변동비', 'refVariable', 'variable'],
+    ['🏠 부동산 관련', 'refRealestate', 'realestate'],
+    ['💸 세금', 'refTax', 'tax'],
+    ['✈️ 해외여행·기타', 'refMisc', 'misc']
+  ];
+  let html = '';
+  for (const [title, tid] of sections) {
+    html += `<div class="panel"><h2>${title}</h2><div class="tbl-wrap"><table id="${tid}"></table></div></div>`;
+  }
+  container.innerHTML = html;
+  for (const s of sections) renderInputTable(s[1], s[2], REFERENCE_DATA, true);
+  container.dataset.rendered = '1';
+}
+
+// ============= Render orchestration =============
+function renderActiveTab() {
+  const active = document.querySelector('.tab-btn.active').dataset.tab;
+  renderDashboard();
+  if (active === 'income') renderInputTable('incomeTable', 'income');
+  else if (active === 'regular') {
+    renderInputTable('fixedTable', 'fixed');
+    renderInputTable('variableTable', 'variable');
+  } else if (active === 'irregular') {
+    renderInputTable('realestateTable', 'realestate');
+    renderInputTable('taxTable', 'tax');
+    renderInputTable('miscTable', 'misc');
+  } else if (active === 'reference') renderReference();
+}
+function renderAll() { renderActiveTab(); }
+
+function onChange() {
+  saveLocal();
+  schedulePush();
+}
+
+// ============= Handlers =============
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    // 편집 중이던 셀 blur 강제 (탭 전환 전 값 반영)
+    if (document.activeElement && document.activeElement.classList.contains('cell')) {
+      document.activeElement.blur();
+    }
+    document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    gid('tab-' + btn.dataset.tab).classList.add('active');
+    renderActiveTab();
+  });
+});
+
+const yearSelect = gid('yearSelect');
+for (let y = 2023; y <= 2030; y++) {
+  const opt = document.createElement('option');
+  opt.value = y; opt.textContent = y + '년';
+  yearSelect.appendChild(opt);
+}
+yearSelect.value = currentYear;
+yearSelect.addEventListener('change', () => {
+  currentYear = parseInt(yearSelect.value);
+  renderAll();
+});
+
+const thresholdInput = gid('threshold');
+thresholdInput.addEventListener('blur', e => {
+  const n = parseNum(e.target.value);
+  if (n !== state.threshold) { state.threshold = n; onChange(); }
+  e.target.value = fmt(n) || '0';
+  renderDashboard();
+});
+thresholdInput.addEventListener('focus', e => {
+  e.target.value = e.target.value.replace(/,/g, '');
+  e.target.select();
+});
+thresholdInput.addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
+
+gid('btnClearYear').addEventListener('click', () => {
+  if (!confirm(currentYear + '년 데이터를 초기화하시겠습니까? (다른 연도는 유지)')) return;
+  state.years[currentYear] = createEmptyYear();
+  onChange();
+  renderAll();
+});
+
+// ============= Init =============
+loadLocal();
+thresholdInput.value = fmt(state.threshold) || '0';
+renderAll();
+</script>
+<script src="/common.js?v=4"></script>
+</body>
+</html>
