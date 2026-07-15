@@ -68,6 +68,11 @@ summary .chev{color:#888;font-size:12px;font-weight:600}
 .vgap{font-size:13px;font-weight:800;margin-top:10px;padding-top:10px;border-top:1px solid #e6e9ee}
 .vgap.ok{color:#0a7c4a}.vgap.off{color:#c0392b}
 .note{font-size:11.5px;color:#888;line-height:1.6;margin-top:12px}.note b{color:#1a1a1a}
+.badge{display:inline-block;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.02em;margin-right:6px;margin-top:4px}
+.badge.actual{background:#dcfce7;color:#047857;border:1px solid #86efac}
+.badge.forecast{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
+.badge.deprecated{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+.badge.info{background:#f3f4f6;color:#4b5563;border:1px solid #d1d5db}
 .manual{background:#fff;border:1px solid #e0e0e0;padding:18px;border-radius:8px;margin-top:24px;line-height:1.7;font-size:13.5px}
 .manual h3{color:#1F4E78;margin-top:16px;margin-bottom:8px;font-size:14px}
 .manual h3:first-child{margin-top:0}
@@ -79,11 +84,16 @@ summary .chev{color:#888;font-size:12px;font-weight:600}
 <a href="../" class="back-link">← 주식 분석 도구로</a>
 
 <h1>✈️ 대한항공 실적 시뮬레이터</h1>
-<p class="desc">증권사 시나리오(한투/하나) 토글 · 유가→영업이익 / 환율→순이익 분리 · 2Q 실측 역산 검증 패널 포함. 입력 기록은 서버에 저장되지 않습니다.</p>
+<p class="desc">2Q26 실측 반영 · 하나 TP 41,000 상향(7/14) · 시나리오 토글 · 유가→영업이익 / 환율→순이익 분리 · 실측 vs 예상 갭 검증 패널. 입력 기록은 서버에 저장되지 않습니다.</p>
+
+<div id="statusBadge" style="margin-bottom:10px"></div>
 
 <div class="infobar">
-  🛢️ <b>유가 근황(2026.6).</b> 7월 국제선 유류할증료 <b>19단계</b> 확정(MOPS 갤런당 338.3센트, 6월 27단계→8계단↓).
-  미·이란 종전(6/19)·호르무즈 재개방으로 유가 Peak-out. 단 완전 정상화는 수개월. <b>3Q부터 연료비 개선 시작(점진적).</b>
+  ✈️ <b>실적·유가 근황(2026.7.14).</b>
+  2Q 별도 실측 <b>OP 2,618억</b>(컨센 4배 상회) · 매출 5.02조(+25.9%YoY) · 순이익 -973억(환율 평가손).
+  화물 운임 703원/km(+42%YoY, 2022 대란 근접) · 국제선 일드 +11% · 탑승률 87% · 전가율 <b>85%+ 확정</b>.
+  하나 <b>TP 41,000</b>(기존 38k→+8%) 상향 · 3Q 별도 OP F <b>+5,170억</b>(+37%YoY).
+  7월 유류할증료 19단계 · <b>8월 발표 대기(7/16 오전, 4월 미만 예상)</b>.
 </div>
 
 <div class="card">
@@ -94,11 +104,12 @@ summary .chev{color:#888;font-size:12px;font-weight:600}
     </div>
     <div class="seg" id="segTerm">
       <button data-v="연간" class="on">연간(2026F)</button>
-      <button data-v="분기">2Q 단기</button>
+      <button data-v="2Q">2Q26 실측</button>
+      <button data-v="3Q">3Q26 F</button>
     </div>
     <div class="seg scn" id="segScn">
-      <button data-v="한투" class="on">한투(보수)</button>
-      <button data-v="하나">하나(낙관)</button>
+      <button data-v="하나" class="on">하나(최신·실측)</button>
+      <button data-v="한투">한투(참고·폐기)</button>
     </div>
   </div>
   <div class="ctrl">
@@ -153,19 +164,19 @@ summary .chev{color:#888;font-size:12px;font-weight:600}
   <div class="pad">
     <div class="arow"><span class="lab">전가율<small>유류할증료+운임 / 한투 70% · 하나 85%</small></span><input type="number" id="aPass" value="70" step="5"><span class="unit">%</span></div>
     <div class="arow"><span class="lab">연료 환산환율<small>유가 효과 원화 환산</small></span><input type="number" id="aFx" value="1500" step="10"><span class="unit">원</span></div>
-    <div class="arow"><span class="lab">순이익 환율민감도<small>별도 350 / 연결 475</small></span><input type="number" id="aFxNI" value="350" step="25"><span class="unit">억/10원</span></div>
+    <div class="arow"><span class="lab">순이익 환율민감도<small>2Q 실측 역산 · 별도 <b>550</b> / 연결 <b>750</b></small></span><input type="number" id="aFxNI" value="550" step="25"><span class="unit">억/10원</span></div>
     <button class="reset" id="resetBtn">시나리오 기본값 복원</button>
   </div>
 </details>
 
 <div class="checkcard">
-  <h3>🔎 2Q 실측 역산 검증</h3>
-  <div class="hint">7월말 실적 나오면 4개 넣어. 추정 계수가 방향·규모로 얼마나 빗나갔는지 잡아냄 (별도 기준 권장). 한투/하나 중 누가 맞았는지 시나리오 토글로 대조 가능.</div>
-  <div class="infield"><label>2Q 실제 영업이익 <small>(억원)</small></label><input type="number" id="cOP" placeholder="예: -420"></div>
+  <h3>🔎 2Q 실측 vs 모델 예상 갭</h3>
+  <div class="hint">2Q26 실측 발표됨(7/13). 별도 OP <b>+2,618억</b>·순이익 <b>-973억</b> 프리셋. 항공유·환율 Δ를 넣으면 모델 추정과 실측의 오차를 잡아냄. 시나리오 토글로 한투(폐기) vs 하나(최신) 대조 가능. <b>결론: 하나·전가율 85%가 실측에 근접</b>.</div>
+  <div class="infield"><label>2Q 실제 영업이익 <small>(억원, 실측: <b>+2,618</b>)</small></label><input type="number" id="cOP" value="2618"></div>
   <div class="infield"><label>2Q 평균 항공유 변동 <small>(기준 대비 Δ$/bbl)</small></label><input type="number" id="cOil" placeholder="예: 8"></div>
   <div class="infield"><label>6월말 환율 변동 <small>(기준 대비 Δ원)</small></label><input type="number" id="cFx" placeholder="예: 30"></div>
-  <div class="infield"><label>2Q 실제 순이익(지배) <small>(억원)</small></label><input type="number" id="cNI" placeholder="예: -1400"></div>
-  <div class="infield"><label>2Q 순이자비용 가정 <small>(억원, 환율효과 분리용)</small></label><input type="number" id="cInt" value="-1100"></div>
+  <div class="infield"><label>2Q 실제 순이익(지배) <small>(억원, 실측: <b>-973</b>)</small></label><input type="number" id="cNI" value="-973"></div>
+  <div class="infield"><label>2Q 영업외 상수 가정 <small>(억원, 이자·지분법 등 상시 -2,000억대)</small></label><input type="number" id="cInt" value="-2000"></div>
 
   <div class="verdict" id="verdict" style="display:none">
     <div class="vrow"><span class="k">전가율</span><span><span class="est" id="vPassEst"></span> → <span class="act" id="vPassAct"></span></span></div>
@@ -183,51 +194,78 @@ summary .chev{color:#888;font-size:12px;font-weight:600}
 <div class="manual">
   <h3>📖 사용 설명</h3>
   <ul>
-    <li><b>별도/연결 · 연간/분기 · 시나리오(한투/하나)</b> 토글로 기준을 고른다. 기본은 별도·연간·한투.</li>
-    <li><b>시나리오</b>: 한투(보수)는 2Q 별도 -360억·전가율 70%, 하나(낙관)는 2Q 별도 +650억·전가율 85%. 같은 분기를 두고 증권사 전망이 갈려, 7월 실측으로 갈린다.</li>
+    <li><b>별도/연결 · 연간/2Q/3Q · 시나리오(하나/한투)</b> 토글로 기준을 고른다. 기본은 별도·연간·하나(최신).</li>
+    <li><b>시나리오</b>: 하나(최신·실측)가 2Q 실측 반영본. 한투는 2Q 실측(전가율 85%)으로 사실상 반박됨(참고·폐기).</li>
     <li><b>항공유·환율 슬라이더</b>를 움직이면 영업이익(항공유 라인)·순이익(환율 라인)이 자동 재계산.</li>
-    <li><b>항공유 단위</b>는 $/bbl ↔ ¢/gal 토글. 하나 넣으면 나머지 자동 환산(1배럴=42갤런). 싱가포르 MOPS Jet은 ¢/gal 기준(7월 산정치 338센트).</li>
+    <li><b>항공유 단위</b>는 $/bbl ↔ ¢/gal 토글. 싱가포르 MOPS Jet은 ¢/gal 기준(7월 338센트).</li>
     <li><b>가정값</b>을 펼치면 전가율·환산환율·환율민감도를 직접 조정 가능.</li>
-    <li><b>2Q 역산 검증</b>은 7월말 실적이 나온 뒤 쓰는 패널.</li>
+    <li><b>2Q 실측 vs 모델 예상 갭</b>: 실측값(OP +2,618/NI -973) 프리셋, 오차만 확인.</li>
   </ul>
   <h3>🧮 모델 핵심</h3>
   <ul>
-    <li><b>유가</b>는 영업이익을 직접 친다. 유류할증료+운임으로 전가(한투 70%/하나 85%)하므로, net 효과는 gross의 15~30% 수준.</li>
-    <li><b>환율</b>은 영업이익엔 거의 중립(달러 매출↔달러 비용 상쇄), 대신 영업외 외화환산손익으로 순이익을 흔든다.</li>
+    <li><b>유가</b>는 영업이익을 직접 친다. 유류할증료+운임으로 전가(<b>85%+ 확정</b>)하므로, net 효과는 gross의 15% 수준으로 축소.</li>
+    <li><b>환율</b>은 영업이익엔 중립(달러 매출↔달러 비용 상쇄), 영업외 외화환산손익으로 순이익을 흔든다.</li>
+    <li><b>환율 민감도(2Q 실측 역산)</b>: 별도 <b>550억/10원</b>, 연결 <b>750억/10원</b> (하나 공식). 이전 350/475 대비 상향.</li>
   </ul>
-  <h3>📊 기준값 출처 (한투 6/15 표5)</h3>
+  <h3>📊 기준값 출처 (2026.7.14 기준)</h3>
   <ul>
-    <li>별도 영업이익 2026F 1.28조 / 연결 8,460억 / 연결 지배순이익 3,430억.</li>
-    <li>2Q 연결 영업이익 -3,350억 · 연결 지배순이익 -1,390억.</li>
-    <li>하나(6/15): 별도 영업이익 2026F 1.35조 · 2Q 별도 +650억(Top Pick).</li>
+    <li><b>하나(7/14 상향)</b>: TP 41,000(+8%) · 2026F 별도 OP <b>1.7조</b>(+21%) · 2027F 연결 OP 2.3조(+5%).</li>
+    <li><b>2Q26 실측(7/13 잠정공시)</b>: 별도 매출 5.02조(+25.9%) · OP <b>+2,618억</b>(컨센 4배) · 순이익 -973억(환율).</li>
+    <li><b>하나 3Q F</b>: 별도 OP <b>+5,170억</b>(+37% YoY) — 유류비 -20% · 8월 유류할증료 4월 미만 예상.</li>
+    <li>한투(참고·폐기): 별도 2026F 1.28조 / 2Q -360억 예상 → 실측 <b>+2,618억</b>으로 반박됨.</li>
+  </ul>
+  <h3>🎯 순이익 3Q 시나리오 (환율 민감도 반영)</h3>
+  <ul>
+    <li><b>환율 정상화(1,500)</b>: OP +5,170 + 환율효과 +2,640 → 순이익 <b>5,000~6,000억</b>.</li>
+    <li>환율 유지(1,548): OP +5,170 + 0 → 순이익 2,000~3,000억.</li>
+    <li>환율 약세(1,570): OP +5,170 - 1,210 → 순이익 1,000~1,500억.</li>
+    <li>→ 어떤 시나리오든 <b>3Q 순이익 흑자 대전환 확실. 2Q가 순이익 트로프 확정.</b></li>
   </ul>
   <h3>⚠️ 주의</h3>
   <ul>
     <li>계수·기준값은 추정이다. 헤지비율·유류할증료 시차·소비량으로 출렁인다. "현재 흐름 기준 근사치"로만 사용.</li>
-    <li>하나 시나리오의 순이익 기준값은 별도 OP만 공개돼 추정 보정한 값. 연결은 한투 기준 유지.</li>
+    <li>2Q 실측만 확정. 3Q F는 하나 7/14 예상, 연간 2026F는 하나 상향분 기준.</li>
+    <li>연결 기준값은 아시아나 편입(12/17) 손실 반영 추정. 실측 나올 때마다 재보정.</li>
     <li>투자 판단과 책임은 본인에게 있습니다.</li>
   </ul>
 </div>
 
 <script>
 const $=id=>document.getElementById(id);
-// 기준값(억원). 한투 6/15 표5 / 하나 6/15. 연결은 한투 기준 공통.
+// 기준값(억원). 2026.7.14 기준 - 2Q 실측(7/13 잠정공시) + 하나 상향(7/14, TP 41,000) 반영.
+// 하나(최신): 실측 반영본. 한투: 2Q 실측(+2,618)으로 반박됨, 참고용 유지.
 const BASE={
-  한투:{
-    별도:{연간:{op:12820,ni:2500,fuelMbbl:40},분기:{op:-360,ni:-1200,fuelMbbl:10}},
-    연결:{연간:{op:8460,ni:3430,fuelMbbl:56},분기:{op:-3350,ni:-1390,fuelMbbl:14}}
+  하나:{ // TP 41,000 (7/14 상향), 실측+최신
+    별도:{
+      '연간':{op:17000,ni:5500,fuelMbbl:40},   // 2026F OP 1.7조 (하나 7/14)
+      '2Q':  {op:2618, ni:-973, fuelMbbl:10},   // 실측 (7/13 잠정공시)
+      '3Q':  {op:5170, ni:5000, fuelMbbl:12}    // 하나 3Q F (+37% YoY)
+    },
+    연결:{
+      '연간':{op:14500,ni:4500,fuelMbbl:56},   // 별도-아시아나 편입손실 추정
+      '2Q':  {op:0,    ni:-3000,fuelMbbl:14},   // 아시아나 편입 -2,500억대 예상
+      '3Q':  {op:4000, ni:4000, fuelMbbl:15}    // 추정
+    }
   },
-  하나:{
-    별도:{연간:{op:13500,ni:2700,fuelMbbl:40},분기:{op:650,ni:-300,fuelMbbl:10}},
-    연결:{연간:{op:8460,ni:3430,fuelMbbl:56},분기:{op:-3350,ni:-1390,fuelMbbl:14}}
+  한투:{ // 참고·폐기 (2Q -360 예상 → 실측 +2,618로 반박)
+    별도:{
+      '연간':{op:12820,ni:2500,fuelMbbl:40},
+      '2Q':  {op:-360, ni:-1200,fuelMbbl:10},
+      '3Q':  {op:2000, ni:800,  fuelMbbl:12}
+    },
+    연결:{
+      '연간':{op:8460, ni:3430, fuelMbbl:56},
+      '2Q':  {op:-3350,ni:-1390,fuelMbbl:14},
+      '3Q':  {op:2500, ni:1000, fuelMbbl:15}
+    }
   }
 };
-const PASS={한투:70,하나:85};
-const state={scenario:'한투',basis:'별도',term:'연간',oil:0,fx:0};
+const PASS={하나:85,한투:70};
+const state={scenario:'하나',basis:'별도',term:'연간',oil:0,fx:0};
 function node(){return BASE[state.scenario][state.basis][state.term];}
 function n(id){let v=parseFloat($(id).value);return isNaN(v)?0:v;}
 function clamp(v,a,b,d){v=parseFloat(v);if(isNaN(v))return d;return Math.min(b,Math.max(a,v));}
-function assume(){return{pass:clamp($('aPass').value,0,100,70),fxKRW:clamp($('aFx').value,100,5000,1500),fxNI:clamp($('aFxNI').value,0,2000,350)};}
+function assume(){return{pass:clamp($('aPass').value,0,100,85),fxKRW:clamp($('aFx').value,100,5000,1500),fxNI:clamp($('aFxNI').value,0,2000,550)};}
 function fmt(v){const s=v<0?'−':(v>0?'+':'');const a=Math.abs(Math.round(v));
   if(a>=10000)return s+(a/10000).toFixed(2).replace(/\.?0+$/,'')+'조';return s+a.toLocaleString('ko-KR')+'억';}
 function fmtAbs(v){const a=Math.abs(Math.round(v));const sg=v<0?'−':'';
@@ -251,11 +289,31 @@ function compute(){
   $('sFx').textContent='순이익 '+fmt(-a.fxNI);
   recheck();
 }
+function updateStatusBadge(){
+  const el=$('statusBadge');if(!el)return;
+  const s=state.scenario, t=state.term, ba=state.basis;
+  let badges=[];
+  // Scenario badge
+  if(s==='하나'){
+    if(t==='2Q') badges.push('<span class="badge actual">✓ 2Q26 실측 (7/13)</span>');
+    else if(t==='3Q') badges.push('<span class="badge forecast">📈 하나 3Q F (7/14)</span>');
+    else badges.push('<span class="badge forecast">🎯 하나 최신 (7/14, TP 41,000)</span>');
+  } else {
+    badges.push('<span class="badge deprecated">⚠ 한투 참고·폐기 (2Q 실측으로 반박)</span>');
+  }
+  // Basis badge
+  badges.push('<span class="badge info">'+ba+'</span>');
+  // Term info
+  const termLbl={'연간':'2026F','2Q':'2Q26','3Q':'3Q26F'}[t]||t;
+  badges.push('<span class="badge info">'+termLbl+'</span>');
+  el.innerHTML=badges.join('');
+}
 function bindSeg(seg,key){document.querySelectorAll('#'+seg+' button').forEach(btn=>{
   btn.addEventListener('click',()=>{document.querySelectorAll('#'+seg+' button').forEach(x=>x.classList.remove('on'));
   btn.classList.add('on');state[key]=btn.dataset.v;
-  if(key==='basis')$('aFxNI').value=state.basis==='연결'?475:350;
+  if(key==='basis')$('aFxNI').value=state.basis==='연결'?750:550;
   if(key==='scenario')$('aPass').value=PASS[state.scenario];
+  updateStatusBadge();
   compute();});});}
 bindSeg('segBasis','basis');bindSeg('segTerm','term');bindSeg('segScn','scenario');
 function link(r,nu,key){const R=$(r),N=$(nu);
@@ -292,19 +350,19 @@ function refreshOilConv(){
   });
 })();
 ['aPass','aFx','aFxNI'].forEach(id=>$(id).addEventListener('input',compute));
-$('resetBtn').addEventListener('click',()=>{$('aPass').value=PASS[state.scenario];$('aFx').value=1500;$('aFxNI').value=state.basis==='연결'?475:350;compute();});
+$('resetBtn').addEventListener('click',()=>{$('aPass').value=PASS[state.scenario];$('aFx').value=1500;$('aFxNI').value=state.basis==='연결'?750:550;compute();});
 function recheck(){
   const opStr=$('cOP').value, niStr=$('cNI').value;
   if(opStr===''||niStr===''){$('verdict').style.display='none';return;}
   const actOP=n('cOP'), dOil=n('cOil'), dFx=n('cFx'), actNI=n('cNI'), intC=n('cInt');
-  const b=BASE[state.scenario][state.basis]['분기'];
+  const b=BASE[state.scenario][state.basis]['2Q'];
   const a=assume();
   const grossQ=b.fuelMbbl*a.fxKRW/100;
   let actNet=null, actPass=null;
   if(dOil!==0){ actNet = -(actOP - b.op)/dOil; actPass = 1 - actNet/grossQ; }
   const estNet = grossQ*(1-a.pass/100);
   const oilNIcontrib = -estNet*dOil;
-  const fxComponent = actNI - b.ni - oilNIcontrib - (intC - (-1100));
+  const fxComponent = actNI - b.ni - oilNIcontrib - (intC - (-2000));
   let actFxSens=null;
   if(dFx!==0){ actFxSens = -(fxComponent)/(dFx/10); }
   $('verdict').style.display='block';
@@ -323,10 +381,11 @@ function recheck(){
     ' (추정 '+fmtAbs(estOP)+' vs 실측 '+fmtAbs(actOP)+')';
 }
 ['cOP','cOil','cFx','cNI','cInt'].forEach(id=>$(id).addEventListener('input',recheck));
+updateStatusBadge();
 compute();
 refreshOilConv();
 </script>
 
-<script src="/common.js?v=2"></script>
+<script src="/common.js?v=4"></script>
 </body>
 </html>
