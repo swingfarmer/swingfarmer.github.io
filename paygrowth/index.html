@@ -38,9 +38,6 @@
   .fld label { font-size: 12px; color: #444; font-weight: 600; }
   .fld small { font-size: 10.5px; color: #999; font-weight: 400; }
   .fld input, .fld select { text-align: right; }
-  .unit-input { position: relative; }
-  .unit-input input { padding-right: 42px; }
-  .unit-input .unit-suffix { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); font-size: 12px; color: #888; pointer-events: none; }
   .readable-hint { font-size: 11px; color: #1F4E78; font-weight: 600; margin-top: 2px; min-height: 14px; }
 
   details.adv { margin-top: 10px; border-top: 1px dashed #e5e7eb; padding-top: 10px; }
@@ -116,8 +113,8 @@
     <h2>📝 입력</h2>
     <div class="grid">
       <div class="fld">
-        <label>현재 연봉 (세전)</label>
-        <div class="unit-input"><input type="text" id="inSalary" inputmode="numeric" value="4,000"><span class="unit-suffix">만원</span></div>
+        <label>현재 연봉 (세전, 원)</label>
+        <input type="text" id="inSalary" inputmode="numeric" value="40,000,000">
         <div class="readable-hint" id="hintSalary"></div>
       </div>
       <div class="fld">
@@ -140,8 +137,8 @@
         </select>
       </div>
       <div class="fld">
-        <label>비과세 수당 <small>(월 · 식대·차량유지비 등)</small></label>
-        <div class="unit-input"><input type="text" id="inNontax" inputmode="numeric" value="20"><span class="unit-suffix">만원</span></div>
+        <label>비과세 수당 <small>(월, 원 · 식대·차량유지비 등)</small></label>
+        <input type="text" id="inNontax" inputmode="numeric" value="200,000">
         <div class="readable-hint" id="hintNontax"></div>
       </div>
       <div class="fld">
@@ -176,12 +173,12 @@
           <input type="number" id="rEmp" value="0.9" step="0.01">
         </div>
         <div class="fld">
-          <label>국민연금 기준소득월액 상한 <small>(만원)</small></label>
-          <input type="text" id="rPensionCap" inputmode="numeric" value="637">
+          <label>국민연금 기준소득월액 상한 (원)</label>
+          <input type="text" id="rPensionCap" inputmode="numeric" value="6,370,000">
         </div>
         <div class="fld">
-          <label>국민연금 기준소득월액 하한 <small>(만원)</small></label>
-          <input type="text" id="rPensionFloor" inputmode="numeric" value="40">
+          <label>국민연금 기준소득월액 하한 (원)</label>
+          <input type="text" id="rPensionFloor" inputmode="numeric" value="400,000">
         </div>
       </div>
     </details>
@@ -372,7 +369,7 @@ INPUT_IDS.forEach(id => {
 
 $('btnReset').addEventListener('click', () => {
   if (!confirm('입력값을 초기값으로 되돌리시겠습니까?')) return;
-  const defaults = { inSalary:'4,000', inRaise:'5', inYears:'10', inDependents:'1', inNontax:'20', inChildren:'0', rPension:'4.75', rHealth:'3.595', rLtc:'13.14', rEmp:'0.9', rPensionCap:'637', rPensionFloor:'40' };
+  const defaults = { inSalary:'40,000,000', inRaise:'5', inYears:'10', inDependents:'1', inNontax:'200,000', inChildren:'0', rPension:'4.75', rHealth:'3.595', rLtc:'13.14', rEmp:'0.9', rPensionCap:'6,370,000', rPensionFloor:'400,000' };
   applyInputs(defaults);
   updateHints();
   onChange();
@@ -381,7 +378,7 @@ $('btnReset').addEventListener('click', () => {
 // ============= Utils =============
 function parseNum(s) {
   if (s === null || s === undefined || s === '') return 0;
-  const clean = String(s).replace(/[,\s원만]/g, '');
+  const clean = String(s).replace(/[,\s원]/g, '');
   const n = parseFloat(clean);
   return isNaN(n) ? 0 : n;
 }
@@ -404,11 +401,8 @@ function toKoreanUnit(won) {
   return (neg ? '-' : '') + parts.join(' ') + '원';
 }
 
-// 만원 단위 입력 → 원 단위 반환
-function manToWon(id) { return parseNum($(id).value) * 10000; }
-
-// Format 만원-unit inputs with commas on blur, update readable hint
-function bindManInput(id, hintId) {
+// Format won-unit inputs with commas on blur, update readable hint
+function bindWonInput(id, hintId) {
   const el = $(id);
   el.addEventListener('focus', e => { e.target.value = e.target.value.replace(/,/g,''); e.target.select(); });
   el.addEventListener('blur', e => {
@@ -418,8 +412,8 @@ function bindManInput(id, hintId) {
   });
   el.addEventListener('input', () => updateHints());
 }
-bindManInput('inSalary', 'hintSalary');
-bindManInput('inNontax', 'hintNontax');
+bindWonInput('inSalary', 'hintSalary');
+bindWonInput('inNontax', 'hintNontax');
 
 ['rPensionCap','rPensionFloor'].forEach(id => {
   const el = $(id);
@@ -428,10 +422,10 @@ bindManInput('inNontax', 'hintNontax');
 });
 
 function updateHints() {
-  const salaryWon = manToWon('inSalary');
-  const nontaxWon = manToWon('inNontax');
-  $('hintSalary').textContent = salaryWon > 0 ? toKoreanUnit(salaryWon) + ' (연봉)' : '';
-  $('hintNontax').textContent = nontaxWon > 0 ? toKoreanUnit(nontaxWon) + ' (월 비과세)' : '';
+  const salaryWon = parseNum($('inSalary').value);
+  const nontaxWon = parseNum($('inNontax').value);
+  $('hintSalary').textContent = salaryWon > 0 ? toKoreanUnit(salaryWon) : '';
+  $('hintNontax').textContent = nontaxWon > 0 ? toKoreanUnit(nontaxWon) + ' (월)' : '';
 }
 
 // ============= 근로소득공제 (연간, 총급여 기준) =============
@@ -538,18 +532,18 @@ function getRates() {
     health: parseFloat($('rHealth').value) || 3.595,
     ltc: parseFloat($('rLtc').value) || 13.14,
     emp: parseFloat($('rEmp').value) || 0.9,
-    pensionCap: parseNum($('rPensionCap').value) * 10000 || 6370000,
-    pensionFloor: parseNum($('rPensionFloor').value) * 10000 || 400000
+    pensionCap: parseNum($('rPensionCap').value) || 6370000,
+    pensionFloor: parseNum($('rPensionFloor').value) || 400000
   };
 }
 
 // ============= Main calc =============
 function calculate() {
-  const initialSalary = manToWon('inSalary');
+  const initialSalary = parseNum($('inSalary').value);
   const raiseRate = parseFloat($('inRaise').value) / 100;
   const years = parseInt($('inYears').value);
   const dependents = parseInt($('inDependents').value);
-  const nontax = manToWon('inNontax');
+  const nontax = parseNum($('inNontax').value);
   const children = parseInt($('inChildren').value);
   const rates = getRates();
 
