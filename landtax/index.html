@@ -39,7 +39,6 @@
   .fld label { font-size: 12px; color: #444; font-weight: 600; }
   .fld small { font-size: 10.5px; color: #999; font-weight: 400; }
   .fld input, .fld select { text-align: right; }
-  .fld input[type="date"] { text-align: left; }
   .readable-hint { font-size: 11px; color: #1F4E78; font-weight: 600; margin-top: 2px; min-height: 14px; }
 
   .seg { display: flex; gap: 4px; background: #eef2f7; border-radius: 8px; padding: 4px; margin-bottom: 12px; }
@@ -55,6 +54,11 @@
   .area-input-row { display: flex; align-items: center; gap: 6px; }
   .area-input-row input { flex: 1; }
   .area-unit-suffix { font-size: 12px; color: #888; white-space: nowrap; }
+  .date-row { display: flex; align-items: center; gap: 4px; }
+  .date-row input { text-align: center !important; padding: 7px 4px; }
+  .date-row input.date-y { width: 78px; }
+  .date-row input.date-md { width: 52px; }
+  .date-sep { color: #999; font-weight: 700; font-size: 14px; user-select: none; }
   .mode-panel { display: none; }
   .mode-panel.on { display: block; }
 
@@ -199,11 +203,23 @@
       <div class="grid">
         <div class="fld">
           <label>취득일</label>
-          <input type="date" id="inAcqDate">
+          <div class="date-row">
+            <input type="text" id="inAcqYear" inputmode="numeric" maxlength="4" placeholder="YYYY" class="date-y">
+            <span class="date-sep">-</span>
+            <input type="text" id="inAcqMonth" inputmode="numeric" maxlength="2" placeholder="MM" class="date-md">
+            <span class="date-sep">-</span>
+            <input type="text" id="inAcqDay" inputmode="numeric" maxlength="2" placeholder="DD" class="date-md">
+          </div>
         </div>
         <div class="fld">
           <label>수용일(양도일)</label>
-          <input type="date" id="inDispDate">
+          <div class="date-row">
+            <input type="text" id="inDispYear" inputmode="numeric" maxlength="4" placeholder="YYYY" class="date-y">
+            <span class="date-sep">-</span>
+            <input type="text" id="inDispMonth" inputmode="numeric" maxlength="2" placeholder="MM" class="date-md">
+            <span class="date-sep">-</span>
+            <input type="text" id="inDispDay" inputmode="numeric" maxlength="2" placeholder="DD" class="date-md">
+          </div>
         </div>
         <div class="fld">
           <label>계산된 보유기간</label>
@@ -214,6 +230,7 @@
 
     <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
       <button id="btnCalc" class="btn btn-blue">계산하기</button>
+      <button id="btnReset" class="btn btn-gray" type="button">🔄 입력값 초기화</button>
       <button id="btnCloudOpen" class="btn btn-gray" type="button" style="display:none">☁️ 시나리오 저장/불러오기</button>
     </div>
   </div>
@@ -395,7 +412,9 @@ onAuthStateChanged(auth, async user => {
 // ============= Input snapshot save/restore =============
 const INPUT_IDS = [
   'inProceeds', 'inAcquisition', 'inExpense',
-  'inYears', 'inAcqDate', 'inDispDate',
+  'inYears',
+  'inAcqYear', 'inAcqMonth', 'inAcqDay',
+  'inDispYear', 'inDispMonth', 'inDispDay',
   'areaProceeds', 'priceProceeds',
   'areaAcquisition', 'priceAcquisition'
 ];
@@ -424,6 +443,23 @@ function onChange() {
   saveLocal();
   schedulePush();
 }
+
+// ============= 입력값 초기화 =============
+const DEFAULTS = {
+  inProceeds: '500,000,000',
+  inAcquisition: '100,000,000',
+  inExpense: '0',
+  inYears: '10',
+  inAcqYear: '', inAcqMonth: '', inAcqDay: '',
+  inDispYear: '', inDispMonth: '', inDispDay: '',
+  areaProceeds: '',
+  priceProceeds: '',
+  areaAcquisition: '',
+  priceAcquisition: '',
+  _mode: 'years',
+  _unitProceeds: 'm2',
+  _unitAcquisition: 'm2'
+};
 
 function saveLocal() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify({ inputs: collectInputs(), slots: slots_ })); } catch (e) {}
@@ -469,7 +505,7 @@ function bindWonInput(id) {
     updateHints();
     onChange();
   });
-  el.addEventListener('input', () => updateHints());
+  el.addEventListener('input', () => { updateHints(); onChange(); });
 }
 bindWonInput('inProceeds');
 bindWonInput('inAcquisition');
@@ -561,9 +597,10 @@ function bindAreaGroup(group) {
     recalcTotalFromAreaPrice();
     onChange();
   });
-  areaEl.addEventListener('input', () => { updatePyeongHintForGroup(group); });
+  areaEl.addEventListener('input', () => { updatePyeongHintForGroup(group); onChange(); });
 
   priceEl.addEventListener('focus', e => { e.target.value = e.target.value.replace(/,/g,''); e.target.select(); });
+  priceEl.addEventListener('input', () => { onChange(); });
   priceEl.addEventListener('blur', e => {
     e.target.value = fmt(parseNum(e.target.value));
     recalcTotalFromAreaPrice();
@@ -600,22 +637,64 @@ document.querySelectorAll('#segMode button').forEach(btn => {
 function currentMode() { return document.querySelector('#segMode button.on').dataset.v; }
 
 function updateDateCalc() {
-  const a = $('inAcqDate').value, d = $('inDispDate').value;
+  const a = getDateString('inAcq');
+  const d = getDateString('inDisp');
   if (!a || !d) { $('calcYearsDisplay').value = ''; return; }
   const days = (new Date(d) - new Date(a)) / 86400000;
+  if (isNaN(days)) { $('calcYearsDisplay').value = '날짜 형식 오류'; return; }
   if (days < 0) { $('calcYearsDisplay').value = '취득일이 양도일보다 늦음'; return; }
   const years = days / 365.25;
   $('calcYearsDisplay').value = years.toFixed(2) + '년 (' + Math.round(days).toLocaleString() + '일)';
 }
-$('inAcqDate').addEventListener('change', () => { updateDateCalc(); onChange(); });
-$('inDispDate').addEventListener('change', () => { updateDateCalc(); onChange(); });
+function getDateString(prefix) {
+  const y = ($(prefix + 'Year').value || '').trim();
+  const m = ($(prefix + 'Month').value || '').trim();
+  const d = ($(prefix + 'Day').value || '').trim();
+  if (y.length !== 4 || !m || !d) return '';
+  return y + '-' + m.padStart(2, '0') + '-' + d.padStart(2, '0');
+}
+function bindDateGroup(prefix) {
+  const y = $(prefix + 'Year');
+  const m = $(prefix + 'Month');
+  const d = $(prefix + 'Day');
+  // 숫자만 유지 + 자릿수 다 채우면 다음 필드로 자동 focus
+  y.addEventListener('input', () => {
+    y.value = y.value.replace(/\D/g, '').slice(0, 4);
+    if (y.value.length === 4) m.focus();
+    updateDateCalc(); onChange();
+  });
+  m.addEventListener('input', () => {
+    m.value = m.value.replace(/\D/g, '').slice(0, 2);
+    if (m.value.length === 2) d.focus();
+    updateDateCalc(); onChange();
+  });
+  d.addEventListener('input', () => {
+    d.value = d.value.replace(/\D/g, '').slice(0, 2);
+    updateDateCalc(); onChange();
+  });
+  // Backspace로 빈 필드에서 이전 필드로 이동
+  m.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && m.value === '') { y.focus(); e.preventDefault(); }
+  });
+  d.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && d.value === '') { m.focus(); e.preventDefault(); }
+  });
+  // blur 시 앞 0 채워 정규화 (월 "3" → "03", 일 "5" → "05")
+  m.addEventListener('blur', () => { if (m.value.length === 1) m.value = '0' + m.value; onChange(); });
+  d.addEventListener('blur', () => { if (d.value.length === 1) d.value = '0' + d.value; onChange(); });
+}
+bindDateGroup('inAcq');
+bindDateGroup('inDisp');
 $('inYears').addEventListener('change', onChange);
+$('inYears').addEventListener('input', onChange);
 
 function getHoldingYears() {
   if (currentMode() === 'years') return parseFloat($('inYears').value) || 0;
-  const a = $('inAcqDate').value, d = $('inDispDate').value;
+  const a = getDateString('inAcq');
+  const d = getDateString('inDisp');
   if (!a || !d) return 0;
   const days = (new Date(d) - new Date(a)) / 86400000;
+  if (isNaN(days)) return 0;
   return Math.max(0, days / 365.25);
 }
 
@@ -794,12 +873,15 @@ function renderSlots() {
 }
 
 $('btnCalc').addEventListener('click', calculate);
+$('btnReset').addEventListener('click', () => {
+  if (!confirm('입력값을 초기값으로 되돌리시겠습니까? (저장된 시나리오는 유지)')) return;
+  applyInputs(DEFAULTS);
+  onChange();
+});
+window.addEventListener('beforeunload', () => { saveLocal(); });
 document.querySelectorAll('.panel input, .panel select').forEach(el => {
   el.addEventListener('keydown', e => {
-    if (e.key !== 'Enter') return;
-    // date inputs use Enter for their own picker interactions - don't hijack
-    if (el.tagName === 'INPUT' && el.type === 'date') return;
-    calculate();
+    if (e.key === 'Enter') calculate();
   });
 });
 
