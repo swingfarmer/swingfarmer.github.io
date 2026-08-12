@@ -85,6 +85,10 @@
   tbody tr:hover td:first-child { background: #f9fafb; }
   td.net { font-weight: 700; color: #0369a1; font-size: 13.5px; }
   td.best { background: #ecfdf5 !important; }
+  tr.tax-total td { font-weight: 800; color: #b91c1c; font-size: 14px; background: #fef2f2; border-top: 1.5px solid #fca5a5; border-bottom: 1.5px solid #fca5a5; }
+  tr.tax-total td:first-child { background: #fef2f2; color: #7f1d1d; }
+  body.sf-dark tr.tax-total td { background: #3a1a1a !important; color: #fca5a5 !important; }
+  body.sf-dark tr.tax-total td:first-child { background: #3a1a1a !important; }
   tfoot td { font-weight: 700; border-top: 2px solid #ccc; background: #f4f6f8; }
   tfoot td:first-child { background: #f4f6f8; }
 
@@ -240,7 +244,7 @@
     <div class="summary-grid" id="summaryGrid"></div>
 
     <div class="panel">
-      <h2>📊 감면 방식별 비교</h2>
+      <h2>📊 감면 방식별 비교 <span id="compareProceeds" style="margin-left:auto;font-size:14px;color:#1F4E78;font-weight:700"></span></h2>
       <div class="tbl-wrap"><table id="compareTable"></table></div>
       <div class="note info" style="margin-top:12px">
         💡 <b>채권보상 주의.</b> 3년·5년 만기채권은 세금은 적지만, 보상금을 <b>즉시 현금으로 받지 못하고 채권(증권) 형태</b>로 받습니다. 만기 전에 현금화하려면 시장에서 할인 매각해야 하며 이때 할인율만큼 손실이 발생합니다. 위 표의 "실수령액"은 <b>채권 액면가 기준</b>이며 실제 즉시 현금 유동성과는 다릅니다.
@@ -779,6 +783,7 @@ function renderSummary(r) {
 }
 
 function renderCompare(r) {
+  $('compareProceeds').innerHTML = '💰 보상금 <span style="font-size:16px">' + fmt(r.proceeds) + '원</span> <span style="font-size:11px;color:#888;font-weight:400">(' + toKoreanUnit(r.proceeds) + ')</span>';
   const best = r.results.reduce((a,b) => a.totalTax < b.totalTax ? a : b);
   let html = `<thead><tr>
     <th>구분</th><th>현금보상(15%)</th><th>3년만기채권(35%)</th><th>5년만기채권(45%)</th>
@@ -793,10 +798,11 @@ function renderCompare(r) {
     { label: '감면세액', fn: x => '-' + fmt(x.relief) + '원' },
     { label: '농어촌특별세(감면액×20%)', fn: x => '+' + fmt(x.ruralTax) + '원' },
     { label: '지방소득세', fn: x => '+' + fmt(x.localTax) + '원' },
-    { label: '총 납부세액', fn: x => fmt(x.totalTax) + '원' }
+    { label: '총 납부세액', cls: 'tax-total', fn: x => fmt(x.totalTax) + '원' }
   ];
   for (const row of rows) {
-    html += `<tr><td>${row.label}</td>`;
+    const cls = row.cls ? ' class="' + row.cls + '"' : '';
+    html += `<tr${cls}><td>${row.label}</td>`;
     for (const x of r.results) html += `<td>${row.fn(x)}</td>`;
     html += '</tr>';
   }
