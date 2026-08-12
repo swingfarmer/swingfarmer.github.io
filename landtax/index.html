@@ -214,7 +214,7 @@
 
     <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
       <button id="btnCalc" class="btn btn-blue">계산하기</button>
-      <button id="btnSaveHist" class="btn btn-gray" type="button" style="display:none">📌 이 계산 저장</button>
+      <button id="btnCloudOpen" class="btn btn-gray" type="button" style="display:none">☁️ 시나리오 저장/불러오기</button>
     </div>
   </div>
 
@@ -231,11 +231,7 @@
     </div>
   </div>
 
-  <!-- History -->
-  <div class="panel" id="histPanel" style="display:none">
-    <h2>📋 계산 이력 <span style="margin-left:auto;font-size:11px;color:#888;font-weight:400" id="histCount"></span></h2>
-    <div class="tbl-wrap"><table class="hist-table" id="histTable"></table></div>
-  </div>
+  <!-- History replaced with slot modal below -->
 
   <div class="panel">
     <h2>📖 계산 방식</h2>
@@ -252,6 +248,28 @@
   </div>
 
   <footer>© 스윙파머 · 토지수용 양도세 계산기</footer>
+</div>
+
+<!-- 클라우드 시나리오 슬롯 모달 -->
+<div id="slotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:16px;max-width:460px;width:100%;max-height:90vh;overflow:auto;padding:20px">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <h3 style="font-size:16px;color:#1F4E78;margin:0">☁️ 시나리오 저장/불러오기</h3>
+      <button id="slotClose" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">💾 현재 입력값을 저장</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="slotName" placeholder="시나리오 이름 (예: 남양주 임야)" maxlength="30" style="flex:1;padding:9px;font-size:13px;border:1px solid #ccc;border-radius:6px">
+        <button id="slotSaveBtn" style="background:#0ea5e9;color:white;border:none;padding:9px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">저장</button>
+      </div>
+      <div style="font-size:11px;color:#0369a1;margin-top:6px">같은 이름으로 다시 저장하면 덮어쓰기됩니다</div>
+    </div>
+    <div style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px">📋 저장된 시나리오</div>
+    <div id="slotList" style="display:flex;flex-direction:column;gap:8px">
+      <div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>
+    </div>
+  </div>
 </div>
 
 <script type="module">
@@ -281,8 +299,7 @@ const $ = id => document.getElementById(id);
 let currentUser = null;
 let cloudReady = false;
 let pushTimer = null;
-let history_ = [];
-let lastResult = null;
+let slots_ = [];
 
 getRedirectResult(auth).catch(()=>{});
 if (location.hash === '#admin' || location.hash === '#관리자') {
@@ -310,7 +327,8 @@ async function cloudPull() {
     const snap = await getDoc(docRef());
     if (snap.exists() && snap.data()[CALC_KEY]) {
       const cloud = snap.data()[CALC_KEY];
-      if (Array.isArray(cloud.history)) history_ = cloud.history;
+      if (Array.isArray(cloud.slots)) slots_ = cloud.slots;
+      else if (Array.isArray(cloud.history)) slots_ = []; // 이전 history 무시 (구조 다름)
       if (cloud.inputs) applyInputs(cloud.inputs);
       saveLocal();
     }
@@ -320,7 +338,7 @@ async function cloudPush() {
   if (!cloudReady) return;
   setSaveStatus('saving');
   try {
-    await setDoc(docRef(), { [CALC_KEY]: { inputs: collectInputs(), history: history_, updatedAt: new Date().toISOString() } }, { merge: true });
+    await setDoc(docRef(), { [CALC_KEY]: { inputs: collectInputs(), slots: slots_, updatedAt: new Date().toISOString() } }, { merge: true });
     setSaveStatus('saved');
   } catch (e) {
     console.log('cloud push fail:', e.message);
@@ -352,9 +370,8 @@ onAuthStateChanged(auth, async user => {
     $('btnAdminLogin').style.display = 'none';
     $('cloudWho').textContent = '☁️ ' + (user.displayName || user.email || '관리자');
     if ($('uidInfo')) $('uidInfo').style.display = 'none';
-    $('btnSaveHist').style.display = 'inline-block';
+    $('btnCloudOpen').style.display = 'inline-block';
     await cloudPull();
-    renderHistory();
     cloudReady = true;
     setSaveStatus('saved');
     cloudPush();
@@ -371,7 +388,7 @@ onAuthStateChanged(auth, async user => {
     cloudReady = false;
     $('cloudArea').classList.remove('on');
     if ($('uidInfo')) $('uidInfo').style.display = 'none';
-    $('btnSaveHist').style.display = 'none';
+    $('btnCloudOpen').style.display = 'none';
   }
 });
 
@@ -409,14 +426,15 @@ function onChange() {
 }
 
 function saveLocal() {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify({ inputs: collectInputs(), history: history_ })); } catch (e) {}
+  try { localStorage.setItem(STORE_KEY, JSON.stringify({ inputs: collectInputs(), slots: slots_ })); } catch (e) {}
 }
 function loadLocal() {
   try {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
       const d = JSON.parse(raw);
-      if (Array.isArray(d.history)) history_ = d.history;
+      if (Array.isArray(d.slots)) slots_ = d.slots;
+      // Old key was `history` (single-record log). Drop it silently on migration - structure incompatible with named slots
       if (d.inputs) applyInputs(d.inputs);
     }
   } catch (e) {}
@@ -662,9 +680,9 @@ function calculate() {
   const gain = proceeds - acquisition - expense;
   const results = SCENARIOS.map(s => ({ ...s, ...computeScenario(gain, years, s.rate), proceeds }));
 
-  lastResult = { proceeds, acquisition, expense, years, gain, results, ts: Date.now() };
-  renderSummary(lastResult);
-  renderCompare(lastResult);
+  const result = { proceeds, acquisition, expense, years, gain, results, ts: Date.now() };
+  renderSummary(result);
+  renderCompare(result);
   $('resultArea').style.display = 'block';
   $('resultArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -713,57 +731,66 @@ function renderCompare(r) {
   $('compareTable').innerHTML = html;
 }
 
-// ============= History =============
-$('btnSaveHist').addEventListener('click', () => {
-  if (!lastResult) { alert('먼저 계산하세요'); return; }
-  const cash = lastResult.results.find(x => x.key === 'cash');
-  const bond5 = lastResult.results.find(x => x.key === 'bond5');
-  history_.unshift({
-    ts: lastResult.ts,
-    proceeds: lastResult.proceeds,
-    acquisition: lastResult.acquisition,
-    years: lastResult.years,
-    gain: lastResult.gain,
-    cashTax: cash.totalTax,
-    bond5Tax: bond5.totalTax,
-    cashNet: lastResult.proceeds - cash.totalTax,
-    bond5Net: lastResult.proceeds - bond5.totalTax
-  });
-  if (history_.length > 50) history_ = history_.slice(0, 50);
+// ============= Slot 저장/불러오기 (클라우드 시나리오) =============
+function openSlotModal() {
+  if (!currentUser || currentUser.uid !== ADMIN_UID) { alert('관리자 로그인이 필요합니다.'); return; }
+  $('slotName').value = '';
+  $('slotModal').style.display = 'flex';
+  renderSlots();
+}
+function closeSlotModal() { $('slotModal').style.display = 'none'; }
+
+$('btnCloudOpen').addEventListener('click', openSlotModal);
+$('slotClose').addEventListener('click', closeSlotModal);
+$('slotModal').addEventListener('click', e => { if (e.target === $('slotModal')) closeSlotModal(); });
+
+$('slotSaveBtn').addEventListener('click', () => {
+  const name = $('slotName').value.trim();
+  if (!name) { alert('시나리오 이름을 입력하세요'); return; }
+  const idx = slots_.findIndex(s => s.name === name);
+  if (idx >= 0 && !confirm('"' + name + '" 시나리오가 이미 있어요. 덮어쓸까요?')) return;
+  const entry = { name, data: collectInputs(), savedAt: new Date().toISOString() };
+  if (idx >= 0) slots_[idx] = entry;
+  else slots_.push(entry);
   saveLocal();
   schedulePush();
-  renderHistory();
+  renderSlots();
+  $('slotName').value = '';
+  alert('✅ "' + name + '" 저장 완료');
 });
 
-function renderHistory() {
-  if (history_.length === 0) { $('histPanel').style.display = 'none'; return; }
-  $('histPanel').style.display = 'block';
-  $('histCount').textContent = history_.length + '건';
-  let html = `<thead><tr><th>저장일시</th><th>보상금</th><th>양도차익</th><th>보유기간</th><th>현금 실수령</th><th>5년채권 실수령</th><th></th></tr></thead><tbody>`;
-  history_.forEach((h, i) => {
-    const date = new Date(h.ts);
-    const dateStr = `${date.getMonth()+1}/${date.getDate()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
-    html += `<tr>
-      <td>${dateStr}</td>
-      <td>${fmt(h.proceeds)}</td>
-      <td>${fmt(h.gain)}</td>
-      <td>${h.years.toFixed(1)}년</td>
-      <td>${fmt(h.cashNet)}</td>
-      <td>${fmt(h.bond5Net)}</td>
-      <td><button class="btn btn-red" data-del="${i}" type="button">삭제</button></td>
-    </tr>`;
-  });
-  html += '</tbody>';
-  $('histTable').innerHTML = html;
-  $('histTable').querySelectorAll('button[data-del]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const i = parseInt(btn.dataset.del);
-      history_.splice(i, 1);
-      saveLocal();
-      schedulePush();
-      renderHistory();
-    });
-  });
+window._ltSlotLoad = function(i) {
+  const s = slots_[i];
+  if (!s) return;
+  applyInputs(s.data);
+  onChange();
+  closeSlotModal();
+  calculate();
+};
+window._ltSlotDelete = function(i) {
+  const s = slots_[i];
+  if (!s) return;
+  if (!confirm('"' + s.name + '" 시나리오를 삭제할까요?')) return;
+  slots_.splice(i, 1);
+  saveLocal();
+  schedulePush();
+  renderSlots();
+};
+
+function renderSlots() {
+  const box = $('slotList');
+  if (!slots_ || slots_.length === 0) {
+    box.innerHTML = '<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 시나리오가 없어요.<br>위에서 이름을 정해 저장해보세요.</div>';
+    return;
+  }
+  box.innerHTML = slots_.map((s, i) => {
+    const t = s.savedAt ? new Date(s.savedAt).toLocaleString('ko-KR') : '';
+    return '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px">' +
+      '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (s.name || '(이름없음)') + '</div>' +
+      '<div style="font-size:11px;color:#999">' + t + '</div></div>' +
+      '<button onclick="window._ltSlotLoad(' + i + ')" style="background:#0284c7;color:white;border:none;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button>' +
+      '<button onclick="window._ltSlotDelete(' + i + ')" style="background:#dc2626;color:white;border:none;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">삭제</button></div>';
+  }).join('');
 }
 
 $('btnCalc').addEventListener('click', calculate);
@@ -781,7 +808,6 @@ loadLocal();
 updateHints();
 updateAllPyeongHints();
 updateDateCalc();
-renderHistory();
 </script>
 <script src="/common.js?v=4"></script>
 </body>
