@@ -311,6 +311,7 @@ async function cloudPull() {
     if (snap.exists() && snap.data()[CALC_KEY]) {
       const cloud = snap.data()[CALC_KEY];
       if (Array.isArray(cloud.history)) history_ = cloud.history;
+      if (cloud.inputs) applyInputs(cloud.inputs);
       saveLocal();
     }
   } catch (e) { console.log('cloud pull fail:', e.message); }
@@ -319,7 +320,7 @@ async function cloudPush() {
   if (!cloudReady) return;
   setSaveStatus('saving');
   try {
-    await setDoc(docRef(), { [CALC_KEY]: { history: history_, updatedAt: new Date().toISOString() } }, { merge: true });
+    await setDoc(docRef(), { [CALC_KEY]: { inputs: collectInputs(), history: history_, updatedAt: new Date().toISOString() } }, { merge: true });
     setSaveStatus('saved');
   } catch (e) {
     console.log('cloud push fail:', e.message);
@@ -356,6 +357,7 @@ onAuthStateChanged(auth, async user => {
     renderHistory();
     cloudReady = true;
     setSaveStatus('saved');
+    cloudPush();
   } else if (user && !isAdmin) {
     $('cloudArea').classList.remove('on');
     $('btnAdminLogin').style.display = 'none';
@@ -373,8 +375,41 @@ onAuthStateChanged(auth, async user => {
   }
 });
 
+// ============= Input snapshot save/restore =============
+const INPUT_IDS = [
+  'inProceeds', 'inAcquisition', 'inExpense',
+  'inYears', 'inAcqDate', 'inDispDate',
+  'areaProceeds', 'priceProceeds',
+  'areaAcquisition', 'priceAcquisition'
+];
+
+function collectInputs() {
+  const o = {};
+  for (const id of INPUT_IDS) o[id] = $(id).value;
+  o._mode = currentMode();
+  o._unitProceeds = unitState.Proceeds;
+  o._unitAcquisition = unitState.Acquisition;
+  return o;
+}
+
+function applyInputs(o) {
+  if (!o) return;
+  for (const id of INPUT_IDS) if (o[id] !== undefined) $(id).value = o[id];
+  if (o._mode) applyMode(o._mode);
+  if (o._unitProceeds) applyUnit('Proceeds', o._unitProceeds);
+  if (o._unitAcquisition) applyUnit('Acquisition', o._unitAcquisition);
+  updateHints();
+  updateAllPyeongHints();
+  updateDateCalc();
+}
+
+function onChange() {
+  saveLocal();
+  schedulePush();
+}
+
 function saveLocal() {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify({ history: history_ })); } catch (e) {}
+  try { localStorage.setItem(STORE_KEY, JSON.stringify({ inputs: collectInputs(), history: history_ })); } catch (e) {}
 }
 function loadLocal() {
   try {
@@ -382,6 +417,7 @@ function loadLocal() {
     if (raw) {
       const d = JSON.parse(raw);
       if (Array.isArray(d.history)) history_ = d.history;
+      if (d.inputs) applyInputs(d.inputs);
     }
   } catch (e) {}
 }
@@ -407,10 +443,14 @@ function toKoreanUnit(won) {
   if (parts.length === 0) parts.push(abs.toLocaleString('ko-KR'));
   return (neg ? '-' : '') + parts.join(' ') + '원';
 }
-function bindWonInput(id, hintId) {
+function bindWonInput(id) {
   const el = $(id);
   el.addEventListener('focus', e => { e.target.value = e.target.value.replace(/,/g,''); e.target.select(); });
-  el.addEventListener('blur', e => { e.target.value = fmt(parseNum(e.target.value)); updateHints(); });
+  el.addEventListener('blur', e => {
+    e.target.value = fmt(parseNum(e.target.value));
+    updateHints();
+    onChange();
+  });
   el.addEventListener('input', () => updateHints());
 }
 bindWonInput('inProceeds');
@@ -427,11 +467,45 @@ function updateHints() {
 const PYEONG_PER_M2 = 1 / 3.305785;
 const unitState = { Proceeds: 'm2', Acquisition: 'm2' };
 
+function updatePyeongHintForGroup(group) {
+  const areaEl = $('area' + group);
+  const hintEl = $('pyeong' + group);
+  if (!areaEl || !hintEl) return;
+  const m2 = parseNum(areaEl.value);
+  hintEl.textContent = m2 > 0 ? ('≈ ' + (m2 * PYEONG_PER_M2).toLocaleString('ko-KR', {maximumFractionDigits:1}) + '평') : '';
+}
+function updateAllPyeongHints() {
+  updatePyeongHintForGroup('Proceeds');
+  updatePyeongHintForGroup('Acquisition');
+}
+
+function applyUnit(group, newUnit) {
+  const oldUnit = unitState[group];
+  if (oldUnit === newUnit) {
+    // still refresh button visual (used during restore)
+    document.querySelectorAll('#segUnit' + group + ' button').forEach(b => {
+      b.classList.toggle('on', b.dataset.v === newUnit);
+    });
+    return;
+  }
+  // convert displayed price to new unit, keep total unchanged
+  const priceEl = $('price' + group);
+  const p = parseNum(priceEl.value);
+  if (p > 0) {
+    const pricePerM2 = oldUnit === 'pyeong' ? p * PYEONG_PER_M2 : p;
+    const converted = newUnit === 'pyeong' ? pricePerM2 / PYEONG_PER_M2 : pricePerM2;
+    priceEl.value = fmt(Math.round(converted));
+  }
+  unitState[group] = newUnit;
+  document.querySelectorAll('#segUnit' + group + ' button').forEach(b => {
+    b.classList.toggle('on', b.dataset.v === newUnit);
+  });
+}
+
 function bindAreaGroup(group) {
   const areaEl = $('area' + group);
   const priceEl = $('price' + group);
   const totalEl = $('in' + group);
-  const pyeongHint = $('pyeong' + group);
   const segEl = $('segUnit' + group);
   let suppress = false; // avoid feedback loops while programmatically updating
 
@@ -442,10 +516,6 @@ function bindAreaGroup(group) {
   }
   function displayPriceFromM2(pricePerM2) {
     return unitState[group] === 'pyeong' ? pricePerM2 / PYEONG_PER_M2 : pricePerM2;
-  }
-  function updatePyeongHint() {
-    const m2 = currentAreaM2();
-    pyeongHint.textContent = m2 > 0 ? ('≈ ' + (m2 * PYEONG_PER_M2).toLocaleString('ko-KR', {maximumFractionDigits:1}) + '평') : '';
   }
   function recalcTotalFromAreaPrice() {
     const m2 = currentAreaM2();
@@ -467,29 +537,28 @@ function bindAreaGroup(group) {
   }
 
   areaEl.addEventListener('focus', e => { e.target.value = e.target.value.replace(/,/g,''); e.target.select(); });
-  areaEl.addEventListener('blur', e => { e.target.value = fmt(parseNum(e.target.value)); updatePyeongHint(); recalcTotalFromAreaPrice(); });
-  areaEl.addEventListener('input', () => { updatePyeongHint(); });
+  areaEl.addEventListener('blur', e => {
+    e.target.value = fmt(parseNum(e.target.value));
+    updatePyeongHintForGroup(group);
+    recalcTotalFromAreaPrice();
+    onChange();
+  });
+  areaEl.addEventListener('input', () => { updatePyeongHintForGroup(group); });
 
   priceEl.addEventListener('focus', e => { e.target.value = e.target.value.replace(/,/g,''); e.target.select(); });
-  priceEl.addEventListener('blur', e => { e.target.value = fmt(parseNum(e.target.value)); recalcTotalFromAreaPrice(); });
+  priceEl.addEventListener('blur', e => {
+    e.target.value = fmt(parseNum(e.target.value));
+    recalcTotalFromAreaPrice();
+    onChange();
+  });
 
-  totalEl.addEventListener('blur', () => { recalcPriceFromTotal(); });
+  // totalEl(inProceeds/inAcquisition) already binds blur via bindWonInput; add price recalc after
+  totalEl.addEventListener('blur', () => { recalcPriceFromTotal(); onChange(); });
 
   segEl.querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', () => {
-      const oldUnit = unitState[group];
-      const newUnit = btn.dataset.v;
-      if (oldUnit === newUnit) return;
-      // convert displayed price to new unit, keep total unchanged
-      const p = parseNum(priceEl.value);
-      if (p > 0) {
-        const pricePerM2 = oldUnit === 'pyeong' ? p * PYEONG_PER_M2 : p;
-        const converted = newUnit === 'pyeong' ? pricePerM2 / PYEONG_PER_M2 : pricePerM2;
-        priceEl.value = fmt(Math.round(converted));
-      }
-      unitState[group] = newUnit;
-      segEl.querySelectorAll('button').forEach(b => b.classList.remove('on'));
-      btn.classList.add('on');
+      applyUnit(group, btn.dataset.v);
+      onChange();
     });
   });
 }
@@ -497,13 +566,17 @@ bindAreaGroup('Proceeds');
 bindAreaGroup('Acquisition');
 
 // ============= Mode toggle =============
+function applyMode(mode) {
+  document.querySelectorAll('#segMode button').forEach(b => {
+    b.classList.toggle('on', b.dataset.v === mode);
+  });
+  $('modeYears').classList.toggle('on', mode === 'years');
+  $('modeDates').classList.toggle('on', mode === 'dates');
+}
 document.querySelectorAll('#segMode button').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('#segMode button').forEach(b => b.classList.remove('on'));
-    btn.classList.add('on');
-    const mode = btn.dataset.v;
-    $('modeYears').classList.toggle('on', mode === 'years');
-    $('modeDates').classList.toggle('on', mode === 'dates');
+    applyMode(btn.dataset.v);
+    onChange();
   });
 });
 function currentMode() { return document.querySelector('#segMode button.on').dataset.v; }
@@ -516,8 +589,9 @@ function updateDateCalc() {
   const years = days / 365.25;
   $('calcYearsDisplay').value = years.toFixed(2) + '년 (' + Math.round(days).toLocaleString() + '일)';
 }
-$('inAcqDate').addEventListener('change', updateDateCalc);
-$('inDispDate').addEventListener('change', updateDateCalc);
+$('inAcqDate').addEventListener('change', () => { updateDateCalc(); onChange(); });
+$('inDispDate').addEventListener('change', () => { updateDateCalc(); onChange(); });
+$('inYears').addEventListener('change', onChange);
 
 function getHoldingYears() {
   if (currentMode() === 'years') return parseFloat($('inYears').value) || 0;
@@ -694,12 +768,19 @@ function renderHistory() {
 
 $('btnCalc').addEventListener('click', calculate);
 document.querySelectorAll('.panel input, .panel select').forEach(el => {
-  el.addEventListener('keydown', e => { if (e.key === 'Enter' && el.tagName !== 'INPUT' || (el.tagName === 'INPUT' && el.type !== 'date')) { if (e.key === 'Enter') calculate(); } });
+  el.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    // date inputs use Enter for their own picker interactions - don't hijack
+    if (el.tagName === 'INPUT' && el.type === 'date') return;
+    calculate();
+  });
 });
 
 // ============= Init =============
 loadLocal();
 updateHints();
+updateAllPyeongHints();
+updateDateCalc();
 renderHistory();
 </script>
 <script src="/common.js?v=4"></script>
