@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="robots" content="noindex, nofollow">
+<title>토지수용 양도소득세 계산기 | 스윙파머</title>
+<meta name="description" content="공익사업 토지수용 양도세 계산. 현금보상·3년채권·5년채권 감면율 비교, 실수령액 자동계산. 2025년 개정 감면율 반영.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
+  header .wrap { padding: 0; }
+  header h1 { font-size: 20px; color: #1F4E78; }
+  .back-link { display: inline-block; margin-bottom: 8px; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
+  .back-link:hover { text-decoration: underline; }
+  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
+  .panel { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 14px; }
+  .panel h2 { font-size: 15px; color: #1F4E78; margin-bottom: 10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .btn { border: none; border-radius: 6px; padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn-blue { background: #1F4E78; color: white; }
+  .btn-gray { background: #9ca3af; color: white; }
+  .btn-red { background: #dc2626; color: white; padding: 4px 10px; font-size: 11px; }
+  input, select { font-size: 13px; border: 1px solid #ccc; border-radius: 6px; padding: 7px 9px; font-family: inherit; width: 100%; }
+  input:focus, select:focus { outline: 2px solid #1F4E78; }
+
+  .cloud-area { display: none; align-items: center; gap: 8px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; flex-wrap: wrap; }
+  .cloud-area.on { display: flex; }
+  .cloud-lbl { font-size: 12px; font-weight: 700; color: #0369a1; }
+  #cloudWho { font-size: 11.5px; color: #0369a1; }
+  #saveStatus { font-size: 11.5px; color: #0369a1; margin-left: 4px; }
+  #saveStatus.dirty { color: #b45309; }
+  #saveStatus.error { color: #dc2626; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 14px; margin-bottom: 6px; }
+  .fld { display: flex; flex-direction: column; gap: 4px; }
+  .fld label { font-size: 12px; color: #444; font-weight: 600; }
+  .fld small { font-size: 10.5px; color: #999; font-weight: 400; }
+  .fld input, .fld select { text-align: right; }
+  .fld input[type="date"] { text-align: left; }
+  .readable-hint { font-size: 11px; color: #1F4E78; font-weight: 600; margin-top: 2px; min-height: 14px; }
+
+  .seg { display: flex; gap: 4px; background: #eef2f7; border-radius: 8px; padding: 4px; margin-bottom: 12px; }
+  .seg button { flex: 1; background: transparent; border: none; padding: 8px; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: #666; cursor: pointer; font-family: inherit; }
+  .seg button.on { background: white; color: #1F4E78; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+  .mode-panel { display: none; }
+  .mode-panel.on { display: block; }
+
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #92400e; margin-bottom: 14px; line-height: 1.6; }
+  .note b { color: #78350f; }
+  .note.info { background: #f0f9ff; border-color: #bae6fd; color: #0369a1; }
+  .note.info b { color: #0c4a6e; }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .sc { background: white; border-radius: 10px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); border-top: 3px solid #1F4E78; }
+  .sc.accent { border-top-color: #dc2626; }
+  .sc .lbl { font-size: 11px; color: #888; margin-bottom: 4px; font-weight: 600; }
+  .sc .val { font-size: 16px; font-weight: 700; color: #1F4E78; }
+  .sc.accent .val { color: #dc2626; }
+  .sc .sub { font-size: 11px; color: #888; margin-top: 4px; }
+
+  .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 640px; }
+  th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; position: sticky; left: 0; background: white; z-index: 1; font-weight: 600; }
+  th { background: #eef2f7; color: #1F4E78; font-weight: 700; font-size: 11.5px; }
+  th:first-child { z-index: 3; background: #eef2f7; }
+  tbody tr:hover td { background: #f9fafb; }
+  tbody tr:hover td:first-child { background: #f9fafb; }
+  td.net { font-weight: 700; color: #0369a1; font-size: 13.5px; }
+  td.best { background: #ecfdf5 !important; }
+  tfoot td { font-weight: 700; border-top: 2px solid #ccc; background: #f4f6f8; }
+  tfoot td:first-child { background: #f4f6f8; }
+
+  .hist-table th, .hist-table td { font-size: 11.5px; padding: 6px 8px; }
+
+  footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+
+  body.sf-dark table th:first-child { background: #2a4a6e !important; }
+  body.sf-dark table td:first-child { background: #1e242e !important; }
+  body.sf-dark td.best { background: #14332a !important; }
+  body.sf-dark input, body.sf-dark select { background: #1e242e; color: #ddd; border-color: #444; }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 12px; }
+    .sc .val { font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a href="/" class="back-link">← 메인으로</a>
+    <h1>🚧 토지수용 양도소득세 계산기</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc">공익사업 토지수용·협의매수 시 <b>현금보상 / 3년만기채권 / 5년만기채권</b> 감면율별 세금과 실수령액을 비교합니다. 조특법 제77조, 2025.3.14 개정(2025.1.1 양도분부터 적용) 최신 감면율 기준. 관리자 로그인 시 계산 이력 클라우드 저장.</p>
+
+  <div id="cloudArea" class="cloud-area">
+    <span class="cloud-lbl">☁️ 관리자</span>
+    <span id="cloudWho"></span>
+    <span id="saveStatus"></span>
+    <button id="btnCloudLogout" class="btn btn-gray" type="button" style="margin-left:auto">로그아웃</button>
+  </div>
+  <button id="btnAdminLogin" class="btn" type="button" style="display:none;background:#fff;color:#444;border:1px solid #ddd;margin-bottom:12px">🔑 관리자 로그인</button>
+  <div id="uidInfo" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:13px;color:#92400e;margin-bottom:12px;line-height:1.7"></div>
+
+  <div class="note">
+    ⚠️ <b>적용 요건 확인 필수.</b> 이 감면은 사업인정고시일(또는 양도일)로부터 소급 2년 이전 취득한 토지에만 적용되며, <b>사업인정고시 절차 없이 양도</b>하면 감면 대상이 아닙니다. 2026.12.31 양도분까지 한시 적용. 감면세액의 <b>20%는 농어촌특별세</b>로 별도 부담합니다. 감면한도는 연 2억원·5년 합산 3억원이며(다른 감면과 합산), 이 계산기는 단건 기준으로만 계산하므로 5년 내 다른 감면 이력이 있다면 실제 한도 초과 여부를 별도 확인해야 합니다.
+  </div>
+
+  <!-- Inputs -->
+  <div class="panel">
+    <h2>📝 입력</h2>
+    <div class="grid">
+      <div class="fld">
+        <label>보상금(양도가액)</label>
+        <input type="text" id="inProceeds" inputmode="numeric" value="500,000,000">
+        <div class="readable-hint" id="hintProceeds"></div>
+      </div>
+      <div class="fld">
+        <label>취득가액</label>
+        <input type="text" id="inAcquisition" inputmode="numeric" value="100,000,000">
+        <div class="readable-hint" id="hintAcquisition"></div>
+      </div>
+      <div class="fld">
+        <label>필요경비 <small>(취득세·중개수수료 등, 선택)</small></label>
+        <input type="text" id="inExpense" inputmode="numeric" value="0">
+        <div class="readable-hint" id="hintExpense"></div>
+      </div>
+    </div>
+
+    <div class="seg" id="segMode">
+      <button data-v="years" class="on">보유기간 직접 입력</button>
+      <button data-v="dates">취득일·양도일로 계산</button>
+    </div>
+
+    <div class="mode-panel on" id="modeYears">
+      <div class="grid">
+        <div class="fld">
+          <label>보유기간 (년)</label>
+          <input type="number" id="inYears" value="10" min="0" step="0.1">
+        </div>
+      </div>
+    </div>
+    <div class="mode-panel" id="modeDates">
+      <div class="grid">
+        <div class="fld">
+          <label>취득일</label>
+          <input type="date" id="inAcqDate">
+        </div>
+        <div class="fld">
+          <label>수용일(양도일)</label>
+          <input type="date" id="inDispDate">
+        </div>
+        <div class="fld">
+          <label>계산된 보유기간</label>
+          <input type="text" id="calcYearsDisplay" readonly style="background:#f4f6f8;font-weight:700;color:#1F4E78">
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+      <button id="btnCalc" class="btn btn-blue">계산하기</button>
+      <button id="btnSaveHist" class="btn btn-gray" type="button" style="display:none">📌 이 계산 저장</button>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="resultArea" style="display:none">
+    <div class="summary-grid" id="summaryGrid"></div>
+
+    <div class="panel">
+      <h2>📊 감면 방식별 비교</h2>
+      <div class="tbl-wrap"><table id="compareTable"></table></div>
+      <div class="note info" style="margin-top:12px">
+        💡 <b>채권보상 주의.</b> 3년·5년 만기채권은 세금은 적지만, 보상금을 <b>즉시 현금으로 받지 못하고 채권(증권) 형태</b>로 받습니다. 만기 전에 현금화하려면 시장에서 할인 매각해야 하며 이때 할인율만큼 손실이 발생합니다. 위 표의 "실수령액"은 <b>채권 액면가 기준</b>이며 실제 즉시 현금 유동성과는 다릅니다.
+      </div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="panel" id="histPanel" style="display:none">
+    <h2>📋 계산 이력 <span style="margin-left:auto;font-size:11px;color:#888;font-weight:400" id="histCount"></span></h2>
+    <div class="tbl-wrap"><table class="hist-table" id="histTable"></table></div>
+  </div>
+
+  <div class="panel">
+    <h2>📖 계산 방식</h2>
+    <ul style="font-size:12.5px; line-height:1.9; padding-left:18px; color:#444">
+      <li><b>양도차익</b> = 보상금(양도가액) − 취득가액 − 필요경비.</li>
+      <li><b>장기보유특별공제</b>: 보유 3년 이상부터 연 2%p씩, 15년 이상 30% 한도 (2년 이하는 미적용).</li>
+      <li><b>양도소득기본공제</b>: 연 250만원 (조특법 감면 대상이어도 별도 적용).</li>
+      <li><b>세율</b>: 보유 1년 미만 50%, 1~2년 미만 40% (단일세율, 장특공제 미적용). 2년 이상은 기본세율(1,400만원 이하 6% ~ 10억원 초과 45%, 8단계 누진).</li>
+      <li><b>감면율 (조특법 77조, 2025.3.14 개정)</b>: 현금보상 15%, 일반채권 20%, 3년만기특약채권 35%, 5년만기특약채권 45%. 산출세액에서 직접 차감.</li>
+      <li><b>농어촌특별세</b> = 감면세액 × 20%.</li>
+      <li><b>지방소득세</b> = (산출세액 − 감면세액) × 10%.</li>
+      <li><b>실수령액</b> = 보상금 − (산출세액−감면세액) − 지방소득세 − 농어촌특별세.</li>
+    </ul>
+  </div>
+
+  <footer>© 스윙파머 · 토지수용 양도세 계산기</footer>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
+  authDomain: "swingfarmer-board01.firebaseapp.com",
+  projectId: "swingfarmer-board01",
+  storageBucket: "swingfarmer-board01.firebasestorage.app",
+  messagingSenderId: "312575044644",
+  appId: "1:312575044644:web:81d754eb1d90f25454fcb1"
+};
+const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1";
+const CALC_KEY = "landtax";
+const STORE_KEY = "sf_landtax_v1";
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ prompt: 'select_account' });
+const $ = id => document.getElementById(id);
+
+let currentUser = null;
+let cloudReady = false;
+let pushTimer = null;
+let history_ = [];
+let lastResult = null;
+
+getRedirectResult(auth).catch(()=>{});
+if (location.hash === '#admin' || location.hash === '#관리자') {
+  $('btnAdminLogin').style.display = 'inline-block';
+}
+
+$('btnAdminLogin').addEventListener('click', async () => {
+  try { await signInWithPopup(auth, provider); }
+  catch (e) {
+    const code = e && e.code;
+    if (code === 'auth/popup-blocked' || code === 'auth/cancelled-popup-request' || code === 'auth/popup-closed-by-user' || code === 'auth/operation-not-supported-in-this-environment') {
+      try { await signInWithRedirect(auth, provider); } catch (e2) { alert('로그인 실패: ' + e2.message); }
+    } else { alert('로그인 실패: ' + (e.message || code)); }
+  }
+});
+$('btnCloudLogout').addEventListener('click', async () => {
+  if (confirm('로그아웃?')) { try { await signOut(auth); } catch (e) {} }
+});
+window._ltSignout = () => signOut(auth);
+
+const docRef = () => doc(db, 'calc_data', ADMIN_UID);
+
+async function cloudPull() {
+  try {
+    const snap = await getDoc(docRef());
+    if (snap.exists() && snap.data()[CALC_KEY]) {
+      const cloud = snap.data()[CALC_KEY];
+      if (Array.isArray(cloud.history)) history_ = cloud.history;
+      saveLocal();
+    }
+  } catch (e) { console.log('cloud pull fail:', e.message); }
+}
+async function cloudPush() {
+  if (!cloudReady) return;
+  setSaveStatus('saving');
+  try {
+    await setDoc(docRef(), { [CALC_KEY]: { history: history_, updatedAt: new Date().toISOString() } }, { merge: true });
+    setSaveStatus('saved');
+  } catch (e) {
+    console.log('cloud push fail:', e.message);
+    setSaveStatus('error');
+  }
+}
+function schedulePush() {
+  if (!cloudReady) return;
+  setSaveStatus('dirty');
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(cloudPush, 800);
+}
+function setSaveStatus(status) {
+  const el = $('saveStatus');
+  if (!el) return;
+  el.className = '';
+  if (status === 'dirty') { el.textContent = '· 저장 대기'; el.className = 'dirty'; }
+  else if (status === 'saving') { el.textContent = '· 저장 중...'; }
+  else if (status === 'saved') { el.textContent = '· ☁️ 동기화됨'; }
+  else if (status === 'error') { el.textContent = '· ⚠️ 저장 실패'; el.className = 'error'; }
+  else { el.textContent = ''; }
+}
+
+onAuthStateChanged(auth, async user => {
+  currentUser = user;
+  const isAdmin = user && user.uid === ADMIN_UID;
+  if (isAdmin) {
+    $('cloudArea').classList.add('on');
+    $('btnAdminLogin').style.display = 'none';
+    $('cloudWho').textContent = '☁️ ' + (user.displayName || user.email || '관리자');
+    if ($('uidInfo')) $('uidInfo').style.display = 'none';
+    $('btnSaveHist').style.display = 'inline-block';
+    await cloudPull();
+    renderHistory();
+    cloudReady = true;
+    setSaveStatus('saved');
+  } else if (user && !isAdmin) {
+    $('cloudArea').classList.remove('on');
+    $('btnAdminLogin').style.display = 'none';
+    const box = $('uidInfo');
+    if (box) {
+      box.style.display = 'block';
+      box.innerHTML = '로그인됨: <b>' + (user.email || '') + '</b><br>UID: <code style="font-size:11px;word-break:break-all">' + user.uid + '</code><br><button onclick="window._ltSignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer;margin-top:4px">로그아웃</button>';
+    }
+    cloudReady = false;
+  } else {
+    cloudReady = false;
+    $('cloudArea').classList.remove('on');
+    if ($('uidInfo')) $('uidInfo').style.display = 'none';
+    $('btnSaveHist').style.display = 'none';
+  }
+});
+
+function saveLocal() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify({ history: history_ })); } catch (e) {}
+}
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const d = JSON.parse(raw);
+      if (Array.isArray(d.history)) history_ = d.history;
+    }
+  } catch (e) {}
+}
+
+// ============= Utils =============
+function parseNum(s) {
+  if (s === null || s === undefined || s === '') return 0;
+  const clean = String(s).replace(/[,\s원]/g, '');
+  const n = parseFloat(clean);
+  return isNaN(n) ? 0 : n;
+}
+function fmt(n) { return Math.round(n).toLocaleString('ko-KR'); }
+function toKoreanUnit(won) {
+  const n = Math.round(won);
+  if (n === 0) return '0원';
+  const neg = n < 0;
+  const abs = Math.abs(n);
+  const eok = Math.floor(abs / 100000000);
+  const man = Math.floor((abs % 100000000) / 10000);
+  let parts = [];
+  if (eok > 0) parts.push(eok.toLocaleString('ko-KR') + '억');
+  if (man > 0) parts.push(man.toLocaleString('ko-KR') + '만');
+  if (parts.length === 0) parts.push(abs.toLocaleString('ko-KR'));
+  return (neg ? '-' : '') + parts.join(' ') + '원';
+}
+function bindWonInput(id, hintId) {
+  const el = $(id);
+  el.addEventListener('focus', e => { e.target.value = e.target.value.replace(/,/g,''); e.target.select(); });
+  el.addEventListener('blur', e => { e.target.value = fmt(parseNum(e.target.value)); updateHints(); });
+  el.addEventListener('input', () => updateHints());
+}
+bindWonInput('inProceeds');
+bindWonInput('inAcquisition');
+bindWonInput('inExpense');
+function updateHints() {
+  $('hintProceeds').textContent = toKoreanUnit(parseNum($('inProceeds').value));
+  $('hintAcquisition').textContent = toKoreanUnit(parseNum($('inAcquisition').value));
+  const exp = parseNum($('inExpense').value);
+  $('hintExpense').textContent = exp > 0 ? toKoreanUnit(exp) : '';
+}
+
+// ============= Mode toggle =============
+document.querySelectorAll('#segMode button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#segMode button').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    const mode = btn.dataset.v;
+    $('modeYears').classList.toggle('on', mode === 'years');
+    $('modeDates').classList.toggle('on', mode === 'dates');
+  });
+});
+function currentMode() { return document.querySelector('#segMode button.on').dataset.v; }
+
+function updateDateCalc() {
+  const a = $('inAcqDate').value, d = $('inDispDate').value;
+  if (!a || !d) { $('calcYearsDisplay').value = ''; return; }
+  const days = (new Date(d) - new Date(a)) / 86400000;
+  if (days < 0) { $('calcYearsDisplay').value = '취득일이 양도일보다 늦음'; return; }
+  const years = days / 365.25;
+  $('calcYearsDisplay').value = years.toFixed(2) + '년 (' + Math.round(days).toLocaleString() + '일)';
+}
+$('inAcqDate').addEventListener('change', updateDateCalc);
+$('inDispDate').addEventListener('change', updateDateCalc);
+
+function getHoldingYears() {
+  if (currentMode() === 'years') return parseFloat($('inYears').value) || 0;
+  const a = $('inAcqDate').value, d = $('inDispDate').value;
+  if (!a || !d) return 0;
+  const days = (new Date(d) - new Date(a)) / 86400000;
+  return Math.max(0, days / 365.25);
+}
+
+// ============= 세율 =============
+const TAX_BRACKETS = [
+  { upTo: 14000000, rate: 0.06, deduction: 0 },
+  { upTo: 50000000, rate: 0.15, deduction: 1260000 },
+  { upTo: 88000000, rate: 0.24, deduction: 5760000 },
+  { upTo: 150000000, rate: 0.35, deduction: 15440000 },
+  { upTo: 300000000, rate: 0.38, deduction: 19940000 },
+  { upTo: 500000000, rate: 0.40, deduction: 25940000 },
+  { upTo: 1000000000, rate: 0.42, deduction: 35940000 },
+  { upTo: Infinity, rate: 0.45, deduction: 65940000 }
+];
+function calcProgressiveTax(base) {
+  if (base <= 0) return 0;
+  for (const b of TAX_BRACKETS) if (base <= b.upTo) return base * b.rate - b.deduction;
+  return 0;
+}
+function longTermDeductionRate(years) {
+  if (years < 3) return 0;
+  return Math.min(30, Math.floor(years) * 2) / 100;
+}
+
+const SCENARIOS = [
+  { key: 'cash', label: '현금보상', rate: 0.15 },
+  { key: 'bond3', label: '3년만기채권', rate: 0.35 },
+  { key: 'bond5', label: '5년만기채권', rate: 0.45 }
+];
+const BASIC_DEDUCTION = 2500000;
+
+function computeScenario(gain, years, scenarioRate) {
+  const ltRate = longTermDeductionRate(years);
+  const ltDeduction = Math.max(0, gain) * ltRate;
+  const gainAfterLT = Math.max(0, gain - ltDeduction);
+  const taxBase = Math.max(0, gainAfterLT - BASIC_DEDUCTION);
+
+  let calculatedTax;
+  let rateLabel;
+  if (years < 1) { calculatedTax = taxBase * 0.50; rateLabel = '50% (1년 미만)'; }
+  else if (years < 2) { calculatedTax = taxBase * 0.40; rateLabel = '40% (2년 미만)'; }
+  else { calculatedTax = calcProgressiveTax(taxBase); rateLabel = '기본세율(누진)'; }
+
+  const relief = calculatedTax * scenarioRate;
+  const afterRelief = Math.max(0, calculatedTax - relief);
+  const ruralTax = relief * 0.20;
+  const localTax = afterRelief * 0.10;
+  const totalTax = afterRelief + localTax + ruralTax;
+
+  return { ltRate, ltDeduction, gainAfterLT, taxBase, calculatedTax, rateLabel, relief, afterRelief, ruralTax, localTax, totalTax };
+}
+
+function calculate() {
+  const proceeds = parseNum($('inProceeds').value);
+  const acquisition = parseNum($('inAcquisition').value);
+  const expense = parseNum($('inExpense').value);
+  const years = getHoldingYears();
+
+  if (proceeds <= 0) { alert('보상금(양도가액)을 입력하세요'); return; }
+  if (currentMode() === 'dates' && years <= 0) { alert('취득일·양도일을 확인하세요'); return; }
+
+  const gain = proceeds - acquisition - expense;
+  const results = SCENARIOS.map(s => ({ ...s, ...computeScenario(gain, years, s.rate), proceeds }));
+
+  lastResult = { proceeds, acquisition, expense, years, gain, results, ts: Date.now() };
+  renderSummary(lastResult);
+  renderCompare(lastResult);
+  $('resultArea').style.display = 'block';
+  $('resultArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderSummary(r) {
+  const cash = r.results.find(x => x.key === 'cash');
+  const bond5 = r.results.find(x => x.key === 'bond5');
+  const saved = cash.totalTax - bond5.totalTax;
+  $('summaryGrid').innerHTML = `
+    <div class="sc"><div class="lbl">양도차익</div><div class="val">${fmt(r.gain)}원</div><div class="sub">${toKoreanUnit(r.gain)}</div></div>
+    <div class="sc"><div class="lbl">보유기간</div><div class="val">${r.years.toFixed(1)}년</div><div class="sub">장특공제 ${(cash.ltRate*100).toFixed(0)}%</div></div>
+    <div class="sc accent"><div class="lbl">현금보상 총 세금</div><div class="val">${fmt(cash.totalTax)}원</div><div class="sub">${toKoreanUnit(cash.totalTax)}</div></div>
+    <div class="sc"><div class="lbl">5년채권 대비 절세액</div><div class="val" style="color:#059669">${fmt(saved)}원</div><div class="sub">현금 대비 채권 선택시</div></div>
+  `;
+}
+
+function renderCompare(r) {
+  const best = r.results.reduce((a,b) => a.totalTax < b.totalTax ? a : b);
+  let html = `<thead><tr>
+    <th>구분</th><th>현금보상(15%)</th><th>3년만기채권(35%)</th><th>5년만기채권(45%)</th>
+  </tr></thead><tbody>`;
+  const rows = [
+    { label: '양도차익', fn: x => fmt(r.gain) + '원' },
+    { label: '장기보유특별공제', fn: x => fmt(x.ltDeduction) + '원 (' + (x.ltRate*100).toFixed(0) + '%)' },
+    { label: '양도소득기본공제', fn: x => fmt(BASIC_DEDUCTION) + '원' },
+    { label: '과세표준', fn: x => fmt(x.taxBase) + '원' },
+    { label: '적용세율', fn: x => x.rateLabel },
+    { label: '산출세액', fn: x => fmt(x.calculatedTax) + '원' },
+    { label: '감면세액', fn: x => '-' + fmt(x.relief) + '원' },
+    { label: '농어촌특별세(감면액×20%)', fn: x => '+' + fmt(x.ruralTax) + '원' },
+    { label: '지방소득세', fn: x => '+' + fmt(x.localTax) + '원' },
+    { label: '총 납부세액', fn: x => fmt(x.totalTax) + '원' }
+  ];
+  for (const row of rows) {
+    html += `<tr><td>${row.label}</td>`;
+    for (const x of r.results) html += `<td>${row.fn(x)}</td>`;
+    html += '</tr>';
+  }
+  html += '</tbody><tfoot><tr><td>실수령액</td>';
+  for (const x of r.results) {
+    const net = r.proceeds - x.totalTax;
+    const isBest = x.key === best.key;
+    html += `<td class="net${isBest ? ' best' : ''}">${fmt(net)}원<br><small style="color:#999;font-weight:400">${toKoreanUnit(net)}</small></td>`;
+  }
+  html += '</tr></tfoot>';
+  $('compareTable').innerHTML = html;
+}
+
+// ============= History =============
+$('btnSaveHist').addEventListener('click', () => {
+  if (!lastResult) { alert('먼저 계산하세요'); return; }
+  const cash = lastResult.results.find(x => x.key === 'cash');
+  const bond5 = lastResult.results.find(x => x.key === 'bond5');
+  history_.unshift({
+    ts: lastResult.ts,
+    proceeds: lastResult.proceeds,
+    acquisition: lastResult.acquisition,
+    years: lastResult.years,
+    gain: lastResult.gain,
+    cashTax: cash.totalTax,
+    bond5Tax: bond5.totalTax,
+    cashNet: lastResult.proceeds - cash.totalTax,
+    bond5Net: lastResult.proceeds - bond5.totalTax
+  });
+  if (history_.length > 50) history_ = history_.slice(0, 50);
+  saveLocal();
+  schedulePush();
+  renderHistory();
+});
+
+function renderHistory() {
+  if (history_.length === 0) { $('histPanel').style.display = 'none'; return; }
+  $('histPanel').style.display = 'block';
+  $('histCount').textContent = history_.length + '건';
+  let html = `<thead><tr><th>저장일시</th><th>보상금</th><th>양도차익</th><th>보유기간</th><th>현금 실수령</th><th>5년채권 실수령</th><th></th></tr></thead><tbody>`;
+  history_.forEach((h, i) => {
+    const date = new Date(h.ts);
+    const dateStr = `${date.getMonth()+1}/${date.getDate()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+    html += `<tr>
+      <td>${dateStr}</td>
+      <td>${fmt(h.proceeds)}</td>
+      <td>${fmt(h.gain)}</td>
+      <td>${h.years.toFixed(1)}년</td>
+      <td>${fmt(h.cashNet)}</td>
+      <td>${fmt(h.bond5Net)}</td>
+      <td><button class="btn btn-red" data-del="${i}" type="button">삭제</button></td>
+    </tr>`;
+  });
+  html += '</tbody>';
+  $('histTable').innerHTML = html;
+  $('histTable').querySelectorAll('button[data-del]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = parseInt(btn.dataset.del);
+      history_.splice(i, 1);
+      saveLocal();
+      schedulePush();
+      renderHistory();
+    });
+  });
+}
+
+$('btnCalc').addEventListener('click', calculate);
+document.querySelectorAll('.panel input, .panel select').forEach(el => {
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' && el.tagName !== 'INPUT' || (el.tagName === 'INPUT' && el.type !== 'date')) { if (e.key === 'Enter') calculate(); } });
+});
+
+// ============= Init =============
+loadLocal();
+updateHints();
+renderHistory();
+</script>
+<script src="/common.js?v=4"></script>
+</body>
+</html>
