@@ -45,6 +45,16 @@
   .seg { display: flex; gap: 4px; background: #eef2f7; border-radius: 8px; padding: 4px; margin-bottom: 12px; }
   .seg button { flex: 1; background: transparent; border: none; padding: 8px; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: #666; cursor: pointer; font-family: inherit; }
   .seg button.on { background: white; color: #1F4E78; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+  .seg.seg-sm { padding: 2px; margin-bottom: 4px; }
+  .seg.seg-sm button { padding: 5px; font-size: 11.5px; }
+
+  .area-block { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+  .area-block-title { font-size: 12.5px; font-weight: 700; color: #475569; margin-bottom: 10px; }
+  .area-block-title small { font-weight: 400; color: #94a3b8; }
+  .area-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px 14px; }
+  .area-input-row { display: flex; align-items: center; gap: 6px; }
+  .area-input-row input { flex: 1; }
+  .area-unit-suffix { font-size: 12px; color: #888; white-space: nowrap; }
   .mode-panel { display: none; }
   .mode-panel.on { display: block; }
 
@@ -131,6 +141,44 @@
         <label>필요경비 <small>(취득세·중개수수료 등, 선택)</small></label>
         <input type="text" id="inExpense" inputmode="numeric" value="0">
         <div class="readable-hint" id="hintExpense"></div>
+      </div>
+    </div>
+
+    <div class="area-block">
+      <div class="area-block-title">📐 면적·평당가로 계산 <small>(입력하면 위 금액이 자동 반영됩니다)</small></div>
+      <div class="area-grid">
+        <div class="fld">
+          <label>보상금 — 면적</label>
+          <div class="area-input-row">
+            <input type="text" id="areaProceeds" inputmode="numeric" placeholder="예: 1,000">
+            <span class="area-unit-suffix">m²</span>
+          </div>
+          <div class="readable-hint" id="pyeongProceeds"></div>
+        </div>
+        <div class="fld">
+          <label>보상금 — 단가</label>
+          <div class="seg seg-sm" id="segUnitProceeds">
+            <button data-v="m2" class="on">m²당</button>
+            <button data-v="pyeong">평당</button>
+          </div>
+          <input type="text" id="priceProceeds" inputmode="numeric" placeholder="예: 500,000">
+        </div>
+        <div class="fld">
+          <label>취득가액 — 면적</label>
+          <div class="area-input-row">
+            <input type="text" id="areaAcquisition" inputmode="numeric" placeholder="예: 1,000">
+            <span class="area-unit-suffix">m²</span>
+          </div>
+          <div class="readable-hint" id="pyeongAcquisition"></div>
+        </div>
+        <div class="fld">
+          <label>취득가액 — 단가</label>
+          <div class="seg seg-sm" id="segUnitAcquisition">
+            <button data-v="m2" class="on">m²당</button>
+            <button data-v="pyeong">평당</button>
+          </div>
+          <input type="text" id="priceAcquisition" inputmode="numeric" placeholder="예: 100,000">
+        </div>
       </div>
     </div>
 
@@ -374,6 +422,79 @@ function updateHints() {
   const exp = parseNum($('inExpense').value);
   $('hintExpense').textContent = exp > 0 ? toKoreanUnit(exp) : '';
 }
+
+// ============= 면적·평당가 연동 (양방향) =============
+const PYEONG_PER_M2 = 1 / 3.305785;
+const unitState = { Proceeds: 'm2', Acquisition: 'm2' };
+
+function bindAreaGroup(group) {
+  const areaEl = $('area' + group);
+  const priceEl = $('price' + group);
+  const totalEl = $('in' + group);
+  const pyeongHint = $('pyeong' + group);
+  const segEl = $('segUnit' + group);
+  let suppress = false; // avoid feedback loops while programmatically updating
+
+  function currentAreaM2() { return parseNum(areaEl.value); }
+  function currentPriceInputAsM2() {
+    const p = parseNum(priceEl.value);
+    return unitState[group] === 'pyeong' ? p * PYEONG_PER_M2 : p;
+  }
+  function displayPriceFromM2(pricePerM2) {
+    return unitState[group] === 'pyeong' ? pricePerM2 / PYEONG_PER_M2 : pricePerM2;
+  }
+  function updatePyeongHint() {
+    const m2 = currentAreaM2();
+    pyeongHint.textContent = m2 > 0 ? ('≈ ' + (m2 * PYEONG_PER_M2).toLocaleString('ko-KR', {maximumFractionDigits:1}) + '평') : '';
+  }
+  function recalcTotalFromAreaPrice() {
+    const m2 = currentAreaM2();
+    if (m2 <= 0) return;
+    const pricePerM2 = currentPriceInputAsM2();
+    if (pricePerM2 <= 0) return;
+    suppress = true;
+    totalEl.value = fmt(Math.round(m2 * pricePerM2));
+    suppress = false;
+    updateHints();
+  }
+  function recalcPriceFromTotal() {
+    if (suppress) return;
+    const m2 = currentAreaM2();
+    if (m2 <= 0) return;
+    const total = parseNum(totalEl.value);
+    const pricePerM2 = total / m2;
+    priceEl.value = fmt(Math.round(displayPriceFromM2(pricePerM2)));
+  }
+
+  areaEl.addEventListener('focus', e => { e.target.value = e.target.value.replace(/,/g,''); e.target.select(); });
+  areaEl.addEventListener('blur', e => { e.target.value = fmt(parseNum(e.target.value)); updatePyeongHint(); recalcTotalFromAreaPrice(); });
+  areaEl.addEventListener('input', () => { updatePyeongHint(); });
+
+  priceEl.addEventListener('focus', e => { e.target.value = e.target.value.replace(/,/g,''); e.target.select(); });
+  priceEl.addEventListener('blur', e => { e.target.value = fmt(parseNum(e.target.value)); recalcTotalFromAreaPrice(); });
+
+  totalEl.addEventListener('blur', () => { recalcPriceFromTotal(); });
+
+  segEl.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const oldUnit = unitState[group];
+      const newUnit = btn.dataset.v;
+      if (oldUnit === newUnit) return;
+      // convert displayed price to new unit, keep total unchanged
+      const p = parseNum(priceEl.value);
+      if (p > 0) {
+        const pricePerM2 = oldUnit === 'pyeong' ? p * PYEONG_PER_M2 : p;
+        const converted = newUnit === 'pyeong' ? pricePerM2 / PYEONG_PER_M2 : pricePerM2;
+        priceEl.value = fmt(Math.round(converted));
+      }
+      unitState[group] = newUnit;
+      segEl.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+      btn.classList.add('on');
+    });
+  });
+}
+bindAreaGroup('Proceeds');
+bindAreaGroup('Acquisition');
 
 // ============= Mode toggle =============
 document.querySelectorAll('#segMode button').forEach(btn => {
