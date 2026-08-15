@@ -6,36 +6,38 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta name="robots" content="noindex, nofollow">
 <title>금값 계산기 | 스윙파머</title>
-<meta name="description" content="순금·18K·14K 시세 기반 금 제품 가격 계산기. 공임비·장식비·부가세 반영. 실사용 기준 정밀 계산.">
+<meta name="description" content="순금·18K·14K 시세 기반 금 제품 가격 계산기. g/돈 병행, 공임비·장식비·부가세 반영, 프리셋 저장.">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; padding-top: 72px; }
-  .wrap { max-width: 720px; margin: 0 auto; padding: 20px 16px 40px; }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 20px 16px 40px; }
   h1 { color: #1F4E78; font-size: 26px; margin-bottom: 4px; }
-  h1 .icon { font-size: 24px; }
   .sub { color: #666; font-size: 14px; margin-bottom: 20px; }
   .panel { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
   .panel h2 { color: #1F4E78; font-size: 16px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #e5e9f0; display: flex; align-items: center; gap: 6px; }
-  .row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-  .row label { flex: 0 0 130px; font-size: 13px; color: #555; font-weight: 500; }
-  .row .input-wrap { flex: 1; }
-  .row input[type=number], .row select {
-    width: 100%; padding: 10px 12px; border: 1px solid #d0d5dd; border-radius: 6px;
+  .row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .row > label { flex: 0 0 110px; font-size: 13px; color: #555; font-weight: 500; padding-top: 10px; }
+  .field { flex: 1; min-width: 100px; position: relative; }
+  .field-inline { display: flex; align-items: center; gap: 4px; }
+  .field input[type=number], .field input[type=text], .field select {
+    width: 100%; padding: 10px 10px; border: 1px solid #d0d5dd; border-radius: 6px;
     background: #FFF2CC; color: #0000FF; font-weight: 700; font-size: 15px;
     text-align: right; font-family: inherit;
   }
-  .row select { background: #fff; color: #333; text-align: left; }
-  .row input[type=number]:focus, .row select:focus { outline: none; border-color: #1F4E78; }
-  .row .unit { flex: 0 0 30px; color: #666; font-size: 13px; }
+  .field select, .field input[type=text] { background: #fff; color: #333; text-align: left; font-weight: 500; }
+  .field input:focus, .field select:focus { outline: none; border-color: #1F4E78; }
+  .field .unit-label { font-size: 12px; color: #666; margin-left: 2px; padding-top: 10px; flex-shrink: 0; }
+  .field .sf-won-kor { font-size: 11px; color: #059669; text-align: right; padding: 2px 4px 0; font-weight: 500; min-height: 15px; }
+  .sync-arrow { align-self: center; padding: 6px 0 0; color: #999; font-size: 14px; }
   .hint { background: #f0f7ff; padding: 10px 12px; border-radius: 6px; font-size: 12px; color: #1F4E78; margin-top: 8px; line-height: 1.6; }
-  .divider { padding: 8px 0 4px; font-size: 12px; color: #888; font-weight: 600; border-top: 1px dashed #e0e4eb; margin-top: 8px; }
-  .radio-group { display: flex; gap: 20px; padding: 4px 0; }
+  .divider { padding: 10px 0 6px; font-size: 12px; color: #666; font-weight: 600; border-top: 1px dashed #e0e4eb; margin-top: 4px; }
+  .radio-group { display: flex; gap: 20px; padding: 4px 0 8px; flex-wrap: wrap; }
   .radio-group label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; }
-  .radio-group input { cursor: pointer; }
   .result-table { width: 100%; border-collapse: collapse; }
-  .result-table td { padding: 10px 4px; font-size: 14px; border-bottom: 1px solid #f0f2f5; }
+  .result-table td { padding: 8px 4px; font-size: 14px; border-bottom: 1px solid #f0f2f5; vertical-align: top; }
   .result-table td:first-child { color: #555; }
-  .result-table td.v { text-align: right; font-family: 'SF Mono', Menlo, monospace; font-weight: 600; color: #1F4E78; }
+  .result-table td.v { text-align: right; font-family: 'SF Mono', Menlo, monospace; font-weight: 600; color: #1F4E78; white-space: nowrap; }
+  .result-table td.v .kor { display: block; font-size: 11px; color: #059669; font-weight: 500; font-family: inherit; margin-top: 2px; }
   .result-table tr.subtotal td { border-top: 2px solid #d0d5dd; border-bottom: none; padding-top: 12px; font-weight: 600; }
   .result-table tr.subtotal td:first-child { color: #333; }
   .result-table tr.total td {
@@ -43,46 +45,62 @@
     font-size: 17px; font-weight: 700; color: #1F4E78; background: #f0f7ff;
   }
   .result-table tr.total td.v { color: #dc2626; font-size: 18px; }
-  .meta-info { background: #fef9e7; padding: 10px 12px; border-radius: 6px; margin-top: 12px; font-size: 12px; color: #6b5b2e; line-height: 1.6; }
+  .result-table tr.total td.v .kor { color: #dc2626; font-size: 12px; font-weight: 600; }
+  .meta-info { background: #fef9e7; padding: 10px 12px; border-radius: 6px; margin-top: 12px; font-size: 12px; color: #6b5b2e; line-height: 1.7; }
   .meta-info b { color: #92400e; }
-  .actions { display: flex; gap: 8px; margin-top: 16px; }
-  .btn { padding: 10px 14px; border: 1px solid #d0d5dd; background: #fff; border-radius: 6px; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .btn { padding: 9px 14px; border: 1px solid #d0d5dd; background: #fff; border-radius: 6px; font-size: 13px; cursor: pointer; font-family: inherit; }
   .btn:hover { background: #f5f7fa; }
   .btn.primary { background: #1F4E78; color: #fff; border-color: #1F4E78; }
   .btn.primary:hover { background: #163a5f; }
+  .btn.danger { color: #dc2626; }
+  .btn.danger:hover { background: #fef2f2; }
   .footer-note { font-size: 11px; color: #888; text-align: center; margin-top: 20px; line-height: 1.6; }
-  @media (max-width: 480px) {
-    .row { flex-wrap: wrap; }
-    .row label { flex: 0 0 100%; margin-bottom: 4px; }
-    .row .input-wrap { flex: 1 1 auto; }
+  .preset-list { max-height: 180px; overflow-y: auto; border: 1px solid #e5e9f0; border-radius: 6px; }
+  .preset-item { display: flex; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f2f5; gap: 8px; font-size: 13px; }
+  .preset-item:last-child { border-bottom: none; }
+  .preset-item.empty { color: #999; justify-content: center; padding: 20px; }
+  .preset-name { flex: 1; font-weight: 600; color: #1F4E78; }
+  .preset-meta { font-size: 11px; color: #888; margin-right: 8px; }
+  .preset-item .btn { padding: 4px 10px; font-size: 12px; }
+  @media (max-width: 520px) {
+    .row > label { flex: 0 0 100%; padding-top: 0; margin-bottom: 4px; }
+    .field { min-width: 90px; }
   }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1><span class="icon">💍</span> 금값 계산기</h1>
-  <p class="sub">순금 시세와 공임·장식·부가세를 반영한 정밀 금 제품 가격 계산기</p>
+  <h1>💍 금값 계산기</h1>
+  <p class="sub">순금 시세와 공임·장식·부가세를 반영한 정밀 금 제품 가격 계산기 · g/돈 병행 입력 · 프리셋 저장</p>
 
   <!-- 1. 금 시세 -->
   <div class="panel">
-    <h2>📊 1. 금 시세 입력</h2>
+    <h2>📊 1. 금 시세 입력 (24K 순금)</h2>
     <div class="row">
-      <label>24K 순금 시세</label>
-      <div class="input-wrap"><input type="number" id="price24k" placeholder="60000" step="100"></div>
-      <span class="unit">원/g</span>
+      <label>24K 시세</label>
+      <div class="field field-inline">
+        <input type="number" id="price24kG" placeholder="60000" step="100">
+        <span class="unit-label">원/g</span>
+      </div>
+      <span class="sync-arrow">↔</span>
+      <div class="field field-inline">
+        <input type="number" id="price24kDon" step="100">
+        <span class="unit-label">원/돈</span>
+      </div>
     </div>
     <div class="hint">
-      💡 <b>K별 자동 환산</b>: 18K = 24K × 75% · 14K = 24K × 58.3%<br>
-      한국금거래소·삼성금거래소 등 실시간 시세 확인 후 입력
+      💡 <b>1돈 = 3.75g</b> · <b>K별 자동 환산</b>: 18K = 24K × 75% · 14K = 24K × 58.3%<br>
+      한국금거래소·삼성금거래소·신한은행 실물 금 시세 참고
     </div>
   </div>
 
-  <!-- 2. 상품 정보 -->
+  <!-- 2. 본체 금 -->
   <div class="panel">
-    <h2>💎 2. 상품 정보</h2>
+    <h2>💎 2. 본체 금</h2>
     <div class="row">
-      <label>금 종류</label>
-      <div class="input-wrap">
+      <label>본체 K</label>
+      <div class="field">
         <select id="karat">
           <option value="24">24K (순금)</option>
           <option value="18" selected>18K</option>
@@ -91,199 +109,326 @@
       </div>
     </div>
     <div class="row">
-      <label>금 중량</label>
-      <div class="input-wrap"><input type="number" id="goldWeight" placeholder="10" step="0.01"></div>
-      <span class="unit">g</span>
-    </div>
-    <div class="divider">✨ 장식 재료 (다이아·큐빅·은 등, 없으면 0)</div>
-    <div class="row">
-      <label>장식 중량</label>
-      <div class="input-wrap"><input type="number" id="decWeight" placeholder="0" step="0.01"></div>
-      <span class="unit">g</span>
-    </div>
-    <div class="row">
-      <label>장식 재료비</label>
-      <div class="input-wrap"><input type="number" id="decCost" placeholder="0" step="1000"></div>
-      <span class="unit">원</span>
+      <label>본체 중량</label>
+      <div class="field field-inline">
+        <input type="number" id="goldWeightG" placeholder="0" step="0.01">
+        <span class="unit-label">g</span>
+      </div>
+      <span class="sync-arrow">↔</span>
+      <div class="field field-inline">
+        <input type="number" id="goldWeightDon" placeholder="0" step="0.01">
+        <span class="unit-label">돈</span>
+      </div>
     </div>
   </div>
 
-  <!-- 3. 부대비용 -->
+  <!-- 3. 장식 -->
   <div class="panel">
-    <h2>🔧 3. 부대비용</h2>
+    <h2>✨ 3. 장식 재료 (없으면 K "없음"·중량 0)</h2>
     <div class="row">
-      <label>공임비</label>
-      <div class="input-wrap"><input type="number" id="labor" placeholder="0" step="1000"></div>
-      <span class="unit">원</span>
+      <label>장식 K</label>
+      <div class="field">
+        <select id="decKarat">
+          <option value="24">24K (순금)</option>
+          <option value="18" selected>18K (연결고리·체인 기본)</option>
+          <option value="14">14K</option>
+          <option value="none">없음 (다이아·큐빅·은 등 비금속)</option>
+        </select>
+      </div>
     </div>
     <div class="row">
-      <label>장식비 (세공)</label>
-      <div class="input-wrap"><input type="number" id="decFee" placeholder="0" step="1000"></div>
-      <span class="unit">원</span>
+      <label>장식 중량</label>
+      <div class="field field-inline">
+        <input type="number" id="decWeightG" placeholder="0" step="0.01">
+        <span class="unit-label">g</span>
+      </div>
+      <span class="sync-arrow">↔</span>
+      <div class="field field-inline">
+        <input type="number" id="decWeightDon" placeholder="0" step="0.01">
+        <span class="unit-label">돈</span>
+      </div>
+    </div>
+    <div class="row" id="decCostRow">
+      <label>장식 재료비</label>
+      <div class="field">
+        <input type="number" id="decCost" placeholder="0" step="1000" data-won>
+      </div>
+      <span class="unit-label" style="padding-top:10px">원</span>
+    </div>
+    <div class="hint">
+      💡 장식 K가 <b>24/18/14K</b>면 재료비는 <b>중량 × K시세로 자동 계산</b> → 위 입력란 비활성.<br>
+      장식 K가 <b>없음</b>이면 재료비 직접 입력 (다이아·큐빅·은 등).
+    </div>
+  </div>
+
+  <!-- 4. 부대비용 -->
+  <div class="panel">
+    <h2>🔧 4. 부대비용</h2>
+    <div class="row">
+      <label>공임비</label>
+      <div class="field">
+        <input type="number" id="labor" placeholder="0" step="1000" data-won>
+      </div>
+      <span class="unit-label" style="padding-top:10px">원</span>
+    </div>
+    <div class="row">
+      <label>장식비(세공)</label>
+      <div class="field">
+        <input type="number" id="decFee" placeholder="0" step="1000" data-won>
+      </div>
+      <span class="unit-label" style="padding-top:10px">원</span>
     </div>
     <div class="row">
       <label>기타비용</label>
-      <div class="input-wrap"><input type="number" id="misc" placeholder="0" step="1000"></div>
-      <span class="unit">원</span>
+      <div class="field">
+        <input type="number" id="misc" placeholder="0" step="1000" data-won>
+      </div>
+      <span class="unit-label" style="padding-top:10px">원</span>
     </div>
     <div class="hint">
-      💡 <b>공임비</b>: 반지·목걸이 제작 인건비 (일반적으로 3~15만원)<br>
-      <b>장식비(세공)</b>: 컷팅·조각·디자인 특수공정 비용<br>
-      <b>기타비용</b>: 배송·케이스·감정서·보증서 등
+      💡 <b>공임비</b>: 인건비 (일반 3~15만) · <b>장식비(세공)</b>: 컷팅·조각 특수공정 · <b>기타비용</b>: 배송·케이스·감정서
     </div>
   </div>
 
-  <!-- 4. 부가세 -->
+  <!-- 5. 부가세 -->
   <div class="panel">
-    <h2>🧾 4. 부가세 (VAT 10%)</h2>
+    <h2>🧾 5. 부가세 (VAT 10%)</h2>
     <div class="radio-group">
       <label><input type="radio" name="vat" value="excl" checked> 별도 (표시가 + 10%)</label>
       <label><input type="radio" name="vat" value="incl"> 포함 (표시가 그대로)</label>
     </div>
     <div class="hint">
-      💡 부가세 <b>별도</b>: 금은방·공장 도매가는 대부분 별도 표기<br>
-      부가세 <b>포함</b>: 백화점·브랜드 소매가는 포함 표기 일반적
+      💡 <b>별도</b>: 금은방·공장 도매가는 대부분 별도 · <b>포함</b>: 백화점·브랜드 소매가는 포함 일반적
     </div>
   </div>
 
-  <!-- 5. 결과 -->
+  <!-- 6. 결과 -->
   <div class="panel">
-    <h2>💰 5. 계산 결과</h2>
+    <h2>💰 6. 계산 결과</h2>
     <table class="result-table">
       <tr>
-        <td>금 원가 <span id="rGoldDetail" style="font-size:11px;color:#888"></span></td>
-        <td class="v" id="rGold">-</td>
+        <td>본체 금 원가 <span id="rGoldDetail" style="font-size:11px;color:#888"></span></td>
+        <td class="v" id="rGold">- <span class="kor"></span></td>
       </tr>
       <tr>
-        <td>장식 재료비</td>
-        <td class="v" id="rDec">-</td>
+        <td>장식 재료비 <span id="rDecDetail" style="font-size:11px;color:#888"></span></td>
+        <td class="v" id="rDec">- <span class="kor"></span></td>
       </tr>
-      <tr>
-        <td>공임비</td>
-        <td class="v" id="rLabor">-</td>
-      </tr>
-      <tr>
-        <td>장식비 (세공)</td>
-        <td class="v" id="rDecFee">-</td>
-      </tr>
-      <tr>
-        <td>기타비용</td>
-        <td class="v" id="rMisc">-</td>
-      </tr>
+      <tr><td>공임비</td><td class="v" id="rLabor">- <span class="kor"></span></td></tr>
+      <tr><td>장식비 (세공)</td><td class="v" id="rDecFee">- <span class="kor"></span></td></tr>
+      <tr><td>기타비용</td><td class="v" id="rMisc">- <span class="kor"></span></td></tr>
       <tr class="subtotal">
         <td>소계 (공급가액)</td>
-        <td class="v" id="rSubtotal">-</td>
+        <td class="v" id="rSubtotal">- <span class="kor"></span></td>
       </tr>
       <tr>
         <td>부가세 (10%)</td>
-        <td class="v" id="rVat">-</td>
+        <td class="v" id="rVat">- <span class="kor"></span></td>
       </tr>
       <tr class="total">
         <td>💵 총 결제금액</td>
-        <td class="v" id="rTotal">-</td>
+        <td class="v" id="rTotal">- <span class="kor"></span></td>
       </tr>
     </table>
     <div class="meta-info" id="metaInfo" style="display:none">
       <div id="metaContent"></div>
     </div>
+  </div>
+
+  <!-- 7. 저장/불러오기 -->
+  <div class="panel">
+    <h2>💾 7. 저장·불러오기</h2>
+    <div class="row">
+      <label>저장 이름</label>
+      <div class="field">
+        <input type="text" id="presetName" placeholder="예: 결혼반지 · 목걸이 A · 부모님 선물">
+      </div>
+      <button class="btn primary" id="btnSavePreset">💾 저장</button>
+    </div>
+    <div class="divider">저장된 계산 목록</div>
+    <div class="preset-list" id="presetList">
+      <div class="preset-item empty">저장된 계산이 없습니다.</div>
+    </div>
     <div class="actions">
-      <button class="btn" id="btnReset">🔄 초기화</button>
-      <button class="btn primary" id="btnSave">💾 값 저장 (다음에도 유지)</button>
+      <button class="btn" id="btnReset">🔄 입력값 초기화</button>
+      <button class="btn danger" id="btnClearAll">🗑️ 저장 전체 삭제</button>
     </div>
   </div>
 
   <p class="footer-note">
     ※ 시세는 실시간 변동. 실제 매장가와 차이 있을 수 있음.<br>
-    ※ 재판매 시 금은방 매입가는 순금 중량 기준 감정 (장식·공임비는 감가).
+    ※ 재판매 시 금은방 매입가는 순금 중량 기준 감정 (장식·공임비는 감가).<br>
+    ※ 저장 데이터는 이 브라우저 로컬에만 저장됩니다.
   </p>
 </div>
 
 <script src="/common.js?v=4"></script>
 <script>
 (function() {
+  'use strict';
+
   const KARAT_FACTOR = { '24': 1.000, '18': 0.750, '14': 0.583 };
-  const STORAGE_KEY = 'gold-calc-v1';
+  const G_PER_DON = 3.75;
+  const PRESETS_KEY = 'gold-calc-presets-v2';
+  const LAST_KEY = 'gold-calc-last-v2';
 
   const $ = id => document.getElementById(id);
-  const inputs = ['price24k', 'karat', 'goldWeight', 'decWeight', 'decCost', 'labor', 'decFee', 'misc'];
 
   function num(id) {
-    const v = parseFloat($(id).value);
+    const el = $(id);
+    if (!el) return 0;
+    const v = parseFloat(el.value);
     return isNaN(v) ? 0 : v;
   }
 
   function fmt(n) {
-    if (!n) return '0 원';
+    if (n === 0 || isNaN(n)) return '0 원';
     return Math.round(n).toLocaleString('ko-KR') + ' 원';
   }
 
-  function fmtWon(n) {
-    // 억/만 단위로 한글 표기
-    if (!n || n < 10000) return '';
-    const eok = Math.floor(n / 100000000);
-    const man = Math.floor((n % 100000000) / 10000);
-    let s = '';
-    if (eok > 0) s += eok + '억 ';
-    if (man > 0) s += man.toLocaleString('ko-KR') + '만';
+  function fmtKor(n) {
+    if (!n || Math.abs(n) < 10000) return '';
+    const abs = Math.abs(Math.round(n));
+    const eok = Math.floor(abs / 100000000);
+    const man = Math.floor((abs % 100000000) / 10000);
+    const won = abs % 10000;
+    let s = n < 0 ? '-' : '';
+    if (eok > 0) s += eok.toLocaleString() + '억 ';
+    if (man > 0) s += man.toLocaleString() + '만';
+    if (!eok && won > 0) s += won.toLocaleString();
     return s.trim() + '원';
   }
 
+  // ---------- g/돈 병행 입력 ----------
+  function bindWeightPair(gId, donId) {
+    const g = $(gId), don = $(donId);
+    if (!g || !don) return;
+    let syncing = false;
+    g.addEventListener('input', () => {
+      if (syncing) return;
+      syncing = true;
+      const v = parseFloat(g.value);
+      don.value = isNaN(v) ? '' : (v / G_PER_DON).toFixed(3);
+      syncing = false;
+      calc();
+    });
+    don.addEventListener('input', () => {
+      if (syncing) return;
+      syncing = true;
+      const v = parseFloat(don.value);
+      g.value = isNaN(v) ? '' : (v * G_PER_DON).toFixed(3);
+      syncing = false;
+      calc();
+    });
+  }
+
+  // 시세 g/돈 병행 (여기선 g/돈이 아니라 원/g <-> 원/돈)
+  function bindPricePair() {
+    const g = $('price24kG'), don = $('price24kDon');
+    let syncing = false;
+    g.addEventListener('input', () => {
+      if (syncing) return;
+      syncing = true;
+      const v = parseFloat(g.value);
+      don.value = isNaN(v) ? '' : Math.round(v * G_PER_DON);
+      syncing = false;
+      calc();
+    });
+    don.addEventListener('input', () => {
+      if (syncing) return;
+      syncing = true;
+      const v = parseFloat(don.value);
+      g.value = isNaN(v) ? '' : Math.round(v / G_PER_DON);
+      syncing = false;
+      calc();
+    });
+  }
+
+  // ---------- 계산 로직 ----------
   function calc() {
-    const price24 = num('price24k');
+    const price24 = num('price24kG');
     const karat = $('karat').value;
-    const goldW = num('goldWeight');
-    const decW = num('decWeight');
-    const decCost = num('decCost');
+    const goldW = num('goldWeightG');
+    const decKarat = $('decKarat').value;
+    const decW = num('decWeightG');
+    const decCostInput = num('decCost');
     const labor = num('labor');
     const decFee = num('decFee');
     const misc = num('misc');
     const vatMode = document.querySelector('input[name="vat"]:checked').value;
 
-    // 금 원가
+    // 본체 금 원가
     const factor = KARAT_FACTOR[karat] || 1;
     const goldPricePerG = price24 * factor;
     const goldCost = goldW * goldPricePerG;
 
-    // 소계
+    // 장식 재료비 (K금이면 자동, 없음이면 수동)
+    let decCost, decAuto = false;
+    if (decKarat !== 'none') {
+      const decFactor = KARAT_FACTOR[decKarat] || 1;
+      const decPricePerG = price24 * decFactor;
+      decCost = decW * decPricePerG;
+      decAuto = true;
+      // 자동 계산 시 입력란 비활성 + 값 표시
+      $('decCost').value = decCost > 0 ? Math.round(decCost) : '';
+      $('decCost').disabled = true;
+      $('decCost').style.background = '#f5f7fa';
+      $('decCost').style.color = '#666';
+    } else {
+      decCost = decCostInput;
+      $('decCost').disabled = false;
+      $('decCost').style.background = '#FFF2CC';
+      $('decCost').style.color = '#0000FF';
+    }
+
     const subtotal = goldCost + decCost + labor + decFee + misc;
 
-    // 부가세·총액
     let vat, total;
     if (vatMode === 'excl') {
       vat = subtotal * 0.1;
       total = subtotal + vat;
     } else {
-      // 포함: 소계 자체가 총액. 부가세는 소계 × 10/110
       total = subtotal;
       vat = subtotal * (10 / 110);
     }
 
-    // 렌더
-    $('rGold').textContent = fmt(goldCost);
-    $('rGoldDetail').textContent = goldW > 0 && price24 > 0
+    // 렌더 with 한글
+    function setCell(id, n) {
+      const el = $(id);
+      const kor = fmtKor(n);
+      el.innerHTML = fmt(n) + (kor ? ' <span class="kor">(' + kor + ')</span>' : ' <span class="kor"></span>');
+    }
+    setCell('rGold', goldCost);
+    $('rGoldDetail').textContent = (goldW > 0 && price24 > 0)
       ? `(${karat}K ${goldW}g × ${Math.round(goldPricePerG).toLocaleString()}원/g)` : '';
-    $('rDec').textContent = fmt(decCost);
-    $('rLabor').textContent = fmt(labor);
-    $('rDecFee').textContent = fmt(decFee);
-    $('rMisc').textContent = fmt(misc);
-    $('rSubtotal').textContent = fmt(subtotal);
-    $('rVat').textContent = fmt(vat);
-    $('rTotal').textContent = fmt(total);
+    setCell('rDec', decCost);
+    $('rDecDetail').textContent = decAuto && decW > 0 && price24 > 0
+      ? `(${decKarat}K ${decW}g 자동)` : (decKarat === 'none' && decCost > 0 ? '(비금속 · 수동)' : '');
+    setCell('rLabor', labor);
+    setCell('rDecFee', decFee);
+    setCell('rMisc', misc);
+    setCell('rSubtotal', subtotal);
+    setCell('rVat', vat);
+    setCell('rTotal', total);
 
     // 참고 정보
     const totalW = goldW + decW;
-    const hangul = fmtWon(total);
     let meta = '';
     if (total > 0) {
-      if (hangul) meta += `<b>💬 총액 한글 표기:</b> ${hangul}<br>`;
-      if (totalW > 0) meta += `<b>⚖️ 총 중량:</b> 금 ${goldW}g + 장식 ${decW}g = ${totalW.toFixed(2)}g `;
-      if (totalW > 0 && goldW > 0) meta += `(순금 함량 비율 ${((goldW/totalW)*100).toFixed(1)}%)`;
-      // 재판매 감가 시뮬레이션 (매입 시 순금 중량 × 24K시세 × 90% 가정)
-      if (price24 > 0 && goldW > 0) {
-        // K 반영: 실제 금 함량 = goldW × factor 그램에 해당하는 순금 무게
-        const pureGoldEquiv = goldW * factor;
-        const resaleEst = pureGoldEquiv * price24 * 0.90; // 매입 스프레드 10% 가정
-        meta += `<br><b>♻️ 재판매 예상액:</b> 약 ${fmt(resaleEst)} (순금 환산 ${pureGoldEquiv.toFixed(2)}g × 24K시세 × 90%). 감가율 <b>${total > 0 ? (100 - (resaleEst/total)*100).toFixed(1) : 0}%</b>`;
+      if (totalW > 0) {
+        meta += `<b>⚖️ 총 중량:</b> 본체 ${goldW}g + 장식 ${decW}g = ${totalW.toFixed(2)}g (${(totalW/G_PER_DON).toFixed(2)}돈)`;
+        if (goldW > 0) meta += ` · 본체 함량 ${((goldW/totalW)*100).toFixed(1)}%`;
+      }
+      // 재판매: 순금 환산 (본체 K + 장식 K 각각 반영)
+      if (price24 > 0) {
+        const pureBody = goldW * factor;
+        let pureDec = 0;
+        if (decKarat !== 'none') pureDec = decW * (KARAT_FACTOR[decKarat] || 0);
+        const pureTotal = pureBody + pureDec;
+        if (pureTotal > 0) {
+          const resale = pureTotal * price24 * 0.90;
+          meta += `<br><b>♻️ 재판매 예상:</b> 약 ${fmt(resale)} (순금 환산 ${pureTotal.toFixed(2)}g × 24K시세 × 90%) · 감가율 <b>${(100 - (resale/total)*100).toFixed(1)}%</b>`;
+        }
       }
     }
     if (meta) {
@@ -292,52 +437,177 @@
     } else {
       $('metaInfo').style.display = 'none';
     }
+
+    // 최근 값 자동 저장
+    saveLast();
+
+    // data-won 힌트 갱신 (동적)
+    if (window.sfRefreshWon) window.sfRefreshWon();
   }
 
-  function save() {
-    const data = {};
-    inputs.forEach(id => data[id] = $(id).value);
-    data.vat = document.querySelector('input[name="vat"]:checked').value;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      $('btnSave').textContent = '✅ 저장됨';
-      setTimeout(() => $('btnSave').textContent = '💾 값 저장 (다음에도 유지)', 1500);
-    } catch(e) { console.error(e); }
+  // ---------- 최근 값 저장 (자동) ----------
+  function collectAll() {
+    return {
+      price24kG: $('price24kG').value,
+      karat: $('karat').value,
+      goldWeightG: $('goldWeightG').value,
+      decKarat: $('decKarat').value,
+      decWeightG: $('decWeightG').value,
+      decCost: $('decCost').value,
+      labor: $('labor').value,
+      decFee: $('decFee').value,
+      misc: $('misc').value,
+      vat: document.querySelector('input[name="vat"]:checked').value
+    };
   }
 
-  function load() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      inputs.forEach(id => { if (data[id] !== undefined) $(id).value = data[id]; });
-      if (data.vat) {
-        const r = document.querySelector(`input[name="vat"][value="${data.vat}"]`);
-        if (r) r.checked = true;
+  function applyAll(d) {
+    if (!d) return;
+    ['price24kG','karat','goldWeightG','decKarat','decWeightG','decCost','labor','decFee','misc'].forEach(k => {
+      if (d[k] !== undefined && d[k] !== null) $(k).value = d[k];
+    });
+    if (d.vat) {
+      const r = document.querySelector(`input[name="vat"][value="${d.vat}"]`);
+      if (r) r.checked = true;
+    }
+    // g→돈 동기화
+    ['price24kG:price24kDon:price', 'goldWeightG:goldWeightDon:weight', 'decWeightG:decWeightDon:weight'].forEach(pair => {
+      const [gId, donId, kind] = pair.split(':');
+      const v = parseFloat($(gId).value);
+      if (!isNaN(v)) {
+        $(donId).value = kind === 'price' ? Math.round(v * G_PER_DON) : (v / G_PER_DON).toFixed(3);
+      } else {
+        $(donId).value = '';
       }
-    } catch(e) { console.error(e); }
-  }
-
-  function reset() {
-    if (!confirm('모든 입력값을 초기화할까요?')) return;
-    inputs.forEach(id => $(id).value = '');
-    $('karat').value = '18';
-    document.querySelector('input[name="vat"][value="excl"]').checked = true;
-    try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+    });
     calc();
   }
 
-  // 이벤트 바인딩
-  inputs.forEach(id => {
+  function saveLast() {
+    try { localStorage.setItem(LAST_KEY, JSON.stringify(collectAll())); } catch(e){}
+  }
+
+  function loadLast() {
+    try {
+      const raw = localStorage.getItem(LAST_KEY);
+      if (raw) applyAll(JSON.parse(raw));
+    } catch(e){}
+  }
+
+  // ---------- 프리셋 시스템 ----------
+  function loadPresets() {
+    try { return JSON.parse(localStorage.getItem(PRESETS_KEY) || '{}'); }
+    catch(e) { return {}; }
+  }
+
+  function savePresets(p) {
+    try { localStorage.setItem(PRESETS_KEY, JSON.stringify(p)); }
+    catch(e) { alert('저장 실패: ' + e.message); }
+  }
+
+  function refreshPresetList() {
+    const presets = loadPresets();
+    const list = $('presetList');
+    const names = Object.keys(presets).sort();
+    if (names.length === 0) {
+      list.innerHTML = '<div class="preset-item empty">저장된 계산이 없습니다.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    names.forEach(name => {
+      const p = presets[name];
+      const total = p._total ? Math.round(p._total).toLocaleString() + '원' : '';
+      const savedAt = p._savedAt ? new Date(p._savedAt).toLocaleDateString('ko-KR') : '';
+      const item = document.createElement('div');
+      item.className = 'preset-item';
+      item.innerHTML = `
+        <div class="preset-name">${escapeHtml(name)}</div>
+        <div class="preset-meta">${total}<br>${savedAt}</div>
+        <button class="btn primary" data-load="${escapeHtml(name)}">📂 불러오기</button>
+        <button class="btn danger" data-del="${escapeHtml(name)}">삭제</button>
+      `;
+      list.appendChild(item);
+    });
+    list.querySelectorAll('[data-load]').forEach(btn => btn.addEventListener('click', () => loadPreset(btn.dataset.load)));
+    list.querySelectorAll('[data-del]').forEach(btn => btn.addEventListener('click', () => deletePreset(btn.dataset.del)));
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function savePreset() {
+    const name = ($('presetName').value || '').trim();
+    if (!name) { alert('저장 이름을 입력하세요.'); return; }
+    const presets = loadPresets();
+    if (presets[name] && !confirm(`"${name}" 이미 존재. 덮어쓸까요?`)) return;
+    const data = collectAll();
+    // 계산 결과 요약 저장
+    const price24 = parseFloat(data.price24kG) || 0;
+    const goldW = parseFloat(data.goldWeightG) || 0;
+    const decW = parseFloat(data.decWeightG) || 0;
+    const factor = KARAT_FACTOR[data.karat] || 1;
+    const decFactor = KARAT_FACTOR[data.decKarat] || 0;
+    const goldCost = goldW * price24 * factor;
+    const decCost = data.decKarat === 'none' ? (parseFloat(data.decCost) || 0) : (decW * price24 * decFactor);
+    const sub = goldCost + decCost + (parseFloat(data.labor)||0) + (parseFloat(data.decFee)||0) + (parseFloat(data.misc)||0);
+    data._total = data.vat === 'excl' ? sub * 1.1 : sub;
+    data._savedAt = new Date().toISOString();
+    presets[name] = data;
+    savePresets(presets);
+    $('presetName').value = '';
+    refreshPresetList();
+    alert(`"${name}" 저장 완료`);
+  }
+
+  function loadPreset(name) {
+    const presets = loadPresets();
+    const p = presets[name];
+    if (!p) return;
+    applyAll(p);
+  }
+
+  function deletePreset(name) {
+    if (!confirm(`"${name}" 삭제할까요?`)) return;
+    const presets = loadPresets();
+    delete presets[name];
+    savePresets(presets);
+    refreshPresetList();
+  }
+
+  function reset() {
+    if (!confirm('현재 입력값을 모두 초기화할까요? (저장된 프리셋은 유지)')) return;
+    ['price24kG','price24kDon','goldWeightG','goldWeightDon','decWeightG','decWeightDon','decCost','labor','decFee','misc'].forEach(id => $(id).value = '');
+    $('karat').value = '18';
+    $('decKarat').value = '18';
+    document.querySelector('input[name="vat"][value="excl"]').checked = true;
+    try { localStorage.removeItem(LAST_KEY); } catch(e){}
+    calc();
+  }
+
+  function clearAllPresets() {
+    if (!confirm('저장된 모든 프리셋을 삭제할까요? 되돌릴 수 없습니다.')) return;
+    try { localStorage.removeItem(PRESETS_KEY); } catch(e){}
+    refreshPresetList();
+  }
+
+  // ---------- 이벤트 바인딩 ----------
+  bindPricePair();
+  bindWeightPair('goldWeightG', 'goldWeightDon');
+  bindWeightPair('decWeightG', 'decWeightDon');
+  ['karat','decKarat','decCost','labor','decFee','misc'].forEach(id => {
     $(id).addEventListener('input', calc);
     $(id).addEventListener('change', calc);
   });
   document.querySelectorAll('input[name="vat"]').forEach(r => r.addEventListener('change', calc));
-  $('btnSave').addEventListener('click', save);
+  $('btnSavePreset').addEventListener('click', savePreset);
   $('btnReset').addEventListener('click', reset);
+  $('btnClearAll').addEventListener('click', clearAllPresets);
+  $('presetName').addEventListener('keydown', e => { if (e.key === 'Enter') savePreset(); });
 
-  // 초기화
-  load();
+  // 초기 로드
+  loadLast();
+  refreshPresetList();
   calc();
 })();
 </script>
