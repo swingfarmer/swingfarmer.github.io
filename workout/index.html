@@ -77,6 +77,16 @@
   .btn-blue { background: #1F4E78; color: white; } .btn-gray { background: #9ca3af; color: white; }
   .tips { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; font-size: 12.5px; line-height: 1.8; color: #6b5618; margin-top: 14px; }
   footer { text-align: center; margin-top: 30px; color: #999; font-size: 12px; }
+
+  /* 클라우드 저장 UI */
+  .cloud-bar { display: none; align-items: center; gap: 8px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; flex-wrap: wrap; }
+  .admin-login-btn { display: none; padding: 8px 14px; border: 1px solid #ddd; background: #fff; color: #444; border-radius: 6px; font-size: 13px; cursor: pointer; margin-bottom: 14px; font-family: inherit; }
+  .uid-info { display: none; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #92400e; margin-bottom: 14px; line-height: 1.7; }
+  .btn-cloud { background: #0ea5e9; color: white; }
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
+  .modal-bg.show { display: flex; }
+  .modal-content { background: #fff; border-radius: 12px; padding: 20px; max-width: 480px; width: 100%; max-height: 90vh; overflow-y: auto; }
+  .modal-content h3 { color: #1F4E78; font-size: 17px; margin: 0; }
 </style>
 </head>
 <body>
@@ -88,6 +98,14 @@
 </header>
 
 <div class="wrap">
+  <div id="cloudArea" class="cloud-bar">
+    <span id="cloudWho" style="font-size:12px;color:#0369a1"></span>
+    <button id="btnCloudOpen" class="btn btn-cloud" type="button">☁️ 클라우드 저장/불러오기</button>
+    <button id="btnCloudLogout" class="btn btn-gray" type="button" style="margin-left:auto">로그아웃</button>
+  </div>
+  <button id="btnAdminLogin" class="admin-login-btn" type="button">🔑 관리자 로그인</button>
+  <div id="uidInfo" class="uid-info"></div>
+
   <p class="desc">입문자용 전신 맨몸운동. <b>한 달에 걸쳐 3단계로</b> 천천히 늘려가세요. 동작을 체크하며 진행하고, 버티기·휴식은 타이머를 쓰세요. <b>🌙 밤 탭</b>은 자기 전 이완 스트레칭이에요. 체크는 오늘 날짜로 저장됩니다.</p>
 
   <!-- 단계 탭 -->
@@ -161,7 +179,119 @@
   </div>
 </div>
 
+<!-- 클라우드 저장 모달 -->
+<div id="slotModal" class="modal-bg">
+  <div class="modal-content">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <h3>☁️ 클라우드 저장</h3>
+      <button onclick="document.getElementById('slotModal').classList.remove('show')" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">💾 현재 운동 진행상황 저장</div>
+      <div style="font-size:11.5px;color:#0369a1;margin-bottom:8px">체크 이력·현재 단계가 저장됩니다. 날짜(2026-06) 이름은 이력용, 그 외는 백업용.</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="slotName" placeholder="예: 2026-08 또는 백업" maxlength="30" style="flex:1;padding:9px;font-size:13px;border:1px solid #ccc;border-radius:6px">
+        <button id="slotSaveBtn" style="background:#0ea5e9;color:white;border:none;padding:9px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">저장</button>
+      </div>
+    </div>
+    <div style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px">📋 저장된 백업</div>
+    <div id="slotSelectBar" style="display:none;align-items:center;gap:8px;margin-bottom:8px;font-size:12px">
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:#555"><input type="checkbox" id="slotSelectAll" onclick="window._slotToggleAll(this.checked)"> 전체선택</label>
+      <span id="slotSelCount" style="color:#888"></span>
+      <button id="slotDelSelected" onclick="window._slotDeleteSelected()" style="margin-left:auto;background:#dc2626;color:white;border:none;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;display:none">선택 삭제</button>
+    </div>
+    <div id="slotList" style="display:flex;flex-direction:column;gap:8px">
+      <div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>
+    </div>
+  </div>
+</div>
+
 <script src="/common.js?v=4"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
+  authDomain: "swingfarmer-board01.firebaseapp.com",
+  projectId: "swingfarmer-board01",
+  storageBucket: "swingfarmer-board01.firebasestorage.app",
+  messagingSenderId: "312575044644",
+  appId: "1:312575044644:web:81d754eb1d90f25454fcb1"
+};
+const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1";
+const CALC_KEY = "workout";
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ prompt: 'select_account' });
+const gid = id => document.getElementById(id);
+let currentUser = null;
+
+getRedirectResult(auth).catch(()=>{});
+if(location.hash === '#admin' || location.hash === '#관리자'){ gid('btnAdminLogin').style.display='inline-block'; }
+gid('btnAdminLogin').addEventListener('click', async ()=>{
+  try{ await signInWithPopup(auth, provider); }
+  catch(e){ const code=e&&e.code;
+    if(code==='auth/popup-blocked'||code==='auth/cancelled-popup-request'||code==='auth/popup-closed-by-user'||code==='auth/operation-not-supported-in-this-environment'){
+      try{ await signInWithRedirect(auth, provider); }catch(e2){ alert('로그인 실패: '+e2.message); }
+    } else { alert('로그인 실패: '+(e.message||code)); }
+  }
+});
+onAuthStateChanged(auth, user=>{
+  currentUser=user; const isAdmin=user&&user.uid===ADMIN_UID;
+  if(isAdmin){ gid('cloudArea').style.display='inline-flex'; gid('btnAdminLogin').style.display='none'; gid('cloudWho').textContent='☁️ '+(user.displayName||user.email||'관리자'); if(gid('uidInfo'))gid('uidInfo').style.display='none'; }
+  else if(user&&!isAdmin){ gid('cloudArea').style.display='none'; gid('btnAdminLogin').style.display='none'; const box=gid('uidInfo'); if(box){ box.style.display='block'; box.innerHTML='로그인됨: <b>'+(user.email||'')+'</b><br>이 계정 UID:<br><code style="font-size:11px;word-break:break-all">'+user.uid+'</code><br><button onclick="window._wkSignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer;margin-top:4px">로그아웃</button>'; } }
+  else { gid('cloudArea').style.display='none'; if(gid('uidInfo'))gid('uidInfo').style.display='none'; }
+});
+window._wkSignout=()=>signOut(auth);
+
+const docRef=()=>doc(db,'calc_data',ADMIN_UID);
+async function loadSlots(){ try{ const snap=await getDoc(docRef()); if(snap.exists()&&snap.data()[CALC_KEY]&&Array.isArray(snap.data()[CALC_KEY].slots))return snap.data()[CALC_KEY].slots; }catch(e){} return []; }
+async function saveSlots(slots){ const ref=docRef(); let ex={}; try{ const s=await getDoc(ref); if(s.exists())ex=s.data(); }catch(e){} ex[CALC_KEY]={slots,updatedAt:new Date().toISOString()}; await setDoc(ref,ex,{merge:true}); }
+
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+let _slotsCache=[];
+function slotItemHtml(s,idx){
+  const t=s.savedAt?new Date(s.savedAt).toLocaleString('ko-KR'):'';
+  const cnt=s.data&&s.data.checks?Object.keys(s.data.checks).length:0;
+  return '<div style="display:flex;align-items:center;gap:6px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px"><input type="checkbox" class="slotChk" data-idx="'+idx+'" onclick="window._slotChkChange()" style="width:16px;height:16px"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.name||'(이름없음)')+' <span style="color:#888;font-weight:500">('+cnt+'일 이력)</span></div><div style="font-size:11px;color:#999">'+t+'</div></div><button onclick="window._slotRename('+idx+')" style="background:#e5e7eb;color:#444;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">✏️</button><button onclick="window._slotLoad('+idx+')" style="background:#0284c7;color:white;border:none;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button></div>';
+}
+function renderSlots(){
+  const box=gid('slotList');
+  if(!_slotsCache||_slotsCache.length===0){ box.innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 백업이 없어요.</div>'; gid('slotSelectBar').style.display='none'; return; }
+  const sorted=[..._slotsCache.map((s,i)=>({s,i}))].sort((a,b)=>(new Date(b.s.savedAt||0))-(new Date(a.s.savedAt||0)));
+  box.innerHTML=sorted.map(x=>slotItemHtml(x.s,x.i)).join('');
+  gid('slotSelectBar').style.display='flex'; gid('slotSelectAll').checked=false; window._slotChkChange();
+}
+window._slotChkChange=function(){ const chks=Array.from(document.querySelectorAll('.slotChk')),sel=chks.filter(c=>c.checked); gid('slotSelCount').textContent=sel.length>0?sel.length+'개 선택':''; gid('slotDelSelected').style.display=sel.length>0?'inline-block':'none'; gid('slotSelectAll').checked=chks.length>0&&sel.length===chks.length; };
+window._slotToggleAll=function(c){ document.querySelectorAll('.slotChk').forEach(x=>x.checked=c); window._slotChkChange(); };
+window._slotDeleteSelected=async function(){ const idxs=Array.from(document.querySelectorAll('.slotChk:checked')).map(c=>parseInt(c.dataset.idx)); if(idxs.length===0)return; if(!confirm(idxs.length+'개 삭제할까요?'))return; try{ idxs.sort((a,b)=>b-a).forEach(i=>_slotsCache.splice(i,1)); await saveSlots(_slotsCache); renderSlots(); }catch(e){ alert('삭제 실패: '+e.message); } };
+async function refreshSlots(){ gid('slotList').innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>'; _slotsCache=await loadSlots(); renderSlots(); }
+
+gid('btnCloudOpen').addEventListener('click', async ()=>{ if(!currentUser||currentUser.uid!==ADMIN_UID){ alert('관리자 로그인이 필요합니다.'); return; } const now=new Date(); gid('slotName').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0'); gid('slotModal').classList.add('show'); await refreshSlots(); });
+gid('slotSaveBtn').addEventListener('click', async ()=>{
+  const name=gid('slotName').value.trim();
+  if(!name){ alert('이름을 입력하세요.'); return; }
+  const idx=_slotsCache.findIndex(s=>s.name===name);
+  if(idx>=0&&!confirm('"'+name+'" 이미 있어요. 덮어쓸까요?'))return;
+  gid('slotSaveBtn').disabled=true; gid('slotSaveBtn').textContent='저장 중...';
+  try{
+    const data=window.wkGetState();
+    const entry={name,data:JSON.parse(JSON.stringify(data)),savedAt:new Date().toISOString()};
+    if(idx>=0)_slotsCache[idx]=entry; else _slotsCache.push(entry);
+    await saveSlots(_slotsCache); renderSlots();
+    alert('✅ "'+name+'" 저장 완료.');
+  }catch(e){ alert('저장 실패: '+e.message); }
+  gid('slotSaveBtn').disabled=false; gid('slotSaveBtn').textContent='저장';
+});
+window._slotLoad=function(i){ const s=_slotsCache[i]; if(!s)return; if(!confirm('"'+s.name+'" 불러올까요? 현재 진행상황이 교체됩니다.'))return; window.wkSetState(s.data); gid('slotModal').classList.remove('show'); alert('✅ "'+s.name+'" 불러왔어요.'); };
+window._slotRename=async function(i){ const s=_slotsCache[i]; if(!s)return; const nn=prompt('이름 수정 (날짜는 2026-06 형식)',s.name||''); if(nn===null)return; const t=nn.trim(); if(!t){ alert('이름을 비울 수 없어요.'); return; } if(_slotsCache.some((x,idx)=>idx!==i&&x.name===t)){ alert('같은 이름이 있어요.'); return; } try{ _slotsCache[i].name=t; await saveSlots(_slotsCache); renderSlots(); }catch(e){ alert('실패: '+e.message); } };
+gid('btnCloudLogout').addEventListener('click', async ()=>{ if(confirm('로그아웃 할까요?')){ try{ await signOut(auth); alert('로그아웃 됐어요.'); }catch(e){} } });
+</script>
 <script>
 const $ = id => document.getElementById(id);
 const STORE_KEY = 'sf_workout_v1';
@@ -251,6 +381,17 @@ function todayKey(){ return new Date().toISOString().slice(0,10); }
 
 function load(){ try{ const raw=localStorage.getItem(STORE_KEY); if(raw){ const d=JSON.parse(raw); checks=d.checks||{}; curStage=d.curStage||0; } }catch(e){} }
 function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify({checks, curStage})); }catch(e){} }
+
+// Firestore 슬롯 시스템 훅
+window.wkGetState = function() { return { checks: JSON.parse(JSON.stringify(checks)), curStage }; };
+window.wkSetState = function(d) {
+  if (!d) return;
+  checks = d.checks || {};
+  curStage = typeof d.curStage === 'number' ? d.curStage : 0;
+  save();
+  document.querySelectorAll('.stage-tab').forEach(t=>t.classList.toggle('active', parseInt(t.dataset.stage)===curStage));
+  render();
+};
 
 function setStage(s){ curStage=s; document.querySelectorAll('.stage-tab').forEach(t=>t.classList.toggle('active', parseInt(t.dataset.stage)===s)); save(); render(); }
 
