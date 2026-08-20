@@ -284,6 +284,25 @@
       </div>
     </div>
 
+    <div id="farmerBox" style="margin-top:14px;padding:12px 14px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px">
+      <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:13.5px;line-height:1.5">
+        <input type="checkbox" id="chkFarmer" style="width:auto;margin-top:3px;flex-shrink:0">
+        <span><b>🌾 재촌자경 8년 이상 (조특법 §69 자경농지 감면 100%)</b> — 요건 충족 시 이 4번째 시나리오가 결과표에 추가됩니다.</span>
+      </label>
+      <details style="margin-top:8px">
+        <summary style="cursor:pointer;font-size:12px;color:#0369a1;font-weight:600">📋 재촌·자경 요건 상세 (클릭)</summary>
+        <div style="font-size:12px;line-height:1.8;margin-top:8px;color:#333">
+          <b>① 재촌</b>: 농지 소재 시·군·구 또는 <b>연접 시·군·구</b>에 거주, 또는 농지로부터 <b>직선 30km 이내</b> 거주<br>
+          <b>② 자경</b>: 8년 이상 <b>직접 경작</b>. 농작업의 1/2 이상을 자기 노동력으로 상시 종사<br>
+          <b>③ 소득 제외</b>: 근로소득 총급여 or 사업소득이 <b>3,700만원 이상</b>인 해는 자경으로 인정 안 됨 (2020년 이후)<br>
+          <b>④ 지목</b>: 양도 시점에 지목이 <b>답·전·과수원</b> (농지). 대지·잡종지 전환 시 감면 불가<br>
+          <b>⑤ 감면한도</b>: 연 1억·5년 합산 3억 (이 계산기는 단건 기준, 5년 합산은 사용자 별도 확인)<br>
+          <b>⑥ 농어촌특별세</b>: <b>면제</b> (§77 공익사업 감면과 다르게 농특세 부담 없음)<br>
+          <b>⑦ 중복 불가</b>: 공익사업 감면(§77)과 <b>동시 적용 불가</b>. 한 양도에 대해 유리한 것 하나만 선택.
+        </div>
+      </details>
+    </div>
+
     <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
       <button id="btnCalc" class="btn btn-blue">계산하기</button>
       <button id="btnReset" class="btn btn-gray" type="button">🔄 입력값 초기화</button>
@@ -312,9 +331,10 @@
       <li><b>양도차익</b> = 보상금(양도가액) − 취득가액 − 필요경비.</li>
       <li><b>장기보유특별공제</b>: 보유 3년 이상부터 연 2%p씩, 15년 이상 30% 한도 (2년 이하는 미적용).</li>
       <li><b>양도소득기본공제</b>: 연 250만원 (조특법 감면 대상이어도 별도 적용).</li>
-      <li><b>세율</b>: 보유 1년 미만 50%, 1~2년 미만 40% (단일세율, 장특공제 미적용). 2년 이상은 기본세율(1,400만원 이하 6% ~ 10억원 초과 45%, 8단계 누진).</li>
-      <li><b>감면율 (조특법 77조, 2025.3.14 개정)</b>: 현금보상 15%, 일반채권 20%, 3년만기특약채권 35%, 5년만기특약채권 45%. 산출세액에서 직접 차감.</li>
-      <li><b>농어촌특별세</b> = 감면세액 × 20%.</li>
+      <li><b>세율</b>: 보유 1년 미만 50% · 2년 미만 40% · 2년 이상 기본세율(누진: 6~45%).</li>
+      <li><b>감면율 (조특법 §77, 2025.3.14 개정)</b>: 현금보상 15%, 일반채권 20%, 3년만기특약채권 35%, 5년만기특약채권 45%. 산출세액에서 직접 차감.</li>
+      <li><b>🌾 재촌자경 감면 (조특법 §69)</b>: 8년 이상 재촌·자경 요건 충족 시 산출세액 <b>100% 감면</b>. <b>연 한도 1억·5년 3억</b>. 초과분은 정상 과세. <b>농어촌특별세 면제</b>. 공익사업 감면(§77)과 <b>중복 불가</b> → 유리한 것 하나만 선택.</li>
+      <li><b>농어촌특별세</b> = 감면세액 × 20% (§77 공익사업 감면 대상. §69 자경농지 감면은 면제).</li>
       <li><b>지방소득세</b> = (산출세액 − 감면세액) × 10%.</li>
       <li><b>실수령액</b> = 보상금 − (산출세액−감면세액) − 지방소득세 − 농어촌특별세.</li>
     </ul>
@@ -481,6 +501,7 @@ function collectInputs() {
   o._mode = currentMode();
   o._unitProceeds = unitState.Proceeds;
   o._unitAcquisition = unitState.Acquisition;
+  o._chkFarmer = $('chkFarmer').checked;
   return o;
 }
 
@@ -490,6 +511,7 @@ function applyInputs(o) {
   if (o._mode) applyMode(o._mode);
   if (o._unitProceeds) applyUnit('Proceeds', o._unitProceeds);
   if (o._unitAcquisition) applyUnit('Acquisition', o._unitAcquisition);
+  if (o._chkFarmer !== undefined) $('chkFarmer').checked = !!o._chkFarmer;
   updateHints();
   updateAllPyeongHints();
   updateDateCalc();
@@ -743,6 +765,7 @@ bindDateGroup('inAcq');
 bindDateGroup('inDisp');
 $('inYears').addEventListener('change', onChange);
 $('inYears').addEventListener('input', onChange);
+$('chkFarmer').addEventListener('change', onChange);
 
 function getHoldingYears() {
   if (currentMode() === 'years') return parseFloat($('inYears').value) || 0;
@@ -780,9 +803,11 @@ const SCENARIOS = [
   { key: 'bond3', label: '3년만기채권', rate: 0.35 },
   { key: 'bond5', label: '5년만기채권', rate: 0.45 }
 ];
+const FARMER_SCENARIO = { key: 'farmer', label: '재촌자경 §69', rate: 1.00 };
+const FARMER_LIMIT_YEAR = 100000000; // 자경농지 감면 연 한도 1억
 const BASIC_DEDUCTION = 2500000;
 
-function computeScenario(gain, years, scenarioRate) {
+function computeScenario(gain, years, scenarioRate, isFarmer) {
   const ltRate = longTermDeductionRate(years);
   const ltDeduction = Math.max(0, gain) * ltRate;
   const gainAfterLT = Math.max(0, gain - ltDeduction);
@@ -794,13 +819,23 @@ function computeScenario(gain, years, scenarioRate) {
   else if (years < 2) { calculatedTax = taxBase * 0.40; rateLabel = '40% (2년 미만)'; }
   else { calculatedTax = calcProgressiveTax(taxBase); rateLabel = '기본세율(누진)'; }
 
-  const relief = calculatedTax * scenarioRate;
+  let relief, ruralTax, excessOverLimit = 0;
+  if (isFarmer) {
+    // 자경농지 감면: 100% 감면, 단 연 한도 1억
+    const reliefBeforeLimit = calculatedTax * scenarioRate;
+    relief = Math.min(reliefBeforeLimit, FARMER_LIMIT_YEAR);
+    excessOverLimit = Math.max(0, reliefBeforeLimit - relief);
+    ruralTax = 0; // 자경농지 감면은 농특세 면제
+  } else {
+    // 공익사업 감면: 감면율 적용, 농특세 20%
+    relief = calculatedTax * scenarioRate;
+    ruralTax = relief * 0.20;
+  }
   const afterRelief = Math.max(0, calculatedTax - relief);
-  const ruralTax = relief * 0.20;
   const localTax = afterRelief * 0.10;
   const totalTax = afterRelief + localTax + ruralTax;
 
-  return { ltRate, ltDeduction, gainAfterLT, taxBase, calculatedTax, rateLabel, relief, afterRelief, ruralTax, localTax, totalTax };
+  return { ltRate, ltDeduction, gainAfterLT, taxBase, calculatedTax, rateLabel, relief, afterRelief, ruralTax, localTax, totalTax, excessOverLimit, isFarmer: !!isFarmer };
 }
 
 function calculate() {
@@ -808,14 +843,21 @@ function calculate() {
   const acquisition = parseNum($('inAcquisition').value);
   const expense = parseNum($('inExpense').value);
   const years = getHoldingYears();
+  const isFarmer = $('chkFarmer').checked;
 
   if (proceeds <= 0) { alert('보상금(양도가액)을 입력하세요'); return; }
   if (currentMode() === 'dates' && years <= 0) { alert('취득일·양도일을 확인하세요'); return; }
 
   const gain = proceeds - acquisition - expense;
-  const results = SCENARIOS.map(s => ({ ...s, ...computeScenario(gain, years, s.rate), proceeds }));
+  const scenarios = [...SCENARIOS];
+  if (isFarmer) scenarios.push(FARMER_SCENARIO);
+  const results = scenarios.map(s => ({
+    ...s,
+    ...computeScenario(gain, years, s.rate, s.key === 'farmer'),
+    proceeds
+  }));
 
-  const result = { proceeds, acquisition, expense, years, gain, results, ts: Date.now() };
+  const result = { proceeds, acquisition, expense, years, gain, results, isFarmer, ts: Date.now() };
   renderSummary(result);
   renderCompare(result);
   $('resultArea').style.display = 'block';
@@ -825,20 +867,30 @@ function calculate() {
 function renderSummary(r) {
   const cash = r.results.find(x => x.key === 'cash');
   const bond5 = r.results.find(x => x.key === 'bond5');
+  const farmer = r.results.find(x => x.key === 'farmer');
   const saved = cash.totalTax - bond5.totalTax;
-  $('summaryGrid').innerHTML = `
+  let html = `
     <div class="sc"><div class="lbl">양도차익</div><div class="val">${fmt(r.gain)}원</div><div class="sub">${toKoreanUnit(r.gain)}</div></div>
     <div class="sc"><div class="lbl">보유기간</div><div class="val">${r.years.toFixed(1)}년</div><div class="sub">장특공제 ${(cash.ltRate*100).toFixed(0)}%</div></div>
     <div class="sc accent"><div class="lbl">현금보상 총 세금</div><div class="val">${fmt(cash.totalTax)}원</div><div class="sub">${toKoreanUnit(cash.totalTax)}</div></div>
-    <div class="sc"><div class="lbl">5년채권 대비 절세액</div><div class="val" style="color:#059669">${fmt(saved)}원</div><div class="sub">현금 대비 채권 선택시</div></div>
-  `;
+    <div class="sc"><div class="lbl">5년채권 대비 절세액</div><div class="val" style="color:#059669">${fmt(saved)}원</div><div class="sub">현금 대비 채권 선택시</div></div>`;
+  if (farmer) {
+    const farmerSaved = cash.totalTax - farmer.totalTax;
+    const limitNote = farmer.excessOverLimit > 0
+      ? '<span style="color:#dc2626">한도 1억 초과분 정상 과세</span>'
+      : '전액 감면 (한도 내)';
+    html += `
+      <div class="sc" style="border:2px solid #059669;background:#f0fdf4"><div class="lbl">🌾 재촌자경 §69 총 세금</div><div class="val" style="color:#059669">${fmt(farmer.totalTax)}원</div><div class="sub">${limitNote}</div></div>
+      <div class="sc" style="border:2px solid #059669;background:#f0fdf4"><div class="lbl">현금 대비 자경감면 절세</div><div class="val" style="color:#059669">${fmt(farmerSaved)}원</div><div class="sub">${toKoreanUnit(farmerSaved)}</div></div>`;
+  }
+  $('summaryGrid').innerHTML = html;
 }
 
 function renderCompare(r) {
   $('compareProceeds').innerHTML = '💰 보상금 <span style="font-size:16px">' + fmt(r.proceeds) + '원</span> <span style="font-size:11px;color:#888;font-weight:400">(' + toKoreanUnit(r.proceeds) + ')</span>';
-  let html = `<thead><tr>
-    <th>구분</th><th>현금보상(15%)</th><th>3년만기채권(35%)</th><th>5년만기채권(45%)</th>
-  </tr></thead><tbody>`;
+  let headerCells = '<th>구분</th><th>현금보상<br>(15%)</th><th>3년만기채권<br>(35%)</th><th>5년만기채권<br>(45%)</th>';
+  if (r.isFarmer) headerCells += '<th style="background:#f0fdf4;color:#059669">🌾 재촌자경 §69<br>(100%)</th>';
+  let html = `<thead><tr>${headerCells}</tr></thead><tbody>`;
   const rows = [
     { label: '양도차익', fn: x => fmt(r.gain) + '원' },
     { label: '장기보유특별공제', fn: x => fmt(x.ltDeduction) + '원 (' + (x.ltRate*100).toFixed(0) + '%)' },
@@ -846,21 +898,32 @@ function renderCompare(r) {
     { label: '과세표준', fn: x => fmt(x.taxBase) + '원' },
     { label: '적용세율', fn: x => x.rateLabel },
     { label: '산출세액', fn: x => fmt(x.calculatedTax) + '원' },
-    { label: '감면세액', fn: x => '-' + fmt(x.relief) + '원' },
-    { label: '농어촌특별세(감면액×20%)', fn: x => '+' + fmt(x.ruralTax) + '원' },
+    { label: '감면세액', fn: x => {
+        let s = '-' + fmt(x.relief) + '원';
+        if (x.isFarmer && x.excessOverLimit > 0) {
+          s += '<br><span style="color:#dc2626;font-size:11px">한도초과 ' + fmt(x.excessOverLimit) + '원 정상과세</span>';
+        }
+        return s;
+      }
+    },
+    { label: '농어촌특별세<br><small style="color:#888">(감면액×20%, 자경 면제)</small>', fn: x => x.ruralTax === 0 ? '<span style="color:#059669">면제</span>' : '+' + fmt(x.ruralTax) + '원' },
     { label: '지방소득세', fn: x => '+' + fmt(x.localTax) + '원' },
     { label: '총 납부세액', cls: 'tax-total', fn: x => fmt(x.totalTax) + '원' }
   ];
   for (const row of rows) {
     const cls = row.cls ? ' class="' + row.cls + '"' : '';
     html += `<tr${cls}><td>${row.label}</td>`;
-    for (const x of r.results) html += `<td>${row.fn(x)}</td>`;
+    for (const x of r.results) {
+      const cellStyle = x.key === 'farmer' ? ' style="background:#f0fdf4"' : '';
+      html += `<td${cellStyle}>${row.fn(x)}</td>`;
+    }
     html += '</tr>';
   }
   html += '</tbody><tfoot><tr><td>실수령액</td>';
   for (const x of r.results) {
     const net = r.proceeds - x.totalTax;
-    html += `<td class="net">${fmt(net)}원<br><small style="color:#999;font-weight:400">${toKoreanUnit(net)}</small></td>`;
+    const cellStyle = x.key === 'farmer' ? ' class="net" style="background:#f0fdf4;color:#059669"' : ' class="net"';
+    html += `<td${cellStyle}>${fmt(net)}원<br><small style="color:#999;font-weight:400">${toKoreanUnit(net)}</small></td>`;
   }
   html += '</tr></tfoot>';
   $('compareTable').innerHTML = html;
