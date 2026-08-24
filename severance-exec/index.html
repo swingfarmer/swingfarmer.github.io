@@ -18,12 +18,11 @@
   .row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
   .row > label { flex: 0 0 130px; font-size: 13px; color: #555; font-weight: 500; }
   .row .field { flex: 1; min-width: 120px; }
-  input[type=number], input[type=text], select, input[type=date] {
+  input[type=number], input[type=text], select {
     width: 100%; padding: 10px; border: 1px solid #d0d5dd; border-radius: 6px;
     background: #FFF2CC; color: #0000FF; font-weight: 700; font-size: 15px;
     text-align: right; font-family: inherit;
   }
-  input[type=date] { text-align: left; }
   select { background: #fff; color: #333; text-align: left; font-weight: 500; }
   input:focus, select:focus { outline: none; border-color: #1F4E78; }
   .unit { font-size: 12px; color: #666; margin-left: 4px; }
@@ -73,18 +72,30 @@
     <h2>📅 1. 근속기간</h2>
     <div class="row">
       <label>입사일</label>
-      <div class="field"><input type="date" id="inJoin"></div>
+      <div class="field" style="display:flex;align-items:center;gap:4px">
+        <input type="text" id="inJoinY" inputmode="numeric" maxlength="4" placeholder="YYYY" style="max-width:80px;text-align:center">
+        <span style="color:#888">-</span>
+        <input type="text" id="inJoinM" inputmode="numeric" maxlength="2" placeholder="MM" style="max-width:56px;text-align:center">
+        <span style="color:#888">-</span>
+        <input type="text" id="inJoinD" inputmode="numeric" maxlength="2" placeholder="DD" style="max-width:56px;text-align:center">
+      </div>
     </div>
     <div class="row">
       <label>퇴사일 (예정)</label>
-      <div class="field"><input type="date" id="inLeave"></div>
+      <div class="field" style="display:flex;align-items:center;gap:4px">
+        <input type="text" id="inLeaveY" inputmode="numeric" maxlength="4" placeholder="YYYY" style="max-width:80px;text-align:center">
+        <span style="color:#888">-</span>
+        <input type="text" id="inLeaveM" inputmode="numeric" maxlength="2" placeholder="MM" style="max-width:56px;text-align:center">
+        <span style="color:#888">-</span>
+        <input type="text" id="inLeaveD" inputmode="numeric" maxlength="2" placeholder="DD" style="max-width:56px;text-align:center">
+      </div>
     </div>
     <div class="row" style="align-items:baseline;background:#f0f7ff;padding:10px 12px;border-radius:6px;margin-top:4px">
       <label style="flex:0 0 100px;color:#1F4E78;font-weight:700">📊 근속기간</label>
       <div class="field" style="font-weight:700;color:#1F4E78;font-size:15px;text-align:left" id="serviceDisplay">-</div>
     </div>
     <div class="hint">
-      💡 두 날짜 선택하면 <b>정확한 근속연수·개월·일</b> 자동 계산. 소수점 오차 없이 계산됨.
+      💡 년(4자리)·월(2자리) 각각 다 채우면 <b>자동으로 다음 칸으로 이동</b>. 소수점 오차 없이 일수 기반 정확 계산.
     </div>
   </div>
 
@@ -326,10 +337,40 @@ function convDeduction(conv) {
   return 151700000 + (c - 300000000) * 0.35;
 }
 
+// 날짜 3분할 자동탭 바인딩 (landtax 패턴)
+function bindDateGroup(prefix) {
+  const y = $(prefix + 'Y'), m = $(prefix + 'M'), d = $(prefix + 'D');
+  y.addEventListener('input', () => {
+    y.value = y.value.replace(/\D/g, '').slice(0, 4);
+    if (y.value.length === 4) m.focus();
+    calc();
+  });
+  m.addEventListener('input', () => {
+    m.value = m.value.replace(/\D/g, '').slice(0, 2);
+    if (m.value.length === 2) d.focus();
+    calc();
+  });
+  d.addEventListener('input', () => {
+    d.value = d.value.replace(/\D/g, '').slice(0, 2);
+    calc();
+  });
+  m.addEventListener('keydown', e => { if (e.key === 'Backspace' && m.value === '') { y.focus(); e.preventDefault(); } });
+  d.addEventListener('keydown', e => { if (e.key === 'Backspace' && d.value === '') { m.focus(); e.preventDefault(); } });
+  m.addEventListener('blur', () => { if (m.value.length === 1) m.value = '0' + m.value; calc(); });
+  d.addEventListener('blur', () => { if (d.value.length === 1) d.value = '0' + d.value; calc(); });
+}
+function getDateStr(prefix) {
+  const y = ($(prefix + 'Y').value || '').trim();
+  const m = ($(prefix + 'M').value || '').trim();
+  const d = ($(prefix + 'D').value || '').trim();
+  if (y.length !== 4 || !m || !d) return '';
+  return y + '-' + m.padStart(2, '0') + '-' + d.padStart(2, '0');
+}
+
 function calc() {
   // 근속연수: 입사일~퇴사일로 계산
-  const joinStr = $('inJoin').value;
-  const leaveStr = $('inLeave').value;
+  const joinStr = getDateStr('inJoin');
+  const leaveStr = getDateStr('inLeave');
   let years = 0;
   if (joinStr && leaveStr) {
     const j = new Date(joinStr);
@@ -425,7 +466,11 @@ function calc() {
   setCell('rNet', net);
 }
 
-document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', calc));
+// 이벤트 바인딩
+bindDateGroup('inJoin');
+bindDateGroup('inLeave');
+// 날짜 필드 제외한 나머지 input/select에만 계산 이벤트
+document.querySelectorAll('input:not([id*="inJoin"]):not([id*="inLeave"]), select').forEach(el => el.addEventListener('input', calc));
 document.querySelectorAll('select').forEach(el => el.addEventListener('change', calc));
 
 // 상태 저장/복원
