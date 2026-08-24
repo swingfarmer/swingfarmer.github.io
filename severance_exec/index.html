@@ -18,11 +18,12 @@
   .row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
   .row > label { flex: 0 0 130px; font-size: 13px; color: #555; font-weight: 500; }
   .row .field { flex: 1; min-width: 120px; }
-  input[type=number], input[type=text], select {
+  input[type=number], input[type=text], select, input[type=date] {
     width: 100%; padding: 10px; border: 1px solid #d0d5dd; border-radius: 6px;
     background: #FFF2CC; color: #0000FF; font-weight: 700; font-size: 15px;
     text-align: right; font-family: inherit;
   }
+  input[type=date] { text-align: left; }
   select { background: #fff; color: #333; text-align: left; font-weight: 500; }
   input:focus, select:focus { outline: none; border-color: #1F4E78; }
   .unit { font-size: 12px; color: #666; margin-left: 4px; }
@@ -71,12 +72,19 @@
   <div class="panel">
     <h2>📅 1. 근속기간</h2>
     <div class="row">
-      <label>근속연수</label>
-      <div class="field"><input type="text" inputmode="decimal" id="inYears" placeholder="15"></div>
-      <span class="unit">년 (소수 가능, 예: 15.5)</span>
+      <label>입사일</label>
+      <div class="field"><input type="date" id="inJoin"></div>
+    </div>
+    <div class="row">
+      <label>퇴사일 (예정)</label>
+      <div class="field"><input type="date" id="inLeave"></div>
+    </div>
+    <div class="row" style="align-items:baseline;background:#f0f7ff;padding:10px 12px;border-radius:6px;margin-top:4px">
+      <label style="flex:0 0 100px;color:#1F4E78;font-weight:700">📊 근속기간</label>
+      <div class="field" style="font-weight:700;color:#1F4E78;font-size:15px;text-align:left" id="serviceDisplay">-</div>
     </div>
     <div class="hint">
-      💡 정확히 계산하려면 근속개월수 ÷ 12 입력. 예: 15년 6개월 = 15.5
+      💡 두 날짜 선택하면 <b>정확한 근속연수·개월·일</b> 자동 계산. 소수점 오차 없이 계산됨.
     </div>
   </div>
 
@@ -319,7 +327,26 @@ function convDeduction(conv) {
 }
 
 function calc() {
-  const years = parseFloat($('inYears').value) || 0;
+  // 근속연수: 입사일~퇴사일로 계산
+  const joinStr = $('inJoin').value;
+  const leaveStr = $('inLeave').value;
+  let years = 0;
+  if (joinStr && leaveStr) {
+    const j = new Date(joinStr);
+    const l = new Date(leaveStr);
+    if (!isNaN(j) && !isNaN(l) && l > j) {
+      const days = Math.round((l - j) / 86400000);
+      years = days / 365.25;
+      const fullY = Math.floor(years);
+      const remMonths = Math.round((years - fullY) * 12);
+      $('serviceDisplay').textContent = `${fullY}년 ${remMonths}개월  ·  총 ${days.toLocaleString()}일  ·  ${years.toFixed(3)}년`;
+    } else {
+      $('serviceDisplay').textContent = '날짜 확인 (퇴사일이 입사일보다 이후여야 함)';
+    }
+  } else {
+    $('serviceDisplay').textContent = '-';
+  }
+
   const y1 = parseFloat($('inY1').value) || 0;
   const y2 = parseFloat($('inY2').value) || 0;
   const y3 = parseFloat($('inY3').value) || 0;
@@ -426,7 +453,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/fireba
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 const firebaseConfig = { apiKey:"AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY", authDomain:"swingfarmer-board01.firebaseapp.com", projectId:"swingfarmer-board01", storageBucket:"swingfarmer-board01.firebasestorage.app", messagingSenderId:"312575044644", appId:"1:312575044644:web:81d754eb1d90f25454fcb1" };
-const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1", CALC_KEY = "severance_exec";
+const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1", CALC_KEY = "severance-exec";
 const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app);
 const provider = new GoogleAuthProvider(); provider.setCustomParameters({prompt:'select_account'});
 const gid = id => document.getElementById(id); let currentUser = null;
