@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="robots" content="noindex, nofollow">
+<title>목표가 계산기 (심플) | 스윙파머</title>
+<meta name="description" content="매수가·수량 넣고 목표가 입력하면 목표금액·수익·수익률 자동. %기반 자동 목표가·손절가 계산. 여러 목표가 시나리오 비교표.">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 80px; padding-top: 72px; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
+  h1 { color: #1F4E78; font-size: 22px; margin-bottom: 4px; }
+  .sub { color: #666; font-size: 13px; margin-bottom: 18px; }
+  .panel { background: #fff; border-radius: 12px; padding: 18px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .panel h2 { color: #1F4E78; font-size: 15px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e5e9f0; }
+  .row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .row > label { flex: 0 0 100px; font-size: 13px; color: #555; font-weight: 500; }
+  .row .field { flex: 1; min-width: 130px; }
+  input[type=text], select {
+    width: 100%; padding: 10px; border: 1px solid #d0d5dd; border-radius: 6px;
+    background: #FFF2CC; color: #0000FF; font-weight: 700; font-size: 15px;
+    text-align: right; font-family: inherit;
+  }
+  select { background: #fff; color: #333; text-align: left; font-weight: 500; }
+  input:focus, select:focus { outline: none; border-color: #1F4E78; }
+  .unit { font-size: 12px; color: #666; margin-left: 4px; flex-shrink: 0; }
+  .kor { font-size: 11px; color: #059669; text-align: right; padding: 2px 4px 0; font-weight: 500; min-height: 14px; }
+  .hint { background: #f0f7ff; padding: 10px 12px; border-radius: 6px; font-size: 12px; color: #1F4E78; margin-top: 8px; line-height: 1.7; }
+  .out-row { display: flex; align-items: baseline; gap: 8px; padding: 8px 10px; background: #f5f7fa; border-radius: 6px; margin-bottom: 6px; }
+  .out-row .lbl { flex: 0 0 90px; font-size: 12.5px; color: #555; }
+  .out-row .v { flex: 1; text-align: right; font-weight: 700; color: #1F4E78; font-size: 15px; }
+  .out-row .v.big { font-size: 17px; color: #dc2626; }
+  .out-row .v .kor { display: block; font-size: 11px; color: #059669; margin-top: 2px; font-weight: 500; }
+  .out-row .v.big .kor { color: #dc2626; }
+  .out-row .v.neg { color: #059669; }
+  .out-row .v.loss { color: #dc2626; }
+  .divider { padding: 8px 0 4px; font-size: 12px; color: #666; font-weight: 600; border-top: 1px dashed #e0e4eb; margin-top: 6px; }
+  .scenario-row { display: grid; grid-template-columns: minmax(90px, 1fr) 40px; gap: 8px; align-items: center; padding: 8px; background: #f9fafb; border-radius: 6px; margin-bottom: 6px; }
+  .sc-result { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: 12px; padding: 2px 0; }
+  .sc-result div { text-align: center; padding: 6px 4px; background: #fff; border-radius: 4px; }
+  .sc-result .l { color: #888; font-size: 10.5px; }
+  .sc-result .v { font-weight: 700; color: #1F4E78; margin-top: 2px; }
+  .sc-result .v.gain { color: #dc2626; }
+  .sc-result .v.loss { color: #059669; }
+  .btn-icon { background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; width: 32px; height: 32px; font-size: 14px; cursor: pointer; font-weight: 700; }
+  .btn { padding: 9px 14px; border: 1px solid #d0d5dd; background: #fff; border-radius: 6px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .btn.pri { background: #0ea5e9; color: #fff; border-color: #0ea5e9; }
+  .btn.pri:hover { background: #0284c7; }
+  .btn.gray { background: #9ca3af; color: #fff; border-color: #9ca3af; }
+  .footer-note { font-size: 11px; color: #888; text-align: center; margin-top: 20px; line-height: 1.6; }
+
+  /* 클라우드 */
+  .cloud-bar { display: none; align-items: center; gap: 8px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; flex-wrap: wrap; }
+  .admin-btn { display: none; padding: 8px 14px; border: 1px solid #ddd; background: #fff; color: #444; border-radius: 6px; font-size: 13px; cursor: pointer; margin-bottom: 14px; }
+  .uid-info { display: none; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #92400e; margin-bottom: 14px; line-height: 1.7; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="cloudArea" class="cloud-bar">
+    <span id="cloudWho" style="font-size:12px;color:#0369a1"></span>
+    <button id="btnCloudOpen" class="btn pri" type="button">☁️ 클라우드 저장/불러오기</button>
+    <button id="btnCloudLogout" class="btn gray" type="button" style="margin-left:auto">로그아웃</button>
+  </div>
+  <button id="btnAdminLogin" class="admin-btn" type="button">🔑 관리자 로그인</button>
+  <div id="uidInfo" class="uid-info"></div>
+
+  <h1>🎯 목표가 계산기 (심플)</h1>
+  <p class="sub">매수가·수량 입력 후 <b>3가지 방식</b>으로 목표 계산: ①직접 목표가 입력 ②상승/하락 %로 자동 ③여러 목표가 시나리오 비교표.</p>
+
+  <!-- 공통 입력 -->
+  <div class="panel">
+    <h2>📥 공통 입력 (매수 기준)</h2>
+    <div class="row">
+      <label>매수가</label>
+      <div class="field"><input type="text" inputmode="numeric" id="inBuy" placeholder="예: 50000"></div>
+      <span class="unit">원/주</span>
+    </div>
+    <div class="kor" id="korBuy"></div>
+    <div class="row">
+      <label>수량</label>
+      <div class="field"><input type="text" inputmode="numeric" id="inQty" placeholder="예: 100"></div>
+      <span class="unit">주</span>
+    </div>
+    <div class="row" style="align-items:baseline;background:#f0f7ff;padding:10px 12px;border-radius:6px;margin-top:4px">
+      <label style="flex:0 0 90px;color:#1F4E78;font-weight:700">📊 매수금액</label>
+      <div class="field" style="font-weight:700;color:#1F4E78;font-size:15px;text-align:right" id="buyAmount">-</div>
+      <span class="unit">원</span>
+    </div>
+    <div class="kor" id="korBuyAmount"></div>
+  </div>
+
+  <!-- ① 단순 목표가 → 목표금액 -->
+  <div class="panel">
+    <h2>① 단순: 목표가 → 목표금액</h2>
+    <div class="row">
+      <label>목표가</label>
+      <div class="field"><input type="text" inputmode="numeric" id="inTarget" placeholder="예: 75000"></div>
+      <span class="unit">원/주</span>
+    </div>
+    <div class="kor" id="korTarget"></div>
+    <div class="divider">계산 결과</div>
+    <div class="out-row"><span class="lbl">목표금액</span><span class="v big" id="o1Amount">- <span class="kor"></span></span></div>
+    <div class="out-row"><span class="lbl">예상 수익</span><span class="v" id="o1Gain">- <span class="kor"></span></span></div>
+    <div class="out-row"><span class="lbl">수익률</span><span class="v" id="o1Rate">-</span></div>
+  </div>
+
+  <!-- ② % 기반 자동 -->
+  <div class="panel">
+    <h2>② % 기반: 목표 상승률 / 손절률</h2>
+    <div class="row">
+      <label>목표 상승률</label>
+      <div class="field"><input type="text" inputmode="decimal" id="inRise" placeholder="예: 30"></div>
+      <span class="unit">%</span>
+    </div>
+    <div class="divider">목표 계산</div>
+    <div class="out-row"><span class="lbl">목표가</span><span class="v" id="o2Price">- <span class="kor"></span></span></div>
+    <div class="out-row"><span class="lbl">목표금액</span><span class="v big" id="o2Amount">- <span class="kor"></span></span></div>
+    <div class="out-row"><span class="lbl">예상 수익</span><span class="v" id="o2Gain">- <span class="kor"></span></span></div>
+
+    <div class="row" style="margin-top:14px">
+      <label>손절률</label>
+      <div class="field"><input type="text" inputmode="decimal" id="inLoss" placeholder="예: 10"></div>
+      <span class="unit">%</span>
+    </div>
+    <div class="divider">손절 계산</div>
+    <div class="out-row"><span class="lbl">손절가</span><span class="v loss" id="o2StopPrice">- <span class="kor"></span></span></div>
+    <div class="out-row"><span class="lbl">손절금액</span><span class="v loss" id="o2StopAmount">- <span class="kor"></span></span></div>
+    <div class="out-row"><span class="lbl">예상 손실</span><span class="v loss" id="o2StopLoss">- <span class="kor"></span></span></div>
+
+    <div class="hint">
+      💡 상승률·손절률은 <b>매수가 기준</b> 퍼센트. 예: 매수가 50,000원 + 상승률 30% → 목표가 65,000원.
+    </div>
+  </div>
+
+  <!-- ③ 여러 시나리오 비교 -->
+  <div class="panel">
+    <h2>③ 여러 시나리오 비교표</h2>
+    <p style="font-size:12.5px;color:#555;margin-bottom:10px">
+      목표가 여러 개 나열하고 각각의 목표금액·수익·수익률을 한눈에 비교. <b>+ 시나리오 추가</b>로 확장.
+    </p>
+    <div id="scenarioList"></div>
+    <button id="btnAddScenario" class="btn" style="margin-top:6px">➕ 시나리오 추가</button>
+    <div class="hint" style="margin-top:12px">
+      💡 익절 분할 매도 계획 세울 때 유용. 예: 목표가 6만(30%↑) / 7만(40%↑) / 8만(60%↑) 시나리오 미리 계산.
+    </div>
+  </div>
+</div>
+
+<!-- 클라우드 모달 -->
+<div id="slotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:16px">
+  <div style="background:white;border-radius:16px;max-width:440px;width:100%;padding:20px;max-height:90vh;overflow:auto">
+    <div style="display:flex;align-items:center;margin-bottom:14px">
+      <h3 style="margin:0;font-size:16px;color:#1F4E78">☁️ 클라우드 저장</h3>
+      <button onclick="document.getElementById('slotModal').style.display='none'" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
+    </div>
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">💾 현재 계산 저장</div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="slotName" placeholder="이름 (예: 삼성전자 목표, 두산에빌 익절계획)" maxlength="30" style="flex:1;padding:9px;font-size:13px;border:1px solid #ccc;border-radius:6px;background:white;color:#333">
+        <button id="slotSaveBtn" style="background:#0ea5e9;color:white;border:none;padding:9px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">저장</button>
+      </div>
+    </div>
+    <div style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px">📋 저장된 항목</div>
+    <div id="slotList" style="display:flex;flex-direction:column;gap:8px"><div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div></div>
+  </div>
+</div>
+
+<script src="/common.js?v=4"></script>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const fmt = n => (!isFinite(n) || n === 0) ? '0 원' : Math.round(n).toLocaleString('ko-KR') + ' 원';
+function fmtKor(n) {
+  if (!n || Math.abs(n) < 10000) return '';
+  const abs = Math.abs(Math.round(n));
+  const eok = Math.floor(abs / 1e8);
+  const man = Math.floor((abs % 1e8) / 10000);
+  const won = abs % 10000;
+  let s = n < 0 ? '-' : '';
+  if (eok > 0) s += eok.toLocaleString() + '억 ';
+  if (man > 0) s += man.toLocaleString() + '만';
+  if (!eok && won > 0) s += won.toLocaleString();
+  return s.trim() + '원';
+}
+function setCell(id, n, addSign) {
+  const el = $(id);
+  const kor = fmtKor(n);
+  const sign = addSign && n > 0 ? '+' : '';
+  el.innerHTML = sign + fmt(n) + (kor ? ' <span class="kor">(' + (n > 0 && addSign ? '+' : '') + kor + ')</span>' : ' <span class="kor"></span>');
+}
+function setKor(id, n) { $(id).textContent = n > 0 ? '≈ ' + fmtKor(n) : ''; }
+function num(id) { const v = parseFloat($(id).value.replace(/,/g,'')); return isNaN(v) ? 0 : v; }
+
+// 시나리오 상태
+let scenarios = [{ target: 60000 }, { target: 70000 }, { target: 80000 }];
+
+function renderScenarios() {
+  const box = $('scenarioList');
+  box.innerHTML = '';
+  scenarios.forEach((s, i) => {
+    const row = document.createElement('div');
+    row.className = 'scenario-row';
+    row.innerHTML = `
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="text" inputmode="numeric" placeholder="목표가" value="${s.target || ''}" data-idx="${i}" class="sc-input" style="width:100%;padding:8px 10px;border:1px solid #d0d5dd;border-radius:6px;background:#FFF2CC;color:#0000FF;font-weight:700;font-size:14px;text-align:right">
+        <span class="unit">원</span>
+      </div>
+      <button class="btn-icon" data-del="${i}" title="삭제">✕</button>
+      <div class="sc-result">
+        <div><div class="l">목표금액</div><div class="v" id="sc-amt-${i}">-</div></div>
+        <div><div class="l">수익</div><div class="v gain" id="sc-gain-${i}">-</div></div>
+        <div><div class="l">수익률</div><div class="v" id="sc-rate-${i}">-</div></div>
+      </div>
+    `;
+    box.appendChild(row);
+  });
+  // 이벤트
+  box.querySelectorAll('.sc-input').forEach(el => {
+    el.addEventListener('input', e => {
+      const i = parseInt(el.dataset.idx);
+      scenarios[i].target = parseFloat(el.value.replace(/,/g,'')) || 0;
+      calcScenarios();
+      saveLocal();
+    });
+  });
+  box.querySelectorAll('[data-del]').forEach(el => {
+    el.addEventListener('click', () => {
+      const i = parseInt(el.dataset.del);
+      scenarios.splice(i, 1);
+      renderScenarios(); calcScenarios(); saveLocal();
+    });
+  });
+  calcScenarios();
+}
+
+function calcScenarios() {
+  const buy = num('inBuy');
+  const qty = num('inQty');
+  scenarios.forEach((s, i) => {
+    const amt = (s.target || 0) * qty;
+    const gain = amt - buy * qty;
+    const rate = (buy > 0 && s.target > 0) ? ((s.target / buy - 1) * 100) : 0;
+    const amtEl = $(`sc-amt-${i}`), gainEl = $(`sc-gain-${i}`), rateEl = $(`sc-rate-${i}`);
+    if (amtEl) amtEl.textContent = amt > 0 ? Math.round(amt).toLocaleString() + '원' : '-';
+    if (gainEl) {
+      const sign = gain > 0 ? '+' : (gain < 0 ? '' : '');
+      gainEl.textContent = amt > 0 ? sign + Math.round(gain).toLocaleString() + '원' : '-';
+      gainEl.classList.toggle('gain', gain >= 0);
+      gainEl.classList.toggle('loss', gain < 0);
+    }
+    if (rateEl) {
+      rateEl.textContent = (buy > 0 && s.target > 0) ? (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%' : '-';
+      rateEl.classList.toggle('gain', rate >= 0);
+      rateEl.classList.toggle('loss', rate < 0);
+    }
+  });
+}
+
+function calc() {
+  const buy = num('inBuy');
+  const qty = num('inQty');
+  const target = num('inTarget');
+  const rise = num('inRise');
+  const loss = num('inLoss');
+
+  setKor('korBuy', buy);
+  setKor('korTarget', target);
+
+  // 공통
+  const buyAmt = buy * qty;
+  $('buyAmount').textContent = buyAmt > 0 ? Math.round(buyAmt).toLocaleString() : '-';
+  $('korBuyAmount').textContent = buyAmt > 0 ? '≈ ' + fmtKor(buyAmt) : '';
+
+  // ① 단순
+  const o1Amt = target * qty;
+  const o1Gain = o1Amt - buyAmt;
+  const o1Rate = (buy > 0 && target > 0) ? ((target / buy - 1) * 100) : 0;
+  setCell('o1Amount', o1Amt);
+  setCell('o1Gain', o1Gain, true);
+  $('o1Rate').textContent = (buy > 0 && target > 0) ? (o1Rate >= 0 ? '+' : '') + o1Rate.toFixed(2) + '%' : '-';
+  $('o1Gain').classList.toggle('neg', o1Gain > 0);
+  $('o1Gain').classList.toggle('loss', o1Gain < 0);
+  $('o1Rate').style.color = o1Rate > 0 ? '#dc2626' : (o1Rate < 0 ? '#059669' : '#1F4E78');
+
+  // ② % 기반
+  const o2Price = buy > 0 && rise !== 0 ? buy * (1 + rise / 100) : 0;
+  const o2Amt = o2Price * qty;
+  const o2Gain = o2Amt - buyAmt;
+  setCell('o2Price', o2Price);
+  setCell('o2Amount', o2Amt);
+  setCell('o2Gain', o2Gain, true);
+
+  const o2StopPrice = buy > 0 && loss !== 0 ? buy * (1 - loss / 100) : 0;
+  const o2StopAmt = o2StopPrice * qty;
+  const o2StopLoss = o2StopAmt - buyAmt;
+  setCell('o2StopPrice', o2StopPrice);
+  setCell('o2StopAmount', o2StopAmt);
+  setCell('o2StopLoss', o2StopLoss);
+
+  // ③ 시나리오
+  calcScenarios();
+}
+
+// 시나리오 추가
+$('btnAddScenario').addEventListener('click', () => {
+  const buy = num('inBuy');
+  const last = scenarios[scenarios.length - 1];
+  const lastPrice = last?.target || (buy > 0 ? Math.round(buy * 1.5) : 0);
+  scenarios.push({ target: Math.round(lastPrice * 1.1) });
+  renderScenarios(); saveLocal();
+});
+
+// 상태 저장/복원
+function tGetState() {
+  return {
+    buy: $('inBuy').value, qty: $('inQty').value, target: $('inTarget').value,
+    rise: $('inRise').value, loss: $('inLoss').value,
+    scenarios: JSON.parse(JSON.stringify(scenarios))
+  };
+}
+function tSetState(d) {
+  if (!d) return;
+  $('inBuy').value = d.buy || '';
+  $('inQty').value = d.qty || '';
+  $('inTarget').value = d.target || '';
+  $('inRise').value = d.rise || '';
+  $('inLoss').value = d.loss || '';
+  scenarios = Array.isArray(d.scenarios) ? JSON.parse(JSON.stringify(d.scenarios)) : [{target:60000},{target:70000},{target:80000}];
+  renderScenarios();
+  calc();
+}
+function saveLocal() { try { localStorage.setItem('sf_ts_state_v1', JSON.stringify(tGetState())); } catch(e){} }
+function loadLocal() { try { const r = localStorage.getItem('sf_ts_state_v1'); if (r) tSetState(JSON.parse(r)); } catch(e){} }
+
+document.querySelectorAll('#inBuy, #inQty, #inTarget, #inRise, #inLoss').forEach(el => {
+  el.addEventListener('input', () => { calc(); saveLocal(); });
+});
+window.tGetState = tGetState;
+window.tSetState = tSetState;
+
+// 초기화
+loadLocal();
+renderScenarios();
+calc();
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+const firebaseConfig = { apiKey:"AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY", authDomain:"swingfarmer-board01.firebaseapp.com", projectId:"swingfarmer-board01", storageBucket:"swingfarmer-board01.firebasestorage.app", messagingSenderId:"312575044644", appId:"1:312575044644:web:81d754eb1d90f25454fcb1" };
+const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1", CALC_KEY = "target-simple";
+const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app);
+const provider = new GoogleAuthProvider(); provider.setCustomParameters({prompt:'select_account'});
+const gid = id => document.getElementById(id); let currentUser = null;
+getRedirectResult(auth).catch(()=>{});
+if (location.hash === '#admin' || location.hash === '#\uad00\ub9ac\uc790') gid('btnAdminLogin').style.display = 'inline-block';
+gid('btnAdminLogin').addEventListener('click', async () => {
+  try { await signInWithPopup(auth, provider); }
+  catch(e) { const c = e && e.code;
+    if (c === 'auth/popup-blocked' || c === 'auth/cancelled-popup-request' || c === 'auth/popup-closed-by-user' || c === 'auth/operation-not-supported-in-this-environment') {
+      try { await signInWithRedirect(auth, provider); } catch(e2) { alert('로그인 실패: ' + e2.message); }
+    } else alert('로그인 실패: ' + (e.message || c));
+  }
+});
+onAuthStateChanged(auth, user => {
+  currentUser = user; const isAdmin = user && user.uid === ADMIN_UID;
+  if (isAdmin) { gid('cloudArea').style.display = 'inline-flex'; gid('btnAdminLogin').style.display = 'none'; gid('cloudWho').textContent = '☁️ ' + (user.displayName || user.email || '관리자'); gid('uidInfo').style.display = 'none'; }
+  else if (user) { gid('cloudArea').style.display = 'none'; gid('btnAdminLogin').style.display = 'none'; gid('uidInfo').style.display = 'block'; gid('uidInfo').innerHTML = '로그인됨: <b>' + (user.email || '') + '</b><br>UID: <code style="font-size:11px;word-break:break-all">' + user.uid + '</code><br><button onclick="window._tSignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer;margin-top:4px">로그아웃</button>'; }
+  else { gid('cloudArea').style.display = 'none'; gid('uidInfo').style.display = 'none'; }
+});
+window._tSignout = () => signOut(auth);
+const docRef = () => doc(db, 'calc_data', ADMIN_UID);
+async function loadSlots() { try { const s = await getDoc(docRef()); if (s.exists() && s.data()[CALC_KEY] && Array.isArray(s.data()[CALC_KEY].slots)) return s.data()[CALC_KEY].slots; } catch(e){} return []; }
+async function saveSlots(slots) { const ref = docRef(); let ex = {}; try { const s = await getDoc(ref); if (s.exists()) ex = s.data(); } catch(e){} ex[CALC_KEY] = { slots, updatedAt: new Date().toISOString() }; await setDoc(ref, ex, {merge: true}); }
+let _slots = [];
+function renderSlots() { const box = gid('slotList'); if (!_slots.length) { box.innerHTML = '<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 항목이 없어요.</div>'; return; }
+  box.innerHTML = _slots.map((s, i) => { const t = s.savedAt ? new Date(s.savedAt).toLocaleString('ko-KR') : ''; return '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (s.name || '(이름없음)') + '</div><div style="font-size:11px;color:#999">' + t + '</div></div><button onclick="window._tRename(' + i + ')" style="background:#e5e7eb;color:#444;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">✏️</button><button onclick="window._tLoad(' + i + ')" style="background:#0284c7;color:white;border:none;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button><button onclick="window._tDel(' + i + ')" style="background:#fee2e2;color:#dc2626;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">🗑️</button></div>'; }).join(''); }
+async function refresh() { gid('slotList').innerHTML = '<div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>'; _slots = await loadSlots(); renderSlots(); }
+gid('btnCloudOpen').addEventListener('click', async () => { if (!currentUser || currentUser.uid !== ADMIN_UID) { alert('관리자 로그인이 필요합니다.'); return; } gid('slotName').value = ''; gid('slotModal').style.display = 'flex'; await refresh(); });
+gid('slotSaveBtn').addEventListener('click', async () => { const name = gid('slotName').value.trim(); if (!name) { alert('이름을 입력하세요.'); return; } const idx = _slots.findIndex(s => s.name === name); if (idx >= 0 && !confirm('"' + name + '" 덮어쓸까요?')) return; gid('slotSaveBtn').disabled = true; gid('slotSaveBtn').textContent = '저장 중...'; try { const entry = { name, data: window.tGetState(), savedAt: new Date().toISOString() }; if (idx >= 0) _slots[idx] = entry; else _slots.push(entry); await saveSlots(_slots); renderSlots(); alert('✅ 저장 완료.'); } catch(e) { alert('저장 실패: ' + e.message); } gid('slotSaveBtn').disabled = false; gid('slotSaveBtn').textContent = '저장'; });
+window._tLoad = function(i) { const s = _slots[i]; if (!s) return; if (!confirm('"' + s.name + '" 불러올까요? 현재 값 교체됩니다.')) return; window.tSetState(s.data); gid('slotModal').style.display = 'none'; };
+window._tDel = async function(i) { if (!confirm('삭제할까요?')) return; try { _slots.splice(i, 1); await saveSlots(_slots); renderSlots(); } catch(e) { alert('실패: ' + e.message); } };
+window._tRename = async function(i) { const nn = prompt('이름 수정', _slots[i].name || ''); if (nn === null) return; const t = nn.trim(); if (!t) return; try { _slots[i].name = t; await saveSlots(_slots); renderSlots(); } catch(e) { alert('실패: ' + e.message); } };
+gid('btnCloudLogout').addEventListener('click', async () => { if (confirm('로그아웃 할까요?')) { try { await signOut(auth); alert('로그아웃 됐어요.'); } catch(e){} } });
+</script>
+
+</body>
+</html>
