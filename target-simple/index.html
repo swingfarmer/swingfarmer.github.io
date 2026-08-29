@@ -90,6 +90,16 @@
       <span class="unit">원</span>
     </div>
     <div class="kor" id="korCredit"></div>
+    <div class="row" id="rateRow" style="display:none">
+      <label>신용 이자율</label>
+      <div class="field"><input type="text" inputmode="decimal" id="inRate" placeholder="8" value="8"></div>
+      <span class="unit">% (연 이자율)</span>
+    </div>
+    <div class="row" id="daysRow" style="display:none">
+      <label>사용일수</label>
+      <div class="field"><input type="text" inputmode="numeric" id="inDays" placeholder="30" value="30"></div>
+      <span class="unit">일 (매도까지 예상)</span>
+    </div>
     <div class="row" style="align-items:baseline;background:#f0f7ff;padding:10px 12px;border-radius:6px;margin-top:4px">
       <label style="flex:0 0 90px;color:#1F4E78;font-weight:700">📊 매수금액</label>
       <div class="field" style="font-weight:700;color:#1F4E78;font-size:15px;text-align:right" id="buyAmount">-</div>
@@ -107,21 +117,23 @@
     </div>
   </div>
 
-  <!-- ① 단순 목표가 → 목표금액 -->
+  <!-- ① 다종목 목표금액 계산 -->
   <div class="panel">
-    <h2>① 단순: 목표가 → 목표금액</h2>
-    <div class="row">
-      <label>목표가</label>
-      <div class="field"><input type="text" inputmode="numeric" id="inTarget" placeholder="예: 75000"></div>
-      <span class="unit">원/주</span>
-    </div>
-    <div class="kor" id="korTarget"></div>
-    <div class="divider">계산 결과</div>
-    <div class="out-row"><span class="lbl">목표금액</span><span class="v big" id="o1Amount">- <span class="kor"></span></span></div>
-    <div class="out-row"><span class="lbl">예상 수익</span><span class="v" id="o1Gain">- <span class="kor"></span></span></div>
-    <div class="out-row"><span class="lbl">수익률</span><span class="v" id="o1Rate">-</span></div>
-    <div class="out-row" id="o1NetRow" style="display:none;background:#fef9e7"><span class="lbl">실수령액</span><span class="v big" id="o1Net">- <span class="kor"></span></span></div>
-    <div class="out-row" id="o1OwnRateRow" style="display:none;background:#fef9e7"><span class="lbl">자본 수익률<br><small style="color:#888;font-weight:400">(레버리지)</small></span><span class="v" id="o1OwnRate">-</span></div>
+    <h2>① 다종목 목표금액 계산</h2>
+    <p style="font-size:12.5px;color:#555;margin-bottom:10px">
+      여러 종목을 함께 계산하여 <b>총 목표금액·수익·실수령 합계</b> 확인. 종목별 매수가/수량/신용/목표가 각각 입력.
+    </p>
+    <div id="stockList"></div>
+    <button id="btnAddStock" class="btn" style="margin-top:6px">➕ 종목 추가</button>
+
+    <div class="divider" style="margin-top:16px;font-size:13px;color:#1F4E78">📊 합계</div>
+    <div class="out-row"><span class="lbl">총 매수금액</span><span class="v" id="sumBuy">- <span class="kor"></span></span></div>
+    <div class="out-row" id="sumCreditRow" style="display:none"><span class="lbl">총 신용</span><span class="v" id="sumCredit">- <span class="kor"></span></span></div>
+    <div class="out-row" id="sumInterestRow" style="display:none"><span class="lbl">총 이자</span><span class="v loss" id="sumInterest">- <span class="kor"></span></span></div>
+    <div class="out-row"><span class="lbl">총 목표금액</span><span class="v big" id="sumTarget">- <span class="kor"></span></span></div>
+    <div class="out-row"><span class="lbl">총 예상 수익</span><span class="v" id="sumGain">- <span class="kor"></span></span></div>
+    <div class="out-row"><span class="lbl">평균 수익률</span><span class="v" id="sumRate">-</span></div>
+    <div class="out-row" id="sumNetRow" style="display:none;background:#fef9e7"><span class="lbl">총 실수령</span><span class="v big" id="sumNet">- <span class="kor"></span></span></div>
   </div>
 
   <!-- ② % 기반 자동 -->
@@ -213,8 +225,111 @@ function setCell(id, n, addSign) {
 function setKor(id, n) { $(id).textContent = n > 0 ? '≈ ' + fmtKor(n) : ''; }
 function num(id) { const v = parseFloat($(id).value.replace(/,/g,'')); return isNaN(v) ? 0 : v; }
 
-// 시나리오 상태
+// 다종목 (Section ①) 상태
+let stocks = [{ name: '', buy: 50000, qty: 100, credit: 0, target: 75000 }];
+// 시나리오 (Section ③)
 let scenarios = [{ target: 60000 }, { target: 70000 }, { target: 80000 }];
+
+function calcInterest(credit) {
+  const rate = num('inRate');
+  const days = num('inDays');
+  if (!credit || rate <= 0 || days <= 0) return 0;
+  return credit * (rate / 100) * (days / 365);
+}
+
+function renderStocks() {
+  const box = $('stockList');
+  box.innerHTML = '';
+  const hasAnyCredit = stocks.some(s => (s.credit || 0) > 0);
+  stocks.forEach((s, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px;margin-bottom:8px';
+    row.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr auto;gap:6px;margin-bottom:6px">
+        <input type="text" placeholder="종목명 (선택)" value="${(s.name || '').replace(/"/g,'&quot;')}" data-f="name" data-i="${i}" class="stk-in" style="width:100%;padding:7px 9px;border:1px solid #d0d5dd;border-radius:6px;background:#fff;color:#333;font-weight:600;font-size:13px;text-align:left">
+        <button class="btn-icon" data-del="${i}" title="삭제">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2, 1fr);gap:6px;margin-bottom:6px">
+        <div><div style="font-size:10.5px;color:#666;margin-bottom:2px">매수가</div><input type="text" inputmode="numeric" placeholder="매수가" value="${s.buy || ''}" data-f="buy" data-i="${i}" class="stk-in" style="width:100%;padding:7px 9px;border:1px solid #d0d5dd;border-radius:6px;background:#FFF2CC;color:#0000FF;font-weight:700;font-size:13px;text-align:right"></div>
+        <div><div style="font-size:10.5px;color:#666;margin-bottom:2px">수량</div><input type="text" inputmode="numeric" placeholder="수량" value="${s.qty || ''}" data-f="qty" data-i="${i}" class="stk-in" style="width:100%;padding:7px 9px;border:1px solid #d0d5dd;border-radius:6px;background:#FFF2CC;color:#0000FF;font-weight:700;font-size:13px;text-align:right"></div>
+        <div><div style="font-size:10.5px;color:#666;margin-bottom:2px">신용</div><input type="text" inputmode="numeric" placeholder="0" value="${s.credit || ''}" data-f="credit" data-i="${i}" class="stk-in" style="width:100%;padding:7px 9px;border:1px solid #d0d5dd;border-radius:6px;background:#FFF2CC;color:#0000FF;font-weight:700;font-size:13px;text-align:right"></div>
+        <div><div style="font-size:10.5px;color:#666;margin-bottom:2px">목표가</div><input type="text" inputmode="numeric" placeholder="목표가" value="${s.target || ''}" data-f="target" data-i="${i}" class="stk-in" style="width:100%;padding:7px 9px;border:1px solid #d0d5dd;border-radius:6px;background:#FFF2CC;color:#0000FF;font-weight:700;font-size:13px;text-align:right"></div>
+      </div>
+      <div id="stk-out-${i}" style="display:grid;grid-template-columns:repeat(${hasAnyCredit ? 4 : 3}, 1fr);gap:4px;padding:4px 0;font-size:11px"></div>
+    `;
+    box.appendChild(row);
+  });
+  box.querySelectorAll('.stk-in').forEach(el => {
+    el.addEventListener('input', e => {
+      const i = parseInt(el.dataset.i);
+      const f = el.dataset.f;
+      if (f === 'name') stocks[i][f] = el.value;
+      else stocks[i][f] = parseFloat(el.value.replace(/,/g,'')) || 0;
+      // credit 변경 시 컬럼 수 바뀔 수 있으니 부분 재렌더
+      if (f === 'credit') { calc(); saveLocal(); return; }
+      calcStocks(); saveLocal();
+    });
+  });
+  box.querySelectorAll('[data-del]').forEach(el => {
+    el.addEventListener('click', () => {
+      const i = parseInt(el.dataset.del);
+      if (stocks.length <= 1) { alert('최소 1개 종목은 있어야 합니다.'); return; }
+      stocks.splice(i, 1);
+      renderStocks(); calc(); saveLocal();
+    });
+  });
+  calcStocks();
+}
+
+function calcStocks() {
+  const hasAnyCredit = stocks.some(s => (s.credit || 0) > 0);
+  let sumBuy = 0, sumCredit = 0, sumInterest = 0, sumTarget = 0, sumGain = 0;
+  stocks.forEach((s, i) => {
+    const buyAmt = (s.buy || 0) * (s.qty || 0);
+    const tAmt = (s.target || 0) * (s.qty || 0);
+    const gain = tAmt - buyAmt;
+    const rate = (s.buy > 0 && s.target > 0) ? ((s.target / s.buy - 1) * 100) : 0;
+    const interest = calcInterest(s.credit || 0);
+    const net = tAmt - (s.credit || 0) - interest;
+    sumBuy += buyAmt; sumCredit += (s.credit || 0); sumInterest += interest;
+    sumTarget += tAmt; sumGain += gain;
+
+    const out = $(`stk-out-${i}`);
+    if (!out) return;
+    const gainColor = gain > 0 ? '#dc2626' : (gain < 0 ? '#059669' : '#666');
+    const netCol = hasAnyCredit
+      ? `<div style="text-align:center;padding:4px;background:#fef9e7;border-radius:4px"><div style="color:#888">실수령</div><div style="font-weight:700;color:#92400e">${buyAmt > 0 ? Math.round(net).toLocaleString() : '-'}</div></div>`
+      : '';
+    out.innerHTML = `
+      <div style="text-align:center;padding:4px;background:#fff;border-radius:4px"><div style="color:#888">목표금액</div><div style="font-weight:700;color:#1F4E78">${buyAmt > 0 ? Math.round(tAmt).toLocaleString() : '-'}</div></div>
+      <div style="text-align:center;padding:4px;background:#fff;border-radius:4px"><div style="color:#888">수익</div><div style="font-weight:700;color:${gainColor}">${buyAmt > 0 ? (gain > 0 ? '+' : '') + Math.round(gain).toLocaleString() : '-'}</div></div>
+      <div style="text-align:center;padding:4px;background:#fff;border-radius:4px"><div style="color:#888">수익률</div><div style="font-weight:700;color:${gainColor}">${(s.buy > 0 && s.target > 0) ? (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%' : '-'}</div></div>
+      ${netCol}
+    `;
+  });
+  // 합계
+  const sumNet = sumTarget - sumCredit - sumInterest;
+  const sumRate = sumBuy > 0 ? ((sumTarget / sumBuy - 1) * 100) : 0;
+  setCell('sumBuy', sumBuy);
+  setCell('sumCredit', sumCredit);
+  setCell('sumInterest', sumInterest);
+  setCell('sumTarget', sumTarget);
+  setCell('sumGain', sumGain, true);
+  setCell('sumNet', sumNet);
+  $('sumRate').textContent = sumBuy > 0 ? (sumRate >= 0 ? '+' : '') + sumRate.toFixed(2) + '%' : '-';
+  $('sumRate').style.color = sumRate > 0 ? '#dc2626' : (sumRate < 0 ? '#059669' : '#1F4E78');
+  $('sumGain').classList.toggle('neg', sumGain > 0);
+  $('sumGain').classList.toggle('loss', sumGain < 0);
+  $('sumCreditRow').style.display = sumCredit > 0 ? 'flex' : 'none';
+  $('sumInterestRow').style.display = sumInterest > 0 ? 'flex' : 'none';
+  $('sumNetRow').style.display = sumCredit > 0 ? 'flex' : 'none';
+}
+
+$('btnAddStock').addEventListener('click', () => {
+  const last = stocks[stocks.length - 1];
+  stocks.push({ name: '', buy: last?.buy || 0, qty: last?.qty || 0, credit: 0, target: last?.target || 0 });
+  renderStocks(); saveLocal();
+});
 
 function renderScenarios() {
   const box = $('scenarioList');
@@ -295,49 +410,31 @@ function calc() {
   const buy = num('inBuy');
   const qty = num('inQty');
   const credit = num('inCredit');
-  const target = num('inTarget');
   const rise = num('inRise');
   const loss = num('inLoss');
 
   setKor('korBuy', buy);
-  setKor('korTarget', target);
   setKor('korCredit', credit);
 
-  // 공통
+  // 공통 (② ③용)
   const buyAmt = buy * qty;
   const ownAmt = Math.max(0, buyAmt - credit);
+  const interest = calcInterest(credit);
   $('buyAmount').textContent = buyAmt > 0 ? Math.round(buyAmt).toLocaleString() : '-';
   $('korBuyAmount').textContent = buyAmt > 0 ? '≈ ' + fmtKor(buyAmt) : '';
   const hasCredit = credit > 0;
   $('ownRow').style.display = hasCredit ? 'flex' : 'none';
   $('ownAmount').textContent = hasCredit ? Math.round(ownAmt).toLocaleString() : '-';
   $('korOwnAmount').textContent = hasCredit && ownAmt > 0 ? '≈ ' + fmtKor(ownAmt) : '';
-
-  // ① 단순
-  const o1Amt = target * qty;
-  const o1Gain = o1Amt - buyAmt;
-  const o1Rate = (buy > 0 && target > 0) ? ((target / buy - 1) * 100) : 0;
-  const o1Net = o1Amt - credit;
-  const o1OwnRate = (ownAmt > 0 && o1Amt > 0) ? (o1Gain / ownAmt * 100) : 0;
-  setCell('o1Amount', o1Amt);
-  setCell('o1Gain', o1Gain, true);
-  $('o1Rate').textContent = (buy > 0 && target > 0) ? (o1Rate >= 0 ? '+' : '') + o1Rate.toFixed(2) + '%' : '-';
-  $('o1Gain').classList.toggle('neg', o1Gain > 0);
-  $('o1Gain').classList.toggle('loss', o1Gain < 0);
-  $('o1Rate').style.color = o1Rate > 0 ? '#dc2626' : (o1Rate < 0 ? '#059669' : '#1F4E78');
-  $('o1NetRow').style.display = hasCredit ? 'flex' : 'none';
-  $('o1OwnRateRow').style.display = hasCredit ? 'flex' : 'none';
-  if (hasCredit) {
-    setCell('o1Net', o1Net);
-    $('o1OwnRate').textContent = (ownAmt > 0 && o1Amt > 0) ? (o1OwnRate >= 0 ? '+' : '') + o1OwnRate.toFixed(2) + '%' : '-';
-    $('o1OwnRate').style.color = o1OwnRate > 0 ? '#dc2626' : (o1OwnRate < 0 ? '#059669' : '#1F4E78');
-  }
+  // 이자율/사용일수 필드는 신용 있을 때만 표시
+  $('rateRow').style.display = hasCredit ? 'flex' : 'none';
+  $('daysRow').style.display = hasCredit ? 'flex' : 'none';
 
   // ② % 기반
   const o2Price = buy > 0 && rise !== 0 ? buy * (1 + rise / 100) : 0;
   const o2Amt = o2Price * qty;
   const o2Gain = o2Amt - buyAmt;
-  const o2Net = o2Amt - credit;
+  const o2Net = o2Amt - credit - interest;
   setCell('o2Price', o2Price);
   setCell('o2Amount', o2Amt);
   setCell('o2Gain', o2Gain, true);
@@ -345,7 +442,7 @@ function calc() {
   const o2StopPrice = buy > 0 && loss !== 0 ? buy * (1 - loss / 100) : 0;
   const o2StopAmt = o2StopPrice * qty;
   const o2StopLoss = o2StopAmt - buyAmt;
-  const o2StopNet = o2StopAmt - credit;
+  const o2StopNet = o2StopAmt - credit - interest;
   setCell('o2StopPrice', o2StopPrice);
   setCell('o2StopAmount', o2StopAmt);
   setCell('o2StopLoss', o2StopLoss);
@@ -356,7 +453,9 @@ function calc() {
     setCell('o2StopNet', o2StopNet);
   }
 
-  // ③ 시나리오 (신용 변경 시 컬럼 개수 바뀌므로 재렌더 필요)
+  // ① 다종목 (이자율/일수 변경 반영)
+  calcStocks();
+  // ③ 시나리오 (신용 컬럼 변화 반영)
   renderScenarios();
 }
 
@@ -373,7 +472,9 @@ $('btnAddScenario').addEventListener('click', () => {
 function tGetState() {
   return {
     buy: $('inBuy').value, qty: $('inQty').value, credit: $('inCredit').value,
-    target: $('inTarget').value, rise: $('inRise').value, loss: $('inLoss').value,
+    rate: $('inRate').value, days: $('inDays').value,
+    rise: $('inRise').value, loss: $('inLoss').value,
+    stocks: JSON.parse(JSON.stringify(stocks)),
     scenarios: JSON.parse(JSON.stringify(scenarios))
   };
 }
@@ -382,17 +483,22 @@ function tSetState(d) {
   $('inBuy').value = d.buy || '';
   $('inQty').value = d.qty || '';
   $('inCredit').value = d.credit || '';
-  $('inTarget').value = d.target || '';
+  $('inRate').value = d.rate || '8';
+  $('inDays').value = d.days || '30';
   $('inRise').value = d.rise || '';
   $('inLoss').value = d.loss || '';
+  stocks = Array.isArray(d.stocks) && d.stocks.length > 0
+    ? JSON.parse(JSON.stringify(d.stocks))
+    : [{ name: '', buy: 50000, qty: 100, credit: 0, target: 75000 }];
   scenarios = Array.isArray(d.scenarios) ? JSON.parse(JSON.stringify(d.scenarios)) : [{target:60000},{target:70000},{target:80000}];
+  renderStocks();
   renderScenarios();
   calc();
 }
 function saveLocal() { try { localStorage.setItem('sf_ts_state_v1', JSON.stringify(tGetState())); } catch(e){} }
 function loadLocal() { try { const r = localStorage.getItem('sf_ts_state_v1'); if (r) tSetState(JSON.parse(r)); } catch(e){} }
 
-document.querySelectorAll('#inBuy, #inQty, #inCredit, #inTarget, #inRise, #inLoss').forEach(el => {
+document.querySelectorAll('#inBuy, #inQty, #inCredit, #inRate, #inDays, #inRise, #inLoss').forEach(el => {
   el.addEventListener('input', () => { calc(); saveLocal(); });
 });
 window.tGetState = tGetState;
@@ -400,6 +506,7 @@ window.tSetState = tSetState;
 
 // 초기화
 loadLocal();
+renderStocks();
 renderScenarios();
 calc();
 </script>
