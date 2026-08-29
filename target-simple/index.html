@@ -84,12 +84,27 @@
       <div class="field"><input type="text" inputmode="numeric" id="inQty" placeholder="예: 100"></div>
       <span class="unit">주</span>
     </div>
+    <div class="row">
+      <label>신용 금액</label>
+      <div class="field"><input type="text" inputmode="numeric" id="inCredit" placeholder="0 (없으면 비워두기)"></div>
+      <span class="unit">원</span>
+    </div>
+    <div class="kor" id="korCredit"></div>
     <div class="row" style="align-items:baseline;background:#f0f7ff;padding:10px 12px;border-radius:6px;margin-top:4px">
       <label style="flex:0 0 90px;color:#1F4E78;font-weight:700">📊 매수금액</label>
       <div class="field" style="font-weight:700;color:#1F4E78;font-size:15px;text-align:right" id="buyAmount">-</div>
       <span class="unit">원</span>
     </div>
     <div class="kor" id="korBuyAmount"></div>
+    <div class="row" id="ownRow" style="align-items:baseline;background:#fef9e7;padding:10px 12px;border-radius:6px;margin-top:4px;display:none">
+      <label style="flex:0 0 90px;color:#92400e;font-weight:700">💵 자기자본</label>
+      <div class="field" style="font-weight:700;color:#92400e;font-size:15px;text-align:right" id="ownAmount">-</div>
+      <span class="unit">원 (매수금액 - 신용)</span>
+    </div>
+    <div class="kor" id="korOwnAmount"></div>
+    <div class="hint">
+      💡 <b>신용</b>: 증권사에서 빌린 돈. 매도 시 원금은 갚아야 함. <b>수익 자체는 신용 여부와 무관</b>하지만 <b>실수령액 = 목표금액 - 신용</b>. <b>자기자본 대비 수익률(레버리지 효과)</b>도 표시.
+    </div>
   </div>
 
   <!-- ① 단순 목표가 → 목표금액 -->
@@ -105,6 +120,8 @@
     <div class="out-row"><span class="lbl">목표금액</span><span class="v big" id="o1Amount">- <span class="kor"></span></span></div>
     <div class="out-row"><span class="lbl">예상 수익</span><span class="v" id="o1Gain">- <span class="kor"></span></span></div>
     <div class="out-row"><span class="lbl">수익률</span><span class="v" id="o1Rate">-</span></div>
+    <div class="out-row" id="o1NetRow" style="display:none;background:#fef9e7"><span class="lbl">실수령액</span><span class="v big" id="o1Net">- <span class="kor"></span></span></div>
+    <div class="out-row" id="o1OwnRateRow" style="display:none;background:#fef9e7"><span class="lbl">자본 수익률<br><small style="color:#888;font-weight:400">(레버리지)</small></span><span class="v" id="o1OwnRate">-</span></div>
   </div>
 
   <!-- ② % 기반 자동 -->
@@ -119,6 +136,7 @@
     <div class="out-row"><span class="lbl">목표가</span><span class="v" id="o2Price">- <span class="kor"></span></span></div>
     <div class="out-row"><span class="lbl">목표금액</span><span class="v big" id="o2Amount">- <span class="kor"></span></span></div>
     <div class="out-row"><span class="lbl">예상 수익</span><span class="v" id="o2Gain">- <span class="kor"></span></span></div>
+    <div class="out-row o2NetRow" style="display:none;background:#fef9e7"><span class="lbl">실수령액</span><span class="v big" id="o2Net">- <span class="kor"></span></span></div>
 
     <div class="row" style="margin-top:14px">
       <label>손절률</label>
@@ -129,6 +147,7 @@
     <div class="out-row"><span class="lbl">손절가</span><span class="v loss" id="o2StopPrice">- <span class="kor"></span></span></div>
     <div class="out-row"><span class="lbl">손절금액</span><span class="v loss" id="o2StopAmount">- <span class="kor"></span></span></div>
     <div class="out-row"><span class="lbl">예상 손실</span><span class="v loss" id="o2StopLoss">- <span class="kor"></span></span></div>
+    <div class="out-row o2NetRow" style="display:none;background:#fef2f2"><span class="lbl">손절 실수령</span><span class="v loss" id="o2StopNet">- <span class="kor"></span></span></div>
 
     <div class="hint">
       💡 상승률·손절률은 <b>매수가 기준</b> 퍼센트. 예: 매수가 50,000원 + 상승률 30% → 목표가 65,000원.
@@ -200,19 +219,26 @@ let scenarios = [{ target: 60000 }, { target: 70000 }, { target: 80000 }];
 function renderScenarios() {
   const box = $('scenarioList');
   box.innerHTML = '';
+  const credit = num('inCredit');
+  const showNet = credit > 0;
   scenarios.forEach((s, i) => {
     const row = document.createElement('div');
     row.className = 'scenario-row';
+    const netCol = showNet
+      ? '<div><div class="l">실수령</div><div class="v" id="sc-net-' + i + '">-</div></div>'
+      : '';
+    const cols = showNet ? 4 : 3;
     row.innerHTML = `
       <div style="display:flex;align-items:center;gap:6px">
         <input type="text" inputmode="numeric" placeholder="목표가" value="${s.target || ''}" data-idx="${i}" class="sc-input" style="width:100%;padding:8px 10px;border:1px solid #d0d5dd;border-radius:6px;background:#FFF2CC;color:#0000FF;font-weight:700;font-size:14px;text-align:right">
         <span class="unit">원</span>
       </div>
       <button class="btn-icon" data-del="${i}" title="삭제">✕</button>
-      <div class="sc-result">
+      <div class="sc-result" style="grid-template-columns:repeat(${cols}, 1fr)">
         <div><div class="l">목표금액</div><div class="v" id="sc-amt-${i}">-</div></div>
         <div><div class="l">수익</div><div class="v gain" id="sc-gain-${i}">-</div></div>
         <div><div class="l">수익률</div><div class="v" id="sc-rate-${i}">-</div></div>
+        ${netCol}
       </div>
     `;
     box.appendChild(row);
@@ -239,11 +265,13 @@ function renderScenarios() {
 function calcScenarios() {
   const buy = num('inBuy');
   const qty = num('inQty');
+  const credit = num('inCredit');
   scenarios.forEach((s, i) => {
     const amt = (s.target || 0) * qty;
     const gain = amt - buy * qty;
     const rate = (buy > 0 && s.target > 0) ? ((s.target / buy - 1) * 100) : 0;
-    const amtEl = $(`sc-amt-${i}`), gainEl = $(`sc-gain-${i}`), rateEl = $(`sc-rate-${i}`);
+    const net = amt - credit;
+    const amtEl = $(`sc-amt-${i}`), gainEl = $(`sc-gain-${i}`), rateEl = $(`sc-rate-${i}`), netEl = $(`sc-net-${i}`);
     if (amtEl) amtEl.textContent = amt > 0 ? Math.round(amt).toLocaleString() + '원' : '-';
     if (gainEl) {
       const sign = gain > 0 ? '+' : (gain < 0 ? '' : '');
@@ -256,39 +284,60 @@ function calcScenarios() {
       rateEl.classList.toggle('gain', rate >= 0);
       rateEl.classList.toggle('loss', rate < 0);
     }
+    if (netEl) {
+      netEl.textContent = amt > 0 ? Math.round(net).toLocaleString() + '원' : '-';
+      netEl.style.color = net >= (buy*qty - credit) ? '#dc2626' : '#059669';
+    }
   });
 }
 
 function calc() {
   const buy = num('inBuy');
   const qty = num('inQty');
+  const credit = num('inCredit');
   const target = num('inTarget');
   const rise = num('inRise');
   const loss = num('inLoss');
 
   setKor('korBuy', buy);
   setKor('korTarget', target);
+  setKor('korCredit', credit);
 
   // 공통
   const buyAmt = buy * qty;
+  const ownAmt = Math.max(0, buyAmt - credit);
   $('buyAmount').textContent = buyAmt > 0 ? Math.round(buyAmt).toLocaleString() : '-';
   $('korBuyAmount').textContent = buyAmt > 0 ? '≈ ' + fmtKor(buyAmt) : '';
+  const hasCredit = credit > 0;
+  $('ownRow').style.display = hasCredit ? 'flex' : 'none';
+  $('ownAmount').textContent = hasCredit ? Math.round(ownAmt).toLocaleString() : '-';
+  $('korOwnAmount').textContent = hasCredit && ownAmt > 0 ? '≈ ' + fmtKor(ownAmt) : '';
 
   // ① 단순
   const o1Amt = target * qty;
   const o1Gain = o1Amt - buyAmt;
   const o1Rate = (buy > 0 && target > 0) ? ((target / buy - 1) * 100) : 0;
+  const o1Net = o1Amt - credit;
+  const o1OwnRate = (ownAmt > 0 && o1Amt > 0) ? (o1Gain / ownAmt * 100) : 0;
   setCell('o1Amount', o1Amt);
   setCell('o1Gain', o1Gain, true);
   $('o1Rate').textContent = (buy > 0 && target > 0) ? (o1Rate >= 0 ? '+' : '') + o1Rate.toFixed(2) + '%' : '-';
   $('o1Gain').classList.toggle('neg', o1Gain > 0);
   $('o1Gain').classList.toggle('loss', o1Gain < 0);
   $('o1Rate').style.color = o1Rate > 0 ? '#dc2626' : (o1Rate < 0 ? '#059669' : '#1F4E78');
+  $('o1NetRow').style.display = hasCredit ? 'flex' : 'none';
+  $('o1OwnRateRow').style.display = hasCredit ? 'flex' : 'none';
+  if (hasCredit) {
+    setCell('o1Net', o1Net);
+    $('o1OwnRate').textContent = (ownAmt > 0 && o1Amt > 0) ? (o1OwnRate >= 0 ? '+' : '') + o1OwnRate.toFixed(2) + '%' : '-';
+    $('o1OwnRate').style.color = o1OwnRate > 0 ? '#dc2626' : (o1OwnRate < 0 ? '#059669' : '#1F4E78');
+  }
 
   // ② % 기반
   const o2Price = buy > 0 && rise !== 0 ? buy * (1 + rise / 100) : 0;
   const o2Amt = o2Price * qty;
   const o2Gain = o2Amt - buyAmt;
+  const o2Net = o2Amt - credit;
   setCell('o2Price', o2Price);
   setCell('o2Amount', o2Amt);
   setCell('o2Gain', o2Gain, true);
@@ -296,12 +345,19 @@ function calc() {
   const o2StopPrice = buy > 0 && loss !== 0 ? buy * (1 - loss / 100) : 0;
   const o2StopAmt = o2StopPrice * qty;
   const o2StopLoss = o2StopAmt - buyAmt;
+  const o2StopNet = o2StopAmt - credit;
   setCell('o2StopPrice', o2StopPrice);
   setCell('o2StopAmount', o2StopAmt);
   setCell('o2StopLoss', o2StopLoss);
 
-  // ③ 시나리오
-  calcScenarios();
+  document.querySelectorAll('.o2NetRow').forEach(el => el.style.display = hasCredit ? 'flex' : 'none');
+  if (hasCredit) {
+    setCell('o2Net', o2Net);
+    setCell('o2StopNet', o2StopNet);
+  }
+
+  // ③ 시나리오 (신용 변경 시 컬럼 개수 바뀌므로 재렌더 필요)
+  renderScenarios();
 }
 
 // 시나리오 추가
@@ -316,8 +372,8 @@ $('btnAddScenario').addEventListener('click', () => {
 // 상태 저장/복원
 function tGetState() {
   return {
-    buy: $('inBuy').value, qty: $('inQty').value, target: $('inTarget').value,
-    rise: $('inRise').value, loss: $('inLoss').value,
+    buy: $('inBuy').value, qty: $('inQty').value, credit: $('inCredit').value,
+    target: $('inTarget').value, rise: $('inRise').value, loss: $('inLoss').value,
     scenarios: JSON.parse(JSON.stringify(scenarios))
   };
 }
@@ -325,6 +381,7 @@ function tSetState(d) {
   if (!d) return;
   $('inBuy').value = d.buy || '';
   $('inQty').value = d.qty || '';
+  $('inCredit').value = d.credit || '';
   $('inTarget').value = d.target || '';
   $('inRise').value = d.rise || '';
   $('inLoss').value = d.loss || '';
@@ -335,7 +392,7 @@ function tSetState(d) {
 function saveLocal() { try { localStorage.setItem('sf_ts_state_v1', JSON.stringify(tGetState())); } catch(e){} }
 function loadLocal() { try { const r = localStorage.getItem('sf_ts_state_v1'); if (r) tSetState(JSON.parse(r)); } catch(e){} }
 
-document.querySelectorAll('#inBuy, #inQty, #inTarget, #inRise, #inLoss').forEach(el => {
+document.querySelectorAll('#inBuy, #inQty, #inCredit, #inTarget, #inRise, #inLoss').forEach(el => {
   el.addEventListener('input', () => { calc(); saveLocal(); });
 });
 window.tGetState = tGetState;
