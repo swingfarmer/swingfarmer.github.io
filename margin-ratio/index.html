@@ -49,6 +49,9 @@
   .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
   .grid2 label { display: block; font-size: 10.5px; color: #666; margin-bottom: 2px; }
   .grid2 label .auto-tag { color: #0369a1; font-weight: 500; margin-left: 2px; }
+  .kor-mini { color: #059669; font-weight: 500; font-size: 10.5px; margin-left: 4px; }
+  .kor-below { font-size: 11px; color: #059669; text-align: right; margin-top: 3px; padding: 0 3px; font-weight: 600; min-height: 14px; }
+  .kor-below.big { font-size: 12.5px; color: #047857; background: #ecfdf5; padding: 3px 6px; border-radius: 4px; font-weight: 700; min-height: 20px; }
   .grid2 input { padding: 7px 8px; font-size: 12.5px; }
   .stock-out { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 8px 0 0; font-size: 11px; margin-top: 8px; border-top: 1px dashed #e0e4eb; }
   .stock-out > div { text-align: center; padding: 5px 4px; background: #fff; border-radius: 4px; }
@@ -99,6 +102,7 @@
       <div class="field"><input type="text" inputmode="numeric" id="inCash" placeholder="0 (없으면 비움)"></div>
       <span class="unit">원</span>
     </div>
+    <div class="kor" id="korCash" style="font-size:11px;color:#059669;text-align:right;padding:2px 4px 0;font-weight:500;min-height:14px;margin-top:-6px;margin-bottom:8px"></div>
     <div class="row">
       <label>담보유지비율</label>
       <div class="field"><input type="text" inputmode="decimal" id="inThreshold" value="140"></div>
@@ -112,12 +116,15 @@
 
   <!-- 종목 리스트 -->
   <div class="panel">
-    <h2>📊 종목별 입력</h2>
+    <h2 style="display:flex;align-items:center">📊 종목별 입력
+      <button id="btnReset" class="btn" type="button" style="margin-left:auto;background:#fef2f2;color:#dc2626;border-color:#fca5a5;font-size:12px;padding:6px 10px">🔄 전체 초기화</button>
+    </h2>
     <div id="stockList"></div>
     <button id="btnAddStock" class="btn" style="margin-top:6px">➕ 종목 추가</button>
     <div class="hint" style="margin-top:10px">
       💡 <b>파란색 필드</b>는 자동 계산됨 (주식수 × 단가). 미세 조정 필요하면 직접 수정 가능. 이후 주식수·단가를 다시 만지면 자동 값으로 덮어써짐.<br>
-      💡 신용 안 쓰는 종목은 신용 섹션 비워두면 됨.
+      💡 신용 안 쓰는 종목은 신용 섹션 비워두면 됨.<br>
+      💡 입력값은 <b>브라우저에 자동 저장</b>됨. 나갔다 와도 마지막 입력 상태 유지. 초기화하려면 위 [🔄 전체 초기화] 클릭.
     </div>
   </div>
 
@@ -205,7 +212,7 @@ function setCell(id, n, addSign) {
 // 상태: 종목 리스트
 // 각 종목: 종목명 + [일반: 주식수/매수가/현재가/매수금액/평가금액] + [신용: 동일]
 let stocks = [
-  { name: '삼성전자', ordQty: 100, ordPrice: 50000, ordCurr: 55000, ordBuy: 5000000, ordVal: 5500000, crdQty: 50, crdPrice: 50000, crdCurr: 55000, crdBuy: 2500000, crdVal: 2750000 }
+  { name: '', ordQty: 0, ordPrice: 0, ordCurr: 0, ordBuy: 0, ordVal: 0, crdQty: 0, crdPrice: 0, crdCurr: 0, crdBuy: 0, crdVal: 0 }
 ];
 
 function renderStocks() {
@@ -222,24 +229,62 @@ function renderStocks() {
       </div>
       <div class="section-title ord">📗 일반 매수 <button class="btn-clear" data-clear-ord="${i}" type="button">비우기</button></div>
       <div class="grid3">
-        <div><label>주식수</label><input type="text" inputmode="numeric" placeholder="0" value="${s.ordQty || ''}" data-f="ordQty" data-i="${i}" class="stk-in"></div>
-        <div><label>매수가 (평단)</label><input type="text" inputmode="numeric" placeholder="0" value="${s.ordPrice || ''}" data-f="ordPrice" data-i="${i}" class="stk-in"></div>
-        <div><label>현재가</label><input type="text" inputmode="numeric" placeholder="0" value="${s.ordCurr || ''}" data-f="ordCurr" data-i="${i}" class="stk-in"></div>
+        <div>
+          <label>주식수</label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.ordQty || ''}" data-f="ordQty" data-i="${i}" class="stk-in">
+        </div>
+        <div>
+          <label>매수가 (평단)</label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.ordPrice || ''}" data-f="ordPrice" data-i="${i}" class="stk-in">
+          <div class="kor-below" id="kor-ordPrice-${i}"></div>
+        </div>
+        <div>
+          <label>현재가</label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.ordCurr || ''}" data-f="ordCurr" data-i="${i}" class="stk-in">
+          <div class="kor-below" id="kor-ordCurr-${i}"></div>
+        </div>
       </div>
       <div class="grid2">
-        <div><label>매수금액 <span class="auto-tag">(자동)</span></label><input type="text" inputmode="numeric" placeholder="0" value="${s.ordBuy || ''}" data-f="ordBuy" data-i="${i}" class="stk-in auto"></div>
-        <div><label>평가금액 <span class="auto-tag">(자동)</span></label><input type="text" inputmode="numeric" placeholder="0" value="${s.ordVal || ''}" data-f="ordVal" data-i="${i}" class="stk-in auto"></div>
+        <div>
+          <label>매수금액 <span class="auto-tag">(자동)</span></label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.ordBuy || ''}" data-f="ordBuy" data-i="${i}" class="stk-in auto">
+          <div class="kor-below big" id="kor-ordBuy-${i}"></div>
+        </div>
+        <div>
+          <label>평가금액 <span class="auto-tag">(자동)</span></label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.ordVal || ''}" data-f="ordVal" data-i="${i}" class="stk-in auto">
+          <div class="kor-below big" id="kor-ordVal-${i}"></div>
+        </div>
       </div>
 
       <div class="section-title crd">📕 신용 매수 <button class="btn-clear" data-clear-crd="${i}" type="button">비우기</button></div>
       <div class="grid3">
-        <div><label>주식수</label><input type="text" inputmode="numeric" placeholder="0" value="${s.crdQty || ''}" data-f="crdQty" data-i="${i}" class="stk-in"></div>
-        <div><label>매수가 (평단)</label><input type="text" inputmode="numeric" placeholder="0" value="${s.crdPrice || ''}" data-f="crdPrice" data-i="${i}" class="stk-in"></div>
-        <div><label>현재가</label><input type="text" inputmode="numeric" placeholder="0" value="${s.crdCurr || ''}" data-f="crdCurr" data-i="${i}" class="stk-in"></div>
+        <div>
+          <label>주식수</label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.crdQty || ''}" data-f="crdQty" data-i="${i}" class="stk-in">
+        </div>
+        <div>
+          <label>매수가 (평단)</label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.crdPrice || ''}" data-f="crdPrice" data-i="${i}" class="stk-in">
+          <div class="kor-below" id="kor-crdPrice-${i}"></div>
+        </div>
+        <div>
+          <label>현재가</label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.crdCurr || ''}" data-f="crdCurr" data-i="${i}" class="stk-in">
+          <div class="kor-below" id="kor-crdCurr-${i}"></div>
+        </div>
       </div>
       <div class="grid2">
-        <div><label>매수금액 <span class="auto-tag">(자동)</span></label><input type="text" inputmode="numeric" placeholder="0" value="${s.crdBuy || ''}" data-f="crdBuy" data-i="${i}" class="stk-in auto"></div>
-        <div><label>평가금액 <span class="auto-tag">(자동)</span></label><input type="text" inputmode="numeric" placeholder="0" value="${s.crdVal || ''}" data-f="crdVal" data-i="${i}" class="stk-in auto"></div>
+        <div>
+          <label>매수금액 <span class="auto-tag">(자동)</span></label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.crdBuy || ''}" data-f="crdBuy" data-i="${i}" class="stk-in auto">
+          <div class="kor-below big" id="kor-crdBuy-${i}"></div>
+        </div>
+        <div>
+          <label>평가금액 <span class="auto-tag">(자동)</span></label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.crdVal || ''}" data-f="crdVal" data-i="${i}" class="stk-in auto">
+          <div class="kor-below big" id="kor-crdVal-${i}"></div>
+        </div>
       </div>
 
       <div class="stock-out" id="stk-out-${i}"></div>
@@ -313,6 +358,17 @@ function calc() {
     const cB = s.crdBuy || 0, cV = s.crdVal || 0;
     sumOrdBuy += oB; sumOrdVal += oV; sumCrdBuy += cB; sumCrdVal += cV;
 
+    // 자동 필드 옆 한글 힌트
+    const kOB = $(`kor-ordBuy-${i}`); if (kOB) kOB.textContent = oB > 0 ? '≈ ' + fmtKor(oB) : '';
+    const kOV = $(`kor-ordVal-${i}`); if (kOV) kOV.textContent = oV > 0 ? '≈ ' + fmtKor(oV) : '';
+    const kCB = $(`kor-crdBuy-${i}`); if (kCB) kCB.textContent = cB > 0 ? '≈ ' + fmtKor(cB) : '';
+    const kCV = $(`kor-crdVal-${i}`); if (kCV) kCV.textContent = cV > 0 ? '≈ ' + fmtKor(cV) : '';
+    // 매수가/현재가는 10만원 이상일 때만 한글 표시
+    const kOP = $(`kor-ordPrice-${i}`); if (kOP) kOP.textContent = (s.ordPrice || 0) >= 100000 ? '≈ ' + fmtKor(s.ordPrice) : '';
+    const kOC = $(`kor-ordCurr-${i}`); if (kOC) kOC.textContent = (s.ordCurr || 0) >= 100000 ? '≈ ' + fmtKor(s.ordCurr) : '';
+    const kCP = $(`kor-crdPrice-${i}`); if (kCP) kCP.textContent = (s.crdPrice || 0) >= 100000 ? '≈ ' + fmtKor(s.crdPrice) : '';
+    const kCC = $(`kor-crdCurr-${i}`); if (kCC) kCC.textContent = (s.crdCurr || 0) >= 100000 ? '≈ ' + fmtKor(s.crdCurr) : '';
+
     const out = $(`stk-out-${i}`);
     if (out) {
       const totalBuy = oB + cB;
@@ -320,10 +376,13 @@ function calc() {
       const pl = totalVal - totalBuy;
       const plRate = totalBuy > 0 ? (pl / totalBuy * 100) : 0;
       const plColor = pl > 0 ? '#dc2626' : (pl < 0 ? '#059669' : '#666');
+      const kBuy = totalBuy > 0 ? `<div style="font-size:10px;color:#059669;margin-top:1px">${fmtKor(totalBuy)}</div>` : '';
+      const kVal = totalVal > 0 ? `<div style="font-size:10px;color:#059669;margin-top:1px">${fmtKor(totalVal)}</div>` : '';
+      const kPl = totalBuy > 0 && Math.abs(pl) >= 10000 ? `<div style="font-size:10px;color:${plColor};margin-top:1px">${pl > 0 ? '+' : ''}${fmtKor(pl)}</div>` : '';
       out.innerHTML = `
-        <div><div class="l">총 매수</div><div class="v">${totalBuy > 0 ? totalBuy.toLocaleString() : '-'}</div></div>
-        <div><div class="l">총 평가</div><div class="v">${totalVal > 0 ? totalVal.toLocaleString() : '-'}</div></div>
-        <div><div class="l">손익</div><div class="v" style="color:${plColor}">${totalBuy > 0 ? (pl > 0 ? '+' : '') + Math.round(pl).toLocaleString() + ' (' + (plRate >= 0 ? '+' : '') + plRate.toFixed(1) + '%)' : '-'}</div></div>
+        <div><div class="l">총 매수</div><div class="v">${totalBuy > 0 ? totalBuy.toLocaleString() : '-'}</div>${kBuy}</div>
+        <div><div class="l">총 평가</div><div class="v">${totalVal > 0 ? totalVal.toLocaleString() : '-'}</div>${kVal}</div>
+        <div><div class="l">손익</div><div class="v" style="color:${plColor}">${totalBuy > 0 ? (pl > 0 ? '+' : '') + Math.round(pl).toLocaleString() + ' (' + (plRate >= 0 ? '+' : '') + plRate.toFixed(1) + '%)' : '-'}</div>${kPl}</div>
       `;
     }
   });
@@ -332,6 +391,9 @@ function calc() {
   const threshold = num('inThreshold') || 140;
   const collateral = sumOrdVal + sumCrdVal + cash;
   const loan = sumCrdBuy;
+
+  // 예수금 한글 힌트
+  const kCash = $('korCash'); if (kCash) kCash.textContent = cash > 0 ? '≈ ' + fmtKor(cash) : '';
 
   if (loan <= 0) {
     $('ratioPanel').style.display = 'none';
@@ -417,6 +479,15 @@ $('btnAddStock').addEventListener('click', () => {
   renderStocks(); saveLocal();
 });
 
+$('btnReset').addEventListener('click', () => {
+  if (!confirm('모든 입력을 초기화할까요?\n\n(저장된 브라우저 데이터도 삭제됩니다. 클라우드 저장은 유지됨)')) return;
+  try { localStorage.removeItem('sf_mr_state_v2'); localStorage.removeItem('sf_mr_state_v1'); } catch(e){}
+  $('inCash').value = '';
+  $('inThreshold').value = '140';
+  stocks = [{ name: '', ordQty: 0, ordPrice: 0, ordCurr: 0, ordBuy: 0, ordVal: 0, crdQty: 0, crdPrice: 0, crdCurr: 0, crdBuy: 0, crdVal: 0 }];
+  renderStocks();
+});
+
 ['inCash', 'inThreshold'].forEach(id => {
   $(id).addEventListener('input', () => { calc(); saveLocal(); });
 });
@@ -494,12 +565,14 @@ async function loadSlots() { try { const s = await getDoc(docRef()); if (s.exist
 async function saveSlots(slots) { const ref = docRef(); let ex = {}; try { const s = await getDoc(ref); if (s.exists()) ex = s.data(); } catch(e){} ex[CALC_KEY] = { slots, updatedAt: new Date().toISOString() }; await setDoc(ref, ex, {merge: true}); }
 let _slots = [];
 function renderSlots() { const box = gid('slotList'); if (!_slots.length) { box.innerHTML = '<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 계좌가 없어요.</div>'; return; }
-  box.innerHTML = _slots.map((s, i) => { const t = s.savedAt ? new Date(s.savedAt).toLocaleString('ko-KR') : ''; return '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (s.name || '(이름없음)') + '</div><div style="font-size:11px;color:#999">' + t + '</div></div><button onclick="window._mRename(' + i + ')" style="background:#e5e7eb;color:#444;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">✏️</button><button onclick="window._mLoad(' + i + ')" style="background:#0284c7;color:white;border:none;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button><button onclick="window._mDel(' + i + ')" style="background:#fee2e2;color:#dc2626;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">🗑️</button></div>'; }).join(''); }
+  box.innerHTML = _slots.map((s, i) => { const t = s.savedAt ? new Date(s.savedAt).toLocaleString('ko-KR') : ''; return '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (s.name || '(이름없음)') + '</div><div style="font-size:11px;color:#999">' + t + '</div></div><button onclick="window._mRename(' + i + ')" style="background:#e5e7eb;color:#444;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">✏️</button><button onclick="window._mOverwrite('+i+')" title="덮어쓰기" style="background:#22c55e;color:white;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">💾</button><button onclick="window._mLoad(' + i + ')" style="background:#0284c7;color:white;border:none;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button><button onclick="window._mDel(' + i + ')" style="background:#fee2e2;color:#dc2626;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">🗑️</button></div>'; }).join(''); }
 async function refresh() { gid('slotList').innerHTML = '<div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>'; _slots = await loadSlots(); renderSlots(); }
 gid('btnCloudOpen').addEventListener('click', async () => { if (!currentUser || currentUser.uid !== ADMIN_UID) { alert('관리자 로그인이 필요합니다.'); return; } gid('slotName').value = ''; gid('slotModal').style.display = 'flex'; await refresh(); });
 gid('slotSaveBtn').addEventListener('click', async () => { const name = gid('slotName').value.trim(); if (!name) { alert('이름을 입력하세요.'); return; } const idx = _slots.findIndex(s => s.name === name); if (idx >= 0 && !confirm('"' + name + '" 덮어쓸까요?')) return; gid('slotSaveBtn').disabled = true; gid('slotSaveBtn').textContent = '저장 중...'; try { const entry = { name, data: window.mGetState(), savedAt: new Date().toISOString() }; if (idx >= 0) _slots[idx] = entry; else _slots.push(entry); await saveSlots(_slots); renderSlots(); alert('✅ 저장 완료.'); } catch(e) { alert('저장 실패: ' + e.message); } gid('slotSaveBtn').disabled = false; gid('slotSaveBtn').textContent = '저장'; });
 window._mLoad = function(i) { const s = _slots[i]; if (!s) return; if (!confirm('"' + s.name + '" 불러올까요? 현재 값 교체됩니다.')) return; window.mSetState(s.data); gid('slotModal').style.display = 'none'; };
 window._mDel = async function(i) { if (!confirm('삭제할까요?')) return; try { _slots.splice(i, 1); await saveSlots(_slots); renderSlots(); } catch(e) { alert('실패: ' + e.message); } };
+
+window._mOverwrite=async function(i){ const s=_slots[i]; if(!s)return; if(!confirm('"'+s.name+'" 덮어쓸까요? 현재 값으로 저장됩니다.'))return; try{ _slots[i]={name:s.name,data:window.mGetState(),savedAt:new Date().toISOString()}; await saveSlots(_slots); renderSlots(); alert('✅ 덮어쓰기 완료.'); }catch(e){ alert('실패: '+e.message); } };
 window._mRename = async function(i) { const nn = prompt('이름 수정', _slots[i].name || ''); if (nn === null) return; const t = nn.trim(); if (!t) return; try { _slots[i].name = t; await saveSlots(_slots); renderSlots(); } catch(e) { alert('실패: ' + e.message); } };
 gid('btnCloudLogout').addEventListener('click', async () => { if (confirm('로그아웃 할까요?')) { try { await signOut(auth); alert('로그아웃 됐어요.'); } catch(e){} } });
 </script>
