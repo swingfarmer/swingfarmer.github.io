@@ -1,11 +1,89 @@
 /* ============================================
    스윙파머 공통 스크립트 (common.js)
+   - 인증 게이트 (Firebase Auth, 관리자 전용)
    - 상단 고정 헤더 (메인 링크 + 다크모드 + 글자크기 + 공지문의 + 문의)
    - 다크모드 (localStorage 저장)
    - 글자크기 4단계 (작게/기본/크게/더크게)
    사용법: 각 페이지 <head> 또는 <body> 끝에
    <script src="/common.js"></script> 한 줄 추가
    ============================================ */
+
+/* ── 인증 게이트 (눈가림) ── */
+(function(){
+  var ADMIN_UID = '1JrHgD2bpTRjrS2jw7MbpHciBph1';
+  var FB_CFG = {apiKey:'AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY',authDomain:'swingfarmer-board01.firebaseapp.com',projectId:'swingfarmer-board01'};
+
+  // 이미 인증된 세션이면 게이트 안 띄움 (빠른 체크)
+  var cached = false;
+  try { cached = sessionStorage.getItem('sf_authed') === '1'; } catch(e){}
+  if (cached) return;
+
+  // 오버레이 즉시 삽입 (FOUC 방지)
+  var overlay = document.createElement('div');
+  overlay.id = 'sf-auth-gate';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(245,247,250,0.97);display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,sans-serif';
+  overlay.innerHTML = '<div style="text-align:center;max-width:360px;padding:40px">'
+    + '<div style="font-size:48px;margin-bottom:16px">🔒</div>'
+    + '<div style="font-size:20px;font-weight:800;color:#1F4E78;margin-bottom:8px">스윙파머 금융도구</div>'
+    + '<div style="font-size:14px;color:#666;margin-bottom:24px;line-height:1.6">개인 전용 공간입니다.<br>관리자 로그인이 필요합니다.</div>'
+    + '<button id="sf-gate-login" style="background:#1F4E78;color:#fff;border:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 2px 10px rgba(31,78,120,0.3)">🔑 Google 로그인</button>'
+    + '<div id="sf-gate-msg" style="margin-top:16px;font-size:13px;color:#dc2626;display:none"></div>'
+    + '</div>';
+
+  // DOM 준비 전이면 documentElement에 바로 삽입
+  if (document.body) document.body.appendChild(overlay);
+  else document.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(overlay); });
+
+  // Firebase 동적 로드 + 인증 체크
+  Promise.all([
+    import('https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js'),
+    import('https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js')
+  ]).then(function(mods){
+    var initializeApp = mods[0].initializeApp, getApps = mods[0].getApps;
+    var getAuth = mods[1].getAuth, onAuthStateChanged = mods[1].onAuthStateChanged;
+    var GoogleAuthProvider = mods[1].GoogleAuthProvider, signInWithPopup = mods[1].signInWithPopup;
+
+    var app = getApps().length ? getApps()[0] : initializeApp(FB_CFG);
+    var auth = getAuth(app);
+    var provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+
+    function unlock(){
+      try { sessionStorage.setItem('sf_authed','1'); } catch(e){}
+      var g = document.getElementById('sf-auth-gate');
+      if(g) g.style.display = 'none';
+    }
+    function showErr(msg){
+      var m = document.getElementById('sf-gate-msg');
+      if(m){ m.textContent = msg; m.style.display = 'block'; }
+    }
+
+    onAuthStateChanged(auth, function(user){
+      if(user && user.uid === ADMIN_UID){ unlock(); }
+      else if(user){ showErr('관리자 계정이 아닙니다. (' + (user.email||'') + ')'); }
+    });
+
+    // 로그인 버튼
+    function bindLogin(){
+      var btn = document.getElementById('sf-gate-login');
+      if(!btn) return;
+      btn.addEventListener('click', function(){
+        btn.textContent = '로그인 중...'; btn.disabled = true;
+        signInWithPopup(auth, provider).catch(function(e){
+          btn.textContent = '🔑 Google 로그인'; btn.disabled = false;
+          if(e.code !== 'auth/popup-closed-by-user') showErr('로그인 실패: ' + e.message);
+        });
+      });
+    }
+    if(document.getElementById('sf-gate-login')) bindLogin();
+    else document.addEventListener('DOMContentLoaded', bindLogin);
+  }).catch(function(e){
+    // Firebase 로드 실패 시 게이트 해제 (오프라인 등)
+    console.warn('Auth gate: Firebase load failed', e);
+    var g = document.getElementById('sf-auth-gate');
+    if(g) g.style.display = 'none';
+  });
+})();
 
 (function () {
   'use strict';
