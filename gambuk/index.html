@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>감북동 202-4 토지보상 전략 종합</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; background: #f5f7fa; color: #1a1a1a; line-height: 1.75; }
+  h1 { color: #1F4E78; border-bottom: 3px solid #1F4E78; padding-bottom: 10px; margin-bottom: 4px; font-size: 1.4rem; }
+  .meta { color: #666; font-size: 13px; margin-bottom: 20px; }
+  .back-link { display: inline-block; margin-bottom: 16px; color: #1F4E78; text-decoration: none; font-size: 14px; }
+  .back-link:hover { text-decoration: underline; }
+
+  /* tabs */
+  .tab-bar { display: flex; gap: 0; border-bottom: 3px solid #1F4E78; margin-bottom: 20px; overflow-x: auto; }
+  .tab-btn { padding: 10px 20px; font-size: 14px; font-weight: 700; border: none; background: #e8e5df; color: #888; cursor: pointer; border-radius: 6px 6px 0 0; white-space: nowrap; }
+  .tab-btn.active { background: #1F4E78; color: #fff; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* print */
+  .pdf-btn { position: fixed; bottom: 20px; right: 20px; background: #1F4E78; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 100; }
+  @media print {
+    .pdf-btn, .tab-bar, .back-link { display: none !important; }
+    .tab-panel { display: block !important; page-break-before: always; }
+    .tab-panel:first-of-type { page-break-before: auto; }
+    body { padding: 0; background: #fff; }
+  }
+
+  /* common */
+  section { margin-bottom: 28px; }
+  h2 { font-size: 16px; font-weight: 700; color: #1F4E78; border-left: 3px solid #1F4E78; padding-left: 10px; margin-bottom: 12px; }
+  h3 { font-size: 14px; font-weight: 700; color: #333; margin: 16px 0 8px; }
+  p, li { font-size: 14px; }
+  p + p { margin-top: 8px; }
+
+  .panel { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .panel-label { font-size: 12px; font-weight: 700; color: #888; margin-bottom: 6px; letter-spacing: 0.02em; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 12px; }
+  th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #f0f5fa; font-weight: 700; font-size: 12px; color: #555; }
+
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 3px; }
+  .tag-danger { background: #fef2f2; color: #b91c1c; }
+  .tag-safe { background: #f0fdf4; color: #15803d; }
+  .tag-warn { background: #fffbeb; color: #92400e; }
+  .tag-info { background: #dbeafe; color: #1F4E78; }
+
+  .rule-box { background: #fef2f2; border-left: 3px solid #dc2626; padding: 12px 14px; margin-bottom: 10px; border-radius: 0 6px 6px 0; font-size: 14px; }
+  .safe-box { background: #f0fdf4; border-left: 3px solid #15803d; padding: 12px 14px; margin-bottom: 10px; border-radius: 0 6px 6px 0; font-size: 14px; }
+  .warn-box { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 12px 14px; margin-bottom: 10px; border-radius: 0 6px 6px 0; font-size: 14px; }
+
+  ul.checklist { list-style: none; padding: 0; }
+  ul.checklist li { padding: 5px 0 5px 24px; position: relative; font-size: 13px; }
+  ul.checklist li::before { content: '☐'; position: absolute; left: 0; }
+
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before { content:''; position:absolute; left:5px; top:6px; bottom:6px; width:2px; background:#ddd; }
+  .tl-item { position:relative; margin-bottom:16px; }
+  .tl-item::before { content:''; position:absolute; left:-21px; top:6px; width:10px; height:10px; border-radius:50%; background:#1F4E78; }
+  .tl-label { font-size: 12px; font-weight: 800; color: #1F4E78; margin-bottom: 2px; }
+  .tl-content { font-size: 13px; }
+
+  footer { border-top: 1px solid #ddd; padding-top: 16px; margin-top: 30px; font-size: 12px; color: #888; line-height: 1.7; }
+
+  @media (max-width: 600px) {
+    body { padding: 14px 10px; }
+    h1 { font-size: 1.15rem; }
+    table { font-size: 12px; }
+    th, td { padding: 6px 7px; }
+    .tab-btn { padding: 8px 12px; font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<a href="/" class="back-link">← 메인으로</a>
+
+<h1>감북동 202-4 토지보상 전략 종합</h1>
+<p class="meta">하남시 감북동 202-4번지 (답, 990㎡) — 감정평가 의견서 분석 &amp; 협의양도인 주택 전략<br>최종 업데이트 2026.09</p>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('appraisal')">감정평가 의견서</button>
+  <button class="tab-btn" onclick="switchTab('housing')">협의양도인 주택 전략</button>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 1: 감정평가 의견서 분석                                      -->
+<!-- ============================================================ -->
+<div id="appraisal" class="tab-panel active">
+
+<section>
+  <h2>대상토지 개요</h2>
+  <table>
+    <tr><th>소재지</th><td>경기도 하남시 감북동 202-4</td></tr>
+    <tr><th>지목 / 면적</th><td>답 / 990㎡ (약 300평)</td></tr>
+    <tr><th>용도지역</th><td>도시지역, 자연녹지지역, <strong>제1종일반주거지역</strong>(약 25㎡), 지구단위계획구역(안촌지구)</td></tr>
+    <tr><th>도로접면</th><td>지적도상 소로2류 (폭 8~10m) 접면 확인</td></tr>
+    <tr><th>개별공시지가</th><td>493,900원/㎡ (2026.01 기준)</td></tr>
+    <tr><th>비교표준지</th><td>202-3번지 — 477,200원/㎡ (답, 733㎡, 개발제한구역 100%, 완경사, 부정형)</td></tr>
+    <tr><th>공유관계</th><td>공동소유 4인 (A 495㎡ 단독 + BCD 각 165㎡ 공유)</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>의견서 4대 전략 요약</h2>
+
+  <div class="panel">
+    <p class="panel-label">전략 1 — 비교표준지 대비 우세 + 주거지역 단가 현실화</p>
+    <p>표준지(202-3)는 100% 개발제한구역·완경사. 대상토지는 1종주거 포함 + 평탄화 완료. 인접 205번지 1종주거 공시지가 2,202,000원/㎡ 반영 요구. 소형 프리미엄(25.6 중개거래 평당 529만, 26.3 직거래 평당 619만) 제시.</p>
+  </div>
+
+  <div class="panel">
+    <p class="panel-label">전략 2 — 222-2 선례 역이용: 맹지 감점 배제 + 기타요인 1.76배 하한선</p>
+    <p>222-2번지(2024타경3789) 감평서상 맹지·부정형·완경사인데도 기타요인 1.76배 적용. 대상토지는 소로2류 접면으로 맹지 아님 → 개별요인 감점 없이 1.76배를 최저 하한선으로 적용 요구.</p>
+  </div>
+
+  <div class="panel">
+    <p class="panel-label">전략 3 — 감평서 내 단가 후려치기 배척</p>
+    <p>감평사가 고가 사례A(842,459원/㎡) 배제하고 저가 사례B(605,545원/㎡)만 선택. 거래사례기준법 631,000원 > 공시지가기준법 583,000원인데 낮은 쪽 채택. 자의적 취사선택 배척.</p>
+  </div>
+
+  <div class="panel">
+    <p class="panel-label">전략 4 — 교산신도시 교통호재 반영 + 헐값 사례 거부</p>
+    <p>222-2 평가 근거 사례는 2022.1월(교통호재 미반영). 25~26년 송파하남선 승인(총 1.8조) + 동남로 2028 조기완공 + 감북동 지상화 등 호재. 대면적 도매가(128만원/평 등) 편입 거부.</p>
+  </div>
+</section>
+
+<section>
+  <h2>보상금 추정 (Bear / Base / Bull)</h2>
+
+  <div class="panel">
+    <p class="panel-label">산식 구조</p>
+    <p>표준지 공시지가(477,200) × 시점수정(~1.02) × 지역요인(1.0) × 개별요인 × 기타요인 × 990㎡</p>
+  </div>
+
+  <table>
+    <tr><th>시나리오</th><th>기타요인</th><th>㎡ 단가</th><th>평당 단가</th><th>총액</th><th>확률</th></tr>
+    <tr>
+      <td><span class="tag tag-danger">Bear</span></td>
+      <td>1.65~1.85</td><td>80~90만</td><td>264~297만</td><td>7.9~8.9억</td><td>35%</td>
+    </tr>
+    <tr>
+      <td><span class="tag tag-info">Base</span></td>
+      <td>1.85~2.05</td><td>90~100만</td><td>297~330만</td><td>8.9~9.9억</td><td>30%</td>
+    </tr>
+    <tr>
+      <td><span class="tag tag-safe">Bull</span></td>
+      <td>2.05~2.25</td><td>100~110만</td><td>330~363만</td><td>9.9~10.9억</td><td>13%</td>
+    </tr>
+  </table>
+
+  <div class="safe-box">
+    <p><strong>가중평균 기대값:</strong> 평당 약 295만원, ㎡당 약 89만원, 총액 약 <strong>8.8억</strong><br>
+    의견서의 핵심 방어선: 기타요인 1.76 하한선 사수 → 최소 8.5억 확보</p>
+  </div>
+
+  <div class="panel">
+    <p class="panel-label">선례 기타요인 비교</p>
+    <table>
+      <tr><th>사례</th><th>조건</th><th>기타요인</th></tr>
+      <tr><td>222-2번지 (2024 경매)</td><td>맹지·부정형·완경사</td><td>1.76</td></tr>
+      <tr><td>감이동 94-2 (2015 보상)</td><td>맹지</td><td>~2.0</td></tr>
+      <tr><td>202-4 대상토지 (추정)</td><td>소로접면·1종주거·평탄</td><td>1.9~2.1 목표</td></tr>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>첨부서류 편철 순서 &amp; 마킹 지침</h2>
+
+  <table>
+    <tr><th>쪽</th><th>서류</th><th>뒷받침 논점</th></tr>
+    <tr><td>1~2</td><td>의견서 본문</td><td>—</td></tr>
+    <tr><td>3</td><td>202-3 표준지 기초자료</td><td>전략1: 완경사·GB 확인</td></tr>
+    <tr><td>4</td><td>202-4 토지이용계획</td><td>전략1: 1종주거·소로2류</td></tr>
+    <tr><td>5</td><td>205번지 토지이용계획</td><td>전략1: 공시지가 220만</td></tr>
+    <tr><td>6~10</td><td>실거래가 4장</td><td>전략1+4: 시세·헐값</td></tr>
+    <tr><td>11~14</td><td>222-2 감평서 4장</td><td>전략2+3: 1.76·631,000</td></tr>
+    <tr><td>15~18</td><td>국토부 보도자료 4장</td><td>전략4: 교산 교통망</td></tr>
+    <tr><td>19~24</td><td>뉴스기사 3건</td><td>전략4: 최신 호재</td></tr>
+  </table>
+
+  <h3>형광펜 마킹 (단일 색상)</h3>
+  <ul class="checklist">
+    <li>3p 표준지: 「완경사지」</li>
+    <li>4p 대상지: 「제1종일반주거지역」 「소로2류(폭 8m~10m)」</li>
+    <li>5p 205번지: 「2,202,000원」</li>
+    <li>11p 감평서 요항표: 「(4) 인접 도로상태」 + 「지적도상 맹지임」 + 「완경사」</li>
+    <li>12p 감평서 비교표: 「842,459」 「605,545」</li>
+    <li>13p 감평서 결정문: 「1.760」</li>
+    <li>14p 감평서 시산가액: 「631,000」</li>
+    <li>16p 보도자료 도면: 서하남로 확장·동남로 노선</li>
+    <li>19~20p 연합뉴스TV: 「기본계획 승인」 「1조8,356억원」 「30분 단축」</li>
+    <li>22p 한경: 「2년 단축해 2028년」 「강남 이동이 훨씬 쉬워질」</li>
+    <li>24p 디스커버리: 「감북동이 교통 요충지」 「동남로 지상화」</li>
+  </ul>
+
+  <h3>빨간펜 마킹</h3>
+  <ul class="checklist">
+    <li>7p 실거래가 2026.2월: 2069㎡/80,000만원 줄 → 두 줄 긋고 "대면적 거래 — 단가 비교 부적격" 기재</li>
+  </ul>
+
+  <h3>마침표</h3>
+  <ul class="checklist">
+    <li>1p 날짜: 제출 당일 기입</li>
+    <li>1p 서명: 4인 전원 서명 또는 날인</li>
+  </ul>
+</section>
+
+<section>
+  <h2>제출 전 리프레시 사항</h2>
+  <div class="warn-box">
+    <p>제출 직전에 실거래가 4장만 최신 조회 후 교체 출력. 새 거래 추가 시 유불리 판단 후 빨간펜 추가만 하면 됨. 의견서 본문·감평서·기사·토지이음은 변경 없이 유지.</p>
+  </div>
+</section>
+
+<section>
+  <h2>후속 절차 로드맵 (GB 해제 기준)</h2>
+  <div class="timeline">
+    <div class="tl-item"><div class="tl-label">2026.10 (예상)</div><div class="tl-content">개발제한구역 해제 발표 — 보상 아직 아님, 선언 단계</div></div>
+    <div class="tl-item"><div class="tl-label">2027 상반기</div><div class="tl-content">지구계획 수립 · 환경영향평가 착수 · 주민설명회</div></div>
+    <div class="tl-item"><div class="tl-label">2027 중후반</div><div class="tl-content">지구지정 · 사업인정고시 → 보상 절차 개시 가능</div></div>
+    <div class="tl-item"><div class="tl-label">2028 초</div><div class="tl-content">보상계획 공고 (14일 열람) · 감평사 3인 선정 · 의견서 제출</div></div>
+    <div class="tl-item"><div class="tl-label">2028 상반기</div><div class="tl-content">감정평가 현장 실사 → 의견서 전달 · 브리핑</div></div>
+    <div class="tl-item"><div class="tl-label">2028 중~하반기</div><div class="tl-content">협의보상 통지 → 협의양도(도장) or 거부(수용재결)</div></div>
+  </div>
+
+  <div class="panel">
+    <p class="panel-label">예비 카드: 감이동 94-2 실사례</p>
+    <p>423㎡ 맹지 / 2010 공시지가 17만/㎡ → 2015 보상 총 1.41억 (333,333원/㎡) → 기타요인 약 2.0배 역산. 의견서에는 넣지 않고, 이의재결·협상 단계에서 구두 압박용으로 보관.</p>
+  </div>
+</section>
+
+</div><!-- /appraisal -->
+
+<!-- ============================================================ -->
+<!-- TAB 2: 협의양도인 주택 전략                                      -->
+<!-- ============================================================ -->
+<div id="housing" class="tab-panel">
+
+<section>
+  <h2>가족 관계 &amp; 지분 구조</h2>
+  <table>
+    <tr><th>인물</th><th>관계</th><th>지분면적</th><th>주택현황</th><th>역할</th></tr>
+    <tr>
+      <td><strong>A</strong></td><td>부모</td><td>495㎡ (단독)</td>
+      <td><span class="tag tag-warn">유주택</span> 매도 예정</td>
+      <td>단독 지분 → 협양주택 1채 신청</td>
+    </tr>
+    <tr>
+      <td><strong>B</strong></td><td>자녀 (본인)</td><td>165㎡ (공유)</td>
+      <td><span class="tag tag-safe">무주택</span></td>
+      <td>공유자 · 자금 지원</td>
+    </tr>
+    <tr>
+      <td><strong>C</strong></td><td>자녀 (형제)</td><td>165㎡ (공유)</td>
+      <td><span class="tag tag-safe">무주택</span></td>
+      <td>BCD 합산 대표자</td>
+    </tr>
+    <tr>
+      <td><strong>D</strong></td><td>자녀 (형제)</td><td>165㎡ (공유)</td>
+      <td><span class="tag tag-danger">유주택</span></td>
+      <td>공유자 · 합의서 제출만</td>
+    </tr>
+  </table>
+  <div class="panel">
+    <p class="panel-label">핵심 관계 룰</p>
+    <p><strong>A ↔ BCD (직계존비속)</strong> — 동일세대 시 중복공급 불가. A 세대에 BCD 합가하면 2채 → 1채.</p>
+    <p><strong>B ↔ C ↔ D (형제)</strong> — 주민등록 분리되면 서로 주택 수 무관.</p>
+  </div>
+</section>
+
+<section>
+  <h2>협의양도인 주택 — 교산 안내문 기준 요약</h2>
+  <div class="panel">
+    <p class="panel-label">대상자</p>
+    <p>공람공고일 이전부터 사업지구 내 <strong>400㎡ 이상</strong> 토지 소유(공유지분 포함)하고, 토지 <strong>전부를 협의양도</strong>한 자</p>
+  </div>
+  <table>
+    <tr><th>항목</th><th>내용</th></tr>
+    <tr><td>공급기준</td><td>1세대 1주택</td></tr>
+    <tr><td>공급규모</td><td>전용 85㎡ 이하</td></tr>
+    <tr><td>공급가격</td><td>일반 분양가격 (할인 없음)</td></tr>
+    <tr><td>공급방법</td><td>특별공급 (경쟁 시 추첨)</td></tr>
+    <tr><td>무주택 요건</td><td>세대주 + 세대원 전원, 입주자모집공고일~입주 시</td></tr>
+  </table>
+  <p>BCD 합산: 165+165+165 = <strong>495㎡ ≥ 400㎡</strong> → 통과</p>
+</section>
+
+<section>
+  <h2>세대 구성 타임라인</h2>
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-label">기준일(공람공고일) 전</div>
+      <div class="tl-content">A 세대: A 단독 (or +배우자만)<br>BCD 세대: B+C+D 합가 완료 → 495㎡ 확보</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-label">기준일 ~ 보상협의</div>
+      <div class="tl-content">세대 유지. A 단독 신청, BCD 합의서+대표자 C 지정.</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-label">입주자모집공고일 전</div>
+      <div class="tl-content">C 세대분리 (C 단독 or C+B). D 별도 세대.<br>A 기존 주택 매도 → 무주택 전환.</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-label">입주자모집공고일</div>
+      <div class="tl-content">A: 무주택 → 협양주택 1채<br>C: 무주택 + 세대원 전원 무주택 → 협양주택 1채<br><span class="tag tag-info">결과: 가족 합계 2채</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>절대 금지사항</h2>
+  <div class="rule-box"><p><strong>① A 세대에 BCD 합가 금지</strong> — 전 기간. 중복공급 → 2채→1채.</p></div>
+  <div class="rule-box"><p><strong>② A 분양권 매수 금지</strong> — 2018.12.11부터 분양권 = 유주택.</p></div>
+  <div class="rule-box"><p><strong>③ 입주모집공고일 시점 C 세대에 D 합가 금지</strong> — D 유주택 → C 자격 탈락.</p></div>
+  <div class="rule-box"><p><strong>④ B 주택 매수 금지</strong> — C 대표자 세대원이 되면 C 자격 동반 소멸.</p></div>
+</section>
+
+<section>
+  <h2>LH 확인 필요사항</h2>
+  <div class="warn-box"><p>교산 안내문 기준 적용. 감북 사업 시행 전 LH 서면 질의 권장.</p></div>
+  <ul class="checklist">
+    <li>중복공급 "동일세대" 판정 시점</li>
+    <li>협의양도인 주택 대표자 사후 변경 가능 여부</li>
+    <li>감북동 공람공고일 구체적 일정</li>
+    <li>감북 협의양도인 주택 공급 물량 및 규모</li>
+    <li>B가 공유자이면서 A 세대원인 경우 중복공급 해당 여부</li>
+    <li>토지 990㎡ 중 A 단독(495)과 BCD 공유(495) 등기 분할 필요 여부</li>
+  </ul>
+</section>
+
+<section>
+  <h2>자금 조달 참고</h2>
+  <div class="panel">
+    <p class="panel-label">B → C 자금 대여 (분양 잔금)</p>
+    <p>2억 1,739만원 이하: 무이자 가능 (연 이자 차액 1,000만 미만).<br>
+    초과 시: 적정 이율 연 4.6%(2024 기준) 적용. 차용증+매월 이체 증빙 필수.</p>
+  </div>
+  <div class="panel">
+    <p class="panel-label">자금 흐름 시뮬레이션 (Base 기준)</p>
+    <p>보상금 ~9억 수령 → 특별공급 분양가(할인 없음) 예상 9~10억 → 보상금으로 커버 or 소폭 부족.<br>
+    이주자택지(할인) 대상 아님 — 주거용 건물 없는 농지이므로 일반 분양가 적용.</p>
+  </div>
+  <div class="warn-box"><p>세법(적정이율, 비과세 요건)은 매년 변동. 실행 직전 세무사 확인 필수.</p></div>
+</section>
+
+<section>
+  <h2>실행 체크리스트</h2>
+  <h3>기준일 전</h3>
+  <ul class="checklist">
+    <li>B를 A 세대에서 전출 → BCD 세대로 전입</li>
+    <li>A 세대: A 단독 확인</li>
+    <li>BCD 세대: B+C+D 동일 주민등록표 확인</li>
+    <li>등기부등본: A 단독 495㎡ / BCD 공유 495㎡ 정리</li>
+  </ul>
+  <h3>보상협의 시</h3>
+  <ul class="checklist">
+    <li>A: 단독 신청서 제출</li>
+    <li>BCD: 합의서 + 인감증명서 + 대표자 C 지정</li>
+  </ul>
+  <h3>입주자모집공고일 전</h3>
+  <ul class="checklist">
+    <li>C 세대분리: C 단독세대 (or C+B)</li>
+    <li>A 기존 주택 매도 → 무주택</li>
+    <li>A 분양권 미매수 재확인</li>
+    <li>B 주택 미매수 재확인</li>
+  </ul>
+  <h3>입주자모집공고일</h3>
+  <ul class="checklist">
+    <li>A: 무주택 확인 → 1채 신청</li>
+    <li>C: 무주택 + 세대원 전원 무주택 → 1채 신청</li>
+    <li>A 세대에 BCD 아무도 없는지 최종 확인</li>
+  </ul>
+</section>
+
+</div><!-- /housing -->
+
+<footer>
+  <p>이 문서는 투자 조언이 아닌 개인 분석 정리 목적이며, 법적 효력 없음. 감정평가 산식 역산은 추정치이며 실제 보상액과 다를 수 있음.<br>
+  협의양도인 주택 전략은 하남교산 이주대책 안내문(2025.04, LH) 기준 적용. 감북 사업 시행 시 별도 규정 확인 필수.<br>
+  세법·주택공급규칙은 수시 변동 — 실행 직전 전문가 확인 권장.</p>
+</footer>
+
+<button class="pdf-btn" onclick="window.print()">PDF 저장</button>
+
+<script>
+function switchTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+<script src="/common.js?v=4"></script>
+</body>
+</html>
