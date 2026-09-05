@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>통신 회선 관리기</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; max-width: 1100px; margin: 0 auto; padding: 20px; background: #f5f7fa; color: #1a1a1a; }
+  h1 { color: #1F4E78; border-bottom: 3px solid #1F4E78; padding-bottom: 10px; margin-bottom: 8px; }
+  .desc { color: #555; font-size: 14px; margin-bottom: 24px; }
+  .back-link { display: inline-block; margin-bottom: 16px; color: #1F4E78; text-decoration: none; font-size: 14px; }
+  .back-link:hover { text-decoration: underline; }
+  .panel { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 20px; }
+  .panel h2 { margin-top: 0; color: #1F4E78; font-size: 18px; }
+  .section-label { font-size: 12px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px 0; grid-column: 1 / -1; }
+  .inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .input-row { display: flex; flex-direction: column; }
+  label { font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #333; }
+  input[type="number"] { padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 4px; background: #FFF2CC; font-weight: 600; color: #0000FF; }
+  input[type="text"], input[type="date"], select { padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 4px; background: #fff; color: #333; font-weight: 600; }
+  input:focus, select:focus { outline: 2px solid #1F4E78; }
+  .hero { background: linear-gradient(135deg, #1F4E78, #2563eb); color: white; padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px; }
+  .hero-label { font-size: 14px; opacity: 0.9; margin-bottom: 8px; }
+  .hero-value { font-size: 38px; font-weight: 800; letter-spacing: -1px; }
+  .hero-sub { font-size: 14px; opacity: 0.85; margin-top: 8px; }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 14px; }
+  .stat { background: rgba(255,255,255,0.12); padding: 12px; border-radius: 8px; text-align: center; }
+  .stat-label { font-size: 11px; opacity: 0.8; margin-bottom: 4px; }
+  .stat-value { font-size: 20px; font-weight: 800; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  th, td { padding: 10px 8px; text-align: center; border-bottom: 1px solid #eee; vertical-align: top; }
+  th { background: #1F4E78; color: white; font-weight: 600; position: sticky; top: 0; font-size: 12px; }
+  .table-wrap { max-height: 600px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; }
+  .btn-primary { background: #1F4E78; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 700; cursor: pointer; grid-column: 1 / -1; margin-top: 10px; }
+  .btn-primary:hover { background: #153857; }
+  .btn-sm { border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: 600; }
+  .btn-edit { background: #dbeafe; color: #1F4E78; }
+  .btn-delete { background: #fee2e2; color: #dc2626; }
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; color: white; }
+  .badge.skt { background: #e11d48; }
+  .badge.kt { background: #0ea5e9; }
+  .badge.lgu { background: #d946ef; }
+  .badge.mvno { background: #10b981; }
+  .badge.expired { background: #ef4444; }
+  .badge.soon { background: #f59e0b; }
+  .badge.ok { background: #94a3b8; }
+  .badge.mwarn { background: #7c3aed; }
+  .line-card { background: white; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; margin-bottom: 10px; }
+  .line-card.alert { border-left: 4px solid #ef4444; }
+  .line-card.soon { border-left: 4px solid #f59e0b; }
+  .line-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .line-header .owner { font-weight: 800; font-size: 15px; color: #1F4E78; }
+  .line-header .phone { font-size: 13px; color: #666; }
+  .line-detail { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; font-size: 12.5px; }
+  .line-detail .item { background: #f8fafc; padding: 8px 10px; border-radius: 6px; }
+  .line-detail .item .lbl { color: #888; font-size: 11px; margin-bottom: 2px; }
+  .line-detail .item .val { font-weight: 700; color: #1F4E78; }
+  .line-actions { display: flex; gap: 6px; margin-top: 10px; justify-content: flex-end; }
+  .won-kor { font-size: 12px; color: #1F4E78; font-weight: 600; margin-top: 3px; min-height: 15px; }
+  @media (max-width: 600px) {
+    body { padding: 14px 10px; }
+    .hero-value { font-size: 28px; }
+    .line-detail { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<a href="/" class="back-link">← 메인으로</a>
+
+<h1>📱 통신 회선 관리기</h1>
+<p class="desc">핸드폰·태블릿·데이터 회선의 약정 기간, 요금, 의무유지 기간을 한눈에 관리. 데이터는 이 브라우저에만 저장됩니다.</p>
+
+<div class="hero">
+  <div class="hero-label">매월 고정 통신비 총액 (요금제 + 할부금)</div>
+  <div class="hero-value" id="totalMonthlyCost">0 원</div>
+  <div class="summary-grid">
+    <div class="stat"><div class="stat-label">운용 회선</div><div class="stat-value" id="totalLines">0</div></div>
+    <div class="stat"><div class="stat-label">요금제 합계</div><div class="stat-value" id="totalPlan">0</div></div>
+    <div class="stat"><div class="stat-label">할부금 합계</div><div class="stat-value" id="totalInstall">0</div></div>
+    <div class="stat"><div class="stat-label">30일 내 만료</div><div class="stat-value" id="totalAlert">0</div></div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>① 회선 등록</h2>
+  <form id="lineForm" class="inputs">
+
+    <div class="section-label">기본 정보</div>
+    <div class="input-row">
+      <label>사용자/용도</label>
+      <input type="text" id="f_owner" placeholder="예: 본인 메인, 자녀폰, 네비용" required>
+    </div>
+    <div class="input-row">
+      <label>통신사</label>
+      <select id="f_carrier">
+        <option value="skt">SKT</option>
+        <option value="kt">KT</option>
+        <option value="lgu">LGU+</option>
+        <option value="mvno">알뜰폰(MVNO)</option>
+      </select>
+    </div>
+    <div class="input-row">
+      <label>전화번호</label>
+      <input type="text" id="f_phone" placeholder="010-0000-0000" required>
+    </div>
+    <div class="input-row">
+      <label>기기명</label>
+      <input type="text" id="f_device" placeholder="예: iPhone 16 Pro, Galaxy S25">
+    </div>
+
+    <div class="section-label">요금 정보</div>
+    <div class="input-row">
+      <label>요금제명</label>
+      <input type="text" id="f_plan" placeholder="예: 5G 슬림, 7개월 0원 요금제">
+    </div>
+    <div class="input-row">
+      <label>월 요금제 금액 (원)</label>
+      <input type="number" id="f_planFee" placeholder="할인 적용 후 실청구" value="0">
+    </div>
+    <div class="input-row">
+      <label>월 할부금 (원)</label>
+      <input type="number" id="f_installment" placeholder="기기 할부금 (없으면 0)" value="0">
+    </div>
+    <div class="input-row">
+      <label>데이터 제공량</label>
+      <input type="text" id="f_data" placeholder="예: 11GB+매일2GB+3Mbps">
+    </div>
+
+    <div class="section-label">약정 / 의무유지</div>
+    <div class="input-row">
+      <label>약정 유형</label>
+      <select id="f_commitType">
+        <option value="선택약정25">선택약정 25% 할인</option>
+        <option value="공시지원금">공시지원금 (기기보조)</option>
+        <option value="프로모션">프로모션 (N개월 무료 등)</option>
+        <option value="자급제">자급제 (약정 없음)</option>
+        <option value="기타">기타</option>
+      </select>
+    </div>
+    <div class="input-row">
+      <label>개통일</label>
+      <input type="date" id="f_startDate">
+    </div>
+    <div class="input-row">
+      <label>약정/할인 만료일</label>
+      <input type="date" id="f_endDate" required>
+    </div>
+    <div class="input-row">
+      <label>할부 만료일</label>
+      <input type="date" id="f_installEnd">
+    </div>
+
+    <div class="section-label">부가 정보</div>
+    <div class="input-row">
+      <label>결합할인</label>
+      <input type="text" id="f_bundle" placeholder="예: 인터넷+TV 결합, 가족결합 3회선">
+    </div>
+    <div class="input-row">
+      <label>메모</label>
+      <input type="text" id="f_memo" placeholder="예: M+3 유지, 위약금 XX만원">
+    </div>
+
+    <input type="hidden" id="f_editIdx" value="-1">
+    <button type="submit" class="btn-primary" id="submitBtn">💾 회선 추가</button>
+  </form>
+</div>
+
+<div class="panel" style="border-left: 4px solid #1F4E78;">
+  <h2>② 보유 회선 목록</h2>
+  <div id="lineList">
+    <p style="color:#999;text-align:center;padding:20px">등록된 회선이 없습니다.</p>
+  </div>
+</div>
+
+<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;margin-bottom:14px">
+  <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
+    <div style="font-size:12px;color:#166534;font-weight:600;margin-right:auto">💾 저장</div>
+    <button id="btnSaveJson" type="button" style="background:#1F4E78;color:white;border:none;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">💾 JSON 저장</button>
+    <label style="background:#10b981;color:white;padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer">
+      📂 불러오기
+      <input type="file" id="fileLoad" accept=".json" style="display:none">
+    </label>
+  </div>
+</div>
+
+<div style="background:#dbeafe;border-left:4px solid #2563eb;padding:13px 18px;border-radius:6px;font-size:12.5px;color:#1e3a8a;line-height:1.7;margin-bottom:20px">
+  <b style="font-size:13.5px">💡 회선 관리 실전 팁</b><br>
+  • <b>알뜰폰 프로모션:</b> 'N개월 0원' 만료 14일 전(D-14)에 다른 알뜰폰으로 MNP 번호이동.<br>
+  • <b>선택약정 25%:</b> 만료 후 재약정 안 하면 요금 25% 인상. D-Day 필수 확인.<br>
+  • <b>M+3 의무유지:</b> 개통월(M) 포함 4개월차 1일에 요금제 하향/해지 가능. 개통일 입력하면 자동 계산.<br>
+  • <b>할부 잔여:</b> 약정보다 할부가 늦게 끝나면 할부 잔여 기간에 요금 부담 증가. 별도 추적 권장.
+</div>
+
+<div id="relatedTools" style="display:none;margin-top:30px">
+  <h2 style="font-size:14px;font-weight:700;color:#1F4E78;margin-bottom:12px;border-left:3px solid #1F4E78;padding-left:10px">관련 도구</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
+    <a href="/budget/" style="background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.06);text-decoration:none;color:inherit;border:2px solid transparent;transition:all .15s;display:block">
+      <div style="font-size:22px;margin-bottom:6px">💰</div>
+      <div style="font-size:14px;font-weight:700;color:#1F4E78;margin-bottom:4px">가계부</div>
+      <div style="font-size:12px;color:#666;line-height:1.4">수입·지출 카테고리별 추적</div>
+    </a>
+    <a href="/salary/" style="background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.06);text-decoration:none;color:inherit;border:2px solid transparent;transition:all .15s;display:block">
+      <div style="font-size:22px;margin-bottom:6px">💼</div>
+      <div style="font-size:14px;font-weight:700;color:#1F4E78;margin-bottom:4px">연봉 실수령액 계산기</div>
+      <div style="font-size:12px;color:#666;line-height:1.4">세전→세후 자동 계산</div>
+    </a>
+    <a href="/fire/" style="background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.06);text-decoration:none;color:inherit;border:2px solid transparent;transition:all .15s;display:block">
+      <div style="font-size:22px;margin-bottom:6px">🔥</div>
+      <div style="font-size:14px;font-weight:700;color:#1F4E78;margin-bottom:4px">파이어족 계산기</div>
+      <div style="font-size:12px;color:#666;line-height:1.4">은퇴 시점 필요 자산 역산</div>
+    </a>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'sf_telecom_lines';
+let lines = [];
+try { lines = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) { lines = []; }
+
+const fmt = n => Number(n).toLocaleString('ko-KR');
+const $ = id => document.getElementById(id);
+
+const CARRIERS = {
+  skt: { name: 'SKT', cls: 'skt' },
+  kt: { name: 'KT', cls: 'kt' },
+  lgu: { name: 'LGU+', cls: 'lgu' },
+  mvno: { name: '알뜰폰', cls: 'mvno' }
+};
+
+const FIELDS = ['f_owner','f_carrier','f_phone','f_device','f_plan','f_planFee','f_installment','f_data','f_commitType','f_startDate','f_endDate','f_installEnd','f_bundle','f_memo'];
+
+function collectForm() {
+  const d = {};
+  FIELDS.forEach(id => { const el = $(id); d[id.replace('f_','')] = el ? el.value : ''; });
+  d.planFee = Number(d.planFee) || 0;
+  d.installment = Number(d.installment) || 0;
+  return d;
+}
+
+function fillForm(d) {
+  FIELDS.forEach(id => {
+    const key = id.replace('f_','');
+    const el = $(id);
+    if (el && d[key] !== undefined) el.value = d[key];
+  });
+}
+
+function clearForm() {
+  $('lineForm').reset();
+  $('f_editIdx').value = '-1';
+  $('submitBtn').textContent = '💾 회선 추가';
+}
+
+function dDay(dateStr) {
+  if (!dateStr) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const end = new Date(dateStr);
+  return Math.ceil((end - today) / 86400000);
+}
+
+function mPlus(startStr) {
+  if (!startStr) return null;
+  const s = new Date(startStr);
+  // M+3 = 개통월 포함 4개월차 1일
+  const free = new Date(s.getFullYear(), s.getMonth() + 3, 1);
+  const today = new Date(); today.setHours(0,0,0,0);
+  return { date: free, days: Math.ceil((free - today) / 86400000), label: free.toISOString().slice(0,10) };
+}
+
+function render() {
+  const list = $('lineList');
+  let totalPlan = 0, totalInstall = 0, alertCount = 0;
+
+  if (lines.length === 0) {
+    list.innerHTML = '<p style="color:#999;text-align:center;padding:20px">등록된 회선이 없습니다.</p>';
+  } else {
+    // 만료 임박순 정렬
+    const sorted = lines.map((l,i) => ({...l, _idx: i}));
+    sorted.sort((a,b) => {
+      const da = dDay(a.endDate) ?? 9999;
+      const db = dDay(b.endDate) ?? 9999;
+      return da - db;
+    });
+
+    list.innerHTML = sorted.map(line => {
+      const i = line._idx;
+      totalPlan += line.planFee;
+      totalInstall += line.installment;
+      const monthly = line.planFee + line.installment;
+      const c = CARRIERS[line.carrier] || { name: line.carrier, cls: 'mvno' };
+
+      // D-Day
+      const dd = dDay(line.endDate);
+      let ddBadge = '';
+      if (dd === null) ddBadge = '';
+      else if (dd < 0) { ddBadge = `<span class="badge expired">만료 +${Math.abs(dd)}일</span>`; alertCount++; }
+      else if (dd <= 30) { ddBadge = `<span class="badge soon">D-${dd}</span>`; alertCount++; }
+      else ddBadge = `<span class="badge ok">D-${dd}</span>`;
+
+      // 할부 D-Day
+      const idd = dDay(line.installEnd);
+      let iddBadge = '';
+      if (idd !== null && idd > 0) iddBadge = `<span style="font-size:11px;color:#666">할부 D-${idd}</span>`;
+      else if (idd !== null && idd <= 0) iddBadge = `<span style="font-size:11px;color:#10b981;font-weight:600">할부 완납</span>`;
+
+      // M+3
+      const mp = mPlus(line.startDate);
+      let mpBadge = '';
+      if (mp && mp.days > 0) mpBadge = `<span class="badge mwarn">M+3 D-${mp.days} (${mp.label})</span>`;
+      else if (mp && mp.days <= 0) mpBadge = `<span style="font-size:11px;color:#10b981">의무유지 해제</span>`;
+
+      const alertClass = (dd !== null && dd < 0) ? 'alert' : (dd !== null && dd <= 30) ? 'soon' : '';
+
+      return `<div class="line-card ${alertClass}">
+        <div class="line-header">
+          <span class="badge ${c.cls}">${c.name}</span>
+          <span class="owner">${line.owner}</span>
+          <span class="phone">${line.phone}</span>
+          ${ddBadge} ${mpBadge}
+        </div>
+        <div class="line-detail">
+          <div class="item"><div class="lbl">기기</div><div class="val">${line.device || '—'}</div></div>
+          <div class="item"><div class="lbl">요금제</div><div class="val">${line.plan || '—'}</div></div>
+          <div class="item"><div class="lbl">데이터</div><div class="val">${line.data || '—'}</div></div>
+          <div class="item"><div class="lbl">월 요금</div><div class="val">${fmt(line.planFee)}원</div></div>
+          <div class="item"><div class="lbl">월 할부</div><div class="val">${line.installment > 0 ? fmt(line.installment)+'원' : '—'}</div></div>
+          <div class="item"><div class="lbl">월 합계</div><div class="val" style="color:#0000FF">${fmt(monthly)}원</div></div>
+          <div class="item"><div class="lbl">약정 유형</div><div class="val">${line.commitType || '—'}</div></div>
+          <div class="item"><div class="lbl">약정 만료</div><div class="val">${line.endDate || '—'}</div></div>
+          ${line.installEnd ? `<div class="item"><div class="lbl">할부 만료</div><div class="val">${line.installEnd} ${iddBadge}</div></div>` : ''}
+          ${line.bundle ? `<div class="item"><div class="lbl">결합할인</div><div class="val">${line.bundle}</div></div>` : ''}
+          ${line.memo ? `<div class="item" style="grid-column:1/-1"><div class="lbl">메모</div><div class="val">${line.memo}</div></div>` : ''}
+        </div>
+        <div class="line-actions">
+          <button class="btn-sm btn-edit" onclick="editLine(${i})">✏️ 수정</button>
+          <button class="btn-sm btn-delete" onclick="deleteLine(${i})">🗑️ 삭제</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  $('totalMonthlyCost').textContent = fmt(totalPlan + totalInstall) + ' 원';
+  $('totalLines').textContent = lines.length;
+  $('totalPlan').textContent = fmt(totalPlan);
+  $('totalInstall').textContent = fmt(totalInstall);
+  $('totalAlert').textContent = alertCount;
+}
+
+$('lineForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const d = collectForm();
+  const idx = parseInt($('f_editIdx').value);
+  if (idx >= 0) {
+    lines[idx] = d;
+  } else {
+    lines.push(d);
+  }
+  save();
+  clearForm();
+});
+
+window.editLine = function(i) {
+  fillForm(lines[i]);
+  $('f_editIdx').value = i;
+  $('submitBtn').textContent = '✏️ 수정 저장';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.deleteLine = function(i) {
+  if (confirm('"' + lines[i].owner + '" 회선을 삭제할까요?')) {
+    lines.splice(i, 1);
+    save();
+  }
+};
+
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(lines)); } catch(e) {}
+  render();
+}
+
+// JSON save/load
+$('btnSaveJson').addEventListener('click', function() {
+  const blob = new Blob([JSON.stringify({ page: '통신회선', savedAt: new Date().toISOString(), lines: lines }, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const ds = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  a.href = url; a.download = '통신회선_' + ds + '.json'; a.click();
+  URL.revokeObjectURL(url);
+});
+
+$('fileLoad').addEventListener('change', function(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.lines && Array.isArray(data.lines)) {
+        lines = data.lines;
+        save();
+        alert('✅ ' + lines.length + '개 회선 불러오기 완료.');
+      } else { alert('파일 형식이 올바르지 않습니다.'); }
+    } catch(err) { alert('❌ 파일 읽기 실패: ' + err.message); }
+  };
+  reader.readAsText(file); e.target.value = '';
+});
+
+// 히든 카드섹션
+if (location.hash === '#admin' || location.hash === '#관리자') {
+  var rt = document.getElementById('relatedTools'); if (rt) rt.style.display = 'block';
+}
+
+render();
+</script>
+<script src="/common.js?v=4"></script>
+</body>
+</html>
