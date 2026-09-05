@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>현대제철(004020) 사업부 실적 시뮬레이터</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --brand:#1F4E78; --brand-2:#2E6DA4; --ink:#1a2330; --mut:#6b7684;
+    --line:#e3e8ef; --bg:#f5f7fa; --card:#ffffff;
+    --yellow:#FFF7DB; --yellow-bd:#EAD98A;
+    --pos:#137a4b; --neg:#c0392b; --warn:#b7791f;
+    --goro:#1F4E78; --eaf:#2E9C8E; --sub:#8a6dab;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;
+       font-size:14px;line-height:1.5;-webkit-text-size-adjust:100%}
+  .wrap{max-width:1120px;margin:0 auto;padding:16px}
+  .back-link{display:inline-block;margin-bottom:12px;color:var(--brand);text-decoration:none;font-size:14px}
+  .back-link:hover{text-decoration:underline}
+  /* header */
+  header.top{background:var(--brand);color:#fff;border-radius:12px;padding:16px 18px;margin-bottom:14px}
+  header.top h1{margin:0;font-size:19px;font-weight:800;letter-spacing:-.3px}
+  header.top .sub{opacity:.85;font-size:12.5px;margin-top:3px}
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .badge{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);
+         border-radius:8px;padding:6px 10px;font-size:12px}
+  .badge b{font-size:15px;display:block;font-weight:800}
+  /* tabs */
+  nav.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px;padding-bottom:2px}
+  nav.tabs button{flex:0 0 auto;background:var(--card);border:1px solid var(--line);
+       color:var(--mut);border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700;
+       cursor:pointer;white-space:nowrap}
+  nav.tabs button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+  .tab{display:none}.tab.on{display:block}
+  /* cards */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+        padding:16px;margin-bottom:14px}
+  .card h2{margin:0 0 4px;font-size:15px;font-weight:800;color:var(--brand)}
+  .card .note{color:var(--mut);font-size:12px;margin:0 0 12px}
+  .row{display:flex;flex-wrap:wrap;gap:12px}
+  .col{flex:1 1 300px;min-width:0}
+  /* scenario buttons */
+  .scen{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .scen button{flex:1 1 auto;border:1px solid var(--line);background:#fff;border-radius:9px;
+       padding:9px;font-size:13px;font-weight:700;cursor:pointer;color:var(--ink)}
+  .scen button.on{color:#fff;border-color:transparent}
+  .scen button[data-s="bear"].on{background:var(--neg)}
+  .scen button[data-s="base"].on{background:var(--brand)}
+  .scen button[data-s="bull"].on{background:var(--pos)}
+  .yearsel{display:inline-flex;gap:4px;background:#eef2f7;padding:4px;border-radius:10px;margin-bottom:12px}
+  .yearsel button{border:0;background:transparent;padding:7px 14px;border-radius:7px;font-weight:700;
+       font-size:13px;cursor:pointer;color:var(--mut)}
+  .yearsel button.on{background:#fff;color:var(--brand);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  /* segment block */
+  .seg{border:1px solid var(--line);border-radius:10px;padding:13px;margin-bottom:10px}
+  .seg .hd{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .dot{width:11px;height:11px;border-radius:3px;flex:0 0 auto}
+  .seg .hd b{font-size:14px}
+  .seg .hd .op{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums}
+  .fld{margin:9px 0}
+  .fld label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);margin-bottom:5px}
+  .fld label .v{color:var(--ink);font-weight:800;font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%;accent-color:var(--brand);height:22px}
+  .num{width:100%;padding:8px 10px;border:1px solid var(--yellow-bd);background:var(--yellow);
+       border-radius:8px;font-size:14px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+  /* output */
+  .out{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .out .kpi{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:11px}
+  .out .kpi .k{font-size:11.5px;color:var(--mut)}
+  .out .kpi .val{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+  .out .kpi.hero{background:var(--brand);border-color:var(--brand)}
+  .out .kpi.hero .k,.out .kpi.hero .val{color:#fff}
+  .out .kpi .sm{font-size:11px;color:var(--mut);margin-top:1px}
+  .out .kpi.hero .sm{color:rgba(255,255,255,.8)}
+  .pos{color:var(--pos)}.neg{color:var(--neg)}
+  canvas{max-width:100%}
+  /* tables */
+  table{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+  th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right}
+  th:first-child,td:first-child{text-align:left}
+  thead th{color:var(--mut);font-weight:700;border-bottom:2px solid var(--line)}
+  tr.hl td{background:#f2f8f2;font-weight:700}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:20px}
+  .tag.sh{background:#e7effa;color:var(--brand)}.tag.cs{background:#f0ecf6;color:var(--sub)}
+  /* valuation */
+  .pbar{position:relative;height:44px;margin:22px 0 8px}
+  .pbar .track{position:absolute;top:18px;left:0;right:0;height:6px;background:#e9edf3;border-radius:6px}
+  .pbar .fill{position:absolute;top:18px;left:0;height:6px;background:var(--brand);border-radius:6px}
+  .pbar .mk{position:absolute;top:0;transform:translateX(-50%);text-align:center;font-size:10px;color:var(--mut);width:70px}
+  .pbar .mk i{display:block;width:2px;height:14px;background:#aeb7c2;margin:16px auto 2px}
+  .pbar .mk.cur i{background:var(--brand)}.pbar .mk.tgt i{background:var(--pos)}
+  /* timeline */
+  .tl{position:relative;padding-left:22px;margin-top:8px}
+  .tl::before{content:'';position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:var(--line)}
+  .tl .it{position:relative;margin-bottom:16px}
+  .tl .it::before{content:'';position:absolute;left:-19px;top:3px;width:12px;height:12px;
+       border-radius:50%;background:#fff;border:2px solid var(--brand)}
+  .tl .it.done::before{background:var(--brand)}
+  .tl .it .d{font-size:11px;color:var(--brand);font-weight:800}
+  .tl .it .t{font-size:13px;font-weight:700}
+  .tl .it .x{font-size:12px;color:var(--mut)}
+  /* checklist */
+  .chk{border:1px solid var(--line);border-radius:10px;padding:13px;margin-bottom:10px}
+  .chk h3{margin:0 0 8px;font-size:13.5px;display:flex;align-items:center;gap:8px}
+  .chk li{margin:6px 0;font-size:13px;list-style:none;position:relative;padding-left:22px}
+  .chk li::before{content:'';position:absolute;left:0;top:4px;width:14px;height:14px;border:2px solid var(--brand);border-radius:4px}
+  .chk li.q::before{border-color:var(--warn);border-radius:50%}
+  .chk li b{color:var(--warn)}
+  /* slots */
+  .slots{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .slots select,.slots input{padding:8px;border:1px solid var(--line);border-radius:8px;font-size:13px}
+  .slots button{padding:8px 12px;border:1px solid var(--brand);background:var(--brand);color:#fff;
+       border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
+  .slots button.ghost{background:#fff;color:var(--brand)}
+  .msg{font-size:12px;color:var(--pos);margin-left:6px}
+  footer{color:var(--mut);font-size:11px;text-align:center;padding:16px 4px 30px;line-height:1.7}
+  @media(max-width:560px){.out .kpi .val{font-size:18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <a href="/" class="back-link">← 메인으로</a>
+
+  <header class="top">
+    <h1>현대제철 (004020) 사업부 실적 시뮬레이터</h1>
+    <div class="sub">고로·전기로·자회사 스프레드 → 별도/연결 영업이익 · 지배순이익 · 밸류에이션</div>
+    <div class="badges">
+      <div class="badge">현재가<b>28,100원</b></div>
+      <div class="badge">현재 PBR<b>0.19배</b></div>
+      <div class="badge">신한 목표<b>44,000원</b></div>
+      <div class="badge">RIM 적정가<b>43,798원</b></div>
+      <div class="badge">지배 BPS<b id="bBps">145,159원</b></div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="on" data-t="sim">사업부 시뮬레이터</button>
+    <button data-t="val">밸류에이션</button>
+    <button data-t="eaf">미국 EAF</button>
+    <button data-t="cmp">리포트 비교</button>
+    <button data-t="chk">체크포인트</button>
+  </nav>
+
+  <!-- ================= TAB 1: SIM ================= -->
+  <section class="tab on" id="sim">
+    <div class="card">
+      <h2>실적 시나리오</h2>
+      <p class="note">사업부 매출은 신한(박광래, 2026.7.1) 추정 기준. OPM 슬라이더로 스프레드를 조정하면 별도·연결 영업이익이 실시간 계산됩니다. <b>주의:</b> 사업부별 OP는 회사가 공개하지 않아 배분은 추정치이며, Base는 신한 연결 영업이익에 캘리브레이션되어 있습니다.</p>
+
+      <div class="yearsel" id="yearSel">
+        <button data-y="2026F" class="on">2026F</button>
+        <button data-y="2027F">2027F</button>
+        <button data-y="2028F">2028F</button>
+      </div>
+
+      <div class="scen" id="scenSel">
+        <button data-s="bear">Bear · 개선 지연</button>
+        <button data-s="base" class="on">Base · 신한</button>
+        <button data-s="bull">Bull · 개선 가속</button>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <div class="seg">
+            <div class="hd"><span class="dot" style="background:var(--goro)"></span><b>고로 · 판재</b><span class="op" id="opGoro">–</span></div>
+            <div class="fld">
+              <label>매출 (십억원) <span class="v" id="vRevGoro">–</span></label>
+              <input type="range" id="revGoro" min="10000" max="16000" step="50">
+            </div>
+            <div class="fld">
+              <label>영업이익률 OPM (%) <span class="v" id="vOpmGoro">–</span></label>
+              <input type="range" id="opmGoro" min="-2" max="6" step="0.05">
+            </div>
+          </div>
+          <div class="seg">
+            <div class="hd"><span class="dot" style="background:var(--eaf)"></span><b>전기로 · 봉형강</b><span class="op" id="opEaf">–</span></div>
+            <div class="fld">
+              <label>매출 (십억원) <span class="v" id="vRevEaf">–</span></label>
+              <input type="range" id="revEaf" min="4000" max="8000" step="50">
+            </div>
+            <div class="fld">
+              <label>영업이익률 OPM (%) <span class="v" id="vOpmEaf">–</span></label>
+              <input type="range" id="opmEaf" min="-2" max="8" step="0.05">
+            </div>
+          </div>
+          <div class="seg">
+            <div class="hd"><span class="dot" style="background:var(--sub)"></span><b>자회사 · 기타 (연결−별도)</b><span class="op" id="opSub">–</span></div>
+            <div class="fld">
+              <label>매출 (십억원) <span class="v" id="vRevSub">–</span></label>
+              <input type="range" id="revSub" min="3000" max="7000" step="50">
+            </div>
+            <div class="fld">
+              <label>영업이익률 OPM (%) <span class="v" id="vOpmSub">–</span></label>
+              <input type="range" id="opmSub" min="0" max="8" step="0.05">
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <div class="out">
+            <div class="kpi hero"><div class="k">연결 영업이익</div><div class="val" id="oConsol">–</div><div class="sm" id="oConsolVs">–</div></div>
+            <div class="kpi"><div class="k">별도 영업이익</div><div class="val" id="oSep">–</div><div class="sm" id="oSepM">–</div></div>
+            <div class="kpi"><div class="k">연결 OPM</div><div class="val" id="oOpm">–</div></div>
+            <div class="kpi"><div class="k">지배순이익</div><div class="val" id="oNi">–</div><div class="sm" id="oNiVs">–</div></div>
+            <div class="kpi"><div class="k">EPS (지배)</div><div class="val" id="oEps">–</div></div>
+            <div class="kpi"><div class="k">PER (@28,100)</div><div class="val" id="oPer">–</div></div>
+          </div>
+          <div style="margin-top:14px"><canvas id="segChart" height="200"></canvas></div>
+          <p class="note" style="margin-top:8px">막대: 사업부별 영업이익 기여(십억원). 회색 선은 신한 연결 OP 추정.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>스프레드 → OPM 해석 가이드</h2>
+      <p class="note">이 리포트는 KAL 유류할증료처럼 정량 계수(예: 철광석 +$10 → OP −N)를 제공하지 않습니다. 아래는 방향성 가이드이며, OPM 슬라이더로 직접 반영하세요.</p>
+      <table>
+        <thead><tr><th>변수</th><th>영향 사업부</th><th>방향</th></tr></thead>
+        <tbody>
+          <tr><td>철광석·원료탄 ↑</td><td>고로</td><td class="neg">OPM ↓</td></tr>
+          <tr><td>철스크랩 ↑</td><td>전기로</td><td class="neg">OPM ↓</td></tr>
+          <tr><td>자동차강판·후판 판가 ↑</td><td>고로</td><td class="pos">OPM ↑</td></tr>
+          <tr><td>미국향 봉형강 수출 ↑</td><td>전기로</td><td class="pos">매출 ↑ + 국내가 방어</td></tr>
+          <tr><td>데이터센터향 비중 ↑ (3→6%)</td><td>전기로</td><td class="warn">내러티브 (실적 기여 소)</td></tr>
+          <tr><td>강관 반덤핑 관세 / 미국 에너지 수요</td><td>자회사</td><td class="pos">OPM ↑</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= TAB 2: VAL ================= -->
+  <section class="tab" id="val">
+    <div class="card">
+      <h2>PBR 밸류에이션</h2>
+      <p class="note">지배 BPS × 목표 PBR = 함의 주가. 현대제철은 실적보다 PBR 리레이팅이 목표가를 좌우합니다.</p>
+      <div class="fld">
+        <label>목표 PBR (배) <span class="v" id="vPbr">0.30</span></label>
+        <input type="range" id="pbrRange" min="0.15" max="0.60" step="0.01" value="0.30">
+      </div>
+      <div class="pbar" id="pbrBar"></div>
+      <div class="out" style="grid-template-columns:repeat(3,1fr);margin-top:22px">
+        <div class="kpi hero"><div class="k">함의 주가</div><div class="val" id="vPrice">–</div></div>
+        <div class="kpi"><div class="k">현재가 대비</div><div class="val" id="vUpside">–</div></div>
+        <div class="kpi"><div class="k">함의 PER</div><div class="val" id="vPerImp">–</div><div class="sm">선택 연도 EPS 기준</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>기준점</h2>
+      <table>
+        <thead><tr><th>기준</th><th>PBR</th><th>주가</th><th>비고</th></tr></thead>
+        <tbody>
+          <tr><td>현재가</td><td>0.19</td><td>28,100</td><td>2026-06-30</td></tr>
+          <tr class="hl"><td>신한 목표</td><td>0.30</td><td>44,000</td><td>RIM 기반, -10.2% 하향</td></tr>
+          <tr><td>RIM 적정가</td><td>0.30</td><td>43,798</td><td>ROE&lt;COE 전구간 → 장부가 70% 할인</td></tr>
+          <tr><td>2025 저점</td><td>0.17</td><td>26,450</td><td>52주 최저</td></tr>
+          <tr><td>2025 고점</td><td>0.32</td><td>46,500</td><td>52주 최고</td></tr>
+          <tr><td>과거 평균 (P/B)</td><td>0.77</td><td>~112,000</td><td>2025 연평균 · 참고용</td></tr>
+        </tbody>
+      </table>
+      <p class="note" style="margin-top:10px">핵심: 과거 평균 PBR(0.77)로 회귀 = 주가 4배. 그러나 RIM은 자본비용을 못 버는 한 그 회귀를 정당화하지 못한다고 봄. 리레이팅의 방아쇠는 <b>ROE의 COE 초과 전환</b> — 현 추정상 2034년까지 미달.</p>
+    </div>
+  </section>
+
+  <!-- ================= TAB 3: EAF ================= -->
+  <section class="tab" id="eaf">
+    <div class="card">
+      <h2>미국 루이지애나 EAF — 투자구조</h2>
+      <p class="note">총 투자비 $58억(약 8.4조). 자기자본 50% / 외부차입 50%. 상업생산 2029.1Q → 근시일 실적 기여 없음.</p>
+      <div class="row">
+        <div class="col" style="flex:0 0 240px;max-width:280px"><canvas id="eafChart" height="240"></canvas></div>
+        <div class="col">
+          <table>
+            <thead><tr><th>출자자</th><th>출자금($억)</th><th>지분</th></tr></thead>
+            <tbody>
+              <tr><td>Hyundai Steel USA</td><td>14.6</td><td>50%</td></tr>
+              <tr><td>Hyundai Motor America</td><td>4.4</td><td>15%</td></tr>
+              <tr><td>Kia America</td><td>4.4</td><td>15%</td></tr>
+              <tr class="hl"><td>현대차그룹 소계</td><td>23.3</td><td>80%</td></tr>
+              <tr><td>POSCO (POS-Louisiana)</td><td>5.8</td><td>20%</td></tr>
+              <tr class="hl"><td>자기자본 합계</td><td>29.1</td><td>100%</td></tr>
+            </tbody>
+          </table>
+          <p class="note" style="margin-top:8px">EPC 시공은 <b>현대건설(000720)</b> — 그룹 내 원전·EAF EPC 축과 연결.</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>사업 일정</h2>
+      <div class="tl">
+        <div class="it done"><div class="d">2025.03</div><div class="t">투자 발표</div></div>
+        <div class="it done"><div class="d">2025.12</div><div class="t">투자사 결정</div></div>
+        <div class="it done"><div class="d">2026.3Q</div><div class="t">착공</div><div class="x">← 현 시점 확인 포인트</div></div>
+        <div class="it"><div class="d">2028.3Q</div><div class="t">시험 생산</div></div>
+        <div class="it"><div class="d">2029.1Q</div><div class="t">상업 생산</div><div class="x">연 250만톤 자동차강판 EAF · 실적 기여 개시</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TAB 4: CMP ================= -->
+  <section class="tab" id="cmp">
+    <div class="card">
+      <h2>2Q26F: 신한 vs 컨센서스</h2>
+      <table>
+        <thead><tr><th>연결(십억)</th><th><span class="tag sh">신한</span></th><th><span class="tag cs">컨센</span></th><th>차이</th></tr></thead>
+        <tbody>
+          <tr><td>매출액</td><td>6,136.7</td><td>6,193.0</td><td class="neg">-0.9%</td></tr>
+          <tr class="hl"><td>영업이익</td><td>73.9</td><td>116.4</td><td class="neg">-36.5%</td></tr>
+          <tr><td>순이익</td><td>9.5</td><td>38.5</td><td class="neg">-75.2%</td></tr>
+        </tbody>
+      </table>
+      <p class="note" style="margin-top:8px">신한은 스프레드 개선 속도가 기대보다 약해 컨센 하회를 예고. 별도 OP도 신한 37.5 vs 컨센 77.9로 절반 수준.</p>
+    </div>
+    <div class="card">
+      <h2>연간 추정 변경 (신한)</h2>
+      <table>
+        <thead><tr><th>연결(십억)</th><th>이전</th><th>신규</th><th>변화</th></tr></thead>
+        <tbody>
+          <tr><td>매출 26F</td><td>23,407.5</td><td>23,797.7</td><td class="pos">+1.7%</td></tr>
+          <tr class="hl"><td>영업이익 26F</td><td>411.9</td><td>308.6</td><td class="neg">-25.1%</td></tr>
+          <tr><td>순이익 26F</td><td>97.4</td><td>25.1</td><td class="neg">-74.2%</td></tr>
+          <tr><td>영업이익 27F</td><td>763.2</td><td>791.5</td><td class="pos">+3.7%</td></tr>
+        </tbody>
+      </table>
+      <p class="note" style="margin-top:8px">목표주가는 -10.2%(49,000→44,000)만 하향. 실적을 대폭 깎으면서 밸류에이션 배수는 방어 = 딥밸류 리레이팅 논리.</p>
+    </div>
+    <div class="card">
+      <h2>하반기 별도 OP 계단식 개선 (신한)</h2>
+      <div><canvas id="cmpChart" height="180"></canvas></div>
+      <p class="note" style="margin-top:8px">별도 OP: 1Q -72.5 → 2Q 37.5 → 3Q 60.1 → 4Q 93.3. 동력: 스크랩 안정화 + 미국 수출 + 원료탄 안정화.</p>
+    </div>
+  </section>
+
+  <!-- ================= TAB 5: CHK ================= -->
+  <section class="tab" id="chk">
+    <div class="card">
+      <h2>사업부별 검증 체크포인트</h2>
+      <p class="note">□ = 확인 대상 / ○(주황) = 리포트가 비워둔 핵심 공백</p>
+
+      <div class="chk">
+        <h3><span class="dot" style="background:var(--goro)"></span>고로 · 판재</h3>
+        <ul>
+          <li class="q"><b>자동차강판 협상 결과(HMC/Kia)</b> — 인상 여부·폭. 별도 흑자 지속성의 핵심인데 리포트에 숫자 없음</li>
+          <li>후판 협상가(조선향) — 상반기 mid-80만원 대비 하반기</li>
+          <li>원료탄 가격 안정화 여부 — 4Q 계단식 개선 전제</li>
+          <li>중국 열연 수입가 — 내수 판가 압박</li>
+        </ul>
+      </div>
+      <div class="chk">
+        <h3><span class="dot" style="background:var(--eaf)"></span>전기로 · 봉형강</h3>
+        <ul>
+          <li>철스크랩 가격 안정화 — 하반기 제강사 매입가 인하 성공 여부</li>
+          <li>미국향 봉형강 수출 물량 — 국내 공급 감소·국내가 방어 효과</li>
+          <li>국내 건설 착공 — 철근 수요 바닥 확인</li>
+          <li class="q">데이터센터향 비중 3→6% — <b>실적 아닌 내러티브</b>. 주가 재료로만 취급</li>
+        </ul>
+      </div>
+      <div class="chk">
+        <h3><span class="dot" style="background:var(--sub)"></span>자회사 · 기타</h3>
+        <ul>
+          <li>강관(현대스틸파이프) 미국 에너지용 수출 · 반덤핑 관세</li>
+          <li>연결 OP의 ~60%를 자회사가 채움 → 별도만 보면 오판</li>
+        </ul>
+      </div>
+      <div class="chk">
+        <h3><span class="dot" style="background:var(--warn)"></span>구조·밸류에이션</h3>
+        <ul>
+          <li>2Q 실적(7월말~8월): 별도 37.5(신한) vs 77.9(컨센) 중 어디에 찍히나 = 1차 리트머스</li>
+          <li>미국 EAF 착공(26.3Q) 확인 · 미 무역확장법 232조 관세</li>
+          <li class="q">리레이팅 방아쇠 = <b>ROE의 COE(11.2%) 초과 전환</b>. 현 추정 2034년까지 미달</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- slots -->
+  <div class="card">
+    <h2>시나리오 저장</h2>
+    <div class="slots">
+      <input id="slotName" placeholder="시나리오 이름" style="flex:1 1 140px">
+      <button id="slotSave">저장</button>
+      <select id="slotList"><option value="">— 불러오기 —</option></select>
+      <button class="ghost" id="slotLoad">불러오기</button>
+      <button class="ghost" id="slotDel">삭제</button>
+      <span class="msg" id="slotMsg"></span>
+    </div>
+  </div>
+
+  <footer>
+    데이터: 신한투자증권(박광래, 2026.7.1) · 에프앤가이드 · 회사 자료 &nbsp;|&nbsp; 사업부별 OP 배분은 추정치(회사 미공개)<br>
+    본 도구는 투자판단 참고용이며 정확성을 보증하지 않습니다. 최종 판단은 투자자 본인의 책임입니다.
+  </footer>
+</div>
+
+<script>
+const DATA = {
+  '2026F':{revGoro:13057.1, revEaf:5731.0, revSub:5009.6,
+           base:{goro:0.45, eaf:1.04, sub:3.80}, baseConsolOp:308.6,
+           baseNiCtrl:25.1, bps:145159},
+  '2027F':{revGoro:13535.0, revEaf:5941.0, revSub:5192.0,
+           base:{goro:2.50, eaf:3.78, sub:4.40}, baseConsolOp:791.5,
+           baseNiCtrl:412.4, bps:147757},
+  '2028F':{revGoro:13929.0, revEaf:6113.0, revSub:5342.0,
+           base:{goro:2.68, eaf:4.00, sub:4.50}, baseConsolOp:858.3,
+           baseNiCtrl:459.4, bps:150707}
+};
+const SCEN = {
+  bear:{goro:-0.40, eaf:-0.80, sub:-1.00},
+  base:{goro:0, eaf:0, sub:0},
+  bull:{goro:+0.80, eaf:+1.50, sub:+1.00}
+};
+const SHARES = 133.446e6;
+const PRICE_NOW = 28100;
+const NI_FACTOR = 0.70;
+
+let year='2026F', scen='base';
+
+const $=id=>document.getElementById(id);
+const fmt=(n,d=0)=>n.toLocaleString('ko-KR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const won=n=>fmt(Math.round(n))+'원';
+
+document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav.tabs button').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); $(b.dataset.t).classList.add('on');
+});
+
+$('yearSel').onclick=e=>{ if(!e.target.dataset.y)return;
+  document.querySelectorAll('#yearSel button').forEach(x=>x.classList.remove('on'));
+  e.target.classList.add('on'); year=e.target.dataset.y; loadPreset(); };
+$('scenSel').onclick=e=>{ if(!e.target.dataset.s)return;
+  document.querySelectorAll('#scenSel button').forEach(x=>x.classList.remove('on'));
+  e.target.classList.add('on'); scen=e.target.dataset.s; loadPreset(); };
+
+function loadPreset(){
+  const d=DATA[year], s=SCEN[scen];
+  $('revGoro').value=d.revGoro; $('revEaf').value=d.revEaf; $('revSub').value=d.revSub;
+  $('opmGoro').value=(d.base.goro+s.goro).toFixed(2);
+  $('opmEaf').value =(d.base.eaf +s.eaf ).toFixed(2);
+  $('opmSub').value =(d.base.sub +s.sub ).toFixed(2);
+  $('bBps').textContent=won(d.bps);
+  calc();
+}
+
+['revGoro','opmGoro','revEaf','opmEaf','revSub','opmSub'].forEach(id=>$(id).oninput=calc);
+
+let segChart,cmpChart,eafChart;
+function calc(){
+  const d=DATA[year];
+  const rG=+$('revGoro').value, rE=+$('revEaf').value, rS=+$('revSub').value;
+  const mG=+$('opmGoro').value, mE=+$('opmEaf').value, mS=+$('opmSub').value;
+  const opG=rG*mG/100, opE=rE*mE/100, opS=rS*mS/100;
+  const sepOp=opG+opE;
+  const consolOp=sepOp+opS;
+  const rev=rG+rE+rS;
+  const opm=consolOp/rev*100;
+  const niCtrl=d.baseNiCtrl+(consolOp-d.baseConsolOp)*NI_FACTOR;
+  const eps=niCtrl*1e9/SHARES;
+  const per=eps>0?PRICE_NOW/eps:null;
+
+  $('vRevGoro').textContent=fmt(rG); $('vOpmGoro').textContent=mG.toFixed(2)+'%';
+  $('vRevEaf').textContent=fmt(rE);  $('vOpmEaf').textContent=mE.toFixed(2)+'%';
+  $('vRevSub').textContent=fmt(rS);  $('vOpmSub').textContent=mS.toFixed(2)+'%';
+  const sg=n=>(n>=0?'+':'')+fmt(n,0);
+  $('opGoro').textContent=sg(opG); $('opGoro').className='op '+(opG>=0?'pos':'neg');
+  $('opEaf').textContent =sg(opE); $('opEaf').className ='op '+(opE>=0?'pos':'neg');
+  $('opSub').textContent =sg(opS); $('opSub').className ='op '+(opS>=0?'pos':'neg');
+
+  $('oConsol').textContent=fmt(consolOp,0);
+  const dv=consolOp-d.baseConsolOp;
+  $('oConsolVs').textContent='신한 '+fmt(d.baseConsolOp,0)+' 대비 '+(dv>=0?'+':'')+fmt(dv,0);
+  $('oSep').textContent=fmt(sepOp,0);
+  $('oSepM').textContent='별도 OPM '+((sepOp/(rG+rE))*100).toFixed(2)+'%';
+  $('oOpm').textContent=opm.toFixed(2)+'%';
+  $('oNi').textContent=fmt(niCtrl,0);
+  $('oNi').className='val '+(niCtrl>=0?'':'neg');
+  $('oNiVs').textContent='신한 '+fmt(d.baseNiCtrl,0)+' 대비';
+  $('oEps').textContent=eps>=0?won(eps):won(eps);
+  $('oPer').textContent=per?per.toFixed(1)+'배':'적자';
+
+  const cd={labels:['고로','전기로','자회사'],
+    datasets:[{label:'사업부 OP',data:[opG,opE,opS],
+      backgroundColor:['#1F4E78','#2E9C8E','#8a6dab']}]};
+  if(!segChart){
+    segChart=new Chart($('segChart'),{type:'bar',data:cd,options:{
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:c=>fmt(c.parsed.y,0)+' 십억'}}},
+      scales:{y:{title:{display:true,text:'영업이익(십억)'}}}}});
+  } else { segChart.data=cd; segChart.update(); }
+
+  syncVal();
+}
+
+const MK=[
+  {pbr:0.19,label:'현재\n28,100',cls:'cur'},
+  {pbr:0.30,label:'신한\n44,000',cls:'tgt'}
+];
+function drawBar(){
+  const min=0.15,max=0.60,cur=+$('pbrRange').value;
+  const pct=v=>((v-min)/(max-min)*100);
+  let html='<div class="track"></div><div class="fill" style="width:'+pct(cur)+'%"></div>';
+  MK.forEach(m=>{html+='<div class="mk '+m.cls+'" style="left:'+pct(m.pbr)+'%"><span>'+m.label.replace('\n','<br>')+'</span><i></i></div>';});
+  html+='<div class="mk" style="left:'+pct(cur)+'%;color:var(--brand);font-weight:800"><i style="background:var(--brand)"></i></div>';
+  $('pbrBar').innerHTML=html;
+}
+function syncVal(){
+  const d=DATA[year], pbr=+$('pbrRange').value;
+  $('vPbr').textContent=pbr.toFixed(2);
+  const price=d.bps*pbr;
+  $('vPrice').textContent=won(price);
+  const up=(price/PRICE_NOW-1)*100;
+  $('vUpside').textContent=(up>=0?'+':'')+up.toFixed(1)+'%';
+  $('vUpside').className='val '+(up>=0?'pos':'neg');
+  const niCtrl=d.baseNiCtrl+((+$('opmGoro').value*+$('revGoro').value/100)+(+$('opmEaf').value*+$('revEaf').value/100)+(+$('opmSub').value*+$('revSub').value/100)-d.baseConsolOp)*NI_FACTOR;
+  const eps=niCtrl*1e9/SHARES;
+  $('vPerImp').textContent=eps>0?(price/eps).toFixed(1)+'배':'적자';
+  drawBar();
+}
+$('pbrRange').oninput=syncVal;
+
+function staticCharts(){
+  eafChart=new Chart($('eafChart'),{type:'doughnut',
+    data:{labels:['Hyundai Steel USA 50%','현대차 America 15%','기아 America 15%','POSCO 20%'],
+      datasets:[{data:[14.6,4.4,4.4,5.8],
+        backgroundColor:['#1F4E78','#2E6DA4','#5B8FBF','#8a6dab']}]},
+    options:{plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:12}}},cutout:'55%'}});
+  cmpChart=new Chart($('cmpChart'),{type:'bar',
+    data:{labels:['1Q26','2Q26F','3Q26F','4Q26F'],
+      datasets:[{label:'별도 영업이익(십억)',data:[-72.5,37.5,60.1,93.3],
+        backgroundColor:['#c0392b','#2E6DA4','#2E6DA4','#1F4E78']}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+}
+
+const KEY='hdsteel_sim_slots';
+function getState(){return{year,scen,
+  revGoro:$('revGoro').value,opmGoro:$('opmGoro').value,
+  revEaf:$('revEaf').value,opmEaf:$('opmEaf').value,
+  revSub:$('revSub').value,opmSub:$('opmSub').value,pbr:$('pbrRange').value};}
+function setState(s){
+  year=s.year||'2026F'; scen=s.scen||'base';
+  document.querySelectorAll('#yearSel button').forEach(x=>x.classList.toggle('on',x.dataset.y===year));
+  document.querySelectorAll('#scenSel button').forEach(x=>x.classList.toggle('on',x.dataset.s===scen));
+  $('bBps').textContent=won(DATA[year].bps);
+  ['revGoro','opmGoro','revEaf','opmEaf','revSub','opmSub'].forEach(k=>{if(s[k]!=null)$(k).value=s[k];});
+  if(s.pbr!=null)$('pbrRange').value=s.pbr;
+  calc();
+}
+const LS={
+  read(){try{return JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){return{};}},
+  write(o){try{localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
+};
+const Store = window.SlotStore || {
+  async list(){return Object.keys(LS.read());},
+  async save(n,d){const o=LS.read();o[n]=d;LS.write(o);},
+  async load(n){return LS.read()[n];},
+  async del(n){const o=LS.read();delete o[n];LS.write(o);}
+};
+async function refreshSlots(){
+  const names=await Store.list();
+  $('slotList').innerHTML='<option value="">— 불러오기 —</option>'+
+    names.map(n=>'<option>'+n+'</option>').join('');
+}
+function toast(t){$('slotMsg').textContent=t;setTimeout(()=>$('slotMsg').textContent='',2000);}
+$('slotSave').onclick=async()=>{const n=$('slotName').value.trim();if(!n)return toast('이름 입력');
+  await Store.save(n,getState());await refreshSlots();toast('저장됨');};
+$('slotLoad').onclick=async()=>{const n=$('slotList').value;if(!n)return;
+  const d=await Store.load(n);if(d)setState(d);toast('불러옴');};
+$('slotDel').onclick=async()=>{const n=$('slotList').value;if(!n)return;
+  await Store.del(n);await refreshSlots();toast('삭제됨');};
+
+staticCharts();
+loadPreset();
+refreshSlots();
+</script>
+<script src="/common.js?v=4"></script>
+</body>
+</html>
