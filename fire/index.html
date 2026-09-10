@@ -66,7 +66,7 @@
 </head>
 <body>
 
-<a href="/" class="back-link">← 메인으로</a>
+<a href="../" class="back-link">← 메인으로</a>
 
 <h1>파이어족 계산기</h1>
 <div class="panel" style="background:linear-gradient(135deg,#1F4E78 0%,#2d6da3 100%);color:#fff;margin-bottom:14px">
@@ -110,8 +110,9 @@
   <b style="font-size:13.5px">📊 기본값은 2000년 이후 장기 평균 기준</b><br>
   • <b>물가상승률 2.7%</b> — CPI 평균 &nbsp;· <b>지출 증가율 3.0%</b> — 생활물가 &nbsp;· <b>수입 증가율 3.5%</b> — 명목임금<br>
   • <b>투자수익률 6%</b> — 코스피~S&amp;P500 중간 (⑤ ⓘ 참고)<br>
+  • <b>사적연금 수익률 4.5%</b> — IRP/연저펀 보수적 운용 가정 (⑤ ⓘ 참고)<br>
   • <b>월 국민연금 110만 (65세부터 평생)</b> — 20년+ 가입자 평균 (2025)<br>
-  • <b>사적연금 (IRP+연저펀) 총잔액</b> — 오늘 기준 총액. 시작 나이(기본 60)부터 지정 기간(기본 20년) 균등 인출, 잔액은 계속 수익률로 굴러감<br>
+  • <b>사적연금 (IRP+연저펀) 총잔액</b> — 오늘 기준 총액. 시작 나이(기본 60)부터 지정 기간(기본 20년) 균등 인출, 잔액은 사적연금 수익률로 굴러감<br>
 </div>
 
 <div class="panel">
@@ -126,7 +127,7 @@
 
     <div class="section-label">② 현재 자산 &amp; 은퇴 전 현금흐름<button class="info-btn" onclick="sfShowInfo('cashflow')" title="설명 보기">i</button></div>
     <div class="input-row">
-      <label>현재 자산 (원) <span class="stat-sub">(IRP/연저펀 <b style="color:#dc2626">제외</b>)</span></label>
+      <label>현재 자산 (원)<button class="info-btn" onclick="sfShowInfo('current-assets')" title="설명 보기">i</button></label>
       <input type="number" id="currentAssets" value="450000000" inputmode="numeric">
       <div class="won-kor" id="currentAssets_kor"></div>
     </div>
@@ -155,7 +156,7 @@
     </div>
 
     <div class="input-row">
-      <label>사적연금 총잔액 (원) <span class="stat-sub">(IRP+연저펀 <b>오늘 기준</b>)</span></label>
+      <label>사적연금 총잔액 (원)<button class="info-btn" onclick="sfShowInfo('pp-balance')" title="설명 보기">i</button></label>
       <input type="number" id="privatePensionTotal" value="0" inputmode="numeric">
       <div class="won-kor" id="privatePensionTotal_kor"></div>
     </div>
@@ -172,16 +173,17 @@
       <div class="won-kor" id="monthlySpending_kor"></div>
     </div>
     <div class="input-row">
-      <label>사망 시 남길 금액 (원, 오늘 기준) <span class="stat-sub">(0=다 쓰고 감)</span></label>
+      <label>사망 시 남길 금액 (원)<button class="info-btn" onclick="sfShowInfo('legacy-info')" title="설명 보기">i</button></label>
       <input type="number" id="legacy" value="0" inputmode="numeric">
       <div class="won-kor" id="legacy_kor"></div>
     </div>
 
     <div class="section-label">⑤ 변동률 (연 %) <span style="text-transform:none;font-weight:500;color:#888">— 2000년 이후 장기 평균</span><button class="info-btn" onclick="sfShowInfo('rates')" title="설명 보기">i</button></div>
-    <div class="input-row"><label>자산 투자수익률 (%)</label><input type="number" id="returnRate" value="6" step="0.1"></div>
-    <div class="input-row"><label>물가상승률 (%)</label><input type="number" id="inflationRate" value="2.7" step="0.1"></div>
-    <div class="input-row"><label>수입 증가율 (%) <span class="stat-sub">(연봉 인상)</span></label><input type="number" id="incomeGrowth" value="3.5" step="0.1"></div>
-    <div class="input-row"><label>지출 증가율 (%) <span class="stat-sub">(생활물가)</span></label><input type="number" id="spendingGrowth" value="3" step="0.1"></div>
+    <div class="input-row"><label>자산 투자수익률 (%)<button class="info-btn" onclick="sfShowInfo('rate-asset')" title="적용 범위">i</button></label><input type="number" id="returnRate" value="6" step="0.1"></div>
+    <div class="input-row"><label>사적연금 수익률 (%)<button class="info-btn" onclick="sfShowInfo('rate-pp')" title="적용 범위">i</button></label><input type="number" id="privatePensionReturn" value="4.5" step="0.1"></div>
+    <div class="input-row"><label>물가상승률 (%)<button class="info-btn" onclick="sfShowInfo('rate-cpi')" title="적용 범위">i</button></label><input type="number" id="inflationRate" value="2.7" step="0.1"></div>
+    <div class="input-row"><label>수입 증가율 (%)<button class="info-btn" onclick="sfShowInfo('rate-income')" title="적용 범위">i</button></label><input type="number" id="incomeGrowth" value="3.5" step="0.1"></div>
+    <div class="input-row"><label>지출 증가율 (%)<button class="info-btn" onclick="sfShowInfo('rate-spending')" title="적용 범위">i</button></label><input type="number" id="spendingGrowth" value="3" step="0.1"></div>
   </div>
 </div>
 
@@ -256,7 +258,7 @@
 </div><!-- /capture-area -->
 
 <div class="panel">
-  <h2>연도별 시뮬레이션 (현재 페이스 기준)</h2>
+  <h2>연도별 시뮬레이션 (현재 페이스 기준)<button class="info-btn" onclick="sfShowInfo('table-colors')" title="색상 범례">i</button></h2>
   <div class="table-wrap">
     <table>
       <thead><tr>
@@ -280,7 +282,7 @@
     <li><span class="badge">연 수입액</span> 실수령액(처분가능소득). 은퇴까지만 적용.</li>
     <li><span class="badge">연 지출액</span> 현재 1년 동안 쓰는 생활비 (은퇴 전 지출).</li>
     <li><span class="badge">국민연금</span> 만 65세부터 <b>평생 수령</b>. 20년+ 가입자 평균 월 110만 (2025). 매년 물가만큼 인상.</li>
-    <li><span class="badge">사적연금 (IRP·연저펀)</span> 만 55세부터 수령 가능, 기본 60세. <b>총잔액 입력</b>하면 시작 나이부터 <b>N년(기본 20년)</b> 자동 균등 인출. 은퇴 전엔 자산 투자수익률로 성장, 인출 중엔 잔액도 계속 수익률로 굴러가서 마지막에 정확히 소진되도록 인출액이 계산됨.</li>
+    <li><span class="badge">사적연금 (IRP·연저펀)</span> 만 55세부터 수령 가능, 기본 60세. <b>총잔액 입력</b>하면 시작 나이부터 <b>N년(기본 20년)</b> 자동 균등 인출. 은퇴 전엔 <b>사적연금 수익률</b>로 성장, 인출 중엔 잔액도 같은 수익률로 굴러가서 마지막에 정확히 소진되도록 인출액이 계산됨.</li>
     <li><span class="badge">월 소비액</span> 은퇴 후 매달 쓸 돈 (오늘 기준). 매년 물가만큼 자동 상승.</li>
     <li><span class="badge">사망 시 남길 금액</span> 오늘 기준. 0이면 다 쓰고 감, 2억이면 자녀 상속 등.</li>
   </ul>
@@ -295,10 +297,11 @@
 
   <h3>④ 계산 로직</h3>
   <ul>
-    <li><b>은퇴 전:</b> 자산 × (1+수익률) + 수입 − 지출</li>
-    <li><b>은퇴~연금시작 전:</b> 자산 × (1+수익률) − 월소비×12</li>
-    <li><b>사적연금 인출 중:</b> 자산 × (1+수익률) + 사적연금 인출액 + 국민연금(해당 시) − 월소비×12</li>
-    <li><b>사적연금 인출액</b> = 시작잔액 × r ÷ [1 − (1+r)^(−N)] (연금 지급 공식, 수익률 반영해서 N년 후 잔액 정확히 0)</li>
+    <li><b>은퇴 전:</b> 자산 × (1+자산수익률) + 수입 − 지출</li>
+    <li><b>은퇴~연금시작 전:</b> 자산 × (1+자산수익률) − 월소비×12</li>
+    <li><b>사적연금 인출 중:</b> 자산 × (1+자산수익률) + 사적연금 인출액 + 국민연금(해당 시) − 월소비×12</li>
+    <li><b>사적연금 잔액 성장:</b> 별도 "사적연금 수익률"로 계산 (자산 투자수익률과 독립)</li>
+    <li><b>사적연금 인출액</b> = 시작잔액 × r ÷ [1 − (1+r)^(−N)] (연금 지급 공식, 사적연금 수익률 r 반영해서 N년 후 잔액 정확히 0)</li>
     <li>역산은 사망 시점 자산 = 남길 금액(미래가치)가 되도록 은퇴시점 자산을 거꾸로 풀어냄</li>
   </ul>
 
@@ -425,7 +428,6 @@ function updateSwrCard() {
 }
 document.querySelectorAll('input[name="swrRate"]').forEach(el => el.addEventListener('change', updateSwrCard));
 
-// 사적연금 인출액 계산 (annuity formula, 수익률 반영, 마지막에 정확히 소진)
 function calcPrivatePensionAnnual(startBalance, years, r) {
   if (startBalance <= 0 || years <= 0) return 0;
   if (Math.abs(r) < 1e-9) return startBalance / years;
@@ -450,6 +452,7 @@ function calculate() {
   const privatePensionStartAge = parseInt(document.getElementById('privatePensionStartAge').value) || 60;
   const privatePensionYears = parseInt(document.getElementById('privatePensionYears').value) || 20;
   const returnRate = (parseFloat(document.getElementById('returnRate').value) || 0) / 100;
+  const ppReturnRate = (parseFloat(document.getElementById('privatePensionReturn').value) || 0) / 100;
   const inflationRate = (parseFloat(document.getElementById('inflationRate').value) || 0) / 100;
   const incomeGrowth = (parseFloat(document.getElementById('incomeGrowth').value) || 0) / 100;
   const spendingGrowth = (parseFloat(document.getElementById('spendingGrowth').value) || 0) / 100;
@@ -471,17 +474,16 @@ function calculate() {
   const annualNationalPensionNow = monthlyPension * 12;
   const privatePensionEndAge = privatePensionStartAge + privatePensionYears - 1;
 
-  // 사적연금: 시작 시점 잔액 (오늘 잔액 × 수익률^출금까지년수) + 매년 인출액
+  // 사적연금: 별도 수익률(ppReturnRate) 적용
   const yearsToPPStart = Math.max(0, privatePensionStartAge - currentAge);
-  const ppStartBalance = privatePensionTotal * Math.pow(1 + returnRate, yearsToPPStart);
-  const ppAnnualWithdrawal = calcPrivatePensionAnnual(ppStartBalance, privatePensionYears, returnRate);
+  const ppStartBalance = privatePensionTotal * Math.pow(1 + ppReturnRate, yearsToPPStart);
+  const ppAnnualWithdrawal = calcPrivatePensionAnnual(ppStartBalance, privatePensionYears, ppReturnRate);
 
-  // 사적연금 인포 박스
   const ppInfo = document.getElementById('ppInfo');
   const ppInfoText = document.getElementById('ppInfoText');
   if (privatePensionTotal > 0) {
     ppInfo.style.display = '';
-    ppInfoText.innerHTML = `사적연금: <b>${privatePensionStartAge}세</b>부터 <b>${privatePensionYears}년간</b> 매년 <b>${fmtShort(ppAnnualWithdrawal)}원</b> (월 ${fmtShort(ppAnnualWithdrawal/12)}원) 인출. 시작 시점 잔액 <b>${fmtShort(ppStartBalance)}원</b> (오늘 ${fmtShort(privatePensionTotal)}원 × 수익률 ${yearsToPPStart}년). <b>${privatePensionEndAge}세</b>에 정확히 소진.`;
+    ppInfoText.innerHTML = `사적연금: <b>${privatePensionStartAge}세</b>부터 <b>${privatePensionYears}년간</b> 매년 <b>${fmtShort(ppAnnualWithdrawal)}원</b> (월 ${fmtShort(ppAnnualWithdrawal/12)}원) 인출. 시작 시점 잔액 <b>${fmtShort(ppStartBalance)}원</b> (오늘 ${fmtShort(privatePensionTotal)}원 × 연 ${(ppReturnRate*100).toFixed(1)}% ${yearsToPPStart}년). <b>${privatePensionEndAge}세</b>에 정확히 소진.`;
   } else {
     ppInfo.style.display = 'none';
   }
@@ -619,14 +621,15 @@ function calculate() {
     {label:'국민연금', value: fmtShort(monthlyPension) + '원/월 (' + pensionStartAge + '세부터 평생)'},
     {label:'사적연금 잔액', value: privatePensionTotal > 0 ? fmtShort(privatePensionTotal) + '원 → ' + privatePensionStartAge + '~' + privatePensionEndAge + '세 월 ' + fmtShort(ppAnnualWithdrawal/12) + '원' : '없음'},
     {label:'사망 시 남길 돈', value: legacy > 0 ? fmtShort(legacy) + '원' : '0원 (다 쓰고 감)'},
-    {label:'투자수익률 / 물가', value: (returnRate*100).toFixed(1) + '% / ' + (inflationRate*100).toFixed(1) + '%'}
+    {label:'자산수익률 / 연금수익률', value: (returnRate*100).toFixed(1) + '% / ' + (ppReturnRate*100).toFixed(1) + '%'},
+    {label:'물가 / 수입↑ / 지출↑', value: (inflationRate*100).toFixed(1) + '% / ' + (incomeGrowth*100).toFixed(1) + '% / ' + (spendingGrowth*100).toFixed(1) + '%'}
   ];
   document.getElementById('inputSummary').innerHTML = summaryItems.map(function(it){
     return '<div style="background:#f8fafc;padding:10px 12px;border-radius:6px;border:1px solid #e5e7eb"><div style="font-size:11px;color:#888;margin-bottom:3px">' + it.label + '</div><div style="font-weight:700;color:#1F4E78">' + it.value + '</div></div>';
   }).join('');
 
   const ppDesc = privatePensionTotal > 0
-    ? ', 그리고 <b>' + privatePensionStartAge + '~' + privatePensionEndAge + '세</b>엔 IRP/연저펀에서 매년 <b>' + fmtShort(ppAnnualWithdrawal) + '원</b> 인출'
+    ? ', 그리고 <b>' + privatePensionStartAge + '~' + privatePensionEndAge + '세</b>엔 IRP/연저펀에서 매년 <b>' + fmtShort(ppAnnualWithdrawal) + '원</b> 인출 (연금수익률 ' + (ppReturnRate*100).toFixed(1) + '%)'
     : '';
   const narrativeMsg = '현재 <b>' + currentAge + '세</b>이고 <b>' + retireAge + '세</b>에 은퇴, <b>' + deathAge + '세</b>까지 산다고 가정. ' +
     '은퇴 후엔 매달 <b>' + fmtShort(monthlySpending) + '원</b>을 쓰고, <b>' + pensionStartAge + '세</b>부터 월 <b>' + fmtShort(monthlyPension) + '원</b>의 국민연금을 받음' + ppDesc + '. ' +
@@ -744,17 +747,72 @@ window.sfShowInfo = function(key) {
       title: '② 현재 자산 & 은퇴 전 현금흐름',
       body: '<b>현재 자산</b>: 지금 보유한 자산 총액 (예금·주식·부동산 등). <b>IRP·연금저축펀드는 여기 제외</b>하고 아래 사적연금 총잔액에 입력. (이중 계산 방지)<br><b>연 수입액</b>: 1년 동안 들어오는 실수령액 (세금·4대보험 뗀 후).<br><b>연 지출액</b>: 1년 동안 쓰는 돈 총액.<br><b>자동 계산: 연 저축액</b> = 수입 - 지출. 이 돈이 매년 자산에 더해져 복리로 늘어남.<br><br>저축률 30%면 양호, 50%+면 파이어족 수준.'
     },
+    'current-assets': {
+      title: '현재 자산',
+      body: '지금 보유한 자산 총액 (예금·주식·부동산 등).<br><br>⚠️ <b style="color:#dc2626">IRP·연금저축펀드는 여기 제외</b>하고 아래 "사적연금 총잔액"에 별도 입력하세요.<br><br>이유: 사적연금은 인출 시기·기간·수익률이 다르게 시뮬레이션되므로 분리해야 정확합니다.'
+    },
     'pension': {
       title: '③ 은퇴 후 수입 (국민연금 + 사적연금)',
-      body: '<b>국민연금</b>: 만 65세부터 <b>평생 수령</b>. 20년+ 가입자 평균 월 110만원, 전체 평균 약 67만원 (2025). 매년 물가 상승분 반영.<br><br><b>사적연금 (IRP + 연저펀)</b>: 만 <b>55세부터 수령 가능</b>, 기본 60세. <b>총잔액 입력</b>하면 시작 나이부터 지정 기간(기본 20년) 균등 분할 인출. 국민연금보다 빨리 시작해서 65세 전 소득 공백을 메울 수 있음.<br><br><b>인출 방식:</b> 연금 지급 공식(annuity)으로 매년 동일 금액 인출. 잔액은 그동안 자산 투자수익률로 계속 굴러가며 마지막 년도에 정확히 소진되도록 인출액이 계산됨.<br><br><b>예시:</b> 오늘 IRP 잔액 2억, 60세 시작, 20년, 수익률 6% → 60세 시점 잔액 약 2.5억(60까지 성장), 매년 약 2,180만원 인출, 80세에 소진.<br><br><b>주의:</b> 인출액은 명목 균등 (물가 반영 X). 후반부에 실질 구매력 감소함.'
+      body: '<b>국민연금</b>: 만 65세부터 <b>평생 수령</b>. 20년+ 가입자 평균 월 110만원, 전체 평균 약 67만원 (2025). 매년 물가 상승분 반영.<br><br><b>사적연금 (IRP + 연저펀)</b>: 만 <b>55세부터 수령 가능</b>, 기본 60세. <b>총잔액 입력</b>하면 시작 나이부터 지정 기간(기본 20년) 균등 분할 인출. 국민연금보다 빨리 시작해서 65세 전 소득 공백을 메울 수 있음.<br><br><b>인출 방식:</b> 연금 지급 공식(annuity)으로 매년 동일 금액 인출. 잔액은 그동안 <b>사적연금 수익률</b>(⑤에서 별도 설정)로 계속 굴러가며 마지막 년도에 정확히 소진되도록 인출액이 계산됨.<br><br><b>예시:</b> 오늘 IRP 잔액 2억, 60세 시작, 20년, 사적연금 수익률 4.5% → 60세 시점 잔액 약 2.4억(60까지 성장), 매년 약 1,840만원 인출, 80세에 소진.<br><br><b>주의:</b> 인출액은 명목 균등 (물가 반영 X). 후반부에 실질 구매력 감소함.'
+    },
+    'pp-balance': {
+      title: '사적연금 총잔액',
+      body: '<b>IRP + 연금저축펀드</b>의 <b>오늘 기준 총잔액</b>을 입력하세요.<br><br>• 위 "현재 자산"에는 <b>포함하지 마세요</b> (이중 계산 방지).<br>• 입력하면 시작 나이(기본 60세)부터 지정 기간(기본 20년) 균등 인출됩니다.<br>• 은퇴 전까지 <b>사적연금 수익률</b>(⑤에서 별도 설정)로 잔액이 성장하고, 인출 중에도 잔액에 같은 수익률이 적용됩니다.<br>• 자산 투자수익률과 <b>별도</b>입니다. IRP/연저펀이 보수적 운용(TDF 등)이면 낮게 잡으세요.'
     },
     'goal': {
       title: '④ 은퇴 후 지출 & 상속 목표',
       body: '<b>월 소비액 (오늘 기준)</b>: 은퇴 후 매달 얼마 쓸지. <b>지금 가치로 입력</b>. 인플레이션은 자동 반영.<br><b>사망 시 남길 금액</b>: 자녀·가족에게 물려줄 돈 (오늘 기준). <b>0이면 "다 쓰고 감"</b>.<br><br>월 소비 290만 = 한국 노인 가구 평균 수준. 여유로운 노후 원하면 350~500만 권장.'
     },
+    'legacy-info': {
+      title: '사망 시 남길 금액',
+      body: '<b>오늘 기준 금액</b>으로 입력. 미래 시점에선 물가만큼 올라간 명목값으로 자동 환산됩니다.<br><br>• <b>0원</b> = 다 쓰고 감 (자산을 전부 소진)<br>• <b>2억원</b> = 자녀 상속 등 사망 시점에 2억원(오늘 가치) 남기기<br><br>의료비 급증 가능성 대비로 <b>1~2억 버퍼</b>를 두는 것도 권장.'
+    },
     'rates': {
-      title: '⑤ 변동률 (연 %) — 2000년 이후 장기 평균',
-      body: '<b>자산 투자수익률 (기본 6%)</b> — 2000년 이후 연평균:<br>• 나스닥 ~15% (변동성 최대)<br>• S&P500 7~10%<br>• 코스피 5~7% (배당 포함)<br>기본값 6%는 코스피~S&P500 중간의 보수적 가정. 과거 수익률이 미래를 보장하진 않습니다.<br><br><b>물가상승률 (기본 2.7%)</b> — 2000년 이후 CPI 평균. 현재가치 환산과 국민연금 인상에 쓰임.<br><br><b>지출 증가율 (기본 3.0%)</b> — 생활물가지수 기준.<br><br><b>수입 증가율 (기본 3.5%)</b> — 명목임금 상승률 장기 평균.<br><br><b>실수익률 = 투자수익률 − 물가</b>. 이 차이가 클수록 자산이 빨리 쌓입니다. 세금·수수료 미반영.'
+      title: '⑤ 변동률 — 각 항목 적용 범위',
+      body: '<table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:12px"><tr style="background:#f0f5fa"><th style="text-align:left;padding:8px;border-bottom:2px solid #1F4E78">항목</th><th style="text-align:left;padding:8px;border-bottom:2px solid #1F4E78">적용 대상</th></tr>' +
+        '<tr><td style="padding:6px 8px;border-bottom:1px solid #eee;font-weight:600;color:#1F4E78">자산 투자수익률</td><td style="padding:6px 8px;border-bottom:1px solid #eee">현재 자산(IRP 제외) 전체. 은퇴 전 성장 + 은퇴 후 자산 운용</td></tr>' +
+        '<tr><td style="padding:6px 8px;border-bottom:1px solid #eee;font-weight:600;color:#1F4E78">사적연금 수익률</td><td style="padding:6px 8px;border-bottom:1px solid #eee">IRP·연저펀 잔액에만 적용. 은퇴 전 성장 + 인출 중 잔액 운용. 자산 수익률과 <b>독립</b></td></tr>' +
+        '<tr><td style="padding:6px 8px;border-bottom:1px solid #eee;font-weight:600;color:#1F4E78">물가상승률</td><td style="padding:6px 8px;border-bottom:1px solid #eee">① 현재가치 환산 ② 국민연금 매년 인상 ③ 은퇴 후 지출 매년 상승 ④ 상속금 미래가치 환산</td></tr>' +
+        '<tr><td style="padding:6px 8px;border-bottom:1px solid #eee;font-weight:600;color:#1F4E78">수입 증가율</td><td style="padding:6px 8px;border-bottom:1px solid #eee">은퇴 <b>전</b> 연 수입(연봉)에만 적용. 은퇴 후엔 수입 0</td></tr>' +
+        '<tr><td style="padding:6px 8px;font-weight:600;color:#1F4E78">지출 증가율</td><td style="padding:6px 8px">은퇴 <b>전</b> 연 지출에만 적용. 은퇴 후 지출은 물가상승률을 따름</td></tr>' +
+        '</table>' +
+        '<b>기본값 근거 (2000년 이후 장기 평균):</b><br>' +
+        '• <b>자산 투자수익률 6%</b> — 코스피 5~7% / S&P500 7~10% 중간<br>' +
+        '• <b>사적연금 수익률 4.5%</b> — IRP·연저펀은 TDF·채권 혼합 등 보수적 운용 가정. 공격적 운용이면 5~6%로 올려도 됨<br>' +
+        '• <b>물가상승률 2.7%</b> — CPI 평균<br>' +
+        '• <b>수입 증가율 3.5%</b> — 명목임금 상승률<br>' +
+        '• <b>지출 증가율 3.0%</b> — 생활물가지수<br><br>' +
+        '<b>실수익률 = 투자수익률 − 물가</b>. 이 차이가 클수록 자산이 빨리 쌓입니다. 세금·수수료 미반영.'
+    },
+    'rate-asset': {
+      title: '자산 투자수익률',
+      body: '<b>적용 대상:</b> "현재 자산" (IRP 제외) 전체<br><br>• 은퇴 전: 매년 자산 × (1+이 수익률) 로 성장<br>• 은퇴 후: 자산에서 지출을 빼고 남은 잔액에 이 수익률 적용<br><br><b>사적연금(IRP·연저펀)에는 적용되지 않습니다.</b> 사적연금은 별도 수익률을 따릅니다.<br><br>기본 6% = 코스피~S&P500 중간 (2000년 이후).'
+    },
+    'rate-pp': {
+      title: '사적연금 수익률',
+      body: '<b>적용 대상:</b> IRP·연금저축펀드 잔액에만 적용<br><br>• 은퇴 전: 사적연금 잔액 × (1+이 수익률) 로 성장<br>• 인출 중: 남은 잔액에 이 수익률 적용 → 인출액 계산에 반영<br><br><b>"자산 투자수익률"과 독립된 별도 수익률</b>입니다.<br><br>기본 4.5% = IRP/연저펀은 보통 TDF·채권혼합 등 보수적 운용. 공격적 운용(주식 ETF 위주)이면 5~6%로 올려도 됨.'
+    },
+    'rate-cpi': {
+      title: '물가상승률',
+      body: '<b>적용 대상 (4곳):</b><br><br>① <b>현재가치 환산</b> — 미래 명목값을 오늘 가치로 나눌 때<br>② <b>국민연금 인상</b> — 매년 물가만큼 연금액 자동 상승<br>③ <b>은퇴 후 지출</b> — 월 소비액이 매년 물가만큼 상승<br>④ <b>상속금 미래가치</b> — "남길 금액"을 사망 시점 명목값으로 환산<br><br>기본 2.7% = 2000년 이후 CPI 평균.'
+    },
+    'rate-income': {
+      title: '수입 증가율',
+      body: '<b>적용 대상:</b> 은퇴 <b>전</b> 연 수입(연봉)에만 적용<br><br>매년 수입 × (1+이 증가율). 은퇴 후엔 수입이 0이므로 미적용.<br><br>기본 3.5% = 2000년 이후 명목임금 상승률 평균.'
+    },
+    'rate-spending': {
+      title: '지출 증가율',
+      body: '<b>적용 대상:</b> 은퇴 <b>전</b> 연 지출에만 적용<br><br>매년 지출 × (1+이 증가율). 은퇴 후 지출은 이 증가율이 아닌 <b>물가상승률</b>을 따릅니다.<br><br>기본 3.0% = 2000년 이후 생활물가지수 평균.'
+    },
+    'table-colors': {
+      title: '테이블 색상 범례',
+      body: '<div style="display:flex;flex-direction:column;gap:8px">' +
+        '<div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:18px;background:#fff;border:1px solid #ddd;border-radius:3px"></div> <b>흰색</b> — 근로기간 (은퇴 전, 수입 있음)</div>' +
+        '<div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:18px;background:#f2f2f2;border:1px solid #ddd;border-radius:3px"></div> <b>회색</b> — 은퇴 후 소득 공백기 (연금 미수령)</div>' +
+        '<div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:18px;background:#ecfdf5;border:1px solid #ddd;border-radius:3px"></div> <b>연두색</b> — 연금 수령 중 (국민연금 또는 사적연금)</div>' +
+        '<div style="display:flex;align-items:center;gap:10px"><div style="width:28px;height:18px;background:#fef3c7;border:1px solid #ddd;border-radius:3px"></div> <b>노란색</b> — 사망 연도</div>' +
+        '<div style="display:flex;align-items:center;gap:10px"><div style="color:#dc2626;font-weight:700;font-size:14px;width:28px;text-align:center">−</div> <b style="color:#dc2626">빨간 숫자</b> — 자산 마이너스 (파산)</div>' +
+        '</div>'
     }
   };
   var c = contents[key];
@@ -777,7 +835,7 @@ calculate();
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (function(){
-  var INPUT_IDS = ['startYear','currentAge','retireAge','deathAge','monthlySpending','legacy','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','privatePensionTotal','privatePensionStartAge','privatePensionYears','returnRate','inflationRate','incomeGrowth','spendingGrowth'];
+  var INPUT_IDS = ['startYear','currentAge','retireAge','deathAge','monthlySpending','legacy','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','privatePensionTotal','privatePensionStartAge','privatePensionYears','privatePensionReturn','returnRate','inflationRate','incomeGrowth','spendingGrowth'];
   var PAGE_NAME = '파이어족';
 
   function getDateStr(){ var d = new Date(); return d.getFullYear() + ('0'+(d.getMonth()+1)).slice(-2) + ('0'+d.getDate()).slice(-2); }
@@ -928,7 +986,7 @@ onAuthStateChanged(auth, user=>{
   else { $('cloudArea').style.display = 'none'; if(user && !isAdmin){ signOut(auth); } }
 });
 
-const INPUT_IDS = ['startYear','currentAge','retireAge','deathAge','monthlySpending','legacy','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','privatePensionTotal','privatePensionStartAge','privatePensionYears','returnRate','inflationRate','incomeGrowth','spendingGrowth'];
+const INPUT_IDS = ['startYear','currentAge','retireAge','deathAge','monthlySpending','legacy','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','privatePensionTotal','privatePensionStartAge','privatePensionYears','privatePensionReturn','returnRate','inflationRate','incomeGrowth','spendingGrowth'];
 function collectInputs(){ const data={}; INPUT_IDS.forEach(id=>{ const el=$(id); if(el) data[id]=el.value; }); return data; }
 function applyInputs(data){
   INPUT_IDS.forEach(id=>{ const el=$(id); if(el && data[id]!==undefined){ el.value=data[id]; } });
