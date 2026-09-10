@@ -9,9 +9,9 @@
 <link rel="apple-touch-icon" href="/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="스윙파머">
+<meta name="robots" content="noindex, nofollow">
 <title>스윙파머 금융도구</title>
 
-<!-- ===== Google Analytics (GA4) ===== -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-JD3EPQXMND"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -23,39 +23,46 @@
 <style>
 *{box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:960px;margin:0 auto;padding:40px 20px;background:#f5f7fa;color:#1a1a1a;min-height:100vh}
-header{text-align:center;margin-bottom:50px}
+header{text-align:center;margin-bottom:30px}
 h1{color:#1F4E78;font-size:32px;margin-bottom:8px}
 .subtitle{color:#666;font-size:15px}
 
-.row{display:grid;gap:18px;margin-bottom:18px}
-.row.row-2{grid-template-columns:1fr 1fr}
-.row.row-3{grid-template-columns:1fr 1fr 1fr}
-.row.row-1{grid-template-columns:1fr}
-/* 자동 채움: PC 3칸, 화면 줄면 자동 줄바꿈 */
-.row.auto{grid-template-columns:repeat(3,1fr)}
-@media(max-width:700px){
-  .row.row-2,.row.row-3,.row.auto{grid-template-columns:1fr 1fr;gap:10px}
-  .card{padding:14px}
-  .card.large{padding:16px}
-  .icon{font-size:24px;margin-bottom:8px}
-  .card-title{font-size:14px}
-  .card-desc{font-size:11.5px;line-height:1.4}
-  .tag{font-size:10px}
-}
+/* 카테고리 카드 (대형) */
+.cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+@media(max-width:700px){.cat-grid{grid-template-columns:repeat(2,1fr);gap:10px}}
+.cat-card{background:white;border-radius:12px;padding:20px;text-align:center;cursor:pointer;border:2px solid transparent;transition:all .15s;box-shadow:0 2px 6px rgba(0,0,0,0.06);user-select:none}
+.cat-card:hover{border-color:#1F4E78;transform:translateY(-2px);box-shadow:0 4px 12px rgba(31,78,120,0.15)}
+.cat-card.active{border-color:#1F4E78;background:#1F4E78;color:white}
+.cat-card.active .cat-name{color:white}
+.cat-card.active .cat-cnt{color:rgba(255,255,255,.7)}
+.cat-icon{font-size:32px;margin-bottom:8px}
+.cat-name{font-size:14px;font-weight:700;color:#1F4E78}
+.cat-cnt{font-size:11px;color:#999;margin-top:4px}
+@media(max-width:700px){.cat-icon{font-size:26px;margin-bottom:4px}.cat-name{font-size:12px}.cat-card{padding:14px}}
 
-.card{background:white;border-radius:10px;padding:24px;box-shadow:0 2px 6px rgba(0,0,0,0.06);text-decoration:none;color:inherit;border:2px solid transparent;transition:all 0.15s ease;display:flex;flex-direction:column;height:100%}
+/* 도구 카드 패널 */
+.tool-panel{display:none;margin-bottom:20px;animation:fadeIn .2s ease}
+.tool-panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.panel-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #1F4E78}
+.panel-header h2{font-size:18px;font-weight:800;color:#1F4E78;margin:0}
+.panel-close{background:#e5e7eb;border:none;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;margin-left:auto;color:#666}
+.panel-close:hover{background:#d1d5db}
+.tool-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:700px){.tool-grid{grid-template-columns:repeat(2,1fr);gap:10px}}
+
+.card{background:white;border-radius:10px;padding:16px;box-shadow:0 2px 6px rgba(0,0,0,0.06);text-decoration:none;color:inherit;border:2px solid transparent;transition:all .15s;display:flex;flex-direction:column;height:100%}
 .card:hover{border-color:#1F4E78;transform:translateY(-2px);box-shadow:0 4px 12px rgba(31,78,120,0.15)}
-.icon{font-size:32px;margin-bottom:12px}
-.card-title{font-size:18px;font-weight:700;color:#1F4E78;margin-bottom:6px}
-.card-desc{font-size:13px;color:#666;line-height:1.5;flex:1}
-.tag{display:inline-block;background:#eef2f7;color:#1F4E78;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;margin-top:10px;align-self:flex-start}
+.icon{font-size:24px;margin-bottom:6px}
+.card-title{font-size:14px;font-weight:700;color:#1F4E78;margin-bottom:3px}
+.card-desc{font-size:11.5px;color:#666;line-height:1.5;flex:1}
+.tag{display:inline-block;background:#eef2f7;color:#1F4E78;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;margin-top:6px;align-self:flex-start}
 .tag.live{background:#fee2e2;color:#dc2626}
+.tag.ext{background:#e0e7ff;color:#4338ca}
+@media(max-width:700px){.card{padding:12px}.icon{font-size:20px;margin-bottom:4px}.card-title{font-size:12.5px}.card-desc{font-size:10.5px}}
 
-.card.large{padding:28px}
-.card.large .icon{font-size:38px;margin-bottom:14px}
-.card.large .card-title{font-size:20px;margin-bottom:8px}
-.card.large .card-desc{font-size:14px;line-height:1.6}
-
+.all-link{text-align:center;margin-top:30px}
+.all-link a{display:inline-block;background:#1F4E78;color:white;text-decoration:none;font-size:13px;font-weight:600;padding:10px 24px;border-radius:8px}
 footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
 </style>
 </head>
@@ -66,283 +73,187 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
   <p class="subtitle">개인 재무 시뮬레이션 & 분석 모음</p>
 </header>
 
-<div id="adminMenuBar" style="display:none;max-width:1000px;margin:0 auto 18px;padding:0 16px">
-  <a id="adminMenuLink" href="#" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#1F4E78;color:#fff;border-radius:12px;padding:14px;font-weight:700;text-decoration:none;font-size:15px;box-shadow:0 2px 10px rgba(31,78,120,.25)">🔓 전체 메뉴 (관리자) →</a>
+<!-- ═══ 카테고리 카드 ═══ -->
+<div class="cat-grid">
+  <div class="cat-card" data-cat="info"><div class="cat-icon">📰</div><div class="cat-name">정보·시장</div><div class="cat-cnt">7개</div></div>
+  <div class="cat-card" data-cat="asset"><div class="cat-icon">💰</div><div class="cat-name">자산 설계·파이어</div><div class="cat-cnt">6개</div></div>
+  <div class="cat-card" data-cat="stock"><div class="cat-icon">📈</div><div class="cat-name">주식·투자</div><div class="cat-cnt">20개</div></div>
+  <div class="cat-card" data-cat="estate"><div class="cat-icon">🏠</div><div class="cat-name">부동산</div><div class="cat-cnt">11개</div></div>
+  <div class="cat-card" data-cat="tax"><div class="cat-icon">💸</div><div class="cat-name">세금</div><div class="cat-cnt">13개</div></div>
+  <div class="cat-card" data-cat="labor"><div class="cat-icon">💼</div><div class="cat-name">근로·회사</div><div class="cat-cnt">6개</div></div>
+  <div class="cat-card" data-cat="life"><div class="cat-icon">🧮</div><div class="cat-name">금융·생활</div><div class="cat-cnt">8개</div></div>
+  <div class="cat-card" data-cat="personal"><div class="cat-icon">🔒</div><div class="cat-name">개인 관리</div><div class="cat-cnt">3개</div></div>
 </div>
 
-<!-- 전체 카드 (PC 3칸 / 모바일 2칸 자동) -->
-<div class="row auto">
-  <a href="news/" class="card">
-    <div class="icon">📰</div>
-    <div class="card-title">뉴스 헤드라인</div>
-    <div class="card-desc">한국 주요 언론사 실시간 헤드라인. 8개 카테고리. 1시간마다 자동 갱신.</div>
-    <div class="tag live">LIVE</div>
-  </a>
-  <a href="https://longnshort.kr/" target="_blank" rel="noopener" class="card">
-    <div class="icon">🌙</div>
-    <div class="card-title">야간선물 대시보드 ↗</div>
-    <div class="card-desc">코스피 야간선물, 달러/원·원유·비트코인·골드·나스닥·미 10년물, 외국인·기관 매매 TOP을 한눈에. (외부 사이트 롱앤숏)</div>
-    <div class="tag">외부 링크</div>
-  </a>
-  <a href="free/" class="card">
-    <div class="icon">📈</div>
-    <div class="card-title">경제적자유 계산기</div>
-    <div class="card-desc">현재 자산·수입·지출·연금을 입력하면 은퇴 시점과 100세까지의 자산 추이 자동 계산.</div>
-    <div class="tag">사용 가능</div>
-  </a>
-  <a href="fire/" class="card">
-    <div class="icon">🎯</div>
-    <div class="card-title">파이어족 계산기</div>
-    <div class="card-desc">월 소비액과 사망 시 남길 금액 입력하면 은퇴 시점에 얼마가 필요한지 자동 계산.</div>
-    <div class="tag">사용 가능</div>
-  </a>
-  <a href="avg/" class="card">
-    <div class="icon">📊</div>
-    <div class="card-title">물타기·불타기 계산기</div>
-    <div class="card-desc">추가 매수 후 평단·손익 계산, 목표 평단 역산, 본전 회복가까지. 원화·달러 선택 가능.</div>
-    <div class="tag">사용 가능</div>
-  </a>
-  <a href="target-price/" class="card">
-    <div class="icon">🎯</div>
-    <div class="card-title">목표주가 역산 계산기</div>
-    <div class="card-desc">예산·목표금액 정하고 매수가만 바꾸면 수량·목표가 자동. "1억으로 2억 만들기" 시나리오 + 마일스톤 진행 추적.</div>
-    <div class="tag">사용 가능</div>
-  </a>
-  <a href="dividend-manager/" class="card">
-    <div class="icon">💰</div>
-    <div class="card-title">배당 포트폴리오 관리기</div>
-    <div class="card-desc">보유 배당주·ETF 등록 → 연 배당금·월별 배당 캘린더·종목 비중·목표 달성률을 한눈에. 국내(원)·미국(달러) 지원. 자동저장 + 파일백업.</div>
-    <div class="tag">사용 가능</div>
-  </a>
-  <a href="tax/" class="card" style="display:none">
-    <div class="icon">💸</div>
-    <div class="card-title">세금 계산기 모음</div>
-    <div class="card-desc">양도세·취득세·증여세·상속세·소득세·중개수수료 등 부동산·금융 세금.</div>
-    <div class="tag">11종 계산기</div>
-  </a>
-  <a href="salary/" class="card">
-    <div class="icon">💰</div>
-    <div class="card-title">연봉 실수령액 계산기</div>
-    <div class="card-desc">2026년 4대보험·소득세 반영 월 실수령액. 연봉 협상·급여 확인용.</div>
-    <div class="tag">2026 최신</div>
-  </a>
-  <a href="severance/" class="card" style="display:none">
-    <div class="icon">🧳</div>
-    <div class="card-title">퇴직금 계산기</div>
-    <div class="card-desc">근속기간·평균임금 기반 법정 퇴직금. 입사·퇴사일로 자동 계산.</div>
-    <div class="tag">사용 가능</div>
-  </a>
-  <a href="finance-tools/" class="card" style="display:none">
-    <div class="icon">💼</div>
-    <div class="card-title">금융 계산기</div>
-    <div class="card-desc">대출 상환 시뮬레이션, 복리 계산기. 원리금균등·원금균등 비교.</div>
-    <div class="tag">2종 계산기</div>
-  </a>
-</div>
-<!-- 금융계산기 카드는 메인에서 숨김 (finance-tools/ 폴더는 유지) -->
+<!-- ═══ 펼쳐지는 도구 패널들 ═══ -->
 
-<!-- PWA 설치 안내 -->
-<div id="installBox" style="background:white;border:1px solid #e0e7ef;border-radius:12px;padding:20px;margin-top:24px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-    <img src="/icon-192.png" alt="앱 아이콘" style="width:44px;height:44px;border-radius:10px">
-    <div>
-      <div style="font-size:16px;font-weight:700;color:#1F4E78">📱 홈 화면에 앱으로 추가</div>
-      <div style="font-size:12.5px;color:#888">설치하면 앱처럼 전체화면으로 바로 열려요</div>
+<!-- 📰 정보·시장 -->
+<div class="tool-panel" id="panel-info">
+<div class="panel-header"><h2>📰 정보·시장</h2><button class="panel-close" onclick="closePanel()">✕</button></div>
+<div class="tool-grid">
+  <a href="/news/" class="card"><div class="icon">📰</div><div class="card-title">뉴스 헤드라인</div><div class="card-desc">주요 언론사 실시간 헤드라인. 8개 카테고리.</div><div class="tag live">LIVE</div></a>
+  <a href="/market/" class="card"><div class="icon">📊</div><div class="card-title">실시간 시장 대시보드</div><div class="card-desc">코스피·다우·나스닥·환율·금리·유가·금.</div><div class="tag live">LIVE</div></a>
+  <a href="https://longnshort.kr/" target="_blank" rel="noopener" class="card"><div class="icon">🌙</div><div class="card-title">야간선물 대시보드 ↗</div><div class="card-desc">야간선물·달러원·원유·비트코인·나스닥.</div><div class="tag ext">외부</div></a>
+  <a href="/crash-history/" class="card"><div class="icon">🚨</div><div class="card-title">역대 폭락장 비교</div><div class="card-desc">IMF·닷컴·금융위기·코로나·긴축장.</div></a>
+  <a href="/correlation/" class="card"><div class="icon">🔗</div><div class="card-title">상관관계 분석기</div><div class="card-desc">DXY·KOSPI·S&P500 상관계수·산점도.</div></a>
+  <a href="/books/" class="card"><div class="icon">📚</div><div class="card-title">책 베스트셀러</div><div class="card-desc">교보·예스24·알라딘·영풍 4개 서점 비교.</div></a>
+  <a href="/quotes/" class="card"><div class="icon">💬</div><div class="card-title">오늘의 투자 명언</div><div class="card-desc">195개 매일 로테이션.</div></a>
+</div>
+</div>
+
+<!-- 💰 자산 설계·파이어 -->
+<div class="tool-panel" id="panel-asset">
+<div class="panel-header"><h2>💰 자산 설계·파이어</h2><button class="panel-close" onclick="closePanel()">✕</button></div>
+<div class="tool-grid">
+  <a href="/wealth-reports/" class="card"><div class="icon">📊</div><div class="card-title">부자보고서 모음</div><div class="card-desc">KB·하나·NH·UBS 부자보고서 직링크.</div></a>
+  <a href="/free/" class="card"><div class="icon">📈</div><div class="card-title">경제적자유 계산기</div><div class="card-desc">자산·수입·지출·연금 → 은퇴 시점 추이.</div></a>
+  <a href="/fire/" class="card"><div class="icon">🔥</div><div class="card-title">파이어족 계산기</div><div class="card-desc">월 소비·상속 → 필요 은퇴 자금 역산.</div></a>
+  <a href="/budget/" class="card"><div class="icon">💳</div><div class="card-title">예산 소비 추적기</div><div class="card-desc">예산 설정 → 남은 예산·초과 확인.</div></a>
+  <a href="/cashflow/" class="card"><div class="icon">💵</div><div class="card-title">현금흐름 트래커</div><div class="card-desc">월별 수입·지출, 순증감·저축률.</div></a>
+  <a href="/gold-calc/" class="card"><div class="icon">🥇</div><div class="card-title">금값 계산기</div><div class="card-desc">금 시세 기반 매수·매도 손익.</div></a>
+</div>
+</div>
+
+<!-- 📈 주식·투자 -->
+<div class="tool-panel" id="panel-stock">
+<div class="panel-header"><h2>📈 주식·투자</h2><button class="panel-close" onclick="closePanel()">✕</button></div>
+<div class="tool-grid">
+  <a href="/stock-tools/kal/" class="card"><div class="icon">✈️</div><div class="card-title">대한항공 실적 시뮬레이터</div><div class="card-desc">유가→OP / 환율→NI 분리. 시나리오 토글.</div></a>
+  <a href="/stock-tools/kal-sotp/" class="card"><div class="icon">✈️</div><div class="card-title">대한항공 SOTP 기업가치</div><div class="card-desc">사업부별 밸류에이션.</div></a>
+  <a href="/stock-tools/fuel-tracker/" class="card"><div class="icon">⛽</div><div class="card-title">항공유·유류할증료 분석</div><div class="card-desc">항공유 가격 추이 + 유류할증료 단계.</div></a>
+  <a href="/hd-enc/" class="card"><div class="icon">⚡</div><div class="card-title">현대건설 원전 시뮬레이터</div><div class="card-desc">원전·SMR·DC 14건. 27~35 연도별 추정.</div></a>
+  <a href="/hdsteel/" class="card"><div class="icon">🔩</div><div class="card-title">현대제철 실적 시뮬레이터</div><div class="card-desc">고로·전기로·자회사 OPM → 연결 OP·EPS.</div></a>
+  <a href="/valuation/" class="card"><div class="icon">🎯</div><div class="card-title">적정주가 계산기</div><div class="card-desc">고든성장·멀티플·DCF·RIM 종합.</div></a>
+  <a href="/avg/" class="card"><div class="icon">📉</div><div class="card-title">물타기·불타기 평단</div><div class="card-desc">추가 매수 후 평단·손익, 본전 회복가.</div></a>
+  <a href="/target-price/" class="card"><div class="icon">🎯</div><div class="card-title">목표주가 역산 계산기</div><div class="card-desc">예산·목표금액 → 매수가별 수량·목표가.</div></a>
+  <a href="/target-simple/" class="card"><div class="icon">💵</div><div class="card-title">목표가 계산기 (심플)</div><div class="card-desc">매수가·수량 → 목표가·손절가 시나리오.</div></a>
+  <a href="/margin-ratio/" class="card"><div class="icon">⚖️</div><div class="card-title">신용 담보비율</div><div class="card-desc">종목별 담보비율. 마진콜까지 여유폭.</div></a>
+  <a href="/stock-tools/dividend/" class="card"><div class="icon">💰</div><div class="card-title">배당 수익 계산기</div><div class="card-desc">배당 재투자·배당성장률·세후 시뮬레이션.</div></a>
+  <a href="/dividend-manager/" class="card"><div class="icon">📋</div><div class="card-title">배당 포트폴리오 관리기</div><div class="card-desc">배당주·ETF 등록 → 연 배당·월별 캘린더.</div></a>
+  <a href="/stock-tools/buffett/" class="card"><div class="icon">🧮</div><div class="card-title">버핏지수 계산기</div><div class="card-desc">시총/GDP 비율로 과열·저평가 판단.</div></a>
+  <a href="/stock-tools/metrics/" class="card"><div class="icon">📐</div><div class="card-title">주식 지표 계산기</div><div class="card-desc">PER·PBR·ROE·배당수익률 직접 계산.</div></a>
+  <a href="/stock-tools/sensitivity/" class="card"><div class="icon">🔬</div><div class="card-title">실적 민감도 계산기</div><div class="card-desc">비용→OP, 환율→NI 범용 추정.</div></a>
+  <a href="/stock-tools/mdd-diverge/" class="card"><div class="icon">📊</div><div class="card-title">MDD·이격도 계산기</div><div class="card-desc">최대낙폭·이동평균 이격도.</div></a>
+  <a href="/risk/position-sizing/" class="card"><div class="icon">📏</div><div class="card-title">포지션 사이징</div><div class="card-desc">자산 대비 적정 매수 금액·수량.</div></a>
+  <a href="/risk/risk-reward/" class="card"><div class="icon">⚖️</div><div class="card-title">손익비 계산기</div><div class="card-desc">매수가·목표가·손절가 → 손익비·기대값.</div></a>
+  <a href="/risk/portfolio-risk/" class="card"><div class="icon">🛡️</div><div class="card-title">포트폴리오 리스크 분석</div><div class="card-desc">집중도·MDD·섹터 편중.</div></a>
+  <a href="/risk/risk-checklist/" class="card"><div class="icon">✅</div><div class="card-title">매매 전 리스크 체크리스트</div><div class="card-desc">매수/매도 전 확인 항목 점검.</div></a>
+</div>
+</div>
+
+<!-- 🏠 부동산 -->
+<div class="tool-panel" id="panel-estate">
+<div class="panel-header"><h2>🏠 부동산</h2><button class="panel-close" onclick="closePanel()">✕</button></div>
+<div class="tool-grid">
+  <a href="/redevelopment/" class="card"><div class="icon">🏗️</div><div class="card-title">재건축 사업성 분석</div><div class="card-desc">비례율·추가분담금. 10개 실제 사례.</div></a>
+  <a href="/abc/a/" class="card"><div class="icon">🧮</div><div class="card-title">재건축 분담금 계산기</div><div class="card-desc">목동 6단지 기준 분담금 시뮬레이션.</div></a>
+  <a href="/realestate/jaechohwan/" class="card"><div class="icon">🔄</div><div class="card-title">재초환 계산기</div><div class="card-desc">재건축 초과이익부담금 시뮬레이션.</div></a>
+  <a href="/realestate/home-swap/" class="card"><div class="icon">🔄</div><div class="card-title">갈아타기 손익 계산기</div><div class="card-desc">기존 집 매도 → 신규 매수 순이익.</div></a>
+  <a href="/realestate/jeonse-vs-buy/" class="card"><div class="icon">🏠</div><div class="card-title">전세 vs 매매 비교</div><div class="card-desc">장기 순자산 비교.</div></a>
+  <a href="/realestate/jeonse-vs-wolse/" class="card"><div class="icon">💰</div><div class="card-title">전세대출이자 vs 월세</div><div class="card-desc">전세대출 이자 vs 월세 비교.</div></a>
+  <a href="/realestate/dsr-limit/" class="card"><div class="icon">🏦</div><div class="card-title">대출 한도·DSR</div><div class="card-desc">DSR 40%·50% 기준 대출 한도.</div></a>
+  <a href="/realestate/entity-choice/" class="card"><div class="icon">🏢</div><div class="card-title">오피스텔 매수 명의 선택</div><div class="card-desc">개인 vs 법인 세금·수익 비교.</div></a>
+  <a href="/realestate/location-check/" class="card"><div class="icon">📍</div><div class="card-title">입지 체크리스트</div><div class="card-desc">교통·학군·상권·환경 항목별 점수.</div></a>
+  <a href="/property/" class="card"><div class="icon">🏪</div><div class="card-title">상가 수익률 분석기</div><div class="card-desc">기대수익률·순수익·회수기간.</div></a>
+  <a href="/commerce/" class="card"><div class="icon">📍</div><div class="card-title">상권분석 도구</div><div class="card-desc">상권 데이터 기반 입지 분석.</div></a>
+</div>
+</div>
+
+<!-- 💸 세금 -->
+<div class="tool-panel" id="panel-tax">
+<div class="panel-header"><h2>💸 세금</h2><button class="panel-close" onclick="closePanel()">✕</button></div>
+<div class="tool-grid">
+  <a href="/tax/acquisition/" class="card"><div class="icon">🏷️</div><div class="card-title">취득세 계산기</div><div class="card-desc">주택·토지·상가 취득세.</div></a>
+  <a href="/tax/house/" class="card"><div class="icon">🏠</div><div class="card-title">주택 양도소득세</div><div class="card-desc">1세대1주택. 3시점 비교. 장특공 반영.</div></a>
+  <a href="/tax/land/" class="card"><div class="icon">🚧</div><div class="card-title">토지 양도소득세</div><div class="card-desc">농지·임야·대지 양도세.</div></a>
+  <a href="/landtax/" class="card"><div class="icon">🏗️</div><div class="card-title">토지수용 양도세</div><div class="card-desc">현금·3년채권·5년채권 감면율 비교.</div></a>
+  <a href="/tax/gift/" class="card"><div class="icon">🎁</div><div class="card-title">증여세 계산기</div><div class="card-desc">증여 재산·공제·세율 자동 계산.</div></a>
+  <a href="/tax/inheritance/" class="card"><div class="icon">📜</div><div class="card-title">상속세 계산기</div><div class="card-desc">상속 재산·공제·세율 자동 계산.</div></a>
+  <a href="/tax/income/" class="card"><div class="icon">💼</div><div class="card-title">근로소득세 (원천징수)</div><div class="card-desc">월 급여 → 원천징수 소득세.</div></a>
+  <a href="/tax/retirement/" class="card"><div class="icon">🧳</div><div class="card-title">퇴직소득세 계산기</div><div class="card-desc">퇴직금 → 퇴직소득세.</div></a>
+  <a href="/tax/retirement-compare/" class="card"><div class="icon">⚖️</div><div class="card-title">퇴직금 수령 방식 비교</div><div class="card-desc">일시금 vs 연금 세금 비교.</div></a>
+  <a href="/tax/stock-kr/" class="card"><div class="icon">🇰🇷</div><div class="card-title">국내주식 수수료·세금</div><div class="card-desc">매매 수수료·양도세·배당세.</div></a>
+  <a href="/tax/stock-us/" class="card"><div class="icon">🇺🇸</div><div class="card-title">해외주식 수수료·세금</div><div class="card-desc">미국주식 매매세·양도세·환전.</div></a>
+  <a href="/tax/brokerage/" class="card"><div class="icon">🏘️</div><div class="card-title">부동산 중개수수료</div><div class="card-desc">매매·전세·월세 중개수수료.</div></a>
+  <a href="/gambuk/" class="card"><div class="icon">🗺️</div><div class="card-title">감북동 토지보상 전략</div><div class="card-desc">감정평가 의견서 + 협의양도인 주택.</div></a>
+</div>
+</div>
+
+<!-- 💼 근로·회사 -->
+<div class="tool-panel" id="panel-labor">
+<div class="panel-header"><h2>💼 근로·회사</h2><button class="panel-close" onclick="closePanel()">✕</button></div>
+<div class="tool-grid">
+  <a href="/salary/" class="card"><div class="icon">💰</div><div class="card-title">연봉 실수령액</div><div class="card-desc">2026년 4대보험·소득세 반영.</div></a>
+  <a href="/severance/" class="card"><div class="icon">🧳</div><div class="card-title">퇴직금 계산기</div><div class="card-desc">근속기간·평균임금 → 법정 퇴직금.</div></a>
+  <a href="/severance-exec/" class="card"><div class="icon">👔</div><div class="card-title">임원 퇴직금 계산기</div><div class="card-desc">정관 배수·§22 한도. 초과분 근로소득세.</div></a>
+  <a href="/paygrowth/" class="card"><div class="icon">📈</div><div class="card-title">누적 연봉·실수령액</div><div class="card-desc">인상률·부양가족 반영 N년 누적.</div></a>
+  <a href="/insurance4/" class="card"><div class="icon">🧾</div><div class="card-title">4대보험 계산기</div><div class="card-desc">근로자·사업주 부담분. 실부담 인건비.</div></a>
+  <a href="/company/" class="card"><div class="icon">🏢</div><div class="card-title">회사 문서 작업</div><div class="card-desc">거래명세표·견적서 작성·출력.</div></a>
+</div>
+</div>
+
+<!-- 🧮 금융·생활 -->
+<div class="tool-panel" id="panel-life">
+<div class="panel-header"><h2>🧮 금융·생활</h2><button class="panel-close" onclick="closePanel()">✕</button></div>
+<div class="tool-grid">
+  <a href="/finance-tools/compound/" class="card"><div class="icon">📈</div><div class="card-title">복리 계산기</div><div class="card-desc">원금·이율·기간 → 복리 성장.</div></a>
+  <a href="/finance-tools/loan/" class="card"><div class="icon">🏦</div><div class="card-title">대출 상환 계산기</div><div class="card-desc">원리금균등·원금균등·만기일시 비교.</div></a>
+  <a href="/loan-switch/" class="card"><div class="icon">🔄</div><div class="card-title">대출 갈아타기·중도상환</div><div class="card-desc">기존 vs 신규 비교. 중도상환수수료 감안.</div></a>
+  <a href="/car-compare/" class="card"><div class="icon">🚗</div><div class="card-title">자동차 구입 vs 렌트</div><div class="card-desc">현금·할부·장기렌트 총비용 비교.</div></a>
+  <a href="/telecom/" class="card"><div class="icon">📱</div><div class="card-title">통신 회선 관리기</div><div class="card-desc">약정·요금·D-Day·M+3. 할부·결합할인.</div></a>
+  <a href="/schedule/" class="card"><div class="icon">📅</div><div class="card-title">일정표</div><div class="card-desc">투자·개인 일정 통합. 달력, D-day.</div></a>
+  <a href="/workout/" class="card"><div class="icon">🏋️</div><div class="card-title">운동 루틴</div><div class="card-desc">전신 맨몸운동. 3단계, 타이머.</div></a>
+  <a href="/health/" class="card"><div class="icon">🩺</div><div class="card-title">건강관리 체크리스트</div><div class="card-desc">고지혈증·고혈압·간수치 관리.</div></a>
+</div>
+</div>
+
+<!-- 🔒 개인 관리 -->
+<div class="tool-panel" id="panel-personal">
+<div class="panel-header"><h2>🔒 개인 관리</h2><button class="panel-close" onclick="closePanel()">✕</button></div>
+<div class="tool-grid">
+  <a href="/portfolio/" class="card"><div class="icon">📊</div><div class="card-title">포트폴리오</div><div class="card-desc">분기별 자산 배분·종목 비중.</div></a>
+  <a href="/notes/" class="card"><div class="icon">📝</div><div class="card-title">투자 메모·일지</div><div class="card-desc">시장 관찰·종목 분석·매매 기록.</div></a>
+  <div class="card"><div class="icon">📈</div><div class="card-title">접속 통계 · 관리</div><div class="card-desc">GA + Firebase 콘솔.</div>
+    <div style="display:flex;gap:6px;margin-top:6px">
+      <a href="https://analytics.google.com" target="_blank" rel="noopener" style="flex:1;text-align:center;background:#1F4E78;color:white;text-decoration:none;font-size:11px;font-weight:600;padding:6px;border-radius:6px">📊 GA</a>
+      <a href="https://console.firebase.google.com/project/swingfarmer-board01" target="_blank" rel="noopener" style="flex:1;text-align:center;background:#f59e0b;color:white;text-decoration:none;font-size:11px;font-weight:600;padding:6px;border-radius:6px">🔥 Firebase</a>
     </div>
-    <button id="btnInstall" style="margin-left:auto;background:#1F4E78;color:white;border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">앱 설치하기</button>
   </div>
-  <div style="font-size:12.5px;color:#666;line-height:1.7;background:#f8fafc;border-radius:8px;padding:12px 14px;margin-top:6px">
-    <b style="color:#1F4E78">안심하세요 — 이건 일반 앱 설치가 아닙니다.</b><br>
-    • <b>앱스토어를 거치지 않고</b>, 이 웹사이트를 홈 화면 아이콘으로 추가하는 기능이에요(PWA).<br>
-    • <b>개인정보를 수집하거나 권한을 요구하지 않습니다.</b> 위치·연락처·사진 접근 없음.<br>
-    • 설치해도 <b>용량을 거의 차지하지 않고</b>, 그냥 홈 화면 바로가기 + 전체화면일 뿐이에요.<br>
-    • 마음에 안 들면 <b>아이콘을 길게 눌러 삭제</b>하면 끝. 흔적 안 남아요.
-  </div>
-  <div id="installHelp" style="display:none;font-size:12.5px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-top:10px;line-height:1.7"></div>
+</div>
 </div>
 
-<footer>
-  © 스윙파머 · GitHub Pages
-  <span id="adminEntry" style="display:none"> · <span id="adminDot" style="color:#ccc;cursor:pointer;user-select:none">·</span></span>
-  <div style="margin-top:10px">
-    <button id="siteLogin" style="background:transparent;border:1px solid #ddd;color:#aaa;border-radius:6px;padding:4px 11px;font-size:11px;cursor:pointer">로그인</button>
-    <span id="siteWho" style="display:none;font-size:11px;color:#1F4E78;font-weight:600"></span>
-    <button id="siteLogout" style="display:none;background:transparent;border:1px solid #ddd;color:#aaa;border-radius:6px;padding:4px 11px;font-size:11px;cursor:pointer">로그아웃</button>
-  </div>
-</footer>
+<div class="all-link"><a href="/1808/">📋 전체 메뉴 (한 페이지)</a></div>
+
+<footer>© 스윙파머 금융도구</footer>
 
 <script>
-// 카톡 등 인앱 브라우저 감지 → 외부 브라우저 안내
 (function(){
-  var ua = navigator.userAgent.toLowerCase();
-  var inApp = /kakaotalk|naver|line|fban|fbav|instagram|daumapps|everytimeapp|whale\/|band/i.test(ua);
-  if(!inApp) return;
-
-  var url = location.href;
-  var isAndroid = /android/i.test(ua);
-
-  var bar = document.createElement('div');
-  bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:100000;background:#1F4E78;color:white;padding:12px 16px;font-size:13px;line-height:1.6;box-shadow:0 2px 8px rgba(0,0,0,.2);font-family:-apple-system,sans-serif';
-  bar.innerHTML =
-    '<b>🌐 외부 브라우저로 열어주세요</b><br>'+
-    '<span style="font-size:12px;opacity:.9">카카오톡 등 앱 안에서는 일부 기능(앱 설치 등)이 제한돼요. 크롬·사파리로 열면 정상 작동합니다.</span>'+
-    '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">'+
-      '<button id="iabOpen" style="background:white;color:#1F4E78;border:none;border-radius:6px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer">'+(isAndroid?'크롬으로 열기':'주소 복사')+'</button>'+
-      '<button id="iabCopy" style="background:rgba(255,255,255,.2);color:white;border:none;border-radius:6px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer">주소 복사</button>'+
-      '<button id="iabClose" style="background:transparent;color:white;border:1px solid rgba(255,255,255,.4);border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer">닫기</button>'+
-    '</div>';
-  document.body.insertBefore(bar, document.body.firstChild);
-  document.body.style.paddingTop = bar.offsetHeight + 'px';
-
-  function copyUrl(){
-    if(navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ alert('주소가 복사됐어요. 크롬·사파리 주소창에 붙여넣어 여세요.'); }); }
-    else { prompt('아래 주소를 복사해서 브라우저에 붙여넣으세요:', url); }
-  }
-
-  document.getElementById('iabOpen').addEventListener('click', function(){
-    if(isAndroid){
-      // 안드로이드: 크롬으로 강제 열기(intent)
-      var intent = 'intent://'+url.replace(/^https?:\/\//,'')+'#Intent;scheme=https;package=com.android.chrome;end';
-      location.href = intent;
-      // 실패 대비 복사 안내
-      setTimeout(copyUrl, 1500);
-    } else {
-      copyUrl();
-    }
-  });
-  document.getElementById('iabCopy').addEventListener('click', copyUrl);
-  document.getElementById('iabClose').addEventListener('click', function(){
-    bar.remove(); document.body.style.paddingTop='';
-  });
-})();
-</script>
-
-<script>
-// service worker 등록 (PWA 설치 조건 충족 + 오프라인)
-if('serviceWorker' in navigator){
-  window.addEventListener('load', function(){
-    navigator.serviceWorker.register('/sw.js').catch(function(e){
-      console.log('SW 등록 실패:', e);
+  var active = null;
+  document.querySelectorAll('.cat-card').forEach(function(card){
+    card.addEventListener('click', function(){
+      var cat = card.getAttribute('data-cat');
+      var panel = document.getElementById('panel-' + cat);
+      // 같은 카드 다시 클릭 → 닫기
+      if(active === cat){ closePanel(); return; }
+      // 다른 패널 닫기
+      document.querySelectorAll('.tool-panel').forEach(function(p){ p.classList.remove('active'); });
+      document.querySelectorAll('.cat-card').forEach(function(c){ c.classList.remove('active'); });
+      // 열기
+      if(panel){
+        panel.classList.add('active');
+        card.classList.add('active');
+        active = cat;
+        // 스크롤
+        setTimeout(function(){ panel.scrollIntoView({behavior:'smooth', block:'start'}); }, 50);
+      }
     });
   });
-}
-
-// PWA 설치
-(function(){
-  var deferredPrompt = null;
-  var btn = document.getElementById('btnInstall');
-  var help = document.getElementById('installHelp');
-
-  // 이미 설치된 상태(standalone)면 안내 박스 숨김
-  if(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone){
-    var box = document.getElementById('installBox');
-    if(box) box.style.display='none';
-    // 앱에선 주소창이 없어 직접 못 가므로, 푸터 점(·)을 5번 눌러 진입
-    var ae = document.getElementById('adminEntry');
-    if(ae) ae.style.display='inline';
-    var dot = document.getElementById('adminDot');
-    if(dot){
-      var taps = 0, lastTap = 0;
-      dot.addEventListener('click', function(){
-        var now = Date.now();
-        if(now - lastTap > 1500) taps = 0; // 1.5초 안에 연속으로
-        lastTap = now;
-        taps++;
-        if(taps >= 5){ taps = 0; location.href = atob('LzE4MDgv'); }
-      });
-    }
-    return;
-  }
-
-  // 안드로이드/크롬: 설치 프롬프트 이벤트 잡기
-  window.addEventListener('beforeinstallprompt', function(e){
-    e.preventDefault();
-    deferredPrompt = e;
-  });
-
-  function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent); }
-
-  btn.addEventListener('click', async function(){
-    // 카톡 등 인앱 브라우저면 설치 불가 안내
-    var ua = navigator.userAgent.toLowerCase();
-    if(/kakaotalk|naver|line|fban|fbav|instagram|daumapps|everytimeapp|whale\/|band/i.test(ua)){
-      help.style.display='block';
-      help.innerHTML='⚠️ <b>지금 카카오톡 등 앱 안의 브라우저예요.</b><br>여기서는 앱 설치가 안 됩니다. 화면 위의 안내대로 <b>크롬·사파리로 먼저 연 다음</b> 설치하세요.';
-      return;
-    }
-    if(deferredPrompt){
-      // 안드로이드/크롬: 네이티브 설치 창
-      deferredPrompt.prompt();
-      var choice = await deferredPrompt.userChoice;
-      deferredPrompt = null;
-      if(choice.outcome==='accepted'){
-        help.style.display='block';
-        help.innerHTML='✅ 설치되었습니다! 홈 화면에서 스윙파머 아이콘을 확인하세요.';
-      }
-    } else if(isIOS()){
-      // 아이폰: 수동 안내
-      help.style.display='block';
-      help.innerHTML='🍎 <b>아이폰에서 설치하는 법</b><br>1. 하단(또는 상단)의 <b>공유 버튼 <span style="font-family:monospace">⬆️</span></b>을 누르세요<br>2. 메뉴를 내려서 <b>"홈 화면에 추가"</b>를 선택<br>3. 오른쪽 위 <b>"추가"</b>를 누르면 끝!';
-    } else {
-      // 그 외(데스크톱 등): 안내
-      help.style.display='block';
-      help.innerHTML='💻 <b>이 브라우저에서 설치하는 법</b><br>주소창 오른쪽의 <b>설치 아이콘(⊕ 또는 모니터 모양)</b>을 누르거나, 브라우저 메뉴에서 <b>"앱 설치" / "홈 화면에 추가"</b>를 선택하세요.<br><span style="color:#888">※ 일부 브라우저(사파리 데스크톱 등)는 지원하지 않을 수 있어요. 모바일 크롬/엣지를 권장합니다.</span>';
-    }
-  });
+  window.closePanel = function(){
+    document.querySelectorAll('.tool-panel').forEach(function(p){ p.classList.remove('active'); });
+    document.querySelectorAll('.cat-card').forEach(function(c){ c.classList.remove('active'); });
+    active = null;
+  };
 })();
-</script>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
-  authDomain: "swingfarmer-board01.firebaseapp.com",
-  projectId: "swingfarmer-board01",
-  storageBucket: "swingfarmer-board01.firebasestorage.app",
-  messagingSenderId: "312575044644",
-  appId: "1:312575044644:web:81d754eb1d90f25454fcb1"
-};
-const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1";
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
-provider.setCustomParameters({ prompt: 'select_account' });
-const gid = id => document.getElementById(id);
-
-getRedirectResult(auth).catch(()=>{});
-
-gid('siteLogin').addEventListener('click', async ()=>{
-  try{ await signInWithPopup(auth, provider); }
-  catch(e){
-    const c=e&&e.code;
-    if(c==='auth/popup-blocked'||c==='auth/cancelled-popup-request'||c==='auth/popup-closed-by-user'||c==='auth/operation-not-supported-in-this-environment'){
-      try{ await signInWithRedirect(auth, provider); }catch(_){ alert('로그인 실패: '+(e.message||e)); }
-    } else { alert('로그인 실패: '+(e.message||e)); }
-  }
-});
-gid('siteLogout').addEventListener('click', ()=> signOut(auth));
-
-onAuthStateChanged(auth, user=>{
-  const isAdmin = user && user.uid===ADMIN_UID;
-  if(isAdmin){
-    gid('adminMenuBar').style.display='block';
-    gid('adminMenuLink').href=atob('LzE4MDgv');
-    gid('adminEntry').style.display='inline';
-    gid('siteLogin').style.display='none';
-    gid('siteLogout').style.display='inline-block';
-    gid('siteWho').style.display='inline-block';
-    gid('siteWho').textContent='☁️ '+(user.displayName||user.email||'관리자');
-  } else {
-    gid('adminMenuBar').style.display='none';
-    gid('siteLogin').style.display='inline-block';
-    gid('siteLogout').style.display='none';
-    gid('siteWho').style.display='none';
-    if(user){ alert('관리자 계정이 아닙니다.'); signOut(auth); }
-  }
-});
 </script>
 <script src="/common.js?v=4"></script>
 </body>
