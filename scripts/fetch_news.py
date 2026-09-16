@@ -1,10 +1,11 @@
 """
-뉴스 RSS 수집 → data/news.json
-GitHub Actions에서 2시간마다 자동 실행
+뉴스 RSS 수집 -> data/news.json
+GitHub Actions 2시간마다 자동 실행
 """
 import requests
 import json
 import os
+import time
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from email.utils import parsedate_to_datetime
@@ -12,10 +13,9 @@ from email.utils import parsedate_to_datetime
 KST = timezone(timedelta(hours=9))
 OUTPUT = "data/news.json"
 TIMEOUT = 15
+MAX_RETRY = 2
+RETRY_DELAY = 3
 
-# ── 카테고리별 RSS 소스 ──
-# 이데일리(봇차단), 전자신문(봇차단), 한경 industry(경로없음), 연합IT(경로폐지) 제거
-# 대체: 조선비즈, 서울경제, 한경IT(기존OK) 등 활용
 FEEDS = {
     "breaking": [
         {"name": "연합뉴스", "url": "https://www.yna.co.kr/rss/news.xml"},
@@ -54,20 +54,21 @@ FEEDS = {
     ],
     "tech": [
         {"name": "한국경제 IT", "url": "https://www.hankyung.com/feed/it"},
-        {"name": "연합뉴스 과학", "url": "https://www.yna.co.kr/rss/science.xml"},
         {"name": "매일경제 IT", "url": "https://www.mk.co.kr/rss/50600019/"},
+        {"name": "연합뉴스", "url": "https://www.yna.co.kr/rss/news.xml"},
+        {"name": "SBS", "url": "https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=08&plink=RSSREADER"},
     ],
     "industry": [
         {"name": "매일경제 산업", "url": "https://www.mk.co.kr/rss/30200030/"},
         {"name": "파이낸셜뉴스 산업", "url": "https://www.fnnews.com/rss/r20/fn_realnews_industry.xml"},
-        {"name": "한국경제 사회", "url": "https://www.hankyung.com/feed/society"},
+        {"name": "연합뉴스 경제", "url": "https://www.yna.co.kr/rss/economy.xml"},
     ],
 }
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept-Language": "ko-KR,ko;q=0.9",
 }
 
 
@@ -77,40 +78,46 @@ def parse_rss(xml_text, source_name):
         root = ET.fromstring(xml_text)
     except ET.ParseError:
         return items
-
     for item in root.iter("item"):
-        title_el = item.find("title")
-        link_el = item.find("link")
-        pub_el = item.find("pubDate")
-
-        title = (title_el.text or "").strip() if title_el is not None else ""
-        link = (link_el.text or "").strip() if link_el is not None else ""
-        pub_date = (pub_el.text or "").strip() if pub_el is not None else ""
-
+        t = item.find("title")
+        l = item.find("link")
+        p = item.find("pubDate")
+        title = (t.text or "").strip() if t is not None else ""
+        link = (l.text or "").strip() if l is not None else ""
+        pub = (p.text or "").strip() if p is not None else ""
         if not title or not link:
             continue
-
         iso = ""
-        if pub_date:
+        if pub:
             try:
-                iso = parsedate_to_datetime(pub_date).isoformat()
+                iso = parsedate_to_datetime(pub).isoformat()
             except:
-                iso = pub_date
-
+                iso = pub
         items.append({"title": title, "link": link, "pubDate": iso, "source": source_name})
-
     return items
 
 
 def fetch_feed(feed):
-    try:
-        r = requests.get(feed["url"], headers=HEADERS, timeout=TIMEOUT)
-        r.raise_for_status()
-        r.encoding = r.apparent_encoding or "utf-8"
-        items = parse_rss(r.text, feed["name"])
-        return items, None
-    except Exception as e:
-        return [], str(e)
+    """재시도 포함 피드 수집"""
+    last_err = ""
+    for attempt in range(MAX_RETRY):
+        try:
+            r = requests.get(feed["url"], headers=HEADERS, timeout=TIMEOUT)
+            r.raise_for_status()
+            r.encoding = r.apparent_encoding or "utf-8"
+            items = parse_rss(r.text, feed["name"])
+            if items:
+                return items, None
+            last_err = "파싱 결과 0건"
+        except requests.exceptions.HTTPError as e:
+            last_err = f"HTTP {r.status_code}"
+            if r.status_code == 403:
+                break  # 403은 재시도 무의미
+        except Exception as e:
+            last_err = str(e)[:80]
+        if attempt < MAX_RETRY - 1:
+            time.sleep(RETRY_DELAY)
+    return [], last_err
 
 
 def dedupe(items, max_items=80):
@@ -141,13 +148,10 @@ def main():
             if err:
                 errors.append(f"{feed['name']}: {err}")
                 total_fail += 1
-            elif len(items) > 0:
+            else:
                 all_items.extend(items)
                 successes.append(feed["name"])
                 total_ok += 1
-            else:
-                errors.append(f"{feed['name']}: 기사 0건")
-                total_fail += 1
 
         unique = dedupe(all_items)
         result["categories"][cat] = {
@@ -156,16 +160,14 @@ def main():
             "sources_ok": successes,
             "sources_fail": [e.split(":")[0] for e in errors],
         }
-
         status = f"  {cat}: {len(unique)}개 (성공 {len(successes)}/{len(feeds)})"
         if errors:
-            status += f" — 실패: {', '.join(e.split(':')[0] for e in errors)}"
+            status += f" — 실패: {', '.join(errors)}"
         print(status)
 
     os.makedirs("data", exist_ok=True)
     with open(OUTPUT, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=1)
-
     print(f"\n✅ 완료: {now.strftime('%Y-%m-%d %H:%M')} — 성공 {total_ok}, 실패 {total_fail}")
 
 
