@@ -133,13 +133,13 @@ footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
 const REFRESH_INTERVAL = 60 * 60 * 1000; // 1시간
 const MAX_ITEMS_PER_CATEGORY = 100;
 
-// CORS 우회 프록시 (여러 개 폴백)
+// CORS 우회 프록시 (여러 개 폴백 — 무료 프록시는 불안정하므로 여러 개 유지)
 const PROXIES = [
   'https://api.allorigins.win/raw?url=',
   'https://corsproxy.io/?url=',
-  'https://api.codetabs.com/v1/proxy?quest=',
-  'https://thingproxy.freeboard.io/fetch/',
-  'https://proxy.cors.sh/'
+  'https://api.cors.lol/?url=',
+  'https://corsproxy.org/?url=',
+  'https://api.codetabs.com/v1/proxy?quest='
 ];
 
 // 카테고리별 RSS 소스
@@ -150,7 +150,7 @@ const FEEDS = {
     { name: '매일경제', url: 'https://www.mk.co.kr/rss/30000001/' },
     { name: '파이낸셜뉴스', url: 'https://www.fnnews.com/rss/r20/fn_realnews_all.xml' },
     { name: 'SBS', url: 'https://news.sbs.co.kr/news/headlineRssFeed.do?plink=RSSREADER' },
-    { name: '이데일리', url: 'http://rss.edaily.co.kr/edaily_news.xml' }
+    { name: '이데일리', url: 'https://rss.edaily.co.kr/edaily_news.xml' }
   ],
   economy: [
     { name: '한국경제', url: 'https://www.hankyung.com/feed/economy' },
@@ -158,20 +158,20 @@ const FEEDS = {
     { name: '파이낸셜뉴스', url: 'https://www.fnnews.com/rss/r20/fn_realnews_economy.xml' },
     { name: '연합뉴스 경제', url: 'https://www.yna.co.kr/rss/economy.xml' },
     { name: 'SBS 경제', url: 'https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=02&plink=RSSREADER' },
-    { name: '이데일리 경제', url: 'http://rss.edaily.co.kr/economy_news.xml' }
+    { name: '이데일리 경제', url: 'https://rss.edaily.co.kr/economy_news.xml' }
   ],
   realestate: [
     { name: '한국경제', url: 'https://www.hankyung.com/feed/realestate' },
     { name: '매일경제', url: 'https://www.mk.co.kr/rss/50300009/' },
     { name: '연합뉴스 경제', url: 'https://www.yna.co.kr/rss/economy.xml' },
-    { name: '매일경제 부동산', url: 'http://news.mk.co.kr/rss/land.xml' }
+    { name: '매일경제 부동산', url: 'https://news.mk.co.kr/rss/land.xml' }
   ],
   stock: [
     { name: '한국경제 증권', url: 'https://www.hankyung.com/feed/finance' },
     { name: '매일경제 증권', url: 'https://www.mk.co.kr/rss/50200011/' },
     { name: '파이낸셜뉴스', url: 'https://www.fnnews.com/rss/r20/fn_realnews_stock.xml' },
     { name: '연합뉴스 경제', url: 'https://www.yna.co.kr/rss/economy.xml' },
-    { name: '이데일리 증권', url: 'http://rss.edaily.co.kr/stock_news.xml' }
+    { name: '이데일리 증권', url: 'https://rss.edaily.co.kr/stock_news.xml' }
   ],
   international: [
     { name: '연합뉴스 국제', url: 'https://www.yna.co.kr/rss/international.xml' },
@@ -264,8 +264,7 @@ async function fetchWithProxy(url) {
       // allorigins, corsproxy(?url=), codetabs : 인코딩 필요
       // thingproxy, cors.sh : raw URL 그대로
       const p = PROXIES[i];
-      const needsEncode = p.includes('allorigins') || p.includes('corsproxy') || p.includes('codetabs');
-      const proxyUrl = needsEncode ? (p + encodeURIComponent(url)) : (p + url);
+      const proxyUrl = p + encodeURIComponent(url);
       const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) });
       if (res.ok) {
         const text = await res.text();
