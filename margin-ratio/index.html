@@ -79,9 +79,6 @@
   .admin-btn { display: none; padding: 8px 14px; border: 1px solid #ddd; background: #fff; color: #444; border-radius: 6px; font-size: 13px; cursor: pointer; margin-bottom: 14px; }
   .uid-info { display: none; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #92400e; margin-bottom: 14px; line-height: 1.7; }
   .footer-note { font-size: 11px; color: #888; text-align: center; margin-top: 20px; line-height: 1.6; }
-  .storage-indicator { background: #f0f4f8; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 14px; font-size: 11.5px; color: #555; margin-top: 14px; line-height: 1.7; }
-  .storage-indicator b { color: #1F4E78; }
-  .storage-indicator code { background: #e5e7eb; padding: 1px 5px; border-radius: 3px; font-size: 10.5px; word-break: break-all; }
 </style>
 </head>
 <body>
@@ -95,6 +92,10 @@
   <div id="uidInfo" class="uid-info"></div>
 
   <h1>⚖️ 신용 담보비율 계산기</h1>
+  <div id="loadedSlot" style="display:none;background:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:13px;color:#1e40af;font-weight:600;display:none">
+    📂 현재: <span id="loadedSlotName"></span>
+    <button onclick="clearLoadedSlot()" style="background:none;border:none;color:#93c5fd;cursor:pointer;font-size:14px;margin-left:6px" title="표시 해제">✕</button>
+  </div>
   <p class="sub">종목별 <b>주식수·매수가·현재가</b> 입력 → 매수금액·평가금액 자동 계산. 계좌 담보비율·마진콜 여유 자동 산출.</p>
 
   <!-- 계좌 공통 -->
@@ -164,10 +165,6 @@
     ※ 이자·수수료·연체료·평가일 종가 변동 등 미반영. 참고용, 실제 반대매매 판정은 증권사 HTS 확인 필수.<br>
     ※ 통상 담보유지비율: 신용융자 140%, 미수 130% (증권사 별 상이).
   </p>
-  <div class="storage-indicator" id="storageInfo">
-    💾 <b>저장 위치:</b> 브라우저 로컬 스토리지 <code>localStorage → sf_mr_state_v2</code><br>
-    ☁️ <b>클라우드:</b> <span id="cloudPath">로그인 안 됨</span>
-  </div>
 </div>
 
 <!-- 클라우드 모달 -->
@@ -488,7 +485,8 @@ $('btnAddStock').addEventListener('click', () => {
 
 $('btnReset').addEventListener('click', () => {
   if (!confirm('모든 입력을 초기화할까요?\n\n(저장된 브라우저 데이터도 삭제됩니다. 클라우드 저장은 유지됨)')) return;
-  try { localStorage.removeItem('sf_mr_state_v2'); localStorage.removeItem('sf_mr_state_v1'); } catch(e){}
+  try { localStorage.removeItem('sf_mr_state_v2'); localStorage.removeItem('sf_mr_state_v1'); localStorage.removeItem('sf_mr_loaded_slot'); } catch(e){}
+  var lsEl = document.getElementById('loadedSlot'); if (lsEl) lsEl.style.display = 'none';
   $('inCash').value = '';
   $('inThreshold').value = '140';
   stocks = [{ name: '', ordQty: 0, ordPrice: 0, ordCurr: 0, ordBuy: 0, ordVal: 0, crdQty: 0, crdPrice: 0, crdCurr: 0, crdBuy: 0, crdVal: 0 }];
@@ -562,11 +560,15 @@ gid('btnAdminLogin').addEventListener('click', async () => {
 });
 onAuthStateChanged(auth, user => {
   currentUser = user; const isAdmin = user && user.uid === ADMIN_UID;
-  if (isAdmin) { gid('cloudArea').style.display = 'inline-flex'; gid('btnAdminLogin').style.display = 'none'; gid('cloudWho').textContent = '☁️ ' + (user.displayName || user.email || '관리자'); gid('uidInfo').style.display = 'none'; if(gid('cloudPath')) gid('cloudPath').innerHTML = '<code>Firestore → calc_data/' + ADMIN_UID + ' → margin-ratio.slots[]</code>'; }
+  if (isAdmin) { gid('cloudArea').style.display = 'inline-flex'; gid('btnAdminLogin').style.display = 'none'; gid('cloudWho').textContent = '☁️ ' + (user.displayName || user.email || '관리자'); gid('uidInfo').style.display = 'none'; }
   else if (user) { gid('cloudArea').style.display = 'none'; gid('btnAdminLogin').style.display = 'none'; gid('uidInfo').style.display = 'block'; gid('uidInfo').innerHTML = '로그인됨: <b>' + (user.email || '') + '</b><br>UID: <code style="font-size:11px;word-break:break-all">' + user.uid + '</code><br><button onclick="window._mSignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer;margin-top:4px">로그아웃</button>'; }
   else { gid('cloudArea').style.display = 'none'; gid('uidInfo').style.display = 'none'; }
 });
 window._mSignout = () => signOut(auth);
+window._showLoadedSlot = function(name) { const el = document.getElementById('loadedSlot'); const nm = document.getElementById('loadedSlotName'); if (el && nm) { nm.textContent = name; el.style.display = 'block'; try { localStorage.setItem('sf_mr_loaded_slot', name); } catch(e){} } };
+window.clearLoadedSlot = function() { const el = document.getElementById('loadedSlot'); if (el) el.style.display = 'none'; try { localStorage.removeItem('sf_mr_loaded_slot'); } catch(e){} };
+// 이전 로드 상태 복원
+try { const prev = localStorage.getItem('sf_mr_loaded_slot'); if (prev) window._showLoadedSlot(prev); } catch(e){}
 const docRef = () => doc(db, 'calc_data', ADMIN_UID);
 async function loadSlots() { try { const s = await getDoc(docRef()); if (s.exists() && s.data()[CALC_KEY] && Array.isArray(s.data()[CALC_KEY].slots)) return s.data()[CALC_KEY].slots; } catch(e){} return []; }
 async function saveSlots(slots) { const ref = docRef(); let ex = {}; try { const s = await getDoc(ref); if (s.exists()) ex = s.data(); } catch(e){} ex[CALC_KEY] = { slots, updatedAt: new Date().toISOString() }; await setDoc(ref, ex, {merge: true}); }
@@ -575,11 +577,11 @@ function renderSlots() { const box = gid('slotList'); if (!_slots.length) { box.
   box.innerHTML = _slots.map((s, i) => { const t = s.savedAt ? new Date(s.savedAt).toLocaleString('ko-KR') : ''; return '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (s.name || '(이름없음)') + '</div><div style="font-size:11px;color:#999">' + t + '</div></div><button onclick="window._mRename(' + i + ')" style="background:#e5e7eb;color:#444;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">✏️</button><button onclick="window._mOverwrite('+i+')" title="덮어쓰기" style="background:#22c55e;color:white;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">💾</button><button onclick="window._mLoad(' + i + ')" style="background:#0284c7;color:white;border:none;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button><button onclick="window._mDel(' + i + ')" style="background:#fee2e2;color:#dc2626;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">🗑️</button></div>'; }).join(''); }
 async function refresh() { gid('slotList').innerHTML = '<div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>'; _slots = await loadSlots(); renderSlots(); }
 gid('btnCloudOpen').addEventListener('click', async () => { if (!currentUser || currentUser.uid !== ADMIN_UID) { alert('관리자 로그인이 필요합니다.'); return; } gid('slotName').value = ''; gid('slotModal').style.display = 'flex'; await refresh(); });
-gid('slotSaveBtn').addEventListener('click', async () => { const name = gid('slotName').value.trim(); if (!name) { alert('이름을 입력하세요.'); return; } const idx = _slots.findIndex(s => s.name === name); if (idx >= 0 && !confirm('"' + name + '" 덮어쓸까요?')) return; gid('slotSaveBtn').disabled = true; gid('slotSaveBtn').textContent = '저장 중...'; try { const entry = { name, data: window.mGetState(), savedAt: new Date().toISOString() }; if (idx >= 0) _slots[idx] = entry; else _slots.push(entry); await saveSlots(_slots); renderSlots(); alert('✅ 저장 완료.'); } catch(e) { alert('저장 실패: ' + e.message); } gid('slotSaveBtn').disabled = false; gid('slotSaveBtn').textContent = '저장'; });
-window._mLoad = function(i) { const s = _slots[i]; if (!s) return; if (!confirm('"' + s.name + '" 불러올까요? 현재 값 교체됩니다.')) return; window.mSetState(s.data); gid('slotModal').style.display = 'none'; };
+gid('slotSaveBtn').addEventListener('click', async () => { const name = gid('slotName').value.trim(); if (!name) { alert('이름을 입력하세요.'); return; } const idx = _slots.findIndex(s => s.name === name); if (idx >= 0 && !confirm('"' + name + '" 덮어쓸까요?')) return; gid('slotSaveBtn').disabled = true; gid('slotSaveBtn').textContent = '저장 중...'; try { const entry = { name, data: window.mGetState(), savedAt: new Date().toISOString() }; if (idx >= 0) _slots[idx] = entry; else _slots.push(entry); await saveSlots(_slots); renderSlots(); alert('✅ 저장 완료.'); window._showLoadedSlot(name); } catch(e) { alert('저장 실패: ' + e.message); } gid('slotSaveBtn').disabled = false; gid('slotSaveBtn').textContent = '저장'; });
+window._mLoad = function(i) { const s = _slots[i]; if (!s) return; if (!confirm('"' + s.name + '" 불러올까요? 현재 값 교체됩니다.')) return; window.mSetState(s.data); gid('slotModal').style.display = 'none'; window._showLoadedSlot(s.name); };
 window._mDel = async function(i) { if (!confirm('삭제할까요?')) return; try { _slots.splice(i, 1); await saveSlots(_slots); renderSlots(); } catch(e) { alert('실패: ' + e.message); } };
 
-window._mOverwrite=async function(i){ const s=_slots[i]; if(!s)return; if(!confirm('"'+s.name+'" 덮어쓸까요? 현재 값으로 저장됩니다.'))return; try{ _slots[i]={name:s.name,data:window.mGetState(),savedAt:new Date().toISOString()}; await saveSlots(_slots); renderSlots(); alert('✅ 덮어쓰기 완료.'); }catch(e){ alert('실패: '+e.message); } };
+window._mOverwrite=async function(i){ const s=_slots[i]; if(!s)return; if(!confirm('"'+s.name+'" 덮어쓸까요? 현재 값으로 저장됩니다.'))return; try{ _slots[i]={name:s.name,data:window.mGetState(),savedAt:new Date().toISOString()}; await saveSlots(_slots); renderSlots(); alert('✅ 덮어쓰기 완료.'); window._showLoadedSlot(s.name); }catch(e){ alert('실패: '+e.message); } };
 window._mRename = async function(i) { const nn = prompt('이름 수정', _slots[i].name || ''); if (nn === null) return; const t = nn.trim(); if (!t) return; try { _slots[i].name = t; await saveSlots(_slots); renderSlots(); } catch(e) { alert('실패: ' + e.message); } };
 gid('btnCloudLogout').addEventListener('click', async () => { if (confirm('로그아웃 할까요?')) { try { await signOut(auth); alert('로그아웃 됐어요.'); } catch(e){} } });
 </script>
