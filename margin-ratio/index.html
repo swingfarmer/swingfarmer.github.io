@@ -79,6 +79,9 @@
   .admin-btn { display: none; padding: 8px 14px; border: 1px solid #ddd; background: #fff; color: #444; border-radius: 6px; font-size: 13px; cursor: pointer; margin-bottom: 14px; }
   .uid-info { display: none; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #92400e; margin-bottom: 14px; line-height: 1.7; }
   .footer-note { font-size: 11px; color: #888; text-align: center; margin-top: 20px; line-height: 1.6; }
+  .storage-indicator { background: #f0f4f8; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 14px; font-size: 11.5px; color: #555; margin-top: 14px; line-height: 1.7; }
+  .storage-indicator b { color: #1F4E78; }
+  .storage-indicator code { background: #e5e7eb; padding: 1px 5px; border-radius: 3px; font-size: 10.5px; word-break: break-all; }
 </style>
 </head>
 <body>
@@ -161,6 +164,10 @@
     ※ 이자·수수료·연체료·평가일 종가 변동 등 미반영. 참고용, 실제 반대매매 판정은 증권사 HTS 확인 필수.<br>
     ※ 통상 담보유지비율: 신용융자 140%, 미수 130% (증권사 별 상이).
   </p>
+  <div class="storage-indicator" id="storageInfo">
+    💾 <b>저장 위치:</b> 브라우저 로컬 스토리지 <code>localStorage → sf_mr_state_v2</code><br>
+    ☁️ <b>클라우드:</b> <span id="cloudPath">로그인 안 됨</span>
+  </div>
 </div>
 
 <!-- 클라우드 모달 -->
@@ -555,7 +562,7 @@ gid('btnAdminLogin').addEventListener('click', async () => {
 });
 onAuthStateChanged(auth, user => {
   currentUser = user; const isAdmin = user && user.uid === ADMIN_UID;
-  if (isAdmin) { gid('cloudArea').style.display = 'inline-flex'; gid('btnAdminLogin').style.display = 'none'; gid('cloudWho').textContent = '☁️ ' + (user.displayName || user.email || '관리자'); gid('uidInfo').style.display = 'none'; }
+  if (isAdmin) { gid('cloudArea').style.display = 'inline-flex'; gid('btnAdminLogin').style.display = 'none'; gid('cloudWho').textContent = '☁️ ' + (user.displayName || user.email || '관리자'); gid('uidInfo').style.display = 'none'; if(gid('cloudPath')) gid('cloudPath').innerHTML = '<code>Firestore → calc_data/' + ADMIN_UID + ' → margin-ratio.slots[]</code>'; }
   else if (user) { gid('cloudArea').style.display = 'none'; gid('btnAdminLogin').style.display = 'none'; gid('uidInfo').style.display = 'block'; gid('uidInfo').innerHTML = '로그인됨: <b>' + (user.email || '') + '</b><br>UID: <code style="font-size:11px;word-break:break-all">' + user.uid + '</code><br><button onclick="window._mSignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer;margin-top:4px">로그아웃</button>'; }
   else { gid('cloudArea').style.display = 'none'; gid('uidInfo').style.display = 'none'; }
 });
