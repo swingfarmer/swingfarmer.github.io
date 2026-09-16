@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>환율/금시세 - SwingFarmer</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Pretendard','맑은 고딕',sans-serif; background:#f5f5f5; padding:20px; }
+  .card { background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.1); max-width:480px; margin:20px auto; padding:24px; }
+  h1 { font-size:20px; color:#1F4E78; margin-bottom:4px; }
+  .updated { font-size:12px; color:#888; margin-bottom:20px; }
+  .rate-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .rate-item { background:#f8f9fa; border-radius:8px; padding:16px; text-align:center; }
+  .rate-item.gold { background:#FFF8E1; }
+  .rate-label { font-size:13px; color:#666; margin-bottom:4px; }
+  .rate-value { font-size:24px; font-weight:700; color:#1F4E78; }
+  .rate-unit { font-size:11px; color:#999; }
+  .copy-btn { display:block; margin:16px auto 0; padding:10px 24px; background:#1F4E78; color:#fff; border:none; border-radius:8px; font-size:14px; cursor:pointer; }
+  .copy-btn:hover { background:#163a5c; }
+  .note { font-size:11px; color:#aaa; text-align:center; margin-top:12px; }
+  .error { color:#c00; font-size:13px; text-align:center; padding:20px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>📊 환율 / 금시세</h1>
+  <div class="updated" id="updated">로딩 중...</div>
+  <div class="rate-grid" id="rates">
+    <div class="rate-item"><div class="rate-label">USD/KRW</div><div class="rate-value" id="usd">-</div><div class="rate-unit">원/달러</div></div>
+    <div class="rate-item"><div class="rate-label">JPY/KRW</div><div class="rate-value" id="jpy">-</div><div class="rate-unit">원/100엔</div></div>
+    <div class="rate-item"><div class="rate-label">CNY/KRW</div><div class="rate-value" id="cny">-</div><div class="rate-unit">원/위안</div></div>
+    <div class="rate-item gold"><div class="rate-label">금 시세</div><div class="rate-value" id="gold">-</div><div class="rate-unit">원/g</div></div>
+  </div>
+  <button class="copy-btn" onclick="copyAll()">📋 전체 복사</button>
+  <div class="note">매일 오전 9시(평일) 자동 갱신 · GitHub Actions</div>
+</div>
+
+<script>
+const URL = 'data/rates.json';
+
+async function load() {
+  try {
+    const r = await fetch(URL + '?t=' + Date.now());
+    const d = await r.json();
+    document.getElementById('updated').textContent = '업데이트: ' + d.updated;
+    document.getElementById('usd').textContent = d.rates.USD_KRW.toLocaleString();
+    document.getElementById('jpy').textContent = d.rates.JPY100_KRW.toLocaleString();
+    document.getElementById('cny').textContent = d.rates.CNY_KRW.toLocaleString();
+    document.getElementById('gold').textContent = d.rates.GOLD_KRW_G ? d.rates.GOLD_KRW_G.toLocaleString() : '-';
+  } catch(e) {
+    document.getElementById('updated').innerHTML = '<span class="error">데이터 로드 실패. rates.json 확인</span>';
+  }
+}
+
+function copyAll() {
+  const u = document.getElementById('usd').textContent;
+  const j = document.getElementById('jpy').textContent;
+  const c = document.getElementById('cny').textContent;
+  const g = document.getElementById('gold').textContent;
+  const text = `달러: ${u}\n엔(100): ${j}\n위안: ${c}\n금(g): ${g}`;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = '✅ 복사됨!';
+    setTimeout(() => btn.textContent = '📋 전체 복사', 1500);
+  });
+}
+
+load();
+</script>
+</body>
+</html>
