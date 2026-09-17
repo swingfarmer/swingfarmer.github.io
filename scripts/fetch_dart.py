@@ -202,32 +202,15 @@ def load_period_data(filepath):
     return {}
 
 
-def add_comparisons(results, prev_q_data, prev_y_data):
-    """전분기·전년 대비 추가."""
+def add_comparisons(results, prev_y_data):
+    """전년 동기 대비(YoY) 추가. QoQ는 누적 분기라 의미 없어서 제거."""
     for s in results:
         code = s['code']
-        pq = prev_q_data.get(code, {})
         py = prev_y_data.get(code, {})
-
-        # 전분기 대비 (QoQ)
-        s['revenue_qoq'] = safe_yoy(s['revenue'], pq.get('revenue'))
-        s['op_qoq'] = safe_yoy(s['op'], pq.get('op'))
-
-        # 전년 동기 대비 (YoY)
         s['revenue_yoy'] = safe_yoy(s['revenue'], py.get('revenue'))
         s['op_yoy'] = safe_yoy(s['op'], py.get('op'))
     return results
 
-
-def get_prev_period_key(year, period):
-    """전분기 파일명."""
-    seq = ['annual','q1','q2','q3']
-    idx = seq.index(period)
-    if idx == 0:  # annual → 전년 q3
-        return f'{int(year)-1}-q3'
-    else:
-        prev = seq[idx-1]
-        return f'{year}-{prev}'
 
 def get_prev_year_key(year, period):
     """전년 동기 파일명."""
@@ -308,21 +291,15 @@ def main():
         if r: results.append(r)
         else: errors.append(stock['name'])
 
-    # 비교 데이터 로드
-    prev_q_key = get_prev_period_key(year, period)
+    # YoY 비교 데이터 로드
     prev_y_key = get_prev_year_key(year, period)
-    prev_q_file = os.path.join(DATA_DIR, f'{prev_q_key}.json')
     prev_y_file = os.path.join(DATA_DIR, f'{prev_y_key}.json')
-
-    prev_q_data = load_period_data(prev_q_file)
     prev_y_data = load_period_data(prev_y_file)
 
-    if prev_q_data:
-        print(f'📈 전분기 비교: {prev_q_key} ({len(prev_q_data)}종목)')
     if prev_y_data:
         print(f'📈 전년동기 비교: {prev_y_key} ({len(prev_y_data)}종목)')
 
-    results = add_comparisons(results, prev_q_data, prev_y_data)
+    results = add_comparisons(results, prev_y_data)
 
     # 저장
     output = {
@@ -333,7 +310,6 @@ def main():
         'report_name': reprt_name,
         'source': 'OpenDART',
         'stock_count': len(results),
-        'compare_qoq': prev_q_key if prev_q_data else None,
         'compare_yoy': prev_y_key if prev_y_data else None,
         'stocks': results
     }
