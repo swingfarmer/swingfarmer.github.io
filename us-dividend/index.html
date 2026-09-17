@@ -1,1 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="robots" content="noindex, nofollow">
+<title>미국 배당·ETF 대시보드 | 스윙파머</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --card: #1a1d27;
+  --card-hover: #222532;
+  --border: #2a2d3a;
+  --text: #e4e4e7;
+  --text-dim: #71717a;
+  --accent: #3b82f6;
+  --green: #22c55e;
+  --red: #ef4444;
+  --gold: #eab308;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 20px 16px 80px; }
 
+/* 헤더 */
+.header { padding: 32px 0 24px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+.header h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+.header h1 span { color: var(--accent); }
+.header-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; flex-wrap: wrap; gap: 8px; }
+.updated { font-size: 13px; color: var(--text-dim); }
+.back-link { color: var(--accent); text-decoration: none; font-size: 13px; font-weight: 600; }
+
+/* 카테고리 탭 */
+.cat-tabs { display: flex; gap: 6px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px; }
+.cat-tab { padding: 8px 18px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--text-dim); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all .15s; }
+.cat-tab:hover { border-color: var(--accent); color: var(--text); }
+.cat-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ETF 카드 그리드 */
+.etf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-bottom: 32px; }
+.etf-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; cursor: pointer; transition: all .15s; }
+.etf-card:hover { background: var(--card-hover); border-color: var(--accent); }
+.etf-card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.etf-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.etf-ticker { font-size: 20px; font-weight: 800; letter-spacing: -0.3px; }
+.etf-name { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+.etf-price { text-align: right; }
+.etf-price .price { font-size: 20px; font-weight: 700; }
+.etf-price .change { font-size: 12px; font-weight: 600; }
+.etf-price .change.up { color: var(--green); }
+.etf-price .change.down { color: var(--red); }
+.etf-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+.metric { text-align: center; }
+.metric-label { font-size: 10px; color: var(--text-dim); font-weight: 600; }
+.metric-value { font-size: 14px; font-weight: 700; margin-top: 2px; }
+.metric-value.yield { color: var(--gold); }
+.etf-desc { font-size: 11px; color: var(--text-dim); margin-top: 10px; line-height: 1.4; }
+
+/* 차트 섹션 */
+.chart-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+.chart-section h2 { font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.chart-tabs { display: flex; gap: 4px; margin-bottom: 14px; }
+.chart-tab { padding: 5px 12px; border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--text-dim); font-size: 12px; cursor: pointer; font-weight: 600; }
+.chart-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.chart-wrap { position: relative; height: 340px; }
+canvas { width: 100% !important; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 12px; color: var(--text-dim); }
+.legend-item { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+/* 비교 테이블 */
+.compare-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; overflow-x: auto; }
+.compare-section h2 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+.compare-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 700px; }
+.compare-table th { text-align: left; padding: 10px 8px; border-bottom: 2px solid var(--border); color: var(--text-dim); font-weight: 600; font-size: 11px; white-space: nowrap; }
+.compare-table td { padding: 10px 8px; border-bottom: 1px solid var(--border); }
+.compare-table tr:hover td { background: rgba(59,130,246,.05); }
+.compare-table .ticker-cell { font-weight: 800; font-size: 14px; }
+.compare-table .up { color: var(--green); font-weight: 600; }
+.compare-table .down { color: var(--red); font-weight: 600; }
+
+.loading { text-align: center; padding: 60px 20px; color: var(--text-dim); font-size: 14px; }
+.error-msg { background: #2d1b1b; border: 1px solid #7f1d1d; color: #fca5a5; padding: 16px; border-radius: 8px; font-size: 13px; line-height: 1.7; }
+.note { font-size: 11px; color: var(--text-dim); text-align: center; margin-top: 30px; line-height: 1.8; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>미국 배당·<span>ETF</span> 대시보드</h1>
+    <div class="header-meta">
+      <div class="updated" id="updated">로딩 중...</div>
+      <a href="/" class="back-link">← 메인으로</a>
+    </div>
+  </div>
+
+  <div id="content">
+    <div class="loading" id="loading">데이터 로딩 중...</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script>
+var DATA_URL = '/data/us_etf.json';
+var etfData = [];
+var chart = null;
+var selectedETFs = ['SCHD', 'JEPI', 'VOO'];
+var currentCat = 'all';
+var chartPeriod = '1Y';
+
+var COLORS = ['#3b82f6','#22c55e','#ef4444','#eab308','#a855f7','#ec4899','#06b6d4','#f97316','#8b5cf6','#14b8a6','#f43f5e','#84cc16'];
+var CAT_LABELS = { all:'전체', dividend:'배당 ETF', coveredcall:'커버드콜', benchmark:'벤치마크', bond:'채권 ETF' };
+
+async function loadData() {
+  try {
+    var r = await fetch(DATA_URL + '?t=' + Date.now());
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    var d = await r.json();
+    etfData = d.etfs.filter(function(e){ return !e.error; });
+    document.getElementById('updated').textContent = '업데이트: ' + d.updated;
+    render();
+  } catch(e) {
+    document.getElementById('content').innerHTML =
+      '<div class="error-msg">⚠ us_etf.json을 불러올 수 없습니다.<br>GitHub Actions에서 <b>미국 ETF 데이터 수집</b> 워크플로를 수동 실행하면 data/us_etf.json이 생성됩니다.</div>';
+  }
+}
+
+function render() {
+  var filtered = currentCat === 'all' ? etfData : etfData.filter(function(e){ return e.cat === currentCat; });
+  var html = '';
+
+  // 카테고리 탭
+  html += '<div class="cat-tabs">';
+  Object.keys(CAT_LABELS).forEach(function(cat) {
+    html += '<button class="cat-tab' + (cat === currentCat ? ' active' : '') + '" onclick="setCat(\'' + cat + '\')">' + CAT_LABELS[cat] + '</button>';
+  });
+  html += '</div>';
+
+  // ETF 카드 그리드
+  html += '<div class="etf-grid">';
+  filtered.forEach(function(e) {
+    var sel = selectedETFs.indexOf(e.ticker) >= 0;
+    var chgClass = e.changePct >= 0 ? 'up' : 'down';
+    var chgSign = e.changePct >= 0 ? '+' : '';
+    html += '<div class="etf-card' + (sel ? ' selected' : '') + '" onclick="toggleETF(\'' + e.ticker + '\')">';
+    html += '<div class="etf-top"><div><div class="etf-ticker">' + e.ticker + '</div><div class="etf-name">' + e.name + '</div></div>';
+    html += '<div class="etf-price"><div class="price">$' + e.price.toLocaleString() + '</div><div class="change ' + chgClass + '">' + chgSign + e.changePct + '%</div></div></div>';
+    html += '<div class="etf-metrics">';
+    html += '<div class="metric"><div class="metric-label">배당률</div><div class="metric-value yield">' + (e.divYield != null ? e.divYield + '%' : '-') + '</div></div>';
+    html += '<div class="metric"><div class="metric-label">1Y 수익</div><div class="metric-value">' + retStr(e, '1Y') + '</div></div>';
+    html += '<div class="metric"><div class="metric-label">비용비율</div><div class="metric-value">' + (e.expense != null ? e.expense + '%' : '-') + '</div></div>';
+    html += '</div>';
+    html += '<div class="etf-desc">' + e.desc + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // 차트 섹션
+  html += '<div class="chart-section"><h2>📈 가격 비교 차트 <span style="font-size:12px;color:var(--text-dim);font-weight:400">(카드 클릭으로 종목 선택/해제)</span></h2>';
+  html += '<div class="chart-tabs">';
+  ['1Y','3Y','5Y'].forEach(function(p) {
+    html += '<button class="chart-tab' + (p === chartPeriod ? ' active' : '') + '" onclick="setPeriod(\'' + p + '\')">' + p + '</button>';
+  });
+  html += '</div>';
+  html += '<div class="chart-wrap"><canvas id="priceChart"></canvas></div></div>';
+
+  // 비교 테이블
+  html += '<div class="compare-section"><h2>📊 전체 비교</h2>';
+  html += '<table class="compare-table"><thead><tr><th>티커</th><th>이름</th><th>가격</th><th>배당률</th><th>비용</th><th>1Y</th><th>3Y</th><th>5Y</th><th>52주 범위</th></tr></thead><tbody>';
+  etfData.forEach(function(e) {
+    html += '<tr><td class="ticker-cell">' + e.ticker + '</td><td>' + e.name + '</td>';
+    html += '<td>$' + e.price.toLocaleString() + '</td>';
+    html += '<td style="color:var(--gold)">' + (e.divYield != null ? e.divYield + '%' : '-') + '</td>';
+    html += '<td>' + (e.expense != null ? e.expense + '%' : '-') + '</td>';
+    html += '<td>' + retStr(e, '1Y') + '</td>';
+    html += '<td>' + retStr(e, '3Y') + '</td>';
+    html += '<td>' + retStr(e, '5Y') + '</td>';
+    html += '<td style="font-size:11px;color:var(--text-dim)">$' + e.low52w + ' – $' + e.high52w + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+
+  html += '<div class="note">yfinance 기반 자동 수집 · 투자 참고용, 투자 권유 아님<br>향후 확장: KIS API, 네이버 금융, DART 연동 예정</div>';
+
+  document.getElementById('content').innerHTML = html;
+  renderChart();
+}
+
+function retStr(e, period) {
+  if (!e.returns || e.returns[period] == null) return '-';
+  var v = e.returns[period];
+  var cls = v >= 0 ? 'up' : 'down';
+  var sign = v >= 0 ? '+' : '';
+  return '<span class="' + cls + '">' + sign + v + '%</span>';
+}
+
+function setCat(cat) { currentCat = cat; render(); }
+function setPeriod(p) { chartPeriod = p; render(); }
+
+function toggleETF(ticker) {
+  var idx = selectedETFs.indexOf(ticker);
+  if (idx >= 0) { if (selectedETFs.length > 1) selectedETFs.splice(idx, 1); }
+  else { if (selectedETFs.length < 6) selectedETFs.push(ticker); }
+  render();
+}
+
+function renderChart() {
+  var canvas = document.getElementById('priceChart');
+  if (!canvas) return;
+  if (chart) chart.destroy();
+
+  var weeks = chartPeriod === '1Y' ? 52 : chartPeriod === '3Y' ? 156 : 260;
+  var datasets = [];
+
+  selectedETFs.forEach(function(ticker, i) {
+    var etf = etfData.find(function(e){ return e.ticker === ticker; });
+    if (!etf || !etf.history || etf.history.length < 2) return;
+
+    var slice = etf.history.slice(-weeks);
+    // 정규화 (시작점 = 100)
+    var base = slice[0].c;
+    var normalized = slice.map(function(h) { return { x: h.d, y: Math.round((h.c / base) * 10000) / 100 }; });
+
+    datasets.push({
+      label: ticker,
+      data: normalized,
+      borderColor: COLORS[i % COLORS.length],
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      pointRadius: 0,
+      tension: 0.3,
+    });
+  });
+
+  if (datasets.length === 0) return;
+
+  chart = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: { datasets: datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: true, position: 'top', labels: { color: '#9ca3af', font: { size: 12, weight: 600 }, usePointStyle: true, pointStyle: 'circle' } },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) { return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1) + '%'; }
+          }
+        }
+      },
+      scales: {
+        x: { type: 'category', ticks: { color: '#6b7280', font: { size: 10 }, maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,.05)' } },
+        y: {
+          ticks: {
+            color: '#6b7280', font: { size: 10 },
+            callback: function(v) { return v + '%'; }
+          },
+          grid: { color: 'rgba(255,255,255,.05)' }
+        }
+      }
+    }
+  });
+}
+
+loadData();
+</script>
+<script src="/common.js?v=4"></script>
+</body>
+</html>
