@@ -81,6 +81,11 @@ th.group-hdr{background:#161922;font-size:10px;color:var(--accent);border-bottom
 }
 .note{font-size:11px;color:var(--text-dim);text-align:center;margin-top:30px;line-height:1.8}
 .loading{text-align:center;padding:60px;color:var(--text-dim)}
+.saved-bar{display:flex;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px}
+.saved-chip{padding:5px 12px;border:1px solid var(--border);border-radius:16px;background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .12s;font-family:inherit;display:inline-flex;align-items:center;gap:4px}
+.saved-chip:hover{border-color:var(--accent);background:rgba(59,130,246,.1)}
+.saved-chip .del{color:var(--text-dim);font-size:10px;margin-left:4px;padding:0 2px;border-radius:50%}
+.saved-chip .del:hover{color:var(--red)}
 </style>
 </head>
 <body>
@@ -102,6 +107,11 @@ th.group-hdr{background:#161922;font-size:10px;color:var(--accent);border-bottom
     <input type="text" class="search-box" id="search" placeholder="종목명 또는 코드 검색…">
   </div>
   <div class="stats-bar" id="statsBar"></div>
+  <!-- 저장된 비교 세트 -->
+  <div class="saved-bar" id="savedBar" style="display:none">
+    <span style="font-size:12px;color:var(--text-dim);font-weight:700;margin-right:8px">📌 저장 비교</span>
+    <div id="savedChips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+  </div>
   <div class="table-wrap">
     <table><thead id="thead"></thead><tbody id="tbody"></tbody></table>
   </div>
@@ -150,6 +160,7 @@ th.group-hdr{background:#161922;font-size:10px;color:var(--accent);border-bottom
 <div class="compare-panel" id="comparePanel">
   <span class="compare-count" id="compareCount">0종목 선택</span>
   <button class="btn-compare" onclick="openCompare()">📊 비교하기</button>
+  <button class="btn-compare" onclick="saveCompare()" style="background:var(--green)">💾 저장</button>
   <button class="btn-clear" onclick="clearSelection()">초기화</button>
 </div>
 <div class="modal-overlay" id="compareModal">
@@ -340,6 +351,65 @@ function updateCompareBar(){
 }
 
 window.clearSelection=function(){selected.clear();render();};
+
+// ── 비교 세트 저장/로드 ──
+var SAVE_KEY='kr_finance_compare_sets';
+
+function loadSavedSets(){
+  try{return JSON.parse(localStorage.getItem(SAVE_KEY))||[];}catch(e){return[];}
+}
+function saveSavedSets(sets){
+  localStorage.setItem(SAVE_KEY, JSON.stringify(sets));
+}
+
+function renderSavedBar(){
+  var sets=loadSavedSets();
+  var bar=document.getElementById('savedBar');
+  var chips=document.getElementById('savedChips');
+  if(!sets.length){bar.style.display='none';return;}
+  bar.style.display='flex';
+  chips.innerHTML='';
+  sets.forEach(function(s,i){
+    var chip=document.createElement('button');
+    chip.className='saved-chip';
+    chip.innerHTML=s.name+'<span class="del" data-idx="'+i+'" title="삭제">✕</span>';
+    chip.addEventListener('click',function(e){
+      if(e.target.classList.contains('del')){
+        // 삭제
+        var idx=parseInt(e.target.getAttribute('data-idx'));
+        var sets2=loadSavedSets();
+        sets2.splice(idx,1);
+        saveSavedSets(sets2);
+        renderSavedBar();
+        return;
+      }
+      // 로드 → 체크 + 비교 모달 열기
+      selected.clear();
+      s.codes.forEach(function(c){selected.add(c);});
+      render();
+      openCompare();
+    });
+    chips.appendChild(chip);
+  });
+}
+
+window.saveCompare=function(){
+  if(selected.size<2) return;
+  // 선택된 종목 이름 조합으로 자동 이름 생성
+  var names=stocks.filter(function(s){return selected.has(s.code);}).map(function(s){return s.name;});
+  var autoName=names.join(' vs ');
+  var name=prompt('비교 세트 이름:',autoName);
+  if(!name) return;
+  var sets=loadSavedSets();
+  // 같은 이름 있으면 덮어쓰기
+  sets=sets.filter(function(s){return s.name!==name;});
+  sets.push({name:name, codes:Array.from(selected)});
+  saveSavedSets(sets);
+  renderSavedBar();
+};
+
+// 초기 렌더
+renderSavedBar();
 
 window.openCompare=function(){
   var arr=stocks.filter(function(s){return selected.has(s.code);});
