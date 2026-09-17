@@ -71,11 +71,16 @@ h1{color:#1F4E78;font-size:32px;margin-bottom:8px}
 .fav-body{padding:14px 0}
 .fav-body.collapsed{display:none}
 .fav-empty{text-align:center;color:#999;font-size:13px;padding:24px;background:white;border-radius:10px;border:2px dashed #e5e7eb}
-.fav-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-@media(max-width:700px){.fav-grid{grid-template-columns:repeat(2,1fr);gap:10px}}
-.fav-grid .card{position:relative}
-.fav-grid .card.dragging{opacity:.4;border:2px dashed #1F4E78}
-.fav-grid .card.drag-over{border-color:#f59e0b;background:#fffbeb}
+.fav-grid{display:flex;flex-wrap:wrap;gap:6px}
+@media(max-width:700px){.fav-grid{gap:5px}}
+.fav-grid .fav-chip{display:inline-flex;align-items:center;gap:5px;background:white;border-radius:8px;padding:7px 12px;text-decoration:none;color:#1a1a1a;font-size:13px;font-weight:600;border:1.5px solid #e5e7eb;transition:all .12s;cursor:grab;user-select:none;white-space:nowrap}
+.fav-chip:hover{border-color:#1F4E78;background:#f0f4f8}
+.fav-chip.dragging{opacity:.4;border:1.5px dashed #1F4E78}
+.fav-chip.drag-over{border-color:#f59e0b;background:#fffbeb}
+.fav-chip .chip-icon{font-size:14px}
+.fav-chip .chip-del{font-size:11px;color:#999;cursor:pointer;margin-left:2px;padding:0 2px}
+.fav-chip .chip-del:hover{color:#dc2626}
+@media(max-width:700px){.fav-chip{font-size:12px;padding:6px 10px}}
 
 /* 카드 위 ☆ 버튼 */
 .star-btn{position:absolute;top:6px;right:6px;background:none;border:none;font-size:16px;cursor:pointer;padding:2px;line-height:1;opacity:.4;transition:opacity .15s;z-index:2}
@@ -362,16 +367,15 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
     favs.forEach(function(f, idx){
       var a = document.createElement('a');
       a.href = f.href;
-      a.className = 'card';
+      a.className = 'fav-chip';
       a.draggable = true;
       a.setAttribute('data-fav-idx', idx);
-      a.innerHTML = '<div class="icon">'+f.icon+'</div>'
-        + '<div class="card-title">'+f.title+'</div>'
-        + '<div class="card-desc">'+f.desc+'</div>';
-      // 삭제 버튼
-      var del = document.createElement('button');
-      del.className = 'star-btn active';
-      del.textContent = '★';
+      a.innerHTML = '<span class="chip-icon">'+f.icon+'</span>'
+        + '<span>'+f.title+'</span>';
+      // × 삭제
+      var del = document.createElement('span');
+      del.className = 'chip-del';
+      del.textContent = '×';
       del.title = '즐겨찾기 해제';
       del.addEventListener('click', function(e){
         e.preventDefault(); e.stopPropagation();
@@ -399,25 +403,6 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
         favs.splice(to, 0, item);
         saveFavs();
         renderFavGrid();
-      });
-
-      // 모바일 터치 드래그
-      var touchStartY=0, touchIdx=-1;
-      a.addEventListener('touchstart', function(e){
-        touchStartY = e.touches[0].clientY;
-        touchIdx = idx;
-      }, {passive:true});
-      a.addEventListener('touchend', function(e){
-        var dy = e.changedTouches[0].clientY - touchStartY;
-        if(Math.abs(dy) < 30) return; // 짧으면 무시
-        var dir = dy > 0 ? 1 : -1;
-        var newIdx = Math.max(0, Math.min(favs.length-1, touchIdx + dir));
-        if(newIdx !== touchIdx){
-          var item = favs.splice(touchIdx, 1)[0];
-          favs.splice(newIdx, 0, item);
-          saveFavs();
-          renderFavGrid();
-        }
       });
 
       favGrid.appendChild(a);
