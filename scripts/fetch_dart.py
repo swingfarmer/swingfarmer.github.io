@@ -107,6 +107,8 @@ def fetch_financials(corp_code, year, reprt_code):
             'fs_div': fs_div
         })
         if data and data.get('status') == '000':
+            elif data:
+            print(f' [{fs_div}:{data.get("status")}:{data.get("message","")}]', end='')
             return data.get('list', [])
     return None
 
