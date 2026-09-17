@@ -19,7 +19,12 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .updated{font-size:12px;color:var(--text-dim)}
 .back-link{color:var(--accent);text-decoration:none;font-size:13px;font-weight:600}
 
-/* 컨트롤 바 */
+/* 기간 선택 바 */
+.period-bar{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px}
+.period-btn{padding:7px 16px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text-dim);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .12s;font-family:inherit}
+.period-btn:hover{border-color:var(--accent);color:var(--text)}
+.period-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
 .controls{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
 .search-box{flex:1;min-width:200px;padding:9px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:13px;font-family:inherit}
 .search-box:focus{outline:none;border-color:var(--accent)}
@@ -28,15 +33,13 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .filter-btn:hover{border-color:var(--accent);color:var(--text)}
 .filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
 
-/* 통계 바 */
 .stats-bar{display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap}
 .stat-chip{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:12px}
 .stat-chip .label{color:var(--text-dim);margin-right:6px}
 .stat-chip .val{font-weight:700}
 
-/* 테이블 */
 .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--card)}
-table{width:100%;border-collapse:collapse;font-size:12px;min-width:1100px}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:1300px}
 thead{position:sticky;top:0;z-index:2}
 th{background:var(--card);text-align:right;padding:10px 8px;border-bottom:2px solid var(--border);color:var(--text-dim);font-weight:700;font-size:11px;cursor:pointer;white-space:nowrap;user-select:none;transition:color .12s}
 th:hover{color:var(--accent)}
@@ -52,15 +55,9 @@ tr.selected td{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.3)}
 .stock-name{font-weight:700;font-size:13px;display:block}
 .stock-code{font-size:10px;color:var(--text-dim)}
 .stock-sector{font-size:10px;color:var(--text-dim);display:block;margin-top:1px}
-.up{color:var(--green)}
-.down{color:var(--red)}
-.gold{color:var(--gold)}
-.dim{color:var(--text-dim)}
-
-/* 체크박스 */
+.up{color:var(--green)}.down{color:var(--red)}.gold{color:var(--gold)}.dim{color:var(--text-dim)}
 .chk{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
 
-/* 비교 패널 */
 .compare-panel{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:2px solid var(--accent);padding:14px 20px;display:none;z-index:10;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap}
 .compare-panel.show{display:flex}
 .compare-panel .compare-count{font-weight:700;font-size:14px}
@@ -68,28 +65,19 @@ tr.selected td{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.3)}
 .btn-compare{background:var(--accent);color:#fff}
 .btn-clear{background:transparent;color:var(--text-dim);border:1px solid var(--border) !important}
 
-/* 비교 모달 */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:20;display:none;align-items:center;justify-content:center;padding:20px}
 .modal-overlay.show{display:flex}
-.modal{background:var(--bg);border:1px solid var(--border);border-radius:16px;max-width:1100px;width:100%;max-height:85vh;overflow-y:auto;padding:24px}
+.modal{background:var(--bg);border:1px solid var(--border);border-radius:16px;max-width:1100px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;position:relative}
 .modal h2{font-size:18px;font-weight:800;margin-bottom:16px}
 .modal .close-btn{position:absolute;top:16px;right:20px;background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer}
-.compare-grid{display:grid;gap:16px}
-.compare-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px}
-.compare-card h3{font-size:16px;font-weight:800;margin-bottom:12px}
-.compare-card .code{color:var(--text-dim);font-size:12px;font-weight:400}
-.compare-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
-.compare-row:last-child{border-bottom:none}
-.compare-row .cl{color:var(--text-dim)}
 
-/* 반응형 */
+/* 그룹 헤더 (YoY/QoQ 구분) */
+th.group-hdr{background:#161922;font-size:10px;color:var(--accent);border-bottom:1px solid var(--accent);padding:4px 8px}
+
 @media(max-width:768px){
-  .controls{gap:6px}
-  .search-box{min-width:100%}
-  .stats-bar{gap:8px}
-  .stat-chip{padding:6px 10px;font-size:11px}
-  table{font-size:11px}
-  th,td{padding:7px 6px}
+  .controls{gap:6px}.search-box{min-width:100%}
+  .stats-bar{gap:8px}.stat-chip{padding:6px 10px;font-size:11px}
+  table{font-size:11px}th,td{padding:7px 6px}
 }
 .note{font-size:11px;color:var(--text-dim);text-align:center;margin-top:30px;line-height:1.8}
 .loading{text-align:center;padding:60px;color:var(--text-dim)}
@@ -105,20 +93,19 @@ tr.selected td{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.3)}
     </div>
   </div>
 
+  <!-- 기간 선택 -->
+  <div class="period-bar" id="periodBar">
+    <button class="period-btn active" data-file="kospi200.json">최신</button>
+  </div>
+
   <div class="controls" id="controls">
     <input type="text" class="search-box" id="search" placeholder="종목명 또는 코드 검색…">
   </div>
-
   <div class="stats-bar" id="statsBar"></div>
-
   <div class="table-wrap">
-    <table>
-      <thead id="thead"></thead>
-      <tbody id="tbody"></tbody>
-    </table>
+    <table><thead id="thead"></thead><tbody id="tbody"></tbody></table>
   </div>
 
-  <!-- 범례 / 사용법 -->
   <details style="margin-top:24px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0">
     <summary style="padding:14px 18px;cursor:pointer;font-weight:700;font-size:14px;color:var(--text);list-style:none;display:flex;align-items:center;gap:8px">
       <span>📖</span> 사용법 · 지표 설명
@@ -127,50 +114,44 @@ tr.selected td{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.3)}
     <div style="padding:4px 18px 18px;font-size:12px;line-height:2;color:var(--text-dim)">
       <div style="margin-bottom:14px">
         <div style="font-weight:700;color:var(--text);margin-bottom:6px">🔍 사용법</div>
+        <div>• <b>기간 선택</b> — 상단 탭으로 연간/분기 데이터 전환</div>
         <div>• <b>검색</b> — 종목명 또는 종목코드 입력</div>
-        <div>• <b>업종 필터</b> — 상단 탭으로 업종별 보기</div>
+        <div>• <b>업종 필터</b> — 탭으로 업종별 보기</div>
         <div>• <b>정렬</b> — 열 헤더 클릭 (한번 더 클릭하면 반전)</div>
-        <div>• <b>비교</b> — 체크박스로 2종목 이상 선택 → 하단 바의 "비교하기" 클릭</div>
+        <div>• <b>비교</b> — 체크박스로 2종목 이상 선택 → 하단 "비교하기" 클릭</div>
       </div>
       <div style="margin-bottom:14px">
         <div style="font-weight:700;color:var(--text);margin-bottom:6px">📊 지표 설명</div>
-        <div>• <b>OPM</b> — 영업이익률 (영업이익 ÷ 매출액). 본업의 수익성</div>
-        <div>• <b>NIM</b> — 순이익률 (순이익 ÷ 매출액). 세금·이자 등 포함 최종 수익성</div>
-        <div>• <b>ROE</b> — 자기자본이익률 (순이익 ÷ 자본총계). 주주 돈의 효율</div>
-        <div>• <b>ROA</b> — 총자산이익률 (순이익 ÷ 자산총계). 전체 자산 효율</div>
-        <div>• <b>부채비율</b> — 부채총계 ÷ 자본총계. 금융업은 구조상 1000% 이상 정상</div>
-        <div>• <b>배당률</b> — 주당배당금 ÷ 주가. 현재 주가 연동 전이라 직전 종가 기준 추정</div>
-        <div>• <b>YoY</b> — 전년 동기 대비 증감률. "적전"은 흑자→적자 전환</div>
+        <div>• <b>OPM</b> — 영업이익률. 본업의 수익성</div>
+        <div>• <b>NIM</b> — 순이익률. 세후 최종 수익성</div>
+        <div>• <b>ROE</b> — 자기자본이익률. 주주 돈의 효율</div>
+        <div>• <b>ROA</b> — 총자산이익률</div>
+        <div>• <b>부채비율</b> — 부채÷자본. 금융업은 1000%↑ 정상</div>
+        <div>• <b>QoQ</b> — 전분기 대비 증감률</div>
+        <div>• <b>YoY</b> — 전년 동기 대비 증감률. "적전"=흑자→적자</div>
       </div>
       <div>
-        <div style="font-weight:700;color:var(--text);margin-bottom:6px">🎨 색상 규칙</div>
-        <div>• <span style="color:var(--green)">■ 초록</span> — 양호 (이익률 10%↑, YoY 증가, 흑자)</div>
-        <div>• <span style="color:var(--red)">■ 빨강</span> — 주의 (적자, YoY 감소, 적자전환)</div>
+        <div style="font-weight:700;color:var(--text);margin-bottom:6px">🎨 색상</div>
+        <div>• <span style="color:var(--green)">■ 초록</span> — 양호 (이익률 10%↑, 증가)</div>
+        <div>• <span style="color:var(--red)">■ 빨강</span> — 주의 (적자, 감소, 적전)</div>
         <div>• <span style="color:var(--gold)">■ 노랑</span> — 경고 (부채비율 100~200%)</div>
-        <div>• 무색 — 보통 범위</div>
       </div>
       <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:11px">
-        ※ 데이터 출처: OpenDART 공시 기준 · 매일 09:00(KST) 자동 업데이트<br>
-        ※ 향후 추가 예정: 주가 연동(PER/PBR/시총/52주 고저), KOSDAQ 확장
+        ※ 출처: OpenDART · 분기별 자동 업데이트 (4/5, 5/20, 8/20, 11/20)<br>
+        ※ 향후: 주가 연동(PER/PBR/시총/52주), KOSDAQ 확장
       </div>
     </div>
   </details>
-
-  <div class="note">
-    ⓘ 문의·오류 신고: 메인 페이지 하단
-  </div>
+  <div class="note">ⓘ 문의·오류: 메인 하단</div>
 </div>
 
-<!-- 비교 바 -->
 <div class="compare-panel" id="comparePanel">
   <span class="compare-count" id="compareCount">0종목 선택</span>
   <button class="btn-compare" onclick="openCompare()">📊 비교하기</button>
   <button class="btn-clear" onclick="clearSelection()">초기화</button>
 </div>
-
-<!-- 비교 모달 -->
 <div class="modal-overlay" id="compareModal">
-  <div class="modal" style="position:relative">
+  <div class="modal">
     <button class="close-btn" onclick="closeCompare()">✕</button>
     <h2>📊 종목 비교</h2>
     <div id="compareBody"></div>
@@ -179,117 +160,114 @@ tr.selected td{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.3)}
 
 <script>
 (function(){
-var DATA_URL = '/data/kospi200.json';
-var stocks = [];
-var filtered = [];
-var selected = new Set();
-var sortKey = 'revenue';
-var sortDir = -1; // -1=desc
-var activeSector = '';
+var stocks=[], filtered=[], selected=new Set();
+var sortKey='revenue', sortDir=-1, activeSector='';
+var periodData={}; // 현재 로드된 데이터
+var hasQoQ=false, hasYoY=false;
 
-var COLS = [
-  {key:'_chk', label:'', nosort:true, w:'42px'},
-  {key:'name', label:'종목', align:'left'},
-  {key:'sector', label:'업종', align:'left', hide:true},
-  {key:'revenue', label:'매출액', unit:'억'},
-  {key:'op', label:'영업이익', unit:'억'},
-  {key:'ni', label:'순이익', unit:'억'},
-  {key:'opm', label:'OPM', unit:'%'},
-  {key:'nim', label:'NIM', unit:'%'},
-  {key:'roe', label:'ROE', unit:'%'},
-  {key:'roa', label:'ROA', unit:'%'},
-  {key:'debt_ratio', label:'부채비율', unit:'%'},
-  {key:'dividend', label:'배당금', unit:'원'},
-  {key:'div_yield', label:'배당률', unit:'%'},
-  {key:'revenue_yoy', label:'매출YoY', unit:'%'},
-  {key:'op_yoy', label:'OPYOY', unit:'%'}
-];
-
-function fmt(v, unit){
-  if(v === null || v === undefined) return '-';
-  if(unit === '억'){
-    if(Math.abs(v) >= 10000) return (v/10000).toFixed(1) + '조';
-    return v.toLocaleString() + '억';
+function getCols(){
+  var cols=[
+    {key:'_chk',label:'',nosort:true},
+    {key:'name',label:'종목',align:'left'},
+    {key:'revenue',label:'매출액',unit:'억'},
+    {key:'op',label:'영업이익',unit:'억'},
+    {key:'ni',label:'순이익',unit:'억'},
+    {key:'opm',label:'OPM',unit:'%'},
+    {key:'nim',label:'NIM',unit:'%'},
+    {key:'roe',label:'ROE',unit:'%'},
+    {key:'roa',label:'ROA',unit:'%'},
+    {key:'debt_ratio',label:'부채비율',unit:'%'},
+    {key:'dividend',label:'배당금',unit:'원'},
+    {key:'div_yield',label:'배당률',unit:'%'},
+  ];
+  if(hasYoY){
+    cols.push({key:'revenue_yoy',label:'매출YoY',unit:'%'});
+    cols.push({key:'op_yoy',label:'OP YoY',unit:'%'});
   }
-  if(unit === '%') return v.toFixed(1) + '%';
-  if(unit === '원') return v.toLocaleString() + '원';
+  if(hasQoQ){
+    cols.push({key:'revenue_qoq',label:'매출QoQ',unit:'%'});
+    cols.push({key:'op_qoq',label:'OP QoQ',unit:'%'});
+  }
+  return cols;
+}
+
+function fmt(v,unit){
+  if(v===null||v===undefined) return '-';
+  if(unit==='억'){
+    if(Math.abs(v)>=10000) return (v/10000).toFixed(1)+'조';
+    return v.toLocaleString()+'억';
+  }
+  if(unit==='%') return v.toFixed(1)+'%';
+  if(unit==='원') return v.toLocaleString()+'원';
   return v;
 }
 
-function colorClass(v, key){
-  if(v === null || v === undefined) return '';
-  if(key === 'debt_ratio') return v > 200 ? 'down' : v > 100 ? 'gold' : '';
-  if(['opm','nim','roe','roa','div_yield'].indexOf(key) >= 0){
-    return v > 10 ? 'up' : v < 0 ? 'down' : '';
+function colorClass(v,key){
+  if(v===null||v===undefined) return '';
+  if(key==='debt_ratio') return v>200?'down':v>100?'gold':'';
+  if(['opm','nim','roe','roa','div_yield'].indexOf(key)>=0) return v>10?'up':v<0?'down':'';
+  if(key.indexOf('yoy')>=0||key.indexOf('qoq')>=0){
+    if(v<=-999) return 'down';
+    return v>0?'up':v<0?'down':'';
   }
-  if(key === 'revenue_yoy' || key === 'op_yoy'){
-    if(v <= -999) return 'down';
-    return v > 0 ? 'up' : v < 0 ? 'down' : '';
-  }
-  if(key === 'op' || key === 'ni') return v < 0 ? 'down' : '';
+  if(key==='op'||key==='ni') return v<0?'down':'';
   return '';
 }
 
 function buildHead(){
-  var tr = document.createElement('tr');
-  COLS.forEach(function(c){
-    if(c.hide) return;
-    var th = document.createElement('th');
+  var cols=getCols();
+  var tr=document.createElement('tr');
+  cols.forEach(function(c){
+    var th=document.createElement('th');
     if(c.nosort){
-      th.innerHTML = '<input type="checkbox" class="chk" id="chkAll" title="전체 선택">';
-      th.querySelector('#chkAll').addEventListener('change', function(e){
-        if(e.target.checked) filtered.forEach(function(s){ selected.add(s.code); });
+      th.innerHTML='<input type="checkbox" class="chk" id="chkAll">';
+      th.querySelector('#chkAll').addEventListener('change',function(e){
+        if(e.target.checked) filtered.forEach(function(s){selected.add(s.code);});
         else selected.clear();
         render();
       });
     } else {
-      th.textContent = c.label;
-      if(c.key === sortKey) th.className = 'sorted';
-      th.innerHTML += (c.key === sortKey ? (sortDir > 0 ? ' <span class="arrow">▲</span>' : ' <span class="arrow">▼</span>') : '');
-      th.addEventListener('click', function(){
-        if(sortKey === c.key) sortDir *= -1;
-        else { sortKey = c.key; sortDir = -1; }
-        sort();
-        buildHead();
-        renderBody();
+      th.textContent=c.label;
+      if(c.key===sortKey) th.className='sorted';
+      th.innerHTML+=(c.key===sortKey?(sortDir>0?' <span class="arrow">▲</span>':' <span class="arrow">▼</span>'):'');
+      th.addEventListener('click',function(){
+        if(sortKey===c.key) sortDir*=-1;
+        else{sortKey=c.key;sortDir=-1;}
+        sort(); buildHead(); renderBody();
       });
     }
-    if(c.align==='left') th.style.textAlign = 'left';
+    if(c.align==='left') th.style.textAlign='left';
     tr.appendChild(th);
   });
-  document.getElementById('thead').innerHTML = '';
+  document.getElementById('thead').innerHTML='';
   document.getElementById('thead').appendChild(tr);
 }
 
 function renderBody(){
-  var tbody = document.getElementById('tbody');
-  tbody.innerHTML = '';
+  var cols=getCols();
+  var tbody=document.getElementById('tbody');
+  tbody.innerHTML='';
   filtered.forEach(function(s){
-    var tr = document.createElement('tr');
-    if(selected.has(s.code)) tr.className = 'selected';
-    tr.addEventListener('click', function(e){
-      if(e.target.tagName === 'INPUT') return;
-    });
-    COLS.forEach(function(c){
-      if(c.hide) return;
-      var td = document.createElement('td');
-      if(c.key === '_chk'){
-        td.innerHTML = '<input type="checkbox" class="chk" '+(selected.has(s.code)?'checked':'')+' data-code="'+s.code+'">';
-        td.querySelector('.chk').addEventListener('change', function(e){
-          if(e.target.checked) selected.add(s.code);
-          else selected.delete(s.code);
-          tr.classList.toggle('selected', selected.has(s.code));
+    var tr=document.createElement('tr');
+    if(selected.has(s.code)) tr.className='selected';
+    cols.forEach(function(c){
+      var td=document.createElement('td');
+      if(c.key==='_chk'){
+        td.innerHTML='<input type="checkbox" class="chk" '+(selected.has(s.code)?'checked':'')+' data-code="'+s.code+'">';
+        td.querySelector('.chk').addEventListener('change',function(e){
+          if(e.target.checked) selected.add(s.code); else selected.delete(s.code);
+          tr.classList.toggle('selected',selected.has(s.code));
           updateCompareBar();
         });
-      } else if(c.key === 'name'){
-        td.innerHTML = '<span class="stock-name">'+s.name+'</span><span class="stock-code">'+s.code+'</span><span class="stock-sector">'+s.sector+'</span>';
-        td.style.textAlign = 'left';
+      } else if(c.key==='name'){
+        td.innerHTML='<span class="stock-name">'+s.name+'</span><span class="stock-code">'+s.code+'</span><span class="stock-sector">'+s.sector+'</span>';
+        td.style.textAlign='left';
       } else {
-        var v = s[c.key];
-        var display = (c.key==='op_yoy' && v <= -999) ? '적전' : fmt(v, c.unit);
-        td.textContent = display;
-        var cc = colorClass(v, c.key);
-        if(cc) td.className = cc;
+        var v=s[c.key];
+        var display=(c.key.indexOf('yoy')>=0||c.key.indexOf('qoq')>=0)&&v<=-999?'적전':fmt(v,c.unit);
+        td.textContent=display;
+        var cc=colorClass(v,c.key);
+        if(cc) td.className=cc;
       }
       tr.appendChild(td);
     });
@@ -300,155 +278,179 @@ function renderBody(){
 
 function sort(){
   filtered.sort(function(a,b){
-    var va = a[sortKey], vb = b[sortKey];
-    if(sortKey === 'name') return sortDir * (va < vb ? -1 : va > vb ? 1 : 0);
-    if(va === null || va === undefined) va = -Infinity;
-    if(vb === null || vb === undefined) vb = -Infinity;
-    return sortDir * (va - vb);
+    var va=a[sortKey],vb=b[sortKey];
+    if(sortKey==='name') return sortDir*(va<vb?-1:va>vb?1:0);
+    if(va===null||va===undefined) va=-Infinity;
+    if(vb===null||vb===undefined) vb=-Infinity;
+    return sortDir*(va-vb);
   });
 }
 
 function applyFilters(){
-  var q = document.getElementById('search').value.trim().toLowerCase();
-  filtered = stocks.filter(function(s){
-    var matchQ = !q || s.name.toLowerCase().indexOf(q) >= 0 || s.code.indexOf(q) >= 0;
-    var matchSec = !activeSector || s.sector === activeSector;
-    return matchQ && matchSec;
+  var q=document.getElementById('search').value.trim().toLowerCase();
+  filtered=stocks.filter(function(s){
+    return(!q||s.name.toLowerCase().indexOf(q)>=0||s.code.indexOf(q)>=0)
+      &&(!activeSector||s.sector===activeSector);
   });
-  sort();
-  renderBody();
-  updateStats();
+  sort(); renderBody(); updateStats();
 }
 
 function updateStats(){
-  var bar = document.getElementById('statsBar');
-  var cnt = filtered.length;
-  var profitable = filtered.filter(function(s){ return s.op > 0; }).length;
-  var avgROE = 0, avgDY = 0;
-  filtered.forEach(function(s){ avgROE += s.roe; avgDY += s.div_yield; });
-  if(cnt){ avgROE /= cnt; avgDY /= cnt; }
-  bar.innerHTML =
+  var cnt=filtered.length;
+  var prof=filtered.filter(function(s){return s.op>0;}).length;
+  var ar=0,ad=0;
+  filtered.forEach(function(s){ar+=s.roe||0;ad+=s.div_yield||0;});
+  if(cnt){ar/=cnt;ad/=cnt;}
+  document.getElementById('statsBar').innerHTML=
     '<div class="stat-chip"><span class="label">종목 수</span><span class="val">'+cnt+'</span></div>'+
-    '<div class="stat-chip"><span class="label">흑자</span><span class="val up">'+profitable+'</span> / <span class="val down">'+(cnt-profitable)+'</span></div>'+
-    '<div class="stat-chip"><span class="label">평균 ROE</span><span class="val">'+avgROE.toFixed(1)+'%</span></div>'+
-    '<div class="stat-chip"><span class="label">평균 배당률</span><span class="val gold">'+avgDY.toFixed(1)+'%</span></div>';
+    '<div class="stat-chip"><span class="label">흑자</span><span class="val up">'+prof+'</span>/<span class="val down">'+(cnt-prof)+'</span></div>'+
+    '<div class="stat-chip"><span class="label">평균 ROE</span><span class="val">'+ar.toFixed(1)+'%</span></div>'+
+    '<div class="stat-chip"><span class="label">평균 배당률</span><span class="val gold">'+ad.toFixed(1)+'%</span></div>';
 }
 
 function updateCompareBar(){
-  var panel = document.getElementById('comparePanel');
-  var cnt = selected.size;
-  document.getElementById('compareCount').textContent = cnt + '종목 선택';
-  panel.classList.toggle('show', cnt >= 2);
+  var p=document.getElementById('comparePanel');
+  document.getElementById('compareCount').textContent=selected.size+'종목 선택';
+  p.classList.toggle('show',selected.size>=2);
 }
 
-window.clearSelection = function(){
-  selected.clear();
-  render();
-};
+window.clearSelection=function(){selected.clear();render();};
 
-window.openCompare = function(){
-  var arr = stocks.filter(function(s){ return selected.has(s.code); });
-  if(arr.length < 2) return;
-  var body = document.getElementById('compareBody');
-  var labels = [
-    ['매출액','revenue','억'],['영업이익','op','억'],['순이익','ni','억'],
+window.openCompare=function(){
+  var arr=stocks.filter(function(s){return selected.has(s.code);});
+  if(arr.length<2) return;
+  var labels=[['매출액','revenue','억'],['영업이익','op','억'],['순이익','ni','억'],
     ['OPM','opm','%'],['NIM','nim','%'],['ROE','roe','%'],['ROA','roa','%'],
-    ['부채비율','debt_ratio','%'],['배당금','dividend','원'],['배당수익률','div_yield','%'],
-    ['매출 YoY','revenue_yoy','%'],['영업이익 YoY','op_yoy','%']
-  ];
+    ['부채비율','debt_ratio','%'],['배당금','dividend','원'],['배당률','div_yield','%']];
+  if(hasYoY) labels.push(['매출YoY','revenue_yoy','%'],['OP YoY','op_yoy','%']);
+  if(hasQoQ) labels.push(['매출QoQ','revenue_qoq','%'],['OP QoQ','op_qoq','%']);
 
-  // 비교 테이블 형태
-  var html = '<div style="overflow-x:auto"><table style="min-width:auto;font-size:13px"><thead><tr><th style="text-align:left;min-width:100px">항목</th>';
-  arr.forEach(function(s){ html += '<th style="text-align:right;min-width:100px">'+s.name+'</th>'; });
-  html += '</tr></thead><tbody>';
+  var html='<div style="overflow-x:auto"><table style="min-width:auto;font-size:13px"><thead><tr><th style="text-align:left;min-width:100px">항목</th>';
+  arr.forEach(function(s){html+='<th style="text-align:right;min-width:100px">'+s.name+'</th>';});
+  html+='</tr></thead><tbody>';
   labels.forEach(function(l){
-    html += '<tr><td style="color:var(--text-dim);text-align:left">'+l[0]+'</td>';
-    // 최대값 찾기
-    var vals = arr.map(function(s){ return s[l[1]]; });
-    var maxV = Math.max.apply(null, vals.filter(function(v){ return v > -999; }));
+    html+='<tr><td style="color:var(--text-dim);text-align:left">'+l[0]+'</td>';
+    var vals=arr.map(function(s){return s[l[1]];});
+    var maxV=Math.max.apply(null,vals.filter(function(v){return v>-999&&v!==null;}));
     arr.forEach(function(s){
-      var v = s[l[1]];
-      var display = (l[1]==='op_yoy' && v <= -999) ? '적전' : fmt(v, l[2]);
-      var cc = colorClass(v, l[1]);
-      var bold = (v === maxV && vals.filter(function(x){return x===maxV;}).length === 1) ? 'font-weight:800;' : '';
-      html += '<td class="'+cc+'" style="text-align:right;'+bold+'">'+display+'</td>';
+      var v=s[l[1]];
+      var display=(l[1].indexOf('yoy')>=0||l[1].indexOf('qoq')>=0)&&v<=-999?'적전':fmt(v,l[2]);
+      var cc=colorClass(v,l[1]);
+      var bold=(v===maxV&&vals.filter(function(x){return x===maxV;}).length===1)?'font-weight:800;':'';
+      html+='<td class="'+cc+'" style="text-align:right;'+bold+'">'+display+'</td>';
     });
-    html += '</tr>';
+    html+='</tr>';
   });
-  html += '</tbody></table></div>';
-  body.innerHTML = html;
+  html+='</tbody></table></div>';
+  document.getElementById('compareBody').innerHTML=html;
   document.getElementById('compareModal').classList.add('show');
 };
 
-window.closeCompare = function(){
-  document.getElementById('compareModal').classList.remove('show');
-};
-
-document.getElementById('compareModal').addEventListener('click', function(e){
-  if(e.target === this) closeCompare();
-});
+window.closeCompare=function(){document.getElementById('compareModal').classList.remove('show');};
+document.getElementById('compareModal').addEventListener('click',function(e){if(e.target===this)closeCompare();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeCompare();});
 
 function buildSectorFilters(){
-  var sectors = {};
-  stocks.forEach(function(s){ sectors[s.sector] = (sectors[s.sector]||0) + 1; });
-  var ctrl = document.getElementById('controls');
-  // "전체" 버튼
-  var all = document.createElement('button');
-  all.className = 'filter-btn active';
-  all.textContent = '전체 ('+stocks.length+')';
-  all.addEventListener('click', function(){
-    activeSector = '';
-    document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
+  var ctrl=document.getElementById('controls');
+  // 기존 필터 버튼 제거 (검색 박스 빼고)
+  ctrl.querySelectorAll('.filter-btn').forEach(function(b){b.remove();});
+
+  var sectors={};
+  stocks.forEach(function(s){sectors[s.sector]=(sectors[s.sector]||0)+1;});
+  var all=document.createElement('button');
+  all.className='filter-btn active';
+  all.textContent='전체 ('+stocks.length+')';
+  all.addEventListener('click',function(){
+    activeSector='';
+    ctrl.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});
     all.classList.add('active');
     applyFilters();
   });
   ctrl.appendChild(all);
-
   Object.keys(sectors).sort().forEach(function(sec){
-    var btn = document.createElement('button');
-    btn.className = 'filter-btn';
-    btn.textContent = sec + ' ('+sectors[sec]+')';
-    btn.addEventListener('click', function(){
-      activeSector = (activeSector === sec) ? '' : sec;
-      document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
-      if(activeSector) btn.classList.add('active');
-      else all.classList.add('active');
+    var btn=document.createElement('button');
+    btn.className='filter-btn';
+    btn.textContent=sec+' ('+sectors[sec]+')';
+    btn.addEventListener('click',function(){
+      activeSector=(activeSector===sec)?'':sec;
+      ctrl.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});
+      if(activeSector) btn.classList.add('active'); else all.classList.add('active');
       applyFilters();
     });
     ctrl.appendChild(btn);
   });
 }
 
-function render(){
-  buildHead();
-  applyFilters();
+function render(){buildHead();applyFilters();}
+
+document.getElementById('search').addEventListener('input',function(){applyFilters();});
+
+function loadData(url, label){
+  document.getElementById('tbody').innerHTML='<tr><td colspan="16" style="text-align:center;padding:40px">로딩 중...</td></tr>';
+  fetch(url)
+    .then(function(r){return r.json();})
+    .then(function(data){
+      stocks=data.stocks||[];
+      filtered=stocks.slice();
+      periodData=data;
+
+      // QoQ/YoY 컬럼 존재 여부
+      hasYoY=stocks.length>0&&stocks[0].revenue_yoy!==undefined;
+      hasQoQ=stocks.length>0&&stocks[0].revenue_qoq!==undefined;
+
+      var info=data.period_label||data.period||'';
+      document.getElementById('updated').textContent=
+        '기준: '+(info)+' · 업데이트: '+(data.updated||'')+' · 출처: '+(data.source||'OpenDART');
+      if(data.compare_yoy) document.getElementById('updated').textContent+=' · YoY비교: '+data.compare_yoy;
+      if(data.compare_qoq) document.getElementById('updated').textContent+=' · QoQ비교: '+data.compare_qoq;
+
+      buildSectorFilters();
+      render();
+    })
+    .catch(function(e){
+      document.getElementById('tbody').innerHTML=
+        '<tr><td colspan="16" style="text-align:center;padding:40px;color:var(--red)">로드 실패: '+e.message+'</td></tr>';
+    });
 }
 
-// 검색
-document.getElementById('search').addEventListener('input', function(){
-  applyFilters();
-});
+// 기간 목록 로드
+function loadPeriodIndex(){
+  fetch('/data/kr/index.json')
+    .then(function(r){return r.json();})
+    .then(function(idx){
+      var bar=document.getElementById('periodBar');
+      bar.innerHTML='';
+      var periods=idx.periods||[];
+      // 최신순 정렬
+      periods.sort(function(a,b){return (b.year+b.period).localeCompare(a.year+a.period);});
 
-// 키보드: ESC로 모달 닫기
-document.addEventListener('keydown', function(e){
-  if(e.key === 'Escape') closeCompare();
-});
+      periods.forEach(function(p,i){
+        var btn=document.createElement('button');
+        btn.className='period-btn'+(i===0?' active':'');
+        btn.textContent=p.label+' ('+p.count+')';
+        btn.addEventListener('click',function(){
+          bar.querySelectorAll('.period-btn').forEach(function(b){b.classList.remove('active');});
+          btn.classList.add('active');
+          loadData('/data/kr/'+p.file, p.label);
+        });
+        bar.appendChild(btn);
+      });
 
-// 로드
-fetch(DATA_URL)
-  .then(function(r){ return r.json(); })
-  .then(function(data){
-    stocks = data.stocks;
-    filtered = stocks.slice();
-    document.getElementById('updated').textContent =
-      '기준: ' + data.period + ' · 업데이트: ' + data.updated + ' · 출처: ' + data.source;
-    buildSectorFilters();
-    render();
-  })
-  .catch(function(e){
-    document.getElementById('tbody').innerHTML =
-      '<tr><td colspan="14" style="text-align:center;padding:40px;color:var(--red)">데이터 로드 실패: '+e.message+'</td></tr>';
-  });
+      // 최신 데이터 로드
+      if(periods.length>0){
+        loadData('/data/kr/'+periods[0].file, periods[0].label);
+      } else {
+        // index 없으면 기존 kospi200.json 폴백
+        loadData('/data/kospi200.json','');
+      }
+    })
+    .catch(function(){
+      // index 로드 실패 → 기존 파일 사용
+      loadData('/data/kospi200.json','');
+    });
+}
+
+loadPeriodIndex();
 })();
 </script>
 <script src="/common.js?v=4"></script>
