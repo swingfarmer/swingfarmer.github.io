@@ -57,7 +57,7 @@ def download_corp_codes():
     print('📥 기업 고유번호 다운로드...')
     url = f'{DART_BASE}/corpCode.xml?crtfc_key={DART_API_KEY}'
     try:
-        with urllib.request.urlopen(urllib.request.Request(url), timeout=30) as resp:
+        with urllib.request.urlopen(urllib.request.Request(url), timeout=90) as resp:
             zip_data = resp.read()
     except Exception as e:
         print(f'❌ 실패: {e}'); sys.exit(1)
