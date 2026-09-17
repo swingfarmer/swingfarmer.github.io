@@ -38,23 +38,34 @@ def safe_get(info, key, default=None):
         return default
 
 
-def normalize_yield(raw_value):
+def calc_dividend_yield(info, price):
     """
-    yfinance dividendYield 정규화.
-    버전에 따라 소수점(0.035) 또는 퍼센트(3.5)로 반환됨.
-    → 항상 퍼센트(3.5) 형태로 통일.
+    배당수익률 계산 (% 형태)
+    1순위: dividendRate / price (가장 안정적)
+    2순위: trailingAnnualDividendYield
+    3순위: dividendYield (yfinance 버전마다 소수점/퍼센트 혼재)
     """
-    if raw_value is None:
-        return None
-    v = float(raw_value)
-    if v <= 0:
-        return None
-    # 0.5 이하면 소수점 형태 (0.035 = 3.5%) → ×100
-    # 0.5 초과면 이미 퍼센트 형태 (3.5 = 3.5%)
-    if v < 0.5:
-        return round(v * 100, 2)
-    else:
-        return round(v, 2)
+    div_rate = safe_get(info, "dividendRate", 0)
+
+    # 1순위: 직접 계산
+    if div_rate and price and price > 0:
+        return round((float(div_rate) / float(price)) * 100, 2)
+
+    # 2순위: trailingAnnualDividendYield
+    tady = safe_get(info, "trailingAnnualDividendYield")
+    if tady and tady > 0:
+        if tady < 1:
+            return round(tady * 100, 2)
+        return round(tady, 2)
+
+    # 3순위: dividendYield
+    dy = safe_get(info, "dividendYield")
+    if dy and dy > 0:
+        if dy < 1:
+            return round(dy * 100, 2)
+        return round(dy, 2)
+
+    return None
 
 
 def normalize_ratio(raw_value):
@@ -82,25 +93,9 @@ def fetch_etf(ticker_str, meta):
         change = round(price - prev_close, 2) if price and prev_close else 0
         change_pct = round((change / prev_close) * 100, 2) if prev_close else 0
 
-        # 배당 — 정규화 적용
-        div_yield = normalize_yield(safe_get(info, "dividendYield"))
+        # 배당 — 직접 계산 우선
+        div_yield = calc_dividend_yield(info, price)
         div_rate = safe_get(info, "dividendRate", 0)
-
-        # 배당률 교차검증: dividendRate / price로 직접 계산
-        if div_yield and price and div_rate:
-            calc_yield = round((div_rate / price) * 100, 2)
-            # 차이가 2배 이상이면 직접 계산값 사용
-            if div_yield > calc_yield * 2 or div_yield < calc_yield * 0.5:
-                print(f"    ⚠ {ticker_str} 배당률 보정: API {div_yield}% → 계산값 {calc_yield}%")
-                div_yield = calc_yield
-
-        # 비정상 배당률 최종 방어 (30% 초과는 데이터 오류)
-        if div_yield and div_yield > 30:
-            if div_rate and price and price > 0:
-                div_yield = round((div_rate / price) * 100, 2)
-                print(f"    ⚠ {ticker_str} 배당률 30%초과 재계산 → {div_yield}%")
-            else:
-                div_yield = None
 
         trailing_pe = safe_get(info, "trailingPE")
         high_52w = safe_get(info, "fiftyTwoWeekHigh", 0)
