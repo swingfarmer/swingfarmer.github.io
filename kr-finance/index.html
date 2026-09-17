@@ -39,7 +39,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 .stat-chip .val{font-weight:700}
 
 .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--card)}
-table{width:100%;border-collapse:collapse;font-size:12px;min-width:1300px}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:1600px}
 thead{position:sticky;top:0;z-index:2}
 th{background:var(--card);text-align:right;padding:10px 8px;border-bottom:2px solid var(--border);color:var(--text-dim);font-weight:700;font-size:11px;cursor:pointer;white-space:nowrap;user-select:none;transition:color .12s}
 th:hover{color:var(--accent)}
@@ -71,7 +71,7 @@ tr.selected td{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.3)}
 .modal h2{font-size:18px;font-weight:800;margin-bottom:16px}
 .modal .close-btn{position:absolute;top:16px;right:20px;background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer}
 
-/* 그룹 헤더 (YoY/QoQ 구분) */
+/* 그룹 헤더 */
 th.group-hdr{background:#161922;font-size:10px;color:var(--accent);border-bottom:1px solid var(--accent);padding:4px 8px}
 
 @media(max-width:768px){
@@ -127,8 +127,10 @@ th.group-hdr{background:#161922;font-size:10px;color:var(--accent);border-bottom
         <div>• <b>ROE</b> — 자기자본이익률. 주주 돈의 효율</div>
         <div>• <b>ROA</b> — 총자산이익률</div>
         <div>• <b>부채비율</b> — 부채÷자본. 금융업은 1000%↑ 정상</div>
-        <div>• <b>QoQ</b> — 전분기 대비 증감률</div>
         <div>• <b>YoY</b> — 전년 동기 대비 증감률. "적전"=흑자→적자</div>
+        <div>• <b>PER</b> — 주가÷EPS. 낮을수록 저평가 (업종별 상대 비교)</div>
+        <div>• <b>PBR</b> — 주가÷BPS. 1 미만이면 자산 대비 저평가</div>
+        <div>• <b>52주고/저</b> — 최근 1년간 최고·최저가</div>
       </div>
       <div>
         <div style="font-weight:700;color:var(--text);margin-bottom:6px">🎨 색상</div>
@@ -137,8 +139,8 @@ th.group-hdr{background:#161922;font-size:10px;color:var(--accent);border-bottom
         <div>• <span style="color:var(--gold)">■ 노랑</span> — 경고 (부채비율 100~200%)</div>
       </div>
       <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:11px">
-        ※ 출처: OpenDART · 분기별 자동 업데이트 (4/5, 5/20, 8/20, 11/20)<br>
-        ※ 향후: 주가 연동(PER/PBR/시총/52주), KOSDAQ 확장
+        ※ 재무: OpenDART · 분기별 자동 업데이트 (4/5, 5/20, 8/20, 11/20)<br>
+        ※ 주가: KRX (pykrx) · 평일 장 마감 후 자동 업데이트
       </div>
     </div>
   </details>
@@ -162,13 +164,15 @@ th.group-hdr{background:#161922;font-size:10px;color:var(--accent);border-bottom
 (function(){
 var stocks=[], filtered=[], selected=new Set();
 var sortKey='revenue', sortDir=-1, activeSector='';
-var periodData={}; // 현재 로드된 데이터
-var hasQoQ=false, hasYoY=false;
+var periodData={};
+var hasYoY=false;
+var priceMap={}; // prices.json 데이터
 
 function getCols(){
   var cols=[
     {key:'_chk',label:'',nosort:true},
     {key:'name',label:'종목',align:'left'},
+    {key:'_price',label:'현재가',unit:'원',price:true},
     {key:'revenue',label:'매출액',unit:'억'},
     {key:'op',label:'영업이익',unit:'억'},
     {key:'ni',label:'순이익',unit:'억'},
@@ -184,12 +188,17 @@ function getCols(){
     cols.push({key:'revenue_yoy',label:'매출YoY',unit:'%'});
     cols.push({key:'op_yoy',label:'OP YoY',unit:'%'});
   }
-  if(hasQoQ){
-    cols.push({key:'revenue_qoq',label:'매출QoQ',unit:'%'});
-    cols.push({key:'op_qoq',label:'OP QoQ',unit:'%'});
+  // 주가 컬럼 (prices.json 있을 때만)
+  if(hasPrices){
+    cols.push({key:'_mcap',label:'시총',unit:'억',price:true});
+    cols.push({key:'_per',label:'PER',unit:'배',price:true});
+    cols.push({key:'_pbr',label:'PBR',unit:'배',price:true});
+    cols.push({key:'_high52',label:'52주고',unit:'원',price:true});
+    cols.push({key:'_low52',label:'52주저',unit:'원',price:true});
   }
   return cols;
 }
+var hasPrices=false;
 
 function fmt(v,unit){
   if(v===null||v===undefined) return '-';
@@ -199,18 +208,31 @@ function fmt(v,unit){
   }
   if(unit==='%') return v.toFixed(1)+'%';
   if(unit==='원') return v.toLocaleString()+'원';
+  if(unit==='배') return v.toFixed(1);
   return v;
+}
+
+// 주가 데이터 getter (priceMap에서 꺼냄)
+function pv(code,key){
+  var p=priceMap[code];
+  if(!p) return null;
+  var map={'_price':'price','_mcap':'market_cap','_per':'per','_pbr':'pbr',
+           '_high52':'high_52w','_low52':'low_52w','_div_yield_price':'div_yield'};
+  var k=map[key];
+  return k?p[k]||null:null;
 }
 
 function colorClass(v,key){
   if(v===null||v===undefined) return '';
   if(key==='debt_ratio') return v>200?'down':v>100?'gold':'';
   if(['opm','nim','roe','roa','div_yield'].indexOf(key)>=0) return v>10?'up':v<0?'down':'';
-  if(key.indexOf('yoy')>=0||key.indexOf('qoq')>=0){
+  if(key.indexOf('yoy')>=0){
     if(v<=-999) return 'down';
     return v>0?'up':v<0?'down':'';
   }
   if(key==='op'||key==='ni') return v<0?'down':'';
+  if(key==='_per') return v<10?'up':v>30?'down':'';
+  if(key==='_pbr') return v<1?'up':v>3?'down':'';
   return '';
 }
 
@@ -263,8 +285,8 @@ function renderBody(){
         td.innerHTML='<span class="stock-name">'+s.name+'</span><span class="stock-code">'+s.code+'</span><span class="stock-sector">'+s.sector+'</span>';
         td.style.textAlign='left';
       } else {
-        var v=s[c.key];
-        var display=(c.key.indexOf('yoy')>=0||c.key.indexOf('qoq')>=0)&&v<=-999?'적전':fmt(v,c.unit);
+        var v=c.price?pv(s.code,c.key):s[c.key];
+        var display=(c.key.indexOf('yoy')>=0)&&v<=-999?'적전':fmt(v,c.unit);
         td.textContent=display;
         var cc=colorClass(v,c.key);
         if(cc) td.className=cc;
@@ -277,8 +299,11 @@ function renderBody(){
 }
 
 function sort(){
+  var isPrice=sortKey.charAt(0)==='_';
   filtered.sort(function(a,b){
-    var va=a[sortKey],vb=b[sortKey];
+    var va,vb;
+    if(isPrice){va=pv(a.code,sortKey);vb=pv(b.code,sortKey);}
+    else{va=a[sortKey];vb=b[sortKey];}
     if(sortKey==='name') return sortDir*(va<vb?-1:va>vb?1:0);
     if(va===null||va===undefined) va=-Infinity;
     if(vb===null||vb===undefined) vb=-Infinity;
@@ -323,18 +348,19 @@ window.openCompare=function(){
     ['OPM','opm','%'],['NIM','nim','%'],['ROE','roe','%'],['ROA','roa','%'],
     ['부채비율','debt_ratio','%'],['배당금','dividend','원'],['배당률','div_yield','%']];
   if(hasYoY) labels.push(['매출YoY','revenue_yoy','%'],['OP YoY','op_yoy','%']);
-  if(hasQoQ) labels.push(['매출QoQ','revenue_qoq','%'],['OP QoQ','op_qoq','%']);
+  if(hasPrices) labels.push(['현재가','_price','원'],['시총','_mcap','억'],['PER','_per','배'],['PBR','_pbr','배']);
 
   var html='<div style="overflow-x:auto"><table style="min-width:auto;font-size:13px"><thead><tr><th style="text-align:left;min-width:100px">항목</th>';
   arr.forEach(function(s){html+='<th style="text-align:right;min-width:100px">'+s.name+'</th>';});
   html+='</tr></thead><tbody>';
   labels.forEach(function(l){
     html+='<tr><td style="color:var(--text-dim);text-align:left">'+l[0]+'</td>';
-    var vals=arr.map(function(s){return s[l[1]];});
-    var maxV=Math.max.apply(null,vals.filter(function(v){return v>-999&&v!==null;}));
+    var isP=l[1].charAt(0)==='_';
+    var vals=arr.map(function(s){return isP?pv(s.code,l[1]):s[l[1]];});
+    var maxV=Math.max.apply(null,vals.filter(function(v){return v!==null&&v>-999;}));
     arr.forEach(function(s){
-      var v=s[l[1]];
-      var display=(l[1].indexOf('yoy')>=0||l[1].indexOf('qoq')>=0)&&v<=-999?'적전':fmt(v,l[2]);
+      var v=isP?pv(s.code,l[1]):s[l[1]];
+      var display=(l[1].indexOf('yoy')>=0)&&v<=-999?'적전':fmt(v,l[2]);
       var cc=colorClass(v,l[1]);
       var bold=(v===maxV&&vals.filter(function(x){return x===maxV;}).length===1)?'font-weight:800;':'';
       html+='<td class="'+cc+'" style="text-align:right;'+bold+'">'+display+'</td>';
@@ -394,15 +420,13 @@ function loadData(url, label){
       filtered=stocks.slice();
       periodData=data;
 
-      // QoQ/YoY 컬럼 존재 여부
+      // YoY 컬럼 존재 여부
       hasYoY=stocks.length>0&&stocks[0].revenue_yoy!==undefined;
-      hasQoQ=stocks.length>0&&stocks[0].revenue_qoq!==undefined;
 
       var info=data.period_label||data.period||'';
       document.getElementById('updated').textContent=
         '기준: '+(info)+' · 업데이트: '+(data.updated||'')+' · 출처: '+(data.source||'OpenDART');
       if(data.compare_yoy) document.getElementById('updated').textContent+=' · YoY비교: '+data.compare_yoy;
-      if(data.compare_qoq) document.getElementById('updated').textContent+=' · QoQ비교: '+data.compare_qoq;
 
       buildSectorFilters();
       render();
@@ -413,6 +437,31 @@ function loadData(url, label){
     });
 }
 
+// 기간 정렬 키 (시간순: q1→q2→q3→annual)
+var PERIOD_ORDER={q1:1,q2:2,q3:3,annual:4};
+function periodSortKey(p){
+  return parseInt(p.year)*10+(PERIOD_ORDER[p.period]||0);
+}
+
+// prices.json 로드
+function loadPrices(){
+  fetch('/data/kr/prices.json')
+    .then(function(r){return r.json();})
+    .then(function(data){
+      priceMap=data.prices||{};
+      hasPrices=Object.keys(priceMap).length>0;
+      // 주가 기준일 표시
+      if(hasPrices){
+        var u=document.getElementById('updated');
+        u.textContent+=' · 주가: '+(data.updated||'');
+      }
+      render(); // 컬럼 추가 반영
+    })
+    .catch(function(){
+      hasPrices=false;
+    });
+}
+
 // 기간 목록 로드
 function loadPeriodIndex(){
   fetch('/data/kr/index.json')
@@ -420,9 +469,9 @@ function loadPeriodIndex(){
     .then(function(idx){
       var bar=document.getElementById('periodBar');
       bar.innerHTML='';
-      var periods=idx.periods||[];
-      // 최신순 정렬
-      periods.sort(function(a,b){return (b.year+b.period).localeCompare(a.year+a.period);});
+      var periods=(idx.periods||[]).filter(function(p){return p.count>0;});
+      // 시간순 정렬 (최신 먼저)
+      periods.sort(function(a,b){return periodSortKey(b)-periodSortKey(a);});
 
       periods.forEach(function(p,i){
         var btn=document.createElement('button');
@@ -436,16 +485,16 @@ function loadPeriodIndex(){
         bar.appendChild(btn);
       });
 
-      // 최신 데이터 로드
       if(periods.length>0){
         loadData('/data/kr/'+periods[0].file, periods[0].label);
       } else {
-        // index 없으면 기존 kospi200.json 폴백
         loadData('/data/kospi200.json','');
       }
+
+      // 주가 데이터 병렬 로드
+      loadPrices();
     })
     .catch(function(){
-      // index 로드 실패 → 기존 파일 사용
       loadData('/data/kospi200.json','');
     });
 }
