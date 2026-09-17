@@ -168,8 +168,10 @@ function render() {
 
   document.getElementById('content').innerHTML = html;
 
-  // 차트는 별도 try-catch
-  try { renderChart(); } catch(ce) { console.error('차트 렌더링 실패:', ce); }
+  // DOM 업데이트 후 차트 렌더링 (타이밍 이슈 방지)
+  setTimeout(function() {
+    try { renderChart(); } catch(ce) { console.error('차트 렌더링 실패:', ce); }
+  }, 100);
 }
 
 function fmtPct(v) {
