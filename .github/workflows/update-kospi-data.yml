@@ -1,14 +1,25 @@
-# 한국주식 재무 트래커 — 매일 자동 데이터 수집
-# 매일 09:00 KST (00:00 UTC)에 실행
-# OpenDART API로 재무제표 수집 → data/kospi200.json 커밋
-
 name: Update KOSPI Financial Data
 
 on:
   schedule:
-    # 매일 00:00 UTC = 09:00 KST
-    - cron: '0 0 * * *'
-  workflow_dispatch:  # 수동 실행 버튼
+    # 연간 (3월 공시 → 4월 5일)
+    - cron: '0 0 5 4 *'
+    # 1분기 (5/15 공시 → 5월 20일)
+    - cron: '0 0 20 5 *'
+    # 반기 (8/14 공시 → 8월 20일)
+    - cron: '0 0 20 8 *'
+    # 3분기 (11/14 공시 → 11월 20일)
+    - cron: '0 0 20 11 *'
+  workflow_dispatch:
+    inputs:
+      period:
+        description: '수집 기간 (annual/q1/q2/q3)'
+        required: false
+        default: 'annual'
+      year:
+        description: '사업연도 (비우면 자동)'
+        required: false
+        default: ''
 
 jobs:
   update-data:
@@ -17,24 +28,43 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
+      - name: Determine period
+        id: period
+        run: |
+          MONTH=$(date +%m)
+          if [ -n "${{ github.event.inputs.period }}" ]; then
+            echo "period=${{ github.event.inputs.period }}" >> $GITHUB_OUTPUT
+          elif [ "$MONTH" = "04" ]; then
+            echo "period=annual" >> $GITHUB_OUTPUT
+          elif [ "$MONTH" = "05" ]; then
+            echo "period=q1" >> $GITHUB_OUTPUT
+          elif [ "$MONTH" = "08" ]; then
+            echo "period=q2" >> $GITHUB_OUTPUT
+          elif [ "$MONTH" = "11" ]; then
+            echo "period=q3" >> $GITHUB_OUTPUT
+          else
+            echo "period=annual" >> $GITHUB_OUTPUT
+          fi
 
       - name: Run DART collector
         env:
           DART_API_KEY: ${{ secrets.DART_API_KEY }}
-        run: python scripts/fetch_dart.py
+        run: |
+          YEAR_ARG=""
+          if [ -n "${{ github.event.inputs.year }}" ]; then
+            YEAR_ARG="--year ${{ github.event.inputs.year }}"
+          fi
+          python scripts/fetch_dart.py --period ${{ steps.period.outputs.period }} $YEAR_ARG
 
       - name: Commit & Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/kospi200.json
-          # 변경사항이 있을 때만 커밋
-          git diff --staged --quiet || git commit -m "📊 재무 데이터 업데이트 $(date +%Y-%m-%d)"
+          git add data/
+          git diff --staged --quiet || git commit -m "📊 재무 데이터: ${{ steps.period.outputs.period }} $(date +%Y-%m-%d)"
           git push
