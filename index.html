@@ -61,6 +61,35 @@ h1{color:#1F4E78;font-size:32px;margin-bottom:8px}
 .tag.ext{background:#e0e7ff;color:#4338ca}
 @media(max-width:700px){.card{padding:12px}.icon{font-size:20px;margin-bottom:4px}.card-title{font-size:12.5px}.card-desc{font-size:10.5px}}
 
+/* ═══ 즐겨찾기 ═══ */
+.fav-section{margin-bottom:20px}
+.fav-header{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#1F4E78;border-radius:12px;cursor:pointer;user-select:none;color:white;flex-wrap:wrap}
+.fav-header h2{font-size:16px;margin:0;font-weight:700}
+.fav-header .fav-cnt{font-size:12px;opacity:.7}
+.fav-header .fav-arrow{margin-left:auto;font-size:12px;transition:transform .2s}
+.fav-header.collapsed .fav-arrow{transform:rotate(-90deg)}
+.fav-body{padding:14px 0}
+.fav-body.collapsed{display:none}
+.fav-empty{text-align:center;color:#999;font-size:13px;padding:24px;background:white;border-radius:10px;border:2px dashed #e5e7eb}
+.fav-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:700px){.fav-grid{grid-template-columns:repeat(2,1fr);gap:10px}}
+.fav-grid .card{position:relative}
+.fav-grid .card.dragging{opacity:.4;border:2px dashed #1F4E78}
+.fav-grid .card.drag-over{border-color:#f59e0b;background:#fffbeb}
+
+/* 카드 위 ☆ 버튼 */
+.star-btn{position:absolute;top:6px;right:6px;background:none;border:none;font-size:16px;cursor:pointer;padding:2px;line-height:1;opacity:.4;transition:opacity .15s;z-index:2}
+.star-btn:hover{opacity:1}
+.star-btn.active{opacity:1;color:#f59e0b}
+.card{position:relative}
+
+/* 프리셋·내보내기 버튼 바 */
+.fav-toolbar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.fav-toolbar button,.fav-toolbar select{font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid #d1d5db;background:white;cursor:pointer;font-family:inherit}
+.fav-toolbar button:hover{background:#f3f4f6}
+.fav-toolbar select{min-width:120px}
+.preset-name-input{font-size:11px;padding:5px 8px;border-radius:6px;border:1px solid #d1d5db;width:100px}
+
 .all-link{text-align:center;margin-top:30px}
 .all-link a{display:inline-block;background:#1F4E78;color:white;text-decoration:none;font-size:13px;font-weight:600;padding:10px 24px;border-radius:8px}
 footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
@@ -73,11 +102,32 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
   <p class="subtitle">개인 재무 시뮬레이션 & 분석 모음</p>
 </header>
 
+<!-- ═══ 즐겨찾기 ═══ -->
+<div class="fav-section">
+  <div class="fav-header" id="favHeader">
+    <span style="font-size:20px">⭐</span>
+    <h2>즐겨찾기</h2>
+    <span class="fav-cnt" id="favCnt"></span>
+    <span class="fav-arrow">▼</span>
+  </div>
+  <div class="fav-body" id="favBody">
+    <div class="fav-toolbar" id="favToolbar">
+      <select id="presetSelect"><option value="">프리셋 선택…</option></select>
+      <button onclick="savePreset()">💾 저장</button>
+      <button onclick="deletePreset()">🗑️ 삭제</button>
+      <button onclick="exportFav()">📤 내보내기</button>
+      <button onclick="importFav()">📥 가져오기</button>
+    </div>
+    <div id="favGrid" class="fav-grid"></div>
+    <div id="favEmpty" class="fav-empty">각 도구 카드의 ☆을 눌러 즐겨찾기에 등록하세요</div>
+  </div>
+</div>
+
 <!-- ═══ 카테고리 카드 ═══ -->
 <div class="cat-grid">
   <div class="cat-card" data-cat="info"><div class="cat-icon">📰</div><div class="cat-name">정보·시장</div><div class="cat-cnt">8개</div></div>
   <div class="cat-card" data-cat="asset"><div class="cat-icon">💰</div><div class="cat-name">자산 설계·파이어</div><div class="cat-cnt">6개</div></div>
-  <div class="cat-card" data-cat="stock"><div class="cat-icon">📈</div><div class="cat-name">주식·투자</div><div class="cat-cnt">20개</div></div>
+  <div class="cat-card" data-cat="stock"><div class="cat-icon">📈</div><div class="cat-name">주식·투자</div><div class="cat-cnt">21개</div></div>
   <div class="cat-card" data-cat="estate"><div class="cat-icon">🏠</div><div class="cat-name">부동산</div><div class="cat-cnt">11개</div></div>
   <div class="cat-card" data-cat="tax"><div class="cat-icon">💸</div><div class="cat-name">세금</div><div class="cat-cnt">14개</div></div>
   <div class="cat-card" data-cat="labor"><div class="cat-icon">💼</div><div class="cat-name">근로·회사</div><div class="cat-cnt">6개</div></div>
@@ -139,6 +189,7 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
   <a href="/risk/risk-reward/" class="card"><div class="icon">⚖️</div><div class="card-title">손익비 계산기</div><div class="card-desc">매수가·목표가·손절가 → 손익비·기대값.</div></a>
   <a href="/risk/portfolio-risk/" class="card"><div class="icon">🛡️</div><div class="card-title">포트폴리오 리스크 분석</div><div class="card-desc">집중도·MDD·섹터 편중.</div></a>
   <a href="/risk/risk-checklist/" class="card"><div class="icon">✅</div><div class="card-title">매매 전 리스크 체크리스트</div><div class="card-desc">매수/매도 전 확인 항목 점검.</div></a>
+  <a href="/us-dividend/" class="card"><div class="icon">🇺🇸</div><div class="card-title">미국 배당·ETF 대시보드</div><div class="card-desc">배당귀족·ETF 비교·포트폴리오 시뮬.</div></a>
 </div>
 </div>
 
@@ -230,22 +281,19 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
 
 <script>
 (function(){
+  /* ─── 패널 토글 (기존) ─── */
   var active = null;
   document.querySelectorAll('.cat-card').forEach(function(card){
     card.addEventListener('click', function(){
       var cat = card.getAttribute('data-cat');
       var panel = document.getElementById('panel-' + cat);
-      // 같은 카드 다시 클릭 → 닫기
       if(active === cat){ closePanel(); return; }
-      // 다른 패널 닫기
       document.querySelectorAll('.tool-panel').forEach(function(p){ p.classList.remove('active'); });
       document.querySelectorAll('.cat-card').forEach(function(c){ c.classList.remove('active'); });
-      // 열기
       if(panel){
         panel.classList.add('active');
         card.classList.add('active');
         active = cat;
-        // 스크롤
         setTimeout(function(){ panel.scrollIntoView({behavior:'smooth', block:'start'}); }, 50);
       }
     });
@@ -255,6 +303,234 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
     document.querySelectorAll('.cat-card').forEach(function(c){ c.classList.remove('active'); });
     active = null;
   };
+
+  /* ─── 즐겨찾기 시스템 ─── */
+  var FAV_KEY = 'sf_favorites';
+  var PRESET_KEY = 'sf_fav_presets';
+  var favs = []; // [{href, icon, title, desc}]
+
+  function loadFavs(){ try{ favs = JSON.parse(localStorage.getItem(FAV_KEY)) || []; }catch(e){ favs=[]; } }
+  function saveFavs(){ localStorage.setItem(FAV_KEY, JSON.stringify(favs)); }
+  function isFav(href){ return favs.some(function(f){ return f.href === href; }); }
+  function addFav(item){ if(!isFav(item.href)){ favs.push(item); saveFavs(); } }
+  function removeFav(href){ favs = favs.filter(function(f){ return f.href !== href; }); saveFavs(); }
+
+  // 모든 도구 카드에 ☆ 버튼 삽입
+  document.querySelectorAll('.tool-grid .card[href], .tool-grid .card a[href]').forEach(function(card){
+    // card가 <a>인 경우만 (div 카드 제외)
+    if(card.tagName !== 'A') return;
+    var href = card.getAttribute('href');
+    var btn = document.createElement('button');
+    btn.className = 'star-btn' + (isFav(href) ? ' active' : '');
+    btn.textContent = isFav(href) ? '★' : '☆';
+    btn.title = '즐겨찾기';
+    btn.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      if(isFav(href)){
+        removeFav(href);
+        btn.textContent = '☆';
+        btn.classList.remove('active');
+      } else {
+        var icon = card.querySelector('.icon');
+        var title = card.querySelector('.card-title');
+        var desc = card.querySelector('.card-desc');
+        addFav({
+          href: href,
+          icon: icon ? icon.textContent.trim() : '📌',
+          title: title ? title.textContent.trim() : '',
+          desc: desc ? desc.textContent.trim() : ''
+        });
+        btn.textContent = '★';
+        btn.classList.add('active');
+      }
+      renderFavGrid();
+    });
+    card.appendChild(btn);
+  });
+
+  // 즐겨찾기 그리드 렌더
+  var favGrid = document.getElementById('favGrid');
+  var favEmpty = document.getElementById('favEmpty');
+  var favCnt = document.getElementById('favCnt');
+
+  function renderFavGrid(){
+    favGrid.innerHTML = '';
+    favCnt.textContent = favs.length ? favs.length + '개' : '';
+    if(!favs.length){ favEmpty.style.display=''; favGrid.style.display='none'; return; }
+    favEmpty.style.display='none'; favGrid.style.display='';
+    favs.forEach(function(f, idx){
+      var a = document.createElement('a');
+      a.href = f.href;
+      a.className = 'card';
+      a.draggable = true;
+      a.setAttribute('data-fav-idx', idx);
+      a.innerHTML = '<div class="icon">'+f.icon+'</div>'
+        + '<div class="card-title">'+f.title+'</div>'
+        + '<div class="card-desc">'+f.desc+'</div>';
+      // 삭제 버튼
+      var del = document.createElement('button');
+      del.className = 'star-btn active';
+      del.textContent = '★';
+      del.title = '즐겨찾기 해제';
+      del.addEventListener('click', function(e){
+        e.preventDefault(); e.stopPropagation();
+        removeFav(f.href);
+        renderFavGrid();
+        syncStarButtons();
+      });
+      a.appendChild(del);
+
+      // 드래그 정렬
+      a.addEventListener('dragstart', function(e){
+        a.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', idx);
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      a.addEventListener('dragend', function(){ a.classList.remove('dragging'); });
+      a.addEventListener('dragover', function(e){ e.preventDefault(); a.classList.add('drag-over'); });
+      a.addEventListener('dragleave', function(){ a.classList.remove('drag-over'); });
+      a.addEventListener('drop', function(e){
+        e.preventDefault(); a.classList.remove('drag-over');
+        var from = parseInt(e.dataTransfer.getData('text/plain'));
+        var to = idx;
+        if(from === to) return;
+        var item = favs.splice(from, 1)[0];
+        favs.splice(to, 0, item);
+        saveFavs();
+        renderFavGrid();
+      });
+
+      // 모바일 터치 드래그
+      var touchStartY=0, touchIdx=-1;
+      a.addEventListener('touchstart', function(e){
+        touchStartY = e.touches[0].clientY;
+        touchIdx = idx;
+      }, {passive:true});
+      a.addEventListener('touchend', function(e){
+        var dy = e.changedTouches[0].clientY - touchStartY;
+        if(Math.abs(dy) < 30) return; // 짧으면 무시
+        var dir = dy > 0 ? 1 : -1;
+        var newIdx = Math.max(0, Math.min(favs.length-1, touchIdx + dir));
+        if(newIdx !== touchIdx){
+          var item = favs.splice(touchIdx, 1)[0];
+          favs.splice(newIdx, 0, item);
+          saveFavs();
+          renderFavGrid();
+        }
+      });
+
+      favGrid.appendChild(a);
+    });
+  }
+
+  // 패널 내 ☆ 동기화
+  function syncStarButtons(){
+    document.querySelectorAll('.tool-grid .star-btn').forEach(function(btn){
+      var card = btn.parentElement;
+      var href = card.getAttribute('href');
+      if(isFav(href)){ btn.textContent='★'; btn.classList.add('active'); }
+      else{ btn.textContent='☆'; btn.classList.remove('active'); }
+    });
+  }
+
+  // 즐겨찾기 접기/펼치기
+  var favHeader = document.getElementById('favHeader');
+  var favBody = document.getElementById('favBody');
+  var favCollapsed = false;
+  try{ favCollapsed = localStorage.getItem('sf_fav_collapsed')==='1'; }catch(e){}
+  if(favCollapsed){ favHeader.classList.add('collapsed'); favBody.classList.add('collapsed'); }
+  favHeader.addEventListener('click', function(){
+    favCollapsed = !favCollapsed;
+    favHeader.classList.toggle('collapsed', favCollapsed);
+    favBody.classList.toggle('collapsed', favCollapsed);
+    try{ localStorage.setItem('sf_fav_collapsed', favCollapsed?'1':'0'); }catch(e){}
+  });
+
+  /* ─── 프리셋 ─── */
+  var presets = {};
+  try{ presets = JSON.parse(localStorage.getItem(PRESET_KEY)) || {}; }catch(e){ presets={}; }
+  var presetSelect = document.getElementById('presetSelect');
+
+  function renderPresets(){
+    // 기존 옵션 제거 (첫번째 빼고)
+    while(presetSelect.options.length > 1) presetSelect.remove(1);
+    Object.keys(presets).forEach(function(name){
+      var opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name + ' ('+presets[name].length+'개)';
+      presetSelect.appendChild(opt);
+    });
+  }
+
+  presetSelect.addEventListener('change', function(){
+    var name = presetSelect.value;
+    if(!name) return;
+    if(presets[name]){
+      favs = JSON.parse(JSON.stringify(presets[name]));
+      saveFavs();
+      renderFavGrid();
+      syncStarButtons();
+    }
+  });
+
+  window.savePreset = function(){
+    if(!favs.length){ alert('즐겨찾기가 비어있습니다.'); return; }
+    var name = prompt('프리셋 이름을 입력하세요:', presetSelect.value || '');
+    if(!name) return;
+    presets[name] = JSON.parse(JSON.stringify(favs));
+    localStorage.setItem(PRESET_KEY, JSON.stringify(presets));
+    renderPresets();
+    presetSelect.value = name;
+  };
+
+  window.deletePreset = function(){
+    var name = presetSelect.value;
+    if(!name){ alert('삭제할 프리셋을 선택하세요.'); return; }
+    if(!confirm('"'+name+'" 프리셋을 삭제할까요?')) return;
+    delete presets[name];
+    localStorage.setItem(PRESET_KEY, JSON.stringify(presets));
+    renderPresets();
+  };
+
+  window.exportFav = function(){
+    var data = { favorites: favs, presets: presets };
+    var blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'swingfarmer-favorites.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  window.importFav = function(){
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.addEventListener('change', function(){
+      var file = input.files[0];
+      if(!file) return;
+      var reader = new FileReader();
+      reader.onload = function(){
+        try{
+          var data = JSON.parse(reader.result);
+          if(data.favorites){ favs = data.favorites; saveFavs(); }
+          if(data.presets){ presets = Object.assign(presets, data.presets); localStorage.setItem(PRESET_KEY, JSON.stringify(presets)); }
+          renderFavGrid();
+          syncStarButtons();
+          renderPresets();
+          alert('가져오기 완료!');
+        }catch(e){ alert('파일 형식 오류'); }
+      };
+      reader.readAsText(file);
+    });
+    input.click();
+  };
+
+  // 초기화
+  loadFavs();
+  renderFavGrid();
+  renderPresets();
 })();
 </script>
 <script src="/common.js?v=4"></script>
