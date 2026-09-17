@@ -94,6 +94,14 @@ def fetch_etf(ticker_str, meta):
                 print(f"    ⚠ {ticker_str} 배당률 보정: API {div_yield}% → 계산값 {calc_yield}%")
                 div_yield = calc_yield
 
+        # 비정상 배당률 최종 방어 (30% 초과는 데이터 오류)
+        if div_yield and div_yield > 30:
+            if div_rate and price and price > 0:
+                div_yield = round((div_rate / price) * 100, 2)
+                print(f"    ⚠ {ticker_str} 배당률 30%초과 재계산 → {div_yield}%")
+            else:
+                div_yield = None
+
         trailing_pe = safe_get(info, "trailingPE")
         high_52w = safe_get(info, "fiftyTwoWeekHigh", 0)
         low_52w = safe_get(info, "fiftyTwoWeekLow", 0)
