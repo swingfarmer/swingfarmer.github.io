@@ -1,0 +1,40 @@
+# 한국주식 재무 트래커 — 매일 자동 데이터 수집
+# 매일 09:00 KST (00:00 UTC)에 실행
+# OpenDART API로 재무제표 수집 → data/kospi200.json 커밋
+
+name: Update KOSPI Financial Data
+
+on:
+  schedule:
+    # 매일 00:00 UTC = 09:00 KST
+    - cron: '0 0 * * *'
+  workflow_dispatch:  # 수동 실행 버튼
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run DART collector
+        env:
+          DART_API_KEY: ${{ secrets.DART_API_KEY }}
+        run: python scripts/fetch_dart.py
+
+      - name: Commit & Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/kospi200.json
+          # 변경사항이 있을 때만 커밋
+          git diff --staged --quiet || git commit -m "📊 재무 데이터 업데이트 $(date +%Y-%m-%d)"
+          git push
