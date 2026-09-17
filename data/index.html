@@ -115,7 +115,12 @@ canvas{width:100%!important}
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script>
+var chartLoaded=false;
+function onChartLoad(){chartLoaded=true;console.log("Chart.js OK");}
+function tryFallbackCDN(){console.warn("1차CDN실패");var s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js";s.onload=onChartLoad;s.onerror=function(){console.error("Chart.js 완전실패")};document.head.appendChild(s);}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" onload="onChartLoad()" onerror="tryFallbackCDN()"></script>
 <script>
 var DATA_URL = '/data/rates.json';
 var HIST_URL = '/data/rates_history.json';
