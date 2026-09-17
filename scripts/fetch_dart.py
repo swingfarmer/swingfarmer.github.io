@@ -160,9 +160,20 @@ def process_stock(stock, corp_code, year, reprt_code):
     if not items:
         print(' ✗'); return None
 
-    rev = extract_account(items, '매출액','수익(매출액)','영업수익','보험료수익')
-    op  = extract_account(items, '영업이익','영업이익(손실)')
-    ni  = extract_account(items, '당기순이익','당기순이익(손실)')
+    rev = extract_account(items,
+        '매출액','수익(매출액)','영업수익',           # 일반기업
+        '이자수익','순이자이익',                       # 은행
+        '보험수익','보험료수익',                       # 보험 (IFRS17/이전)
+        '순영업수익',                                  # 증권
+        '영업이익수익',                                # 카드/캐피탈
+    )
+    op  = extract_account(items,
+        '영업이익','영업이익(손실)',
+        '영업손익',                                    # 금융사 변형
+    )
+    ni  = extract_account(items, '당기순이익','당기순이익(손실)',
+        '당기순이익(손실)의 귀속 지배기업의 소유주에게 귀속되는 당기순이익(손실)',
+    )
     eq  = extract_account(items, '자본총계')
     ast = extract_account(items, '자산총계')
     lib = extract_account(items, '부채총계')
