@@ -174,17 +174,30 @@ def fetch_investor(token, code):
         return None
     output = data.get('output', [])
     result = {}
+
+    # 디버그: 첫 종목에서 투자자 이름 전체 출력 (프로그램매매 필드 확인용)
+    global _investor_names_logged
+    if not _investor_names_logged and output:
+        names = [item.get('invr_nm', '?').strip() for item in output]
+        print(f'   📋 투자자 항목: {names}')
+        _investor_names_logged = True
+
     for item in output:
         name = item.get('invr_nm', '').strip()
         net = safe_int(item.get('ntby_qty'))          # 순매수 수량
         net_amt = safe_int(item.get('ntby_tr_pbmn'))  # 순매수 금액
-        if '외국인' in name:
+        if '외국인' in name and '기타' not in name:
             result['foreign_qty'] = net
             result['foreign_amt'] = net_amt
         elif '기관' in name:
             result['institution_qty'] = net
             result['institution_amt'] = net_amt
+        elif '프로그램' in name or 'program' in name.lower():
+            result['program_qty'] = net
+            result['program_amt'] = net_amt
     return result if result else None
+
+_investor_names_logged = False  # 첫 호출에서만 로그
 
 
 # ── 기술적 지표 계산 ──
@@ -490,6 +503,8 @@ def main():
         'institution_top15_sell': [],
         'foreign_consecutive': [],
         'institution_consecutive': [],
+        'program_absorb_bull': [],    # 프로그램매도 소화 + 외인순매수 (강세)
+        'program_absorb_bear': [],    # 프로그램매수 + 외인순매도 (약세)
     }
 
     # 수급 데이터 임시 저장 (Top 15 정렬용)
@@ -537,6 +552,7 @@ def main():
             inv_hist[code][today_iso] = {
                 'foreign': inv.get('foreign_qty', 0),
                 'institution': inv.get('institution_qty', 0),
+                'program': inv.get('program_qty', 0),  # 프로그램매매
             }
 
             investor_today.append({
@@ -546,6 +562,8 @@ def main():
                 'foreign_amt': inv.get('foreign_amt', 0),
                 'institution_qty': inv.get('institution_qty', 0),
                 'institution_amt': inv.get('institution_amt', 0),
+                'program_qty': inv.get('program_qty', 0),
+                'program_amt': inv.get('program_amt', 0),
             })
 
         sig_keys = [k for k in sig]
@@ -597,6 +615,71 @@ def main():
         key=lambda x: x['consecutive'], reverse=True)
     all_signals['institution_consecutive'].sort(
         key=lambda x: x['consecutive'], reverse=True)
+
+    # ── 프로그램매도 소화 + 외인순매수 (3일 연속) ──
+    # 조건: 프로그램 순매도(음수) + 외인 순매수(양수) 3일 연속
+    #       → 외인이 프로그램 매도 물량을 흡수하며 추가 매수 (강세 패턴)
+    # 반대: 프로그램 순매수(양수) + 외인 순매도(음수) 3일 연속 (약세 패턴)
+    has_program_data = any(
+        s.get('program_qty', 0) != 0 for s in investor_today
+    )
+
+    if has_program_data:
+        print('\n🔍 프로그램 vs 외인 패턴 분석...')
+        for s in stocks:
+            code = s['code']
+            if code not in inv_hist:
+                continue
+            dates = sorted(inv_hist[code].keys(), reverse=True)
+            if len(dates) < 3:
+                continue
+
+            # 최근 3거래일 체크
+            bull_days = 0   # 프로그램매도 + 외인매수
+            bear_days = 0   # 프로그램매수 + 외인매도
+            for d in dates[:3]:
+                day = inv_hist[code][d]
+                pgm = day.get('program', 0)
+                frn = day.get('foreign', 0)
+                if pgm < 0 and frn > 0:
+                    bull_days += 1
+                if pgm > 0 and frn < 0:
+                    bear_days += 1
+
+            base = {'code': code, 'name': s['name'],
+                    'sector': s['sector']}
+
+            if bull_days >= 3:
+                # 최근 일자 수급 정보 추가
+                latest = inv_hist[code][dates[0]]
+                all_signals['program_absorb_bull'].append({
+                    **base,
+                    'consecutive': bull_days,
+                    'foreign_qty': latest.get('foreign', 0),
+                    'program_qty': latest.get('program', 0),
+                })
+            if bear_days >= 3:
+                latest = inv_hist[code][dates[0]]
+                all_signals['program_absorb_bear'].append({
+                    **base,
+                    'consecutive': bear_days,
+                    'foreign_qty': latest.get('foreign', 0),
+                    'program_qty': latest.get('program', 0),
+                })
+
+        all_signals['program_absorb_bull'].sort(
+            key=lambda x: x.get('foreign_qty', 0), reverse=True)
+        all_signals['program_absorb_bear'].sort(
+            key=lambda x: x.get('foreign_qty', 0))
+
+        bull_n = len(all_signals['program_absorb_bull'])
+        bear_n = len(all_signals['program_absorb_bear'])
+        if bull_n or bear_n:
+            print(f'   강세패턴(프매도+외매수): {bull_n}종목')
+            print(f'   약세패턴(프매수+외매도): {bear_n}종목')
+    else:
+        print('\n⚠️  프로그램매매 데이터 없음 — 시그널 비활성')
+        print('   → 월요일 Actions 로그에서 📋 투자자 항목 확인 필요')
 
     # ── 저장 ──
     os.makedirs(OUT_DIR, exist_ok=True)
