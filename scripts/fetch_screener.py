@@ -201,55 +201,187 @@ def calc_bollinger_upper(closes, n=20, k=2):
     return ma + k * std
 
 
+def calc_rsi(closes, period=14):
+    """RSI (Relative Strength Index)."""
+    if len(closes) < period + 1:
+        return None
+    gains, losses = [], []
+    for i in range(-period, 0):
+        change = closes[i] - closes[i - 1]
+        gains.append(max(0, change))
+        losses.append(max(0, -change))
+    avg_gain = sum(gains) / period
+    avg_loss = sum(losses) / period
+    if avg_loss == 0:
+        return 100.0
+    rs = avg_gain / avg_loss
+    return round(100 - (100 / (1 + rs)), 1)
+
+
+def calc_ema(prices, period):
+    """EMA 시리즈의 마지막 값 반환."""
+    if len(prices) < period:
+        return None
+    k = 2 / (period + 1)
+    ema = sum(prices[:period]) / period
+    for p in prices[period:]:
+        ema = p * k + ema * (1 - k)
+    return ema
+
+
+def calc_macd(closes):
+    """MACD, Signal 마지막 값 반환."""
+    if len(closes) < 35:  # 26 + 9
+        return None, None, None, None
+    # EMA12, EMA26 시리즈 생성
+    k12, k26 = 2 / 13, 2 / 27
+    ema12 = sum(closes[:12]) / 12
+    ema26 = sum(closes[:26]) / 26
+    macd_series = []
+    for i in range(26, len(closes)):
+        if i < 26:
+            continue
+        # EMA12 up to i
+        e12 = sum(closes[:12]) / 12
+        for j in range(12, i + 1):
+            e12 = closes[j] * k12 + e12 * (1 - k12)
+        e26 = sum(closes[:26]) / 26
+        for j in range(26, i + 1):
+            e26 = closes[j] * k26 + e26 * (1 - k26)
+        macd_series.append(e12 - e26)
+    if len(macd_series) < 10:
+        return None, None, None, None
+    # Signal (EMA9 of MACD)
+    k9 = 2 / 10
+    sig = sum(macd_series[:9]) / 9
+    prev_sig = sig
+    for m in macd_series[9:]:
+        prev_sig = sig
+        sig = m * k9 + sig * (1 - k9)
+    macd_now = macd_series[-1]
+    macd_prev = macd_series[-2]
+    return macd_now, sig, macd_prev, prev_sig
+
+
 def detect_signals(ohlcv):
     """OHLCV 배열에서 모든 기술적 시그널 판별."""
     signals = {}
-    if len(ohlcv) < 51:  # MA50 최소 요구
+    if len(ohlcv) < 51:
         return signals
 
     closes = [d['close'] for d in ohlcv]
+    volumes = [d['volume'] for d in ohlcv]
     latest = ohlcv[-1]
+    price = latest['close']
+
+    # ── MA / 크로스 ──
+    ma5_now = calc_ma(closes, 5)
+    ma5_prev = calc_ma(closes[:-1], 5)
+    ma20_now = calc_ma(closes, 20)
+    ma20_prev = calc_ma(closes[:-1], 20)
+    ma50_now = calc_ma(closes, 50)
+    ma50_prev = calc_ma(closes[:-1], 50)
+    ma60_now = calc_ma(closes, 60) if len(closes) >= 60 else None
 
     # ① 50일선(10주선) 종가 돌파
-    ma50_now = calc_ma(closes, 50)
-    ma50_prev = calc_ma(closes[:-1], 50) if len(closes) > 50 else None
     if ma50_now and ma50_prev:
         prev_close = ohlcv[-2]['close']
-        if prev_close < ma50_prev and latest['close'] >= ma50_now:
+        if prev_close < ma50_prev and price >= ma50_now:
             signals['ma50_breakout'] = {
-                'price': latest['close'],
-                'ma50': round(ma50_now),
-            }
+                'price': price, 'ma50': round(ma50_now)}
 
-    # ② ③ 볼밴 상단 돌파
+    # ⑤ 골든크로스 (MA5 > MA20 돌파)
+    if ma5_now and ma5_prev and ma20_now and ma20_prev:
+        if ma5_prev <= ma20_prev and ma5_now > ma20_now:
+            signals['golden_cross'] = {
+                'price': price, 'ma5': round(ma5_now),
+                'ma20': round(ma20_now)}
+
+    # ⑥ 데드크로스 (MA5 < MA20 돌파)
+    if ma5_now and ma5_prev and ma20_now and ma20_prev:
+        if ma5_prev >= ma20_prev and ma5_now < ma20_now:
+            signals['dead_cross'] = {
+                'price': price, 'ma5': round(ma5_now),
+                'ma20': round(ma20_now)}
+
+    # ⑦ 정배열 (MA5 > MA20 > MA60)
+    if ma5_now and ma20_now and ma60_now:
+        if ma5_now > ma20_now > ma60_now:
+            signals['aligned_bull'] = {
+                'price': price, 'ma5': round(ma5_now),
+                'ma20': round(ma20_now), 'ma60': round(ma60_now)}
+
+    # ── 볼린저밴드 ──
     bb_upper = calc_bollinger_upper(closes)
     if bb_upper:
         bb_upper = round(bb_upper)
-        if latest['close'] > bb_upper:
+        if price > bb_upper:
             signals['bb_upper_close'] = {
-                'price': latest['close'],
-                'bb_upper': bb_upper,
-            }
+                'price': price, 'bb_upper': bb_upper}
         elif latest['high'] > bb_upper:
             signals['bb_upper_intra'] = {
-                'price': latest['close'],
-                'high': latest['high'],
-                'bb_upper': bb_upper,
-            }
+                'price': price, 'high': latest['high'],
+                'bb_upper': bb_upper}
 
-    # ④ 3일 연속 양봉 + 합계 10%↑
+    # ── 3일 연속 양봉 10%↑ ──
     if len(ohlcv) >= 4:
         last3 = ohlcv[-3:]
         all_bullish = all(d['close'] > d['open'] for d in last3)
         if all_bullish:
             base_close = ohlcv[-4]['close']
             if base_close > 0:
-                gain = (latest['close'] - base_close) / base_close * 100
+                gain = (price - base_close) / base_close * 100
                 if gain >= 10:
                     signals['rally_3d_10pct'] = {
-                        'price': latest['close'],
-                        'gain_3d': round(gain, 1),
-                    }
+                        'price': price, 'gain_3d': round(gain, 1)}
+
+    # ── 거래량 ──
+    vol_avg20 = calc_ma(volumes, 20)
+    vol_avg5 = calc_ma(volumes[-5:], 5) if len(volumes) >= 5 else None
+    vol_avg100 = calc_ma(volumes, min(len(volumes), 100))
+
+    # ⑧ 거래량 폭발 (당일 > 20일평균 × 2)
+    if vol_avg20 and vol_avg20 > 0 and latest['volume'] > 0:
+        vol_ratio = latest['volume'] / vol_avg20
+        if vol_ratio >= 2:
+            signals['volume_spike'] = {
+                'price': price, 'volume': latest['volume'],
+                'avg20': round(vol_avg20),
+                'ratio': round(vol_ratio, 1)}
+
+    # ⑭ 거래량 돌파 (5일평균 > 100일평균) — 이미지 스크리너 재현
+    if vol_avg5 and vol_avg100 and vol_avg100 > 0:
+        vol_change = (vol_avg5 / vol_avg100 - 1) * 100
+        if vol_avg5 > vol_avg100:
+            signals['volume_breakout'] = {
+                'price': price, 'vol_avg5': round(vol_avg5),
+                'vol_avg100': round(vol_avg100),
+                'change_pct': round(vol_change, 1)}
+
+    # ── 52주 신고가/신저가 ──
+    if len(closes) >= 5:
+        high_52w = max(d['high'] for d in ohlcv)
+        low_52w = min(d['low'] for d in ohlcv)
+        if latest['high'] >= high_52w:
+            signals['new_high_52w'] = {'price': price, 'high': latest['high']}
+        if latest['low'] <= low_52w:
+            signals['new_low_52w'] = {'price': price, 'low': latest['low']}
+
+    # ── RSI ──
+    rsi = calc_rsi(closes)
+    if rsi is not None:
+        if rsi <= 30:
+            signals['rsi_oversold'] = {'price': price, 'rsi': rsi}
+        elif rsi >= 70:
+            signals['rsi_overbought'] = {'price': price, 'rsi': rsi}
+
+    # ── MACD 골든크로스 ──
+    macd_now, sig_now, macd_prev, sig_prev = calc_macd(closes)
+    if macd_now is not None and sig_now is not None:
+        if macd_prev <= sig_prev and macd_now > sig_now:
+            signals['macd_golden'] = {
+                'price': price, 'macd': round(macd_now, 1),
+                'signal': round(sig_now, 1)}
 
     return signals
 
@@ -343,9 +475,19 @@ def main():
     # ── 종목별 데이터 수집 ──
     all_signals = {
         'ma50_breakout': [],
+        'golden_cross': [],
+        'dead_cross': [],
+        'aligned_bull': [],
         'bb_upper_close': [],
         'bb_upper_intra': [],
         'rally_3d_10pct': [],
+        'volume_spike': [],
+        'volume_breakout': [],
+        'new_high_52w': [],
+        'new_low_52w': [],
+        'rsi_oversold': [],
+        'rsi_overbought': [],
+        'macd_golden': [],
         'foreign_top15_buy': [],
         'foreign_top15_sell': [],
         'institution_top15_buy': [],
@@ -379,8 +521,11 @@ def main():
         base = {'code': code, 'name': name, 'sector': sector,
                 'price': latest_price}
 
-        for key in ['ma50_breakout', 'bb_upper_close',
-                     'bb_upper_intra', 'rally_3d_10pct']:
+        for key in ['ma50_breakout', 'golden_cross', 'dead_cross',
+                     'aligned_bull', 'bb_upper_close', 'bb_upper_intra',
+                     'rally_3d_10pct', 'volume_spike', 'volume_breakout',
+                     'new_high_52w', 'new_low_52w',
+                     'rsi_oversold', 'rsi_overbought', 'macd_golden']:
             if key in sig:
                 entry = {**base, **sig[key]}
                 all_signals[key].append(entry)
@@ -492,9 +637,19 @@ def main():
     for k, v in summary.items():
         label = {
             'ma50_breakout':          '10주선 돌파',
+            'golden_cross':           '골든크로스',
+            'dead_cross':             '데드크로스',
+            'aligned_bull':           '정배열',
             'bb_upper_close':         '볼밴상단 종가돌파',
             'bb_upper_intra':         '볼밴상단 장중돌파',
             'rally_3d_10pct':         '3일양봉 10%↑',
+            'volume_spike':           '거래량 폭발(2배↑)',
+            'volume_breakout':        '거래량 돌파(5일>100일)',
+            'new_high_52w':           '52주 신고가',
+            'new_low_52w':            '52주 신저가',
+            'rsi_oversold':           'RSI 과매도(≤30)',
+            'rsi_overbought':         'RSI 과매수(≥70)',
+            'macd_golden':            'MACD 골든',
             'foreign_top15_buy':      '외인 매수 Top15',
             'foreign_top15_sell':     '외인 매도 Top15',
             'institution_top15_buy':  '기관 매수 Top15',
