@@ -243,8 +243,13 @@ def try_kis_fallback():
             print(f'   [{i}/{len(existing)}]...')
         mcap = _kis_market_cap(token, s['code'])
 
+        # 시총 0/None이면 1회 재시도 (API 일시 오류 대비)
         if mcap is None or mcap == 0:
-            # API 에러 또는 시총 0 → 기존 종목 유지 (제거하지 않음)
+            time.sleep(0.3)
+            mcap = _kis_market_cap(token, s['code'])
+
+        if mcap is None or mcap == 0:
+            # 재시도에도 실패 → 기존 종목 유지 (제거하지 않음)
             s['mcap'] = 0
             stocks.append(s)
             kept_no_data.append(s['name'])
@@ -256,7 +261,7 @@ def try_kis_fallback():
             # 시총 1조 미만 확인됨 → 제거
             removed.append(f'{s["name"]}({mcap}억)')
 
-        time.sleep(0.06)
+        time.sleep(0.15)  # rate limit 여유 (0.06→0.15)
 
     # 시총 확인된 종목만 정렬 (0은 뒤로)
     stocks.sort(key=lambda x: -(x['mcap'] or 0))
