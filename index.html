@@ -81,6 +81,10 @@ h1{color:#1F4E78;font-size:32px;margin-bottom:8px}
 .fav-chip .chip-icon{font-size:14px}
 .fav-chip .chip-del{font-size:11px;color:#999;cursor:pointer;margin-left:2px;padding:0 2px}
 .fav-chip .chip-del:hover{color:#dc2626}
+.fav-chip .chip-move{font-size:11px;color:#999;cursor:pointer;padding:0 2px;display:none}
+.fav-chip .chip-move:hover{color:#1F4E78}
+.fav-grid.edit-mode .chip-move{display:inline}
+.fav-grid.edit-mode .fav-chip{border-color:#f59e0b;background:#fffbeb}
 @media(max-width:700px){.fav-chip{font-size:12px;padding:6px 10px}}
 
 /* 카드 위 ☆ 버튼 */
@@ -123,6 +127,7 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
       <button onclick="deletePreset()">🗑️ 삭제</button>
       <button onclick="exportFav()">📤 내보내기</button>
       <button onclick="importFav()">📥 가져오기</button>
+      <button id="btnEditFav" onclick="toggleEditMode()">✏️ 순서편집</button>
     </div>
     <div id="favGrid" class="fav-grid"></div>
     <div id="favEmpty" class="fav-empty">각 도구 카드의 ☆을 눌러 즐겨찾기에 등록하세요</div>
@@ -373,6 +378,7 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
       a.className = 'fav-chip';
       a.draggable = true;
       a.setAttribute('data-fav-idx', idx);
+      a.setAttribute('data-idx', idx);
       a.innerHTML = '<span class="chip-icon">'+f.icon+'</span>'
         + '<span>'+f.title+'</span>';
       // × 삭제
@@ -387,6 +393,20 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
         syncStarButtons();
       });
       a.appendChild(del);
+
+      // ↑↓ 순서 이동 버튼 (편집모드)
+      var mvUp = document.createElement('span');
+      mvUp.className = 'chip-move';
+      mvUp.textContent = '◀';
+      mvUp.title = '앞으로';
+      mvUp.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); moveFav(idx, -1); });
+      a.appendChild(mvUp);
+      var mvDn = document.createElement('span');
+      mvDn.className = 'chip-move';
+      mvDn.textContent = '▶';
+      mvDn.title = '뒤로';
+      mvDn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); moveFav(idx, 1); });
+      a.appendChild(mvDn);
 
       // 드래그 정렬
       a.addEventListener('dragstart', function(e){
@@ -411,6 +431,48 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
       favGrid.appendChild(a);
     });
   }
+
+  // ── 편집모드 ──
+  var editMode = false;
+  window.toggleEditMode = function(){
+    editMode = !editMode;
+    document.getElementById('btnEditFav').textContent = editMode ? '✅ 완료' : '✏️ 순서편집';
+    favGrid.classList.toggle('edit-mode', editMode);
+  };
+  window.moveFav = function(idx, dir){
+    var to = idx + dir;
+    if(to < 0 || to >= favs.length) return;
+    var tmp = favs[idx];
+    favs[idx] = favs[to];
+    favs[to] = tmp;
+    saveFavs();
+    renderFavGrid();
+    favGrid.classList.add('edit-mode'); // 편집모드 유지
+  };
+
+  // 터치 드래그 (모바일)
+  var touchIdx = -1;
+  favGrid.addEventListener('touchstart', function(e){
+    var chip = e.target.closest('.fav-chip');
+    if(!chip) return;
+    touchIdx = parseInt(chip.getAttribute('data-idx'));
+  }, {passive:true});
+  favGrid.addEventListener('touchend', function(e){
+    if(touchIdx < 0) return;
+    var touch = e.changedTouches[0];
+    var el = document.elementFromPoint(touch.clientX, touch.clientY);
+    var chip = el ? el.closest('.fav-chip') : null;
+    if(chip){
+      var to = parseInt(chip.getAttribute('data-idx'));
+      if(to !== touchIdx){
+        var item = favs.splice(touchIdx, 1)[0];
+        favs.splice(to, 0, item);
+        saveFavs();
+        renderFavGrid();
+      }
+    }
+    touchIdx = -1;
+  });
 
   // 패널 내 ☆ 동기화
   function syncStarButtons(){
