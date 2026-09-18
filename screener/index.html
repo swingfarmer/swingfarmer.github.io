@@ -71,7 +71,7 @@ tr:hover{background:rgba(59,130,246,.06)}
 
 <p class="note">
   ※ KIS Open API · 평일 장 마감 후 자동 업데이트<br>
-  ※ 과거 데이터 최대 1년 보관
+  ※ 현재가: prices.json 기준 · 시그널: 수정주가 기반
 </p>
 
 <script src="/common.js?v=4"></script>
@@ -82,6 +82,7 @@ var indexData = null;   // {dates:[], latest:''}
 var currentDate = '';
 var currentTab = '';
 var dayData = null;     // 현재 날짜 데이터
+var pricesData = null;  // prices.json (실제 현재가 — 수정주가 대체용)
 
 var TAB_CONFIG = [
   {key:'ma50_breakout',         label:'10주선 돌파',       icon:'📈'},
@@ -245,6 +246,11 @@ function renderTable(){
   }
 
   tbody.innerHTML=items.map(function(item){
+    // prices.json에서 실제 현재가 가져오기 (수정주가 대체)
+    var realPrice=null;
+    if(pricesData&&pricesData.prices&&pricesData.prices[item.code]){
+      realPrice=pricesData.prices[item.code].price;
+    }
     return '<tr>'+cols.map(function(c){
       if(c.key==='name'){
         return '<td style="text-align:left"><span class="stock-name">'+item.name+'</span><span class="stock-code">'+item.code+'</span></td>';
@@ -253,6 +259,8 @@ function renderTable(){
         return '<td style="text-align:left"><span class="stock-sector">'+item.sector+'</span></td>';
       }
       var v=item[c.key];
+      // price 컬럼은 실제 현재가로 교체
+      if(c.key==='price'&&realPrice) v=realPrice;
       var cls='';
       if(c.key==='net_amt'||c.key==='net_qty'){
         cls=v>0?'up':v<0?'down':'';
@@ -265,17 +273,21 @@ function renderTable(){
 }
 
 // ── 초기화 ──
-fetch('/data/kr/screener/index.json')
-  .then(function(r){return r.json();})
-  .then(function(idx){
-    indexData=idx;
+// prices.json (실제 현재가) + index.json 병렬 로드
+Promise.all([
+  fetch('/data/kr/prices.json').then(function(r){return r.json();}).catch(function(){return null;}),
+  fetch('/data/kr/screener/index.json').then(function(r){return r.json();})
+])
+  .then(function(results){
+    pricesData=results[0];  // null이면 수정주가 fallback
+    indexData=results[1];
     var sel=document.getElementById('dateSelect');
-    idx.dates.forEach(function(d){
+    indexData.dates.forEach(function(d){
       var opt=document.createElement('option');
       opt.value=d;opt.textContent=d;
       sel.appendChild(opt);
     });
-    if(idx.latest) loadDate(idx.latest);
+    if(indexData.latest) loadDate(indexData.latest);
     else document.getElementById('tbody').innerHTML='<tr><td class="empty">아직 데이터 없음 — GitHub Actions에서 스크리너를 먼저 실행하세요</td></tr>';
   })
   .catch(function(){
