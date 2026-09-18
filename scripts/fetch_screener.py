@@ -224,6 +224,7 @@ def fetch_program_trade(token, code):
     """종목별 프로그램매매추이(일별) — FHPPG04650201.
     최근 5거래일 프로그램 순매수 수량/금액 반환.
     [{date, program_qty, program_amt}, ...]  (날짜 오름차순)"""
+    global _program_fields_logged
     today_str = date.today().strftime('%Y%m%d')
     # KIS 문서: FID_INPUT_DATE_1은 "002" prefix 필요 (예: "0020260918")
     date_param = f'002{today_str}'
@@ -235,43 +236,38 @@ def fetch_program_trade(token, code):
     data = kis_request(url, token, 'FHPPG04650201')
 
     # 디버그: 첫 종목에서 에러 확인
-    global _program_fields_logged
-    if not _program_fields_logged:
-        if data is None:
-            # kis_request가 None 반환 → 에러 내용을 직접 확인
-            print(f'   ⚠️ 프로그램매매 API 호출 실패 — 에러 응답 직접 확인 중...')
-            try:
-                req = urllib.request.Request(url, headers={
-                    'Content-Type':  'application/json; charset=UTF-8',
-                    'authorization': f'Bearer {token}',
-                    'appkey':        KIS_APP_KEY,
-                    'appsecret':     KIS_APP_SECRET,
-                    'tr_id':         'FHPPG04650201',
-                })
-                with urllib.request.urlopen(req, timeout=15) as resp:
-                    raw = json.loads(resp.read().decode('utf-8'))
-                print(f'   📋 rt_cd={raw.get("rt_cd")}, msg_cd={raw.get("msg_cd")}, msg1={raw.get("msg1")}')
-                print(f'   📋 응답 키: {list(raw.keys())}')
-            except urllib.error.HTTPError as he:
-                body = he.read().decode('utf-8', errors='replace')
-                print(f'   📋 HTTP {he.code}: {body[:300]}')
-            except Exception as ex:
-                print(f'   📋 예외: {ex}')
-            _program_fields_logged = True
-            return []
+    if not _program_fields_logged and data is None:
+        print(f'   ⚠️ 프로그램매매 API 호출 실패 — 에러 응답 직접 확인 중...')
+        try:
+            req = urllib.request.Request(url, headers={
+                'Content-Type':  'application/json; charset=UTF-8',
+                'authorization': f'Bearer {token}',
+                'appkey':        KIS_APP_KEY,
+                'appsecret':     KIS_APP_SECRET,
+                'tr_id':         'FHPPG04650201',
+            })
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                raw = json.loads(resp.read().decode('utf-8'))
+            print(f'   📋 rt_cd={raw.get("rt_cd")}, msg_cd={raw.get("msg_cd")}, msg1={raw.get("msg1")}')
+            print(f'   📋 응답 키: {list(raw.keys())}')
+        except urllib.error.HTTPError as he:
+            body = he.read().decode('utf-8', errors='replace')
+            print(f'   📋 HTTP {he.code}: {body[:300]}')
+        except Exception as ex:
+            print(f'   📋 예외: {ex}')
+        _program_fields_logged = True
+        return []
 
     if not data:
         return []
 
     output = data.get('output', [])
     if not output:
-        # output2 fallback (일부 시세분석 API는 output2 사용)
         output = data.get('output2', [])
     if not output:
         return []
 
     # 디버그: 첫 종목에서 응답 필드명 전체 출력
-    global _program_fields_logged
     if not _program_fields_logged:
         keys = list(output[0].keys()) if output else []
         print(f'   📋 프로그램매매 응답 필드: {keys}')
