@@ -1,0 +1,34 @@
+name: Update KOSPI Screener
+
+on:
+  schedule:
+    # 매일 KST 18:45 (UTC 09:45) — 주가 수집 후 15분 뒤
+    - cron: '45 9 * * 1-5'
+  workflow_dispatch: {}
+
+jobs:
+  update-screener:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run screener
+        env:
+          KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
+        run: python scripts/fetch_screener.py
+
+      - name: Commit & Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/kr/screener/
+          git diff --staged --quiet || git commit -m "📊 스크리너 $(date +%Y-%m-%d)"
+          git pull --rebase
+          git push
