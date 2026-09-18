@@ -164,7 +164,8 @@ def fetch_ohlcv(token, code, end_date):
 
 
 def fetch_investor(token, code):
-    """종목별 투자자 매매 동향 (최근 거래일 기준)."""
+    """종목별 투자자 매매 동향 (최근 거래일 기준).
+    FHKST01010900 응답은 날짜별 행 — 각 행에 외인/기관/프로그램 필드."""
     url = (f'{KIS_BASE}/uapi/domestic-stock/v1/quotations/'
            f'inquire-investor'
            f'?FID_COND_MRKT_DIV_CODE=J'
@@ -173,31 +174,53 @@ def fetch_investor(token, code):
     if not data:
         return None
     output = data.get('output', [])
+    if not output:
+        return None
+
+    # 디버그: 첫 종목에서 응답 필드명 전체 출력
+    global _investor_fields_logged
+    if not _investor_fields_logged:
+        keys = list(output[0].keys()) if output else []
+        print(f'   📋 투자자 응답 필드: {keys}')
+        # 첫 행 값도 출력
+        if output:
+            print(f'   📋 첫 행 데이터: {output[0]}')
+        _investor_fields_logged = True
+
+    # 최신 거래일 데이터 (첫 행)
+    row = output[0]
+
+    # 필드명 후보 (KIS API 버전에 따라 다를 수 있음)
     result = {}
 
-    # 디버그: 첫 종목에서 투자자 이름 전체 출력 (프로그램매매 필드 확인용)
-    global _investor_names_logged
-    if not _investor_names_logged and output:
-        names = [item.get('invr_nm', '?').strip() for item in output]
-        print(f'   📋 투자자 항목: {names}')
-        _investor_names_logged = True
+    # 외국인 순매수
+    frgn_qty = (safe_int(row.get('frgn_ntby_qty'))
+                or safe_int(row.get('frgn_ntby_stcn'))
+                or safe_int(row.get('ntby_qty')))
+    frgn_amt = (safe_int(row.get('frgn_ntby_tr_pbmn'))
+                or safe_int(row.get('frgn_ntby_tr_mhht')))
+    result['foreign_qty'] = frgn_qty
+    result['foreign_amt'] = frgn_amt
 
-    for item in output:
-        name = item.get('invr_nm', '').strip()
-        net = safe_int(item.get('ntby_qty'))          # 순매수 수량
-        net_amt = safe_int(item.get('ntby_tr_pbmn'))  # 순매수 금액
-        if '외국인' in name and '기타' not in name:
-            result['foreign_qty'] = net
-            result['foreign_amt'] = net_amt
-        elif '기관' in name:
-            result['institution_qty'] = net
-            result['institution_amt'] = net_amt
-        elif '프로그램' in name or 'program' in name.lower():
-            result['program_qty'] = net
-            result['program_amt'] = net_amt
-    return result if result else None
+    # 기관 순매수
+    orgn_qty = (safe_int(row.get('orgn_ntby_qty'))
+                or safe_int(row.get('orgn_ntby_stcn')))
+    orgn_amt = (safe_int(row.get('orgn_ntby_tr_pbmn'))
+                or safe_int(row.get('orgn_ntby_tr_mhht')))
+    result['institution_qty'] = orgn_qty
+    result['institution_amt'] = orgn_amt
 
-_investor_names_logged = False  # 첫 호출에서만 로그
+    # 프로그램 순매수
+    prgm_qty = (safe_int(row.get('prgm_ntby_qty'))
+                or safe_int(row.get('prgm_ntby_stcn')))
+    prgm_amt = (safe_int(row.get('prgm_ntby_tr_pbmn'))
+                or safe_int(row.get('prgm_ntby_tr_mhht')))
+    result['program_qty'] = prgm_qty
+    result['program_amt'] = prgm_amt
+
+    return result
+
+_investor_fields_logged = False  # 첫 호출에서만 로그
 
 
 # ── 기술적 지표 계산 ──
