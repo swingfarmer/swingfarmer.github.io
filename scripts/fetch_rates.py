@@ -10,7 +10,7 @@ from datetime import datetime, timezone, timedelta
 
 KST = timezone(timedelta(hours=9))
 HISTORY_FILE = "data/rates_history.json"
-MAX_HISTORY_DAYS = 365
+MAX_HISTORY_DAYS = 3650
 
 
 def fetch_exchange_rates():

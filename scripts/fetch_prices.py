@@ -181,7 +181,7 @@ def main():
         print(' ✓')
         time.sleep(CALL_DELAY)
 
-    # 저장
+    # 저장 — 최신 + 일자별 이력
     output = {
         'updated':     today.isoformat(),
         'source':      'KIS Open API',
@@ -190,11 +190,30 @@ def main():
     }
 
     os.makedirs(os.path.dirname(OUT_FILE), exist_ok=True)
+
+    # 1) 최신 (뷰어가 읽음)
     with open(OUT_FILE, 'w', encoding='utf-8') as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
 
+    # 2) 일자별 스냅샷 (이력 보관)
+    hist_dir = os.path.join(os.path.dirname(OUT_FILE), 'prices')
+    os.makedirs(hist_dir, exist_ok=True)
+    hist_file = os.path.join(hist_dir, f'{today.isoformat()}.json')
+    with open(hist_file, 'w', encoding='utf-8') as f:
+        json.dump(output, f, ensure_ascii=False, indent=2)
+
+    # 10년 이상 된 이력 삭제
+    import glob
+    cutoff = (today - timedelta(days=3650)).isoformat()
+    for old in glob.glob(os.path.join(hist_dir, '20??-??-??.json')):
+        fname = os.path.splitext(os.path.basename(old))[0]
+        if fname < cutoff:
+            os.remove(old)
+
+    hist_count = len(glob.glob(os.path.join(hist_dir, '*.json')))
     print(f'\n{"="*50}')
     print(f'✅ {len(prices)}종목 → {OUT_FILE}')
+    print(f'   이력: {hist_count}일치 보관 중')
     if errors:
         print(f'❌ 실패: {len(errors)} — {", ".join(errors[:10])}')
 
