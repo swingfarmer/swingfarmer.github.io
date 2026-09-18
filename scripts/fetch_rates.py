@@ -1,7 +1,12 @@
 """
 환율(USD/JPY/CNY→KRW) + 금시세(원/g) 수집
-→ data/rates.json (최신) + data/rates_history.json (일별 누적, 최대 365일)
+→ data/rates.json (최신) + data/rates_history.json (일별 누적, 무제한 보관)
 GitHub Actions 매일 자동 실행
+
+# TODO [오라클 이관]
+# 오라클 클라우드 세팅 후 rates_history.json을 오라클로 옮기면
+# GitHub 쪽 data/rates_history.json 삭제하여 용량 확보 가능.
+# 이관 후 이 스크립트도 오라클 cron으로 전환.
 """
 import requests
 import json
@@ -10,7 +15,7 @@ from datetime import datetime, timezone, timedelta
 
 KST = timezone(timedelta(hours=9))
 HISTORY_FILE = "data/rates_history.json"
-MAX_HISTORY_DAYS = 3650
+MAX_HISTORY_DAYS = None  # 무제한 보관 (오라클 이관 예정)
 
 
 def fetch_exchange_rates():
@@ -78,7 +83,7 @@ def fetch_gold_price_krw():
 
 
 def append_history(entry):
-    """히스토리 파일에 오늘 데이터 추가 (같은 날짜 덮어쓰기, 365일 초과 삭제)"""
+    """히스토리 파일에 오늘 데이터 추가 (같은 날짜 덮어쓰기, 무제한 보관)"""
     history = []
     if os.path.exists(HISTORY_FILE):
         try:
@@ -92,8 +97,7 @@ def append_history(entry):
     history.append(entry)
     history.sort(key=lambda x: x["date"])
 
-    if len(history) > MAX_HISTORY_DAYS:
-        history = history[-MAX_HISTORY_DAYS:]
+    # 무제한 보관 — 삭제 로직 없음
 
     with open(HISTORY_FILE, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=1)

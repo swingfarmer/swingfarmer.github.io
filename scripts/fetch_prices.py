@@ -1,7 +1,7 @@
 """
 한국주식 주가 데이터 수집 — KIS Open API
 =========================================
-한투 Open API로 KOSPI 200 종목의 현재가·시총·52주 고저·PER/PBR 수집.
+한투 Open API로 종목 리스트(kospi200_list.csv)의 현재가·시총·52주 고저·PER/PBR 수집.
 재무 데이터(DART)와 분리 — 이 파일만 매일 갱신.
 
 사용법:
@@ -15,6 +15,11 @@
 
 환경변수 (선택):
   KIS_BASE_URL    — API base URL (기본: https://openapi.koreainvestment.com:9443)
+
+# TODO [오라클 이관]
+# data/kr/prices/ 일자별 이력을 오라클로 옮기면
+# GitHub 쪽 prices/ 폴더 삭제하여 용량 확보 가능 (10년 ~500MB 추정).
+# 이관 후 이 스크립트도 오라클 cron으로 전환.
 """
 
 import os, sys, csv, json, time
@@ -202,14 +207,8 @@ def main():
     with open(hist_file, 'w', encoding='utf-8') as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
 
-    # 10년 이상 된 이력 삭제
+    # 무제한 보관 — 삭제 없음 (오라클 이관 예정)
     import glob
-    cutoff = (today - timedelta(days=3650)).isoformat()
-    for old in glob.glob(os.path.join(hist_dir, '20??-??-??.json')):
-        fname = os.path.splitext(os.path.basename(old))[0]
-        if fname < cutoff:
-            os.remove(old)
-
     hist_count = len(glob.glob(os.path.join(hist_dir, '*.json')))
     print(f'\n{"="*50}')
     print(f'✅ {len(prices)}종목 → {OUT_FILE}')

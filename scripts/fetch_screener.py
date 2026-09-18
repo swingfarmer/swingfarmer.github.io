@@ -22,7 +22,12 @@ KIS Open API로 일봉 + 투자자 매매 수집 → 시그널 판별 → 일자
 출력:
   data/kr/screener/YYYY-MM-DD.json   (일별)
   data/kr/screener/index.json        (날짜 목록)
-  data/kr/screener/investor_hist.json (수급 누적 — 60일 보관)
+  data/kr/screener/investor_hist.json (수급 누적 — 60거래일 롤링)
+
+# TODO [오라클 이관]
+# data/kr/screener/ 일별 JSON을 오라클로 옮기면
+# GitHub 쪽 screener/ 폴더 삭제하여 용량 확보 가능 (10년 ~125MB 추정).
+# 이관 후 이 스크립트도 오라클 cron으로 전환.
 """
 
 import os, sys, json, time, math, glob
@@ -45,7 +50,7 @@ INDEX_FILE  = os.path.join(OUT_DIR, 'index.json')
 CALL_DELAY  = 0.08          # ~12 req/s (안전 마진)
 OHLCV_DAYS  = 150           # 캘린더일 기준 (거래일 ~100)
 HIST_KEEP   = 60            # 수급 이력 보관 거래일
-FILE_KEEP   = 3650          # 스크리너 파일 보관 일수 (10년)
+FILE_KEEP   = None           # 무제한 보관 (오라클 이관 예정)
 
 
 # ── 유틸 ──
@@ -438,17 +443,8 @@ def update_index():
 
 
 def cleanup_old_files():
-    """1년 이상 지난 파일 삭제."""
-    cutoff = (date.today() - timedelta(days=FILE_KEEP)).isoformat()
-    files = glob.glob(os.path.join(OUT_DIR, '20??-??-??.json'))
-    removed = 0
-    for f in files:
-        fname = os.path.splitext(os.path.basename(f))[0]
-        if fname < cutoff:
-            os.remove(f)
-            removed += 1
-    if removed:
-        print(f'🗑️  오래된 파일 {removed}개 삭제')
+    """무제한 보관 — 삭제 없음."""
+    pass
 
 
 # ── 메인 ──
@@ -626,7 +622,7 @@ def main():
     # 인덱스 갱신
     dates = update_index()
 
-    # 오래된 파일 삭제
+    # 무제한 보관 (cleanup_old_files는 no-op)
     cleanup_old_files()
 
     # ── 결과 출력 ──
