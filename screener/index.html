@@ -85,9 +85,19 @@ var dayData = null;     // 현재 날짜 데이터
 
 var TAB_CONFIG = [
   {key:'ma50_breakout',         label:'10주선 돌파',       icon:'📈'},
+  {key:'golden_cross',          label:'골든크로스',        icon:'✨'},
+  {key:'dead_cross',            label:'데드크로스',        icon:'💀'},
+  {key:'aligned_bull',          label:'정배열',            icon:'🔥'},
   {key:'bb_upper_close',        label:'볼밴상단 종가',     icon:'🔺'},
   {key:'bb_upper_intra',        label:'볼밴상단 장중',     icon:'⚡'},
-  {key:'rally_3d_10pct',        label:'3일양봉 10%↑',     icon:'🔥'},
+  {key:'rally_3d_10pct',        label:'3일양봉 10%↑',     icon:'🚀'},
+  {key:'volume_spike',          label:'거래량 폭발',       icon:'💥'},
+  {key:'volume_breakout',       label:'거래량 돌파',       icon:'📊'},
+  {key:'new_high_52w',          label:'52주 신고가',       icon:'🏔'},
+  {key:'new_low_52w',           label:'52주 신저가',       icon:'🕳'},
+  {key:'rsi_oversold',          label:'RSI 과매도',        icon:'🟢'},
+  {key:'rsi_overbought',        label:'RSI 과매수',        icon:'🔴'},
+  {key:'macd_golden',           label:'MACD 골든',         icon:'⚙'},
   {key:'foreign_top15_buy',     label:'외인 매수 T15',    icon:'🏦'},
   {key:'foreign_top15_sell',    label:'외인 매도 T15',    icon:'🏦'},
   {key:'institution_top15_buy', label:'기관 매수 T15',    icon:'🏛'},
@@ -105,10 +115,24 @@ function getColumns(tab){
   ];
   if(tab==='ma50_breakout')
     return base.concat([{key:'ma50',label:'MA50',unit:'원'}]);
+  if(tab==='golden_cross'||tab==='dead_cross')
+    return base.concat([{key:'ma5',label:'MA5',unit:'원'},{key:'ma20',label:'MA20',unit:'원'}]);
+  if(tab==='aligned_bull')
+    return base.concat([{key:'ma5',label:'MA5',unit:'원'},{key:'ma20',label:'MA20',unit:'원'},{key:'ma60',label:'MA60',unit:'원'}]);
   if(tab==='bb_upper_close'||tab==='bb_upper_intra')
     return base.concat([{key:'bb_upper',label:'BB상단',unit:'원'},{key:'high',label:'고가',unit:'원'}]);
   if(tab==='rally_3d_10pct')
     return base.concat([{key:'gain_3d',label:'3일수익',unit:'%'}]);
+  if(tab==='volume_spike')
+    return base.concat([{key:'volume',label:'거래량'},{key:'avg20',label:'20일평균'},{key:'ratio',label:'배율',unit:'x'}]);
+  if(tab==='volume_breakout')
+    return base.concat([{key:'vol_avg5',label:'5일평균'},{key:'vol_avg100',label:'100일평균'},{key:'change_pct',label:'변화율',unit:'%'}]);
+  if(tab==='new_high_52w') return base.concat([{key:'high',label:'고가',unit:'원'}]);
+  if(tab==='new_low_52w') return base.concat([{key:'low',label:'저가',unit:'원'}]);
+  if(tab==='rsi_oversold'||tab==='rsi_overbought')
+    return base.concat([{key:'rsi',label:'RSI'}]);
+  if(tab==='macd_golden')
+    return base.concat([{key:'macd',label:'MACD'},{key:'signal',label:'Signal'}]);
   if(tab.indexOf('top15')>=0)
     return base.concat([{key:'net_amt',label:'순매수금액',unit:'만원'},{key:'net_qty',label:'순매수수량'}]);
   if(tab.indexOf('consecutive')>=0)
@@ -120,6 +144,7 @@ function fmt(v,unit){
   if(v===null||v===undefined) return '-';
   if(unit==='원') return v.toLocaleString()+'원';
   if(unit==='%') return v.toFixed(1)+'%';
+  if(unit==='x') return v.toFixed(1)+'배';
   if(unit==='만원'){
     if(Math.abs(v)>=100000000) return (v/100000000).toFixed(0)+'억';
     if(Math.abs(v)>=10000) return (v/10000).toFixed(0)+'만';
@@ -165,11 +190,12 @@ function renderSummary(){
   if(!dayData||!dayData.summary){el.innerHTML='';return;}
   var s=dayData.summary;
   var cards=[
-    {label:'10주선 돌파',num:s.ma50_breakout||0},
-    {label:'볼밴 돌파',num:(s.bb_upper_close||0)+(s.bb_upper_intra||0)},
-    {label:'3일양봉10%↑',num:s.rally_3d_10pct||0},
+    {label:'골든크로스',num:s.golden_cross||0},
+    {label:'정배열',num:s.aligned_bull||0},
+    {label:'52주 신고가',num:s.new_high_52w||0},
+    {label:'거래량 돌파',num:s.volume_breakout||0},
+    {label:'RSI 과매도',num:s.rsi_oversold||0},
     {label:'외인 연속매수',num:s.foreign_consecutive||0},
-    {label:'기관 연속매수',num:s.institution_consecutive||0},
   ];
   el.innerHTML=cards.map(function(c){
     return '<div class="summary-card"><div class="num">'+c.num+'</div><div class="label">'+c.label+'</div></div>';
