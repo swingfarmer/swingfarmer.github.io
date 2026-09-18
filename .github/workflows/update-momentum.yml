@@ -1,0 +1,47 @@
+name: Update Momentum Analysis
+
+on:
+  schedule:
+    # 매주 금요일 KST 21:00 (UTC 12:00) — 애프터마켓 종료 후
+    - cron: '0 12 * * 5'
+    # 매월 마지막 영업일 근사 — 28~31일 중 평일이면 실행
+    - cron: '0 12 28-31 * 1-5'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'weekly / monthly / (빈값=둘다)'
+        required: false
+        default: ''
+
+jobs:
+  update-momentum:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run momentum analysis
+        env:
+          KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
+        run: |
+          MODE="${{ github.event.inputs.mode }}"
+          if [ -n "$MODE" ]; then
+            python scripts/fetch_momentum.py --$MODE
+          else
+            python scripts/fetch_momentum.py
+          fi
+
+      - name: Commit & Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/kr/momentum/
+          git diff --staged --quiet || git commit -m "🔥 모멘텀 $(date +%Y-%m-%d)"
+          git pull --rebase
+          git push
