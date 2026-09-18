@@ -226,13 +226,11 @@ def fetch_program_trade(token, code):
     [{date, program_qty, program_amt}, ...]  (날짜 오름차순)"""
     global _program_fields_logged
     today_str = date.today().strftime('%Y%m%d')
-    # KIS 문서: FID_INPUT_DATE_1은 "002" prefix 필요 (예: "0020260918")
-    date_param = f'002{today_str}'
     url = (f'{KIS_BASE}/uapi/domestic-stock/v1/quotations/'
            f'program-trade-by-stock-daily'
            f'?FID_COND_MRKT_DIV_CODE=J'
            f'&FID_INPUT_ISCD={code}'
-           f'&FID_INPUT_DATE_1={date_param}')
+           f'&FID_INPUT_DATE_1={today_str}')
     data = kis_request(url, token, 'FHPPG04650201')
 
     # 디버그: 첫 종목에서 에러 확인
