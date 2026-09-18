@@ -45,7 +45,7 @@ INDEX_FILE  = os.path.join(OUT_DIR, 'index.json')
 CALL_DELAY  = 0.08          # ~12 req/s (안전 마진)
 OHLCV_DAYS  = 150           # 캘린더일 기준 (거래일 ~100)
 HIST_KEEP   = 60            # 수급 이력 보관 거래일
-FILE_KEEP   = 365           # 스크리너 파일 보관 일수
+FILE_KEEP   = 3650          # 스크리너 파일 보관 일수 (10년)
 
 
 # ── 유틸 ──
