@@ -210,17 +210,87 @@ def fetch_investor(token, code):
     result['institution_qty'] = orgn_qty
     result['institution_amt'] = orgn_amt
 
-    # 프로그램 순매수
-    prgm_qty = (safe_int(row.get('prgm_ntby_qty'))
-                or safe_int(row.get('prgm_ntby_stcn')))
-    prgm_amt = (safe_int(row.get('prgm_ntby_tr_pbmn'))
-                or safe_int(row.get('prgm_ntby_tr_mhht')))
-    result['program_qty'] = prgm_qty
-    result['program_amt'] = prgm_amt
+    # 프로그램 순매수 — FHKST01010900에는 프로그램 필드 없음
+    # → fetch_program_trade()에서 별도 수집 (FHPPG04650201)
+    result['program_qty'] = 0
+    result['program_amt'] = 0
 
     return result
 
 _investor_fields_logged = False  # 첫 호출에서만 로그
+
+
+def fetch_program_trade(token, code):
+    """종목별 프로그램매매추이(일별) — FHPPG04650201.
+    최근 5거래일 프로그램 순매수 수량/금액 반환.
+    [{date, program_qty, program_amt}, ...]  (날짜 오름차순)"""
+    today_str = date.today().strftime('%Y%m%d')
+    url = (f'{KIS_BASE}/uapi/domestic-stock/v1/quotations/'
+           f'inquire-program-trade-by-stock-daily'
+           f'?FID_COND_MRKT_DIV_CODE=J'
+           f'&FID_INPUT_ISCD={code}'
+           f'&FID_INPUT_DATE_1={today_str}'
+           f'&FID_PERIOD_DIV_CODE=D')
+    data = kis_request(url, token, 'FHPPG04650201')
+    if not data:
+        return []
+
+    output = data.get('output', [])
+    if not output:
+        # output2 fallback (일부 시세분석 API는 output2 사용)
+        output = data.get('output2', [])
+    if not output:
+        return []
+
+    # 디버그: 첫 종목에서 응답 필드명 전체 출력
+    global _program_fields_logged
+    if not _program_fields_logged:
+        keys = list(output[0].keys()) if output else []
+        print(f'   📋 프로그램매매 응답 필드: {keys}')
+        if output:
+            print(f'   📋 첫 행: {output[0]}')
+        _program_fields_logged = True
+
+    result = []
+    for row in output[:5]:  # 최근 5일만
+        d = (row.get('stck_bsop_date', '')
+             or row.get('bsop_date', '')
+             or row.get('stck_bsop_date_1', ''))
+        if not d:
+            continue
+        # 프로그램 순매수 수량/금액 (필드명 후보)
+        pgm_qty = (safe_int(row.get('prgm_ntby_qty'))
+                   or safe_int(row.get('ntby_qty'))
+                   or safe_int(row.get('prgm_seln_qty'))
+                   - safe_int(row.get('prgm_shnu_qty', 0))
+                   if safe_int(row.get('prgm_seln_qty')) else 0)
+        # 매도-매수 분리형이면 순매수 계산
+        if pgm_qty == 0:
+            sell = safe_int(row.get('prgm_seln_qty', 0))
+            buy = safe_int(row.get('prgm_shnu_qty', 0))
+            if sell or buy:
+                pgm_qty = buy - sell
+
+        pgm_amt = (safe_int(row.get('prgm_ntby_tr_pbmn'))
+                   or safe_int(row.get('ntby_tr_pbmn'))
+                   or 0)
+        if pgm_amt == 0:
+            sell_a = safe_int(row.get('prgm_seln_tr_pbmn', 0))
+            buy_a = safe_int(row.get('prgm_shnu_tr_pbmn', 0))
+            if sell_a or buy_a:
+                pgm_amt = buy_a - sell_a
+
+        result.append({
+            'date': d,
+            'program_qty': pgm_qty,
+            'program_amt': pgm_amt,
+        })
+
+    # 날짜 오름차순 정렬
+    result.sort(key=lambda x: x['date'])
+    return result
+
+_program_fields_logged = False
 
 
 # ── 기술적 지표 계산 ──
@@ -564,19 +634,43 @@ def main():
                 entry = {**base, **sig[key]}
                 all_signals[key].append(entry)
 
-        # 3) 수급
+        # 3) 수급 (외인/기관)
         inv = fetch_investor(token, code)
         time.sleep(CALL_DELAY)
 
+        # 4) 프로그램매매 (별도 엔드포인트 FHPPG04650201)
+        pgm_days = fetch_program_trade(token, code)
+        time.sleep(CALL_DELAY)
+
         if inv:
-            # 이력 기록
+            # 이력 기록 — 외인/기관은 당일 값
             if code not in inv_hist:
                 inv_hist[code] = {}
             inv_hist[code][today_iso] = {
                 'foreign': inv.get('foreign_qty', 0),
                 'institution': inv.get('institution_qty', 0),
-                'program': inv.get('program_qty', 0),  # 프로그램매매
+                'program': 0,  # 아래에서 프로그램 데이터로 덮어씀
             }
+
+            # 프로그램매매 이력 병합 (최근 5거래일 백필)
+            today_pgm_qty = 0
+            today_pgm_amt = 0
+            for pd in pgm_days:
+                d_raw = pd['date']  # YYYYMMDD
+                d_iso = f'{d_raw[:4]}-{d_raw[4:6]}-{d_raw[6:8]}'
+                if d_iso in inv_hist[code]:
+                    # 기존 날짜에 프로그램 데이터 추가
+                    inv_hist[code][d_iso]['program'] = pd['program_qty']
+                else:
+                    # 과거 날짜 — 프로그램만 기록 (외인/기관은 이미 이전 실행에서 기록됨)
+                    inv_hist[code][d_iso] = {
+                        'foreign': inv_hist[code].get(d_iso, {}).get('foreign', 0),
+                        'institution': inv_hist[code].get(d_iso, {}).get('institution', 0),
+                        'program': pd['program_qty'],
+                    }
+                if d_iso == today_iso:
+                    today_pgm_qty = pd['program_qty']
+                    today_pgm_amt = pd['program_amt']
 
             investor_today.append({
                 'code': code, 'name': name, 'sector': sector,
@@ -585,8 +679,8 @@ def main():
                 'foreign_amt': inv.get('foreign_amt', 0),
                 'institution_qty': inv.get('institution_qty', 0),
                 'institution_amt': inv.get('institution_amt', 0),
-                'program_qty': inv.get('program_qty', 0),
-                'program_amt': inv.get('program_amt', 0),
+                'program_qty': today_pgm_qty,
+                'program_amt': today_pgm_amt,
             })
 
         sig_keys = [k for k in sig]
@@ -758,6 +852,8 @@ def main():
             'institution_top15_sell': '기관 매도 Top15',
             'foreign_consecutive':    '외인 연속매수(3일↑)',
             'institution_consecutive':'기관 연속매수(3일↑)',
+            'program_absorb_bull':   '🟢 프매도+외매수(3일↑)',
+            'program_absorb_bear':   '🔴 프매수+외매도(3일↑)',
         }.get(k, k)
         print(f'   {label}: {v}종목')
 
