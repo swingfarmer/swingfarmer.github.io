@@ -105,6 +105,8 @@ var TAB_CONFIG = [
   {key:'institution_top15_sell',label:'기관 매도 T15',    icon:'🏛'},
   {key:'foreign_consecutive',   label:'외인 연속매수',     icon:'📊'},
   {key:'institution_consecutive',label:'기관 연속매수',    icon:'📊'},
+  {key:'program_absorb_bull',   label:'프매도+외매수',     icon:'🟢'},
+  {key:'program_absorb_bear',   label:'프매수+외매도',     icon:'🔴'},
 ];
 
 // 탭별 테이블 컬럼 정의
@@ -138,6 +140,8 @@ function getColumns(tab){
     return base.concat([{key:'net_amt',label:'순매수금액',unit:'만원'},{key:'net_qty',label:'순매수수량'}]);
   if(tab.indexOf('consecutive')>=0)
     return base.concat([{key:'consecutive',label:'연속일'}]);
+  if(tab==='program_absorb_bull'||tab==='program_absorb_bear')
+    return base.concat([{key:'consecutive',label:'연속일'},{key:'foreign_qty',label:'외인수량'},{key:'program_qty',label:'프로그램수량'}]);
   return base;
 }
 
@@ -197,6 +201,7 @@ function renderSummary(){
     {label:'거래량 돌파',num:s.volume_breakout||0},
     {label:'RSI 과매도',num:s.rsi_oversold||0},
     {label:'외인 연속매수',num:s.foreign_consecutive||0},
+    {label:'프매도+외매수',num:s.program_absorb_bull||0},
   ];
   el.innerHTML=cards.map(function(c){
     return '<div class="summary-card"><div class="num">'+c.num+'</div><div class="label">'+c.label+'</div></div>';
