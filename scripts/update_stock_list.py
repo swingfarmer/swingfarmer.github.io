@@ -236,17 +236,35 @@ def try_kis_fallback():
 
     print(f'   기존 {len(existing)}종목 시총 확인 중...')
     stocks = []
+    kept_no_data = []
+    removed = []
     for i, s in enumerate(existing, 1):
         if i % 50 == 0:
             print(f'   [{i}/{len(existing)}]...')
         mcap = _kis_market_cap(token, s['code'])
-        if mcap is not None and mcap >= MIN_MCAP_EUK:
+
+        if mcap is None or mcap == 0:
+            # API 에러 또는 시총 0 → 기존 종목 유지 (제거하지 않음)
+            s['mcap'] = 0
+            stocks.append(s)
+            kept_no_data.append(s['name'])
+        elif mcap >= MIN_MCAP_EUK:
+            # 시총 1조↑ 확인됨
             s['mcap'] = mcap * 100_000_000  # 억→원 변환
             stocks.append(s)
+        else:
+            # 시총 1조 미만 확인됨 → 제거
+            removed.append(f'{s["name"]}({mcap}억)')
+
         time.sleep(0.06)
 
-    stocks.sort(key=lambda x: -x['mcap'])
-    print(f'   ✅ {len(stocks)}종목 통과 (시총 1조↑)')
+    # 시총 확인된 종목만 정렬 (0은 뒤로)
+    stocks.sort(key=lambda x: -(x['mcap'] or 0))
+    print(f'   ✅ {len(stocks)}종목 유지')
+    if kept_no_data:
+        print(f'   ⚠️  시총 미확인 {len(kept_no_data)}종목 (기존 유지): {", ".join(kept_no_data[:10])}')
+    if removed:
+        print(f'   🗑️  시총 1조 미만 확인 {len(removed)}종목: {", ".join(removed[:10])}')
     print(f'   ⚠️  신규 상장은 감지 불가 — KRX API 복구 후 전체 갱신 필요')
     return stocks
 
