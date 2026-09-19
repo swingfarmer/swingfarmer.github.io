@@ -239,16 +239,10 @@ def fetch_program_trade(token, code):
             print(f'   ⚠️ 프로그램매매 API 호출 실패 (kis_request → None)')
         else:
             out = data.get('output', [])
-            out2 = data.get('output2', [])
-            print(f'   📋 프로그램매매 rt_cd={data.get("rt_cd")}, output={len(out) if isinstance(out,list) else type(out).__name__}건, output2={len(out2) if isinstance(out2,list) else type(out2).__name__}건')
-            if isinstance(out, list) and out:
-                print(f'   📋 output[0] 필드: {list(out[0].keys())}')
-                print(f'   📋 output[0] 값: {out[0]}')
-            elif isinstance(out, dict) and out:
-                print(f'   📋 output(dict) 필드: {list(out.keys())}')
-                print(f'   📋 output(dict) 값: {out}')
-            else:
-                print(f'   📋 output 비어있음: {repr(out)}')
+            print(f'   📋 프로그램매매 output={len(out)}건')
+            if out:
+                r = out[0]
+                print(f'   📋 삼전 프매 순매수: {r.get("whol_smtn_ntby_qty")}주, {r.get("whol_smtn_ntby_tr_pbmn")}원')
         _program_fields_logged = True
 
     if not data:
@@ -270,32 +264,12 @@ def fetch_program_trade(token, code):
 
     result = []
     for row in output[:5]:  # 최근 5일만
-        d = (row.get('stck_bsop_date', '')
-             or row.get('bsop_date', '')
-             or row.get('stck_bsop_date_1', ''))
+        d = row.get('stck_bsop_date', '')
         if not d:
             continue
-        # 프로그램 순매수 수량/금액 (필드명 후보)
-        pgm_qty = (safe_int(row.get('prgm_ntby_qty'))
-                   or safe_int(row.get('ntby_qty'))
-                   or safe_int(row.get('prgm_seln_qty'))
-                   - safe_int(row.get('prgm_shnu_qty', 0))
-                   if safe_int(row.get('prgm_seln_qty')) else 0)
-        # 매도-매수 분리형이면 순매수 계산
-        if pgm_qty == 0:
-            sell = safe_int(row.get('prgm_seln_qty', 0))
-            buy = safe_int(row.get('prgm_shnu_qty', 0))
-            if sell or buy:
-                pgm_qty = buy - sell
-
-        pgm_amt = (safe_int(row.get('prgm_ntby_tr_pbmn'))
-                   or safe_int(row.get('ntby_tr_pbmn'))
-                   or 0)
-        if pgm_amt == 0:
-            sell_a = safe_int(row.get('prgm_seln_tr_pbmn', 0))
-            buy_a = safe_int(row.get('prgm_shnu_tr_pbmn', 0))
-            if sell_a or buy_a:
-                pgm_amt = buy_a - sell_a
+        # 프로그램 순매수: whol_smtn_ntby_qty (전체합계 순매수 수량)
+        pgm_qty = safe_int(row.get('whol_smtn_ntby_qty', 0))
+        pgm_amt = safe_int(row.get('whol_smtn_ntby_tr_pbmn', 0))
 
         result.append({
             'date': d,
