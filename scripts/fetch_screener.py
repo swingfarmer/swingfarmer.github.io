@@ -233,28 +233,23 @@ def fetch_program_trade(token, code):
            f'&FID_INPUT_DATE_1={today_str}')
     data = kis_request(url, token, 'FHPPG04650201')
 
-    # 디버그: 첫 종목에서 에러 확인
-    if not _program_fields_logged and data is None:
-        print(f'   ⚠️ 프로그램매매 API 호출 실패 — 에러 응답 직접 확인 중...')
-        try:
-            req = urllib.request.Request(url, headers={
-                'Content-Type':  'application/json; charset=UTF-8',
-                'authorization': f'Bearer {token}',
-                'appkey':        KIS_APP_KEY,
-                'appsecret':     KIS_APP_SECRET,
-                'tr_id':         'FHPPG04650201',
-            })
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                raw = json.loads(resp.read().decode('utf-8'))
-            print(f'   📋 rt_cd={raw.get("rt_cd")}, msg_cd={raw.get("msg_cd")}, msg1={raw.get("msg1")}')
-            print(f'   📋 응답 키: {list(raw.keys())}')
-        except urllib.error.HTTPError as he:
-            body = he.read().decode('utf-8', errors='replace')
-            print(f'   📋 HTTP {he.code}: {body[:300]}')
-        except Exception as ex:
-            print(f'   📋 예외: {ex}')
+    # 디버그: 첫 종목에서 응답 전체 확인 (성공이든 실패든)
+    if not _program_fields_logged:
+        if data is None:
+            print(f'   ⚠️ 프로그램매매 API 호출 실패 (kis_request → None)')
+        else:
+            out = data.get('output', [])
+            out2 = data.get('output2', [])
+            print(f'   📋 프로그램매매 rt_cd={data.get("rt_cd")}, output={len(out) if isinstance(out,list) else type(out).__name__}건, output2={len(out2) if isinstance(out2,list) else type(out2).__name__}건')
+            if isinstance(out, list) and out:
+                print(f'   📋 output[0] 필드: {list(out[0].keys())}')
+                print(f'   📋 output[0] 값: {out[0]}')
+            elif isinstance(out, dict) and out:
+                print(f'   📋 output(dict) 필드: {list(out.keys())}')
+                print(f'   📋 output(dict) 값: {out}')
+            else:
+                print(f'   📋 output 비어있음: {repr(out)}')
         _program_fields_logged = True
-        return []
 
     if not data:
         return []
