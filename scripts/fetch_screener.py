@@ -177,16 +177,6 @@ def fetch_investor(token, code):
     if not output:
         return None
 
-    # 디버그: 첫 종목에서 응답 필드명 전체 출력
-    global _investor_fields_logged
-    if not _investor_fields_logged:
-        keys = list(output[0].keys()) if output else []
-        print(f'   📋 투자자 응답 필드: {keys}')
-        # 첫 행 값도 출력
-        if output:
-            print(f'   📋 첫 행 데이터: {output[0]}')
-        _investor_fields_logged = True
-
     # 최신 거래일 데이터 (첫 행)
     row = output[0]
 
@@ -217,7 +207,7 @@ def fetch_investor(token, code):
 
     return result
 
-_investor_fields_logged = False  # 첫 호출에서만 로그
+
 
 
 def fetch_program_trade(token, code):
