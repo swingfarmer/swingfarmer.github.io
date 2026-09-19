@@ -650,18 +650,22 @@ def main():
                 d_raw = pd['date']  # YYYYMMDD
                 d_iso = f'{d_raw[:4]}-{d_raw[4:6]}-{d_raw[6:8]}'
                 if d_iso in inv_hist[code]:
-                    # 기존 날짜에 프로그램 데이터 추가
                     inv_hist[code][d_iso]['program'] = pd['program_qty']
                 else:
-                    # 과거 날짜 — 프로그램만 기록 (외인/기관은 이미 이전 실행에서 기록됨)
                     inv_hist[code][d_iso] = {
                         'foreign': inv_hist[code].get(d_iso, {}).get('foreign', 0),
                         'institution': inv_hist[code].get(d_iso, {}).get('institution', 0),
                         'program': pd['program_qty'],
                     }
-                if d_iso == today_iso:
-                    today_pgm_qty = pd['program_qty']
-                    today_pgm_amt = pd['program_amt']
+
+            # 가장 최근 거래일 데이터를 today 레코드에 사용
+            # (토요일 실행 시 today_iso≠거래일이므로 날짜 비교 대신 첫 항목 사용)
+            if pgm_days:
+                latest_pgm = pgm_days[-1]  # 날짜 오름차순 → 마지막이 최신
+                today_pgm_qty = latest_pgm['program_qty']
+                today_pgm_amt = latest_pgm['program_amt']
+                # today_iso 키에도 프로그램 데이터 반영
+                inv_hist[code][today_iso]['program'] = today_pgm_qty
 
             investor_today.append({
                 'code': code, 'name': name, 'sector': sector,
