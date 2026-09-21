@@ -129,6 +129,8 @@ def main():
                 alerts.append(f'📅 <b>D-7</b> | {event_date.strftime("%m/%d")} {desc}')
             elif diff == 3:
                 alerts.append(f'⚠️ <b>D-3</b> | {event_date.strftime("%m/%d")} {desc}')
+            elif diff == 1:
+                alerts.append(f'🔔 <b>D-1</b> | {event_date.strftime("%m/%d")} {desc}')
             elif diff == 0:
                 alerts.append(f'🚨 <b>오늘!</b> | {desc}')
 
