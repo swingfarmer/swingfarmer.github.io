@@ -355,6 +355,27 @@ def calc_macd(closes):
     return macd_now, sig, macd_prev, prev_sig
 
 
+def daily_to_weekly_closes(ohlcv):
+    """일봉 → 주봉 종가 리스트 (주간 마지막 거래일 종가 기준).
+    월~금 기준으로 묶어 금요일(또는 주 마지막 거래일) 종가를 반환.
+    가장 최근 주(진행 중)도 포함.
+    반환: [close1, close2, ...] 오래된 순."""
+    if not ohlcv:
+        return []
+    weeks = []
+    current_week = None
+    for d in ohlcv:
+        dt = datetime.strptime(d['date'], '%Y%m%d')
+        iso_year, iso_week, _ = dt.isocalendar()
+        week_key = (iso_year, iso_week)
+        if week_key != current_week:
+            weeks.append(d['close'])
+            current_week = week_key
+        else:
+            weeks[-1] = d['close']  # 같은 주면 덮어쓰기 → 주 마지막 거래일
+    return weeks
+
+
 def detect_signals(ohlcv):
     """OHLCV 배열에서 모든 기술적 시그널 판별."""
     signals = {}
@@ -375,12 +396,35 @@ def detect_signals(ohlcv):
     ma50_prev = calc_ma(closes[:-1], 50)
     ma60_now = calc_ma(closes, 60) if len(closes) >= 60 else None
 
-    # ① 50일선(10주선) 종가 돌파
-    if ma50_now and ma50_prev:
+    # ①-b 20일선 종가 돌파
+    if ma20_now and ma20_prev:
         prev_close = ohlcv[-2]['close']
-        if prev_close < ma50_prev and price >= ma50_now:
-            signals['ma50_breakout'] = {
-                'price': price, 'ma50': round(ma50_now)}
+        if prev_close < ma20_prev and price >= ma20_now:
+            signals['ma20_breakout'] = {
+                'price': price, 'ma20': round(ma20_now)}
+
+    # ①-a, ①-c 주봉 기반 이동평균선 돌파 (5주선 / 10주선)
+    weekly_closes = daily_to_weekly_closes(ohlcv)
+
+    # 5주선 돌파
+    if len(weekly_closes) >= 6:
+        ma5w_now = calc_ma(weekly_closes, 5)
+        ma5w_prev = calc_ma(weekly_closes[:-1], 5)
+        if ma5w_now and ma5w_prev:
+            prev_weekly_close = weekly_closes[-2]
+            if prev_weekly_close < ma5w_prev and price >= ma5w_now:
+                signals['ma5w_breakout'] = {
+                    'price': price, 'ma5w': round(ma5w_now)}
+
+    # 10주선 돌파 (주봉 기반 — 기존 50일 SMA에서 전환)
+    if len(weekly_closes) >= 11:
+        ma10w_now = calc_ma(weekly_closes, 10)
+        ma10w_prev = calc_ma(weekly_closes[:-1], 10)
+        if ma10w_now and ma10w_prev:
+            prev_weekly_close = weekly_closes[-2]
+            if prev_weekly_close < ma10w_prev and price >= ma10w_now:
+                signals['ma50_breakout'] = {
+                    'price': price, 'ma50': round(ma10w_now)}
 
     # ⑤ 골든크로스 (MA5 > MA20 돌파)
     if ma5_now and ma5_prev and ma20_now and ma20_prev:
@@ -557,6 +601,8 @@ def main():
 
     # ── 종목별 데이터 수집 ──
     all_signals = {
+        'ma5w_breakout': [],
+        'ma20_breakout': [],
         'ma50_breakout': [],
         'golden_cross': [],
         'dead_cross': [],
@@ -606,7 +652,8 @@ def main():
         base = {'code': code, 'name': name, 'sector': sector,
                 'price': latest_price}
 
-        for key in ['ma50_breakout', 'golden_cross', 'dead_cross',
+        for key in ['ma5w_breakout', 'ma20_breakout',
+                     'ma50_breakout', 'golden_cross', 'dead_cross',
                      'aligned_bull', 'bb_upper_close', 'bb_upper_intra',
                      'rally_3d_10pct', 'volume_spike', 'volume_breakout',
                      'new_high_52w', 'new_low_52w',
@@ -817,7 +864,9 @@ def main():
     print()
     for k, v in summary.items():
         label = {
-            'ma50_breakout':          '10주선 돌파',
+            'ma5w_breakout':          '5주선 돌파(주봉)',
+            'ma20_breakout':          '20일선 돌파',
+            'ma50_breakout':          '10주선 돌파(주봉)',
             'golden_cross':           '골든크로스',
             'dead_cross':             '데드크로스',
             'aligned_bull':           '정배열',
