@@ -138,6 +138,9 @@ th.group-hdr{background:#161922;font-size:10px;color:var(--accent);border-bottom
         <div>• <b>ROA</b> — 총자산이익률</div>
         <div>• <b>부채비율</b> — 부채÷자본. 금융업은 1000%↑ 정상</div>
         <div>• <b>YoY</b> — 전년 동기 대비 증감률. "적전"=흑자→적자</div>
+        <div>• <b>EBITDA</b> — 영업이익+감가상각비. 현금 창출력</div>
+        <div>• <b>D&A</b> — 감가상각비+무형자산상각비</div>
+        <div>• <b>EV/EBITDA</b> — 기업가치÷EBITDA. 낮을수록 저평가 (7 이하 관심)</div>
         <div>• <b>PER</b> — 주가÷EPS. 낮을수록 저평가 (업종별 상대 비교)</div>
         <div>• <b>PBR</b> — 주가÷BPS. 1 미만이면 자산 대비 저평가</div>
         <div>• <b>52주고/저</b> — 최근 1년간 최고·최저가</div>
@@ -194,6 +197,8 @@ function getCols(){
     {key:'debt_ratio',label:'부채비율',unit:'%'},
     {key:'dividend',label:'배당금',unit:'원'},
     {key:'div_yield',label:'배당률',unit:'%'},
+    {key:'ebitda',label:'EBITDA',unit:'억'},
+    {key:'da',label:'D&A',unit:'억'},
   ];
   if(hasYoY){
     cols.push({key:'revenue_yoy',label:'매출YoY',unit:'%'});
@@ -202,6 +207,7 @@ function getCols(){
   // 주가 컬럼 (prices.json 있을 때만)
   if(hasPrices){
     cols.push({key:'_mcap',label:'시총',unit:'억',price:true});
+    cols.push({key:'_ev_ebitda',label:'EV/EBITDA',unit:'배',price:true});
     cols.push({key:'_per',label:'PER',unit:'배',price:true});
     cols.push({key:'_pbr',label:'PBR',unit:'배',price:true});
     cols.push({key:'_high52',label:'52주고',unit:'원',price:true});
@@ -224,9 +230,18 @@ function fmt(v,unit){
 }
 
 // 주가 데이터 getter (priceMap에서 꺼냄)
-function pv(code,key){
+function pv(code,key,stock){
   var p=priceMap[code];
   if(!p) return null;
+  // EV/EBITDA 계산: EV = 시총 + 순차입금
+  if(key==='_ev_ebitda'){
+    var mcap=p.market_cap;
+    var ebitda=stock?stock.ebitda:null;
+    var nd=stock?stock.net_debt:null;
+    if(!mcap||!ebitda||ebitda<=0) return null;
+    var ev=mcap+(nd||0);
+    return Math.round(ev/ebitda*10)/10;
+  }
   var map={'_price':'price','_mcap':'market_cap','_per':'per','_pbr':'pbr',
            '_high52':'high_52w','_low52':'low_52w','_div_yield_price':'div_yield'};
   var k=map[key];
@@ -244,6 +259,8 @@ function colorClass(v,key){
   if(key==='op'||key==='ni') return v<0?'down':'';
   if(key==='_per') return v<10?'up':v>30?'down':'';
   if(key==='_pbr') return v<1?'up':v>3?'down':'';
+  if(key==='_ev_ebitda') return v<7?'up':v>20?'down':'';
+  if(key==='ebitda') return v<0?'down':'';
   return '';
 }
 
@@ -296,7 +313,7 @@ function renderBody(){
         td.innerHTML='<span class="stock-name">'+s.name+'</span><span class="stock-code">'+s.code+'</span><span class="stock-sector">'+s.sector+'</span>';
         td.style.textAlign='left';
       } else {
-        var v=c.price?pv(s.code,c.key):s[c.key];
+        var v=c.price?pv(s.code,c.key,s):s[c.key];
         var display=(c.key.indexOf('yoy')>=0)&&v<=-999?'적전':fmt(v,c.unit);
         td.textContent=display;
         var cc=colorClass(v,c.key);
@@ -313,7 +330,7 @@ function sort(){
   var isPrice=sortKey.charAt(0)==='_';
   filtered.sort(function(a,b){
     var va,vb;
-    if(isPrice){va=pv(a.code,sortKey);vb=pv(b.code,sortKey);}
+    if(isPrice){va=pv(a.code,sortKey,a);vb=pv(b.code,sortKey,b);}
     else{va=a[sortKey];vb=b[sortKey];}
     if(sortKey==='name') return sortDir*(va<vb?-1:va>vb?1:0);
     if(va===null||va===undefined) va=-Infinity;
@@ -415,10 +432,11 @@ window.openCompare=function(){
   var arr=stocks.filter(function(s){return selected.has(s.code);});
   if(arr.length<2) return;
   var labels=[['매출액','revenue','억'],['영업이익','op','억'],['순이익','ni','억'],
+    ['EBITDA','ebitda','억'],['D&A','da','억'],
     ['OPM','opm','%'],['NIM','nim','%'],['ROE','roe','%'],['ROA','roa','%'],
     ['부채비율','debt_ratio','%'],['배당금','dividend','원'],['배당률','div_yield','%']];
   if(hasYoY) labels.push(['매출YoY','revenue_yoy','%'],['OP YoY','op_yoy','%']);
-  if(hasPrices) labels.push(['현재가','_price','원'],['시총','_mcap','억'],['PER','_per','배'],['PBR','_pbr','배']);
+  if(hasPrices) labels.push(['현재가','_price','원'],['시총','_mcap','억'],['EV/EBITDA','_ev_ebitda','배'],['PER','_per','배'],['PBR','_pbr','배']);
 
   var html='<div style="overflow-x:auto"><table style="min-width:auto;font-size:13px"><thead><tr><th style="text-align:left;min-width:100px">항목</th>';
   arr.forEach(function(s){html+='<th style="text-align:right;min-width:100px">'+s.name+'</th>';});
@@ -426,10 +444,10 @@ window.openCompare=function(){
   labels.forEach(function(l){
     html+='<tr><td style="color:var(--text-dim);text-align:left">'+l[0]+'</td>';
     var isP=l[1].charAt(0)==='_';
-    var vals=arr.map(function(s){return isP?pv(s.code,l[1]):s[l[1]];});
+    var vals=arr.map(function(s){return isP?pv(s.code,l[1],s):s[l[1]];});
     var maxV=Math.max.apply(null,vals.filter(function(v){return v!==null&&v>-999;}));
     arr.forEach(function(s){
-      var v=isP?pv(s.code,l[1]):s[l[1]];
+      var v=isP?pv(s.code,l[1],s):s[l[1]];
       var display=(l[1].indexOf('yoy')>=0)&&v<=-999?'적전':fmt(v,l[2]);
       var cc=colorClass(v,l[1]);
       var bold=(v===maxV&&vals.filter(function(x){return x===maxV;}).length===1)?'font-weight:800;':'';
