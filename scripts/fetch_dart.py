@@ -127,7 +127,72 @@ def extract_account(items, *names):
     return None
 
 
-def fetch_dividend(corp_code, year, reprt_code):
+def fetch_full_accounts(corp_code, year, reprt_code):
+    """전체 재무제표 항목 (fnlttSinglAcntAll) — 감가상각비, 현금 등 추출용."""
+    for fs_div in ['CFS', 'OFS']:
+        data = api_call('fnlttSinglAcntAll', {
+            'corp_code': corp_code,
+            'bsns_year': year,
+            'reprt_code': reprt_code,
+            'fs_div': fs_div
+        })
+        if data and data.get('status') == '000':
+            return data.get('list', [])
+    return []
+
+
+def extract_da(full_items):
+    """현금흐름표에서 감가상각비 추출 (억원)."""
+    da_names = [
+        '감가상각비', '감가상각비및무형자산상각비',
+        '감가상각비 및 무형자산상각비',
+        '유형자산감가상각비', '무형자산상각비',
+        '유·무형자산상각비',
+    ]
+    total_da = 0
+    found = set()
+    for item in full_items:
+        sj = item.get('sj_div', '')  # BS/IS/CF 등
+        nm = item.get('account_nm', '').strip().replace(' ', '')
+        if sj != 'CF':
+            continue
+        for da_nm in da_names:
+            if da_nm.replace(' ', '') in nm and nm not in found:
+                amt = parse_amount(item.get('thstrm_amount'))
+                if amt is not None:
+                    total_da += abs(amt)  # 감가상각비는 양수로
+                    found.add(nm)
+                break
+    return total_da if total_da > 0 else None
+
+
+def extract_cash(full_items):
+    """BS에서 현금 및 현금성자산 추출 (억원)."""
+    cash_names = ['현금및현금성자산', '현금 및 현금성자산',
+                  '현금및현금등가물', '현금및예치금']
+    for item in full_items:
+        if item.get('sj_div') != 'BS':
+            continue
+        nm = item.get('account_nm', '').strip()
+        if nm in cash_names:
+            return parse_amount(item.get('thstrm_amount'))
+    return None
+
+
+def extract_short_debt(full_items):
+    """BS에서 단기차입금+유동성장기차입금+사채 추출 (억원)."""
+    debt_names = ['단기차입금', '유동성장기부채', '유동성장기차입금',
+                  '사채', '장기차입금']
+    total = 0
+    for item in full_items:
+        if item.get('sj_div') != 'BS':
+            continue
+        nm = item.get('account_nm', '').strip()
+        if nm in debt_names:
+            amt = parse_amount(item.get('thstrm_amount'))
+            if amt is not None:
+                total += amt
+    return total if total > 0 else None
     data = api_call('alotMatter', {
         'corp_code': corp_code,
         'bsns_year': year,
@@ -163,15 +228,15 @@ def process_stock(stock, corp_code, year, reprt_code):
         print(' ✗'); return None
 
     rev = extract_account(items,
-        '매출액','수익(매출액)','영업수익',           # 일반기업
-        '이자수익','순이자이익',                       # 은행
-        '보험수익','보험료수익',                       # 보험 (IFRS17/이전)
-        '순영업수익',                                  # 증권
-        '영업이익수익',                                # 카드/캐피탈
+        '매출액','수익(매출액)','영업수익',
+        '이자수익','순이자이익',
+        '보험수익','보험료수익',
+        '순영업수익',
+        '영업이익수익',
     )
     op  = extract_account(items,
         '영업이익','영업이익(손실)',
-        '영업손익',                                    # 금융사 변형
+        '영업손익',
     )
     ni  = extract_account(items, '당기순이익','당기순이익(손실)',
         '당기순이익(손실)의 귀속 지배기업의 소유주에게 귀속되는 당기순이익(손실)',
@@ -181,6 +246,20 @@ def process_stock(stock, corp_code, year, reprt_code):
     lib = extract_account(items, '부채총계')
     div = fetch_dividend(corp_code, year, reprt_code)
 
+    # 전체계정에서 EBITDA 관련 항목 추출
+    full = fetch_full_accounts(corp_code, year, reprt_code)
+    da = extract_da(full) if full else None
+    cash = extract_cash(full) if full else None
+    total_debt = extract_short_debt(full) if full else None
+
+    ebitda = None
+    if op is not None and da is not None:
+        ebitda = op + da
+
+    net_debt = None
+    if total_debt is not None and cash is not None:
+        net_debt = total_debt - cash
+
     print(' ✓')
     return {
         'code': code, 'name': stock['name'], 'sector': stock['sector'],
@@ -189,6 +268,8 @@ def process_stock(stock, corp_code, year, reprt_code):
         'roe': safe_pct(ni, eq), 'roa': safe_pct(ni, ast),
         'debt_ratio': safe_pct(lib, eq), 'equity': eq,
         'dividend': div or 0, 'div_yield': 0,
+        'da': da, 'ebitda': ebitda, 'cash': cash,
+        'total_debt': total_debt, 'net_debt': net_debt,
     }
 
 
