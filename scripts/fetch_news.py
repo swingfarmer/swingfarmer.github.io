@@ -137,7 +137,7 @@ def search_news(query, display=DISPLAY):
         items = []
         for it in data.get("items", []):
             title = clean_html(it.get("title", ""))
-            link = it.get("originallink", "") or it.get("link", "")
+            link = it.get("link", "") or it.get("originallink", "")
             pub = it.get("pubDate", "")
             if title and link:
                 # pubDate를 ISO로 변환 시도
