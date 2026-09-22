@@ -70,7 +70,6 @@ def search_news(query, display=15):
         items = []
         for it in data.get("items", []):
             title = clean_html(it.get("title", ""))
-            # 네이버 뉴스 링크 우선 (link), 없으면 원본 (originallink)
             link = it.get("link", "") or it.get("originallink", "")
             pub = it.get("pubDate", "")
             if title and link:
@@ -158,8 +157,9 @@ def format_telegram(category, items):
     lines = [f"📰 <b>{category} 뉴스 Top {len(items)}</b>  ({now.strftime('%m/%d %H:%M')})"]
     lines.append("")
     for i, it in enumerate(items, 1):
-        source_tag = f"  — {it['source']}" if it["source"] else ""
-        lines.append(f'{i}. <a href="{it["link"]}">{it["title"]}</a>{source_tag}')
+        lines.append(f"{i}. {it['title']}")
+        lines.append(it["link"])
+        lines.append("")
     return "\n".join(lines)
 
 
