@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta name="robots" content="noindex, nofollow">
-<title>미국 배당·ETF 대시보드 | 스윙파머</title>
+<title>미국주식 대시보드 | 스윙파머</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0f1117;--card:#1a1d27;--card-hover:#222532;--border:#2a2d3a;--text:#e4e4e7;--text-dim:#71717a;--accent:#3b82f6;--green:#22c55e;--red:#ef4444;--gold:#eab308}
@@ -62,7 +62,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var
 <body>
 <div class="wrap">
   <div class="header">
-    <h1>미국 배당·<span>ETF</span> 대시보드</h1>
+    <h1>미국주식 <span>대시보드</span></h1>
     <div class="header-meta">
       <div class="updated" id="updated">로딩 중...</div>
       <a href="/" class="back-link">← 메인으로</a>
@@ -94,7 +94,7 @@ var selectedETFs = ['SCHD','JEPI','VOO'];
 var currentCat = 'all';
 var chartPeriod = '1Y';
 var COLORS = ['#3b82f6','#22c55e','#ef4444','#eab308','#a855f7','#ec4899','#06b6d4','#f97316'];
-var CAT_LABELS = {all:'전체',dividend:'배당 ETF',coveredcall:'커버드콜',benchmark:'벤치마크',bond:'채권 ETF'};
+var CAT_LABELS = {all:'전체',m7:'M7',hot:'핫 종목',dividend:'배당 ETF',coveredcall:'커버드콜',benchmark:'벤치마크',bond:'채권 ETF'};
 
 async function loadData() {
   try {
@@ -136,9 +136,16 @@ function render() {
     html += '<div class="etf-top"><div><div class="etf-ticker">'+e.ticker+'</div><div class="etf-name">'+(e.name||'')+'</div></div>';
     html += '<div class="etf-price"><div class="price">$'+(e.price||0).toFixed(2)+'</div><div class="change '+(cp>=0?'up':'down')+'">'+(cp>=0?'+':'')+cp+'%</div></div></div>';
     html += '<div class="etf-metrics">';
-    html += '<div class="metric"><div class="metric-label">배당률</div><div class="metric-value yield">'+fp(e.divYield)+'</div></div>';
-    html += '<div class="metric"><div class="metric-label">1Y 수익</div><div class="metric-value">'+rs(e,'1Y')+'</div></div>';
-    html += '<div class="metric"><div class="metric-label">비용비율</div><div class="metric-value">'+fp(e.expense)+'</div></div>';
+    var isStock = (e.cat==='m7'||e.cat==='hot');
+    if(isStock){
+      html += '<div class="metric"><div class="metric-label">PER</div><div class="metric-value">'+(e.pe||'-')+'</div></div>';
+      html += '<div class="metric"><div class="metric-label">1Y 수익</div><div class="metric-value">'+rs(e,'1Y')+'</div></div>';
+      html += '<div class="metric"><div class="metric-label">배당률</div><div class="metric-value yield">'+fp(e.divYield)+'</div></div>';
+    } else {
+      html += '<div class="metric"><div class="metric-label">배당률</div><div class="metric-value yield">'+fp(e.divYield)+'</div></div>';
+      html += '<div class="metric"><div class="metric-label">1Y 수익</div><div class="metric-value">'+rs(e,'1Y')+'</div></div>';
+      html += '<div class="metric"><div class="metric-label">비용비율</div><div class="metric-value">'+fp(e.expense)+'</div></div>';
+    }
     html += '</div><div class="etf-desc">'+(e.desc||'')+'</div></div>';
   });
   html += '</div>';
