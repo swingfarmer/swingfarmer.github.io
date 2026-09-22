@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -79,7 +78,7 @@ tr:hover{background:rgba(59,130,246,.06)}
 <div class="period-tabs">
   <button class="period-tab active" data-period="weekly">📅 주간</button>
   <button class="period-tab" data-period="monthly">📆 월간</button>
-  <button class="period-tab disabled" data-period="intraday" title="오라클 이관 후 추가 예정">⏰ 장중 (준비 중)</button>
+  <button class="period-tab" data-period="intraday">⏰ 장중</button>
 </div>
 
 <div id="content">
@@ -129,7 +128,7 @@ function loadPeriod(period){
 function render(data){
   var html='';
   var stats=data.stats;
-  var periodLabel = data.period==='weekly'?'주간 (5거래일)':'월간 (22거래일)';
+  var periodLabel = data.period==='weekly'?'주간 (5거래일)':data.period==='monthly'?'월간 (22거래일)':'장중 (전일 종가 대비)';
 
   document.getElementById('updated').textContent=
     periodLabel+' · 기준일: '+data.updated+' · '+data.total_stocks+'종목';
@@ -176,10 +175,13 @@ function render(data){
 }
 
 function buildTable(items, isLoser){
+  var isIntra = items.length>0 && items[0].open_price !== undefined;
   var h='<div class="table-wrap"><table><thead><tr>';
   h+='<th style="text-align:center">#</th>';
   h+='<th style="text-align:left">종목</th>';
-  h+='<th>현재가</th><th>기준가</th><th>수익률</th><th style="text-align:left">업종</th>';
+  h+='<th>현재가</th><th>'+(isIntra?'전일종가':'기준가')+'</th><th>수익률</th>';
+  if(isIntra){h+='<th>시가대비</th><th>거래량</th>';}
+  h+='<th style="text-align:left">업종</th>';
   h+='</tr></thead><tbody>';
   items.forEach(function(s, i){
     var cls=s.return_pct>=0?'up':'down';
@@ -189,6 +191,11 @@ function buildTable(items, isLoser){
     h+='<td>'+s.price.toLocaleString()+'</td>';
     h+='<td>'+s.prev_price.toLocaleString()+'</td>';
     h+='<td class="'+cls+'">'+(s.return_pct>=0?'+':'')+s.return_pct.toFixed(1)+'%</td>';
+    if(isIntra){
+      var oCls=(s.open_ret||0)>=0?'up':'down';
+      h+='<td class="'+oCls+'">'+(s.open_ret>=0?'+':'')+(s.open_ret||0).toFixed(1)+'%</td>';
+      h+='<td style="color:var(--text-dim);font-size:11px">'+(s.volume||0).toLocaleString()+'</td>';
+    }
     h+='<td style="text-align:left"><span class="stock-sector">'+s.sector+'</span></td>';
     h+='</tr>';
   });
