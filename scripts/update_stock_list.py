@@ -1,8 +1,8 @@
 """
-종목 리스트 자동 갱신 — KOSPI 시총 1조↑ + KOSDAQ 시총 5천억↑
-================================================================
-1차: KRX 공개 API로 전체 시가총액 조회 → 필터
-2차: KRX 실패 시 KIS API fallback — 기존 CSV 종목만 시총 재검증
+종목 리스트 자동 갱신 — KIS API 시가총액 순위 기반
+===================================================
+KIS Open API 시가총액 순위 조회로 KOSPI/KOSDAQ 전체 스캔.
+KRX API는 차단되므로 사용하지 않음.
 
 오라클 VM crontab: 주 1회 (월 06:00 KST)
 
@@ -10,30 +10,27 @@
   scripts/kospi200_list.csv  (KOSPI 시총 1조↑)
   scripts/kosdaq_list.csv    (KOSDAQ 시총 5천억↑)
 
-환경변수 (KIS fallback용, 선택):
-  KIS_APP_KEY, KIS_APP_SECRET
+환경변수:
+  KIS_APP_KEY, KIS_APP_SECRET (필수)
 """
 
-import os, sys, json, time, ssl
+import os, sys, json, time
 import urllib.request, urllib.parse
-from datetime import date, timedelta
+from datetime import date
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# 시장별 설정
 MARKETS = {
     'KOSPI': {
-        'mktId':    'STK',
+        'mkt_div':  'J',           # KIS 시장구분: J=KOSPI
         'csv_file': os.path.join(SCRIPT_DIR, 'kospi200_list.csv'),
-        'min_mcap': 1_000_000_000_000,      # 1조원
-        'min_mcap_euk': 10_000,              # 1조 = 10,000억 (KIS 단위)
+        'min_mcap_euk': 10_000,    # 1조 = 10,000억
         'label':    'KOSPI 시총 1조↑',
     },
     'KOSDAQ': {
-        'mktId':    'KSQ',
+        'mkt_div':  'Q',           # KIS 시장구분: Q=KOSDAQ
         'csv_file': os.path.join(SCRIPT_DIR, 'kosdaq_list.csv'),
-        'min_mcap': 500_000_000_000,         # 5천억원
-        'min_mcap_euk': 5_000,               # 5천억 = 5,000억 (KIS 단위)
+        'min_mcap_euk': 5_000,     # 5천억 = 5,000억
         'label':    'KOSDAQ 시총 5천억↑',
     },
 }
@@ -42,233 +39,13 @@ KIS_APP_KEY    = os.environ.get('KIS_APP_KEY', '')
 KIS_APP_SECRET = os.environ.get('KIS_APP_SECRET', '')
 KIS_BASE       = os.environ.get('KIS_BASE_URL', 'https://openapi.koreainvestment.com:9443')
 
-
-# ──────────────────────────────────────────────
-# 방법 1: KRX 공개 API (인증 불필요)
-# ──────────────────────────────────────────────
-
-def try_krx_api(mkt_id):
-    """KRX data.krx.co.kr 공개 API — 전체 시가총액."""
-    print(f'\n📡 [방법 1] KRX 공개 API 시도 ({mkt_id})')
-
-    for i in range(10):
-        d = date.today() - timedelta(days=i)
-        if d.weekday() >= 5:
-            continue
-        tdate = d.strftime('%Y%m%d')
-        result = _fetch_krx(tdate, mkt_id)
-        if result and len(result) > 50:
-            print(f'   ✅ {tdate}: {len(result)}종목')
-            return result, tdate
-        print(f'   {tdate}: 실패')
-    return None, None
+SECTOR_MAP = {
+    # KIS 업종코드 → 한글 (주요 업종만)
+}
 
 
-def _fetch_krx(tdate, mkt_id):
-    """KRX에서 전체 종목 시세 조회."""
-    param_sets = [
-        {
-            'url':  'https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd',
-            'data': {
-                'bld':          'dbms/MDC/STAT/standard/MDCSTAT01501',
-                'locale':       'ko_KR',
-                'mktId':        mkt_id,
-                'trdDd':        tdate,
-                'share':        '1',
-                'money':        '1',
-                'csvxls_isNo':  'false',
-            },
-        },
-        {
-            'url':  'http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd',
-            'data': {
-                'bld':          'dbms/MDC/STAT/standard/MDCSTAT01501',
-                'locale':       'ko_KR',
-                'mktId':        mkt_id,
-                'trdDd':        tdate,
-                'share':        '1',
-                'money':        '1',
-                'csvxls_isNo':  'false',
-            },
-        },
-        {
-            'url':   'https://data.krx.co.kr/comm/fileDn/GenerateOTP/generate.cmd',
-            'data':  {
-                'locale':       'ko_KR',
-                'mktId':        mkt_id,
-                'trdDd':        tdate,
-                'share':        '1',
-                'money':        '1',
-                'csvxls_isNo':  'false',
-                'name':         'fileDown',
-                'url':          'dbms/MDC/STAT/standard/MDCSTAT01501',
-            },
-            'otp': True,
-        },
-    ]
-
-    ctx = ssl.create_default_context()
-
-    for ps in param_sets:
-        try:
-            body = urllib.parse.urlencode(ps['data']).encode('utf-8')
-            req = urllib.request.Request(ps['url'], data=body, headers={
-                'User-Agent':   'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Referer':      'https://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd?menuId=MDC0201020101',
-                'Accept':       'application/json, text/javascript, */*',
-            })
-            with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
-                raw = resp.read().decode('utf-8')
-
-            if ps.get('otp'):
-                items = _fetch_krx_with_otp(raw.strip(), ctx)
-                if items:
-                    return items
-                continue
-
-            data = json.loads(raw)
-            items = data.get('OutBlock_1', [])
-            if items:
-                return items
-        except:
-            pass
-    return None
-
-
-def _fetch_krx_with_otp(otp_code, ctx):
-    """OTP 코드로 KRX CSV 다운로드 후 파싱."""
-    if not otp_code or len(otp_code) > 200:
-        return None
-    try:
-        body = urllib.parse.urlencode({'code': otp_code}).encode('utf-8')
-        req = urllib.request.Request(
-            'https://data.krx.co.kr/comm/fileDn/download_csv/download.cmd',
-            data=body,
-            headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-                'Referer':    'https://data.krx.co.kr/',
-            }
-        )
-        with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
-            raw = resp.read()
-
-        text = raw.decode('euc-kr', errors='replace')
-        if text.startswith('\ufeff'):
-            text = text[1:]
-        lines = text.strip().split('\n')
-        if len(lines) < 2:
-            return None
-
-        headers = [h.strip().strip('"') for h in lines[0].split(',')]
-        items = []
-        for line in lines[1:]:
-            vals = [v.strip().strip('"') for v in line.split(',')]
-            if len(vals) >= len(headers):
-                item = dict(zip(headers, vals))
-                items.append(item)
-        return items if len(items) > 50 else None
-    except:
-        return None
-
-
-def parse_krx_stocks(items, min_mcap):
-    """KRX 응답 파싱 → 종목 리스트."""
-    stocks = []
-    code_keys  = ['ISU_SRT_CD', '종목코드', '단축코드']
-    name_keys  = ['ISU_ABBRV', '종목명']
-    mcap_keys  = ['MKTCAP', '시가총액']
-    sector_keys = ['IDX_IND_NM', '업종명', '소속부']
-
-    for item in items:
-        code = _find_val(item, code_keys, '')
-        name = _find_val(item, name_keys, '')
-        mcap_str = _find_val(item, mcap_keys, '0')
-        sector = _find_val(item, sector_keys, '기타')
-
-        if not code or not name:
-            continue
-        code = code.strip()
-        if len(code) != 6 or not code.isdigit():
-            continue
-
-        mcap = int(mcap_str.replace(',', '').replace(' ', '') or '0')
-        if mcap >= min_mcap:
-            stocks.append({
-                'code':   code,
-                'name':   name.strip(),
-                'sector': sector.strip() if sector.strip() else '기타',
-                'mcap':   mcap,
-            })
-
-    stocks.sort(key=lambda x: -x['mcap'])
-    return stocks
-
-
-def _find_val(d, keys, default=''):
-    for k in keys:
-        if k in d and d[k]:
-            return d[k]
-    return default
-
-
-# ──────────────────────────────────────────────
-# 방법 2: KIS API fallback (기존 종목 시총 재검증)
-# ──────────────────────────────────────────────
-
-def try_kis_fallback(csv_file, min_mcap_euk, mkt_div='J'):
-    """KIS API로 기존 CSV 종목의 시총 재검증."""
-    print(f'\n📡 [방법 2] KIS API fallback')
-
-    if not KIS_APP_KEY or not KIS_APP_SECRET:
-        print('   ⚠️  KIS_APP_KEY / KIS_APP_SECRET 없음 — fallback 불가')
-        return None
-
-    existing = load_existing_csv(csv_file)
-    if not existing:
-        print('   ⚠️  기존 CSV 없음 — fallback 불가')
-        return None
-
-    token = _kis_token()
-    if not token:
-        return None
-
-    print(f'   기존 {len(existing)}종목 시총 확인 중...')
-    stocks = []
-    kept_no_data = []
-    removed = []
-    for i, s in enumerate(existing, 1):
-        if i % 50 == 0:
-            print(f'   [{i}/{len(existing)}]...')
-        mcap = _kis_market_cap(token, s['code'], mkt_div)
-
-        if mcap is None or mcap == 0:
-            time.sleep(0.3)
-            mcap = _kis_market_cap(token, s['code'], mkt_div)
-
-        if mcap is None or mcap == 0:
-            s['mcap'] = 0
-            stocks.append(s)
-            kept_no_data.append(s['name'])
-        elif mcap >= min_mcap_euk:
-            s['mcap'] = mcap * 100_000_000
-            stocks.append(s)
-        else:
-            removed.append(f'{s["name"]}({mcap}억)')
-
-        time.sleep(0.15)
-
-    stocks.sort(key=lambda x: -(x['mcap'] or 0))
-    print(f'   ✅ {len(stocks)}종목 유지')
-    if kept_no_data:
-        print(f'   ⚠️  시총 미확인 {len(kept_no_data)}종목 (기존 유지): {", ".join(kept_no_data[:10])}')
-    if removed:
-        print(f'   🗑️  제외 {len(removed)}종목: {", ".join(removed[:10])}')
-    print(f'   ⚠️  신규 상장은 감지 불가 — KRX API 복구 후 전체 갱신 필요')
-    return stocks
-
-
-def _kis_token():
+def kis_token():
+    """KIS OAuth 토큰 발급."""
     url = f'{KIS_BASE}/oauth2/tokenP'
     body = json.dumps({
         'grant_type': 'client_credentials',
@@ -283,38 +60,111 @@ def _kis_token():
             data = json.loads(resp.read().decode('utf-8'))
         token = data.get('access_token', '')
         if token:
-            print('   🔑 KIS 토큰 발급 완료')
+            print('🔑 KIS 토큰 발급 완료')
         return token
     except Exception as e:
-        print(f'   ❌ KIS 토큰 실패: {e}')
+        print(f'❌ KIS 토큰 실패: {e}')
         return None
 
 
-def _kis_market_cap(token, code, mkt_div='J'):
-    """KIS 현재가 조회 → 시총(억원) 반환."""
-    url = (f'{KIS_BASE}/uapi/domestic-stock/v1/quotations/inquire-price'
-           f'?FID_COND_MRKT_DIV_CODE={mkt_div}&FID_INPUT_ISCD={code}')
-    req = urllib.request.Request(url, headers={
-        'Content-Type':  'application/json; charset=UTF-8',
-        'authorization': f'Bearer {token}',
-        'appkey':        KIS_APP_KEY,
-        'appsecret':     KIS_APP_SECRET,
-        'tr_id':         'FHKST01010100',
-    })
-    try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read().decode('utf-8'))
+def kis_market_cap_ranking(token, mkt_div='J'):
+    """
+    KIS 시가총액 상위 종목 조회.
+    /uapi/domestic-stock/v1/ranking/market-cap
+    한 번에 최대 30종목, 연속 조회로 전체 스캔.
+    """
+    all_stocks = []
+    ctx_area_nk = ''  # 연속 조회 키
+    ctx_area_fk = ''
+    page = 0
+    max_pages = 50  # 최대 50*30 = 1500종목까지
+
+    while page < max_pages:
+        page += 1
+        params = {
+            'FID_COND_MRKT_DIV_CODE': mkt_div,
+            'FID_COND_SCR_DIV_CODE':  '20174',
+            'FID_INPUT_ISCD':         '',
+            'FID_DIV_CLS_CODE':       '0',
+            'FID_BLNG_CLS_CODE':      '0',
+            'FID_TRGT_CLS_CODE':      '',
+            'FID_TRGT_EXLS_CLS_CODE': '',
+            'FID_INPUT_PRICE_1':      '',
+            'FID_INPUT_PRICE_2':      '',
+            'FID_VOL_CNT':            '',
+            'FID_INPUT_DATE_1':       '',
+        }
+        query = urllib.parse.urlencode(params)
+        url = f'{KIS_BASE}/uapi/domestic-stock/v1/ranking/market-cap?{query}'
+
+        headers = {
+            'Content-Type':  'application/json; charset=UTF-8',
+            'authorization': f'Bearer {token}',
+            'appkey':        KIS_APP_KEY,
+            'appsecret':     KIS_APP_SECRET,
+            'tr_id':         'FHPST01710000',
+            'custtype':      'P',
+        }
+        if ctx_area_nk:
+            headers['tr_cont'] = 'N'
+            headers['CTX_AREA_NK'] = ctx_area_nk
+            headers['CTX_AREA_FK'] = ctx_area_fk
+        else:
+            headers['tr_cont'] = ''
+
+        req = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                resp_headers = dict(resp.headers)
+                data = json.loads(resp.read().decode('utf-8'))
+        except Exception as e:
+            print(f'   ❌ API 호출 실패 (page {page}): {e}')
+            break
+
         if data.get('rt_cd') != '0':
-            return None
-        out = data.get('output', {})
-        return int(out.get('hts_avls', '0') or '0')
-    except:
-        return None
+            print(f'   ❌ API 에러: {data.get("msg1", "")}')
+            break
+
+        items = data.get('output', [])
+        if not items:
+            break
+
+        for it in items:
+            code = it.get('mksc_shrn_iscd', '').strip()
+            name = it.get('hts_kor_isnm', '').strip()
+            mcap_str = it.get('stck_avls_scal', '0')  # 시가총액 (억원)
+            sector = it.get('bstp_kor_isnm', '기타').strip()
+
+            if not code or not name or len(code) != 6:
+                continue
+
+            mcap = int(mcap_str.replace(',', '') or '0')
+            all_stocks.append({
+                'code':   code,
+                'name':   name,
+                'sector': sector if sector else '기타',
+                'mcap':   mcap,  # 억원 단위
+            })
+
+        # 연속 조회 확인
+        tr_cont = resp_headers.get('tr_cont', '')
+        if tr_cont in ('F', 'M'):
+            ctx_area_nk = resp_headers.get('CTX_AREA_NK', data.get('ctx_area_nk', ''))
+            ctx_area_fk = resp_headers.get('CTX_AREA_FK', data.get('ctx_area_fk', ''))
+            if not ctx_area_nk:
+                break
+            time.sleep(0.2)
+        else:
+            break
+
+    all_stocks.sort(key=lambda x: -x['mcap'])
+    return all_stocks
 
 
-# ──────────────────────────────────────────────
-# 공통
-# ──────────────────────────────────────────────
+def filter_by_mcap(stocks, min_mcap_euk):
+    """시총 기준 필터링."""
+    return [s for s in stocks if s['mcap'] >= min_mcap_euk]
+
 
 def load_existing_csv(csv_file):
     """기존 CSV → [{code, name, sector}]."""
@@ -332,26 +182,27 @@ def load_existing_csv(csv_file):
                     'code':   parts[0].strip(),
                     'name':   parts[1].strip(),
                     'sector': parts[2].strip(),
-                    'mcap':   0,
                 })
     return stocks
 
 
-def save_csv(stocks, source_date, csv_file, label):
-    """CSV 저장."""
+def save_csv(stocks, csv_file, label):
+    """CSV 저장 + 변동 리포트."""
     existing = {}
     for s in load_existing_csv(csv_file):
-        existing[s['code']] = s['sector']
+        existing[s['code']] = s.get('sector', '기타')
 
     old_codes = set(existing.keys())
     new_codes = set(s['code'] for s in stocks)
 
+    # 기존 업종 보존
     for s in stocks:
         if s.get('sector', '') in ('', '기타') and s['code'] in existing:
             s['sector'] = existing[s['code']]
 
+    today = date.today().strftime('%Y.%m.%d')
     with open(csv_file, 'w', encoding='utf-8', newline='') as f:
-        f.write(f'# {label} (자동 갱신 {source_date})\n')
+        f.write(f'# {label} (자동 갱신 {today})\n')
         f.write('# 종목코드,종목명,업종\n')
         for s in stocks:
             f.write(f'{s["code"]},{s["name"]},{s["sector"]}\n')
@@ -365,61 +216,56 @@ def save_csv(stocks, source_date, csv_file, label):
     print(f'   기존: {len(old_codes)}종목')
 
     if added:
-        added_names = [s['name'] for s in stocks if s['code'] in added][:10]
+        added_names = [s['name'] for s in stocks if s['code'] in added][:15]
         print(f'   🆕 신규 ({len(added)}): {", ".join(added_names)}')
-        if len(added) > 10:
-            print(f'      ... 외 {len(added)-10}종목')
-
+        if len(added) > 15:
+            print(f'      ... 외 {len(added)-15}종목')
     if removed:
-        removed_info = [f'{existing.get(c,"?")}({c})' for c in list(removed)[:10]]
+        removed_info = [f'{existing.get(c,"?")}({c})' for c in list(removed)[:15]]
         print(f'   🗑️  제외 ({len(removed)}): {", ".join(removed_info)}')
-
     if not added and not removed:
         print(f'   변동 없음')
 
     print()
     print(f'   시총 Top 10:')
     for i, s in enumerate(stocks[:10], 1):
-        mcap_jo = s['mcap'] / 1_000_000_000_000
+        mcap_jo = s['mcap'] / 10_000  # 억→조
         print(f'   {i:2d}. {s["name"]:12s} {mcap_jo:8.1f}조  [{s["sector"]}]')
 
 
-def process_market(market_name, config):
-    """시장 하나 처리."""
-    print(f'\n{"━"*50}')
-    print(f'🔄 {config["label"]} 갱신')
-    print(f'{"━"*50}')
-
-    # 방법 1: KRX
-    items, tdate = try_krx_api(config['mktId'])
-    if items:
-        stocks = parse_krx_stocks(items, config['min_mcap'])
-        if stocks:
-            save_csv(stocks, f'{tdate[:4]}.{tdate[4:6]}.{tdate[6:]}',
-                     config['csv_file'], config['label'])
-            return True
-
-    # 방법 2: KIS fallback
-    mkt_div = 'J' if market_name == 'KOSPI' else 'J'  # KIS는 둘 다 'J'
-    stocks = try_kis_fallback(config['csv_file'], config['min_mcap_euk'], mkt_div)
-    if stocks:
-        save_csv(stocks, date.today().strftime('%Y.%m.%d'),
-                 config['csv_file'], config['label'])
-        return True
-
-    print(f'\n❌ {market_name} KRX · KIS 모두 실패 — 기존 CSV 유지')
-    return False
-
-
 def main():
-    print('🔄 종목 리스트 자동 갱신')
+    print('🔄 종목 리스트 자동 갱신 (KIS API)')
     print(f'   KOSPI: 시총 1조↑ → kospi200_list.csv')
     print(f'   KOSDAQ: 시총 5천억↑ → kosdaq_list.csv')
 
+    if not KIS_APP_KEY or not KIS_APP_SECRET:
+        print('❌ KIS_APP_KEY / KIS_APP_SECRET 환경변수 없음')
+        sys.exit(1)
+
+    token = kis_token()
+    if not token:
+        sys.exit(1)
+
     ok_count = 0
+
     for market_name, config in MARKETS.items():
-        if process_market(market_name, config):
+        print(f'\n{"━"*50}')
+        print(f'📡 {config["label"]} 조회 중...')
+        print(f'{"━"*50}')
+
+        all_stocks = kis_market_cap_ranking(token, config['mkt_div'])
+        print(f'   전체 {len(all_stocks)}종목 수집')
+
+        filtered = filter_by_mcap(all_stocks, config['min_mcap_euk'])
+        print(f'   시총 기준 통과: {len(filtered)}종목')
+
+        if filtered:
+            save_csv(filtered, config['csv_file'], config['label'])
             ok_count += 1
+        else:
+            print(f'   ❌ 결과 0건 — 기존 CSV 유지')
+
+        time.sleep(1)
 
     print(f'\n{"="*50}')
     print(f'완료: {ok_count}/{len(MARKETS)} 시장 갱신 성공')
