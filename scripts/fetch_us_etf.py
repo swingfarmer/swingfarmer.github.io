@@ -12,21 +12,43 @@ import yfinance as yf
 
 KST = timezone(timedelta(hours=9))
 OUTPUT = "data/us_etf.json"
-DELAY = 1.5
+DELAY = 1.0
 
 ETFS = {
+    # ── 배당 ETF ──
     "SCHD": {"name": "Schwab 미국 배당", "cat": "dividend", "desc": "미국 고배당+품질 스크리닝"},
     "VYM":  {"name": "Vanguard 고배당", "cat": "dividend", "desc": "미국 고배당 대형주 400+종목"},
     "DGRO": {"name": "iShares 배당성장", "cat": "dividend", "desc": "배당 성장률 기반 선별"},
     "HDV":  {"name": "iShares 고배당", "cat": "dividend", "desc": "고배당+재무건전성 필터"},
+    # ── 커버드콜 ──
     "JEPI": {"name": "JPM 커버드콜 S&P", "cat": "coveredcall", "desc": "S&P500 커버드콜, 월배당"},
     "JEPQ": {"name": "JPM 커버드콜 나스닥", "cat": "coveredcall", "desc": "나스닥 커버드콜, 월배당"},
+    # ── 벤치마크 ──
     "VOO":  {"name": "S&P 500", "cat": "benchmark", "desc": "미국 대형주 500종목 추종"},
     "QQQ":  {"name": "Nasdaq 100", "cat": "benchmark", "desc": "나스닥 대형 기술주 100종목"},
     "VTI":  {"name": "미국 전체시장", "cat": "benchmark", "desc": "미국 주식 전체(3500+종목)"},
+    "IWM":  {"name": "Russell 2000", "cat": "benchmark", "desc": "미국 소형주 2000종목"},
+    # ── 채권 ──
     "TLT":  {"name": "미국 장기국채 20Y+", "cat": "bond", "desc": "만기 20년+ 미국 국채"},
     "SHY":  {"name": "미국 단기국채 1-3Y", "cat": "bond", "desc": "만기 1-3년 미국 국채"},
     "BND":  {"name": "미국 채권 종합", "cat": "bond", "desc": "투자등급 채권 전체"},
+    # ── M7 (Magnificent 7) ──
+    "AAPL":  {"name": "Apple", "cat": "m7", "desc": "아이폰, 맥, 서비스 생태계"},
+    "MSFT":  {"name": "Microsoft", "cat": "m7", "desc": "Azure 클라우드, Office, AI(Copilot)"},
+    "GOOGL": {"name": "Alphabet (Google)", "cat": "m7", "desc": "검색, 유튜브, GCP, Waymo"},
+    "AMZN":  {"name": "Amazon", "cat": "m7", "desc": "이커머스, AWS 클라우드"},
+    "NVDA":  {"name": "NVIDIA", "cat": "m7", "desc": "AI GPU, 데이터센터"},
+    "META":  {"name": "Meta (Facebook)", "cat": "m7", "desc": "SNS, 메타버스, AI"},
+    "TSLA":  {"name": "Tesla", "cat": "m7", "desc": "전기차, 에너지, 자율주행"},
+    # ── 핫 종목 ──
+    "PLTR":  {"name": "Palantir", "cat": "hot", "desc": "빅데이터 분석, 정부+기업 AI 플랫폼"},
+    "RKLB":  {"name": "Rocket Lab", "cat": "hot", "desc": "소형 위성 발사, 우주 산업"},
+    "COIN":  {"name": "Coinbase", "cat": "hot", "desc": "미국 최대 암호화폐 거래소"},
+    "ARM":   {"name": "ARM Holdings", "cat": "hot", "desc": "모바일·AI 칩 설계 IP"},
+    "AVGO":  {"name": "Broadcom", "cat": "hot", "desc": "반도체+인프라 소프트웨어, VMware"},
+    "CRWD":  {"name": "CrowdStrike", "cat": "hot", "desc": "클라우드 기반 사이버 보안"},
+    "SNOW":  {"name": "Snowflake", "cat": "hot", "desc": "클라우드 데이터 웨어하우스"},
+    "SMR":   {"name": "NuScale Power", "cat": "hot", "desc": "소형모듈원전(SMR) 기술 선두"},
 }
 
 
