@@ -168,7 +168,65 @@ def main():
     os.makedirs("data", exist_ok=True)
     with open(OUTPUT, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=1)
+
+    # ── 날짜별 아카이브 저장 ──
+    archive_dir = os.path.join("data", "news")
+    os.makedirs(archive_dir, exist_ok=True)
+    today_str = now.strftime("%Y-%m-%d")
+    archive_file = os.path.join(archive_dir, f"{today_str}.json")
+
+    # 기존 아카이브가 있으면 기사 머지 (중복 제거)
+    existing = {}
+    if os.path.exists(archive_file):
+        try:
+            with open(archive_file, "r", encoding="utf-8") as f:
+                existing = json.load(f)
+        except:
+            existing = {}
+
+    merged = {"date": today_str, "updated": result["updated"], "categories": {}}
+    for cat in result["categories"]:
+        new_items = result["categories"][cat]["items"]
+        old_items = existing.get("categories", {}).get(cat, {}).get("items", [])
+        # 합치고 중복 제거
+        all_items = new_items + old_items
+        seen = set()
+        unique = []
+        for it in all_items:
+            key = it["title"].replace(" ", "").lower()[:40]
+            if key not in seen:
+                seen.add(key)
+                unique.append(it)
+        unique.sort(key=lambda x: x.get("pubDate", ""), reverse=True)
+        merged["categories"][cat] = {
+            "items": unique[:200],  # 하루 최대 200개
+            "count": min(len(unique), 200),
+        }
+
+    with open(archive_file, "w", encoding="utf-8") as f:
+        json.dump(merged, f, ensure_ascii=False, indent=1)
+
+    # ── 아카이브 인덱스 갱신 ──
+    import glob
+    archive_files = glob.glob(os.path.join(archive_dir, "20??-??-??.json"))
+    dates = sorted(
+        [os.path.splitext(os.path.basename(f))[0] for f in archive_files],
+        reverse=True
+    )
+    # 90일 넘으면 오래된 것 삭제
+    if len(dates) > 90:
+        for old_d in dates[90:]:
+            old_f = os.path.join(archive_dir, f"{old_d}.json")
+            if os.path.exists(old_f):
+                os.remove(old_f)
+        dates = dates[:90]
+
+    index = {"dates": dates, "latest": dates[0] if dates else None}
+    with open(os.path.join(archive_dir, "index.json"), "w", encoding="utf-8") as f:
+        json.dump(index, f, ensure_ascii=False, indent=1)
+
     print(f"\n✅ 완료: {now.strftime('%Y-%m-%d %H:%M')} — 성공 {total_ok}, 실패 {total_fail}")
+    print(f"   아카이브: {archive_file} ({len(dates)}일치 보관)")
 
 
 if __name__ == "__main__":

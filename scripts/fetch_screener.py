@@ -42,7 +42,8 @@ KIS_BASE       = os.environ.get('KIS_BASE_URL',
 
 SCRIPT_DIR  = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR    = os.path.dirname(SCRIPT_DIR)
-STOCK_LIST  = os.path.join(SCRIPT_DIR, 'kospi200_list.csv')
+KOSPI_LIST  = os.path.join(SCRIPT_DIR, 'kospi200_list.csv')
+KOSDAQ_LIST = os.path.join(SCRIPT_DIR, 'kosdaq_list.csv')
 OUT_DIR     = os.path.join(ROOT_DIR, 'data', 'kr', 'screener')
 HIST_FILE   = os.path.join(OUT_DIR, 'investor_hist.json')
 INDEX_FILE  = os.path.join(OUT_DIR, 'index.json')
@@ -54,9 +55,11 @@ FILE_KEEP   = None           # 무제한 보관 (오라클 이관 예정)
 
 
 # ── 유틸 ──
-def load_stock_list():
+def _load_csv(path, market):
     stocks = []
-    with open(STOCK_LIST, 'r', encoding='utf-8') as f:
+    if not os.path.exists(path):
+        return stocks
+    with open(path, 'r', encoding='utf-8') as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith('#'):
@@ -66,9 +69,24 @@ def load_stock_list():
                 stocks.append({
                     'code': parts[0].strip(),
                     'name': parts[1].strip(),
-                    'sector': parts[2].strip()
+                    'sector': parts[2].strip(),
+                    'market': market,
                 })
     return stocks
+
+
+def load_stock_list():
+    kospi = _load_csv(KOSPI_LIST, 'KOSPI')
+    kosdaq = _load_csv(KOSDAQ_LIST, 'KOSDAQ')
+    combined = kospi + kosdaq
+    # 중복 코드 제거 (혹시 모를 중복)
+    seen = set()
+    result = []
+    for s in combined:
+        if s['code'] not in seen:
+            seen.add(s['code'])
+            result.append(s)
+    return result
 
 
 def safe_int(v):
@@ -129,13 +147,13 @@ def get_access_token():
         sys.exit(1)
 
 
-def fetch_ohlcv(token, code, end_date):
+def fetch_ohlcv(token, code, end_date, mrkt='J'):
     """종목별 일봉 OHLCV (최근 ~100거래일)."""
     start = (datetime.strptime(end_date, '%Y%m%d') -
              timedelta(days=OHLCV_DAYS)).strftime('%Y%m%d')
     url = (f'{KIS_BASE}/uapi/domestic-stock/v1/quotations/'
            f'inquire-daily-itemchartprice'
-           f'?FID_COND_MRKT_DIV_CODE=J'
+           f'?FID_COND_MRKT_DIV_CODE={mrkt}'
            f'&FID_INPUT_ISCD={code}'
            f'&FID_INPUT_DATE_1={start}'
            f'&FID_INPUT_DATE_2={end_date}'
@@ -163,12 +181,12 @@ def fetch_ohlcv(token, code, end_date):
     return result
 
 
-def fetch_investor(token, code):
+def fetch_investor(token, code, mrkt='J'):
     """종목별 투자자 매매 동향 (최근 거래일 기준).
     FHKST01010900 응답은 날짜별 행 — 각 행에 외인/기관/프로그램 필드."""
     url = (f'{KIS_BASE}/uapi/domestic-stock/v1/quotations/'
            f'inquire-investor'
-           f'?FID_COND_MRKT_DIV_CODE=J'
+           f'?FID_COND_MRKT_DIV_CODE={mrkt}'
            f'&FID_INPUT_ISCD={code}')
     data = kis_request(url, token, 'FHKST01010900')
     if not data:
@@ -210,7 +228,7 @@ def fetch_investor(token, code):
 
 
 
-def fetch_program_trade(token, code):
+def fetch_program_trade(token, code, mrkt='J'):
     """종목별 프로그램매매추이(일별) — FHPPG04650201.
     최근 5거래일 프로그램 순매수 수량/금액 반환.
     [{date, program_qty, program_amt}, ...]  (날짜 오름차순)"""
@@ -218,7 +236,7 @@ def fetch_program_trade(token, code):
     today_str = date.today().strftime('%Y%m%d')
     url = (f'{KIS_BASE}/uapi/domestic-stock/v1/quotations/'
            f'program-trade-by-stock-daily'
-           f'?FID_COND_MRKT_DIV_CODE=J'
+           f'?FID_COND_MRKT_DIV_CODE={mrkt}'
            f'&FID_INPUT_ISCD={code}'
            f'&FID_INPUT_DATE_1={today_str}')
     data = kis_request(url, token, 'FHPPG04650201')
@@ -589,9 +607,11 @@ def main():
     today_iso = today.isoformat()
 
     stocks = load_stock_list()
-    print(f'📊 KOSPI 200 스크리너')
+    kospi_cnt = sum(1 for s in stocks if s.get('market') == 'KOSPI')
+    kosdaq_cnt = sum(1 for s in stocks if s.get('market') == 'KOSDAQ')
+    print(f'📊 KOSPI+KOSDAQ 스크리너')
     print(f'   기준일: {today_iso}')
-    print(f'   종목: {len(stocks)}개')
+    print(f'   종목: {len(stocks)}개 (KOSPI {kospi_cnt} + KOSDAQ {kosdaq_cnt})')
     print()
 
     token = get_access_token()
@@ -635,10 +655,12 @@ def main():
         code = s['code']
         name = s['name']
         sector = s['sector']
-        print(f'[{i}/{total}] {name}', end='', flush=True)
+        market = s.get('market', 'KOSPI')
+        mrkt = 'J' if market == 'KOSPI' else 'J'  # KIS API: J=유가증권+코스닥 공통
+        print(f'[{i}/{total}] {name} ({market})', end='', flush=True)
 
         # 1) OHLCV
-        ohlcv = fetch_ohlcv(token, code, today_str)
+        ohlcv = fetch_ohlcv(token, code, today_str, mrkt)
         time.sleep(CALL_DELAY)
 
         if not ohlcv:
@@ -650,7 +672,7 @@ def main():
         # 2) 기술적 시그널
         sig = detect_signals(ohlcv)
         base = {'code': code, 'name': name, 'sector': sector,
-                'price': latest_price}
+                'market': market, 'price': latest_price}
 
         for key in ['ma5w_breakout', 'ma20_breakout',
                      'ma50_breakout', 'golden_cross', 'dead_cross',
@@ -663,11 +685,11 @@ def main():
                 all_signals[key].append(entry)
 
         # 3) 수급 (외인/기관)
-        inv = fetch_investor(token, code)
+        inv = fetch_investor(token, code, mrkt)
         time.sleep(CALL_DELAY)
 
         # 4) 프로그램매매 (별도 엔드포인트 FHPPG04650201)
-        pgm_days = fetch_program_trade(token, code)
+        pgm_days = fetch_program_trade(token, code, mrkt)
         time.sleep(CALL_DELAY)
 
         if inv:
@@ -706,7 +728,7 @@ def main():
 
             investor_today.append({
                 'code': code, 'name': name, 'sector': sector,
-                'price': latest_price,
+                'market': market, 'price': latest_price,
                 'foreign_qty': inv.get('foreign_qty', 0),
                 'foreign_amt': inv.get('foreign_amt', 0),
                 'institution_qty': inv.get('institution_qty', 0),
@@ -751,7 +773,7 @@ def main():
         fc = count_consecutive_buy(inv_hist, s['code'], 'foreign')
         ic = count_consecutive_buy(inv_hist, s['code'], 'institution')
         base = {'code': s['code'], 'name': s['name'],
-                'sector': s['sector']}
+                'sector': s['sector'], 'market': s.get('market', 'KOSPI')}
         if fc >= 3:
             all_signals['foreign_consecutive'].append(
                 {**base, 'consecutive': fc})
@@ -796,7 +818,8 @@ def main():
                     bear_days += 1
 
             base = {'code': code, 'name': s['name'],
-                    'sector': s['sector']}
+                    'sector': s['sector'],
+                    'market': s.get('market', 'KOSPI')}
 
             if bull_days >= 3:
                 # 최근 일자 수급 정보 추가
