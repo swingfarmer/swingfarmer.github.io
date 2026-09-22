@@ -48,6 +48,41 @@ tr:hover{background:rgba(59,130,246,.06)}
 .loading{text-align:center;padding:60px;color:var(--text-dim)}
 .empty{text-align:center;padding:40px;color:var(--text-dim);font-size:14px}
 .note{font-size:11px;color:var(--text-dim);text-align:center;margin-top:20px;line-height:1.8}
+
+/* 편집 버튼 */
+.edit-btn{background:var(--card);border:1px solid var(--border);color:var(--text-dim);padding:6px 12px;border-radius:20px;cursor:pointer;font-size:12px;font-family:inherit;transition:all .12s}
+.edit-btn:hover{border-color:var(--accent);color:var(--text)}
+
+/* 편집 모달 */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;justify-content:center;align-items:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg);border:1px solid var(--border);border-radius:14px;width:94%;max-width:420px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal-header{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--border)}
+.modal-header h2{font-size:15px;font-weight:700}
+.modal-header button{background:none;border:none;color:var(--text-dim);font-size:18px;cursor:pointer}
+.modal-body{overflow-y:auto;padding:8px 0;flex:1}
+.modal-footer{display:flex;gap:8px;padding:14px 18px;border-top:1px solid var(--border)}
+.modal-footer button{flex:1;padding:10px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border)}
+.btn-save{background:var(--accent);border-color:var(--accent)!important;color:#fff}
+.btn-reset{background:transparent;color:var(--text-dim)}
+.btn-reset:hover{color:var(--text)}
+
+/* 편집 리스트 아이템 */
+.edit-item{display:flex;align-items:center;gap:8px;padding:10px 18px;cursor:grab;user-select:none;transition:background .1s}
+.edit-item:active{cursor:grabbing}
+.edit-item:hover{background:rgba(59,130,246,.06)}
+.edit-item.dragging{opacity:.4;background:rgba(59,130,246,.1)}
+.edit-item .drag-handle{color:var(--text-dim);font-size:14px;flex-shrink:0;width:18px;text-align:center}
+.edit-item .item-icon{font-size:14px;flex-shrink:0}
+.edit-item .item-label{flex:1;font-size:13px;font-weight:500}
+.edit-item .item-toggle{position:relative;width:38px;height:22px;flex-shrink:0}
+.edit-item .item-toggle input{opacity:0;width:0;height:0}
+.edit-item .item-toggle .slider{position:absolute;inset:0;background:var(--border);border-radius:11px;cursor:pointer;transition:background .2s}
+.edit-item .item-toggle .slider::before{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;left:3px;top:3px;transition:transform .2s}
+.edit-item .item-toggle input:checked+.slider{background:var(--accent)}
+.edit-item .item-toggle input:checked+.slider::before{transform:translateX(16px)}
+.edit-item.hidden-item .item-label{color:var(--text-dim);text-decoration:line-through;opacity:.5}
+.drop-indicator{height:2px;background:var(--accent);margin:0 18px;border-radius:1px;display:none}
 </style>
 </head>
 <body>
@@ -64,7 +99,25 @@ tr:hover{background:rgba(59,130,246,.06)}
 </div>
 
 <div class="summary" id="summary"></div>
-<div class="tabs" id="tabs"></div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+  <div class="tabs" id="tabs" style="margin-bottom:0;flex:1;display:flex;gap:6px;flex-wrap:wrap"></div>
+  <button class="edit-btn" onclick="openEditModal()">⚙️ 편집</button>
+</div>
+
+<!-- 순서/표시 편집 모달 -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>⚙️ 시그널 탭 편집</h2>
+      <button onclick="closeEditModal()">✕</button>
+    </div>
+    <div class="modal-body" id="editList"></div>
+    <div class="modal-footer">
+      <button class="btn-reset" onclick="resetTabConfig()">초기화</button>
+      <button class="btn-save" onclick="saveTabConfig()">저장</button>
+    </div>
+  </div>
+</div>
 <div class="table-wrap">
   <table><thead id="thead"></thead><tbody id="tbody"></tbody></table>
 </div>
@@ -78,38 +131,216 @@ tr:hover{background:rgba(59,130,246,.06)}
 <script>
 (function(){
 
-var indexData = null;   // {dates:[], latest:''}
+var indexData = null;
 var currentDate = '';
 var currentTab = '';
-var dayData = null;     // 현재 날짜 데이터
-var pricesData = null;  // prices.json (실제 현재가 — 수정주가 대체용)
+var dayData = null;
+var pricesData = null;
 
-var TAB_CONFIG = [
-  {key:'ma50_breakout',         label:'10주선 돌파',       icon:'📈'},
-  {key:'golden_cross',          label:'골든크로스',        icon:'✨'},
-  {key:'dead_cross',            label:'데드크로스',        icon:'💀'},
-  {key:'aligned_bull',          label:'정배열',            icon:'🔥'},
-  {key:'bb_upper_close',        label:'볼밴상단 종가',     icon:'🔺'},
-  {key:'bb_upper_intra',        label:'볼밴상단 장중',     icon:'⚡'},
-  {key:'rally_3d_10pct',        label:'3일양봉 10%↑',     icon:'🚀'},
-  {key:'volume_spike',          label:'거래량 폭발',       icon:'💥'},
-  {key:'volume_breakout',       label:'거래량 돌파',       icon:'📊'},
-  {key:'new_high_52w',          label:'52주 신고가',       icon:'🏔'},
-  {key:'new_low_52w',           label:'52주 신저가',       icon:'🕳'},
-  {key:'rsi_oversold',          label:'RSI 과매도',        icon:'🟢'},
-  {key:'rsi_overbought',        label:'RSI 과매수',        icon:'🔴'},
-  {key:'macd_golden',           label:'MACD 골든',         icon:'⚙'},
-  {key:'foreign_top15_buy',     label:'외인 매수 T15',    icon:'🏦'},
-  {key:'foreign_top15_sell',    label:'외인 매도 T15',    icon:'🏦'},
-  {key:'institution_top15_buy', label:'기관 매수 T15',    icon:'🏛'},
-  {key:'institution_top15_sell',label:'기관 매도 T15',    icon:'🏛'},
-  {key:'foreign_consecutive',   label:'외인 연속매수',     icon:'📊'},
-  {key:'institution_consecutive',label:'기관 연속매수',    icon:'📊'},
-  {key:'program_absorb_bull',   label:'프매도+외매수',     icon:'🟢'},
-  {key:'program_absorb_bear',   label:'프매수+외매도',     icon:'🔴'},
+// ── 기본 탭 설정 (원본) ──
+var DEFAULT_TAB_CONFIG = [
+  {key:'ma50_breakout',         label:'10주선 돌파',       icon:'📈', visible:true},
+  {key:'golden_cross',          label:'골든크로스',        icon:'✨', visible:true},
+  {key:'dead_cross',            label:'데드크로스',        icon:'💀', visible:true},
+  {key:'aligned_bull',          label:'정배열',            icon:'🔥', visible:true},
+  {key:'bb_upper_close',        label:'볼밴상단 종가',     icon:'🔺', visible:true},
+  {key:'bb_upper_intra',        label:'볼밴상단 장중',     icon:'⚡', visible:true},
+  {key:'rally_3d_10pct',        label:'3일양봉 10%↑',     icon:'🚀', visible:true},
+  {key:'volume_spike',          label:'거래량 폭발',       icon:'💥', visible:true},
+  {key:'volume_breakout',       label:'거래량 돌파',       icon:'📊', visible:true},
+  {key:'new_high_52w',          label:'52주 신고가',       icon:'🏔', visible:true},
+  {key:'new_low_52w',           label:'52주 신저가',       icon:'🕳', visible:true},
+  {key:'rsi_oversold',          label:'RSI 과매도',        icon:'🟢', visible:true},
+  {key:'rsi_overbought',        label:'RSI 과매수',        icon:'🔴', visible:true},
+  {key:'macd_golden',           label:'MACD 골든',         icon:'⚙', visible:true},
+  {key:'foreign_top15_buy',     label:'외인 매수 T15',    icon:'🏦', visible:true},
+  {key:'foreign_top15_sell',    label:'외인 매도 T15',    icon:'🏦', visible:true},
+  {key:'institution_top15_buy', label:'기관 매수 T15',    icon:'🏛', visible:true},
+  {key:'institution_top15_sell',label:'기관 매도 T15',    icon:'🏛', visible:true},
+  {key:'foreign_consecutive',   label:'외인 연속매수',     icon:'📊', visible:true},
+  {key:'institution_consecutive',label:'기관 연속매수',    icon:'📊', visible:true},
+  {key:'program_absorb_bull',   label:'프매도+외매수',     icon:'🟢', visible:true},
+  {key:'program_absorb_bear',   label:'프매수+외매도',     icon:'🔴', visible:true},
 ];
 
-// 탭별 테이블 컬럼 정의
+// 서머리 카드에 표시할 키 (기본 7개, 보이는 탭만 필터)
+var SUMMARY_KEYS = ['golden_cross','aligned_bull','new_high_52w','volume_breakout','rsi_oversold','foreign_consecutive','program_absorb_bull'];
+
+var TAB_CONFIG = loadTabConfig();
+
+function loadTabConfig(){
+  try {
+    var saved = localStorage.getItem('screener_tab_config');
+    if(!saved) return deepCopy(DEFAULT_TAB_CONFIG);
+    var parsed = JSON.parse(saved);
+    if(!Array.isArray(parsed)||!parsed.length) return deepCopy(DEFAULT_TAB_CONFIG);
+    // 새로 추가된 탭이 있으면 끝에 붙이기
+    var savedKeys = parsed.map(function(t){return t.key;});
+    DEFAULT_TAB_CONFIG.forEach(function(dt){
+      if(savedKeys.indexOf(dt.key)===-1){
+        parsed.push(deepCopy(dt));
+      }
+    });
+    // 삭제된 탭 제거
+    var defaultKeys = DEFAULT_TAB_CONFIG.map(function(t){return t.key;});
+    parsed = parsed.filter(function(t){return defaultKeys.indexOf(t.key)>=0;});
+    // label/icon은 원본에서 복원 (코드 업데이트 반영)
+    var defaultMap = {};
+    DEFAULT_TAB_CONFIG.forEach(function(t){defaultMap[t.key]=t;});
+    parsed.forEach(function(t){
+      if(defaultMap[t.key]){t.label=defaultMap[t.key].label;t.icon=defaultMap[t.key].icon;}
+    });
+    return parsed;
+  } catch(e){ return deepCopy(DEFAULT_TAB_CONFIG); }
+}
+
+function saveTabConfigToStorage(){
+  var toSave = TAB_CONFIG.map(function(t){return {key:t.key,visible:t.visible};});
+  localStorage.setItem('screener_tab_config', JSON.stringify(toSave));
+}
+
+function deepCopy(arr){return JSON.parse(JSON.stringify(arr));}
+
+function getVisibleTabs(){
+  return TAB_CONFIG.filter(function(t){return t.visible!==false;});
+}
+
+function getTabByKey(key){
+  for(var i=0;i<TAB_CONFIG.length;i++){if(TAB_CONFIG[i].key===key) return TAB_CONFIG[i];}
+  return null;
+}
+
+// ── 편집 모달 ──
+var editDraft = []; // 편집 중 임시 배열
+var dragSrcIdx = null;
+
+function openEditModal(){
+  editDraft = deepCopy(TAB_CONFIG);
+  renderEditList();
+  document.getElementById('editModal').classList.add('open');
+}
+
+function closeEditModal(){
+  document.getElementById('editModal').classList.remove('open');
+}
+
+function renderEditList(){
+  var el = document.getElementById('editList');
+  el.innerHTML = editDraft.map(function(t,i){
+    var hiddenCls = t.visible===false ? ' hidden-item' : '';
+    return '<div class="edit-item'+hiddenCls+'" data-idx="'+i+'" draggable="true">'
+      +'<span class="drag-handle">⠿</span>'
+      +'<span class="item-icon">'+t.icon+'</span>'
+      +'<span class="item-label">'+t.label+'</span>'
+      +'<label class="item-toggle"><input type="checkbox"'+(t.visible!==false?' checked':'')+'><span class="slider"></span></label>'
+      +'</div>';
+  }).join('');
+
+  // 드래그 이벤트
+  var items = el.querySelectorAll('.edit-item');
+  items.forEach(function(item){
+    item.addEventListener('dragstart', onDragStart);
+    item.addEventListener('dragover', onDragOver);
+    item.addEventListener('dragend', onDragEnd);
+    item.addEventListener('drop', onDrop);
+    // 토글
+    var cb = item.querySelector('input[type=checkbox]');
+    cb.addEventListener('change', function(){
+      var idx = parseInt(item.getAttribute('data-idx'));
+      editDraft[idx].visible = cb.checked;
+      item.classList.toggle('hidden-item', !cb.checked);
+    });
+  });
+
+  // 터치 드래그 지원
+  items.forEach(function(item){
+    item.addEventListener('touchstart', onTouchStart, {passive:false});
+    item.addEventListener('touchmove', onTouchMove, {passive:false});
+    item.addEventListener('touchend', onTouchEnd);
+  });
+}
+
+function onDragStart(e){
+  dragSrcIdx = parseInt(this.getAttribute('data-idx'));
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+}
+function onDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+}
+function onDrop(e){
+  e.preventDefault();
+  var targetIdx = parseInt(this.getAttribute('data-idx'));
+  if(dragSrcIdx===null||dragSrcIdx===targetIdx) return;
+  var moved = editDraft.splice(dragSrcIdx,1)[0];
+  editDraft.splice(targetIdx,0,moved);
+  renderEditList();
+}
+function onDragEnd(){
+  dragSrcIdx=null;
+  document.querySelectorAll('.edit-item').forEach(function(el){el.classList.remove('dragging');});
+}
+
+// 터치 드래그
+var touchItem=null, touchClone=null, touchStartY=0, touchIdx=null;
+function onTouchStart(e){
+  // 토글 터치는 무시
+  if(e.target.closest('.item-toggle')) return;
+  touchIdx = parseInt(this.getAttribute('data-idx'));
+  touchItem = this;
+  touchStartY = e.touches[0].clientY;
+  this.classList.add('dragging');
+}
+function onTouchMove(e){
+  if(touchItem===null) return;
+  e.preventDefault();
+  var y = e.touches[0].clientY;
+  var list = document.getElementById('editList');
+  var items = list.querySelectorAll('.edit-item');
+  for(var i=0;i<items.length;i++){
+    var rect = items[i].getBoundingClientRect();
+    if(y>rect.top && y<rect.bottom && i!==touchIdx){
+      var moved = editDraft.splice(touchIdx,1)[0];
+      editDraft.splice(i,0,moved);
+      touchIdx=i;
+      renderEditList();
+      // re-mark dragging
+      var newItems = list.querySelectorAll('.edit-item');
+      if(newItems[i]) newItems[i].classList.add('dragging');
+      break;
+    }
+  }
+}
+function onTouchEnd(){
+  if(touchItem) touchItem.classList.remove('dragging');
+  touchItem=null;touchIdx=null;
+}
+
+function saveTabConfig(){
+  TAB_CONFIG = deepCopy(editDraft);
+  saveTabConfigToStorage();
+  closeEditModal();
+  // 현재 탭이 숨겨졌으면 첫 번째 보이는 탭으로
+  var visible = getVisibleTabs();
+  if(visible.length && !getTabByKey(currentTab)){
+    currentTab = visible[0].key;
+  } else if(visible.length) {
+    var found=false;
+    for(var i=0;i<visible.length;i++){if(visible[i].key===currentTab){found=true;break;}}
+    if(!found) currentTab = visible[0].key;
+  }
+  renderSummary();
+  renderTabs();
+  selectTab(currentTab);
+}
+
+function resetTabConfig(){
+  editDraft = deepCopy(DEFAULT_TAB_CONFIG);
+  renderEditList();
+}
+
+// ── 컬럼 정의 (변경 없음) ──
 function getColumns(tab){
   var base = [
     {key:'name',label:'종목',align:'left'},
@@ -162,7 +393,7 @@ function fmt(v,unit){
 function navDate(dir){
   if(!indexData||!indexData.dates.length) return;
   var idx=indexData.dates.indexOf(currentDate);
-  var next=idx-dir; // dates는 최신순이라 방향 반전
+  var next=idx-dir;
   if(next<0) next=0;
   if(next>=indexData.dates.length) next=indexData.dates.length-1;
   loadDate(indexData.dates[next]);
@@ -172,7 +403,6 @@ function loadDate(d){
   currentDate=d;
   document.getElementById('dateLabel').textContent=d;
   document.getElementById('dateSelect').value=d;
-
   document.getElementById('tbody').innerHTML='<tr><td colspan="10" class="loading">로딩 중…</td></tr>';
 
   fetch('/data/kr/screener/'+d+'.json')
@@ -181,7 +411,8 @@ function loadDate(d){
       dayData=data;
       renderSummary();
       renderTabs();
-      if(!currentTab) currentTab=TAB_CONFIG[0].key;
+      var visible = getVisibleTabs();
+      if(!currentTab && visible.length) currentTab=visible[0].key;
       selectTab(currentTab);
     })
     .catch(function(){
@@ -189,30 +420,31 @@ function loadDate(d){
     });
 }
 
-// ── 서머리 카드 ──
+// ── 서머리 카드 (보이는 탭만) ──
 function renderSummary(){
   var el=document.getElementById('summary');
   if(!dayData||!dayData.summary){el.innerHTML='';return;}
   var s=dayData.summary;
-  var cards=[
-    {label:'골든크로스',num:s.golden_cross||0},
-    {label:'정배열',num:s.aligned_bull||0},
-    {label:'52주 신고가',num:s.new_high_52w||0},
-    {label:'거래량 돌파',num:s.volume_breakout||0},
-    {label:'RSI 과매도',num:s.rsi_oversold||0},
-    {label:'외인 연속매수',num:s.foreign_consecutive||0},
-    {label:'프매도+외매수',num:s.program_absorb_bull||0},
-  ];
+  var visibleKeys = getVisibleTabs().map(function(t){return t.key;});
+  var tabMap={};
+  TAB_CONFIG.forEach(function(t){tabMap[t.key]=t;});
+
+  var cards=SUMMARY_KEYS.filter(function(k){return visibleKeys.indexOf(k)>=0;}).map(function(k){
+    return {label:tabMap[k]?tabMap[k].label:k, num:s[k]||0};
+  });
+
+  if(!cards.length){el.innerHTML='';return;}
   el.innerHTML=cards.map(function(c){
     return '<div class="summary-card"><div class="num">'+c.num+'</div><div class="label">'+c.label+'</div></div>';
   }).join('');
 }
 
-// ── 탭 ──
+// ── 탭 (보이는 것만, 커스텀 순서) ──
 function renderTabs(){
   var el=document.getElementById('tabs');
   var s=dayData?dayData.summary:{};
-  el.innerHTML=TAB_CONFIG.map(function(t){
+  var visible = getVisibleTabs();
+  el.innerHTML=visible.map(function(t){
     var cnt=s[t.key]||0;
     var cls='tab'+(t.key===currentTab?' active':'');
     return '<button class="'+cls+'" data-key="'+t.key+'">'+t.icon+' '+t.label+'<span class="cnt">('+cnt+')</span></button>';
@@ -226,19 +458,17 @@ function renderTabs(){
 
 function selectTab(key){
   currentTab=key;
-  // 탭 active 갱신
   document.querySelectorAll('.tab').forEach(function(t){
     t.classList.toggle('active',t.getAttribute('data-key')===key);
   });
   renderTable();
 }
 
-// ── 테이블 ──
+// ── 테이블 (변경 없음) ──
 function renderTable(){
   var cols=getColumns(currentTab);
   var items=(dayData&&dayData.signals)?dayData.signals[currentTab]||[]:[];
 
-  // 헤더
   var thead=document.getElementById('thead');
   thead.innerHTML='<tr>'+cols.map(function(c){
     return '<th style="text-align:'+(c.align||'right')+'">'+c.label+'</th>';
@@ -251,7 +481,6 @@ function renderTable(){
   }
 
   tbody.innerHTML=items.map(function(item){
-    // prices.json에서 실제 현재가 가져오기 (수정주가 대체)
     var realPrice=null;
     if(pricesData&&pricesData.prices&&pricesData.prices[item.code]){
       realPrice=pricesData.prices[item.code].price;
@@ -264,7 +493,6 @@ function renderTable(){
         return '<td style="text-align:left"><span class="stock-sector">'+item.sector+'</span></td>';
       }
       var v=item[c.key];
-      // price 컬럼은 실제 현재가로 교체
       if(c.key==='price'&&realPrice) v=realPrice;
       var cls='';
       if(c.key==='net_amt'||c.key==='net_qty'){
@@ -278,13 +506,12 @@ function renderTable(){
 }
 
 // ── 초기화 ──
-// prices.json (실제 현재가) + index.json 병렬 로드
 Promise.all([
   fetch('/data/kr/prices.json').then(function(r){return r.json();}).catch(function(){return null;}),
   fetch('/data/kr/screener/index.json').then(function(r){return r.json();})
 ])
   .then(function(results){
-    pricesData=results[0];  // null이면 수정주가 fallback
+    pricesData=results[0];
     indexData=results[1];
     var sel=document.getElementById('dateSelect');
     indexData.dates.forEach(function(d){
@@ -301,6 +528,10 @@ Promise.all([
 
 window.navDate=navDate;
 window.loadDate=loadDate;
+window.openEditModal=openEditModal;
+window.closeEditModal=closeEditModal;
+window.saveTabConfig=saveTabConfig;
+window.resetTabConfig=resetTabConfig;
 })();
 </script>
 </body>
