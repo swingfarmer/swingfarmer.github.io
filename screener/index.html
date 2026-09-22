@@ -68,11 +68,12 @@ tr:hover{background:rgba(59,130,246,.06)}
 .btn-reset:hover{color:var(--text)}
 
 /* 편집 리스트 아이템 */
-.edit-item{display:flex;align-items:center;gap:8px;padding:10px 18px;cursor:grab;user-select:none;transition:background .1s}
-.edit-item:active{cursor:grabbing}
+.edit-item{display:flex;align-items:center;gap:6px;padding:8px 18px;user-select:none;transition:background .1s}
 .edit-item:hover{background:rgba(59,130,246,.06)}
-.edit-item.dragging{opacity:.4;background:rgba(59,130,246,.1)}
-.edit-item .drag-handle{color:var(--text-dim);font-size:14px;flex-shrink:0;width:18px;text-align:center}
+.edit-item .move-btns{display:flex;flex-direction:column;gap:1px;flex-shrink:0}
+.edit-item .move-btn{background:none;border:1px solid var(--border);color:var(--text-dim);width:26px;height:20px;border-radius:4px;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
+.edit-item .move-btn:hover{border-color:var(--accent);color:var(--accent)}
+.edit-item .move-btn:disabled{opacity:.2;cursor:default;border-color:var(--border);color:var(--text-dim)}
 .edit-item .item-icon{font-size:14px;flex-shrink:0}
 .edit-item .item-label{flex:1;font-size:13px;font-weight:500}
 .edit-item .item-toggle{position:relative;width:38px;height:22px;flex-shrink:0}
@@ -214,8 +215,6 @@ function getTabByKey(key){
 
 // ── 편집 모달 ──
 var editDraft = []; // 편집 중 임시 배열
-var dragSrcIdx = null;
-
 function openEditModal(){
   editDraft = deepCopy(TAB_CONFIG);
   renderEditList();
@@ -228,23 +227,38 @@ function closeEditModal(){
 
 function renderEditList(){
   var el = document.getElementById('editList');
+  var len = editDraft.length;
   el.innerHTML = editDraft.map(function(t,i){
     var hiddenCls = t.visible===false ? ' hidden-item' : '';
-    return '<div class="edit-item'+hiddenCls+'" data-idx="'+i+'" draggable="true">'
-      +'<span class="drag-handle">⠿</span>'
+    return '<div class="edit-item'+hiddenCls+'" data-idx="'+i+'">'
+      +'<div class="move-btns">'
+      +'<button class="move-btn" data-dir="-1"'+(i===0?' disabled':'')+'>▲</button>'
+      +'<button class="move-btn" data-dir="1"'+(i===len-1?' disabled':'')+'>▼</button>'
+      +'</div>'
       +'<span class="item-icon">'+t.icon+'</span>'
       +'<span class="item-label">'+t.label+'</span>'
       +'<label class="item-toggle"><input type="checkbox"'+(t.visible!==false?' checked':'')+'><span class="slider"></span></label>'
       +'</div>';
   }).join('');
 
-  // 드래그 이벤트
   var items = el.querySelectorAll('.edit-item');
   items.forEach(function(item){
-    item.addEventListener('dragstart', onDragStart);
-    item.addEventListener('dragover', onDragOver);
-    item.addEventListener('dragend', onDragEnd);
-    item.addEventListener('drop', onDrop);
+    // 이동 버튼
+    item.querySelectorAll('.move-btn').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        var idx = parseInt(item.getAttribute('data-idx'));
+        var dir = parseInt(btn.getAttribute('data-dir'));
+        var newIdx = idx + dir;
+        if(newIdx < 0 || newIdx >= editDraft.length) return;
+        var moved = editDraft.splice(idx, 1)[0];
+        editDraft.splice(newIdx, 0, moved);
+        renderEditList();
+        // 이동한 아이템이 보이도록 스크롤
+        var newItems = el.querySelectorAll('.edit-item');
+        if(newItems[newIdx]) newItems[newIdx].scrollIntoView({block:'nearest'});
+      });
+    });
     // 토글
     var cb = item.querySelector('input[type=checkbox]');
     cb.addEventListener('change', function(){
@@ -253,70 +267,6 @@ function renderEditList(){
       item.classList.toggle('hidden-item', !cb.checked);
     });
   });
-
-  // 터치 드래그 지원
-  items.forEach(function(item){
-    item.addEventListener('touchstart', onTouchStart, {passive:false});
-    item.addEventListener('touchmove', onTouchMove, {passive:false});
-    item.addEventListener('touchend', onTouchEnd);
-  });
-}
-
-function onDragStart(e){
-  dragSrcIdx = parseInt(this.getAttribute('data-idx'));
-  this.classList.add('dragging');
-  e.dataTransfer.effectAllowed='move';
-}
-function onDragOver(e){
-  e.preventDefault();
-  e.dataTransfer.dropEffect='move';
-}
-function onDrop(e){
-  e.preventDefault();
-  var targetIdx = parseInt(this.getAttribute('data-idx'));
-  if(dragSrcIdx===null||dragSrcIdx===targetIdx) return;
-  var moved = editDraft.splice(dragSrcIdx,1)[0];
-  editDraft.splice(targetIdx,0,moved);
-  renderEditList();
-}
-function onDragEnd(){
-  dragSrcIdx=null;
-  document.querySelectorAll('.edit-item').forEach(function(el){el.classList.remove('dragging');});
-}
-
-// 터치 드래그
-var touchItem=null, touchClone=null, touchStartY=0, touchIdx=null;
-function onTouchStart(e){
-  // 토글 터치는 무시
-  if(e.target.closest('.item-toggle')) return;
-  touchIdx = parseInt(this.getAttribute('data-idx'));
-  touchItem = this;
-  touchStartY = e.touches[0].clientY;
-  this.classList.add('dragging');
-}
-function onTouchMove(e){
-  if(touchItem===null) return;
-  e.preventDefault();
-  var y = e.touches[0].clientY;
-  var list = document.getElementById('editList');
-  var items = list.querySelectorAll('.edit-item');
-  for(var i=0;i<items.length;i++){
-    var rect = items[i].getBoundingClientRect();
-    if(y>rect.top && y<rect.bottom && i!==touchIdx){
-      var moved = editDraft.splice(touchIdx,1)[0];
-      editDraft.splice(i,0,moved);
-      touchIdx=i;
-      renderEditList();
-      // re-mark dragging
-      var newItems = list.querySelectorAll('.edit-item');
-      if(newItems[i]) newItems[i].classList.add('dragging');
-      break;
-    }
-  }
-}
-function onTouchEnd(){
-  if(touchItem) touchItem.classList.remove('dragging');
-  touchItem=null;touchIdx=null;
 }
 
 function saveTabConfig(){
