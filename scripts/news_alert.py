@@ -1,7 +1,7 @@
 """
 뉴스 텔레그램 알림 + 일별 JSON 아카이브 (NAVER API HUB 버전)
-오라클 VM crontab: 매일 07:00 KST
-부동산/증권 각 10개 헤드라인 → 텔레그램 발송 + data/news_archive/YYYY-MM-DD.json 저장
+오라클 VM crontab: 매일 07:30 KST
+부동산/증권/해외증시 각 10개 헤드라인 → 텔레그램 발송 + data/news_archive/YYYY-MM-DD.json 저장
 
 환경변수:
   NAVER_CLIENT_ID      — 네이버 클라우드 NAVER API HUB Client ID
@@ -38,6 +38,7 @@ ARCHIVE_DIR = REPO_ROOT / "data" / "news_archive"
 CATEGORIES = {
     "부동산": ["부동산", "아파트 분양", "재건축 재개발"],
     "증권": ["증권 주식", "코스피 코스닥", "공매도 기관 외국인"],
+    "해외증시": ["미국 증시", "나스닥 S&P500", "뉴욕 증시 마감"],
 }
 
 HEADERS = {
