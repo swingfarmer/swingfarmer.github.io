@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="robots" content="noindex, nofollow">
+<title>유사종목 찾기 | 스윙파머</title>
+<style>
+:root{--bg:#0f1117;--card:#1a1d27;--card-hover:#222532;--border:#2a2d3a;--text:#e4e4e7;--text-dim:#71717a;--accent:#3b82f6;--green:#22c55e;--red:#ef4444;--gold:#eab308}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;font-size:14px}
+.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 80px}
+.header{padding:24px 0 20px;border-bottom:1px solid var(--border);margin-bottom:24px}
+.header h1{font-size:24px;font-weight:800;letter-spacing:-0.5px}
+.header-meta{display:flex;justify-content:space-between;align-items:center;margin-top:8px;flex-wrap:wrap;gap:8px}
+.updated{font-size:12px;color:var(--text-dim)}
+.back-link{color:var(--accent);text-decoration:none;font-size:13px;font-weight:600}
+
+/* 검색 */
+.search-wrap{position:relative;margin-bottom:24px}
+.search-input{width:100%;padding:14px 18px;border:2px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font-size:15px;font-family:inherit;outline:none;transition:border-color .15s}
+.search-input:focus{border-color:var(--accent)}
+.search-input::placeholder{color:var(--text-dim)}
+.dropdown{position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:10px;margin-top:4px;max-height:300px;overflow-y:auto;z-index:10;display:none}
+.dropdown.show{display:block}
+.dropdown-item{padding:10px 18px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:13px;border-bottom:1px solid var(--border)}
+.dropdown-item:last-child{border-bottom:none}
+.dropdown-item:hover{background:var(--card-hover)}
+.dropdown-item .name{font-weight:700}
+.dropdown-item .code{color:var(--text-dim);font-size:12px;margin-left:8px}
+.dropdown-item .sector{color:var(--text-dim);font-size:11px}
+
+/* 선택된 종목 카드 */
+.target-card{background:var(--card);border:2px solid var(--accent);border-radius:14px;padding:20px 24px;margin-bottom:24px;display:none}
+.target-card.show{display:block}
+.target-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.target-name{font-size:22px;font-weight:800}
+.target-meta{font-size:12px;color:var(--text-dim)}
+.target-metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px}
+.metric{text-align:center;background:rgba(255,255,255,.03);border-radius:8px;padding:10px 6px}
+.metric .val{font-size:16px;font-weight:700}
+.metric .label{font-size:10px;color:var(--text-dim);margin-top:2px}
+
+/* 가중치 컨트롤 */
+.weights-bar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.weights-bar .label{font-size:12px;color:var(--text-dim);font-weight:600;margin-right:4px}
+.weight-btn{padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text-dim);font-size:11px;font-weight:600;cursor:pointer;transition:all .12s;font-family:inherit}
+.weight-btn:hover{border-color:var(--accent);color:var(--text)}
+.weight-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* 결과 테이블 */
+.result-section{display:none}
+.result-section.show{display:block}
+.result-title{font-size:15px;font-weight:700;margin-bottom:12px}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--card)}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:900px}
+th{background:var(--card);text-align:right;padding:10px 8px;border-bottom:2px solid var(--border);color:var(--text-dim);font-weight:700;font-size:11px;white-space:nowrap}
+th:first-child{text-align:center;width:40px}
+th:nth-child(2){text-align:left}
+td{padding:9px 8px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}
+td:first-child{text-align:center;color:var(--text-dim);font-weight:700}
+td:nth-child(2){text-align:left}
+tr:hover td{background:rgba(59,130,246,.03)}
+.stock-name{font-weight:700;margin-right:6px}
+.stock-code{color:var(--text-dim);font-size:10px}
+.stock-sector{color:var(--text-dim);font-size:10px;margin-left:6px;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px}
+.sim-bar{display:inline-block;height:6px;border-radius:3px;background:var(--accent);vertical-align:middle;margin-right:6px}
+.up{color:var(--green)}.down{color:var(--red)}
+.note{font-size:11px;color:var(--text-dim);text-align:center;margin-top:30px;line-height:1.8}
+.empty{text-align:center;padding:60px 20px;color:var(--text-dim)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>🔍 유사종목 찾기</h1>
+    <div class="header-meta">
+      <div class="updated" id="updated">데이터 로딩 중...</div>
+      <a href="/" class="back-link">← 메인으로</a>
+    </div>
+  </div>
+
+  <div class="search-wrap">
+    <input type="text" class="search-input" id="searchInput" placeholder="종목명 또는 코드 검색..." autocomplete="off">
+    <div class="dropdown" id="dropdown"></div>
+  </div>
+
+  <div class="target-card" id="targetCard">
+    <div class="target-top">
+      <div>
+        <div class="target-name" id="targetName"></div>
+        <div class="target-meta" id="targetMeta"></div>
+      </div>
+    </div>
+    <div class="target-metrics" id="targetMetrics"></div>
+  </div>
+
+  <div class="weights-bar">
+    <span class="label">가중치:</span>
+    <button class="weight-btn active" data-preset="balanced" onclick="setPreset(this)">균형</button>
+    <button class="weight-btn" data-preset="value" onclick="setPreset(this)">가치</button>
+    <button class="weight-btn" data-preset="growth" onclick="setPreset(this)">성장</button>
+    <button class="weight-btn" data-preset="sector" onclick="setPreset(this)">업종 우선</button>
+  </div>
+
+  <div class="result-section" id="resultSection">
+    <div class="result-title">📊 유사종목 Top 15</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>#</th><th>종목</th><th>유사도</th>
+          <th>매출(억)</th><th>OPM</th><th>ROE</th><th>부채비율</th>
+          <th>EBITDA(억)</th><th>EV/EBITDA</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="empty" id="emptyMsg">종목을 검색해서 선택하면 재무 유사도 기반으로 비슷한 종목을 찾아줍니다.</div>
+
+  <p class="note">
+    ※ OpenDART 재무 데이터 기반 · 유사도 = 정규화 재무지표 유클리드 거리<br>
+    ※ EBITDA · EV/EBITDA는 데이터 수집 후 반영
+  </p>
+</div>
+
+<script src="/common.js?v=4"></script>
+<script>
+(function(){
+
+var allStocks = [];
+var priceMap = {};
+var targetStock = null;
+
+// 가중치 프리셋
+var PRESETS = {
+  balanced: {revenue:1, opm:1.5, nim:1, roe:1.5, roa:1, debt_ratio:1, ebitda:1.2, sector:2},
+  value:    {revenue:0.5, opm:1, nim:1, roe:2, roa:1.5, debt_ratio:1.5, ebitda:2, sector:1},
+  growth:   {revenue:1.5, opm:2, nim:1.5, roe:1, roa:0.5, debt_ratio:0.5, ebitda:1, sector:1.5},
+  sector:   {revenue:0.8, opm:1, nim:1, roe:1, roa:0.8, debt_ratio:0.8, ebitda:1, sector:5},
+};
+var currentPreset = 'balanced';
+
+// 데이터 로드 — 최신 기간
+async function loadData(){
+  try {
+    var idx = await (await fetch('/data/kr/index.json')).json();
+    var periods = (idx.periods||[]).filter(function(p){return p.count>0;});
+    var PERIOD_ORDER = {q1:1,q2:2,q3:3,annual:4};
+    periods.sort(function(a,b){
+      return (parseInt(b.year)*10+(PERIOD_ORDER[b.period]||0)) -
+             (parseInt(a.year)*10+(PERIOD_ORDER[a.period]||0));
+    });
+    if(!periods.length) throw new Error('기간 데이터 없음');
+
+    var latest = periods[0];
+    var data = await (await fetch('/data/kr/'+latest.file)).json();
+    allStocks = data.stocks || [];
+    document.getElementById('updated').textContent =
+      latest.label + ' · ' + allStocks.length + '종목 · 업데이트: ' + (data.updated||'');
+
+    // prices.json도 로드
+    try {
+      var pd = await (await fetch('/data/kr/prices.json')).json();
+      priceMap = pd.prices || {};
+    } catch(e){}
+
+  } catch(e){
+    document.getElementById('updated').textContent = '데이터 로드 실패';
+  }
+}
+
+// 검색 드롭다운
+var input = document.getElementById('searchInput');
+var dropdown = document.getElementById('dropdown');
+
+input.addEventListener('input', function(){
+  var q = input.value.trim().toLowerCase();
+  if(q.length < 1){ dropdown.classList.remove('show'); return; }
+  var matches = allStocks.filter(function(s){
+    return s.name.toLowerCase().indexOf(q)>=0 || s.code.indexOf(q)>=0;
+  }).slice(0, 10);
+
+  if(!matches.length){ dropdown.classList.remove('show'); return; }
+
+  dropdown.innerHTML = matches.map(function(s){
+    return '<div class="dropdown-item" data-code="'+s.code+'">'
+      +'<span><span class="name">'+s.name+'</span><span class="code">'+s.code+'</span></span>'
+      +'<span class="sector">'+s.sector+'</span></div>';
+  }).join('');
+  dropdown.classList.add('show');
+
+  dropdown.querySelectorAll('.dropdown-item').forEach(function(el){
+    el.addEventListener('click', function(){
+      var code = el.getAttribute('data-code');
+      selectStock(code);
+    });
+  });
+});
+
+input.addEventListener('blur', function(){
+  setTimeout(function(){ dropdown.classList.remove('show'); }, 200);
+});
+
+function selectStock(code){
+  targetStock = allStocks.find(function(s){return s.code===code;});
+  if(!targetStock) return;
+
+  input.value = targetStock.name + ' (' + targetStock.code + ')';
+  dropdown.classList.remove('show');
+
+  // 타겟 카드 표시
+  document.getElementById('targetName').textContent = targetStock.name;
+  document.getElementById('targetMeta').textContent = targetStock.code + ' · ' + targetStock.sector;
+
+  var metrics = [
+    {label:'매출(억)', val:fmtB(targetStock.revenue)},
+    {label:'OPM', val:fmtP(targetStock.opm)},
+    {label:'NIM', val:fmtP(targetStock.nim)},
+    {label:'ROE', val:fmtP(targetStock.roe)},
+    {label:'부채비율', val:fmtP(targetStock.debt_ratio)},
+    {label:'EBITDA', val:fmtB(targetStock.ebitda)},
+  ];
+  document.getElementById('targetMetrics').innerHTML = metrics.map(function(m){
+    return '<div class="metric"><div class="val">'+m.val+'</div><div class="label">'+m.label+'</div></div>';
+  }).join('');
+  document.getElementById('targetCard').classList.add('show');
+
+  findSimilar();
+}
+
+function fmtB(v){
+  if(v===null||v===undefined) return '-';
+  if(Math.abs(v)>=10000) return (v/10000).toFixed(1)+'조';
+  return v.toLocaleString()+'억';
+}
+function fmtP(v){ return (v!==null&&v!==undefined)?v.toFixed(1)+'%':'-'; }
+
+// 유사도 계산
+function findSimilar(){
+  if(!targetStock) return;
+  var w = PRESETS[currentPreset];
+
+  // 정규화를 위해 각 지표의 min/max 계산
+  var keys = ['revenue','opm','nim','roe','roa','debt_ratio','ebitda'];
+  var stats = {};
+  keys.forEach(function(k){
+    var vals = allStocks.map(function(s){return s[k];}).filter(function(v){return v!==null&&v!==undefined;});
+    if(!vals.length){ stats[k]={min:0,max:1,range:1}; return; }
+    var mn = Math.min.apply(null, vals);
+    var mx = Math.max.apply(null, vals);
+    var range = mx - mn || 1;
+    stats[k] = {min:mn, max:mx, range:range};
+  });
+
+  function normalize(v, k){
+    if(v===null||v===undefined) return null;
+    return (v - stats[k].min) / stats[k].range;
+  }
+
+  var tNorm = {};
+  keys.forEach(function(k){ tNorm[k] = normalize(targetStock[k], k); });
+
+  var results = [];
+  allStocks.forEach(function(s){
+    if(s.code === targetStock.code) return;
+
+    var dist = 0;
+    var totalWeight = 0;
+
+    keys.forEach(function(k){
+      var wk = w[k] || 1;
+      var tv = tNorm[k];
+      var sv = normalize(s[k], k);
+      if(tv===null || sv===null) return; // 데이터 없으면 스킵
+      dist += wk * Math.pow(tv - sv, 2);
+      totalWeight += wk;
+    });
+
+    // 업종 보너스 (같은 업종이면 거리 감소)
+    var sectorBonus = (s.sector === targetStock.sector) ? 0 : (w.sector || 1);
+    dist += sectorBonus;
+    totalWeight += (w.sector || 1);
+
+    if(totalWeight === 0) return;
+    var similarity = Math.max(0, 100 - Math.sqrt(dist / totalWeight) * 100);
+
+    // EV/EBITDA 계산
+    var evEbitda = null;
+    var p = priceMap[s.code];
+    if(p && p.market_cap && s.ebitda && s.ebitda > 0){
+      var ev = p.market_cap + (s.net_debt || 0);
+      evEbitda = Math.round(ev / s.ebitda * 10) / 10;
+    }
+
+    results.push({
+      code: s.code, name: s.name, sector: s.sector,
+      revenue: s.revenue, opm: s.opm, roe: s.roe,
+      debt_ratio: s.debt_ratio, ebitda: s.ebitda,
+      ev_ebitda: evEbitda,
+      similarity: Math.round(similarity * 10) / 10,
+    });
+  });
+
+  results.sort(function(a,b){ return b.similarity - a.similarity; });
+  renderResults(results.slice(0, 15));
+}
+
+function renderResults(items){
+  var tbody = document.getElementById('tbody');
+  var maxSim = items.length > 0 ? items[0].similarity : 100;
+
+  tbody.innerHTML = items.map(function(s, i){
+    var barW = Math.max(4, Math.round(s.similarity / maxSim * 80));
+    return '<tr>'
+      +'<td>'+(i+1)+'</td>'
+      +'<td><span class="stock-name">'+s.name+'</span><span class="stock-code">'+s.code+'</span>'
+      +'<span class="stock-sector">'+s.sector+'</span></td>'
+      +'<td style="text-align:left"><span class="sim-bar" style="width:'+barW+'px"></span>'+s.similarity+'%</td>'
+      +'<td>'+fmtB(s.revenue)+'</td>'
+      +'<td>'+fmtP(s.opm)+'</td>'
+      +'<td>'+fmtP(s.roe)+'</td>'
+      +'<td>'+fmtP(s.debt_ratio)+'</td>'
+      +'<td>'+fmtB(s.ebitda)+'</td>'
+      +'<td>'+(s.ev_ebitda!==null?s.ev_ebitda.toFixed(1):'-')+'</td>'
+      +'</tr>';
+  }).join('');
+
+  document.getElementById('resultSection').classList.add('show');
+  document.getElementById('emptyMsg').style.display = 'none';
+}
+
+// 프리셋 전환
+window.setPreset = function(btn){
+  document.querySelectorAll('.weight-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  currentPreset = btn.getAttribute('data-preset');
+  if(targetStock) findSimilar();
+};
+
+// 초기화
+loadData();
+
+})();
+</script>
+</body>
+</html>
