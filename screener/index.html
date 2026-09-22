@@ -84,6 +84,14 @@ tr:hover{background:rgba(59,130,246,.06)}
 .edit-item .item-toggle input:checked+.slider::before{transform:translateX(16px)}
 .edit-item.hidden-item .item-label{color:var(--text-dim);text-decoration:line-through;opacity:.5}
 .drop-indicator{height:2px;background:var(--accent);margin:0 18px;border-radius:1px;display:none}
+
+/* 설명 모달 */
+.help-section{margin-bottom:18px}
+.help-section h3{font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+.help-list{margin:0}
+.help-list dt{font-size:13px;font-weight:600;margin-top:10px}
+.help-list dd{font-size:12px;color:var(--text-dim);margin:3px 0 0 0;line-height:1.6}
+.help-note{font-size:11px;color:var(--text-dim);line-height:1.8;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-top:12px}
 </style>
 </head>
 <body>
@@ -103,6 +111,98 @@ tr:hover{background:rgba(59,130,246,.06)}
 <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
   <div class="tabs" id="tabs" style="margin-bottom:0;flex:1;display:flex;gap:6px;flex-wrap:wrap"></div>
   <button class="edit-btn" onclick="openEditModal()">⚙️ 편집</button>
+  <button class="edit-btn" onclick="openHelpModal()">❓ 설명</button>
+</div>
+
+<!-- 시그널 설명 모달 -->
+<div class="modal-overlay" id="helpModal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h2>📖 시그널 설명</h2>
+      <button onclick="closeHelpModal()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px 20px">
+      <div class="help-section">
+        <h3>이동평균선</h3>
+        <dl class="help-list">
+          <dt>📈 5주선 돌파</dt>
+          <dd>주봉 기준 5주 이동평균선을 종가가 상향 돌파. 직전 주 종가 &lt; 직전 5주선 → 이번 주 종가 ≥ 이번 5주선.</dd>
+          <dt>📈 20일선 돌파</dt>
+          <dd>일봉 20일 이동평균선을 종가가 상향 돌파. 전일 종가 &lt; 전일 MA20 → 당일 종가 ≥ 당일 MA20.</dd>
+          <dt>📈 10주선 돌파</dt>
+          <dd>주봉 기준 10주 이동평균선을 종가가 상향 돌파. 5주선과 동일 방식, 10주 SMA 사용.</dd>
+        </dl>
+      </div>
+      <div class="help-section">
+        <h3>크로스 / 배열</h3>
+        <dl class="help-list">
+          <dt>✨ 골든크로스</dt>
+          <dd>5일선이 20일선을 상향 돌파 (MA5 > MA20). 단기 추세 전환 시그널.</dd>
+          <dt>💀 데드크로스</dt>
+          <dd>5일선이 20일선을 하향 돌파 (MA5 &lt; MA20). 하락 추세 전환 시그널.</dd>
+          <dt>🔥 정배열</dt>
+          <dd>MA5 > MA20 > MA60. 단기·중기·장기 이평선이 순서대로 정렬된 강세 상태.</dd>
+        </dl>
+      </div>
+      <div class="help-section">
+        <h3>볼린저밴드</h3>
+        <dl class="help-list">
+          <dt>🔺 볼밴상단 종가</dt>
+          <dd>종가가 볼린저밴드 상단(20일, 2σ)을 돌파. 강한 상승 모멘텀.</dd>
+          <dt>⚡ 볼밴상단 장중</dt>
+          <dd>장중 고가가 볼밴 상단을 터치했으나 종가는 미돌파. 저항 테스트.</dd>
+        </dl>
+      </div>
+      <div class="help-section">
+        <h3>모멘텀 / 거래량</h3>
+        <dl class="help-list">
+          <dt>🚀 3일양봉 10%↑</dt>
+          <dd>최근 3거래일 연속 양봉 + 합계 수익률 10% 이상.</dd>
+          <dt>💥 거래량 폭발</dt>
+          <dd>당일 거래량 ≥ 20일 평균 × 2배.</dd>
+          <dt>📊 거래량 돌파</dt>
+          <dd>5일 평균 거래량 > 100일 평균 거래량. 거래 활성화 구간.</dd>
+        </dl>
+      </div>
+      <div class="help-section">
+        <h3>가격 / 기술적 지표</h3>
+        <dl class="help-list">
+          <dt>🏔 52주 신고가</dt>
+          <dd>장중 고가가 최근 52주(보유 데이터 범위) 최고가와 동일.</dd>
+          <dt>🕳 52주 신저가</dt>
+          <dd>장중 저가가 최근 52주 최저가와 동일.</dd>
+          <dt>🟢 RSI 과매도</dt>
+          <dd>RSI(14) ≤ 30. 과도한 매도 → 반등 가능성.</dd>
+          <dt>🔴 RSI 과매수</dt>
+          <dd>RSI(14) ≥ 70. 과도한 매수 → 조정 가능성.</dd>
+          <dt>⚙ MACD 골든</dt>
+          <dd>MACD선이 시그널선을 상향 돌파 (EMA12-EMA26 > Signal9).</dd>
+        </dl>
+      </div>
+      <div class="help-section">
+        <h3>수급 (외인·기관)</h3>
+        <dl class="help-list">
+          <dt>🏦 외인 매수/매도 T15</dt>
+          <dd>당일 외국인 순매수금액 상위/하위 15종목.</dd>
+          <dt>🏛 기관 매수/매도 T15</dt>
+          <dd>당일 기관 순매수금액 상위/하위 15종목.</dd>
+          <dt>📊 외인 연속매수</dt>
+          <dd>외국인이 3거래일 이상 연속 순매수한 종목. 수급 이력이 충분히 쌓여야 집계됨 (최소 3~5일 이상 데이터 필요).</dd>
+          <dt>📊 기관 연속매수</dt>
+          <dd>기관이 3거래일 이상 연속 순매수한 종목.</dd>
+          <dt>🟢 프매도+외매수</dt>
+          <dd>최근 3거래일 연속으로 프로그램 순매도 + 외인 순매수. 외인이 프로그램 매도 물량을 흡수하며 추가 매수하는 강세 패턴.</dd>
+          <dt>🔴 프매수+외매도</dt>
+          <dd>최근 3거래일 연속으로 프로그램 순매수 + 외인 순매도. 약세 패턴.</dd>
+        </dl>
+      </div>
+      <div class="help-note">
+        ※ 수급 시그널(연속매수, 프매도+외매수)은 수급 이력이 3거래일 이상 쌓여야 작동합니다.<br>
+        ※ 이동평균선: 5주선·10주선은 주봉(주간 마지막 거래일 종가) 기준, 20일선은 일봉 기준입니다.<br>
+        ※ 데이터 소스: KIS Open API · 평일 장 마감 후 자동 수집.
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- 순서/표시 편집 모달 -->
@@ -482,12 +582,21 @@ Promise.all([
     document.getElementById('tbody').innerHTML='<tr><td class="empty">index.json 로드 실패</td></tr>';
   });
 
+function openHelpModal(){
+  document.getElementById('helpModal').classList.add('open');
+}
+function closeHelpModal(){
+  document.getElementById('helpModal').classList.remove('open');
+}
+
 window.navDate=navDate;
 window.loadDate=loadDate;
 window.openEditModal=openEditModal;
 window.closeEditModal=closeEditModal;
 window.saveTabConfig=saveTabConfig;
 window.resetTabConfig=resetTabConfig;
+window.openHelpModal=openHelpModal;
+window.closeHelpModal=closeHelpModal;
 })();
 </script>
 </body>
