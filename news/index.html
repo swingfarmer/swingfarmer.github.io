@@ -48,6 +48,13 @@ footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
 
 <div class="status-bar">
   <div class="status-left">마지막 수집: <b id="lastUpdate">로딩 중...</b></div>
+  <div class="status-right">
+    <button id="prevDate" onclick="navDate(-1)" style="padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:12px">◀ 이전</button>
+    <select id="dateSelect" onchange="loadArchive(this.value)" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;background:#fff">
+      <option value="today">📡 최신</option>
+    </select>
+    <button id="nextDate" onclick="navDate(1)" style="padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:12px">다음 ▶</button>
+  </div>
 </div>
 
 <div id="sourceInfo" class="source-info" style="display:none"></div>
@@ -84,8 +91,11 @@ footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
 
 <script>
 var NEWS_URL = '/data/news.json';
+var ARCHIVE_INDEX_URL = '/data/news/index.json';
 var newsData = null;
 var currentTab = 'breaking';
+var archiveDates = [];
+var currentDateIdx = -1; // -1 = today (live)
 
 function timeAgo(isoStr) {
   if (!isoStr) return '';
@@ -121,14 +131,19 @@ function renderCategory(cat) {
 
   // 소스 정보
   var infoEl = document.getElementById('sourceInfo');
-  var okList = (catData.sources_ok || []).join(', ');
-  var failList = (catData.sources_fail || []).join(', ');
-  var infoHtml = '✅ <span class="ok">' + (catData.sources_ok || []).length + '개 성공</span>';
-  if (okList) infoHtml += ': ' + okList;
-  if (failList) infoHtml += ' · ❌ <span class="fail">실패</span>: ' + failList;
-  infoHtml += ' · 📊 ' + items.length + '개 기사';
-  infoEl.innerHTML = infoHtml;
-  infoEl.style.display = 'block';
+  if (catData.sources_ok) {
+    var okList = (catData.sources_ok || []).join(', ');
+    var failList = (catData.sources_fail || []).join(', ');
+    var infoHtml = '✅ <span class="ok">' + (catData.sources_ok || []).length + '개 성공</span>';
+    if (okList) infoHtml += ': ' + okList;
+    if (failList) infoHtml += ' · ❌ <span class="fail">실패</span>: ' + failList;
+    infoHtml += ' · 📊 ' + items.length + '개 기사';
+    infoEl.innerHTML = infoHtml;
+    infoEl.style.display = 'block';
+  } else {
+    infoEl.innerHTML = '📊 ' + items.length + '개 기사 (아카이브)';
+    infoEl.style.display = 'block';
+  }
 
   if (items.length === 0) {
     container.innerHTML = '<div class="error">⚠ 이 카테고리에 기사가 없습니다.</div>';
@@ -144,6 +159,67 @@ function renderCategory(cat) {
       '<div class="news-time">' + timeAgo(item.pubDate) + '</div></a>';
   });
   container.innerHTML = html;
+}
+
+async function loadArchiveIndex() {
+  try {
+    var r = await fetch(ARCHIVE_INDEX_URL + '?t=' + Date.now());
+    if (!r.ok) return;
+    var idx = await r.json();
+    archiveDates = idx.dates || [];
+    var sel = document.getElementById('dateSelect');
+    archiveDates.forEach(function(d) {
+      var opt = document.createElement('option');
+      opt.value = d;
+      opt.textContent = d;
+      sel.appendChild(opt);
+    });
+  } catch(e) {}
+}
+
+function loadArchive(val) {
+  if (val === 'today') {
+    currentDateIdx = -1;
+    loadNews();
+  } else {
+    currentDateIdx = archiveDates.indexOf(val);
+    loadArchiveDate(val);
+  }
+}
+
+async function loadArchiveDate(d) {
+  try {
+    var r = await fetch('/data/news/' + d + '.json?t=' + Date.now());
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    newsData = await r.json();
+    document.getElementById('lastUpdate').textContent = d + ' 아카이브';
+    renderCategory(currentTab);
+  } catch(e) {
+    document.getElementById('lastUpdate').textContent = '아카이브 로드 실패';
+  }
+}
+
+function navDate(dir) {
+  if (!archiveDates.length) return;
+  var newIdx;
+  if (currentDateIdx === -1) {
+    // 현재 최신 → 이전 누르면 첫 아카이브
+    if (dir === -1) newIdx = 0;
+    else return;
+  } else {
+    newIdx = currentDateIdx + dir;
+  }
+  if (newIdx < 0) {
+    // 최신으로 복귀
+    document.getElementById('dateSelect').value = 'today';
+    currentDateIdx = -1;
+    loadNews();
+    return;
+  }
+  if (newIdx >= archiveDates.length) return;
+  currentDateIdx = newIdx;
+  document.getElementById('dateSelect').value = archiveDates[newIdx];
+  loadArchiveDate(archiveDates[newIdx]);
 }
 
 async function loadNews() {
@@ -174,6 +250,7 @@ document.querySelectorAll('.tab').forEach(function(tab) {
 });
 
 loadNews();
+loadArchiveIndex();
 </script>
 <script src="/common.js?v=4"></script>
 </body>
