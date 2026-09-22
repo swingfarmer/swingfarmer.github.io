@@ -1,8 +1,8 @@
-name: 뉴스 RSS 자동 수집
+name: 뉴스 자동 수집 (네이버 API)
 
 on:
   schedule:
-    - cron: '15 */2 * * *'  # 매 2시간마다 (15분)
+    - cron: '10 */1 * * *'  # 매 1시간마다 (10분)
   workflow_dispatch:
 
 jobs:
@@ -17,16 +17,16 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
-        run: pip install requests
-
-      - name: Fetch news RSS
+      - name: Fetch news (Naver API)
+        env:
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
         run: python scripts/fetch_news.py
 
       - name: Commit & Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/news.json
+          git add data/news.json data/news/
           git diff --cached --quiet || git commit -m "뉴스 업데이트 $(date +%Y-%m-%d_%H:%M)"
           git push
