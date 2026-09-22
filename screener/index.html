@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<title>KOSPI 200 스크리너 · 시그널 & 수급</title>
+<title>스크리너 · 시그널 & 수급</title>
 <style>
 :root{--bg:#0f1117;--card:#1a1d27;--border:#2a2d3a;--text:#e0e0e0;--text-dim:#888;--accent:#3b82f6;--green:#22c55e;--red:#ef4444;--gold:#eab308}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -44,6 +44,9 @@ tr:hover{background:rgba(59,130,246,.06)}
 .stock-name{font-weight:700;font-size:13px}
 .stock-code{color:var(--text-dim);font-size:10px;margin-left:6px}
 .stock-sector{color:var(--text-dim);font-size:10px;margin-left:6px;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px}
+.stock-market{font-size:9px;margin-left:5px;padding:1px 5px;border-radius:3px;font-weight:600}
+.stock-market.kospi{color:#3b82f6;background:rgba(59,130,246,.12)}
+.stock-market.kosdaq{color:#a855f7;background:rgba(168,85,247,.12)}
 .up{color:var(--green)}.down{color:var(--red)}.gold{color:var(--gold)}
 .loading{text-align:center;padding:60px;color:var(--text-dim)}
 .empty{text-align:center;padding:40px;color:var(--text-dim);font-size:14px}
@@ -70,10 +73,10 @@ tr:hover{background:rgba(59,130,246,.06)}
 /* 편집 리스트 아이템 */
 .edit-item{display:flex;align-items:center;gap:6px;padding:8px 18px;user-select:none;transition:background .1s}
 .edit-item:hover{background:rgba(59,130,246,.06)}
-.edit-item .move-btns{display:flex;flex-direction:column;gap:1px;flex-shrink:0}
-.edit-item .move-btn{background:none;border:1px solid var(--border);color:var(--text-dim);width:26px;height:20px;border-radius:4px;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
-.edit-item .move-btn:hover{border-color:var(--accent);color:var(--accent)}
-.edit-item .move-btn:disabled{opacity:.2;cursor:default;border-color:var(--border);color:var(--text-dim)}
+.edit-item .drag-handle{cursor:grab;color:var(--text-dim);font-size:16px;padding:0 4px;flex-shrink:0;user-select:none;touch-action:none}
+.edit-item .drag-handle:active{cursor:grabbing}
+.edit-item.sortable-ghost{opacity:.3;background:rgba(59,130,246,.1)}
+.edit-item.sortable-chosen{background:rgba(59,130,246,.08)}
 .edit-item .item-icon{font-size:14px;flex-shrink:0}
 .edit-item .item-label{flex:1;font-size:13px;font-weight:500}
 .edit-item .item-toggle{position:relative;width:38px;height:22px;flex-shrink:0}
@@ -97,7 +100,7 @@ tr:hover{background:rgba(59,130,246,.06)}
 <body>
 
 <a href="/" style="font-size:13px;color:var(--text-dim)">← 메인</a>
-<h1>📊 KOSPI 200 스크리너</h1>
+<h1>📊 스크리너</h1>
 <p class="subtitle" id="updated">기술적 시그널 + 외인·기관 수급</p>
 
 <div class="date-nav">
@@ -228,6 +231,7 @@ tr:hover{background:rgba(59,130,246,.06)}
   ※ 현재가: prices.json 기준 · 시그널: 수정주가 기반
 </p>
 
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 <script src="/common.js?v=4"></script>
 <script>
 (function(){
@@ -325,47 +329,45 @@ function closeEditModal(){
   document.getElementById('editModal').classList.remove('open');
 }
 
+var editSortable = null;
 function renderEditList(){
   var el = document.getElementById('editList');
-  var len = editDraft.length;
   el.innerHTML = editDraft.map(function(t,i){
     var hiddenCls = t.visible===false ? ' hidden-item' : '';
     return '<div class="edit-item'+hiddenCls+'" data-idx="'+i+'">'
-      +'<div class="move-btns">'
-      +'<button class="move-btn" data-dir="-1"'+(i===0?' disabled':'')+'>▲</button>'
-      +'<button class="move-btn" data-dir="1"'+(i===len-1?' disabled':'')+'>▼</button>'
-      +'</div>'
+      +'<span class="drag-handle">⠿</span>'
       +'<span class="item-icon">'+t.icon+'</span>'
       +'<span class="item-label">'+t.label+'</span>'
       +'<label class="item-toggle"><input type="checkbox"'+(t.visible!==false?' checked':'')+'><span class="slider"></span></label>'
       +'</div>';
   }).join('');
 
-  var items = el.querySelectorAll('.edit-item');
-  items.forEach(function(item){
-    // 이동 버튼
-    item.querySelectorAll('.move-btn').forEach(function(btn){
-      btn.addEventListener('click', function(e){
-        e.stopPropagation();
-        var idx = parseInt(item.getAttribute('data-idx'));
-        var dir = parseInt(btn.getAttribute('data-dir'));
-        var newIdx = idx + dir;
-        if(newIdx < 0 || newIdx >= editDraft.length) return;
-        var moved = editDraft.splice(idx, 1)[0];
-        editDraft.splice(newIdx, 0, moved);
-        renderEditList();
-        // 이동한 아이템이 보이도록 스크롤
-        var newItems = el.querySelectorAll('.edit-item');
-        if(newItems[newIdx]) newItems[newIdx].scrollIntoView({block:'nearest'});
-      });
-    });
-    // 토글
+  // 토글 이벤트
+  el.querySelectorAll('.edit-item').forEach(function(item){
     var cb = item.querySelector('input[type=checkbox]');
     cb.addEventListener('change', function(){
       var idx = parseInt(item.getAttribute('data-idx'));
       editDraft[idx].visible = cb.checked;
       item.classList.toggle('hidden-item', !cb.checked);
     });
+  });
+
+  // SortableJS 초기화
+  if(editSortable) editSortable.destroy();
+  editSortable = new Sortable(el, {
+    handle: '.drag-handle',
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    chosenClass: 'sortable-chosen',
+    onEnd: function(evt){
+      // editDraft 배열 재정렬
+      var moved = editDraft.splice(evt.oldIndex, 1)[0];
+      editDraft.splice(evt.newIndex, 0, moved);
+      // data-idx 갱신
+      el.querySelectorAll('.edit-item').forEach(function(item,i){
+        item.setAttribute('data-idx', i);
+      });
+    }
   });
 }
 
@@ -543,7 +545,9 @@ function renderTable(){
     }
     return '<tr>'+cols.map(function(c){
       if(c.key==='name'){
-        return '<td style="text-align:left"><span class="stock-name">'+item.name+'</span><span class="stock-code">'+item.code+'</span></td>';
+        var mkt=item.market||'KOSPI';
+        var mCls=mkt==='KOSDAQ'?'kosdaq':'kospi';
+        return '<td style="text-align:left"><span class="stock-name">'+item.name+'</span><span class="stock-code">'+item.code+'</span><span class="stock-market '+mCls+'">'+mkt+'</span></td>';
       }
       if(c.key==='sector'){
         return '<td style="text-align:left"><span class="stock-sector">'+item.sector+'</span></td>';
