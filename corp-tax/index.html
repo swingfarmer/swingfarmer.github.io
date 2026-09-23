@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>법인세 시뮬레이터</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:1100px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a;font-feature-settings:"tnum"}
+.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}
+.back-link:hover{text-decoration:underline}
+h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:6px;font-size:22px}
+.desc{color:#555;font-size:13.5px;margin-bottom:18px}
+.tabs{display:flex;gap:4px;background:#e5e7eb;padding:4px;border-radius:10px;margin-bottom:20px;flex-wrap:wrap}
+.tab{flex:1;padding:10px 6px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:700;color:#666;border-radius:8px;transition:all .15s;font-family:inherit;min-width:80px}
+.tab:hover{background:rgba(255,255,255,.5)}
+.tab.active{background:white;color:#1F4E78;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.panel{background:white;border-radius:10px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:18px}
+.panel h2{color:#1F4E78;font-size:17px;margin-bottom:14px}
+.panel h2 .sub{font-size:12px;color:#888;font-weight:400;margin-left:6px}
+.section-label{font-size:12px;font-weight:700;color:#1F4E78;margin:18px 0 8px;padding-top:12px;border-top:1px solid #eee;grid-column:1/-1}
+.section-label:first-child{margin-top:0;padding-top:0;border-top:none}
+.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.input-row{display:flex;flex-direction:column}
+.input-row label{font-size:12px;font-weight:600;margin-bottom:4px;color:#444}
+.input-row label .hint{font-weight:400;color:#999;font-size:11px}
+.input-row input,.input-row select{padding:9px;font-size:14px;border:1px solid #ccc;border-radius:6px;background:#FFF2CC;font-weight:600;color:#0000FF;font-family:inherit}
+.input-row input:focus,.input-row select:focus{outline:2px solid #1F4E78;background:#FFFACD}
+.input-row input[readonly]{background:#f0f0f0;color:#666}
+.summary-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:18px}
+.scard{padding:18px;border-radius:10px;color:white}
+.scard.blue{background:linear-gradient(135deg,#1F4E78,#2563eb)}
+.scard.green{background:linear-gradient(135deg,#059669,#10b981)}
+.scard.amber{background:linear-gradient(135deg,#d97706,#f59e0b)}
+.scard.red{background:linear-gradient(135deg,#dc2626,#ef4444)}
+.scard.purple{background:linear-gradient(135deg,#6d28d9,#8b5cf6)}
+.scard .lbl{font-size:12px;opacity:.9;margin-bottom:4px}
+.scard .val{font-size:20px;font-weight:800;letter-spacing:-.5px}
+.scard .sub{font-size:11px;opacity:.85;margin-top:4px}
+.result-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
+.result-table th{background:#1F4E78;color:white;padding:9px 10px;text-align:right;font-weight:600;font-size:12px}
+.result-table th:first-child{text-align:left}
+.result-table td{padding:9px 10px;text-align:right;border-bottom:1px solid #eee}
+.result-table td:first-child{text-align:left;color:#444;font-weight:600}
+.result-table tr:hover td{background:#f8fafc}
+.result-table tr.total td{background:#f0f5fa;font-weight:700;color:#1F4E78;border-top:2px solid #1F4E78}
+.result-table tr.sub-total td{background:#fafafa;font-weight:600}
+.notice{background:#dbeafe;border-left:4px solid #2563eb;padding:12px 16px;border-radius:6px;font-size:12.5px;color:#1e3a8a;line-height:1.7;margin-bottom:16px}
+.warn{background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 16px;border-radius:6px;font-size:12.5px;color:#92400e;line-height:1.7;margin-bottom:16px}
+.btn{padding:10px 18px;border:none;border-radius:7px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-primary{background:#1F4E78;color:white}
+.btn-primary:hover{background:#2d6ba3}
+.btn-sm{padding:6px 12px;font-size:12px}
+.rate-table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+.rate-table th,.rate-table td{padding:8px 10px;border:1px solid #ddd;text-align:right}
+.rate-table th{background:#1F4E78;color:white;text-align:center}
+.rate-table td:first-child{text-align:left}
+.rate-table tr.highlight td{background:#dbeafe;font-weight:700}
+.manual{background:#fff;border:1px solid #e0e0e0;padding:20px;border-radius:8px;line-height:1.8;font-size:13.5px;margin-top:16px}
+.manual h3{color:#1F4E78;margin:16px 0 8px;font-size:15px}
+.manual h3:first-child{margin-top:0}
+.manual ul{padding-left:20px;margin:6px 0}
+.manual li{margin-bottom:4px}
+.toggle-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.toggle-row label{font-size:13px;font-weight:600;color:#444}
+.chk{width:18px;height:18px;accent-color:#1F4E78}
+@media(max-width:600px){
+  .tabs{flex-direction:column}
+  .tab{min-width:100%}
+  .summary-cards{grid-template-columns:repeat(2,1fr)}
+  .inputs{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<a href="/" class="back-link">← 메인으로</a>
+<h1>🏢 법인세 시뮬레이터</h1>
+<p class="desc">법인세 산출·접대비 한도·감가상각·세액공제·중간예납 종합 계산. 2024~2026 세법 기준.</p>
+
+<!-- 종합 요약 카드 -->
+<div class="summary-cards" id="topSummary"></div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="basic">① 법인세 계산</button>
+  <button class="tab" data-tab="entertain">② 접대비 한도</button>
+  <button class="tab" data-tab="deprec">③ 감가상각</button>
+  <button class="tab" data-tab="credit">④ 세액공제</button>
+  <button class="tab" data-tab="interim">⑤ 중간예납</button>
+  <button class="tab" data-tab="ref">📋 세율표</button>
+</div>
+
+<!-- ① 법인세 계산 -->
+<div class="tab-content active" id="tab-basic">
+<div class="panel">
+  <h2>📥 기본 입력</h2>
+  <div class="inputs">
+    <div class="section-label">사업 정보</div>
+    <div class="input-row">
+      <label>사업연도 (개월)</label>
+      <select id="bizMonths"><option value="12" selected>12개월</option><option value="6">6개월</option><option value="3">3개월</option></select>
+    </div>
+    <div class="input-row">
+      <label>기업 규모</label>
+      <select id="corpSize"><option value="sme" selected>중소기업</option><option value="mid">중견기업</option><option value="large">대기업</option></select>
+    </div>
+
+    <div class="section-label">손익 항목 (원)</div>
+    <div class="input-row">
+      <label>매출(수입금액)</label>
+      <input type="number" id="revenue" value="100000000">
+    </div>
+    <div class="input-row">
+      <label>당기순이익(세전)</label>
+      <input type="number" id="netIncome" value="30000000">
+    </div>
+
+    <div class="section-label">세무 조정</div>
+    <div class="input-row">
+      <label>익금산입 <span class="hint">(세법상 수익 가산)</span></label>
+      <input type="number" id="addIncome" value="0">
+    </div>
+    <div class="input-row">
+      <label>손금산입 <span class="hint">(세법상 비용 가산)</span></label>
+      <input type="number" id="addExpense" value="0">
+    </div>
+    <div class="input-row">
+      <label>익금불산입 <span class="hint">(수익에서 차감)</span></label>
+      <input type="number" id="subIncome" value="0">
+    </div>
+    <div class="input-row">
+      <label>손금불산입 <span class="hint">(비용에서 차감)</span></label>
+      <input type="number" id="subExpense" value="0">
+    </div>
+
+    <div class="section-label">공제 항목</div>
+    <div class="input-row">
+      <label>이월결손금</label>
+      <input type="number" id="carryLoss" value="0">
+    </div>
+    <div class="input-row">
+      <label>비과세소득</label>
+      <input type="number" id="nonTaxable" value="0">
+    </div>
+    <div class="input-row">
+      <label>소득공제</label>
+      <input type="number" id="incomeDeduct" value="0">
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="basicResult"></div>
+</div>
+
+<!-- ② 접대비 한도 -->
+<div class="tab-content" id="tab-entertain">
+<div class="panel">
+  <h2>🍽️ 접대비 한도 계산</h2>
+  <div class="notice">접대비 한도를 초과하면 초과분은 손금불산입(세무조정 가산) → 과세표준 증가.</div>
+  <div class="inputs">
+    <div class="input-row">
+      <label>기업 규모</label>
+      <select id="entCorpSize"><option value="sme" selected>중소기업</option><option value="mid">중견기업</option><option value="large">대기업</option></select>
+    </div>
+    <div class="input-row">
+      <label>사업연도 (개월)</label>
+      <select id="entMonths"><option value="12" selected>12개월</option><option value="6">6개월</option></select>
+    </div>
+    <div class="input-row">
+      <label>매출(수입금액) (원)</label>
+      <input type="number" id="entRevenue" value="100000000">
+    </div>
+    <div class="input-row">
+      <label>실제 접대비 지출 (원)</label>
+      <input type="number" id="entActual" value="5000000">
+    </div>
+  </div>
+</div>
+<div class="panel" id="entertainResult"></div>
+</div>
+
+<!-- ③ 감가상각 -->
+<div class="tab-content" id="tab-deprec">
+<div class="panel">
+  <h2>🏗️ 감가상각 계산</h2>
+  <div class="inputs">
+    <div class="input-row">
+      <label>상각 방법</label>
+      <select id="depMethod"><option value="straight" selected>정액법</option><option value="declining">정률법</option></select>
+    </div>
+    <div class="input-row">
+      <label>취득가액 (원)</label>
+      <input type="number" id="depCost" value="50000000">
+    </div>
+    <div class="input-row">
+      <label>잔존가액 (원) <span class="hint">정액법만</span></label>
+      <input type="number" id="depSalvage" value="0">
+    </div>
+    <div class="input-row">
+      <label>내용연수 (년)</label>
+      <input type="number" id="depLife" value="5" min="1" max="60">
+    </div>
+    <div class="input-row">
+      <label>경과 연수 (년)</label>
+      <input type="number" id="depElapsed" value="0" min="0">
+    </div>
+  </div>
+</div>
+<div class="panel" id="deprecResult"></div>
+</div>
+
+<!-- ④ 세액공제 -->
+<div class="tab-content" id="tab-credit">
+<div class="panel">
+  <h2>💳 세액공제·감면</h2>
+  <div class="notice">세액공제는 산출세액에서 차감. 최저한세 한도 있음 (중소기업 7%).</div>
+  <div class="inputs">
+    <div class="section-label">직접 입력 공제액</div>
+    <div class="input-row">
+      <label>중소기업 특별세액감면</label>
+      <input type="number" id="crSmeRelief" value="0">
+    </div>
+    <div class="input-row">
+      <label>R&D 세액공제</label>
+      <input type="number" id="crRnd" value="0">
+    </div>
+    <div class="input-row">
+      <label>투자세액공제</label>
+      <input type="number" id="crInvest" value="0">
+    </div>
+    <div class="input-row">
+      <label>고용증대 세액공제</label>
+      <input type="number" id="crEmploy" value="0">
+    </div>
+    <div class="input-row">
+      <label>기타 세액공제</label>
+      <input type="number" id="crOther" value="0">
+    </div>
+
+    <div class="section-label">가산세</div>
+    <div class="input-row">
+      <label>무신고 가산세</label>
+      <input type="number" id="penNoFile" value="0">
+    </div>
+    <div class="input-row">
+      <label>과소신고 가산세</label>
+      <input type="number" id="penUnder" value="0">
+    </div>
+    <div class="input-row">
+      <label>납부불성실 가산세</label>
+      <input type="number" id="penLate" value="0">
+    </div>
+  </div>
+</div>
+<div class="panel" id="creditResult"></div>
+</div>
+
+<!-- ⑤ 중간예납 -->
+<div class="tab-content" id="tab-interim">
+<div class="panel">
+  <h2>📆 중간예납 계산</h2>
+  <div class="notice">사업연도 6개월 경과 시 직전 사업연도 법인세의 50%를 중간예납. 중소기업은 가결산 방식 선택 가능.</div>
+  <div class="inputs">
+    <div class="input-row">
+      <label>계산 방식</label>
+      <select id="intMethod">
+        <option value="prior" selected>직전연도 기준 (50%)</option>
+        <option value="provisional">가결산 방식</option>
+      </select>
+    </div>
+
+    <div class="section-label">직전연도 기준</div>
+    <div class="input-row">
+      <label>직전 사업연도 법인세</label>
+      <input type="number" id="intPriorTax" value="5000000">
+    </div>
+
+    <div class="section-label">가결산 방식</div>
+    <div class="input-row">
+      <label>상반기 과세표준</label>
+      <input type="number" id="intHalfIncome" value="15000000">
+    </div>
+  </div>
+</div>
+<div class="panel" id="interimResult"></div>
+</div>
+
+<!-- 📋 세율표 -->
+<div class="tab-content" id="tab-ref">
+<div class="panel">
+  <h2>📋 법인세율표 <span class="sub">2024~2026년 적용</span></h2>
+  <table class="rate-table">
+    <thead><tr><th>과세표준</th><th>세율</th><th>누진공제</th></tr></thead>
+    <tbody>
+      <tr><td>2억원 이하</td><td>9%</td><td>-</td></tr>
+      <tr><td>2억 초과 ~ 200억 이하</td><td>19%</td><td>2,000만원</td></tr>
+      <tr><td>200억 초과 ~ 3,000억 이하</td><td>21%</td><td>42,000만원</td></tr>
+      <tr><td>3,000억 초과</td><td>24%</td><td>942,000만원</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="margin-top:20px">📋 최저한세율</h2>
+  <table class="rate-table">
+    <thead><tr><th>구분</th><th>세율</th></tr></thead>
+    <tbody>
+      <tr><td>중소기업</td><td>7%</td></tr>
+      <tr><td>과세표준 100억 이하</td><td>10%</td></tr>
+      <tr><td>100억 초과 ~ 1,000억</td><td>12%</td></tr>
+      <tr><td>1,000억 초과</td><td>17%</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="margin-top:20px">📋 접대비 한도</h2>
+  <table class="rate-table">
+    <thead><tr><th>수입금액</th><th>중소기업</th><th>일반기업</th></tr></thead>
+    <tbody>
+      <tr><td>기본한도 (12개월)</td><td>3,600만원</td><td>1,200만원</td></tr>
+      <tr><td>100억 이하</td><td>0.3%</td><td>0.2%</td></tr>
+      <tr><td>100억 초과 ~ 500억</td><td colspan="2">0.2%</td></tr>
+      <tr><td>500억 초과</td><td colspan="2">0.03%</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="margin-top:20px">📋 이월결손금 공제 한도</h2>
+  <table class="rate-table">
+    <thead><tr><th>구분</th><th>공제 한도</th></tr></thead>
+    <tbody>
+      <tr><td>중소기업</td><td>각 사업연도 소득의 100%</td></tr>
+      <tr><td>비중소기업</td><td>각 사업연도 소득의 80%</td></tr>
+    </tbody>
+  </table>
+
+  <div class="manual">
+    <h3>참고사항</h3>
+    <ul>
+      <li>지방소득세: 법인세의 10% 별도</li>
+      <li>농어촌특별세: 감면세액의 20% (일부 공제에 부과)</li>
+      <li>법인세 신고기한: 사업연도 종료 후 3개월 이내</li>
+      <li>중간예납: 사업연도 6개월 경과 후 2개월 이내</li>
+      <li>성실신고확인 대상(수입금액 기준): 제조업 500억, 도소매 1,500억, 서비스 750억 등</li>
+      <li>본 시뮬레이터는 참고용이며 정확한 세무는 세무사와 상담하세요</li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<script>
+// ── 공통 유틸 ──
+function v(id) { return parseFloat(document.getElementById(id).value) || 0; }
+function fmt(n) { return n.toLocaleString('ko-KR', {maximumFractionDigits:0}); }
+function fmtPct(n) { return n.toFixed(2) + '%'; }
+
+// ── 법인세 구간별 계산 ──
+var TAX_BRACKETS = [
+  { limit: 200000000, rate: 0.09, deduct: 0 },
+  { limit: 20000000000, rate: 0.19, deduct: 20000000 },
+  { limit: 300000000000, rate: 0.21, deduct: 4200000000 },
+  { limit: Infinity, rate: 0.24, deduct: 94200000000 },
+];
+
+function calcCorpTax(taxBase) {
+  if (taxBase <= 0) return { tax: 0, rate: 0, bracket: 0, detail: [] };
+  var detail = [];
+  var remain = taxBase;
+  var totalTax = 0;
+  var prev = 0;
+
+  for (var i = 0; i < TAX_BRACKETS.length; i++) {
+    var b = TAX_BRACKETS[i];
+    var slice = Math.min(remain, b.limit - prev);
+    if (slice <= 0) break;
+    var t = slice * b.rate;
+    detail.push({ from: prev, to: prev + slice, rate: b.rate, tax: t });
+    totalTax += t;
+    remain -= slice;
+    prev = b.limit;
+  }
+
+  // 누진공제 방식 검증
+  var quickTax = 0;
+  for (var i = 0; i < TAX_BRACKETS.length; i++) {
+    if (taxBase <= TAX_BRACKETS[i].limit) {
+      quickTax = taxBase * TAX_BRACKETS[i].rate - TAX_BRACKETS[i].deduct;
+      break;
+    }
+  }
+
+  return {
+    tax: Math.round(totalTax),
+    effectiveRate: taxBase > 0 ? totalTax / taxBase * 100 : 0,
+    bracket: detail.length - 1,
+    detail: detail
+  };
+}
+
+// ── 최저한세 ──
+function calcMinTax(taxBase, corpSize) {
+  if (corpSize === 'sme') return Math.round(taxBase * 0.07);
+  if (taxBase <= 10000000000) return Math.round(taxBase * 0.10);
+  if (taxBase <= 100000000000) return Math.round(taxBase * 0.12);
+  return Math.round(taxBase * 0.17);
+}
+
+// ── 이월결손금 한도 ──
+function calcCarryLossLimit(income, loss, corpSize) {
+  if (loss <= 0 || income <= 0) return 0;
+  var limit = corpSize === 'sme' ? income : Math.round(income * 0.8);
+  return Math.min(loss, limit);
+}
+
+// ── 탭1: 기본 법인세 ──
+function calcBasic() {
+  var months = v('bizMonths');
+  var corpSize = document.getElementById('corpSize').value;
+  var ni = v('netIncome');
+  var addInc = v('addIncome');
+  var addExp = v('addExpense');
+  var subInc = v('subIncome');
+  var subExp = v('subExpense');
+  var carryLoss = v('carryLoss');
+  var nonTax = v('nonTaxable');
+  var incDed = v('incomeDeduct');
+
+  // 각사소득 = 당기순이익 + 익금산입 + 손금불산입 - 익금불산입 - 손금산입
+  var adjIncome = ni + addInc + subExp - subInc - addExp;
+
+  // 이월결손금 공제 한도
+  var lossLimit = calcCarryLossLimit(adjIncome, carryLoss, corpSize);
+
+  // 과세표준
+  var taxBase = Math.max(0, adjIncome - lossLimit - nonTax - incDed);
+
+  // 사업연도 월수 보정
+  if (months < 12 && months > 0) {
+    // 월할 계산은 2억 기준선 조정
+    // 실무적으로는 과세표준에 (12/월수) 곱해 연환산 → 세율 적용 → 다시 (월수/12)
+    var annualized = taxBase * 12 / months;
+    var annTax = calcCorpTax(annualized);
+    var actualTax = Math.round(annTax.tax * months / 12);
+    var result = { tax: actualTax, effectiveRate: taxBase > 0 ? actualTax / taxBase * 100 : 0, detail: annTax.detail };
+  } else {
+    var result = calcCorpTax(taxBase);
+  }
+
+  var corpTax = result.tax;
+  var localTax = Math.round(corpTax * 0.1);  // 지방소득세
+  var totalTax = corpTax + localTax;
+  var effectiveRate = taxBase > 0 ? totalTax / taxBase * 100 : 0;
+  var afterTax = adjIncome - totalTax;
+
+  // 최저한세
+  var minTax = calcMinTax(taxBase, corpSize);
+
+  // 상단 요약 카드 업데이트
+  document.getElementById('topSummary').innerHTML =
+    '<div class="scard blue"><div class="lbl">과세표준</div><div class="val">' + fmt(taxBase) + '원</div></div>' +
+    '<div class="scard amber"><div class="lbl">법인세</div><div class="val">' + fmt(corpTax) + '원</div></div>' +
+    '<div class="scard red"><div class="lbl">법인세+지방소득세</div><div class="val">' + fmt(totalTax) + '원</div><div class="sub">실효세율 ' + fmtPct(effectiveRate) + '</div></div>' +
+    '<div class="scard green"><div class="lbl">세후 소득</div><div class="val">' + fmt(afterTax) + '원</div></div>';
+
+  // 상세 테이블
+  var html = '<h2>📊 법인세 계산 결과</h2>';
+  html += '<table class="result-table">';
+  html += '<tr><td>당기순이익(세전)</td><td>' + fmt(ni) + '원</td></tr>';
+  if (addInc || subExp || subInc || addExp) {
+    html += '<tr><td>세무조정 (익금산입+손금불산입-익금불산입-손금산입)</td><td>' + fmt(addInc + subExp - subInc - addExp) + '원</td></tr>';
+  }
+  html += '<tr class="sub-total"><td>각 사업연도 소득</td><td>' + fmt(adjIncome) + '원</td></tr>';
+  if (lossLimit > 0) {
+    html += '<tr><td>(-) 이월결손금 공제 <span style="color:#888;font-size:11px">(한도: ' + fmt(calcCarryLossLimit(adjIncome, Infinity, corpSize)) + '원)</span></td><td>' + fmt(lossLimit) + '원</td></tr>';
+  }
+  if (nonTax) html += '<tr><td>(-) 비과세소득</td><td>' + fmt(nonTax) + '원</td></tr>';
+  if (incDed) html += '<tr><td>(-) 소득공제</td><td>' + fmt(incDed) + '원</td></tr>';
+  html += '<tr class="total"><td>과세표준</td><td>' + fmt(taxBase) + '원</td></tr>';
+
+  html += '</table>';
+
+  // 구간별 세액 상세
+  html += '<h2 style="margin-top:20px">🔢 구간별 세액</h2>';
+  html += '<table class="result-table"><thead><tr><th style="text-align:left">구간</th><th>세율</th><th>세액</th></tr></thead><tbody>';
+  result.detail.forEach(function(d) {
+    html += '<tr><td>' + fmt(d.from) + ' ~ ' + fmt(d.from + (d.to - d.from)) + '원</td><td>' + (d.rate * 100) + '%</td><td>' + fmt(d.tax) + '원</td></tr>';
+  });
+  html += '<tr class="total"><td>산출세액</td><td></td><td>' + fmt(corpTax) + '원</td></tr>';
+  html += '<tr><td>지방소득세 (10%)</td><td>10%</td><td>' + fmt(localTax) + '원</td></tr>';
+  html += '<tr class="total"><td>총 납부세액</td><td>실효 ' + fmtPct(effectiveRate) + '</td><td>' + fmt(totalTax) + '원</td></tr>';
+  html += '</tbody></table>';
+
+  // 최저한세 비교
+  html += '<div style="margin-top:14px;padding:12px;background:#f8fafc;border-radius:6px;font-size:13px">';
+  html += '📌 최저한세: ' + fmt(minTax) + '원 (' + corpSize + ' 기준) — ';
+  if (corpTax >= minTax) {
+    html += '<span style="color:#059669">산출세액이 최저한세 이상 ✓</span>';
+  } else {
+    html += '<span style="color:#dc2626">산출세액 < 최저한세 → 세액공제 제한 가능</span>';
+  }
+  html += '</div>';
+
+  document.getElementById('basicResult').innerHTML = html;
+}
+
+// ── 탭2: 접대비 한도 ──
+function calcEntertain() {
+  var corpSize = document.getElementById('entCorpSize').value;
+  var months = v('entMonths');
+  var revenue = v('entRevenue');
+  var actual = v('entActual');
+
+  // 기본한도
+  var baseLimit = (corpSize === 'sme' ? 36000000 : 12000000) * months / 12;
+
+  // 수입금액 적수
+  var revLimit = 0;
+  if (corpSize === 'sme') {
+    if (revenue <= 10000000000) {
+      revLimit = revenue * 0.003;
+    } else if (revenue <= 50000000000) {
+      revLimit = 10000000000 * 0.003 + (revenue - 10000000000) * 0.002;
+    } else {
+      revLimit = 10000000000 * 0.003 + 40000000000 * 0.002 + (revenue - 50000000000) * 0.0003;
+    }
+  } else {
+    if (revenue <= 10000000000) {
+      revLimit = revenue * 0.002;
+    } else if (revenue <= 50000000000) {
+      revLimit = 10000000000 * 0.002 + (revenue - 10000000000) * 0.002;
+    } else {
+      revLimit = 10000000000 * 0.002 + 40000000000 * 0.002 + (revenue - 50000000000) * 0.0003;
+    }
+  }
+
+  var totalLimit = Math.round(baseLimit + revLimit);
+  var excess = Math.max(0, actual - totalLimit);
+
+  var html = '<h2>🍽️ 접대비 한도 결과</h2>';
+  html += '<table class="result-table">';
+  html += '<tr><td>기본한도 (' + (corpSize === 'sme' ? '중소' : '일반') + ', ' + months + '개월)</td><td>' + fmt(baseLimit) + '원</td></tr>';
+  html += '<tr><td>수입금액 적수 한도</td><td>' + fmt(Math.round(revLimit)) + '원</td></tr>';
+  html += '<tr class="total"><td>접대비 한도 합계</td><td>' + fmt(totalLimit) + '원</td></tr>';
+  html += '<tr><td>실제 접대비 지출</td><td>' + fmt(actual) + '원</td></tr>';
+
+  if (excess > 0) {
+    html += '<tr class="total" style="color:#dc2626"><td>⚠️ 한도 초과 (손금불산입)</td><td>' + fmt(excess) + '원</td></tr>';
+  } else {
+    html += '<tr class="total" style="color:#059669"><td>✅ 한도 이내 (잔여)</td><td>' + fmt(totalLimit - actual) + '원</td></tr>';
+  }
+  html += '</table>';
+
+  if (excess > 0) {
+    html += '<div class="warn" style="margin-top:12px">초과분 ' + fmt(excess) + '원은 손금불산입 처리 → 법인세 계산 시 "손금불산입" 칸에 입력하면 과세표준에 반영됩니다.</div>';
+  }
+
+  document.getElementById('entertainResult').innerHTML = html;
+}
+
+// ── 탭3: 감가상각 ──
+function calcDeprec() {
+  var method = document.getElementById('depMethod').value;
+  var cost = v('depCost');
+  var salvage = v('depSalvage');
+  var life = Math.max(1, v('depLife'));
+  var elapsed = Math.max(0, v('depElapsed'));
+
+  var html = '<h2>🏗️ 감가상각 스케줄</h2>';
+  html += '<table class="result-table"><thead><tr><th style="text-align:center">연차</th><th>기초 장부가</th><th>상각비</th><th>기말 장부가</th><th>누적 상각</th></tr></thead><tbody>';
+
+  if (method === 'straight') {
+    var annualDep = Math.round((cost - salvage) / life);
+    var book = cost;
+    var cumDep = 0;
+
+    for (var y = 1; y <= life; y++) {
+      var dep = (y === life) ? (book - salvage) : annualDep;
+      dep = Math.max(0, dep);
+      cumDep += dep;
+      var endBook = book - dep;
+      var cls = (y === elapsed + 1) ? ' class="highlight"' : '';
+      // highlight doesn't exist in result-table but let's use sub-total style
+      var trStyle = (y === elapsed + 1) ? ' style="background:#dbeafe"' : '';
+      html += '<tr' + trStyle + '><td style="text-align:center">' + y + (y === elapsed + 1 ? ' ◀' : '') + '</td><td>' + fmt(book) + '</td><td>' + fmt(dep) + '</td><td>' + fmt(endBook) + '</td><td>' + fmt(cumDep) + '</td></tr>';
+      book = endBook;
+    }
+  } else {
+    // 정률법: 상각률 = 1 - (잔존가/취득가)^(1/내용연수)
+    // 실무: 잔존가 5% 기준 또는 세법 상각률 사용
+    var depRate = 1 - Math.pow(0.05, 1 / life);  // 잔존 5% 기준
+    var book = cost;
+    var cumDep = 0;
+
+    for (var y = 1; y <= life; y++) {
+      var dep;
+      if (y === life) {
+        dep = Math.round(book - cost * 0.05);  // 마지막 해: 잔존가까지
+      } else {
+        dep = Math.round(book * depRate);
+      }
+      dep = Math.max(0, dep);
+      cumDep += dep;
+      var endBook = book - dep;
+      var trStyle = (y === elapsed + 1) ? ' style="background:#dbeafe"' : '';
+      html += '<tr' + trStyle + '><td style="text-align:center">' + y + (y === elapsed + 1 ? ' ◀' : '') + '</td><td>' + fmt(book) + '</td><td>' + fmt(dep) + '</td><td>' + fmt(Math.max(0, endBook)) + '</td><td>' + fmt(cumDep) + '</td></tr>';
+      book = Math.max(0, endBook);
+    }
+
+    html += '</tbody></table>';
+    html += '<div style="margin-top:10px;font-size:12px;color:#888">정률법 상각률: ' + (depRate * 100).toFixed(2) + '% (잔존가 5% 기준)</div>';
+    document.getElementById('deprecResult').innerHTML = html;
+    return;
+  }
+
+  html += '</tbody></table>';
+  html += '<div style="margin-top:10px;font-size:12px;color:#888">연간 상각비: ' + fmt(Math.round((cost - salvage) / life)) + '원 (정액법)</div>';
+  document.getElementById('deprecResult').innerHTML = html;
+}
+
+// ── 탭4: 세액공제 ──
+function calcCredit() {
+  var totalCredit = v('crSmeRelief') + v('crRnd') + v('crInvest') + v('crEmploy') + v('crOther');
+  var totalPenalty = v('penNoFile') + v('penUnder') + v('penLate');
+
+  // 기본 탭에서 산출세액 가져오기
+  var corpSize = document.getElementById('corpSize').value;
+  var taxBase = getCurrentTaxBase();
+  var corpTaxResult = calcCorpTax(taxBase);
+  var corpTax = corpTaxResult.tax;
+  var minTax = calcMinTax(taxBase, corpSize);
+
+  // 최저한세 한도 적용
+  var maxCredit = Math.max(0, corpTax - minTax);
+  var appliedCredit = Math.min(totalCredit, maxCredit);
+  var blockedCredit = totalCredit - appliedCredit;
+
+  var finalTax = Math.max(0, corpTax - appliedCredit) + totalPenalty;
+  var localTax = Math.round(finalTax * 0.1);
+
+  var html = '<h2>💳 세액공제 적용 결과</h2>';
+  html += '<table class="result-table">';
+  html += '<tr><td>산출세액 (①탭 기준)</td><td>' + fmt(corpTax) + '원</td></tr>';
+  html += '<tr><td>최저한세 (' + corpSize + ')</td><td>' + fmt(minTax) + '원</td></tr>';
+  html += '<tr><td>공제 가능 한도 (산출-최저한)</td><td>' + fmt(maxCredit) + '원</td></tr>';
+  html += '<tr><td>세액공제 신청 합계</td><td>' + fmt(totalCredit) + '원</td></tr>';
+  html += '<tr class="sub-total"><td>적용 세액공제</td><td>' + fmt(appliedCredit) + '원</td></tr>';
+  if (blockedCredit > 0) {
+    html += '<tr style="color:#dc2626"><td>⚠️ 최저한세 초과 미적용 (이월)</td><td>' + fmt(blockedCredit) + '원</td></tr>';
+  }
+  html += '<tr><td>(+) 가산세 합계</td><td>' + fmt(totalPenalty) + '원</td></tr>';
+  html += '<tr class="total"><td>최종 법인세</td><td>' + fmt(finalTax) + '원</td></tr>';
+  html += '<tr><td>지방소득세 (10%)</td><td>' + fmt(localTax) + '원</td></tr>';
+  html += '<tr class="total"><td>총 납부세액</td><td>' + fmt(finalTax + localTax) + '원</td></tr>';
+  html += '</table>';
+
+  document.getElementById('creditResult').innerHTML = html;
+}
+
+function getCurrentTaxBase() {
+  var ni = v('netIncome');
+  var adjIncome = ni + v('addIncome') + v('subExpense') - v('subIncome') - v('addExpense');
+  var corpSize = document.getElementById('corpSize').value;
+  var lossLimit = calcCarryLossLimit(adjIncome, v('carryLoss'), corpSize);
+  return Math.max(0, adjIncome - lossLimit - v('nonTaxable') - v('incomeDeduct'));
+}
+
+// ── 탭5: 중간예납 ──
+function calcInterim() {
+  var method = document.getElementById('intMethod').value;
+  var html = '<h2>📆 중간예납 계산 결과</h2>';
+
+  if (method === 'prior') {
+    var priorTax = v('intPriorTax');
+    var interim = Math.round(priorTax / 2);
+    html += '<table class="result-table">';
+    html += '<tr><td>직전 사업연도 법인세</td><td>' + fmt(priorTax) + '원</td></tr>';
+    html += '<tr class="total"><td>중간예납세액 (50%)</td><td>' + fmt(interim) + '원</td></tr>';
+    html += '<tr><td>지방소득세 중간예납 (10%)</td><td>' + fmt(Math.round(interim * 0.1)) + '원</td></tr>';
+    html += '<tr class="total"><td>총 중간예납</td><td>' + fmt(Math.round(interim * 1.1)) + '원</td></tr>';
+    html += '</table>';
+  } else {
+    var halfIncome = v('intHalfIncome');
+    var halfTaxResult = calcCorpTax(halfIncome);
+    var halfTax = halfTaxResult.tax;
+    var halfLocal = Math.round(halfTax * 0.1);
+    html += '<table class="result-table">';
+    html += '<tr><td>상반기 과세표준</td><td>' + fmt(halfIncome) + '원</td></tr>';
+    html += '<tr class="total"><td>가결산 법인세</td><td>' + fmt(halfTax) + '원</td></tr>';
+    html += '<tr><td>지방소득세 (10%)</td><td>' + fmt(halfLocal) + '원</td></tr>';
+    html += '<tr class="total"><td>총 중간예납</td><td>' + fmt(halfTax + halfLocal) + '원</td></tr>';
+    html += '</table>';
+    html += '<div style="margin-top:10px;font-size:12px;color:#888">가결산 방식은 중소기업만 선택 가능. 직전연도 대비 유리한 쪽으로 선택.</div>';
+  }
+
+  document.getElementById('interimResult').innerHTML = html;
+}
+
+// ── 전체 재계산 ──
+function calcAll() {
+  calcBasic();
+  calcEntertain();
+  calcDeprec();
+  calcCredit();
+  calcInterim();
+}
+
+// ── 이벤트 ──
+document.querySelectorAll('.tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// 모든 input/select 변경 시 재계산
+document.querySelectorAll('input, select').forEach(function(el) {
+  el.addEventListener('input', calcAll);
+  el.addEventListener('change', calcAll);
+});
+
+// 초기 계산
+calcAll();
+</script>
+<script src="/common.js?v=4"></script>
+</body>
+</html>
