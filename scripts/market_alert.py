@@ -71,12 +71,13 @@ def get_fx_change(current_usd):
     try:
         with open(RATES_HIST_FILE, 'r') as f:
             hist = json.load(f)
-        entries = hist.get('history', [])
+        # 구조: 리스트 [...] 또는 {"history": [...]}
+        entries = hist if isinstance(hist, list) else hist.get('history', [])
         if len(entries) < 2:
             return None
-        # 최신 2개 중 전일 (entries는 날짜순)
         prev = entries[-2]
-        prev_usd = prev.get('rates', {}).get('USD_KRW')
+        # 키 구조: 플랫(prev['USD_KRW']) 또는 중첩(prev['rates']['USD_KRW'])
+        prev_usd = prev.get('USD_KRW') or prev.get('rates', {}).get('USD_KRW')
         if not prev_usd or prev_usd == 0:
             return None
         chg_pct = (current_usd - prev_usd) / prev_usd * 100
