@@ -48,6 +48,7 @@ tr:hover{background:rgba(59,130,246,.06)}
 .stock-market.kospi{color:#3b82f6;background:rgba(59,130,246,.12)}
 .stock-market.kosdaq{color:#a855f7;background:rgba(168,85,247,.12)}
 .up{color:var(--green)}.down{color:var(--red)}.gold{color:var(--gold)}
+.sig-tags{font-size:11px;color:var(--text-dim);line-height:1.8;white-space:normal;max-width:400px}
 .loading{text-align:center;padding:60px;color:var(--text-dim)}
 .empty{text-align:center;padding:40px;color:var(--text-dim);font-size:14px}
 .note{font-size:11px;color:var(--text-dim);text-align:center;margin-top:20px;line-height:1.8}
@@ -125,6 +126,13 @@ tr:hover{background:rgba(59,130,246,.06)}
       <button onclick="closeHelpModal()">✕</button>
     </div>
     <div class="modal-body" style="padding:16px 20px">
+      <div class="help-section">
+        <h3>복합 시그널</h3>
+        <dl class="help-list">
+          <dt>⚡ 복합 시그널</dt>
+          <dd>당일 2개 이상 시그널이 동시에 발생한 종목. 수급 Top15(랭킹)는 제외하고 집계. 시그널 수 내림차순 정렬. 시그널이 겹칠수록 신호 강도가 높을 가능성.</dd>
+        </dl>
+      </div>
       <div class="help-section">
         <h3>이동평균선</h3>
         <dl class="help-list">
@@ -288,6 +296,7 @@ var pricesData = null;
 
 // ── 기본 탭 설정 (원본) ──
 var DEFAULT_TAB_CONFIG = [
+  {key:'_composite',             label:'복합 시그널',       icon:'⚡', visible:true},
   {key:'ma5w_breakout',          label:'5주선 돌파',        icon:'📈', visible:true},
   {key:'ma20_breakout',          label:'20일선 돌파',       icon:'📈', visible:true},
   {key:'ma50_breakout',         label:'10주선 돌파',       icon:'📈', visible:true},
@@ -331,7 +340,7 @@ var DEFAULT_TAB_CONFIG = [
 ];
 
 // 서머리 카드에 표시할 키 (기본 7개, 보이는 탭만 필터)
-var SUMMARY_KEYS = ['golden_cross','aligned_bull','new_high_52w','volume_breakout','rsi_oversold','foreign_consecutive','program_absorb_bull'];
+var SUMMARY_KEYS = ['_composite','golden_cross','aligned_bull','new_high_52w','volume_breakout','rsi_oversold','foreign_consecutive','program_absorb_bull'];
 
 var TAB_CONFIG = loadTabConfig();
 
@@ -456,6 +465,55 @@ function resetTabConfig(){
   renderEditList();
 }
 
+// ── 복합 시그널 빌드 ──
+// 수급 Top15(랭킹)는 제외, 나머지 시그널에서 2개↑ 동시 발생 종목 추출
+var COMPOSITE_EXCLUDE = ['foreign_top15_buy','foreign_top15_sell','institution_top15_buy','institution_top15_sell'];
+
+function buildComposite(){
+  if(!dayData||!dayData.signals) return [];
+  var tabMap={};
+  TAB_CONFIG.forEach(function(t){tabMap[t.key]=t;});
+
+  var stockMap={};  // code → {name, code, sector, market, price, signals:[{key,label,icon}]}
+  var sigKeys=Object.keys(dayData.signals);
+  for(var si=0;si<sigKeys.length;si++){
+    var sk=sigKeys[si];
+    if(COMPOSITE_EXCLUDE.indexOf(sk)>=0) continue;
+    if(sk==='_composite') continue;
+    var items=dayData.signals[sk];
+    if(!items||!items.length) continue;
+    var tab=tabMap[sk];
+    var label=tab?tab.label:sk;
+    var icon=tab?tab.icon:'';
+    for(var ii=0;ii<items.length;ii++){
+      var item=items[ii];
+      var c=item.code;
+      if(!c) continue;
+      if(!stockMap[c]){
+        stockMap[c]={code:c, name:item.name||'', sector:item.sector||'',
+                     market:item.market||'KOSPI', price:item.price||0, signals:[]};
+      }
+      stockMap[c].signals.push({key:sk, label:label, icon:icon});
+      // price 갱신 (가장 최근 값)
+      if(item.price) stockMap[c].price=item.price;
+    }
+  }
+  // 2개 이상만 필터 → 개수 내림차순
+  var result=[];
+  var codes=Object.keys(stockMap);
+  for(var ci=0;ci<codes.length;ci++){
+    var s=stockMap[codes[ci]];
+    if(s.signals.length>=2){
+      s.signal_count=s.signals.length;
+      // 시그널 라벨 문자열
+      s.signal_tags=s.signals.map(function(x){return x.icon+x.label;}).join(', ');
+      result.push(s);
+    }
+  }
+  result.sort(function(a,b){return b.signal_count-a.signal_count;});
+  return result;
+}
+
 // ── 컬럼 정의 (변경 없음) ──
 function getColumns(tab){
   var base = [
@@ -463,6 +521,8 @@ function getColumns(tab){
     {key:'price',label:'현재가',unit:'원'},
     {key:'sector',label:'업종',align:'left'},
   ];
+  if(tab==='_composite')
+    return base.concat([{key:'signal_count',label:'시그널수'},{key:'signal_tags',label:'시그널 목록',align:'left'}]);
   if(tab==='ma5w_breakout')
     return base.concat([{key:'ma5w',label:'5주선',unit:'원'}]);
   if(tab==='ma20_breakout')
@@ -564,7 +624,13 @@ function renderSummary(){
   TAB_CONFIG.forEach(function(t){tabMap[t.key]=t;});
 
   var cards=SUMMARY_KEYS.filter(function(k){return visibleKeys.indexOf(k)>=0;}).map(function(k){
-    return {label:tabMap[k]?tabMap[k].label:k, num:s[k]||0};
+    var num;
+    if(k==='_composite'){
+      num=buildComposite().length;
+    } else {
+      num=s[k]||0;
+    }
+    return {label:tabMap[k]?tabMap[k].label:k, num:num};
   });
 
   if(!cards.length){el.innerHTML='';return;}
@@ -579,7 +645,12 @@ function renderTabs(){
   var s=dayData?dayData.summary:{};
   var visible = getVisibleTabs();
   el.innerHTML=visible.map(function(t){
-    var cnt=s[t.key]||0;
+    var cnt;
+    if(t.key==='_composite'){
+      cnt=buildComposite().length;
+    } else {
+      cnt=s[t.key]||0;
+    }
     var cls='tab'+(t.key===currentTab?' active':'');
     return '<button class="'+cls+'" data-key="'+t.key+'">'+t.icon+' '+t.label+'<span class="cnt">('+cnt+')</span></button>';
   }).join('');
@@ -598,10 +669,15 @@ function selectTab(key){
   renderTable();
 }
 
-// ── 테이블 (변경 없음) ──
+// ── 테이블 ──
 function renderTable(){
   var cols=getColumns(currentTab);
-  var items=(dayData&&dayData.signals)?dayData.signals[currentTab]||[]:[];
+  var items;
+  if(currentTab==='_composite'){
+    items=buildComposite();
+  } else {
+    items=(dayData&&dayData.signals)?dayData.signals[currentTab]||[]:[];
+  }
 
   var thead=document.getElementById('thead');
   thead.innerHTML='<tr>'+cols.map(function(c){
@@ -631,6 +707,10 @@ function renderTable(){
       var v=item[c.key];
       if(c.key==='price'&&realPrice) v=realPrice;
       var cls='';
+      if(c.key==='signal_tags'){
+        return '<td style="text-align:left"><span class="sig-tags">'+(v||'')+'</span></td>';
+      }
+      if(c.key==='signal_count') cls='gold';
       if(c.key==='net_amt'||c.key==='net_qty'){
         cls=v>0?'up':v<0?'down':'';
       }
