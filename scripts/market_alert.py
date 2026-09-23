@@ -64,8 +64,8 @@ def fmt_change(change_pct):
     return f'{arrow} {abs(change_pct):.2f}%'
 
 
-def get_fx_change(current_usd):
-    """rates_history.json에서 전일 USD/KRW 찾아서 변동률·변동액 반환."""
+def get_fx_change(current_val, key='USD_KRW'):
+    """rates_history.json에서 전일 대비 변동률·변동액 반환. key: 히스토리 필드명."""
     if not os.path.exists(RATES_HIST_FILE):
         return None
     try:
@@ -77,11 +77,11 @@ def get_fx_change(current_usd):
             return None
         prev = entries[-2]
         # 키 구조: 플랫(prev['USD_KRW']) 또는 중첩(prev['rates']['USD_KRW'])
-        prev_usd = prev.get('USD_KRW') or prev.get('rates', {}).get('USD_KRW')
-        if not prev_usd or prev_usd == 0:
+        prev_val = prev.get(key) or prev.get('rates', {}).get(key)
+        if not prev_val or prev_val == 0:
             return None
-        chg_pct = (current_usd - prev_usd) / prev_usd * 100
-        chg_amt = current_usd - prev_usd
+        chg_pct = (current_val - prev_val) / prev_val * 100
+        chg_amt = current_val - prev_val
         return (round(chg_pct, 2), round(chg_amt, 2))
     except:
         return None
@@ -162,21 +162,24 @@ def build_message(data, news_items=None):
 
     # ── 환율 ──
     if rates.get('USD_KRW'):
-        usd = rates['USD_KRW']
-        # 전일 대비 변동 계산 (rates_history.json에서)
-        fx_change = get_fx_change(usd)
-        fx_line = f"  원/달러: {fmt_num(usd, 2)}"
-        if fx_change:
-            chg_pct, chg_amt = fx_change
-            arrow = '▲' if chg_pct > 0 else '▼'
-            warn = ' ⚠️' if abs(chg_pct) >= 1 else ''
-            fx_line += f" {arrow}{abs(chg_pct):.2f}% ({chg_amt:+.2f}){warn}"
         lines.append('<b>💱 환율</b>')
-        lines.append(fx_line)
-        if rates.get('JPY100_KRW'):
-            lines.append(f"  원/엔(100): {fmt_num(rates['JPY100_KRW'], 2)}")
-        if rates.get('CNY_KRW'):
-            lines.append(f"  원/위안: {fmt_num(rates['CNY_KRW'], 2)}")
+        fx_items = [
+            ('원/달러', 'USD_KRW', 2),
+            ('원/엔(100)', 'JPY100_KRW', 2),
+            ('원/위안', 'CNY_KRW', 2),
+        ]
+        for label, key, dec in fx_items:
+            val = rates.get(key)
+            if not val:
+                continue
+            fx_line = f"  {label}: {fmt_num(val, dec)}"
+            chg = get_fx_change(val, key)
+            if chg:
+                chg_pct, chg_amt = chg
+                arrow = '▲' if chg_pct > 0 else '▼'
+                warn = ' ⚠️' if abs(chg_pct) >= 1 else ''
+                fx_line += f" {arrow}{abs(chg_pct):.2f}% ({chg_amt:+.2f}){warn}"
+            lines.append(fx_line)
 
     # ── 금리 ──
     rate_tickers = ['^IRX', '^FVX', '^TNX', '^TYX']
@@ -201,7 +204,14 @@ def build_message(data, news_items=None):
 
     # ── 금시세 ──
     if rates.get('GOLD_KRW_G'):
-        lines.append(f"<b>🥇 금</b>: {fmt_num(rates['GOLD_KRW_G'], 0)}원/g")
+        gold = rates['GOLD_KRW_G']
+        gold_line = f"<b>🥇 금</b>: {fmt_num(gold, 0)}원/g"
+        chg = get_fx_change(gold, 'GOLD_KRW_G')
+        if chg:
+            chg_pct, chg_amt = chg
+            arrow = '▲' if chg_pct > 0 else '▼'
+            gold_line += f" {arrow}{abs(chg_pct):.2f}% ({chg_amt:+,.0f})"
+        lines.append(gold_line)
 
     # ── 뉴스 헤드라인 ──
     if news_items:
