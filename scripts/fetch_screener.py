@@ -394,6 +394,155 @@ def daily_to_weekly_closes(ohlcv):
     return weeks
 
 
+def detect_candle_patterns(ohlcv):
+    """최근 1~3봉 캔들 패턴 판별.
+    반환: {패턴키: {price, pattern_name, ...}}
+    
+    판별 기준:
+    - 몸통 = |close - open|
+    - 위꼬리 = high - max(open, close)
+    - 아래꼬리 = min(open, close) - low
+    - 레인지 = high - low
+    - 추세 판별: 직전 5봉 종가 방향 (상승/하락 추세 여부)
+    """
+    if len(ohlcv) < 6:
+        return {}
+
+    signals = {}
+    c = ohlcv[-1]  # 당일
+    p = ohlcv[-2]  # 전일
+    pp = ohlcv[-3]  # 전전일
+
+    price = c['close']
+    o, h, l, cl = c['open'], c['high'], c['low'], c['close']
+    body = abs(cl - o)
+    rng = h - l
+    upper_shadow = h - max(o, cl)
+    lower_shadow = min(o, cl) - l
+
+    if rng == 0:
+        return signals
+
+    body_ratio = body / rng  # 몸통 비율
+
+    # 추세 판별 (직전 5봉)
+    prev5 = ohlcv[-6:-1]
+    trend_up = prev5[-1]['close'] > prev5[0]['close']
+    trend_down = prev5[-1]['close'] < prev5[0]['close']
+    # 추세 강도: 5봉 평균 대비 변화율
+    avg5 = sum(d['close'] for d in prev5) / 5
+    trend_pct = (prev5[-1]['close'] - prev5[0]['close']) / prev5[0]['close'] * 100 if prev5[0]['close'] > 0 else 0
+
+    # ── 1봉 패턴 ──
+
+    # 도지 (Doji): 몸통 < 레인지의 5%
+    if body_ratio < 0.05 and rng > 0:
+        signals['candle_doji'] = {
+            'price': price, 'pattern': '도지',
+            'body_pct': round(body_ratio * 100, 1),
+        }
+
+    # 해머 (Hammer): 하락추세 + 아래꼬리 ≥ 몸통×2 + 위꼬리 작음
+    if (trend_down and lower_shadow >= body * 2
+            and upper_shadow <= body * 0.5 and body > 0
+            and body_ratio < 0.35):
+        signals['candle_hammer'] = {
+            'price': price, 'pattern': '해머',
+            'trend': round(trend_pct, 1),
+        }
+
+    # 교수형 (Hanging Man): 상승추세 + 해머 모양
+    if (trend_up and lower_shadow >= body * 2
+            and upper_shadow <= body * 0.5 and body > 0
+            and body_ratio < 0.35):
+        signals['candle_hangman'] = {
+            'price': price, 'pattern': '교수형',
+            'trend': round(trend_pct, 1),
+        }
+
+    # 역해머 (Inverted Hammer): 하락추세 + 위꼬리 ≥ 몸통×2 + 아래꼬리 작음
+    if (trend_down and upper_shadow >= body * 2
+            and lower_shadow <= body * 0.5 and body > 0
+            and body_ratio < 0.35):
+        signals['candle_inv_hammer'] = {
+            'price': price, 'pattern': '역해머',
+            'trend': round(trend_pct, 1),
+        }
+
+    # 유성 (Shooting Star): 상승추세 + 역해머 모양
+    if (trend_up and upper_shadow >= body * 2
+            and lower_shadow <= body * 0.5 and body > 0
+            and body_ratio < 0.35):
+        signals['candle_shooting_star'] = {
+            'price': price, 'pattern': '유성',
+            'trend': round(trend_pct, 1),
+        }
+
+    # ── 2봉 패턴 ──
+    p_body = abs(p['close'] - p['open'])
+    p_rng = p['high'] - p['low']
+    p_bullish = p['close'] > p['open']
+    c_bullish = cl > o
+
+    # 장악형 양봉 (Bullish Engulfing): 전일 음봉 + 당일 양봉이 전일 몸통 감싸기
+    if (not p_bullish and c_bullish
+            and o <= p['close'] and cl >= p['open']
+            and body > p_body and p_body > 0):
+        signals['candle_engulf_bull'] = {
+            'price': price, 'pattern': '장악형 양봉',
+            'prev_close': p['close'],
+        }
+
+    # 장악형 음봉 (Bearish Engulfing): 전일 양봉 + 당일 음봉이 전일 몸통 감싸기
+    if (p_bullish and not c_bullish
+            and o >= p['close'] and cl <= p['open']
+            and body > p_body and p_body > 0):
+        signals['candle_engulf_bear'] = {
+            'price': price, 'pattern': '장악형 음봉',
+            'prev_close': p['close'],
+        }
+
+    # 잉태형 (Harami): 전일 큰 봉 안에 당일 작은 봉
+    if (p_body > 0 and body < p_body * 0.5
+            and max(o, cl) <= max(p['open'], p['close'])
+            and min(o, cl) >= min(p['open'], p['close'])):
+        harami_type = '잉태형 양' if (not p_bullish and c_bullish) else (
+                      '잉태형 음' if (p_bullish and not c_bullish) else None)
+        if harami_type:
+            key = 'candle_harami_bull' if '양' in harami_type else 'candle_harami_bear'
+            signals[key] = {
+                'price': price, 'pattern': harami_type,
+                'prev_close': p['close'],
+            }
+
+    # ── 3봉 패턴 ──
+    pp_bullish = pp['close'] > pp['open']
+    pp_body = abs(pp['close'] - pp['open'])
+    p_body_ratio = p_body / p_rng if p_rng > 0 else 1
+
+    # 샛별 (Morning Star): 음봉 → 작은 봉(도지급) → 양봉
+    if (not pp_bullish and pp_body > 0
+            and p_body_ratio < 0.3
+            and c_bullish and cl > (pp['open'] + pp['close']) / 2
+            and body > pp_body * 0.3):
+        signals['candle_morning_star'] = {
+            'price': price, 'pattern': '샛별',
+            'prev_close': p['close'],
+        }
+
+    # 석별 (Evening Star): 양봉 → 작은 봉(도지급) → 음봉
+    if (pp_bullish and pp_body > 0
+            and p_body_ratio < 0.3
+            and not c_bullish and cl < (pp['open'] + pp['close']) / 2
+            and body > pp_body * 0.3):
+        signals['candle_evening_star'] = {
+            'price': price, 'pattern': '석별',
+            'prev_close': p['close'],
+        }
+
+    return signals
+
+
 def detect_signals(ohlcv):
     """OHLCV 배열에서 모든 기술적 시그널 판별."""
     signals = {}
@@ -537,6 +686,10 @@ def detect_signals(ohlcv):
                 'price': price, 'macd': round(macd_now, 1),
                 'signal': round(sig_now, 1)}
 
+    # ── 캔들 패턴 ──
+    candle = detect_candle_patterns(ohlcv)
+    signals.update(candle)
+
     return signals
 
 
@@ -645,6 +798,18 @@ def main():
         'institution_consecutive': [],
         'program_absorb_bull': [],    # 프로그램매도 소화 + 외인순매수 (강세)
         'program_absorb_bear': [],    # 프로그램매수 + 외인순매도 (약세)
+        # 캔들 패턴
+        'candle_doji': [],
+        'candle_hammer': [],
+        'candle_hangman': [],
+        'candle_inv_hammer': [],
+        'candle_shooting_star': [],
+        'candle_engulf_bull': [],
+        'candle_engulf_bear': [],
+        'candle_harami_bull': [],
+        'candle_harami_bear': [],
+        'candle_morning_star': [],
+        'candle_evening_star': [],
     }
 
     # 수급 데이터 임시 저장 (Top 15 정렬용)
@@ -679,7 +844,12 @@ def main():
                      'aligned_bull', 'bb_upper_close', 'bb_upper_intra',
                      'rally_3d_10pct', 'volume_spike', 'volume_breakout',
                      'new_high_52w', 'new_low_52w',
-                     'rsi_oversold', 'rsi_overbought', 'macd_golden']:
+                     'rsi_oversold', 'rsi_overbought', 'macd_golden',
+                     'candle_doji', 'candle_hammer', 'candle_hangman',
+                     'candle_inv_hammer', 'candle_shooting_star',
+                     'candle_engulf_bull', 'candle_engulf_bear',
+                     'candle_harami_bull', 'candle_harami_bear',
+                     'candle_morning_star', 'candle_evening_star']:
             if key in sig:
                 entry = {**base, **sig[key]}
                 all_signals[key].append(entry)
@@ -911,6 +1081,17 @@ def main():
             'institution_consecutive':'기관 연속매수(3일↑)',
             'program_absorb_bull':   '🟢 프매도+외매수(3일↑)',
             'program_absorb_bear':   '🔴 프매수+외매도(3일↑)',
+            'candle_doji':           '🕯 도지',
+            'candle_hammer':         '🔨 해머',
+            'candle_hangman':        '☠ 교수형',
+            'candle_inv_hammer':     '🔨 역해머',
+            'candle_shooting_star':  '💫 유성',
+            'candle_engulf_bull':    '🟩 장악형 양봉',
+            'candle_engulf_bear':    '🟥 장악형 음봉',
+            'candle_harami_bull':    '🟢 잉태형 양',
+            'candle_harami_bear':    '🔴 잉태형 음',
+            'candle_morning_star':   '🌅 샛별',
+            'candle_evening_star':   '🌆 석별',
         }.get(k, k)
         print(f'   {label}: {v}종목')
 
