@@ -543,6 +543,178 @@ def detect_candle_patterns(ohlcv):
     return signals
 
 
+def find_pivots(ohlcv, window=5):
+    """피벗 고점/저점 탐색.
+    window=5 → 좌우 5봉 대비 최고/최저인 봉을 피벗으로 판별.
+    반환: (pivot_highs, pivot_lows)
+      각 항목은 [(index, price), ...] 리스트, 시간순."""
+    highs = []
+    lows = []
+    for i in range(window, len(ohlcv) - window):
+        h = ohlcv[i]['high']
+        l = ohlcv[i]['low']
+        is_high = all(h >= ohlcv[j]['high']
+                      for j in range(i - window, i + window + 1) if j != i)
+        is_low = all(l <= ohlcv[j]['low']
+                     for j in range(i - window, i + window + 1) if j != i)
+        if is_high:
+            highs.append((i, h))
+        if is_low:
+            lows.append((i, l))
+    return highs, lows
+
+
+def detect_chart_patterns(ohlcv):
+    """기술적 차트 패턴 판별 (이중바닥/천장, 삼각형).
+    반환: {패턴키: {price, pattern, ...}}
+
+    파라미터:
+    - 피벗 window=5 (좌우 5봉)
+    - 이중바닥/천장 유사가격 허용: 3%
+    - 삼각형: 최근 40봉 내 피벗 2개 이상
+    """
+    if len(ohlcv) < 40:
+        return {}
+
+    signals = {}
+    price = ohlcv[-1]['close']
+    pivot_highs, pivot_lows = find_pivots(ohlcv, window=5)
+
+    # ── 이중바닥 (Double Bottom) ──
+    # 최근 피벗 저점 2개가 유사 가격 + 사이에 피벗 고점(넥라인)
+    # + 현재가가 넥라인 돌파
+    if len(pivot_lows) >= 2:
+        for i in range(len(pivot_lows) - 1, 0, -1):
+            l2_idx, l2_price = pivot_lows[i]      # 두 번째 바닥 (최근)
+            l1_idx, l1_price = pivot_lows[i - 1]   # 첫 번째 바닥
+
+            # 두 바닥 간 거리: 10~50봉
+            gap = l2_idx - l1_idx
+            if gap < 10 or gap > 50:
+                continue
+
+            # 유사 가격 (3% 이내)
+            avg_low = (l1_price + l2_price) / 2
+            if avg_low == 0:
+                continue
+            diff_pct = abs(l1_price - l2_price) / avg_low * 100
+            if diff_pct > 3:
+                continue
+
+            # 사이에 피벗 고점 (넥라인) 존재
+            neckline_candidates = [
+                (idx, p) for idx, p in pivot_highs
+                if l1_idx < idx < l2_idx
+            ]
+            if not neckline_candidates:
+                continue
+
+            neckline = max(neckline_candidates, key=lambda x: x[1])
+            neck_price = neckline[1]
+
+            # 현재가가 넥라인 돌파
+            if price > neck_price:
+                signals['pattern_double_bottom'] = {
+                    'price': price,
+                    'pattern': '이중바닥',
+                    'low1': l1_price,
+                    'low2': l2_price,
+                    'neckline': neck_price,
+                    'gap_days': gap,
+                }
+                break  # 가장 최근 것만
+
+    # ── 이중천장 (Double Top) ──
+    if len(pivot_highs) >= 2:
+        for i in range(len(pivot_highs) - 1, 0, -1):
+            h2_idx, h2_price = pivot_highs[i]
+            h1_idx, h1_price = pivot_highs[i - 1]
+
+            gap = h2_idx - h1_idx
+            if gap < 10 or gap > 50:
+                continue
+
+            avg_high = (h1_price + h2_price) / 2
+            if avg_high == 0:
+                continue
+            diff_pct = abs(h1_price - h2_price) / avg_high * 100
+            if diff_pct > 3:
+                continue
+
+            neckline_candidates = [
+                (idx, p) for idx, p in pivot_lows
+                if h1_idx < idx < h2_idx
+            ]
+            if not neckline_candidates:
+                continue
+
+            neckline = min(neckline_candidates, key=lambda x: x[1])
+            neck_price = neckline[1]
+
+            if price < neck_price:
+                signals['pattern_double_top'] = {
+                    'price': price,
+                    'pattern': '이중천장',
+                    'high1': h1_price,
+                    'high2': h2_price,
+                    'neckline': neck_price,
+                    'gap_days': gap,
+                }
+                break
+
+    # ── 삼각형 패턴 (최근 40봉 내 피벗 기반) ──
+    cutoff = len(ohlcv) - 40
+    recent_highs = [(i, p) for i, p in pivot_highs if i >= cutoff]
+    recent_lows = [(i, p) for i, p in pivot_lows if i >= cutoff]
+
+    if len(recent_highs) >= 2 and len(recent_lows) >= 2:
+        # 고점 추세: 최근 2개
+        rh = recent_highs[-2:]
+        rl = recent_lows[-2:]
+
+        h_slope = (rh[1][1] - rh[0][1]) / max(rh[1][0] - rh[0][0], 1)
+        l_slope = (rl[1][1] - rl[0][1]) / max(rl[1][0] - rl[0][0], 1)
+
+        # 수렴 판별 — 고점과 저점 사이 간격 축소
+        spread_old = rh[0][1] - rl[0][1]
+        spread_new = rh[1][1] - rl[1][1]
+
+        if spread_old > 0 and spread_new > 0 and spread_new < spread_old * 0.8:
+            # 수렴 확인 — 유형 분류
+            avg_price = (rh[1][1] + rl[1][1]) / 2
+            if avg_price == 0:
+                avg_price = 1
+            h_flat = abs(rh[1][1] - rh[0][1]) / avg_price < 0.015  # 1.5% 이내
+            l_flat = abs(rl[1][1] - rl[0][1]) / avg_price < 0.015
+
+            if h_flat and l_slope > 0:
+                # 상승삼각형: 고점 수평 + 저점 상승
+                signals['pattern_asc_triangle'] = {
+                    'price': price,
+                    'pattern': '상승삼각형',
+                    'resistance': rh[1][1],
+                    'support': rl[1][1],
+                }
+            elif l_flat and h_slope < 0:
+                # 하락삼각형: 저점 수평 + 고점 하락
+                signals['pattern_desc_triangle'] = {
+                    'price': price,
+                    'pattern': '하락삼각형',
+                    'resistance': rh[1][1],
+                    'support': rl[1][1],
+                }
+            elif h_slope < 0 and l_slope > 0:
+                # 대칭삼각형: 고점 하락 + 저점 상승
+                signals['pattern_sym_triangle'] = {
+                    'price': price,
+                    'pattern': '대칭삼각형',
+                    'resistance': rh[1][1],
+                    'support': rl[1][1],
+                }
+
+    return signals
+
+
 def detect_signals(ohlcv):
     """OHLCV 배열에서 모든 기술적 시그널 판별."""
     signals = {}
@@ -690,6 +862,10 @@ def detect_signals(ohlcv):
     candle = detect_candle_patterns(ohlcv)
     signals.update(candle)
 
+    # ── 차트 패턴 (이중바닥/천장, 삼각형) ──
+    chart = detect_chart_patterns(ohlcv)
+    signals.update(chart)
+
     return signals
 
 
@@ -810,6 +986,12 @@ def main():
         'candle_harami_bear': [],
         'candle_morning_star': [],
         'candle_evening_star': [],
+        # 차트 패턴
+        'pattern_double_bottom': [],
+        'pattern_double_top': [],
+        'pattern_asc_triangle': [],
+        'pattern_desc_triangle': [],
+        'pattern_sym_triangle': [],
     }
 
     # 수급 데이터 임시 저장 (Top 15 정렬용)
@@ -849,7 +1031,10 @@ def main():
                      'candle_inv_hammer', 'candle_shooting_star',
                      'candle_engulf_bull', 'candle_engulf_bear',
                      'candle_harami_bull', 'candle_harami_bear',
-                     'candle_morning_star', 'candle_evening_star']:
+                     'candle_morning_star', 'candle_evening_star',
+                     'pattern_double_bottom', 'pattern_double_top',
+                     'pattern_asc_triangle', 'pattern_desc_triangle',
+                     'pattern_sym_triangle']:
             if key in sig:
                 entry = {**base, **sig[key]}
                 all_signals[key].append(entry)
@@ -1092,6 +1277,11 @@ def main():
             'candle_harami_bear':    '🔴 잉태형 음',
             'candle_morning_star':   '🌅 샛별',
             'candle_evening_star':   '🌆 석별',
+            'pattern_double_bottom': '📉📈 이중바닥',
+            'pattern_double_top':    '📈📉 이중천장',
+            'pattern_asc_triangle':  '🔺 상승삼각형',
+            'pattern_desc_triangle': '🔻 하락삼각형',
+            'pattern_sym_triangle':  '◇ 대칭삼각형',
         }.get(k, k)
         print(f'   {label}: {v}종목')
 
