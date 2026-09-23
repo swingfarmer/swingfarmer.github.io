@@ -199,7 +199,35 @@ tr:hover{background:rgba(59,130,246,.06)}
           <dd>최근 3거래일 연속으로 프로그램 순매수 + 외인 순매도. 약세 패턴.</dd>
         </dl>
       </div>
+      <div class="help-section">
+        <h3>캔들 패턴</h3>
+        <dl class="help-list">
+          <dt>🕯 도지</dt>
+          <dd>시가 ≈ 종가 (몸통 &lt; 레인지 5%). 매수·매도 균형 → 추세 전환 가능성.</dd>
+          <dt>🔨 해머</dt>
+          <dd>하락추세에서 긴 아래꼬리 + 짧은 위꼬리. 바닥권 반등 시그널.</dd>
+          <dt>☠ 교수형</dt>
+          <dd>상승추세에서 해머 모양. 상단에서 매도 압력 → 하락 전환 경고.</dd>
+          <dt>🔨 역해머</dt>
+          <dd>하락추세에서 긴 위꼬리 + 짧은 아래꼬리. 매수 시도 시작.</dd>
+          <dt>💫 유성</dt>
+          <dd>상승추세에서 역해머 모양. 고점 매도 압력 → 하락 신호.</dd>
+          <dt>🟩 장악형 양봉</dt>
+          <dd>전일 음봉을 당일 양봉이 완전히 감싸는 패턴. 강한 반등 시그널.</dd>
+          <dt>🟥 장악형 음봉</dt>
+          <dd>전일 양봉을 당일 음봉이 완전히 감싸는 패턴. 강한 하락 시그널.</dd>
+          <dt>🟢 잉태형 양</dt>
+          <dd>큰 음봉 안에 작은 양봉. 하락 모멘텀 소진 → 반등 가능.</dd>
+          <dt>🔴 잉태형 음</dt>
+          <dd>큰 양봉 안에 작은 음봉. 상승 모멘텀 소진 → 조정 가능.</dd>
+          <dt>🌅 샛별 (Morning Star)</dt>
+          <dd>음봉 → 작은 봉 → 양봉 (3봉). 바닥 반전 강력 시그널.</dd>
+          <dt>🌆 석별 (Evening Star)</dt>
+          <dd>양봉 → 작은 봉 → 음봉 (3봉). 천장 반전 강력 시그널.</dd>
+        </dl>
+      </div>
       <div class="help-note">
+        ※ 캔들 패턴 단독 승률은 낮음 — 다른 시그널(RSI, 볼밴, 수급)과 함께 확인 권장.<br>
         ※ 수급 시그널(연속매수, 프매도+외매수)은 수급 이력이 3거래일 이상 쌓여야 작동합니다.<br>
         ※ 이동평균선: 5주선·10주선은 주봉(주간 마지막 거래일 종가) 기준, 20일선은 일봉 기준입니다.<br>
         ※ 데이터 소스: KIS Open API · 평일 장 마감 후 자동 수집.
@@ -268,6 +296,17 @@ var DEFAULT_TAB_CONFIG = [
   {key:'institution_consecutive',label:'기관 연속매수',    icon:'📊', visible:true},
   {key:'program_absorb_bull',   label:'프매도+외매수',     icon:'🟢', visible:true},
   {key:'program_absorb_bear',   label:'프매수+외매도',     icon:'🔴', visible:true},
+  {key:'candle_doji',           label:'도지',              icon:'🕯', visible:true},
+  {key:'candle_hammer',         label:'해머',              icon:'🔨', visible:true},
+  {key:'candle_hangman',        label:'교수형',            icon:'☠', visible:true},
+  {key:'candle_inv_hammer',     label:'역해머',            icon:'🔨', visible:true},
+  {key:'candle_shooting_star',  label:'유성',              icon:'💫', visible:true},
+  {key:'candle_engulf_bull',    label:'장악형 양봉',       icon:'🟩', visible:true},
+  {key:'candle_engulf_bear',    label:'장악형 음봉',       icon:'🟥', visible:true},
+  {key:'candle_harami_bull',    label:'잉태형 양',         icon:'🟢', visible:true},
+  {key:'candle_harami_bear',    label:'잉태형 음',         icon:'🔴', visible:true},
+  {key:'candle_morning_star',   label:'샛별',              icon:'🌅', visible:true},
+  {key:'candle_evening_star',   label:'석별',              icon:'🌆', visible:true},
 ];
 
 // 서머리 카드에 표시할 키 (기본 7개, 보이는 탭만 필터)
@@ -433,6 +472,14 @@ function getColumns(tab){
     return base.concat([{key:'consecutive',label:'연속일'}]);
   if(tab==='program_absorb_bull'||tab==='program_absorb_bear')
     return base.concat([{key:'consecutive',label:'연속일'},{key:'foreign_qty',label:'외인수량'},{key:'program_qty',label:'프로그램수량'}]);
+  if(tab==='candle_doji')
+    return base.concat([{key:'pattern',label:'패턴'},{key:'body_pct',label:'몸통비율',unit:'%'}]);
+  if(tab==='candle_hammer'||tab==='candle_hangman'||tab==='candle_inv_hammer'||tab==='candle_shooting_star')
+    return base.concat([{key:'pattern',label:'패턴'},{key:'trend',label:'추세',unit:'%'}]);
+  if(tab.indexOf('candle_engulf')>=0||tab.indexOf('candle_harami')>=0)
+    return base.concat([{key:'pattern',label:'패턴'},{key:'prev_close',label:'전일종가',unit:'원'}]);
+  if(tab==='candle_morning_star'||tab==='candle_evening_star')
+    return base.concat([{key:'pattern',label:'패턴'},{key:'prev_close',label:'전일종가',unit:'원'}]);
   return base;
 }
 
