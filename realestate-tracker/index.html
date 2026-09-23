@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>실거래가 트래커</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:1200px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a;font-feature-settings:"tnum"}
+.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}
+h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:6px;font-size:22px}
+.desc{color:#555;font-size:13.5px;margin-bottom:8px}
+.updated{color:#999;font-size:12px;margin-bottom:18px}
+.summary-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px}
+.scard{padding:14px;border-radius:10px;color:white}
+.scard.blue{background:linear-gradient(135deg,#1F4E78,#2563eb)}
+.scard.green{background:linear-gradient(135deg,#059669,#10b981)}
+.scard.amber{background:linear-gradient(135deg,#d97706,#f59e0b)}
+.scard.purple{background:linear-gradient(135deg,#6d28d9,#8b5cf6)}
+.scard.red{background:linear-gradient(135deg,#dc2626,#ef4444)}
+.scard .lbl{font-size:11px;opacity:.9;margin-bottom:3px}
+.scard .val{font-size:18px;font-weight:800}
+.tabs{display:flex;gap:4px;background:#e5e7eb;padding:4px;border-radius:10px;margin-bottom:18px;flex-wrap:wrap}
+.tab{flex:1;padding:10px 6px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:700;color:#666;border-radius:8px;transition:all .15s;font-family:inherit;min-width:80px}
+.tab:hover{background:rgba(255,255,255,.5)}
+.tab.active{background:white;color:#1F4E78;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.tab-content{display:none}.tab-content.active{display:block}
+.filter-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.filter-row select,.filter-row input{padding:8px;font-size:13px;border:1px solid #ccc;border-radius:6px;font-family:inherit}
+.filter-row input{flex:1;min-width:160px}
+.cnt{font-size:12px;color:#888;margin-bottom:8px}
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{background:#1F4E78;color:white;padding:8px 6px;text-align:right;font-weight:600;font-size:11px;position:sticky;top:0;z-index:1}
+.tbl th:nth-child(1),.tbl th:nth-child(2),.tbl th:nth-child(3){text-align:left}
+.tbl td:nth-child(1),.tbl td:nth-child(2),.tbl td:nth-child(3){text-align:left}
+.tbl td{padding:7px 6px;text-align:right;border-bottom:1px solid #eee}
+.tbl tr:hover td{background:#f0f5fa}
+.tbl-wrap{max-height:600px;overflow-y:auto;border:1px solid #ddd;border-radius:8px}
+.price{color:#dc2626;font-weight:700}
+.jeonse{color:#2563eb;font-weight:700}
+.wolse{color:#059669;font-weight:700}
+.badge{display:inline-block;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600}
+.badge-trade{background:#fee2e2;color:#991b1b}
+.badge-jeonse{background:#dbeafe;color:#1e40af}
+.badge-wolse{background:#d1fae5;color:#065f46}
+.region-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.region-card{background:white;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:pointer;transition:transform .1s}
+.region-card:hover{transform:translateY(-2px);box-shadow:0 3px 8px rgba(0,0,0,.12)}
+.region-card h4{color:#1F4E78;font-size:14px;margin-bottom:6px}
+.region-card .avg-price{font-size:18px;font-weight:800;color:#dc2626}
+.region-card .stat{font-size:12px;color:#555;line-height:1.6}
+.apt-card{background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:10px}
+.apt-card h4{color:#1F4E78;font-size:13px;margin-bottom:6px}
+.loading{text-align:center;padding:60px;color:#888}
+@media(max-width:600px){.summary-cards{grid-template-columns:repeat(2,1fr)}.region-grid{grid-template-columns:1fr}.filter-row input{min-width:100%}}
+</style>
+</head>
+<body>
+<a href="/" class="back-link">← 메인으로</a>
+<h1>🏠 실거래가 트래커</h1>
+<p class="desc">국토교통부 아파트 매매·전월세 실거래 데이터. 자동 수집.</p>
+<div class="updated" id="updatedAt"></div>
+<div class="summary-cards" id="topCards"></div>
+<div class="tabs">
+  <button class="tab active" data-tab="recent">📋 최근 거래</button>
+  <button class="tab" data-tab="apt">🏢 단지별 시세</button>
+  <button class="tab" data-tab="region">📊 지역 통계</button>
+</div>
+<div class="tab-content active" id="tab-recent">
+  <div class="filter-row">
+    <select id="fRegion"><option value="all">전체 지역</option></select>
+    <select id="fType"><option value="all">전체</option><option value="trade">매매</option><option value="jeonse">전세</option><option value="wolse">월세</option></select>
+    <select id="fArea"><option value="all">전체 면적</option><option value="small">60㎡ 이하</option><option value="mid">60~85㎡</option><option value="large">85㎡ 초과</option></select>
+    <input type="text" id="fSearch" placeholder="아파트명 검색...">
+  </div>
+  <div class="cnt" id="recentCnt"></div>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>지역</th><th>아파트</th><th>동</th><th>면적</th><th>층</th><th>금액</th><th>유형</th><th>거래일</th></tr></thead><tbody id="recentBody"></tbody></table></div>
+</div>
+<div class="tab-content" id="tab-apt">
+  <div class="filter-row">
+    <select id="aRegion"><option value="all">전체 지역</option></select>
+    <input type="text" id="aSearch" placeholder="아파트명 검색... (2자 이상)">
+  </div>
+  <div id="aptResult"><div style="color:#999;text-align:center;padding:40px">아파트명 2자 이상 입력</div></div>
+</div>
+<div class="tab-content" id="tab-region">
+  <div class="region-grid" id="regionGrid"></div>
+</div>
+
+<script>
+var D=null;
+function fmt(n){return Math.round(n).toLocaleString('ko-KR')}
+function fmtEok(n){if(n>=10000)return(n/10000).toFixed(1)+'억';return fmt(n)+'만'}
+function load(){
+  document.getElementById('recentBody').innerHTML='<tr><td colspan="8" class="loading">📊 로딩 중...</td></tr>';
+  fetch('/data/realestate_trades.json').then(function(r){return r.json()}).then(function(d){D=d;init()}).catch(function(){
+    document.getElementById('recentBody').innerHTML='<tr><td colspan="8" class="loading">❌ data/realestate_trades.json 없음</td></tr>';
+  });
+}
+function init(){
+  document.getElementById('updatedAt').textContent='업데이트: '+(D.updated||'-')+' | '+(D.period?D.period.from+'~'+D.period.to:'');
+  var s=D.stats||{};
+  document.getElementById('topCards').innerHTML=
+    '<div class="scard blue"><div class="lbl">총 거래</div><div class="val">'+fmt(s.total)+'건</div></div>'
+    +'<div class="scard red"><div class="lbl">매매</div><div class="val">'+fmt(s.trade)+'건</div></div>'
+    +'<div class="scard purple"><div class="lbl">전세</div><div class="val">'+fmt(s.jeonse)+'건</div></div>'
+    +'<div class="scard green"><div class="lbl">월세</div><div class="val">'+fmt(s.wolse)+'건</div></div>'
+    +'<div class="scard amber"><div class="lbl">지역</div><div class="val">'+Object.keys(D.regions||{}).length+'곳</div></div>';
+  var regs=D.regions||{};
+  ['fRegion','aRegion'].forEach(function(id){
+    var sel=document.getElementById(id);
+    Object.values(regs).sort().forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;sel.appendChild(o)});
+  });
+  renderRecent();renderRegion();
+}
+function renderRecent(){
+  var region=document.getElementById('fRegion').value,type=document.getElementById('fType').value;
+  var area=document.getElementById('fArea').value,q=(document.getElementById('fSearch').value||'').trim().toLowerCase();
+  var items=(D.trades||[]).filter(function(t){
+    if(region!=='all'&&t.region!==region)return false;
+    if(type!=='all'&&t.type!==type)return false;
+    if(q&&(t.apt||'').toLowerCase().indexOf(q)===-1)return false;
+    if(area==='small'&&t.area>60)return false;
+    if(area==='mid'&&(t.area<=60||t.area>85))return false;
+    if(area==='large'&&t.area<=85)return false;
+    return true;
+  });
+  items.sort(function(a,b){var da=(a.year||'')+String(a.month||'').padStart(2,'0')+String(a.day||'').padStart(2,'0');var db=(b.year||'')+String(b.month||'').padStart(2,'0')+String(b.day||'').padStart(2,'0');return db.localeCompare(da)});
+  document.getElementById('recentCnt').textContent='총 '+fmt(items.length)+'건'+(items.length>500?' (500건 표시)':'');
+  var html='';items.slice(0,500).forEach(function(t){
+    var badge='',price='';
+    if(t.type==='trade'){badge='<span class="badge badge-trade">매매</span>';price='<span class="price">'+fmtEok(t.amount)+'</span>'}
+    else if(t.type==='jeonse'){badge='<span class="badge badge-jeonse">전세</span>';price='<span class="jeonse">'+fmtEok(t.deposit)+'</span>'}
+    else{badge='<span class="badge badge-wolse">월세</span>';price='<span class="wolse">'+fmtEok(t.deposit)+'/'+fmt(t.monthly)+'</span>'}
+    html+='<tr><td>'+t.region+'</td><td>'+t.apt+'</td><td>'+(t.dong||'')+'</td><td>'+t.area+'㎡</td><td>'+(t.floor||'')+'층</td><td>'+price+'</td><td>'+badge+'</td><td>'+t.year+'.'+String(t.month).padStart(2,'0')+'.'+String(t.day).padStart(2,'0')+'</td></tr>'
+  });
+  document.getElementById('recentBody').innerHTML=html||'<tr><td colspan="8" style="text-align:center;padding:30px;color:#999">결과 없음</td></tr>';
+}
+function renderApt(){
+  var region=document.getElementById('aRegion').value,q=(document.getElementById('aSearch').value||'').trim().toLowerCase();
+  var box=document.getElementById('aptResult');
+  if(q.length<2){box.innerHTML='<div style="color:#999;text-align:center;padding:40px">아파트명 2자 이상 입력</div>';return}
+  var trades=(D.trades||[]).filter(function(t){if(region!=='all'&&t.region!==region)return false;return(t.apt||'').toLowerCase().indexOf(q)>=0});
+  var groups={};trades.forEach(function(t){var key=t.region+'|'+t.apt;if(!groups[key])groups[key]={region:t.region,apt:t.apt,trades:[],rents:[]};if(t.type==='trade')groups[key].trades.push(t);else groups[key].rents.push(t)});
+  var keys=Object.keys(groups).sort();
+  if(!keys.length){box.innerHTML='<div style="color:#999;text-align:center;padding:40px">결과 없음</div>';return}
+  var html='';keys.forEach(function(k){
+    var g=groups[k];html+='<div class="apt-card"><h4>'+g.apt+' <span style="font-size:11px;color:#888;font-weight:400">'+g.region+'</span></h4>';
+    if(g.trades.length){
+      g.trades.sort(function(a,b){return(a.year+String(a.month).padStart(2,'0')).localeCompare(b.year+String(b.month).padStart(2,'0'))});
+      var amts=g.trades.map(function(t){return t.amount}),avg=Math.round(amts.reduce(function(s,a){return s+a},0)/amts.length);
+      html+='<div style="font-size:12px;margin-bottom:6px"><span class="badge badge-trade">매매</span> '+g.trades.length+'건 | 평균 <span class="price">'+fmtEok(avg)+'</span> | 최고 '+fmtEok(Math.max.apply(null,amts))+' | 최저 '+fmtEok(Math.min.apply(null,amts))+'</div>';
+      html+='<table class="tbl" style="font-size:11px;margin-bottom:8px"><thead><tr><th>면적</th><th>층</th><th>금액</th><th>일자</th></tr></thead><tbody>';
+      g.trades.slice(-5).reverse().forEach(function(t){html+='<tr><td>'+t.area+'㎡</td><td>'+t.floor+'</td><td class="price">'+fmtEok(t.amount)+'</td><td>'+t.year+'.'+String(t.month).padStart(2,'0')+'.'+String(t.day).padStart(2,'0')+'</td></tr>'});
+      html+='</tbody></table>';
+    }
+    if(g.rents.length){
+      var js=g.rents.filter(function(r){return r.type==='jeonse'}),ws=g.rents.filter(function(r){return r.type==='wolse'});
+      if(js.length){var jA=Math.round(js.reduce(function(s,r){return s+r.deposit},0)/js.length);html+='<div style="font-size:12px"><span class="badge badge-jeonse">전세</span> '+js.length+'건 | 평균 <span class="jeonse">'+fmtEok(jA)+'</span></div>'}
+      if(ws.length)html+='<div style="font-size:12px"><span class="badge badge-wolse">월세</span> '+ws.length+'건</div>';
+    }
+    html+='</div>';
+  });box.innerHTML=html;
+}
+function renderRegion(){
+  var rs=D.region_stats||{},grid=document.getElementById('regionGrid');
+  var keys=Object.keys(rs).sort(function(a,b){return(rs[b].avg||0)-(rs[a].avg||0)});
+  if(!keys.length){grid.innerHTML='<div class="loading">데이터 없음</div>';return}
+  var html='';keys.forEach(function(k){var s=rs[k];
+    html+='<div class="region-card" onclick="document.getElementById(\'fRegion\').value=\''+k+'\';document.querySelectorAll(\'.tab\')[0].click();renderRecent()">'
+      +'<h4>'+k+'</h4><div class="avg-price">평균 '+fmtEok(s.avg)+'</div>'
+      +'<div class="stat">거래 '+fmt(s.count)+'건<br>최고 '+fmtEok(s.max)+' / 최저 '+fmtEok(s.min)+'<br>중위 '+fmtEok(s.median)+'</div></div>'
+  });grid.innerHTML=html;
+}
+document.querySelectorAll('.tab').forEach(function(tab){tab.addEventListener('click',function(){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
+  document.querySelectorAll('.tab-content').forEach(function(c){c.classList.remove('active')});
+  tab.classList.add('active');document.getElementById('tab-'+tab.dataset.tab).classList.add('active');
+})});
+['fRegion','fType','fArea'].forEach(function(id){document.getElementById(id).addEventListener('change',renderRecent)});
+document.getElementById('fSearch').addEventListener('input',renderRecent);
+document.getElementById('aRegion').addEventListener('change',renderApt);
+document.getElementById('aSearch').addEventListener('input',renderApt);
+load();
+</script>
+<script src="/common.js?v=4"></script>
+</body>
+</html>
