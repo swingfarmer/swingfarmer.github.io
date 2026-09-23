@@ -193,6 +193,10 @@ def extract_short_debt(full_items):
             if amt is not None:
                 total += amt
     return total if total > 0 else None
+
+
+def fetch_dividend(corp_code, year, reprt_code):
+    """DART 배당 API (alotMatter) — 주당 배당금 추출."""
     data = api_call('alotMatter', {
         'corp_code': corp_code,
         'bsns_year': year,
