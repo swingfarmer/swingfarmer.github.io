@@ -18,6 +18,8 @@ KST = timezone(timedelta(hours=9))
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR   = os.path.dirname(SCRIPT_DIR)
 INDICATORS_FILE = os.path.join(ROOT_DIR, 'data', 'market_indicators.json')
+NEWS_FILE = os.path.join(ROOT_DIR, 'data', 'news.json')
+NEWS_CATS = ['economy', 'stock', 'breaking']  # 경제, 증시, 속보
 
 
 def send_telegram(text):
@@ -59,8 +61,10 @@ def fmt_change(change_pct):
     return f'{arrow} {abs(change_pct):.2f}%'
 
 
-def build_message(data):
-    """market_indicators.json → 텔레그램 메시지 생성."""
+def build_message(data, news_items=None):
+    """market_indicators.json + news → 텔레그램 메시지 생성."""
+    if news_items is None:
+        news_items = []
     now = datetime.now(KST)
     hour = now.hour
     session = '🌅 아침' if hour < 12 else '🌙 저녁'
@@ -135,10 +139,42 @@ def build_message(data):
     if rates.get('GOLD_KRW_G'):
         lines.append(f"<b>🥇 금</b>: {fmt_num(rates['GOLD_KRW_G'], 0)}원/g")
 
+    # ── 뉴스 헤드라인 ──
+    if news_items:
+        lines.append('\n<b>📰 주요 뉴스</b>')
+        for item in news_items[:5]:
+            lines.append(f"  · {item['title']}")
+
     # 업데이트 시각
     lines.append(f"\n<i>데이터: {data.get('updated', '-')}</i>")
 
     return '\n'.join(lines)
+
+
+def load_news():
+    """news.json에서 경제/증시/속보 헤드라인 추출."""
+    if not os.path.exists(NEWS_FILE):
+        return []
+    try:
+        with open(NEWS_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        items = []
+        cats = data.get('categories', {})
+        for cat in NEWS_CATS:
+            cat_data = cats.get(cat, {})
+            cat_items = cat_data.get('items', [])
+            for item in cat_items[:3]:
+                items.append({
+                    'title': item.get('title', ''),
+                    'cat': cat,
+                    'pubDate': item.get('pubDate', ''),
+                })
+        # 최신순 정렬
+        items.sort(key=lambda x: x.get('pubDate', ''), reverse=True)
+        return items[:5]
+    except Exception as e:
+        print(f'  뉴스 로드 실패: {e}')
+        return []
 
 
 def main():
@@ -149,7 +185,8 @@ def main():
     with open(INDICATORS_FILE, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
-    msg = build_message(data)
+    news = load_news()
+    msg = build_message(data, news)
     print(msg.replace('<b>', '').replace('</b>', '').replace('<i>', '').replace('</i>', ''))
     print(f'\n메시지 길이: {len(msg)}자')
 
