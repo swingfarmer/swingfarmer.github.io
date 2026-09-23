@@ -226,8 +226,24 @@ tr:hover{background:rgba(59,130,246,.06)}
           <dd>양봉 → 작은 봉 → 음봉 (3봉). 천장 반전 강력 시그널.</dd>
         </dl>
       </div>
+      <div class="help-section">
+        <h3>차트 패턴</h3>
+        <dl class="help-list">
+          <dt>📉 이중바닥 (Double Bottom)</dt>
+          <dd>유사한 가격의 피벗 저점 2개 + 사이에 고점(넥라인) + 현재가가 넥라인 돌파. 바닥 반전 시그널. 두 바닥 허용 오차 3%, 간격 10~50봉.</dd>
+          <dt>📈 이중천장 (Double Top)</dt>
+          <dd>유사한 가격의 피벗 고점 2개 + 사이에 저점(넥라인) + 현재가가 넥라인 이탈. 천장 반전 시그널.</dd>
+          <dt>🔺 상승삼각형</dt>
+          <dd>고점 수평(저항선) + 저점 상승. 매수 세력이 점점 높은 가격에서 진입 → 상방 돌파 기대.</dd>
+          <dt>🔻 하락삼각형</dt>
+          <dd>저점 수평(지지선) + 고점 하락. 매도 세력이 점점 낮은 가격에서 압박 → 하방 이탈 경고.</dd>
+          <dt>◇ 대칭삼각형</dt>
+          <dd>고점 하락 + 저점 상승 (수렴). 방향성 미정 → 변동성 폭발 임박, 돌파 방향 주시.</dd>
+        </dl>
+      </div>
       <div class="help-note">
         ※ 캔들 패턴 단독 승률은 낮음 — 다른 시그널(RSI, 볼밴, 수급)과 함께 확인 권장.<br>
+        ※ 차트 패턴(이중바닥 등)은 피벗 고점/저점 기반 — 좌우 5봉 대비 극값으로 판별, 허용 오차 3%.<br>
         ※ 수급 시그널(연속매수, 프매도+외매수)은 수급 이력이 3거래일 이상 쌓여야 작동합니다.<br>
         ※ 이동평균선: 5주선·10주선은 주봉(주간 마지막 거래일 종가) 기준, 20일선은 일봉 기준입니다.<br>
         ※ 데이터 소스: KIS Open API · 평일 장 마감 후 자동 수집.
@@ -307,6 +323,11 @@ var DEFAULT_TAB_CONFIG = [
   {key:'candle_harami_bear',    label:'잉태형 음',         icon:'🔴', visible:true},
   {key:'candle_morning_star',   label:'샛별',              icon:'🌅', visible:true},
   {key:'candle_evening_star',   label:'석별',              icon:'🌆', visible:true},
+  {key:'pattern_double_bottom', label:'이중바닥',          icon:'📉', visible:true},
+  {key:'pattern_double_top',    label:'이중천장',          icon:'📈', visible:true},
+  {key:'pattern_asc_triangle',  label:'상승삼각형',        icon:'🔺', visible:true},
+  {key:'pattern_desc_triangle', label:'하락삼각형',        icon:'🔻', visible:true},
+  {key:'pattern_sym_triangle',  label:'대칭삼각형',        icon:'◇', visible:true},
 ];
 
 // 서머리 카드에 표시할 키 (기본 7개, 보이는 탭만 필터)
@@ -480,6 +501,12 @@ function getColumns(tab){
     return base.concat([{key:'pattern',label:'패턴'},{key:'prev_close',label:'전일종가',unit:'원'}]);
   if(tab==='candle_morning_star'||tab==='candle_evening_star')
     return base.concat([{key:'pattern',label:'패턴'},{key:'prev_close',label:'전일종가',unit:'원'}]);
+  if(tab==='pattern_double_bottom')
+    return base.concat([{key:'pattern',label:'패턴'},{key:'low1',label:'바닥1',unit:'원'},{key:'low2',label:'바닥2',unit:'원'},{key:'neckline',label:'넥라인',unit:'원'},{key:'gap_days',label:'간격'}]);
+  if(tab==='pattern_double_top')
+    return base.concat([{key:'pattern',label:'패턴'},{key:'high1',label:'천장1',unit:'원'},{key:'high2',label:'천장2',unit:'원'},{key:'neckline',label:'넥라인',unit:'원'},{key:'gap_days',label:'간격'}]);
+  if(tab.indexOf('pattern_')===0&&tab.indexOf('triangle')>=0)
+    return base.concat([{key:'pattern',label:'패턴'},{key:'resistance',label:'저항',unit:'원'},{key:'support',label:'지지',unit:'원'}]);
   return base;
 }
 
