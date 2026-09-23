@@ -87,6 +87,10 @@ input[type="date"]{font-size:13px}
     <button id="btnCloudLogout" class="tag-cloud" style="background:#9ca3af">로그아웃</button>
   </div>
   <span id="loadedSlotName" class="loaded-name"></span>
+  <div id="loadedSlot" style="display:none;background:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:13px;color:#1e40af;font-weight:600">
+    📂 현재: <span id="loadedSlotLabel"></span>
+    <button onclick="clearLoadedSlot()" style="background:none;border:none;color:#93c5fd;cursor:pointer;font-size:14px;margin-left:6px" title="표시 해제">✕</button>
+  </div>
   <div id="uidInfo" style="display:none;font-size:11px;color:#888;margin-top:4px"></div>
 </div>
 
@@ -233,6 +237,7 @@ input[type="date"]{font-size:13px}
 <div id="slotModal" class="modal">
 <div class="modal-box">
   <div style="display:flex;align-items:center;margin-bottom:16px"><h3 style="flex:1;color:#1F4E78">☁️ 클라우드 저장</h3><button onclick="document.getElementById('slotModal').classList.remove('show')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button></div>
+  <div style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">💾 현재 입력값 저장</div>
   <div style="display:flex;gap:6px;margin-bottom:14px"><input type="text" id="slotName" placeholder="예: 2025 1기 법인세" maxlength="40" style="flex:1;padding:9px;font-size:13px;border:1px solid #ccc;border-radius:6px"><button id="slotSaveBtn" style="background:#0ea5e9;color:white;border:none;padding:9px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">저장</button></div>
   <div style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px">📋 저장된 계산</div>
   <div id="slotSelectBar" style="display:none;align-items:center;gap:8px;margin-bottom:8px;font-size:12px"><label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:#555"><input type="checkbox" id="slotSelectAll" onclick="window._slotToggleAll(this.checked)"> 전체선택</label><span id="slotSelCount" style="color:#888"></span><button id="slotDelSelected" onclick="window._slotDeleteSelected()" style="margin-left:auto;background:#dc2626;color:white;border:none;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;display:none">선택 삭제</button></div>
@@ -479,30 +484,60 @@ import{initializeApp}from"https://www.gstatic.com/firebasejs/12.14.0/firebase-ap
 import{getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 import{getFirestore,doc,getDoc,setDoc}from"https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 const firebaseConfig={apiKey:"AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",authDomain:"swingfarmer-board01.firebaseapp.com",projectId:"swingfarmer-board01",storageBucket:"swingfarmer-board01.firebasestorage.app",messagingSenderId:"312575044644",appId:"1:312575044644:web:81d754eb1d90f25454fcb1"};
-const ADMIN_UID="1JrHgD2bpTRjrS2jw7MbpHciBph1";
-const CALC_KEY="corp-tax";
-const app=initializeApp(firebaseConfig);const auth=getAuth(app);const db=getFirestore(app);
+const ADMIN_UID="1JrHgD2bpTRjrS2jw7MbpHciBph1",CALC_KEY="corp-tax";
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
 const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});
 const gid=id=>document.getElementById(id);let currentUser=null;
 getRedirectResult(auth).catch(()=>{});
-if(location.hash==='#admin'||location.hash==='#관리자'){gid('btnAdminLogin').style.display='inline-block';}
+if(location.hash==='#admin'||location.hash==='#관리자')gid('btnAdminLogin').style.display='inline-block';
 gid('btnAdminLogin').addEventListener('click',async()=>{try{await signInWithPopup(auth,provider);}catch(e){const c=e&&e.code;if(c==='auth/popup-blocked'||c==='auth/cancelled-popup-request'||c==='auth/popup-closed-by-user'){try{await signInWithRedirect(auth,provider);}catch(e2){alert('로그인 실패');}}else alert('로그인 실패');}});
-onAuthStateChanged(auth,user=>{currentUser=user;const isAdmin=user&&user.uid===ADMIN_UID;if(isAdmin){gid('cloudArea').style.display='inline-flex';gid('btnAdminLogin').style.display='none';gid('cloudWho').textContent='☁️ '+(user.displayName||user.email||'관리자');}else{gid('cloudArea').style.display='none';if(user&&!isAdmin){gid('btnAdminLogin').style.display='none';}}});
+onAuthStateChanged(auth,user=>{currentUser=user;const isAdmin=user&&user.uid===ADMIN_UID;
+  if(isAdmin){gid('cloudArea').style.display='inline-flex';gid('btnAdminLogin').style.display='none';gid('cloudWho').textContent='☁️ '+(user.displayName||user.email||'관리자');if(gid('uidInfo'))gid('uidInfo').style.display='none';}
+  else{gid('cloudArea').style.display='none';if(user&&!isAdmin){gid('btnAdminLogin').style.display='none';}}
+});
+
+// 로드된 슬롯 표시
+window._showLoadedSlot=function(name){const el=gid('loadedSlot'),nm=gid('loadedSlotLabel');if(el&&nm){nm.textContent=name;el.style.display='block';try{localStorage.setItem('sf_ct_loaded_slot',name);}catch(e){}}};
+window.clearLoadedSlot=function(){const el=gid('loadedSlot');if(el)el.style.display='none';try{localStorage.removeItem('sf_ct_loaded_slot');}catch(e){}};
+try{const prev=localStorage.getItem('sf_ct_loaded_slot');if(prev)window._showLoadedSlot(prev);}catch(e){}
+
 const docRef=()=>doc(db,'calc_data',ADMIN_UID);
 async function loadSlots(){try{const s=await getDoc(docRef());if(s.exists()&&s.data()[CALC_KEY]&&Array.isArray(s.data()[CALC_KEY].slots))return s.data()[CALC_KEY].slots;}catch(e){}return[];}
 async function saveSlots(slots){const ref=docRef();let ex={};try{const s=await getDoc(ref);if(s.exists())ex=s.data();}catch(e){}ex[CALC_KEY]={slots,updatedAt:new Date().toISOString()};await setDoc(ref,ex,{merge:true});}
 function escH(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-let _slotsCache=[];
-function slotItemHtml(s,idx){const t=s.savedAt?new Date(s.savedAt).toLocaleString('ko-KR'):'';return'<div style="display:flex;align-items:center;gap:6px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px"><input type="checkbox" class="slotChk" data-idx="'+idx+'" onclick="window._slotChkChange()" style="width:16px;height:16px"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(s.name)+'</div><div style="font-size:11px;color:#999">'+t+'</div></div><button onclick="window._slotRename('+idx+')" style="background:#e5e7eb;color:#444;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer">✏️</button><button onclick="window._slotLoad('+idx+')" style="background:#0284c7;color:white;border:none;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button></div>';}
-function renderSlots(){const box=gid('slotList');if(!_slotsCache||_slotsCache.length===0){box.innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 계산이 없어요.</div>';gid('slotSelectBar').style.display='none';return;}const sorted=[..._slotsCache.map((s,i)=>({s,i}))].sort((a,b)=>(new Date(b.s.savedAt||0))-(new Date(a.s.savedAt||0)));box.innerHTML=sorted.map(x=>slotItemHtml(x.s,x.i)).join('');gid('slotSelectBar').style.display='flex';gid('slotSelectAll').checked=false;window._slotChkChange();}
+let _slots=[];
+
+function renderSlots(){
+  const box=gid('slotList');
+  if(!_slots.length){box.innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 계산이 없어요.</div>';gid('slotSelectBar').style.display='none';return;}
+  box.innerHTML=_slots.map((s,i)=>{
+    const t=s.savedAt?new Date(s.savedAt).toLocaleString('ko-KR'):'';
+    return'<div style="display:flex;align-items:center;gap:6px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px">'
+      +'<input type="checkbox" class="slotChk" data-idx="'+i+'" onclick="window._slotChkChange()" style="width:16px;height:16px">'
+      +'<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(s.name)+'</div><div style="font-size:11px;color:#999">'+t+'</div></div>'
+      +'<button onclick="window._slotRename('+i+')" style="background:#e5e7eb;color:#444;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer" title="이름변경">✏️</button>'
+      +'<button onclick="window._slotOverwrite('+i+')" style="background:#22c55e;color:white;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer" title="덮어쓰기">💾</button>'
+      +'<button onclick="window._slotLoad('+i+')" style="background:#0284c7;color:white;border:none;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button>'
+      +'<button onclick="window._slotDel('+i+')" style="background:#fee2e2;color:#dc2626;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer" title="삭제">🗑️</button>'
+      +'</div>';
+  }).join('');
+  gid('slotSelectBar').style.display='flex';gid('slotSelectAll').checked=false;window._slotChkChange();
+}
+
+// 체크박스 일괄삭제
 window._slotChkChange=function(){const chks=Array.from(document.querySelectorAll('.slotChk')),sel=chks.filter(c=>c.checked);gid('slotSelCount').textContent=sel.length>0?sel.length+'개 선택':'';gid('slotDelSelected').style.display=sel.length>0?'inline-block':'none';gid('slotSelectAll').checked=chks.length>0&&sel.length===chks.length;};
 window._slotToggleAll=function(c){document.querySelectorAll('.slotChk').forEach(x=>x.checked=c);window._slotChkChange();};
-window._slotDeleteSelected=async function(){const idxs=Array.from(document.querySelectorAll('.slotChk:checked')).map(c=>parseInt(c.dataset.idx));if(idxs.length===0)return;if(!confirm(idxs.length+'개 삭제?'))return;try{idxs.sort((a,b)=>b-a).forEach(i=>_slotsCache.splice(i,1));await saveSlots(_slotsCache);renderSlots();}catch(e){alert('실패');}};
-async function refreshSlots(){gid('slotList').innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>';_slotsCache=await loadSlots();renderSlots();}
-gid('btnCloudOpen').addEventListener('click',async()=>{if(!currentUser||currentUser.uid!==ADMIN_UID){alert('관리자 로그인 필요');return;}gid('slotName').value='';gid('slotModal').classList.add('show');await refreshSlots();});
-gid('slotSaveBtn').addEventListener('click',async()=>{const name=gid('slotName').value.trim();if(!name){alert('이름 입력');return;}const idx=_slotsCache.findIndex(s=>s.name===name);if(idx>=0&&!confirm('"'+name+'" 덮어쓸까요?'))return;gid('slotSaveBtn').disabled=true;gid('slotSaveBtn').textContent='저장 중...';try{const data=window.gcGetState();const entry={name,data:JSON.parse(JSON.stringify(data)),savedAt:new Date().toISOString()};if(idx>=0)_slotsCache[idx]=entry;else _slotsCache.push(entry);await saveSlots(_slotsCache);renderSlots();gid('loadedSlotName').textContent='📂 '+name;alert('✅ 저장 완료');}catch(e){alert('실패: '+e.message);}gid('slotSaveBtn').disabled=false;gid('slotSaveBtn').textContent='저장';});
-window._slotLoad=function(i){const s=_slotsCache[i];if(!s)return;if(!confirm('"'+s.name+'" 불러올까요?'))return;window.gcSetState(s.data);gid('loadedSlotName').textContent='📂 '+s.name;gid('slotModal').classList.remove('show');};
-window._slotRename=async function(i){const s=_slotsCache[i];if(!s)return;const nn=prompt('이름 수정',s.name||'');if(nn===null)return;const t=nn.trim();if(!t)return;try{_slotsCache[i].name=t;await saveSlots(_slotsCache);renderSlots();}catch(e){alert('실패');}};
+window._slotDeleteSelected=async function(){const idxs=Array.from(document.querySelectorAll('.slotChk:checked')).map(c=>parseInt(c.dataset.idx));if(!idxs.length)return;if(!confirm(idxs.length+'개 삭제할까요?'))return;try{idxs.sort((a,b)=>b-a).forEach(i=>_slots.splice(i,1));await saveSlots(_slots);renderSlots();}catch(e){alert('삭제 실패');}};
+
+// 개별 버튼
+window._slotLoad=function(i){const s=_slots[i];if(!s)return;if(!confirm('"'+s.name+'" 불러올까요? 현재 값이 교체됩니다.'))return;window.gcSetState(s.data);gid('slotModal').classList.remove('show');window._showLoadedSlot(s.name);};
+window._slotOverwrite=async function(i){const s=_slots[i];if(!s)return;if(!confirm('"'+s.name+'" 현재 값으로 덮어쓸까요?'))return;try{_slots[i]={name:s.name,data:JSON.parse(JSON.stringify(window.gcGetState())),savedAt:new Date().toISOString()};await saveSlots(_slots);renderSlots();alert('✅ 덮어쓰기 완료');window._showLoadedSlot(s.name);}catch(e){alert('실패: '+e.message);}};
+window._slotDel=async function(i){if(!confirm('삭제할까요?'))return;try{_slots.splice(i,1);await saveSlots(_slots);renderSlots();}catch(e){alert('실패');}};
+window._slotRename=async function(i){const s=_slots[i];if(!s)return;const nn=prompt('이름 수정',s.name||'');if(nn===null)return;const t=nn.trim();if(!t)return;if(_slots.some((x,idx)=>idx!==i&&x.name===t)){alert('같은 이름 있음');return;}try{_slots[i].name=t;await saveSlots(_slots);renderSlots();}catch(e){alert('실패');}};
+
+async function refresh(){gid('slotList').innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>';_slots=await loadSlots();renderSlots();}
+gid('btnCloudOpen').addEventListener('click',async()=>{if(!currentUser||currentUser.uid!==ADMIN_UID){alert('관리자 로그인 필요');return;}gid('slotName').value='';gid('slotModal').classList.add('show');await refresh();});
+gid('slotSaveBtn').addEventListener('click',async()=>{const name=gid('slotName').value.trim();if(!name){alert('이름 입력');return;}const idx=_slots.findIndex(s=>s.name===name);if(idx>=0&&!confirm('"'+name+'" 덮어쓸까요?'))return;gid('slotSaveBtn').disabled=true;gid('slotSaveBtn').textContent='저장 중...';try{const entry={name,data:JSON.parse(JSON.stringify(window.gcGetState())),savedAt:new Date().toISOString()};if(idx>=0)_slots[idx]=entry;else _slots.push(entry);await saveSlots(_slots);renderSlots();alert('✅ 저장 완료');window._showLoadedSlot(name);}catch(e){alert('실패: '+e.message);}gid('slotSaveBtn').disabled=false;gid('slotSaveBtn').textContent='저장';});
 gid('btnCloudLogout').addEventListener('click',async()=>{if(confirm('로그아웃?')){try{await signOut(auth);}catch(e){}}});
 </script>
 </body>
