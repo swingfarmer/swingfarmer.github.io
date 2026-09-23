@@ -19,6 +19,9 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR   = os.path.dirname(SCRIPT_DIR)
 INDICATORS_FILE = os.path.join(ROOT_DIR, 'data', 'market_indicators.json')
 NEWS_FILE = os.path.join(ROOT_DIR, 'data', 'news.json')
+RATES_FILE = os.path.join(ROOT_DIR, 'data', 'rates.json')
+RATES_HIST_FILE = os.path.join(ROOT_DIR, 'data', 'rates_history.json')
+FX_STATE_FILE = os.path.join(SCRIPT_DIR, 'fx_alert_state.json')
 NEWS_CATS = ['economy', 'stock', 'breaking']  # 경제, 증시, 속보
 
 
@@ -59,6 +62,57 @@ def fmt_change(change_pct):
         return '→ 0.00%'
     arrow = '▲' if change_pct > 0 else '▼'
     return f'{arrow} {abs(change_pct):.2f}%'
+
+
+def get_fx_change(current_usd):
+    """rates_history.json에서 전일 USD/KRW 찾아서 변동률·변동액 반환."""
+    if not os.path.exists(RATES_HIST_FILE):
+        return None
+    try:
+        with open(RATES_HIST_FILE, 'r') as f:
+            hist = json.load(f)
+        entries = hist.get('history', [])
+        if len(entries) < 2:
+            return None
+        # 최신 2개 중 전일 (entries는 날짜순)
+        prev = entries[-2]
+        prev_usd = prev.get('rates', {}).get('USD_KRW')
+        if not prev_usd or prev_usd == 0:
+            return None
+        chg_pct = (current_usd - prev_usd) / prev_usd * 100
+        chg_amt = current_usd - prev_usd
+        return (round(chg_pct, 2), round(chg_amt, 2))
+    except:
+        return None
+
+
+def check_fx_band(current_usd):
+    """50원 구간 돌파 체크 → 알림 메시지 or None."""
+    state = {}
+    if os.path.exists(FX_STATE_FILE):
+        try:
+            with open(FX_STATE_FILE, 'r') as f:
+                state = json.load(f)
+        except:
+            pass
+
+    band = int(current_usd // 50)
+    prev_band = state.get('last_band')
+    msg = None
+
+    if prev_band is not None and band != prev_band:
+        band_low = band * 50
+        band_high = band_low + 50
+        direction = '📈 상승' if band > prev_band else '📉 하락'
+        msg = (f'<b>💱 환율 구간 변동</b>\n'
+               f'  {direction} → {current_usd:,.2f}원\n'
+               f'  새 구간: {band_low:,}~{band_high:,}원')
+
+    state['last_band'] = band
+    with open(FX_STATE_FILE, 'w') as f:
+        json.dump(state, f)
+
+    return msg
 
 
 def build_message(data, news_items=None):
@@ -107,8 +161,17 @@ def build_message(data, news_items=None):
 
     # ── 환율 ──
     if rates.get('USD_KRW'):
+        usd = rates['USD_KRW']
+        # 전일 대비 변동 계산 (rates_history.json에서)
+        fx_change = get_fx_change(usd)
+        fx_line = f"  원/달러: {fmt_num(usd, 2)}"
+        if fx_change:
+            chg_pct, chg_amt = fx_change
+            arrow = '▲' if chg_pct > 0 else '▼'
+            warn = ' ⚠️' if abs(chg_pct) >= 1 else ''
+            fx_line += f" {arrow}{abs(chg_pct):.2f}% ({chg_amt:+.2f}){warn}"
         lines.append('<b>💱 환율</b>')
-        lines.append(f"  원/달러: {fmt_num(rates['USD_KRW'], 2)}")
+        lines.append(fx_line)
         if rates.get('JPY100_KRW'):
             lines.append(f"  원/엔(100): {fmt_num(rates['JPY100_KRW'], 2)}")
         if rates.get('CNY_KRW'):
@@ -185,6 +248,15 @@ def main():
     with open(INDICATORS_FILE, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
+    # ── 환율 50원 구간 돌파 체크 ──
+    usd_krw = data.get('rates', {}).get('USD_KRW')
+    if usd_krw:
+        fx_msg = check_fx_band(usd_krw)
+        if fx_msg:
+            print(f'🔔 {fx_msg}')
+            send_telegram(fx_msg)
+
+    # ── 정기 브리핑 ──
     news = load_news()
     msg = build_message(data, news)
     print(msg.replace('<b>', '').replace('</b>', '').replace('<i>', '').replace('</i>', ''))
