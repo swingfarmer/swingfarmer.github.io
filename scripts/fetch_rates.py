@@ -1,89 +1,100 @@
 """
-환율(USD/JPY/CNY→KRW) + 금시세(원/g) 수집
-→ data/rates.json (최신) + data/rates_history.json (일별 누적, 무제한 보관)
-GitHub Actions 매일 자동 실행
-
-# TODO [오라클 이관]
-# 오라클 클라우드 세팅 후 rates_history.json을 오라클로 옮기면
-# GitHub 쪽 data/rates_history.json 삭제하여 용량 확보 가능.
-# 이관 후 이 스크립트도 오라클 cron으로 전환.
+환율(USD/JPY/CNY→KRW) + 금시세(원/g) 수집 — yfinance 기반
+==========================================================
+→ data/rates.json (최신) + data/rates_history.json (일별 누적)
+yfinance: 장중 실시간, 장외 최종 종가. exchangerate-api 대비 엔화 지연 해소.
+오라클 cron 07:50 + 18:45.
 """
-import requests
-import json
-import os
+import json, os, time
 from datetime import datetime, timezone, timedelta
 
+try:
+    import yfinance as yf
+except ImportError:
+    print("❌ yfinance 필요: pip install yfinance --break-system-packages")
+    raise
+
 KST = timezone(timedelta(hours=9))
-HISTORY_FILE = "data/rates_history.json"
-MAX_HISTORY_DAYS = None  # 무제한 보관 (오라클 이관 예정)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(SCRIPT_DIR)
+RATES_FILE = os.path.join(ROOT_DIR, "data", "rates.json")
+HISTORY_FILE = os.path.join(ROOT_DIR, "data", "rates_history.json")
+
+
+def fetch_yf_price(ticker_str):
+    """yfinance에서 현재가 조회."""
+    try:
+        tk = yf.Ticker(ticker_str)
+        info = tk.info or {}
+        price = info.get("regularMarketPrice") or info.get("previousClose")
+        if price and price > 0:
+            return round(price, 2)
+    except Exception as e:
+        print(f"  ⚠ {ticker_str} 실패: {e}")
+    return None
 
 
 def fetch_exchange_rates():
-    url = "https://api.exchangerate-api.com/v4/latest/KRW"
-    try:
-        r = requests.get(url, timeout=10)
-        r.raise_for_status()
-        d = r.json()["rates"]
-        return {
-            "USD_KRW": round(1 / d["USD"], 2),
-            "JPY100_KRW": round(100 / d["JPY"], 2),
-            "CNY_KRW": round(1 / d["CNY"], 2),
-        }
-    except Exception as e:
-        print(f"환율 API 실패: {e}")
+    """yfinance로 환율 3종 조회."""
+    print("📊 환율 수집 (yfinance)...")
+
+    usd = fetch_yf_price("USDKRW=X")
+    time.sleep(0.5)
+
+    # JPY: yfinance는 JPY→KRW 1엔 단위, ×100 필요
+    jpy_raw = fetch_yf_price("JPYKRW=X")
+    jpy100 = round(jpy_raw * 100, 2) if jpy_raw else None
+    time.sleep(0.5)
+
+    cny = fetch_yf_price("CNYKRW=X")
+
+    print(f"  USD/KRW: {usd}")
+    print(f"  JPY100/KRW: {jpy100} (원본 {jpy_raw})")
+    print(f"  CNY/KRW: {cny}")
+
+    if not usd:
+        print("  ❌ USD/KRW 조회 실패")
         return None
 
+    return {
+        "USD_KRW": usd,
+        "JPY100_KRW": jpy100 or 0,
+        "CNY_KRW": cny or 0,
+    }
 
-def get_usd_krw_rate():
+
+def fetch_gold_price_krw(usd_krw):
+    """금시세: yfinance GC=F (금 선물) × 환율."""
+    print("📊 금시세 수집...")
+
+    # 1순위: yfinance GC=F
+    gold_usd = fetch_yf_price("GC=F")
+    if gold_usd and gold_usd > 500:
+        g = round(gold_usd * usd_krw / 31.1035, 0)
+        print(f"  금(yfinance): ${gold_usd}/oz → {g:,.0f}원/g")
+        return g
+
+    # 2순위: metals.live (fallback)
     try:
-        r = requests.get("https://api.exchangerate-api.com/v4/latest/USD", timeout=10)
-        r.raise_for_status()
-        return r.json()["rates"]["KRW"]
-    except:
-        return None
-
-
-def fetch_gold_price_krw():
-    usd_krw = get_usd_krw_rate()
-    if not usd_krw:
-        print("  금시세: USD/KRW 환율 조회 실패")
-        return None
-
-    # 1순위: metals.live (무료, 키 불필요)
-    try:
-        r = requests.get("https://api.metals.live/v1/spot/gold", timeout=10)
-        if r.status_code == 200:
-            data = r.json()
-            if isinstance(data, list) and len(data) > 0:
-                usd_oz = float(data[0].get("price", 0))
-                if usd_oz > 500:
-                    g = round(usd_oz * usd_krw / 31.1035, 0)
-                    print(f"  금시세(metals.live): ${usd_oz}/oz -> {g:,.0f}원/g")
-                    return g
+        import urllib.request
+        req = urllib.request.Request("https://api.metals.live/v1/spot/gold")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+        if isinstance(data, list) and len(data) > 0:
+            usd_oz = float(data[0].get("price", 0))
+            if usd_oz > 500:
+                g = round(usd_oz * usd_krw / 31.1035, 0)
+                print(f"  금(metals.live): ${usd_oz}/oz → {g:,.0f}원/g")
+                return g
     except Exception as e:
         print(f"  metals.live 실패: {e}")
 
-    # 2순위: Yahoo Finance
-    try:
-        r = requests.get(
-            "https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=1d&range=1d",
-            headers={"User-Agent": "Mozilla/5.0"}, timeout=10
-        )
-        if r.status_code == 200:
-            p = r.json()["chart"]["result"][0]["meta"]["regularMarketPrice"]
-            if p > 500:
-                g = round(p * usd_krw / 31.1035, 0)
-                print(f"  금시세(Yahoo): ${p}/oz -> {g:,.0f}원/g")
-                return g
-    except Exception as e:
-        print(f"  Yahoo 실패: {e}")
-
-    print("  금시세: 모든 소스 실패")
+    print("  ❌ 금시세 수집 실패")
     return None
 
 
 def append_history(entry):
-    """히스토리 파일에 오늘 데이터 추가 (같은 날짜 덮어쓰기, 무제한 보관)"""
+    """히스토리 파일에 오늘 데이터 추가 (같은 날짜 덮어쓰기)."""
     history = []
     if os.path.exists(HISTORY_FILE):
         try:
@@ -97,8 +108,6 @@ def append_history(entry):
     history.append(entry)
     history.sort(key=lambda x: x["date"])
 
-    # 무제한 보관 — 삭제 로직 없음
-
     with open(HISTORY_FILE, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=1)
 
@@ -109,29 +118,38 @@ def main():
     now = datetime.now(KST)
     rates = fetch_exchange_rates()
     if rates is None:
-        print("환율 수집 실패")
+        print("❌ 환율 수집 실패")
         return
 
-    gold = fetch_gold_price_krw()
+    gold = fetch_gold_price_krw(rates["USD_KRW"])
 
     result = {
         "updated": now.strftime("%Y-%m-%d %H:%M KST"),
-        "source": "exchangerate-api.com",
-        "rates": {"USD_KRW": rates["USD_KRW"], "JPY100_KRW": rates["JPY100_KRW"], "CNY_KRW": rates["CNY_KRW"]}
+        "source": "yfinance",
+        "rates": {
+            "USD_KRW": rates["USD_KRW"],
+            "JPY100_KRW": rates["JPY100_KRW"],
+            "CNY_KRW": rates["CNY_KRW"],
+        }
     }
     if gold:
         result["rates"]["GOLD_KRW_G"] = gold
 
-    os.makedirs("data", exist_ok=True)
-    with open("data/rates.json", "w", encoding="utf-8") as f:
+    os.makedirs(os.path.dirname(RATES_FILE), exist_ok=True)
+    with open(RATES_FILE, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
 
-    hist_entry = {"date": now.strftime("%Y-%m-%d"), "USD_KRW": rates["USD_KRW"], "JPY100_KRW": rates["JPY100_KRW"], "CNY_KRW": rates["CNY_KRW"]}
+    hist_entry = {
+        "date": now.strftime("%Y-%m-%d"),
+        "USD_KRW": rates["USD_KRW"],
+        "JPY100_KRW": rates["JPY100_KRW"],
+        "CNY_KRW": rates["CNY_KRW"],
+    }
     if gold:
         hist_entry["GOLD_KRW_G"] = gold
     append_history(hist_entry)
 
-    print(f"✅ 저장 완료: {now.strftime('%Y-%m-%d %H:%M')}")
+    print(f"\n✅ 저장 완료: {now.strftime('%Y-%m-%d %H:%M')}")
     for k, v in result["rates"].items():
         print(f"  {k}: {v:,.2f}")
 
