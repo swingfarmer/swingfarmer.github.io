@@ -135,7 +135,8 @@ def build_message(data, news_items=None):
     if kr_items:
         lines.append('<b>🇰🇷 한국</b>')
         for ind in kr_items:
-            lines.append(f"  {ind['name']}: {fmt_num(ind['price'], 2)} {fmt_change(ind['change_pct'])}")
+            warn = ' ⚠️' if ind.get('change_pct') and abs(ind['change_pct']) >= 2 else ''
+            lines.append(f"  {ind['name']}: {fmt_num(ind['price'], 2)} {fmt_change(ind['change_pct'])}{warn}")
 
     # ── 미국 지수 ──
     us_tickers = ['^GSPC', '^IXIC', '^DJI']
@@ -158,7 +159,7 @@ def build_message(data, news_items=None):
             level = '(경계)'
         else:
             level = '(공포)'
-        lines.append(f'<b>😱 VIX</b>: {fmt_num(v, 2)} {fmt_change(vix["change_pct"])} {level}')
+        lines.append(f'<b>😱 VIX</b>: {fmt_num(v, 2)} {fmt_change(vix["change_pct"])} {level}{" ⚠️" if v >= 20 else ""}')
 
     # ── 환율 ──
     if rates.get('USD_KRW'):
@@ -200,7 +201,8 @@ def build_message(data, news_items=None):
     # ── 원유 ──
     if 'CL=F' in indicators:
         oil = indicators['CL=F']
-        lines.append(f"<b>🛢️ WTI</b>: ${fmt_num(oil['price'], 2)} {fmt_change(oil['change_pct'])}")
+        oil_warn = ' ⚠️' if oil.get('change_pct') and abs(oil['change_pct']) >= 3 else ''
+        lines.append(f"<b>🛢️ WTI</b>: ${fmt_num(oil['price'], 2)} {fmt_change(oil['change_pct'])}{oil_warn}")
 
     # ── 금시세 ──
     if rates.get('GOLD_KRW_G'):
@@ -210,7 +212,8 @@ def build_message(data, news_items=None):
         if chg:
             chg_pct, chg_amt = chg
             arrow = '▲' if chg_pct > 0 else '▼'
-            gold_line += f" {arrow}{abs(chg_pct):.2f}% ({chg_amt:+,.0f})"
+            gold_warn = ' ⚠️' if abs(chg_pct) >= 2 else ''
+            gold_line += f" {arrow}{abs(chg_pct):.2f}% ({chg_amt:+,.0f}){gold_warn}"
         lines.append(gold_line)
 
     # ── 뉴스 헤드라인 ──
