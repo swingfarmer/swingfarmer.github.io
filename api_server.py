@@ -1,32 +1,25 @@
 #!/usr/bin/env python3
 """
 스윙파머 API 서버 (Flask + Oracle Autonomous DB)
-- /api/health
-- /api/realestate/*   (실거래가)
-- /api/categories/*   (게시판 카테고리)
-- /api/posts/*        (게시판)
-- /api/comments/*     (댓글)
-
-VM 배포: ~/api_server.py → sudo systemctl restart swingfarmer-api
+비밀번호 인증 없음 — 보안은 클라이언트 Firebase Auth 게이트에 위임
+보류A(보안1단계)에서 서버 토큰 검증 추가 예정
 """
-
-import os, hashlib
+import os
 from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import oracledb
 
 def load_env():
-    env_file = os.path.expanduser('~/.env_secrets')
-    if os.path.exists(env_file):
-        with open(env_file) as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith('#'): continue
-                if line.startswith('export '): line = line[7:]
-                if '=' in line:
-                    k, v = line.split('=', 1)
-                    os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+    f = os.path.expanduser('~/.env_secrets')
+    if os.path.exists(f):
+        for line in open(f):
+            line = line.strip()
+            if not line or line.startswith('#'): continue
+            if line.startswith('export '): line = line[7:]
+            if '=' in line:
+                k, v = line.split('=', 1)
+                os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 load_env()
 
 app = Flask(__name__)
@@ -55,11 +48,6 @@ def dt_str(val):
     if isinstance(val, datetime): return val.strftime('%Y-%m-%d %H:%M:%S')
     return str(val)
 
-def hash_pw(pw):
-    return hashlib.sha256((pw + '_sf_salt_2026').encode()).hexdigest()
-
-ADMIN_PW_HASH = '7046371e5d7b0d17221938e25d12b146ddc83a20546fb86eab16cb1d5c3a4014'
-
 # ── health ──
 @app.route('/api/health')
 def health():
@@ -71,9 +59,7 @@ def health():
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
-# ══════════════════════════════════
-#  /api/realestate/*
-# ══════════════════════════════════
+# ══ realestate ══
 @app.route('/api/realestate/regions')
 def re_regions():
     prop = request.args.get('prop_type', 'APT')
@@ -142,9 +128,7 @@ def re_stats():
     yearly = rows_to_list(cur, cur.fetchall()); cur.close(); conn.close()
     return jsonify({'total': total, 'by_type': by_type, 'yearly': yearly})
 
-# ══════════════════════════════════
-#  /api/categories/*
-# ══════════════════════════════════
+# ══ categories ══
 @app.route('/api/categories', methods=['GET'])
 def list_categories():
     conn = get_conn(); cur = conn.cursor()
@@ -156,9 +140,6 @@ def list_categories():
 def add_category():
     d = request.get_json()
     if not d: return jsonify({'error': 'JSON 필요'}), 400
-    pw = d.get('password', '')
-    if hash_pw(pw) != ADMIN_PW_HASH:
-        return jsonify({'error': '관리자 비밀번호가 틀렸습니다.'}), 403
     name = (d.get('name') or '').strip()
     if not name: return jsonify({'error': '카테고리명을 입력하세요.'}), 400
     if len(name) > 20: return jsonify({'error': '20자 이내로 입력하세요.'}), 400
@@ -169,24 +150,30 @@ def add_category():
     conn.commit(); cur.close(); conn.close()
     return jsonify({'ok': True}), 201
 
+@app.route('/api/categories/<int:cat_id>', methods=['PUT'])
+def update_category(cat_id):
+    d = request.get_json()
+    if not d: return jsonify({'error': 'JSON 필요'}), 400
+    name = (d.get('name') or '').strip()
+    if not name: return jsonify({'error': '카테고리명을 입력하세요.'}), 400
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("UPDATE categories SET name=:n WHERE id=:id", {'n': name, 'id': cat_id})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
 @app.route('/api/categories/<int:cat_id>', methods=['DELETE'])
 def delete_category(cat_id):
-    d = request.get_json() or {}
-    pw = d.get('password', '')
-    if hash_pw(pw) != ADMIN_PW_HASH:
-        return jsonify({'error': '관리자 비밀번호가 틀렸습니다.'}), 403
     conn = get_conn(); cur = conn.cursor()
-    cur.execute("SELECT COUNT(*) FROM posts WHERE category=:n", {'n': str(cat_id)})
+    cur.execute("SELECT COUNT(*) FROM posts WHERE category=:c", {'c': str(cat_id)})
     cnt = cur.fetchone()[0]
     if cnt > 0:
-        return jsonify({'error': f'이 카테고리에 글 {cnt}건이 있어 삭제할 수 없습니다. 글을 먼저 이동하세요.'}), 400
+        cur.close(); conn.close()
+        return jsonify({'error': f'글 {cnt}건이 있어 삭제 불가. 글을 먼저 이동하세요.'}), 400
     cur.execute("DELETE FROM categories WHERE id=:id", {'id': cat_id})
     conn.commit(); cur.close(); conn.close()
     return jsonify({'ok': True})
 
-# ══════════════════════════════════
-#  /api/posts/*
-# ══════════════════════════════════
+# ══ posts ══
 @app.route('/api/posts', methods=['GET'])
 def list_posts():
     page = int(request.args.get('page', 1))
@@ -194,8 +181,7 @@ def list_posts():
     category = request.args.get('category', '')
     search = request.args.get('q', '')
     where = ['1=1']; params = {}
-    if category:
-        where.append('category=:cat'); params['cat'] = category
+    if category: where.append('category=:cat'); params['cat'] = category
     if search:
         where.append("(UPPER(title) LIKE '%'||UPPER(:q)||'%' OR UPPER(content) LIKE '%'||UPPER(:q)||'%')")
         params['q'] = search
@@ -249,21 +235,13 @@ def create_post():
     content = (d.get('content') or '').strip()
     author = (d.get('author') or '').strip() or '익명'
     category = d.get('category', '')
-    pw = d.get('password', '')
     pinned = 1 if d.get('pinned') else 0
     if not title: return jsonify({'error': '제목을 입력하세요.'}), 400
     if not content: return jsonify({'error': '내용을 입력하세요.'}), 400
-    pw_hashed = hash_pw(pw) if pw else ''
-    if pw and len(pw) < 4: return jsonify({'error': '비밀번호를 4자 이상 입력하세요.'}), 400
-    # 고정은 관리자만
-    if pinned:
-        if pw_hashed != ADMIN_PW_HASH:
-            return jsonify({'error': '고정은 관리자만 가능합니다.'}), 403
     conn = get_conn(); cur = conn.cursor()
-    cur.execute("""INSERT INTO posts (category, title, author, content, pw_hash, pinned, views, created_at)
-        VALUES (:cat, :title, :author, :content, :pw, :pinned, 0, SYSTIMESTAMP)""",
-        {'cat': category, 'title': title, 'author': author, 'content': content,
-         'pw': pw_hashed, 'pinned': pinned})
+    cur.execute("""INSERT INTO posts (category, title, author, content, pinned, views, created_at)
+        VALUES (:cat, :title, :author, :content, :pinned, 0, SYSTIMESTAMP)""",
+        {'cat': category, 'title': title, 'author': author, 'content': content, 'pinned': pinned})
     conn.commit()
     cur.execute("SELECT MAX(id) FROM posts"); new_id = cur.fetchone()[0]
     cur.close(); conn.close()
@@ -273,13 +251,9 @@ def create_post():
 def update_post(post_id):
     d = request.get_json()
     if not d: return jsonify({'error': 'JSON 필요'}), 400
-    pw = d.get('password', ''); pw_hashed = hash_pw(pw) if pw else ''
     conn = get_conn(); cur = conn.cursor()
-    cur.execute("SELECT pw_hash FROM posts WHERE id=:id", {'id': post_id})
-    row = cur.fetchone()
-    if not row: cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
-    if pw_hashed != ADMIN_PW_HASH and pw_hashed != row[0]:
-        cur.close(); conn.close(); return jsonify({'error': '비밀번호가 틀렸습니다.'}), 403
+    cur.execute("SELECT id FROM posts WHERE id=:id", {'id': post_id})
+    if not cur.fetchone(): cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
     title = (d.get('title') or '').strip()
     content = (d.get('content') or '').strip()
     author = (d.get('author') or '').strip() or '익명'
@@ -294,22 +268,15 @@ def update_post(post_id):
 
 @app.route('/api/posts/<int:post_id>', methods=['DELETE'])
 def delete_post(post_id):
-    d = request.get_json() or {}
-    pw = d.get('password', ''); pw_hashed = hash_pw(pw) if pw else ''
     conn = get_conn(); cur = conn.cursor()
-    cur.execute("SELECT pw_hash FROM posts WHERE id=:id", {'id': post_id})
-    row = cur.fetchone()
-    if not row: cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
-    if pw_hashed != ADMIN_PW_HASH and pw_hashed != row[0]:
-        cur.close(); conn.close(); return jsonify({'error': '비밀번호가 틀렸습니다.'}), 403
+    cur.execute("SELECT id FROM posts WHERE id=:id", {'id': post_id})
+    if not cur.fetchone(): cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
     cur.execute("DELETE FROM comments WHERE post_id=:id", {'id': post_id})
     cur.execute("DELETE FROM posts WHERE id=:id", {'id': post_id})
     conn.commit(); cur.close(); conn.close()
     return jsonify({'ok': True})
 
-# ══════════════════════════════════
-#  /api/comments/*
-# ══════════════════════════════════
+# ══ comments ══
 @app.route('/api/posts/<int:post_id>/comments', methods=['POST'])
 def add_comment(post_id):
     d = request.get_json()
@@ -317,26 +284,16 @@ def add_comment(post_id):
     author = (d.get('author') or '').strip() or '익명'
     content = (d.get('content') or '').strip()
     if not content: return jsonify({'error': '댓글 내용을 입력하세요.'}), 400
-    is_admin = 0
-    if author in ['운영자', '관리자', 'admin']:
-        pw = d.get('password', '')
-        if hash_pw(pw) != ADMIN_PW_HASH:
-            return jsonify({'error': '관리자 비밀번호가 틀렸습니다.'}), 403
-        is_admin = 1
     conn = get_conn(); cur = conn.cursor()
     cur.execute("SELECT id FROM posts WHERE id=:id", {'id': post_id})
     if not cur.fetchone(): cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
-    cur.execute("INSERT INTO comments (post_id,author,content,is_admin,created_at) VALUES (:pid,:a,:c,:adm,SYSTIMESTAMP)",
-        {'pid': post_id, 'a': author, 'c': content, 'adm': is_admin})
+    cur.execute("INSERT INTO comments (post_id,author,content,is_admin,created_at) VALUES (:pid,:a,:c,0,SYSTIMESTAMP)",
+        {'pid': post_id, 'a': author, 'c': content})
     conn.commit(); cur.close(); conn.close()
     return jsonify({'ok': True}), 201
 
 @app.route('/api/comments/<int:comment_id>', methods=['DELETE'])
 def delete_comment(comment_id):
-    d = request.get_json() or {}
-    pw = d.get('password', '')
-    if hash_pw(pw) != ADMIN_PW_HASH:
-        return jsonify({'error': '관리자 비밀번호가 틀렸습니다.'}), 403
     conn = get_conn(); cur = conn.cursor()
     cur.execute("DELETE FROM comments WHERE id=:id", {'id': comment_id})
     conn.commit(); cur.close(); conn.close()
