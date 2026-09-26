@@ -106,9 +106,9 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
     <select id="fRegion"><option value="">전체 지역</option></select>
     <select id="fDong"><option value="">전체 동</option></select>
     <div class="chk-group" id="fTypeGroup">
-      <label class="chk-label on-trade" onclick="this.classList.toggle('off');this.classList.toggle('on-trade');PAGE=0;loadRecent()"><input type="checkbox" value="S" checked>매매</label>
-      <label class="chk-label on-jeonse" onclick="this.classList.toggle('off');this.classList.toggle('on-jeonse');PAGE=0;loadRecent()"><input type="checkbox" value="J" checked>전세</label>
-      <label class="chk-label on-wolse" onclick="this.classList.toggle('off');this.classList.toggle('on-wolse');PAGE=0;loadRecent()"><input type="checkbox" value="W" checked>월세</label>
+      <label class="chk-label on-trade" id="lblS">매매</label>
+      <label class="chk-label on-jeonse" id="lblJ">전세</label>
+      <label class="chk-label on-wolse" id="lblW">월세</label>
     </div>
     <select id="fArea"><option value="">전체 면적</option><option value="0-40">40㎡이하</option><option value="40-60">40~60㎡</option><option value="60-85">60~85㎡</option><option value="85-135">85~135㎡</option><option value="135-">135㎡초과</option></select>
     <select id="fYearFrom"></select>
@@ -192,7 +192,9 @@ function loadSummary(){
 function loadRecent(){
   var region=document.getElementById('fRegion').value;
   var dong=document.getElementById('fDong').value;
-  var types=Array.from(document.querySelectorAll('#fTypeGroup label:not(.off)')).map(function(l){return l.querySelector('input').value});
+  var typeMap={'lblS':'S','lblJ':'J','lblW':'W'};
+  var types=[];
+  ['lblS','lblJ','lblW'].forEach(function(id){var el=document.getElementById(id);if(!el.classList.contains('off'))types.push(typeMap[id]);});
   var name=document.getElementById('fSearch').value.trim();
   var yf=document.getElementById('fYearFrom').value;
   var yt=document.getElementById('fYearTo').value;
@@ -300,6 +302,11 @@ document.querySelectorAll('.tab').forEach(function(tab){
 document.getElementById('fRegion').addEventListener('change',function(){loadDongs();PAGE=0;loadRecent()});
 document.getElementById('fDong').addEventListener('change',function(){PAGE=0;loadRecent()});
 document.getElementById('fArea').addEventListener('change',function(){PAGE=0;loadRecent()});
+['lblS','lblJ','lblW'].forEach(function(id){
+  var el=document.getElementById(id);
+  var onCls=id==='lblS'?'on-trade':id==='lblJ'?'on-jeonse':'on-wolse';
+  el.addEventListener('click',function(){el.classList.toggle('off');el.classList.toggle(onCls);PAGE=0;loadRecent()});
+});
 document.getElementById('fSearch').addEventListener('input',function(){clearTimeout(this._t);var self=this;this._t=setTimeout(function(){PAGE=0;loadRecent()},400)});
 document.getElementById('fYearFrom').addEventListener('change',function(){PAGE=0;loadRecent()});
 document.getElementById('fYearTo').addEventListener('change',function(){PAGE=0;loadRecent()});
