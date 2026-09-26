@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>커뮤니티 | 스윙파머</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:900px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a}
+.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}
+.back-link:hover{text-decoration:underline}
+h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:6px;font-size:22px}
+.desc{color:#555;font-size:13.5px;margin-bottom:18px}
+
+/* 메인 탭 (게시판 / 자료실) */
+.main-tabs{display:flex;gap:4px;background:#1F4E78;padding:4px;border-radius:10px;margin-bottom:16px}
+.main-tab{flex:1;padding:12px;border:none;background:transparent;cursor:pointer;font-size:15px;font-weight:700;color:rgba(255,255,255,.6);border-radius:8px;transition:all .15s;font-family:inherit}
+.main-tab:hover{color:white;background:rgba(255,255,255,.1)}
+.main-tab.active{background:white;color:#1F4E78}
+.main-content{display:none}.main-content.active{display:block}
+
+/* 서브 필터 탭 */
+.filter-tabs{display:flex;gap:4px;background:#e5e7eb;padding:4px;border-radius:8px}
+.ftab{padding:8px 16px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:700;color:#666;border-radius:6px;font-family:inherit}
+.ftab.active{background:white;color:#1F4E78;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+/* 버튼 */
+.btn{padding:9px 16px;border:none;border-radius:7px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .1s}
+.btn-primary{background:#1F4E78;color:white}.btn-primary:hover{background:#2d6ba3}
+.btn-gray{background:#9ca3af;color:white}.btn-gray:hover{background:#6b7280}
+.btn-red{background:#dc2626;color:white}.btn-red:hover{background:#b91c1c}
+.btn-sm{padding:5px 11px;font-size:12px}
+
+/* 툴바 */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.toolbar .search-box{flex:1;min-width:160px;display:flex;gap:6px}
+.toolbar .search-box input{flex:1;padding:8px 10px;font-size:13px;border:1px solid #ccc;border-radius:6px;font-family:inherit}
+.toolbar .search-box input:focus{outline:2px solid #1F4E78}
+
+/* 글 목록 */
+.post-list{display:flex;flex-direction:column;gap:10px}
+.post{background:white;border-radius:10px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.08);border-left:4px solid #e5e7eb;cursor:pointer;transition:all .15s}
+.post:hover{box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.post.notice{border-left-color:#dc2626;background:#fffbfb}
+.post.pinned{border-left-color:#d97706;background:#fffbeb}
+.post-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.badge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px}
+.badge.notice{background:#fee2e2;color:#b91c1c}
+.badge.question{background:#dbeafe;color:#1e40af}
+.badge.pin{background:#fed7aa;color:#9a3412}
+.post-title{font-size:15px;font-weight:700;color:#1a1a1a;flex:1}
+.post-meta{font-size:12px;color:#999;display:flex;gap:10px;flex-wrap:wrap}
+
+/* 글 상세 (펼침) */
+.post-detail{display:none;margin-top:10px;padding-top:10px;border-top:1px solid #f0f0f0}
+.post.open .post-detail{display:block}
+.post-content{font-size:14px;line-height:1.7;color:#333;white-space:pre-wrap;word-break:break-word}
+.post-actions{margin-top:12px;display:flex;gap:6px;flex-wrap:wrap}
+
+/* 댓글 */
+.comments-section{margin-top:14px;padding-top:12px;border-top:1px dashed #ddd}
+.comment-empty{font-size:12px;color:#aaa;padding:4px 0 10px}
+.comment-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.comment{background:#f8fafc;border-radius:8px;padding:9px 12px;font-size:13px}
+.comment.admin{background:#eff6ff;border-left:3px solid #2563eb}
+.comment-head{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+.comment-name{font-weight:700;color:#1F4E78;font-size:12px}
+.comment.admin .comment-name{color:#1e40af}
+.comment-date{font-size:11px;color:#aaa;margin-right:auto}
+.comment-del{background:none;border:none;color:#ccc;cursor:pointer;font-size:12px;padding:0 4px}
+.comment-del:hover{color:#dc2626}
+.comment-body{color:#333;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.comment-form{display:flex;gap:6px;flex-wrap:wrap}
+.comment-form input{padding:7px 9px;font-size:13px;border:1px solid #ccc;border-radius:6px;background:#FFF2CC;font-family:inherit}
+.comment-form input:focus{outline:2px solid #1F4E78;background:#FFFACD}
+.comment-form .cm-author{width:90px}
+.comment-form .cm-text{flex:1;min-width:140px}
+
+/* 자료실 */
+.archive-notice{background:#dbeafe;border-left:4px solid #2563eb;padding:16px 20px;border-radius:8px;font-size:14px;color:#1e3a8a;line-height:1.7;text-align:center}
+.archive-notice b{font-size:15px}
+.file-list{display:flex;flex-direction:column;gap:8px}
+.file-item{background:white;border-radius:10px;padding:14px 18px;box-shadow:0 1px 3px rgba(0,0,0,.08);display:flex;align-items:center;gap:14px}
+.file-icon{font-size:28px;flex:none}
+.file-info{flex:1}
+.file-name{font-size:14px;font-weight:700;color:#1a1a1a}
+.file-desc{font-size:12px;color:#888;margin-top:2px}
+.file-size{font-size:11px;color:#aaa}
+
+/* 페이저 */
+.pager{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:14px}
+.pager button{padding:6px 14px;border:1px solid #ccc;border-radius:6px;background:white;cursor:pointer;font-size:13px;font-family:inherit}
+.pager button:disabled{opacity:.4;cursor:default}
+.pager span{font-size:13px;color:#666}
+
+/* 모달 */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:20px}
+.modal-bg.active{display:flex}
+.modal{background:white;border-radius:12px;max-width:540px;width:100%;max-height:90vh;overflow-y:auto;padding:24px}
+.modal h2{color:#1F4E78;font-size:18px;margin-bottom:16px}
+.field{display:flex;flex-direction:column;margin-bottom:12px}
+.field label{font-size:13px;font-weight:600;margin-bottom:5px;color:#444}
+.field input,.field select,.field textarea{padding:10px;font-size:14px;border:1px solid #ccc;border-radius:6px;font-family:inherit}
+.field input,.field textarea{background:#FFF2CC}
+.field textarea{min-height:140px;resize:vertical;line-height:1.6}
+.field input:focus,.field textarea:focus,.field select:focus{outline:2px solid #1F4E78;background:#FFFACD}
+.field .hint{font-size:11px;color:#888;margin-top:3px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+
+.empty{text-align:center;color:#999;padding:50px 20px;background:white;border-radius:10px}
+.loading{text-align:center;color:#888;padding:40px}
+
+@media(max-width:600px){
+  .toolbar{flex-direction:column;align-items:stretch}
+  .toolbar .search-box{width:100%}
+  .comment-form{flex-direction:column}
+  .comment-form .cm-author{width:100%}
+}
+</style>
+</head>
+<body>
+
+<a href="/" class="back-link">← 메인으로</a>
+<h1>💬 커뮤니티</h1>
+<p class="desc">게시판과 자료실을 이용할 수 있습니다.</p>
+
+<div class="main-tabs">
+  <button class="main-tab active" data-tab="board">📋 게시판</button>
+  <button class="main-tab" data-tab="archive">📁 자료실</button>
+</div>
+
+<!-- ========== 게시판 탭 ========== -->
+<div class="main-content active" id="boardTab">
+
+  <div class="toolbar">
+    <div class="filter-tabs">
+      <button class="ftab active" data-filter="all">전체</button>
+      <button class="ftab" data-filter="notice">📢 공지</button>
+      <button class="ftab" data-filter="question">💬 문의</button>
+    </div>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="제목·내용 검색">
+      <button class="btn btn-primary btn-sm" id="btnSearch">🔍</button>
+    </div>
+    <button class="btn btn-primary" id="btnWrite">✏️ 글쓰기</button>
+  </div>
+
+  <div id="postList" class="post-list">
+    <div class="loading">불러오는 중...</div>
+  </div>
+  <div id="pager" class="pager" style="display:none"></div>
+</div>
+
+<!-- ========== 자료실 탭 ========== -->
+<div class="main-content" id="archiveTab">
+  <div class="archive-notice">
+    <b>🔧 자료실 준비 중</b><br><br>
+    파일 업로드·다운로드 기능이 곧 추가됩니다.<br>
+    정리된 투자 자료, 엑셀 템플릿 등을 공유할 예정입니다.
+  </div>
+</div>
+
+<!-- 글쓰기/수정 모달 -->
+<div class="modal-bg" id="writeModal">
+  <div class="modal">
+    <h2 id="modalTitle">✏️ 글쓰기</h2>
+    <div class="field">
+      <label>종류</label>
+      <select id="fType">
+        <option value="question" selected>💬 문의</option>
+        <option value="notice">📢 공지 (운영자)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>제목</label>
+      <input type="text" id="fTitle" placeholder="제목을 입력하세요" maxlength="100">
+    </div>
+    <div class="field">
+      <label>작성자</label>
+      <input type="text" id="fAuthor" placeholder="이름 또는 닉네임" maxlength="20">
+    </div>
+    <div class="field">
+      <label>내용</label>
+      <textarea id="fContent" placeholder="내용을 입력하세요"></textarea>
+    </div>
+    <div class="field" id="pwField">
+      <label id="pwLabel">비밀번호 <span style="color:#888;font-weight:400">(본인 글 수정·삭제용)</span></label>
+      <div style="position:relative">
+        <input type="password" id="fPw" placeholder="4자 이상" maxlength="30" style="width:100%;padding-right:44px">
+        <button type="button" id="fPwToggle" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:4px">👁</button>
+      </div>
+      <span class="hint" id="pwHint">문의 글은 이 비밀번호로 나중에 수정·삭제할 수 있어요.</span>
+    </div>
+    <div class="field" id="pinField" style="display:none">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="fPinned" style="width:16px;height:16px"> 📌 상단 고정 (공지)
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-gray" id="btnCancel">취소</button>
+      <button class="btn btn-primary" id="btnSubmit">등록</button>
+    </div>
+  </div>
+</div>
+
+<!-- 비밀번호 확인 모달 -->
+<div class="modal-bg" id="pwModal">
+  <div class="modal" style="max-width:380px">
+    <h2 id="pwModalTitle">🔒 비밀번호 확인</h2>
+    <div class="field">
+      <div style="position:relative">
+        <input type="password" id="pwInput" placeholder="비밀번호 입력" maxlength="30" style="width:100%;padding-right:44px">
+        <button type="button" id="pwToggle" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:4px">👁</button>
+      </div>
+      <span class="hint" id="pwModalHint"></span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-gray" id="btnPwCancel">취소</button>
+      <button class="btn btn-primary" id="btnPwConfirm">확인</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+var API = 'https://swingfarmer.duckdns.org/api';
+var currentFilter = 'all';
+var currentPage = 1;
+var totalPages = 1;
+var searchQuery = '';
+var editingId = null;
+var openPostId = null;
+
+var $ = function(id){ return document.getElementById(id); };
+var esc = function(s){ return (s||'').replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+
+// SHA-256 해시 (서버와 동일한 salt)
+function hashPw(pw){
+  var enc = new TextEncoder().encode(pw + '_sf_salt_2026');
+  return crypto.subtle.digest('SHA-256', enc).then(function(buf){
+    return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+  });
+}
+
+// 비밀번호 입력 모달
+function askPassword(title, hint){
+  return new Promise(function(resolve){
+    $('pwModalTitle').textContent = title || '🔒 비밀번호 확인';
+    $('pwModalHint').textContent = hint || '';
+    $('pwInput').value = '';
+    $('pwInput').type = 'password';
+    $('pwModal').classList.add('active');
+    setTimeout(function(){ $('pwInput').focus(); }, 50);
+    function ok(){ cleanup(); resolve($('pwInput').value); }
+    function cancel(){ cleanup(); resolve(null); }
+    function onKey(e){ if(e.key==='Enter') ok(); if(e.key==='Escape') cancel(); }
+    function cleanup(){
+      $('pwModal').classList.remove('active');
+      $('btnPwConfirm').removeEventListener('click', ok);
+      $('btnPwCancel').removeEventListener('click', cancel);
+      $('pwInput').removeEventListener('keydown', onKey);
+    }
+    $('btnPwConfirm').addEventListener('click', ok);
+    $('btnPwCancel').addEventListener('click', cancel);
+    $('pwInput').addEventListener('keydown', onKey);
+  });
+}
+
+// 표시 토글
+$('pwToggle').addEventListener('click', function(){ var i=$('pwInput'); i.type = i.type==='password'?'text':'password'; });
+$('fPwToggle').addEventListener('click', function(){ var i=$('fPw'); i.type = i.type==='password'?'text':'password'; });
+
+function fmtDate(s){
+  if(!s) return '';
+  var d = new Date(s.replace(' ','T'));
+  if(isNaN(d)) return s;
+  var p = function(n){ return ('0'+n).slice(-2); };
+  return d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+}
+
+// ── 메인 탭 전환 ──
+document.querySelectorAll('.main-tab').forEach(function(t){
+  t.addEventListener('click', function(){
+    document.querySelectorAll('.main-tab').forEach(function(x){ x.classList.remove('active'); });
+    document.querySelectorAll('.main-content').forEach(function(x){ x.classList.remove('active'); });
+    t.classList.add('active');
+    $(t.dataset.tab+'Tab').classList.add('active');
+  });
+});
+
+// ── 필터 탭 ──
+document.querySelectorAll('.ftab').forEach(function(t){
+  t.addEventListener('click', function(){
+    document.querySelectorAll('.ftab').forEach(function(x){ x.classList.remove('active'); });
+    t.classList.add('active');
+    currentFilter = t.dataset.filter;
+    currentPage = 1;
+    loadPosts();
+  });
+});
+
+// ── 검색 ──
+$('btnSearch').addEventListener('click', function(){
+  searchQuery = $('searchInput').value.trim();
+  currentPage = 1;
+  loadPosts();
+});
+$('searchInput').addEventListener('keydown', function(e){
+  if(e.key==='Enter'){ $('btnSearch').click(); }
+});
+
+// ── 목록 로드 ──
+function loadPosts(){
+  var q = '?page='+currentPage+'&per_page=20';
+  if(currentFilter !== 'all') q += '&type='+currentFilter;
+  if(searchQuery) q += '&q='+encodeURIComponent(searchQuery);
+
+  $('postList').innerHTML = '<div class="loading">불러오는 중...</div>';
+  $('pager').style.display = 'none';
+
+  fetch(API+'/posts'+q)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      totalPages = d.pages || 1;
+      renderList(d.data || []);
+      renderPager(d.total);
+    })
+    .catch(function(e){
+      $('postList').innerHTML = '<div class="empty">불러오기 실패: '+esc(e.message)+'</div>';
+    });
+}
+
+function renderList(posts){
+  if(posts.length === 0){
+    $('postList').innerHTML = '<div class="empty">글이 없습니다.</div>';
+    return;
+  }
+  $('postList').innerHTML = posts.map(function(p){
+    var cls = (p.post_type==='notice'?'notice':'') + (p.pinned?' pinned':'');
+    return '<div class="post '+cls+'" data-id="'+p.id+'">' +
+      '<div class="post-head">' +
+        (p.pinned?'<span class="badge pin">📌 고정</span>':'') +
+        '<span class="badge '+(p.post_type==='notice'?'notice':'question')+'">'+(p.post_type==='notice'?'📢 공지':'💬 문의')+'</span>' +
+        '<span class="post-title">'+esc(p.title)+'</span>' +
+      '</div>' +
+      '<div class="post-meta">' +
+        '<span>👤 '+esc(p.author||'익명')+'</span>' +
+        '<span>🕒 '+fmtDate(p.created_at)+'</span>' +
+        '<span>👁 '+(p.views||0)+'</span>' +
+        '<span>💬 '+(p.comment_count||0)+'</span>' +
+      '</div>' +
+      '<div class="post-detail">' +
+        '<div class="post-content" id="content_'+p.id+'">불러오는 중...</div>' +
+        '<div class="post-actions">' +
+          '<button class="btn btn-gray btn-sm" data-action="edit" data-id="'+p.id+'">수정</button>' +
+          '<button class="btn btn-red btn-sm" data-action="delete" data-id="'+p.id+'">삭제</button>' +
+        '</div>' +
+        '<div class="comments-section" id="comments_'+p.id+'"></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderPager(total){
+  if(totalPages <= 1){ $('pager').style.display = 'none'; return; }
+  $('pager').style.display = 'flex';
+  $('pager').innerHTML =
+    '<button '+(currentPage<=1?'disabled':'')+' data-page="'+(currentPage-1)+'">◀ 이전</button>' +
+    '<span>'+currentPage+' / '+totalPages+' ('+total+'건)</span>' +
+    '<button '+(currentPage>=totalPages?'disabled':'')+' data-page="'+(currentPage+1)+'">다음 ▶</button>';
+}
+$('pager').addEventListener('click', function(e){
+  var btn = e.target.closest('button[data-page]');
+  if(!btn || btn.disabled) return;
+  currentPage = parseInt(btn.dataset.page);
+  loadPosts();
+  window.scrollTo({top:0, behavior:'smooth'});
+});
+
+// ── 글 클릭 → 펼침 + 상세 로드 ──
+$('postList').addEventListener('click', function(e){
+  // 버튼 클릭 처리
+  var actionBtn = e.target.closest('[data-action]');
+  if(actionBtn){
+    e.stopPropagation();
+    var action = actionBtn.dataset.action;
+    var id = parseInt(actionBtn.dataset.id);
+    if(action === 'edit') editPost(id);
+    else if(action === 'delete') deletePost(id);
+    return;
+  }
+  // 댓글 삭제
+  var cmDel = e.target.closest('[data-cm-delete]');
+  if(cmDel){
+    e.stopPropagation();
+    deleteComment(parseInt(cmDel.dataset.cmDelete), parseInt(cmDel.dataset.postId));
+    return;
+  }
+  // 댓글 등록
+  var cmAdd = e.target.closest('[data-cm-add]');
+  if(cmAdd){
+    e.stopPropagation();
+    addComment(parseInt(cmAdd.dataset.cmAdd));
+    return;
+  }
+
+  // 글 펼침/접기
+  var post = e.target.closest('.post');
+  if(!post) return;
+  // 입력칸 클릭 무시
+  if(e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+
+  var wasOpen = post.classList.contains('open');
+  // 다른 글 닫기
+  document.querySelectorAll('.post.open').forEach(function(p){ p.classList.remove('open'); });
+
+  if(!wasOpen){
+    post.classList.add('open');
+    var id = parseInt(post.dataset.id);
+    if(openPostId !== id){
+      openPostId = id;
+      loadPostDetail(id);
+    }
+  } else {
+    openPostId = null;
+  }
+});
+
+function loadPostDetail(id){
+  fetch(API+'/posts/'+id)
+    .then(function(r){ return r.json(); })
+    .then(function(p){
+      var el = $('content_'+id);
+      if(el) el.innerHTML = esc(p.content).replace(/\n/g,'<br>');
+      renderComments(id, p.comments || []);
+    })
+    .catch(function(e){
+      var el = $('content_'+id);
+      if(el) el.textContent = '불러오기 실패: '+e.message;
+    });
+}
+
+function renderComments(postId, comments){
+  var el = $('comments_'+postId);
+  if(!el) return;
+
+  var html = '';
+  if(comments.length === 0){
+    html += '<div class="comment-empty">아직 댓글이 없어요.</div>';
+  } else {
+    html += '<div class="comment-list">';
+    comments.forEach(function(c){
+      var isAdmin = c.is_admin;
+      html += '<div class="comment '+(isAdmin?'admin':'')+'">' +
+        '<div class="comment-head">' +
+          '<span class="comment-name">'+(isAdmin?'🛡️ ':'')+esc(c.author||'익명')+'</span>' +
+          '<span class="comment-date">'+fmtDate(c.created_at)+'</span>' +
+          '<button class="comment-del" data-cm-delete="'+c.id+'" data-post-id="'+postId+'" title="삭제">✕</button>' +
+        '</div>' +
+        '<div class="comment-body">'+esc(c.content)+'</div>' +
+      '</div>';
+    });
+    html += '</div>';
+  }
+  html += '<div class="comment-form">' +
+    '<input type="text" class="cm-author" id="ca_'+postId+'" placeholder="이름" maxlength="20">' +
+    '<input type="text" class="cm-text" id="ct_'+postId+'" placeholder="댓글 달기..." maxlength="500">' +
+    '<button class="btn btn-primary btn-sm" data-cm-add="'+postId+'">등록</button>' +
+  '</div>';
+  el.innerHTML = html;
+}
+
+// ── 댓글 등록 ──
+function addComment(postId){
+  var author = ($('ca_'+postId).value || '').trim() || '익명';
+  var text = ($('ct_'+postId).value || '').trim();
+  if(!text){ alert('댓글 내용을 입력하세요.'); return; }
+
+  var adminNames = ['운영자','관리자','admin'];
+  var body = { author: author, content: text };
+
+  function doPost(pw){
+    if(pw !== undefined) body.password = pw;
+    fetch(API+'/posts/'+postId+'/comments', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    })
+    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+    .then(function(res){
+      if(!res.ok){ alert(res.data.error || '등록 실패'); return; }
+      openPostId = null; // 강제 리로드
+      loadPostDetail(postId);
+      $('ct_'+postId).value = '';
+    })
+    .catch(function(e){ alert('오류: '+e.message); });
+  }
+
+  if(adminNames.indexOf(author) >= 0){
+    askPassword('🛡️ 관리자 댓글', '관리자 이름으로 댓글을 달려면 비밀번호를 입력하세요.').then(function(pw){
+      if(pw === null) return;
+      doPost(pw);
+    });
+  } else {
+    doPost();
+  }
+}
+
+// ── 댓글 삭제 ──
+function deleteComment(commentId, postId){
+  askPassword('🔒 댓글 삭제', '관리자 비밀번호를 입력하세요.').then(function(pw){
+    if(pw === null) return;
+    fetch(API+'/comments/'+commentId, {
+      method:'DELETE',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ password: pw })
+    })
+    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+    .then(function(res){
+      if(!res.ok){ alert(res.data.error || '삭제 실패'); return; }
+      openPostId = null;
+      loadPostDetail(postId);
+    })
+    .catch(function(e){ alert('오류: '+e.message); });
+  });
+}
+
+// ── 글쓰기 모달 ──
+function openWrite(){
+  editingId = null;
+  $('modalTitle').textContent = '✏️ 글쓰기';
+  $('fType').value = 'question';
+  $('fTitle').value = ''; $('fAuthor').value = ''; $('fContent').value = ''; $('fPw').value = '';
+  $('fPinned').checked = false;
+  $('pwField').style.display = 'flex';
+  updateTypeUI();
+  $('writeModal').classList.add('active');
+}
+$('btnWrite').addEventListener('click', openWrite);
+$('btnCancel').addEventListener('click', function(){ $('writeModal').classList.remove('active'); });
+$('writeModal').addEventListener('click', function(e){ if(e.target === $('writeModal')) $('writeModal').classList.remove('active'); });
+
+function updateTypeUI(){
+  var isNotice = $('fType').value === 'notice';
+  $('pinField').style.display = isNotice ? 'block' : 'none';
+  if(isNotice){
+    $('pwLabel').innerHTML = '관리자 비밀번호';
+    $('pwHint').textContent = '공지 작성에는 관리자 비밀번호가 필요합니다.';
+    if(!editingId && (!$('fAuthor').value.trim() || $('fAuthor').value.trim()==='익명'))
+      $('fAuthor').value = '운영자';
+  } else {
+    $('pwLabel').innerHTML = '비밀번호 <span style="color:#888;font-weight:400">(본인 글 수정·삭제용)</span>';
+    $('pwHint').textContent = '문의 글은 이 비밀번호로 나중에 수정·삭제할 수 있어요.';
+    if(!editingId && $('fAuthor').value.trim()==='운영자')
+      $('fAuthor').value = '';
+  }
+}
+$('fType').addEventListener('change', updateTypeUI);
+
+// ── 등록/수정 ──
+$('btnSubmit').addEventListener('click', function(){
+  var type = $('fType').value;
+  var title = $('fTitle').value.trim();
+  var author = $('fAuthor').value.trim() || '익명';
+  var content = $('fContent').value.trim();
+  var pw = $('fPw').value;
+  var pinned = $('fPinned').checked;
+
+  if(!title){ alert('제목을 입력하세요.'); return; }
+  if(!content){ alert('내용을 입력하세요.'); return; }
+  if(!editingId && type !== 'notice' && pw.length < 4){ alert('비밀번호를 4자 이상 입력하세요.'); return; }
+  if(!editingId && type === 'notice' && !pw){ alert('관리자 비밀번호를 입력하세요.'); return; }
+
+  $('btnSubmit').disabled = true;
+  $('btnSubmit').textContent = '저장 중...';
+
+  var body = { type: type, title: title, author: author, content: content, password: pw, pinned: pinned };
+  var url = API + '/posts' + (editingId ? '/'+editingId : '');
+  var method = editingId ? 'PUT' : 'POST';
+
+  fetch(url, {
+    method: method,
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+  .then(function(res){
+    if(!res.ok){ alert(res.data.error || '저장 실패'); return; }
+    $('writeModal').classList.remove('active');
+    openPostId = null;
+    loadPosts();
+  })
+  .catch(function(e){ alert('오류: '+e.message); })
+  .finally(function(){
+    $('btnSubmit').disabled = false;
+    $('btnSubmit').textContent = '등록';
+  });
+});
+
+// ── 수정 ──
+function editPost(id){
+  askPassword('🔒 수정 비밀번호', '본인 비밀번호 또는 관리자 비밀번호를 입력하세요.').then(function(pw){
+    if(pw === null) return;
+
+    // 상세 로드 후 모달 채우기
+    fetch(API+'/posts/'+id)
+      .then(function(r){ return r.json(); })
+      .then(function(p){
+        if(p.error){ alert(p.error); return; }
+        editingId = id;
+        $('modalTitle').textContent = '✏️ 글 수정';
+        $('fType').value = p.post_type || 'question';
+        $('fTitle').value = p.title || '';
+        $('fAuthor').value = p.author || '';
+        $('fContent').value = p.content || '';
+        $('fPw').value = pw; // 인증용 비번 그대로
+        $('fPinned').checked = !!p.pinned;
+        $('pwField').style.display = 'flex';
+        updateTypeUI();
+        $('writeModal').classList.add('active');
+      })
+      .catch(function(e){ alert('오류: '+e.message); });
+  });
+}
+
+// ── 삭제 ──
+function deletePost(id){
+  askPassword('🔒 삭제 비밀번호', '본인 비밀번호 또는 관리자 비밀번호를 입력하세요.').then(function(pw){
+    if(pw === null) return;
+    if(!confirm('정말 삭제할까요? (되돌릴 수 없습니다)')) return;
+
+    fetch(API+'/posts/'+id, {
+      method:'DELETE',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ password: pw })
+    })
+    .then(function(r){ return r.json().then(function(d){ return {ok:r.ok, data:d}; }); })
+    .then(function(res){
+      if(!res.ok){ alert(res.data.error || '삭제 실패'); return; }
+      openPostId = null;
+      loadPosts();
+    })
+    .catch(function(e){ alert('오류: '+e.message); });
+  });
+}
+
+// ── 초기 로드 ──
+loadPosts();
+
+})();
+</script>
+
+<script src="/common.js?v=4"></script>
+</body>
+</html>
