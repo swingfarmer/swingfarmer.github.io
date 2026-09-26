@@ -159,7 +159,7 @@ def re_search():
     total = cur.fetchone()[0]
     cur.execute(f"""SELECT * FROM (SELECT a.*, ROWNUM rn FROM (
         SELECT region, name, dong, area, floor, deal_type, price, deposit, monthly_rent,
-               deal_year AS year, deal_month AS month, deal_day AS day
+               deal_year, deal_month, deal_day
         FROM real_estate WHERE {w}
         ORDER BY deal_year DESC, deal_month DESC, deal_day DESC
     ) a WHERE ROWNUM <= :maxrow) WHERE rn > :minrow""",
