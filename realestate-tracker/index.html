@@ -76,7 +76,9 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 .chk-label.on-wolse{background:#d1fae5;color:#065f46}
 .chk-label.off{background:#e5e5e5;color:#aaa;text-decoration:line-through}
 .loading{text-align:center;padding:60px;color:#888}
-@media(max-width:600px){.summary-cards{grid-template-columns:repeat(2,1fr)}.region-grid{grid-template-columns:1fr}.filter-row input{min-width:100%}}
+#fRegion{min-height:34px;max-height:34px;overflow:hidden}
+#fRegion:focus{max-height:200px;overflow-y:auto;position:absolute;z-index:10;background:white;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+@media(max-width:600px){.summary-cards{grid-template-columns:repeat(2,1fr)}.region-grid{grid-template-columns:1fr}.filter-row input{min-width:60px}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -103,18 +105,27 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 <!-- 최근 거래 -->
 <div class="tab-content active" id="tab-recent">
   <div class="filter-row">
-    <select id="fRegion"><option value="">전체 지역</option></select>
+    <select id="fRegion" multiple size="1" style="min-width:120px"><option value="">전체 지역</option></select>
     <select id="fDong"><option value="">전체 동</option></select>
     <div class="chk-group" id="fTypeGroup">
       <label class="chk-label on-trade" id="lblS">매매</label>
       <label class="chk-label on-jeonse" id="lblJ">전세</label>
       <label class="chk-label on-wolse" id="lblW">월세</label>
     </div>
-    <select id="fArea"><option value="">전체 면적</option><option value="0-40">40㎡이하</option><option value="40-60">40~60㎡</option><option value="60-85">60~85㎡</option><option value="85-135">85~135㎡</option><option value="135-">135㎡초과</option></select>
     <select id="fYearFrom"></select>
     <span style="font-size:13px;color:#888">~</span>
     <select id="fYearTo"></select>
-    <input type="text" id="fSearch" placeholder="아파트명/건물명 검색...">
+    <input type="text" id="fSearch" placeholder="아파트명/건물명 검색..." style="min-width:140px">
+  </div>
+  <div class="filter-row" style="margin-top:-6px">
+    <span style="font-size:12px;color:#666;font-weight:600">면적(㎡)</span>
+    <input type="number" id="fAreaMin" placeholder="최소" style="width:70px;min-width:70px;flex:none" min="0" step="1">
+    <span style="font-size:13px;color:#888">~</span>
+    <input type="number" id="fAreaMax" placeholder="최대" style="width:70px;min-width:70px;flex:none" min="0" step="1">
+    <span style="font-size:12px;color:#666;font-weight:600;margin-left:8px">금액(만원)</span>
+    <input type="number" id="fPriceMin" placeholder="최소" style="width:90px;min-width:90px;flex:none" min="0" step="1000">
+    <span style="font-size:13px;color:#888">~</span>
+    <input type="number" id="fPriceMax" placeholder="최대" style="width:90px;min-width:90px;flex:none" min="0" step="1000">
   </div>
   <div class="cnt" id="recentCnt"></div>
   <div class="tbl-wrap"><table class="tbl"><thead><tr><th>지역</th><th>건물명</th><th>동</th><th>면적</th><th>층</th><th>금액</th><th>유형</th><th>거래일</th></tr></thead><tbody id="recentBody"><tr><td colspan="8" class="loading">로딩...</td></tr></tbody></table></div>
@@ -152,23 +163,30 @@ function typePrice(d){
 // ── 지역 목록 로드 ──
 function loadRegions(){
   fetch(API+'/regions?prop_type='+PROP).then(function(r){return r.json()}).then(function(data){
-    ['fRegion','yRegion'].forEach(function(id){
-      var sel=document.getElementById(id);if(!sel)return;
-      sel.innerHTML='<option value="">전체 지역</option>';
-      data.forEach(function(d){
-        var o=document.createElement('option');o.value=d.region;o.textContent=d.region+' ('+fmt(d.count)+')';sel.appendChild(o);
-      });
+    // fRegion: multi-select
+    var sel=document.getElementById('fRegion');
+    sel.innerHTML='<option value="">전체 지역</option>';
+    data.forEach(function(d){
+      var o=document.createElement('option');o.value=d.region;o.textContent=d.region+' ('+fmt(d.count)+')';sel.appendChild(o);
+    });
+    // yRegion: single select
+    var ysel=document.getElementById('yRegion');if(!ysel)return;
+    ysel.innerHTML='<option value="">전체 지역</option>';
+    data.forEach(function(d){
+      var o=document.createElement('option');o.value=d.region;o.textContent=d.region;ysel.appendChild(o);
     });
   });
 }
 
 // ── 동 목록 로드 ──
 function loadDongs(){
-  var region=document.getElementById('fRegion').value;
+  var fsel=document.getElementById('fRegion');
+  var regions=[];
+  for(var i=0;i<fsel.options.length;i++){if(fsel.options[i].selected&&fsel.options[i].value)regions.push(fsel.options[i].value);}
   var sel=document.getElementById('fDong');
   sel.innerHTML='<option value="">전체 동</option>';
-  if(!region)return;
-  fetch(API+'/dongs?region='+encodeURIComponent(region)).then(function(r){return r.json()}).then(function(data){
+  if(!regions.length)return;
+  fetch(API+'/dongs?region='+encodeURIComponent(regions.join(','))+'&prop_type='+PROP).then(function(r){return r.json()}).then(function(data){
     data.forEach(function(d){var o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});
   });
 }
@@ -190,15 +208,30 @@ function loadSummary(){
 
 // ── 최근 거래 ──
 function loadRecent(){
-  var region=document.getElementById('fRegion').value;
+  // 다중 지역
+  var sel=document.getElementById('fRegion');
+  var regions=[];
+  for(var i=0;i<sel.options.length;i++){if(sel.options[i].selected&&sel.options[i].value)regions.push(sel.options[i].value);}
+  var region=regions.join(',');
   var dong=document.getElementById('fDong').value;
   var typeMap={'lblS':'S','lblJ':'J','lblW':'W'};
   var types=[];
   ['lblS','lblJ','lblW'].forEach(function(id){var el=document.getElementById(id);if(!el.classList.contains('off'))types.push(typeMap[id]);});
+  // 전부 끄면 0건
+  if(types.length===0){
+    TOTAL=0;
+    document.getElementById('recentCnt').textContent='0건';
+    document.getElementById('recentBody').innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;color:#999">거래 유형을 선택하세요.</td></tr>';
+    document.getElementById('pager').innerHTML='';
+    return;
+  }
   var name=document.getElementById('fSearch').value.trim();
   var yf=document.getElementById('fYearFrom').value;
   var yt=document.getElementById('fYearTo').value;
-  var area=document.getElementById('fArea').value;
+  var areaMin=document.getElementById('fAreaMin').value;
+  var areaMax=document.getElementById('fAreaMax').value;
+  var priceMin=document.getElementById('fPriceMin').value;
+  var priceMax=document.getElementById('fPriceMax').value;
 
   var q='?prop_type='+PROP+'&limit='+LIMIT+'&offset='+(PAGE*LIMIT);
   if(region)q+='&region='+encodeURIComponent(region);
@@ -207,7 +240,10 @@ function loadRecent(){
   if(name)q+='&name='+encodeURIComponent(name);
   if(yf)q+='&year_from='+yf;
   if(yt)q+='&year_to='+yt;
-  if(area)q+='&area='+area;
+  if(areaMin)q+='&area_min='+areaMin;
+  if(areaMax)q+='&area_max='+areaMax;
+  if(priceMin)q+='&price_min='+priceMin;
+  if(priceMax)q+='&price_max='+priceMax;
 
   document.getElementById('recentBody').innerHTML='<tr><td colspan="8" class="loading">검색 중...</td></tr>';
   fetch(API+'/search'+q).then(function(r){return r.json()}).then(function(d){
@@ -215,10 +251,15 @@ function loadRecent(){
     document.getElementById('recentCnt').textContent=fmt(TOTAL)+'건'+(TOTAL>LIMIT?' (페이지 '+(PAGE+1)+'/'+Math.ceil(TOTAL/LIMIT)+')':'');
     var html='';
     d.data.forEach(function(t){
-      html+='<tr><td>'+t.region+'</td><td>'+(t.name||'')+'</td><td>'+(t.dong||'')+'</td><td>'+(t.area||0)+'㎡</td><td>'+(t.floor||'')+'층</td><td>'+typePrice(t)+'</td><td>'+typeBadge(t.deal_type)+'</td><td>'+(t.year||'')+'.'+String(t.month||'').padStart(2,'0')+'.'+String(t.day||'').padStart(2,'0')+'</td></tr>';
+      var yr=t.year||t.deal_year||'';
+      var mo=String(t.month||t.deal_month||'').padStart(2,'0');
+      var dy=String(t.day||t.deal_day||'').padStart(2,'0');
+      html+='<tr><td>'+t.region+'</td><td>'+(t.name||'')+'</td><td>'+(t.dong||'')+'</td><td>'+(t.area||0)+'㎡</td><td>'+(t.floor||'')+'층</td><td>'+typePrice(t)+'</td><td>'+typeBadge(t.deal_type)+'</td><td>'+yr+'.'+mo+'.'+dy+'</td></tr>';
     });
     document.getElementById('recentBody').innerHTML=html||'<tr><td colspan="8" style="text-align:center;padding:30px;color:#999">결과 없음</td></tr>';
     renderPager();
+  }).catch(function(e){
+    document.getElementById('recentBody').innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;color:#c00">오류: '+e.message+'</td></tr>';
   });
 }
 
@@ -239,9 +280,16 @@ function loadRegionStats(){
   fetch(API+'/regions?prop_type='+PROP).then(function(r){return r.json()}).then(function(data){
     var html='';
     data.forEach(function(d){
-      html+='<div class="region-card" onclick="document.getElementById(\'fRegion\').value=\''+d.region+'\';loadDongs();PAGE=0;loadRecent();document.querySelectorAll(\'.tab\')[0].click()"><h4>'+d.region+'</h4><div class="stat">거래 '+fmt(d.count)+'건</div></div>';
+      html+='<div class="region-card" data-region="'+d.region+'"><h4>'+d.region+'</h4><div class="stat">거래 '+fmt(d.count)+'건</div></div>';
     });
     document.getElementById('regionGrid').innerHTML=html||'<div class="loading">데이터 없음</div>';
+    document.querySelectorAll('.region-card').forEach(function(card){
+      card.addEventListener('click',function(){
+        var fsel=document.getElementById('fRegion');
+        for(var i=0;i<fsel.options.length;i++){fsel.options[i].selected=(fsel.options[i].value===card.dataset.region);}
+        loadDongs();PAGE=0;loadRecent();document.querySelectorAll('.tab')[0].click();
+      });
+    });
   });
 }
 
@@ -255,9 +303,9 @@ function loadYearly(){
     var yearly=d.yearly||[];
     if(!yearly.length)return;
 
-    var labels=yearly.map(function(y){return y.year});
+    var labels=yearly.map(function(y){return y.year||y.deal_year});
     var prices=yearly.map(function(y){return y.avg_price});
-    var counts=yearly.map(function(y){return y.count});
+    var counts=yearly.map(function(y){return y.count||y.cnt});
 
     if(yearlyChart)yearlyChart.destroy();
     yearlyChart=new Chart(document.getElementById('yearlyChart'),{
@@ -273,7 +321,7 @@ function loadYearly(){
 
     var thtml='<table class="tbl" style="margin-top:14px"><thead><tr><th style="text-align:left">연도</th><th>거래건수</th><th>평균매매가</th></tr></thead><tbody>';
     yearly.slice().reverse().forEach(function(y){
-      thtml+='<tr><td style="text-align:left">'+y.year+'</td><td>'+fmt(y.count)+'건</td><td class="price">'+fmtEok(y.avg_price)+'</td></tr>';
+      thtml+='<tr><td style="text-align:left">'+(y.year||y.deal_year)+'</td><td>'+fmt(y.count||y.cnt)+'건</td><td class="price">'+fmtEok(y.avg_price)+'</td></tr>';
     });
     thtml+='</tbody></table>';
     document.getElementById('yearlyTable').innerHTML=thtml;
@@ -301,15 +349,18 @@ document.querySelectorAll('.tab').forEach(function(tab){
 });
 document.getElementById('fRegion').addEventListener('change',function(){loadDongs();PAGE=0;loadRecent()});
 document.getElementById('fDong').addEventListener('change',function(){PAGE=0;loadRecent()});
-document.getElementById('fArea').addEventListener('change',function(){PAGE=0;loadRecent()});
 ['lblS','lblJ','lblW'].forEach(function(id){
   var el=document.getElementById(id);
   var onCls=id==='lblS'?'on-trade':id==='lblJ'?'on-jeonse':'on-wolse';
   el.addEventListener('click',function(){el.classList.toggle('off');el.classList.toggle(onCls);PAGE=0;loadRecent()});
 });
-document.getElementById('fSearch').addEventListener('input',function(){clearTimeout(this._t);var self=this;this._t=setTimeout(function(){PAGE=0;loadRecent()},400)});
+document.getElementById('fSearch').addEventListener('input',function(){clearTimeout(this._t);this._t=setTimeout(function(){PAGE=0;loadRecent()},400)});
 document.getElementById('fYearFrom').addEventListener('change',function(){PAGE=0;loadRecent()});
 document.getElementById('fYearTo').addEventListener('change',function(){PAGE=0;loadRecent()});
+// 면적·금액 입력 (debounce)
+['fAreaMin','fAreaMax','fPriceMin','fPriceMax'].forEach(function(id){
+  document.getElementById(id).addEventListener('input',function(){clearTimeout(this._t);this._t=setTimeout(function(){PAGE=0;loadRecent()},600)});
+});
 document.getElementById('yRegion').addEventListener('change',loadYearly);
 
 // ── 연도 셀렉트 초기화 ──
