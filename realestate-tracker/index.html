@@ -67,6 +67,9 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 .pager button{padding:6px 14px;border:1px solid #ccc;border-radius:6px;background:white;cursor:pointer;font-size:13px;font-family:inherit}
 .pager button:disabled{opacity:.4;cursor:default}
 .pager span{font-size:13px;color:#666}
+.chk-group{display:flex;gap:6px;align-items:center;background:#f8fafc;border:1px solid #ddd;border-radius:6px;padding:4px 8px}
+.chk-label{display:flex;align-items:center;gap:3px;cursor:pointer;font-size:12px;white-space:nowrap}
+.chk-label input{width:14px;height:14px;cursor:pointer}
 .loading{text-align:center;padding:60px;color:#888}
 @media(max-width:600px){.summary-cards{grid-template-columns:repeat(2,1fr)}.region-grid{grid-template-columns:1fr}.filter-row input{min-width:100%}}
 </style>
@@ -97,8 +100,13 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
   <div class="filter-row">
     <select id="fRegion"><option value="">전체 지역</option></select>
     <select id="fDong"><option value="">전체 동</option></select>
-    <select id="fType"><option value="">전체</option><option value="S">매매</option><option value="J">전세</option><option value="W">월세</option></select>
-    <select id="fYearFrom" id="fYearFrom"></select>
+    <div class="chk-group" id="fTypeGroup">
+      <label class="chk-label"><input type="checkbox" value="S" checked> <span class="badge badge-trade">매매</span></label>
+      <label class="chk-label"><input type="checkbox" value="J" checked> <span class="badge badge-jeonse">전세</span></label>
+      <label class="chk-label"><input type="checkbox" value="W" checked> <span class="badge badge-wolse">월세</span></label>
+    </div>
+    <select id="fArea"><option value="">전체 면적</option><option value="0-40">40㎡이하</option><option value="40-60">40~60㎡</option><option value="60-85">60~85㎡</option><option value="85-135">85~135㎡</option><option value="135-">135㎡초과</option></select>
+    <select id="fYearFrom"></select>
     <span style="font-size:13px;color:#888">~</span>
     <select id="fYearTo"></select>
     <input type="text" id="fSearch" placeholder="아파트명/건물명 검색...">
@@ -179,18 +187,20 @@ function loadSummary(){
 function loadRecent(){
   var region=document.getElementById('fRegion').value;
   var dong=document.getElementById('fDong').value;
-  var type=document.getElementById('fType').value;
+  var types=Array.from(document.querySelectorAll('#fTypeGroup input:checked')).map(function(c){return c.value});
   var name=document.getElementById('fSearch').value.trim();
   var yf=document.getElementById('fYearFrom').value;
   var yt=document.getElementById('fYearTo').value;
+  var area=document.getElementById('fArea').value;
 
   var q='?prop_type='+PROP+'&limit='+LIMIT+'&offset='+(PAGE*LIMIT);
   if(region)q+='&region='+encodeURIComponent(region);
   if(dong)q+='&dong='+encodeURIComponent(dong);
-  if(type)q+='&deal_type='+type;
+  if(types.length>0&&types.length<3)q+='&deal_type='+types.join(',');
   if(name)q+='&name='+encodeURIComponent(name);
   if(yf)q+='&year_from='+yf;
   if(yt)q+='&year_to='+yt;
+  if(area)q+='&area='+area;
 
   document.getElementById('recentBody').innerHTML='<tr><td colspan="8" class="loading">검색 중...</td></tr>';
   fetch(API+'/search'+q).then(function(r){return r.json()}).then(function(d){
@@ -284,7 +294,8 @@ document.querySelectorAll('.tab').forEach(function(tab){
 });
 document.getElementById('fRegion').addEventListener('change',function(){loadDongs();PAGE=0;loadRecent()});
 document.getElementById('fDong').addEventListener('change',function(){PAGE=0;loadRecent()});
-document.getElementById('fType').addEventListener('change',function(){PAGE=0;loadRecent()});
+document.querySelectorAll('#fTypeGroup input').forEach(function(c){c.addEventListener('change',function(){PAGE=0;loadRecent()})});
+document.getElementById('fArea').addEventListener('change',function(){PAGE=0;loadRecent()});
 document.getElementById('fSearch').addEventListener('input',function(){clearTimeout(this._t);var self=this;this._t=setTimeout(function(){PAGE=0;loadRecent()},400)});
 document.getElementById('fYearFrom').addEventListener('change',function(){PAGE=0;loadRecent()});
 document.getElementById('fYearTo').addEventListener('change',function(){PAGE=0;loadRecent()});
