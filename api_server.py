@@ -64,8 +64,9 @@ def health():
 def re_regions():
     prop = request.args.get('prop_type', 'APT')
     conn = get_conn(); cur = conn.cursor()
-    cur.execute("SELECT DISTINCT region FROM real_estate WHERE prop_type=:1 ORDER BY region", [prop])
-    data = [r[0] for r in cur.fetchall()]; cur.close(); conn.close()
+    cur.execute("SELECT region, COUNT(*) cnt FROM real_estate WHERE prop_type=:1 GROUP BY region ORDER BY region", [prop])
+    data = [{'region': r[0], 'count': r[1]} for r in cur.fetchall()]
+    cur.close(); conn.close()
     return jsonify(data)
 
 @app.route('/api/realestate/dongs')
@@ -73,7 +74,17 @@ def re_dongs():
     region = request.args.get('region', '')
     prop = request.args.get('prop_type', 'APT')
     conn = get_conn(); cur = conn.cursor()
-    cur.execute("SELECT DISTINCT dong FROM real_estate WHERE region=:1 AND prop_type=:2 ORDER BY dong", [region, prop])
+    # 다중 지역 지원 (쉼표 구분)
+    regions = [r.strip() for r in region.split(',') if r.strip()]
+    if len(regions) == 1:
+        cur.execute("SELECT DISTINCT dong FROM real_estate WHERE region=:1 AND prop_type=:2 ORDER BY dong", [regions[0], prop])
+    elif len(regions) > 1:
+        ph = ','.join([f':r{i}' for i in range(len(regions))])
+        p = {f'r{i}': regions[i] for i in range(len(regions))}
+        p['prop'] = prop
+        cur.execute(f"SELECT DISTINCT dong FROM real_estate WHERE region IN ({ph}) AND prop_type=:prop ORDER BY dong", p)
+    else:
+        cur.execute("SELECT DISTINCT dong FROM real_estate WHERE prop_type=:1 ORDER BY dong", [prop])
     data = [r[0] for r in cur.fetchall()]; cur.close(); conn.close()
     return jsonify(data)
 
@@ -82,51 +93,118 @@ def re_search():
     prop = request.args.get('prop_type', 'APT')
     region = request.args.get('region', '')
     dong = request.args.get('dong', '')
-    deal_types = request.args.getlist('deal_type')
+    deal_type_str = request.args.get('deal_type', '')  # 쉼표 구분 문자열
     year_from = request.args.get('year_from', '')
     year_to = request.args.get('year_to', '')
     area_min = request.args.get('area_min', '')
     area_max = request.args.get('area_max', '')
-    page = int(request.args.get('page', 1))
-    per = int(request.args.get('per_page', 50))
+    area_range = request.args.get('area', '')  # "60-85" 형태 호환
+    price_min = request.args.get('price_min', '')
+    price_max = request.args.get('price_max', '')
+    name = request.args.get('name', '')
+    limit = int(request.args.get('limit', request.args.get('per_page', 500)))
+    offset = int(request.args.get('offset', 0))
+    # page 파라미터 호환
+    page = request.args.get('page', '')
+    if page and not request.args.get('offset', ''):
+        offset = (int(page) - 1) * limit
+
     where = ['prop_type=:prop']; params = {'prop': prop}
-    if region: where.append('region=:region'); params['region'] = region
+
+    # 다중 지역 (쉼표 구분)
+    if region:
+        regions = [r.strip() for r in region.split(',') if r.strip()]
+        if len(regions) == 1:
+            where.append('region=:region'); params['region'] = regions[0]
+        else:
+            ph = ','.join([f':rg{i}' for i in range(len(regions))])
+            where.append(f'region IN ({ph})')
+            for i, r in enumerate(regions): params[f'rg{i}'] = r
     if dong: where.append('dong=:dong'); params['dong'] = dong
-    if deal_types:
-        ph = ','.join([f':dt{i}' for i in range(len(deal_types))])
-        where.append(f'deal_type IN ({ph})')
-        for i, dt in enumerate(deal_types): params[f'dt{i}'] = dt
+
+    # 거래유형 (쉼표 구분)
+    if deal_type_str:
+        dts = [d.strip() for d in deal_type_str.split(',') if d.strip()]
+        if dts and len(dts) < 3:
+            ph = ','.join([f':dt{i}' for i in range(len(dts))])
+            where.append(f'deal_type IN ({ph})')
+            for i, dt in enumerate(dts): params[f'dt{i}'] = dt
+
     if year_from: where.append('deal_year>=:yf'); params['yf'] = int(year_from)
     if year_to: where.append('deal_year<=:yt'); params['yt'] = int(year_to)
-    if area_min: where.append('area>=:amin'); params['amin'] = float(area_min)
-    if area_max: where.append('area<=:amax'); params['amax'] = float(area_max)
+
+    # 면적: 직접 입력 우선, area 파라미터 호환
+    if area_min:
+        where.append('area>=:amin'); params['amin'] = float(area_min)
+    if area_max:
+        where.append('area<=:amax'); params['amax'] = float(area_max)
+    if area_range and not area_min and not area_max:
+        if '-' in area_range:
+            parts = area_range.split('-')
+            if parts[0]: where.append('area>=:amin'); params['amin'] = float(parts[0])
+            if parts[1]: where.append('area<=:amax'); params['amax'] = float(parts[1])
+
+    # 금액 범위
+    if price_min: where.append('price>=:pmin'); params['pmin'] = int(price_min)
+    if price_max: where.append('price<=:pmax'); params['pmax'] = int(price_max)
+
+    # 건물명 검색
+    if name:
+        where.append("UPPER(name) LIKE '%'||UPPER(:name)||'%'")
+        params['name'] = name
+
     w = ' AND '.join(where)
     conn = get_conn(); cur = conn.cursor()
     cur.execute(f"SELECT COUNT(*) FROM real_estate WHERE {w}", params)
     total = cur.fetchone()[0]
-    offset = (page - 1) * per
     cur.execute(f"""SELECT * FROM (SELECT a.*, ROWNUM rn FROM (
-        SELECT * FROM real_estate WHERE {w} ORDER BY deal_year DESC, deal_month DESC, deal_day DESC
+        SELECT region, name, dong, area, floor, deal_type, price, deposit, monthly_rent,
+               deal_year AS year, deal_month AS month, deal_day AS day
+        FROM real_estate WHERE {w}
+        ORDER BY deal_year DESC, deal_month DESC, deal_day DESC
     ) a WHERE ROWNUM <= :maxrow) WHERE rn > :minrow""",
-        {**params, 'maxrow': offset + per, 'minrow': offset})
-    data = rows_to_list(cur, cur.fetchall()); cur.close(); conn.close()
-    return jsonify({'total': total, 'page': page, 'per_page': per, 'pages': (total+per-1)//per, 'data': data})
+        {**params, 'maxrow': offset + limit, 'minrow': offset})
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify({'total': total, 'data': data})
 
 @app.route('/api/realestate/stats')
 def re_stats():
     prop = request.args.get('prop_type', 'APT')
     region = request.args.get('region', '')
     where = ['prop_type=:prop']; params = {'prop': prop}
-    if region: where.append('region=:region'); params['region'] = region
+    if region:
+        regions = [r.strip() for r in region.split(',') if r.strip()]
+        if len(regions) == 1:
+            where.append('region=:region'); params['region'] = regions[0]
+        else:
+            ph = ','.join([f':rg{i}' for i in range(len(regions))])
+            where.append(f'region IN ({ph})')
+            for i, r in enumerate(regions): params[f'rg{i}'] = r
     w = ' AND '.join(where)
     conn = get_conn(); cur = conn.cursor()
-    cur.execute(f"SELECT COUNT(*) FROM real_estate WHERE {w}", params)
-    total = cur.fetchone()[0]
-    cur.execute(f"SELECT deal_type, COUNT(*) cnt, ROUND(AVG(price)) avg_price FROM real_estate WHERE {w} AND price>0 GROUP BY deal_type", params)
-    by_type = rows_to_list(cur, cur.fetchall())
-    cur.execute(f"SELECT deal_year, ROUND(AVG(price)) avg_price, COUNT(*) cnt FROM real_estate WHERE {w} AND deal_type='S' AND price>0 GROUP BY deal_year ORDER BY deal_year", params)
-    yearly = rows_to_list(cur, cur.fetchall()); cur.close(); conn.close()
-    return jsonify({'total': total, 'by_type': by_type, 'yearly': yearly})
+
+    # summary (매매 기준)
+    cur.execute(f"""SELECT COUNT(*), ROUND(AVG(price)), MAX(price), MIN(price)
+        FROM real_estate WHERE {w} AND deal_type='S' AND price>0""", params)
+    row = cur.fetchone()
+    summary = {'count': row[0] or 0, 'avg_price': row[1] or 0, 'max_price': row[2] or 0, 'min_price': row[3] or 0}
+
+    # top 아파트
+    cur.execute(f"""SELECT * FROM (
+        SELECT name, COUNT(*) cnt FROM real_estate WHERE {w} AND name IS NOT NULL
+        GROUP BY name ORDER BY cnt DESC
+    ) WHERE ROWNUM <= 5""", params)
+    top_apts = [{'name': r[0], 'count': r[1]} for r in cur.fetchall()]
+
+    # 연도별
+    cur.execute(f"""SELECT deal_year AS year, ROUND(AVG(price)) avg_price, COUNT(*) count
+        FROM real_estate WHERE {w} AND deal_type='S' AND price>0
+        GROUP BY deal_year ORDER BY deal_year""", params)
+    yearly = rows_to_list(cur, cur.fetchall())
+
+    cur.close(); conn.close()
+    return jsonify({'summary': summary, 'top_apts': top_apts, 'yearly': yearly})
 
 # ══ categories ══
 @app.route('/api/categories', methods=['GET'])
