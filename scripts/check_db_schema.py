@@ -99,8 +99,46 @@ if 'ATTACHMENTS' not in tables:
 else:
     cur.execute("SELECT COUNT(*) FROM attachments"); print(f"\nATTACHMENTS: {cur.fetchone()[0]}건")
 
+# ── NOTE_CATEGORIES ──
+if 'NOTE_CATEGORIES' not in tables:
+    print("\n[+] NOTE_CATEGORIES 생성...")
+    cur.execute("""CREATE TABLE note_categories (
+        id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        name VARCHAR2(40) NOT NULL,
+        sort_order NUMBER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT SYSTIMESTAMP
+    )""")
+    # 기본 카테고리 삽입
+    for i, name in enumerate(['메모', '시장관찰', '종목분석', '매매기록'], 1):
+        cur.execute("INSERT INTO note_categories (name, sort_order) VALUES (:n, :s)", {'n': name, 's': i})
+    conn.commit()
+    print("  → 완료 (기본 4개 카테고리 삽입)")
+else:
+    cur.execute("SELECT COUNT(*) FROM note_categories"); print(f"\nNOTE_CATEGORIES: {cur.fetchone()[0]}건")
+
+# ── NOTES ──
+if 'NOTES' not in tables:
+    print("\n[+] NOTES 생성...")
+    cur.execute("""CREATE TABLE notes (
+        id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        category VARCHAR2(40) DEFAULT '',
+        title VARCHAR2(200),
+        content CLOB,
+        author VARCHAR2(50) DEFAULT '스윙파머',
+        is_pinned NUMBER(1) DEFAULT 0,
+        views NUMBER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT SYSTIMESTAMP,
+        updated_at TIMESTAMP
+    )""")
+    cur.execute("CREATE INDEX idx_notes_cat ON notes(category)")
+    cur.execute("CREATE INDEX idx_notes_created ON notes(created_at DESC)")
+    conn.commit()
+    print("  → 완료")
+else:
+    cur.execute("SELECT COUNT(*) FROM notes"); print(f"\nNOTES: {cur.fetchone()[0]}건")
+
 # 전체 확인
-for tbl in ['CATEGORIES','POSTS','COMMENTS']:
+for tbl in ['CATEGORIES','POSTS','COMMENTS','NOTE_CATEGORIES','NOTES']:
     if tbl in tables or tbl == 'CATEGORIES':
         try:
             cur.execute(f"SELECT column_name, data_type FROM user_tab_columns WHERE table_name='{tbl}' ORDER BY column_id")
