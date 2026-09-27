@@ -293,7 +293,7 @@ function renderTable(posts,total){
   if(!posts.length){$('postArea').innerHTML='<div class="empty">글이 없습니다. 첫 글을 남겨보세요!</div>';return;}
   var h='<table class="post-table"><thead><tr><th>번호</th><th>분류</th><th class="th-title">제목</th><th>작성자</th><th>작성일</th><th>조회</th></tr></thead><tbody>';
   posts.forEach(function(p,i){
-    var no=p.pinned?'<span class="pin-tag">📌</span>':(total-((currentPage-1)*20)-i);
+    var no=p.is_pinned?'<span class="pin-tag">📌</span>':(total-((currentPage-1)*20)-i);
     var cn=catName(p.category);
     var cm=p.comment_count?'<span class="t-comment">['+p.comment_count+']</span>':'';
     var nw=isNew(p.created_at)?'<span class="t-new">N</span>':'';
@@ -318,7 +318,7 @@ function openPost(id){
 function closeView(){$('viewModal').classList.remove('active');document.body.style.overflow='';}
 function renderView(p){
   var cn=catName(p.category);
-  $('vBadge').innerHTML=(p.pinned?'<span class="pin-tag">📌 고정</span> ':'')+(cn?'<span class="cat-tag">'+esc(cn)+'</span>':'');
+  $('vBadge').innerHTML=(p.is_pinned?'<span class="pin-tag">📌 고정</span> ':'')+(cn?'<span class="cat-tag">'+esc(cn)+'</span>':'');
   $('vTitle').textContent=p.title;$('vAuthor').textContent=p.author||'익명';$('vDate').textContent=fmtDate(p.created_at);$('vViews').textContent='조회 '+(p.views||0);
   var body=esc(p.content);
   body=body.replace(/\[이미지:(https?:\/\/[^\]]+)\]/g,'<img src="$1" alt="이미지">');
@@ -388,7 +388,7 @@ function editPost(id){
     if(p.error){alert(p.error);return;}
     editingId=id;$('wTitle').textContent='글 수정';
     $('fCategory').value=p.category||'';$('fTitle').value=p.title||'';$('fAuthor').value=p.author||'';
-    $('fContent').value=p.content||'';$('fPinned').checked=!!p.pinned;
+    $('fContent').value=p.content||'';$('fPinned').checked=!!p.is_pinned;
     $('writeModal').classList.add('active');document.body.style.overflow='hidden';
   }).catch(function(e){alert('오류: '+e.message);});
 }
