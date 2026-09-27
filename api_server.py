@@ -269,15 +269,16 @@ def list_posts():
     where = ['1=1']; params = {}
     if category: where.append('category=:cat'); params['cat'] = category
     if search:
-        where.append("(UPPER(title) LIKE '%'||UPPER(:q)||'%' OR UPPER(content) LIKE '%'||UPPER(:q)||'%')")
+        where.append("(UPPER(title) LIKE '%'||UPPER(:q)||'%' OR UPPER(CAST(content AS VARCHAR2(4000))) LIKE '%'||UPPER(:q2)||'%')")
         params['q'] = search
+        params['q2'] = search
     w = ' AND '.join(where)
     conn = get_conn(); cur = conn.cursor()
     cur.execute(f"SELECT COUNT(*) FROM posts WHERE {w}", params)
     total = cur.fetchone()[0]
     offset = (page - 1) * per
     cur.execute(f"""SELECT * FROM (SELECT a.*, ROWNUM rn FROM (
-        SELECT id, category, title, author, content, is_pinned, views, created_at, updated_at
+        SELECT id, category, title, author, is_pinned, views, created_at, updated_at
         FROM posts WHERE {w} ORDER BY is_pinned DESC NULLS LAST, created_at DESC
     ) a WHERE ROWNUM <= :maxrow) WHERE rn > :minrow""",
         {**params, 'maxrow': offset + per, 'minrow': offset})
