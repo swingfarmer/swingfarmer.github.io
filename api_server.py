@@ -369,6 +369,125 @@ def delete_post(post_id):
     conn.commit(); cur.close(); conn.close()
     return jsonify({'ok': True})
 
+# ══ notes (투자메모·일지) ══
+@app.route('/api/note-categories', methods=['GET'])
+def list_note_categories():
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT id, name, sort_order FROM note_categories ORDER BY sort_order, id")
+    data = rows_to_list(cur, cur.fetchall()); cur.close(); conn.close()
+    return jsonify(data)
+
+@app.route('/api/note-categories', methods=['POST'])
+def add_note_category():
+    d = request.get_json()
+    if not d: return jsonify({'error': 'JSON 필요'}), 400
+    name = (d.get('name') or '').strip()
+    if not name or len(name) > 20: return jsonify({'error': '1~20자 카테고리명을 입력하세요.'}), 400
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT MAX(sort_order) FROM note_categories"); mx = cur.fetchone()[0] or 0
+    cur.execute("INSERT INTO note_categories (name, sort_order) VALUES (:n, :s)", {'n': name, 's': mx + 1})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True}), 201
+
+@app.route('/api/note-categories/<int:cat_id>', methods=['DELETE'])
+def delete_note_category(cat_id):
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM notes WHERE category=:c", {'c': str(cat_id)})
+    cnt = cur.fetchone()[0]
+    if cnt > 0: cur.close(); conn.close(); return jsonify({'error': f'글 {cnt}건이 있어 삭제 불가.'}), 400
+    cur.execute("DELETE FROM note_categories WHERE id=:id", {'id': cat_id})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/notes', methods=['GET'])
+def list_notes():
+    page = int(request.args.get('page', 1))
+    per = int(request.args.get('per_page', 30))
+    category = request.args.get('category', '')
+    search = request.args.get('q', '')
+    where = ['1=1']; params = {}
+    if category: where.append('category=:cat'); params['cat'] = category
+    if search:
+        where.append("(UPPER(NVL(title,'')) LIKE '%'||UPPER(:q)||'%' OR UPPER(CAST(content AS VARCHAR2(4000))) LIKE '%'||UPPER(:q2)||'%')")
+        params['q'] = search; params['q2'] = search
+    w = ' AND '.join(where)
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute(f"SELECT COUNT(*) FROM notes WHERE {w}", params)
+    total = cur.fetchone()[0]
+    offset = (page - 1) * per
+    cur.execute(f"""SELECT * FROM (SELECT a.*, ROWNUM rn FROM (
+        SELECT id, category, title, author, is_pinned, views, created_at, updated_at
+        FROM notes WHERE {w} ORDER BY is_pinned DESC NULLS LAST, created_at DESC
+    ) a WHERE ROWNUM <= :maxrow) WHERE rn > :minrow""",
+        {**params, 'maxrow': offset + per, 'minrow': offset})
+    notes = rows_to_list(cur, cur.fetchall())
+    for n in notes:
+        n['created_at'] = dt_str(n.get('created_at'))
+        n['updated_at'] = dt_str(n.get('updated_at'))
+    cur.close(); conn.close()
+    return jsonify({'total': total, 'page': page, 'per_page': per, 'pages': (total+per-1)//per, 'data': notes})
+
+@app.route('/api/notes/<int:note_id>', methods=['GET'])
+def get_note(note_id):
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("UPDATE notes SET views=NVL(views,0)+1 WHERE id=:id", {'id': note_id})
+    conn.commit()
+    cur.execute("SELECT * FROM notes WHERE id=:id", {'id': note_id})
+    row = cur.fetchone()
+    if not row: cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
+    note = row_to_dict(cur, row)
+    note['created_at'] = dt_str(note.get('created_at'))
+    note['updated_at'] = dt_str(note.get('updated_at'))
+    cur.close(); conn.close()
+    return jsonify(note)
+
+@app.route('/api/notes', methods=['POST'])
+def create_note():
+    d = request.get_json()
+    if not d: return jsonify({'error': 'JSON 필요'}), 400
+    title = (d.get('title') or '').strip()
+    content = (d.get('content') or '').strip()
+    author = (d.get('author') or '').strip() or '스윙파머'
+    category = d.get('category', '')
+    is_pinned = 1 if d.get('pinned') else 0
+    if not content: return jsonify({'error': '내용을 입력하세요.'}), 400
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("""INSERT INTO notes (category, title, content, author, is_pinned, views, created_at)
+        VALUES (:cat, :title, :content, :author, :pinned, 0, SYSTIMESTAMP)""",
+        {'cat': category, 'title': title, 'content': content, 'author': author, 'pinned': is_pinned})
+    conn.commit()
+    cur.execute("SELECT MAX(id) FROM notes"); new_id = cur.fetchone()[0]
+    cur.close(); conn.close()
+    return jsonify({'ok': True, 'id': new_id}), 201
+
+@app.route('/api/notes/<int:note_id>', methods=['PUT'])
+def update_note(note_id):
+    d = request.get_json()
+    if not d: return jsonify({'error': 'JSON 필요'}), 400
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT id FROM notes WHERE id=:id", {'id': note_id})
+    if not cur.fetchone(): cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
+    title = (d.get('title') or '').strip()
+    content = (d.get('content') or '').strip()
+    author = (d.get('author') or '').strip() or '스윙파머'
+    category = d.get('category', '')
+    is_pinned = 1 if d.get('pinned') else 0
+    if not content: cur.close(); conn.close(); return jsonify({'error': '내용을 입력하세요.'}), 400
+    cur.execute("""UPDATE notes SET title=:title, author=:author, content=:content,
+        category=:cat, is_pinned=:pinned, updated_at=SYSTIMESTAMP WHERE id=:id""",
+        {'title': title, 'author': author, 'content': content, 'cat': category, 'pinned': is_pinned, 'id': note_id})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/notes/<int:note_id>', methods=['DELETE'])
+def delete_note(note_id):
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT id FROM notes WHERE id=:id", {'id': note_id})
+    if not cur.fetchone(): cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
+    cur.execute("DELETE FROM notes WHERE id=:id", {'id': note_id})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
 # ══ comments ══
 @app.route('/api/posts/<int:post_id>/comments', methods=['POST'])
 def add_comment(post_id):
