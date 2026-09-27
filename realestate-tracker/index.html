@@ -124,9 +124,13 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
     <input type="number" id="fPriceMin" placeholder="최소" style="width:90px;min-width:90px;flex:none" min="0" step="1000">
     <span style="font-size:13px;color:#888">~</span>
     <input type="number" id="fPriceMax" placeholder="최대" style="width:90px;min-width:90px;flex:none" min="0" step="1000">
+    <span style="font-size:12px;color:#666;font-weight:600;margin-left:8px">준공</span>
+    <input type="number" id="fBuildFrom" placeholder="시작" style="width:64px;min-width:64px;flex:none" min="1970" max="2030">
+    <span style="font-size:13px;color:#888">~</span>
+    <input type="number" id="fBuildTo" placeholder="끝" style="width:64px;min-width:64px;flex:none" min="1970" max="2030">
   </div>
   <div class="cnt" id="recentCnt"></div>
-  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>지역</th><th>건물명</th><th>동</th><th>전용면적</th><th>층</th><th>금액</th><th>유형</th><th>거래일</th></tr></thead><tbody id="recentBody"><tr><td colspan="8" class="loading">로딩...</td></tr></tbody></table></div>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>지역</th><th>건물명</th><th>동</th><th>전용면적</th><th>층</th><th>금액</th><th>유형</th><th>준공</th><th>거래일</th></tr></thead><tbody id="recentBody"><tr><td colspan="9" class="loading">로딩...</td></tr></tbody></table></div>
   <div class="pager" id="pager"></div>
 </div>
 
@@ -213,7 +217,7 @@ function loadRecent(){
   if(types.length===0){
     TOTAL=0;
     document.getElementById('recentCnt').textContent='0건';
-    document.getElementById('recentBody').innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;color:#999">거래 유형을 선택하세요.</td></tr>';
+    document.getElementById('recentBody').innerHTML='<tr><td colspan="9" style="text-align:center;padding:30px;color:#999">거래 유형을 선택하세요.</td></tr>';
     document.getElementById('pager').innerHTML='';
     return;
   }
@@ -224,6 +228,8 @@ function loadRecent(){
   var areaMax=document.getElementById('fAreaMax').value;
   var priceMin=document.getElementById('fPriceMin').value;
   var priceMax=document.getElementById('fPriceMax').value;
+  var buildFrom=document.getElementById('fBuildFrom').value;
+  var buildTo=document.getElementById('fBuildTo').value;
 
   var q='?prop_type='+PROP+'&limit='+LIMIT+'&offset='+(PAGE*LIMIT);
   if(region)q+='&region='+encodeURIComponent(region);
@@ -236,8 +242,10 @@ function loadRecent(){
   if(areaMax)q+='&area_max='+areaMax;
   if(priceMin)q+='&price_min='+priceMin;
   if(priceMax)q+='&price_max='+priceMax;
+  if(buildFrom)q+='&build_year_from='+buildFrom;
+  if(buildTo)q+='&build_year_to='+buildTo;
 
-  document.getElementById('recentBody').innerHTML='<tr><td colspan="8" class="loading">검색 중...</td></tr>';
+  document.getElementById('recentBody').innerHTML='<tr><td colspan="9" class="loading">검색 중...</td></tr>';
   fetch(API+'/search'+q).then(function(r){return r.json()}).then(function(d){
     TOTAL=d.total;
     document.getElementById('recentCnt').textContent=fmt(TOTAL)+'건'+(TOTAL>LIMIT?' (페이지 '+(PAGE+1)+'/'+Math.ceil(TOTAL/LIMIT)+')':'');
@@ -249,12 +257,12 @@ function loadRecent(){
       var areaM2=t.area||0;
       var pyeong=(areaM2/3.3058).toFixed(1);
       var areaStr=areaM2+'㎡<br><span style="font-size:11px;color:#888">('+pyeong+'평)</span>';
-      html+='<tr><td>'+t.region+'</td><td>'+(t.name||'')+'</td><td>'+(t.dong||'')+'</td><td>'+areaStr+'</td><td>'+(t.floor||'')+'층</td><td>'+typePrice(t)+'</td><td>'+typeBadge(t.deal_type)+'</td><td>'+yr+'.'+mo+'.'+dy+'</td></tr>';
+      html+='<tr><td>'+t.region+'</td><td>'+(t.name||'')+'</td><td>'+(t.dong||'')+'</td><td>'+areaStr+'</td><td>'+(t.floor||'')+'층</td><td>'+typePrice(t)+'</td><td>'+typeBadge(t.deal_type)+'</td><td>'+(t.build_year||'-')+'</td><td>'+yr+'.'+mo+'.'+dy+'</td></tr>';
     });
-    document.getElementById('recentBody').innerHTML=html||'<tr><td colspan="8" style="text-align:center;padding:30px;color:#999">결과 없음</td></tr>';
+    document.getElementById('recentBody').innerHTML=html||'<tr><td colspan="9" style="text-align:center;padding:30px;color:#999">결과 없음</td></tr>';
     renderPager();
   }).catch(function(e){
-    document.getElementById('recentBody').innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;color:#c00">오류: '+e.message+'</td></tr>';
+    document.getElementById('recentBody').innerHTML='<tr><td colspan="9" style="text-align:center;padding:30px;color:#c00">오류: '+e.message+'</td></tr>';
   });
 }
 
@@ -352,7 +360,7 @@ document.getElementById('fSearch').addEventListener('input',function(){clearTime
 document.getElementById('fYearFrom').addEventListener('change',function(){PAGE=0;loadRecent()});
 document.getElementById('fYearTo').addEventListener('change',function(){PAGE=0;loadRecent()});
 // 면적·금액 입력 (debounce)
-['fAreaMin','fAreaMax','fPriceMin','fPriceMax'].forEach(function(id){
+['fAreaMin','fAreaMax','fPriceMin','fPriceMax','fBuildFrom','fBuildTo'].forEach(function(id){
   document.getElementById(id).addEventListener('input',function(){clearTimeout(this._t);this._t=setTimeout(function(){PAGE=0;loadRecent()},600)});
 });
 document.getElementById('yRegion').addEventListener('change',loadYearly);
