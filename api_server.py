@@ -135,14 +135,14 @@ def re_search():
 
     # 면적: 직접 입력 우선, area 파라미터 호환
     if area_min:
-        where.append('area>=:amin'); params['amin'] = float(area_min)
+        where.append('area_m2>=:amin'); params['amin'] = float(area_min)
     if area_max:
-        where.append('area<=:amax'); params['amax'] = float(area_max)
+        where.append('area_m2<=:amax'); params['amax'] = float(area_max)
     if area_range and not area_min and not area_max:
         if '-' in area_range:
             parts = area_range.split('-')
-            if parts[0]: where.append('area>=:amin'); params['amin'] = float(parts[0])
-            if parts[1]: where.append('area<=:amax'); params['amax'] = float(parts[1])
+            if parts[0]: where.append('area_m2>=:amin'); params['amin'] = float(parts[0])
+            if parts[1]: where.append('area_m2<=:amax'); params['amax'] = float(parts[1])
 
     # 금액 범위
     if price_min: where.append('price>=:pmin'); params['pmin'] = int(price_min)
@@ -158,7 +158,7 @@ def re_search():
     cur.execute(f"SELECT COUNT(*) FROM real_estate WHERE {w}", params)
     total = cur.fetchone()[0]
     cur.execute(f"""SELECT * FROM (SELECT a.*, ROWNUM rn FROM (
-        SELECT region, name, dong, area, floor, deal_type, price, deposit, monthly_rent,
+        SELECT region, name, dong, area_m2 AS area, floor_no AS floor, deal_type, price, deposit, monthly_rent,
                deal_year, deal_month, deal_day
         FROM real_estate WHERE {w}
         ORDER BY deal_year DESC, deal_month DESC, deal_day DESC
@@ -269,8 +269,8 @@ def list_posts():
     total = cur.fetchone()[0]
     offset = (page - 1) * per
     cur.execute(f"""SELECT * FROM (SELECT a.*, ROWNUM rn FROM (
-        SELECT id, category, title, author, content, pinned, views, created_at, updated_at
-        FROM posts WHERE {w} ORDER BY pinned DESC NULLS LAST, created_at DESC
+        SELECT id, category, title, author, content, is_pinned, views, created_at, updated_at
+        FROM posts WHERE {w} ORDER BY is_pinned DESC NULLS LAST, created_at DESC
     ) a WHERE ROWNUM <= :maxrow) WHERE rn > :minrow""",
         {**params, 'maxrow': offset + per, 'minrow': offset})
     posts = rows_to_list(cur, cur.fetchall())
@@ -298,8 +298,7 @@ def get_post(post_id):
     post = row_to_dict(cur, row)
     post['created_at'] = dt_str(post.get('created_at'))
     post['updated_at'] = dt_str(post.get('updated_at'))
-    post.pop('pw_hash', None)
-    cur.execute("SELECT id,post_id,author,content,is_admin,created_at FROM comments WHERE post_id=:pid ORDER BY created_at", {'pid': post_id})
+    cur.execute("SELECT id,post_id,author,content,created_at FROM comments WHERE post_id=:pid ORDER BY created_at", {'pid': post_id})
     comments = rows_to_list(cur, cur.fetchall())
     for c in comments: c['created_at'] = dt_str(c.get('created_at'))
     post['comments'] = comments; cur.close(); conn.close()
@@ -317,7 +316,7 @@ def create_post():
     if not title: return jsonify({'error': '제목을 입력하세요.'}), 400
     if not content: return jsonify({'error': '내용을 입력하세요.'}), 400
     conn = get_conn(); cur = conn.cursor()
-    cur.execute("""INSERT INTO posts (category, title, author, content, pinned, views, created_at)
+    cur.execute("""INSERT INTO posts (category, title, author, content, is_pinned, views, created_at)
         VALUES (:cat, :title, :author, :content, :pinned, 0, SYSTIMESTAMP)""",
         {'cat': category, 'title': title, 'author': author, 'content': content, 'pinned': pinned})
     conn.commit()
@@ -339,7 +338,7 @@ def update_post(post_id):
     pinned = 1 if d.get('pinned') else 0
     if not title or not content: cur.close(); conn.close(); return jsonify({'error': '제목과 내용을 입력하세요.'}), 400
     cur.execute("""UPDATE posts SET title=:title, author=:author, content=:content,
-        category=:cat, pinned=:pinned, updated_at=SYSTIMESTAMP WHERE id=:id""",
+        category=:cat, is_pinned=:pinned, updated_at=SYSTIMESTAMP WHERE id=:id""",
         {'title': title, 'author': author, 'content': content, 'cat': category, 'pinned': pinned, 'id': post_id})
     conn.commit(); cur.close(); conn.close()
     return jsonify({'ok': True})
@@ -365,7 +364,7 @@ def add_comment(post_id):
     conn = get_conn(); cur = conn.cursor()
     cur.execute("SELECT id FROM posts WHERE id=:id", {'id': post_id})
     if not cur.fetchone(): cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
-    cur.execute("INSERT INTO comments (post_id,author,content,is_admin,created_at) VALUES (:pid,:a,:c,0,SYSTIMESTAMP)",
+    cur.execute("INSERT INTO comments (post_id,author,content,created_at) VALUES (:pid,:a,:c,SYSTIMESTAMP)",
         {'pid': post_id, 'a': author, 'c': content})
     conn.commit(); cur.close(); conn.close()
     return jsonify({'ok': True}), 201
