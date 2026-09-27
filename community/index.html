@@ -29,6 +29,10 @@ a{color:#333;text-decoration:none}
 .list-cnt{font-size:13px;color:#666}
 .btn-write{margin-left:auto;padding:8px 20px;background:#03c75a;color:white;border:none;border-radius:4px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
 .btn-write:hover{background:#02b350}
+.btn-bulk-del{padding:6px 14px;background:#dc2626;color:white;border:none;border-radius:4px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-left:8px}
+.btn-bulk-del:hover{background:#b91c1c}
+.td-chk{text-align:center;width:36px}
+.td-chk input{width:15px;height:15px;cursor:pointer}
 .post-table{width:100%;border-collapse:collapse}
 .post-table th{padding:9px 8px;font-size:12px;font-weight:600;color:#666;text-align:center;background:#fafafa;border-bottom:1px solid #e5e5e5}
 .post-table th.th-title{text-align:left;padding-left:16px}
@@ -163,6 +167,7 @@ a{color:#333;text-decoration:none}
 </div>
 <div class="list-header">
   <span class="list-cnt" id="cntInfo"></span>
+  <button class="btn-bulk-del" id="btnBulkDel" style="display:none">🗑️ 선택 삭제</button>
   <button class="btn-write" id="btnWrite">글쓰기</button>
 </div>
 <div id="postArea"><div class="loading">불러오는 중...</div></div>
@@ -290,17 +295,21 @@ $('btnSearch').addEventListener('click',function(){searchQuery=$('searchInput').
 $('searchInput').addEventListener('keydown',function(e){if(e.key==='Enter')$('btnSearch').click();});
 
 function renderTable(posts,total){
-  if(!posts.length){$('postArea').innerHTML='<div class="empty">글이 없습니다. 첫 글을 남겨보세요!</div>';return;}
-  var h='<table class="post-table"><thead><tr><th>번호</th><th>분류</th><th class="th-title">제목</th><th>작성자</th><th>작성일</th><th>조회</th></tr></thead><tbody>';
+  if(!posts.length){$('postArea').innerHTML='<div class="empty">글이 없습니다. 첫 글을 남겨보세요!</div>';$('btnBulkDel').style.display='none';return;}
+  var h='<table class="post-table"><thead><tr><th class="td-chk"><input type="checkbox" id="chkAll" title="전체 선택"></th><th>번호</th><th>분류</th><th class="th-title">제목</th><th>작성자</th><th>작성일</th><th>조회</th></tr></thead><tbody>';
   posts.forEach(function(p,i){
     var no=p.is_pinned?'<span class="pin-tag">📌</span>':(total-((currentPage-1)*20)-i);
     var cn=catName(p.category);
     var cm=p.comment_count?'<span class="t-comment">['+p.comment_count+']</span>':'';
     var nw=isNew(p.created_at)?'<span class="t-new">N</span>':'';
-    h+='<tr data-id="'+p.id+'"><td class="td-no">'+no+'</td><td class="td-cat">'+(cn?'<span class="cat-tag">'+esc(cn)+'</span>':'')+'</td><td class="td-title-cell"><span class="t-text">'+esc(p.title)+'</span>'+cm+nw+'</td><td class="td-author">'+esc(p.author||'익명')+'</td><td class="td-date">'+fmtShort(p.created_at)+'</td><td class="td-views">'+(p.views||0)+'</td></tr>';
+    h+='<tr data-id="'+p.id+'"><td class="td-chk"><input type="checkbox" class="post-chk" value="'+p.id+'"></td><td class="td-no">'+no+'</td><td class="td-cat">'+(cn?'<span class="cat-tag">'+esc(cn)+'</span>':'')+'</td><td class="td-title-cell"><span class="t-text">'+esc(p.title)+'</span>'+cm+nw+'</td><td class="td-author">'+esc(p.author||'익명')+'</td><td class="td-date">'+fmtShort(p.created_at)+'</td><td class="td-views">'+(p.views||0)+'</td></tr>';
   });
   h+='</tbody></table>';$('postArea').innerHTML=h;
   $('postArea').querySelectorAll('tr[data-id]').forEach(function(tr){tr.querySelector('.td-title-cell').addEventListener('click',function(){openPost(parseInt(tr.dataset.id));});});
+  // 전체선택
+  var chkAll=$('chkAll');
+  if(chkAll) chkAll.addEventListener('change',function(){var chks=document.querySelectorAll('.post-chk');chks.forEach(function(c){c.checked=chkAll.checked;});updateBulkBtn();});
+  document.querySelectorAll('.post-chk').forEach(function(c){c.addEventListener('change',updateBulkBtn);});
 }
 function renderPager(){
   if(totalPages<=1){$('pager').style.display='none';return;}$('pager').style.display='flex';
@@ -399,6 +408,32 @@ function deletePost(id){
   .then(function(r){if(!r.ok){alert(r.data.error||'실패');return;}closeView();loadPosts();})
   .catch(function(e){alert('오류: '+e.message);});
 }
+
+function updateBulkBtn(){
+  var checked=document.querySelectorAll('.post-chk:checked');
+  $('btnBulkDel').style.display=checked.length>0?'inline-block':'none';
+  $('btnBulkDel').textContent='🗑️ '+checked.length+'건 삭제';
+}
+
+$('btnBulkDel').addEventListener('click',function(){
+  var ids=[];
+  document.querySelectorAll('.post-chk:checked').forEach(function(c){ids.push(parseInt(c.value));});
+  if(!ids.length)return;
+  if(!confirm(ids.length+'건을 삭제할까요? (되돌릴 수 없습니다)'))return;
+  var done=0,fail=0;
+  var total=ids.length;
+  ids.forEach(function(id){
+    apiFetch(API+'/posts/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({})})
+    .then(function(r){if(!r.ok)fail++;else done++;})
+    .catch(function(){fail++;})
+    .finally(function(){
+      if(done+fail===total){
+        if(fail)alert(done+'건 삭제, '+fail+'건 실패');
+        loadPosts();
+      }
+    });
+  });
+});
 
 loadCategories().then(function(){loadPosts();});
 })();
