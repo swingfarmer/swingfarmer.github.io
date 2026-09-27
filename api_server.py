@@ -108,6 +108,8 @@ def re_search():
     area_range = request.args.get('area', '')  # "60-85" 형태 호환
     price_min = request.args.get('price_min', '')
     price_max = request.args.get('price_max', '')
+    build_year_from = request.args.get('build_year_from', '')
+    build_year_to = request.args.get('build_year_to', '')
     name = request.args.get('name', '')
     limit = int(request.args.get('limit', request.args.get('per_page', 500)))
     offset = int(request.args.get('offset', 0))
@@ -172,13 +174,19 @@ def re_search():
                 params[f'nm{i}'] = n
             where.append('(' + ' OR '.join(or_parts) + ')')
 
+    # 준공년도
+    if build_year_from:
+        where.append('build_year>=:byf'); params['byf'] = int(build_year_from)
+    if build_year_to:
+        where.append('build_year<=:byt'); params['byt'] = int(build_year_to)
+
     w = ' AND '.join(where)
     conn = get_conn(); cur = conn.cursor()
     cur.execute(f"SELECT COUNT(*) FROM real_estate WHERE {w}", params)
     total = cur.fetchone()[0]
     cur.execute(f"""SELECT * FROM (SELECT a.*, ROWNUM rn FROM (
         SELECT region, name, dong, area_m2 AS area, floor_no AS floor, deal_type, price, deposit, monthly_rent,
-               deal_year, deal_month, deal_day
+               deal_year, deal_month, deal_day, build_year
         FROM real_estate WHERE {w}
         ORDER BY deal_year DESC, deal_month DESC, deal_day DESC
     ) a WHERE ROWNUM <= :maxrow) WHERE rn > :minrow""",
