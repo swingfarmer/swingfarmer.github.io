@@ -148,10 +148,18 @@ def re_search():
     if price_min: where.append('price>=:pmin'); params['pmin'] = int(price_min)
     if price_max: where.append('price<=:pmax'); params['pmax'] = int(price_max)
 
-    # 건물명 검색
+    # 건물명 검색 (쉼표로 여러 개 OR 검색)
     if name:
-        where.append("UPPER(name) LIKE '%'||UPPER(:name)||'%'")
-        params['name'] = name
+        names = [n.strip() for n in name.split(',') if n.strip()]
+        if len(names) == 1:
+            where.append("UPPER(name) LIKE '%'||UPPER(:name)||'%'")
+            params['name'] = names[0]
+        elif names:
+            or_parts = []
+            for i, n in enumerate(names):
+                or_parts.append(f"UPPER(name) LIKE '%'||UPPER(:nm{i})||'%'")
+                params[f'nm{i}'] = n
+            where.append('(' + ' OR '.join(or_parts) + ')')
 
     w = ' AND '.join(where)
     conn = get_conn(); cur = conn.cursor()
