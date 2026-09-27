@@ -4,425 +4,401 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<title>투자 메모·일지 (관리자)</title>
+<title>투자 메모·일지 | 스윙파머</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:900px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a}
-.back-link{display:inline-block;margin-bottom:14px;color:#1F4E78;text-decoration:none;font-size:14px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:860px;margin:0 auto;padding:20px;background:#fff;color:#333}
+a{color:#333;text-decoration:none}
+.back-link{display:inline-block;margin-bottom:12px;color:#1F4E78;font-size:14px}
 .back-link:hover{text-decoration:underline}
-h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:6px;font-size:21px}
-.desc{color:#555;font-size:13px;margin-bottom:16px}
+.board-header{border-bottom:2px solid #1F4E78;padding-bottom:12px;margin-bottom:14px}
+.board-header h1{font-size:20px;color:#1F4E78;font-weight:800;display:flex;align-items:center;gap:10px}
+.cat-mgr{background:none;border:1px solid #ddd;border-radius:4px;padding:3px 8px;font-size:12px;color:#888;cursor:pointer;font-family:inherit}
+.cat-mgr:hover{background:#f5f5f5;color:#333}
 
-/* 로그인 상태바 */
-.authbar{background:white;border-radius:10px;padding:12px 16px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.authbar .who{font-size:13px;color:#444;margin-right:auto}
-.authbar .who b{color:#1F4E78}
-.uid-box{background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:16px;line-height:1.6;word-break:break-all}
-.uid-box b{color:#b45309}
-.uid-box code{background:#fff;padding:2px 6px;border-radius:4px;font-weight:700;color:#dc2626}
+/* 빠른 메모 바 */
+.quick-bar{display:flex;gap:8px;margin-bottom:16px;align-items:stretch}
+.quick-bar select{padding:8px;font-size:13px;border:1px solid #ddd;border-radius:6px;font-family:inherit;background:#fff;max-width:120px}
+.quick-bar input{flex:1;padding:10px 14px;font-size:14px;border:1px solid #ddd;border-radius:6px;font-family:inherit}
+.quick-bar input:focus{outline:none;border-color:#1F4E78}
+.quick-bar input::placeholder{color:#bbb}
+.quick-bar button{padding:8px 18px;background:#1F4E78;color:white;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+.quick-bar button:hover{background:#2d6ba3}
 
-.btn{padding:9px 16px;border:none;border-radius:7px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
-.btn-primary{background:#1F4E78;color:white}
-.btn-primary:hover{background:#2d6ba3}
-.btn-gray{background:#9ca3af;color:white}
-.btn-red{background:#dc2626;color:white}
-.btn-google{background:#fff;color:#444;border:1px solid #ddd;display:inline-flex;align-items:center;gap:8px}
-.btn-google:hover{background:#f8f8f8}
-.btn-sm{padding:5px 11px;font-size:12px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 0;border-bottom:1px solid #e5e5e5}
+.filter-tabs{display:flex;gap:0;flex-wrap:wrap}
+.ftab{padding:6px 14px;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:12px;font-weight:600;color:#666;font-family:inherit;margin-right:-1px}
+.ftab:first-child{border-radius:4px 0 0 4px}.ftab:last-child{border-radius:0 4px 4px 0}
+.ftab.active{background:#1F4E78;color:white;border-color:#1F4E78;z-index:1;position:relative}
+.search-box{display:flex;gap:0;flex:1;min-width:120px;margin-left:auto;max-width:260px}
+.search-box input{flex:1;padding:6px 10px;font-size:12px;border:1px solid #ddd;border-right:none;border-radius:4px 0 0 4px;font-family:inherit}
+.search-box input:focus{outline:none;border-color:#1F4E78}
+.search-box button{padding:6px 12px;background:#1F4E78;color:white;border:1px solid #1F4E78;border-radius:0 4px 4px 0;cursor:pointer;font-size:12px}
+.list-header{display:flex;align-items:center;padding:10px 0}
+.list-cnt{font-size:13px;color:#666}
+.btn-bulk-del{padding:6px 14px;background:#dc2626;color:white;border:none;border-radius:4px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-left:8px;display:none}
+.btn-write{margin-left:auto;padding:8px 20px;background:#03c75a;color:white;border:none;border-radius:4px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-write:hover{background:#02b350}
 
-/* 잠금 화면 */
-.locked{background:white;border-radius:12px;padding:50px 30px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.locked .icon{font-size:48px;margin-bottom:16px}
-.locked h2{font-size:18px;color:#1F4E78;margin-bottom:10px}
-.locked p{font-size:14px;color:#666;line-height:1.7;margin-bottom:20px}
+/* 글 목록 */
+.note-list{display:flex;flex-direction:column;gap:0}
+.note-item{display:flex;align-items:flex-start;gap:10px;padding:14px 0;border-bottom:1px solid #f0f0f0;cursor:pointer}
+.note-item:hover{background:#f8fbff;margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:4px}
+.note-chk{flex:none;margin-top:4px}
+.note-chk input{width:15px;height:15px;cursor:pointer}
+.note-body{flex:1;min-width:0}
+.note-title{font-size:14px;font-weight:600;color:#333;margin-bottom:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.note-title .cat-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#e8f0fe;color:#1a73e8}
+.note-title .pin-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#fff3e0;color:#e65100}
+.note-title .t-new{display:inline-block;background:#ff3e3e;color:white;font-size:9px;font-weight:700;padding:1px 4px;border-radius:2px}
+.note-preview{font-size:13px;color:#888;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:100%}
+.note-meta{font-size:11px;color:#aaa;margin-top:4px;display:flex;gap:10px}
+.note-item.is-memo .note-title{font-weight:400;color:#555}
 
-/* 목록 */
-.toolbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
-.search-box{flex:1;min-width:160px;padding:9px 12px;font-size:14px;border:1px solid #ccc;border-radius:7px;font-family:inherit}
-.note-list{display:flex;flex-direction:column;gap:1px;background:#e5e7eb;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden}
-.note-row{background:white;padding:14px 16px;cursor:pointer;transition:background .12s;display:flex;align-items:center;gap:12px}
-.note-row:hover{background:#f0f5fa}
-.note-row .tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:#dbeafe;color:#1e40af;flex-shrink:0}
-.note-row .title{font-weight:600;font-size:14.5px;color:#1a1a1a;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.note-row .date{font-size:12px;color:#999;flex-shrink:0}
-.list-empty{background:white;text-align:center;color:#999;padding:50px 20px;border-radius:10px;font-size:14px}
-
-/* 상세 */
-.detail{background:white;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.detail-head{border-bottom:2px solid #1F4E78;padding-bottom:14px;margin-bottom:18px}
-.detail-head .tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:#dbeafe;color:#1e40af}
-.detail-head h2{font-size:20px;color:#1a1a1a;margin:8px 0}
-.detail-head .meta{font-size:12px;color:#999}
-.detail-body{font-size:15px;line-height:1.8;color:#333;white-space:pre-wrap;word-break:break-word;min-height:200px}
-.detail-actions{margin-top:20px;padding-top:16px;border-top:1px solid #eee;display:flex;gap:8px;flex-wrap:wrap}
-
-/* 작성/수정 폼 */
-.editor{background:white;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.editor h2{font-size:17px;color:#1F4E78;margin-bottom:16px}
-.field{display:flex;flex-direction:column;margin-bottom:14px}
-.field label{font-size:13px;font-weight:600;margin-bottom:5px;color:#444}
-.field input,.field select,.field textarea{padding:11px;font-size:14px;border:1px solid #ccc;border-radius:7px;font-family:inherit;background:#FFF2CC}
-.field textarea{min-height:340px;resize:vertical;line-height:1.7}
-.field input:focus,.field textarea:focus,.field select:focus{outline:2px solid #1F4E78;background:#FFFACD}
-.editor-actions{display:flex;gap:8px;justify-content:flex-end}
-
+.empty{text-align:center;color:#999;padding:60px 20px}
 .loading{text-align:center;color:#888;padding:40px}
-.hidden{display:none !important}
+.pager{display:flex;gap:4px;justify-content:center;align-items:center;margin-top:16px}
+.pager button{padding:5px 12px;border:1px solid #ddd;border-radius:3px;background:#fff;cursor:pointer;font-size:12px;font-family:inherit}
+.pager button:disabled{opacity:.35}.pager button.current{background:#1F4E78;color:white;border-color:#1F4E78}
+
+/* 글 상세 모달 */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;overflow-y:auto}
+.modal-overlay.active{display:block}
+.modal-inner{max-width:720px;margin:100px auto 40px;padding:0 16px}
+.v-box{background:#fff;border-radius:6px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+.v-header{padding:24px 28px 16px;border-bottom:1px solid #eee}
+.v-title{font-size:20px;font-weight:800;color:#333;line-height:1.4;margin-bottom:10px}
+.v-memo-title{font-size:16px;font-weight:400;color:#666;margin-bottom:10px}
+.v-meta{display:flex;gap:12px;font-size:13px;color:#999;flex-wrap:wrap}
+.v-body{padding:24px 28px;font-size:15px;line-height:1.85;color:#333;min-height:80px;word-break:break-word;white-space:pre-wrap}
+.v-body img{max-width:100%;border-radius:4px;margin:10px 0;display:block}
+.v-body a{color:#1a73e8;text-decoration:underline}
+.v-body hr{border:none;border-top:1px solid #e5e5e5;margin:20px 0}
+.v-actions{padding:14px 28px;border-top:1px solid #eee;display:flex;gap:8px}
+.v-btn{padding:6px 16px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-size:13px;font-family:inherit;color:#555}
+.v-btn:hover{background:#f5f5f5}
+.v-btn.red{color:#e55;border-color:#fcc}.v-close{margin-left:auto}
+
+/* 글쓰기 모달 */
+.w-box{background:#fff;border-radius:6px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+.w-topbar{display:flex;align-items:center;padding:14px 24px;border-bottom:1px solid #e5e5e5}
+.w-topbar h2{font-size:17px;font-weight:800;color:#333;flex:1}
+.w-cancel{padding:6px 14px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-size:13px;font-family:inherit;color:#555;margin-right:8px}
+.w-submit{padding:6px 20px;border:none;border-radius:4px;background:#03c75a;color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.w-submit:hover{background:#02b350}
+.w-selectors{display:flex;gap:10px;padding:14px 24px;border-bottom:1px solid #f0f0f0}
+.w-selectors select{padding:8px 12px;font-size:13px;border:1px solid #ddd;border-radius:4px;font-family:inherit}
+.w-title-row{padding:0 24px;border-bottom:1px solid #f0f0f0}
+.w-title-row input{width:100%;padding:14px 0;font-size:16px;border:none;font-family:inherit;color:#333;font-weight:500}
+.w-title-row input::placeholder{color:#bbb}.w-title-row input:focus{outline:none}
+.w-media-bar{display:flex;gap:0;padding:8px 24px;border-bottom:1px solid #f0f0f0;overflow-x:auto}
+.w-media-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 12px;border:none;background:none;cursor:pointer;font-family:inherit;color:#555;border-radius:4px}
+.w-media-btn:hover{background:#f5f5f5}
+.w-media-btn.disabled{opacity:.3;cursor:not-allowed}.w-media-btn.disabled:hover{background:none}
+.w-media-btn .ico{font-size:20px}.w-media-btn .lbl{font-size:10px;color:#888;white-space:nowrap}
+.w-content textarea{width:100%;min-height:280px;border:none;padding:18px 24px;font-size:15px;line-height:1.8;resize:vertical;font-family:inherit;color:#333}
+.w-content textarea::placeholder{color:#bbb}.w-content textarea:focus{outline:none}
+.w-pin-row{display:flex;padding:8px 24px;align-items:center;gap:6px;border-top:1px solid #f0f0f0}
+.w-pin-row label{font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer}
+
+/* 카테고리 관리 모달 */
+.sm-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1002;align-items:center;justify-content:center;padding:20px}
+.sm-modal-bg.active{display:flex}
+.sm-modal{background:white;border-radius:8px;max-width:400px;width:100%;padding:24px}
+.sm-modal h2{font-size:16px;font-weight:700;margin-bottom:14px}
+.cat-list{margin-bottom:14px}
+.cat-item{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0;gap:8px}
+.cat-item .cat-name{flex:1;font-size:14px}
+.cat-item .cat-del{background:none;border:none;color:#ccc;cursor:pointer;font-size:13px;padding:2px 6px}
+.cat-item .cat-del:hover{color:#e55}
+.cat-add-row{display:flex;gap:8px}
+.cat-add-row input{flex:1;padding:7px 10px;font-size:13px;border:1px solid #ddd;border-radius:4px;font-family:inherit}
+.cat-add-row input:focus{outline:none;border-color:#1F4E78}
+.cat-add-row button{padding:7px 14px;background:#1F4E78;color:white;border:none;border-radius:4px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.sm-close{margin-top:14px;text-align:right}
+.sm-close button{padding:7px 16px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-size:13px;font-family:inherit}
+
+@media(max-width:600px){
+  .toolbar{flex-direction:column;align-items:stretch}.search-box{max-width:100%}
+  .modal-inner{margin:20px auto}
+  .quick-bar{flex-direction:column}.quick-bar select{max-width:100%}
+}
 </style>
 </head>
 <body>
-
 <a href="/" class="back-link">← 메인으로</a>
-<h1>📝 투자 메모·일지</h1>
-<p class="desc">관리자 전용 공간입니다. 시장 관찰·종목 분석·매매 기록을 자유롭게 남겨두세요.</p>
-
-<!-- 로그인 상태바 -->
-<div class="authbar" id="authbar">
-  <div class="who" id="whoami">로그인 확인 중...</div>
-  <button class="btn btn-google hidden" id="btnLogin">
-    <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-    구글로 로그인
-  </button>
-  <button class="btn btn-gray btn-sm hidden" id="btnLogout">로그아웃</button>
+<div class="board-header">
+  <h1>📝 투자 메모·일지 <button class="cat-mgr" id="btnCatMgr">⚙️ 카테고리</button></h1>
 </div>
 
-<!-- 내 UID 안내 (로그인 시, 관리자 설정 전) -->
-<div class="uid-box hidden" id="uidBox"></div>
-
-<!-- 잠금 화면 (비로그인 / 권한없음) -->
-<div class="locked hidden" id="lockedView">
-  <div class="icon">🔒</div>
-  <h2 id="lockedTitle">로그인이 필요합니다</h2>
-  <p id="lockedMsg">이 게시판은 관리자 전용입니다.<br>구글 계정으로 로그인해 주세요.</p>
+<!-- 빠른 메모 -->
+<div class="quick-bar">
+  <select id="qCat"></select>
+  <input type="text" id="qText" placeholder="빠른 메모... (Enter로 저장)" maxlength="500">
+  <button id="qSubmit">메모</button>
 </div>
 
-<!-- 목록 화면 -->
-<div id="listView" class="hidden">
-  <div class="toolbar">
-    <input type="text" class="search-box" id="searchBox" placeholder="🔍 제목·내용 검색">
-    <button class="btn btn-primary" id="btnNew">✏️ 새 메모</button>
-    <button class="btn btn-gray" id="btnSelectMode">☑️ 선택삭제</button>
-    <button class="btn btn-red" id="btnDeleteAll">🗑 전체삭제</button>
-  </div>
-  <div id="selectBar" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:10px;align-items:center;gap:10px">
-    <label style="font-size:13px;font-weight:600;color:#991b1b;display:flex;align-items:center;gap:6px;cursor:pointer">
-      <input type="checkbox" id="checkAll" style="width:16px;height:16px"> 전체 선택
-    </label>
-    <span id="selectCount" style="font-size:13px;color:#991b1b;margin-right:auto">0개 선택됨</span>
-    <button class="btn btn-red btn-sm" id="btnDeleteSelected">선택 삭제</button>
-    <button class="btn btn-gray btn-sm" id="btnSelectCancel">취소</button>
-  </div>
-  <div class="note-list" id="noteList"></div>
-</div>
-
-<!-- 상세 화면 -->
-<div id="detailView" class="hidden">
-  <div class="detail">
-    <div class="detail-head">
-      <span class="tag" id="dTag">메모</span>
-      <h2 id="dTitle"></h2>
-      <div class="meta" id="dMeta"></div>
-    </div>
-    <div class="detail-body" id="dBody"></div>
-    <div class="detail-actions">
-      <button class="btn btn-gray" id="btnBackList">← 목록</button>
-      <button class="btn btn-primary" id="btnEdit">✏️ 수정</button>
-      <button class="btn btn-red" id="btnDelete">🗑 삭제</button>
-    </div>
+<div class="toolbar">
+  <div class="filter-tabs" id="filterTabs"><button class="ftab active" data-filter="">전체</button></div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="검색">
+    <button id="btnSearch">검색</button>
   </div>
 </div>
-
-<!-- 작성/수정 화면 -->
-<div id="editorView" class="hidden">
-  <div class="editor">
-    <h2 id="editorTitle">✏️ 새 메모</h2>
-    <div class="field">
-      <label>분류</label>
-      <select id="eCategory">
-        <option value="메모">📝 메모</option>
-        <option value="종목분석">📊 종목분석</option>
-        <option value="매매기록">💰 매매기록</option>
-        <option value="시장관찰">🌐 시장관찰</option>
-        <option value="부동산">🏢 부동산</option>
-        <option value="기타">📌 기타</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>제목</label>
-      <input type="text" id="eTitle" placeholder="제목" maxlength="120">
-    </div>
-    <div class="field">
-      <label>내용</label>
-      <textarea id="eBody" placeholder="자유롭게 작성하세요..."></textarea>
-    </div>
-    <div class="editor-actions">
-      <button class="btn btn-gray" id="btnCancelEdit">취소</button>
-      <button class="btn btn-primary" id="btnSave">저장</button>
-    </div>
-  </div>
+<div class="list-header">
+  <span class="list-cnt" id="cntInfo"></span>
+  <button class="btn-bulk-del" id="btnBulkDel">🗑️ 삭제</button>
+  <button class="btn-write" id="btnWrite">✏️ 글쓰기</button>
 </div>
+<div id="noteArea"><div class="loading">불러오는 중...</div></div>
+<div id="pager" class="pager" style="display:none"></div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, updateDoc, doc, query, orderBy, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+<!-- 글 상세 -->
+<div class="modal-overlay" id="viewModal"><div class="modal-inner"><div class="v-box">
+  <div class="v-header"><div id="vBadge" style="margin-bottom:8px"></div><div id="vTitle"></div>
+    <div class="v-meta"><span id="vAuthor"></span><span style="color:#ddd">|</span><span id="vDate" style="color:#999"></span></div>
+  </div>
+  <div class="v-body" id="vBody"></div>
+  <div class="v-actions" id="vActions"></div>
+</div></div></div>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
-  authDomain: "swingfarmer-board01.firebaseapp.com",
-  projectId: "swingfarmer-board01",
-  storageBucket: "swingfarmer-board01.firebasestorage.app",
-  messagingSenderId: "312575044644",
-  appId: "1:312575044644:web:81d754eb1d90f25454fcb1",
-  measurementId: "G-WGQH1DPTFB"
-};
+<!-- 글쓰기 -->
+<div class="modal-overlay" id="writeModal"><div class="modal-inner"><div class="w-box">
+  <div class="w-topbar"><h2 id="wTitle">글쓰기</h2><button class="w-cancel" id="wCancel">취소</button><button class="w-submit" id="wSubmit">등록</button></div>
+  <div class="w-selectors"><select id="fCategory"></select></div>
+  <div class="w-title-row"><input type="text" id="fTitle" placeholder="제목 (빈칸이면 메모로 저장)" maxlength="200"></div>
+  <div class="w-media-bar">
+    <button class="w-media-btn disabled" disabled><span class="ico">🖼️</span><span class="lbl">사진</span></button>
+    <button class="w-media-btn" id="tbHr"><span class="ico">—</span><span class="lbl">구분선</span></button>
+    <button class="w-media-btn disabled" disabled><span class="ico">📎</span><span class="lbl">파일</span></button>
+    <button class="w-media-btn" id="tbLink"><span class="ico">🔗</span><span class="lbl">링크</span></button>
+    <button class="w-media-btn" id="tbImg"><span class="ico">🌐</span><span class="lbl">이미지URL</span></button>
+  </div>
+  <div class="w-content"><textarea id="fContent" placeholder="내용을 입력하세요."></textarea></div>
+  <div class="w-pin-row"><label><input type="checkbox" id="fPinned" style="width:15px;height:15px"> 📌 상단 고정</label></div>
+</div></div></div>
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const NOTES = collection(db, 'notes');
+<!-- 카테고리 관리 -->
+<div class="sm-modal-bg" id="catModal"><div class="sm-modal">
+  <h2>⚙️ 카테고리 관리</h2>
+  <div class="cat-list" id="catList"></div>
+  <div class="cat-add-row">
+    <input type="text" id="catNewName" placeholder="새 카테고리명" maxlength="20">
+    <button id="btnCatAdd">추가</button>
+  </div>
+  <div class="sm-close"><button id="btnCatClose">닫기</button></div>
+</div></div>
 
-// ⚠️ 관리자 UID — 이 UID로 로그인한 사람만 접근 가능
-const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1";
+<script>
+(function(){
+'use strict';
+var API='https://swingfarmer.duckdns.org/api';
+var currentFilter='',currentPage=1,totalPages=1,searchQuery='',editingId=null,categories=[];
+var $=function(id){return document.getElementById(id);};
+var esc=function(s){return(s||'').replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
+function fmtDate(s){if(!s)return'';var d=new Date(s.replace(' ','T'));if(isNaN(d))return s;var p=function(n){return('0'+n).slice(-2);};return d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate())+'. '+p(d.getHours())+':'+p(d.getMinutes());}
+function fmtShort(s){if(!s)return'';var d=new Date(s.replace(' ','T'));if(isNaN(d))return s;var p=function(n){return('0'+n).slice(-2);};var now=new Date();if(d.toDateString()===now.toDateString())return p(d.getHours())+':'+p(d.getMinutes());if(d.getFullYear()===now.getFullYear())return p(d.getMonth()+1)+'.'+p(d.getDate())+'.';return d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate())+'.';}
+function isNew(s){if(!s)return false;return(Date.now()-new Date(s.replace(' ','T')).getTime())<86400000;}
+function catName(id){var c=categories.find(function(x){return String(x.id)===String(id);});return c?c.name:'';}
+function apiFetch(url,opts){return fetch(url,opts).then(function(r){return r.json().then(function(d){return{ok:r.ok,data:d};});});}
 
-const $ = id => document.getElementById(id);
-const esc = s => (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
-let currentUser = null;
-let notes = [];
-let currentNoteId = null;
-let editingId = null;
-let selectMode = false;
-
-function fmtDate(ts){
-  if(!ts) return '';
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
-  const p = n => ('0'+n).slice(-2);
-  return d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+// ── 카테고리 ──
+function loadCategories(){
+  return fetch(API+'/note-categories').then(function(r){return r.json();}).then(function(data){
+    categories=data;renderFilterTabs();renderCategorySelects();renderCatList();
+  }).catch(function(){categories=[];renderFilterTabs();renderCategorySelects();});
 }
-
-function isAdmin(){
-  if(!currentUser) return false;
-  if(!ADMIN_UID) return true; // UID 미설정 시 임시로 로그인한 사람 허용
-  return currentUser.uid === ADMIN_UID;
+function renderFilterTabs(){
+  var h='<button class="ftab'+(currentFilter===''?' active':'')+'" data-filter="">전체</button>';
+  categories.forEach(function(c){h+='<button class="ftab'+(currentFilter===String(c.id)?' active':'')+'" data-filter="'+c.id+'">'+esc(c.name)+'</button>';});
+  $('filterTabs').innerHTML=h;
+  $('filterTabs').querySelectorAll('.ftab').forEach(function(t){
+    t.addEventListener('click',function(){$('filterTabs').querySelectorAll('.ftab').forEach(function(x){x.classList.remove('active');});t.classList.add('active');currentFilter=t.dataset.filter;currentPage=1;loadNotes();});
+  });
 }
-
-function showView(name){
-  ['lockedView','listView','detailView','editorView'].forEach(v=>$(v).classList.add('hidden'));
-  if(name) $(name).classList.remove('hidden');
+function renderCategorySelects(){
+  var h='<option value="">카테고리</option>';
+  categories.forEach(function(c){h+='<option value="'+c.id+'">'+esc(c.name)+'</option>';});
+  $('fCategory').innerHTML=h;
+  // 빠른메모 카테고리
+  var qh='<option value="">분류</option>';
+  categories.forEach(function(c){qh+='<option value="'+c.id+'">'+esc(c.name)+'</option>';});
+  $('qCat').innerHTML=qh;
+  // 메모 기본값 찾기
+  var memo=categories.find(function(c){return c.name==='메모';});
+  if(memo) $('qCat').value=String(memo.id);
 }
-
-// === 인증 ===
-const provider = new GoogleAuthProvider();
-$('btnLogin').addEventListener('click', async ()=>{
-  try{ await signInWithPopup(auth, provider); }
-  catch(e){ alert('로그인 실패: '+e.message); }
+function renderCatList(){
+  if(!categories.length){$('catList').innerHTML='<div style="color:#999;font-size:13px;padding:8px 0">카테고리가 없습니다.</div>';return;}
+  $('catList').innerHTML=categories.map(function(c){return'<div class="cat-item"><span class="cat-name">'+esc(c.name)+'</span><button class="cat-del" data-cid="'+c.id+'">✕</button></div>';}).join('');
+  $('catList').querySelectorAll('.cat-del').forEach(function(b){b.addEventListener('click',function(){deleteCat(parseInt(b.dataset.cid));});});
+}
+$('btnCatMgr').addEventListener('click',function(){$('catModal').classList.add('active');});
+$('btnCatClose').addEventListener('click',function(){$('catModal').classList.remove('active');});
+$('catModal').addEventListener('click',function(e){if(e.target===$('catModal'))$('catModal').classList.remove('active');});
+$('btnCatAdd').addEventListener('click',function(){
+  var name=$('catNewName').value.trim();if(!name)return;
+  apiFetch(API+'/note-categories',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name})})
+  .then(function(r){if(!r.ok){alert(r.data.error);return;}$('catNewName').value='';loadCategories();}).catch(function(e){alert(e.message);});
 });
-$('btnLogout').addEventListener('click', ()=> signOut(auth));
-
-onAuthStateChanged(auth, user=>{
-  currentUser = user;
-  if(!user){
-    // 비로그인
-    $('whoami').textContent = '로그인하지 않음';
-    $('btnLogin').classList.remove('hidden');
-    $('btnLogout').classList.add('hidden');
-    $('uidBox').classList.add('hidden');
-    $('lockedTitle').textContent = '로그인이 필요합니다';
-    $('lockedMsg').innerHTML = '이 게시판은 관리자 전용입니다.<br>구글 계정으로 로그인해 주세요.';
-    showView('lockedView');
-    return;
-  }
-  // 로그인됨
-  $('whoami').innerHTML = '로그인: <b>'+esc(user.displayName||user.email)+'</b>';
-  $('btnLogin').classList.add('hidden');
-  $('btnLogout').classList.remove('hidden');
-
-  // UID 미설정이면 안내 박스 표시
-  if(!ADMIN_UID){
-    $('uidBox').classList.remove('hidden');
-    $('uidBox').innerHTML = '⚙️ <b>관리자 설정 안내</b><br>아직 관리자 UID가 설정되지 않아, 현재는 <b>로그인한 누구나</b> 접근 가능합니다.<br>아래 UID를 코드의 <b>ADMIN_UID</b>와 Firestore 보안 규칙에 붙여넣으면 <b>본인만</b> 접근하게 됩니다.<br>내 UID: <code>'+esc(user.uid)+'</code>';
-  } else {
-    $('uidBox').classList.add('hidden');
-  }
-
-  if(!isAdmin()){
-    // 로그인했지만 관리자 아님
-    $('lockedTitle').textContent = '접근 권한이 없습니다';
-    $('lockedMsg').innerHTML = '이 계정은 관리자가 아닙니다.<br>관리자 본인 계정으로 로그인해 주세요.';
-    showView('lockedView');
-    return;
-  }
-  // 관리자 → 목록
-  loadNotes();
-});
-
-// === 목록 로드 ===
-async function loadNotes(){
-  showView('listView');
-  $('noteList').innerHTML = '<div class="loading">불러오는 중...</div>';
-  try{
-    const q = query(NOTES, orderBy('createdAt','desc'));
-    const snap = await getDocs(q);
-    notes = [];
-    snap.forEach(d => notes.push({id:d.id, ...d.data()}));
-    renderList();
-  }catch(e){
-    $('noteList').innerHTML = '<div class="list-empty">불러오기 실패: '+esc(e.message)+'</div>';
-  }
+$('catNewName').addEventListener('keydown',function(e){if(e.key==='Enter')$('btnCatAdd').click();});
+function deleteCat(cid){
+  if(!confirm('삭제할까요?'))return;
+  apiFetch(API+'/note-categories/'+cid,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({})})
+  .then(function(r){if(!r.ok){alert(r.data.error);return;}loadCategories();}).catch(function(e){alert(e.message);});
 }
 
-function renderList(){
-  const kw = $('searchBox').value.trim().toLowerCase();
-  let list = notes;
-  if(kw){
-    list = notes.filter(n => (n.title||'').toLowerCase().includes(kw) || (n.body||'').toLowerCase().includes(kw));
-  }
-  if(list.length===0){
-    $('noteList').innerHTML = '<div class="list-empty">'+(kw?'검색 결과가 없습니다.':'아직 메모가 없어요. 「새 메모」로 첫 글을 남겨보세요.')+'</div>';
-    return;
-  }
-  $('noteList').innerHTML = list.map(n=>`
-    <div class="note-row" onclick="window.rowClick(event,'${n.id}')">
-      <input type="checkbox" class="note-check" data-id="${n.id}" onclick="event.stopPropagation()" style="display:${selectMode?'inline-block':'none'};width:16px;height:16px;cursor:pointer">
-      <span class="tag">${esc(n.category||'메모')}</span>
-      <span class="title">${esc(n.title||'(제목없음)')}</span>
-      <span class="date">조회 ${n.views||0} · ${fmtDate(n.createdAt)}</span>
-    </div>`).join('');
+// ── 빠른 메모 ──
+function quickMemo(){
+  var text=$('qText').value.trim();if(!text)return;
+  var cat=$('qCat').value;
+  $('qSubmit').disabled=true;$('qSubmit').textContent='저장...';
+  apiFetch(API+'/notes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:text,category:cat,author:'스윙파머'})})
+  .then(function(r){if(!r.ok){alert(r.data.error);return;}$('qText').value='';loadNotes();})
+  .catch(function(e){alert(e.message);})
+  .finally(function(){$('qSubmit').disabled=false;$('qSubmit').textContent='메모';});
 }
-$('searchBox').addEventListener('input', renderList);
+$('qSubmit').addEventListener('click',quickMemo);
+$('qText').addEventListener('keydown',function(e){if(e.key==='Enter')quickMemo();});
 
-// === 상세 ===
-// 행 클릭: 선택모드면 체크, 아니면 열기
-window.rowClick = function(e, id){
-  if(selectMode){
-    const row = e.currentTarget;
-    const chk = row.querySelector('.note-check');
-    if(chk){ chk.checked = !chk.checked; updateSelectCount(); }
-  } else {
-    window.openNote(id);
-  }
-};
-// 선택모드 토글
-function setSelectMode(on){
-  selectMode = on;
-  $('selectBar').style.display = on ? 'flex' : 'none';
-  document.querySelectorAll('.note-check').forEach(c=>{ c.style.display = on?'inline-block':'none'; c.checked=false; });
-  $('checkAll').checked = false;
-  updateSelectCount();
+// ── 목록 ──
+function loadNotes(){
+  var q='?page='+currentPage+'&per_page=30';
+  if(currentFilter)q+='&category='+currentFilter;
+  if(searchQuery)q+='&q='+encodeURIComponent(searchQuery);
+  $('noteArea').innerHTML='<div class="loading">불러오는 중...</div>';$('pager').style.display='none';$('cntInfo').textContent='';$('btnBulkDel').style.display='none';
+  fetch(API+'/notes'+q).then(function(r){return r.json();}).then(function(d){
+    totalPages=d.pages||1;$('cntInfo').textContent='총 '+(d.total||0)+'건';renderList(d.data||[]);renderPager();
+  }).catch(function(e){$('noteArea').innerHTML='<div class="empty">불러오기 실패: '+esc(e.message)+'</div>';});
 }
-function updateSelectCount(){
-  const n = document.querySelectorAll('.note-check:checked').length;
-  $('selectCount').textContent = n + '개 선택됨';
-}
+$('btnSearch').addEventListener('click',function(){searchQuery=$('searchInput').value.trim();currentPage=1;loadNotes();});
+$('searchInput').addEventListener('keydown',function(e){if(e.key==='Enter')$('btnSearch').click();});
 
-window.openNote = async function(id){
-  const n = notes.find(x=>x.id===id);
-  if(!n) return;
-  currentNoteId = id;
-  $('dTag').textContent = n.category||'메모';
-  $('dTitle').textContent = n.title||'(제목없음)';
-  const views = n.views||0;
-  $('dMeta').textContent = fmtDate(n.createdAt) + (n.updatedAt ? ' (수정: '+fmtDate(n.updatedAt)+')' : '') + ' · 조회 ' + views;
-  $('dBody').textContent = n.body||'';
-  showView('detailView');
-  // 조회수: 내가 쓴 글이 아니면 +1
-  if(currentUser && n.uid && n.uid !== currentUser.uid){
-    try{
-      await updateDoc(doc(db,'notes',id), { views: increment(1) });
-      n.views = views + 1;
-      $('dMeta').textContent = fmtDate(n.createdAt) + (n.updatedAt ? ' (수정: '+fmtDate(n.updatedAt)+')' : '') + ' · 조회 ' + n.views;
-    }catch(e){}
-  }
-};
-$('btnBackList').addEventListener('click', ()=> showView('listView'));
-
-// === 작성 ===
-$('btnNew').addEventListener('click', ()=>{
-  editingId = null;
-  $('editorTitle').textContent = '✏️ 새 메모';
-  $('eCategory').value = '메모'; $('eTitle').value=''; $('eBody').value='';
-  showView('editorView');
-});
-$('btnEdit').addEventListener('click', ()=>{
-  const n = notes.find(x=>x.id===currentNoteId);
-  if(!n) return;
-  editingId = currentNoteId;
-  $('editorTitle').textContent = '✏️ 메모 수정';
-  $('eCategory').value = n.category||'메모'; $('eTitle').value = n.title||''; $('eBody').value = n.body||'';
-  showView('editorView');
-});
-$('btnCancelEdit').addEventListener('click', ()=>{
-  showView(editingId ? 'detailView' : 'listView');
-});
-
-$('btnSave').addEventListener('click', async ()=>{
-  const category = $('eCategory').value;
-  const title = $('eTitle').value.trim();
-  const body = $('eBody').value.trim();
-  if(!title){ alert('제목을 입력하세요.'); return; }
-  $('btnSave').disabled = true; $('btnSave').textContent = '저장 중...';
-  try{
-    if(editingId){
-      await updateDoc(doc(db,'notes',editingId), { category, title, body, updatedAt: serverTimestamp() });
+function renderList(notes){
+  if(!notes.length){$('noteArea').innerHTML='<div class="empty">아직 기록이 없습니다. 메모를 남겨보세요!</div>';return;}
+  var h='<div class="note-list">';
+  notes.forEach(function(n){
+    var isMemo=!n.title;
+    var cn=catName(n.category);
+    var nw=isNew(n.created_at)?'<span class="t-new">N</span>':'';
+    var pin=n.is_pinned?'<span class="pin-tag">📌</span>':'';
+    var catTag=cn?'<span class="cat-tag">'+esc(cn)+'</span>':'';
+    h+='<div class="note-item'+(isMemo?' is-memo':'')+'" data-id="'+n.id+'">';
+    h+='<div class="note-chk"><input type="checkbox" class="note-chk-input" value="'+n.id+'"></div>';
+    h+='<div class="note-body">';
+    if(isMemo){
+      h+='<div class="note-preview">'+pin+catTag+' '+esc(n.title||'')+'</div>';
     } else {
-      await addDoc(NOTES, { category, title, body, uid: currentUser.uid, createdAt: serverTimestamp() });
+      h+='<div class="note-title">'+pin+catTag+' '+esc(n.title)+nw+'</div>';
     }
-    await loadNotes();
-  }catch(e){ alert('저장 실패: '+e.message); }
-  $('btnSave').disabled = false; $('btnSave').textContent = '저장';
+    h+='<div class="note-meta"><span>'+fmtShort(n.created_at)+'</span><span>👁 '+(n.views||0)+'</span></div>';
+    h+='</div></div>';
+  });
+  h+='</div>';$('noteArea').innerHTML=h;
+  $('noteArea').querySelectorAll('.note-item').forEach(function(el){
+    el.querySelector('.note-body').addEventListener('click',function(){openNote(parseInt(el.dataset.id));});
+  });
+  document.querySelectorAll('.note-chk-input').forEach(function(c){c.addEventListener('change',updateBulkBtn);});
+}
+function updateBulkBtn(){
+  var cnt=document.querySelectorAll('.note-chk-input:checked').length;
+  $('btnBulkDel').style.display=cnt>0?'inline-block':'none';
+  $('btnBulkDel').textContent='🗑️ '+cnt+'건 삭제';
+}
+function renderPager(){
+  if(totalPages<=1){$('pager').style.display='none';return;}$('pager').style.display='flex';
+  var h='<button '+(currentPage<=1?'disabled':'')+' data-p="'+(currentPage-1)+'">◀</button>';
+  var s=Math.max(1,currentPage-4),e=Math.min(totalPages,s+9);if(e-s<9)s=Math.max(1,e-9);
+  for(var i=s;i<=e;i++)h+='<button data-p="'+i+'" class="'+(i===currentPage?'current':'')+'">'+i+'</button>';
+  h+='<button '+(currentPage>=totalPages?'disabled':'')+' data-p="'+(currentPage+1)+'">▶</button>';$('pager').innerHTML=h;
+}
+$('pager').addEventListener('click',function(e){var b=e.target.closest('button[data-p]');if(!b||b.disabled)return;currentPage=parseInt(b.dataset.p);loadNotes();window.scrollTo({top:0,behavior:'smooth'});});
+
+// ── 상세 ──
+function openNote(id){
+  fetch(API+'/notes/'+id).then(function(r){return r.json();}).then(function(n){
+    if(n.error){alert(n.error);return;}renderView(n);$('viewModal').classList.add('active');document.body.style.overflow='hidden';
+  }).catch(function(e){alert(e.message);});
+}
+function closeView(){$('viewModal').classList.remove('active');document.body.style.overflow='';}
+function renderView(n){
+  var cn=catName(n.category);
+  $('vBadge').innerHTML=(n.is_pinned?'<span class="pin-tag">📌</span> ':'')+(cn?'<span class="cat-tag">'+esc(cn)+'</span>':'');
+  var titleEl=$('vTitle');
+  if(n.title){titleEl.className='v-title';titleEl.textContent=n.title;}
+  else{titleEl.className='v-memo-title';titleEl.textContent='빠른 메모';}
+  $('vAuthor').textContent=n.author||'스윙파머';
+  $('vDate').textContent=fmtDate(n.created_at);
+  var body=esc(n.content||'');
+  body=body.replace(/\[이미지:(https?:\/\/[^\]]+)\]/g,'<img src="$1" alt="">');
+  body=body.replace(/\[링크:(https?:\/\/[^\|]+)\|([^\]]+)\]/g,'<a href="$1" target="_blank" rel="noopener">$2 ↗</a>');
+  body=body.replace(/────+/g,'<hr>');
+  $('vBody').innerHTML=body.replace(/\n/g,'<br>');
+  $('vActions').innerHTML='<button class="v-btn" data-act="edit" data-id="'+n.id+'">수정</button><button class="v-btn red" data-act="del" data-id="'+n.id+'">삭제</button><button class="v-btn v-close">닫기</button>';
+  $('vActions').querySelector('.v-close').addEventListener('click',closeView);
+  $('vActions').querySelector('[data-act="edit"]').addEventListener('click',function(){closeView();editNote(parseInt(this.dataset.id));});
+  $('vActions').querySelector('[data-act="del"]').addEventListener('click',function(){deleteNote(parseInt(this.dataset.id));});
+}
+$('viewModal').addEventListener('click',function(e){if(e.target===$('viewModal'))closeView();});
+
+// ── 글쓰기 ──
+function openWrite(){
+  editingId=null;$('wTitle').textContent='글쓰기';
+  $('fCategory').value='';$('fTitle').value='';$('fContent').value='';$('fPinned').checked=false;
+  $('writeModal').classList.add('active');document.body.style.overflow='hidden';
+  setTimeout(function(){$('fTitle').focus();},100);
+}
+$('btnWrite').addEventListener('click',openWrite);
+function closeWrite(){$('writeModal').classList.remove('active');document.body.style.overflow='';}
+$('wCancel').addEventListener('click',closeWrite);
+$('writeModal').addEventListener('click',function(e){if(e.target===$('writeModal'))closeWrite();});
+
+function insertAt(ta,txt){var s=ta.selectionStart,e=ta.selectionEnd,v=ta.value;ta.value=v.substring(0,s)+txt+v.substring(e);ta.selectionStart=ta.selectionEnd=s+txt.length;ta.focus();}
+$('tbHr').addEventListener('click',function(){insertAt($('fContent'),'\n────────────────────\n');});
+$('tbImg').addEventListener('click',function(){var u=prompt('이미지 URL');if(u&&u.trim())insertAt($('fContent'),'[이미지:'+u.trim()+']');});
+$('tbLink').addEventListener('click',function(){var u=prompt('링크 URL');if(!u)return;var l=prompt('표시 텍스트',u.trim());insertAt($('fContent'),'[링크:'+u.trim()+'|'+(l||u.trim())+']');});
+
+$('wSubmit').addEventListener('click',function(){
+  var cat=$('fCategory').value,title=$('fTitle').value.trim(),content=$('fContent').value.trim(),pinned=$('fPinned').checked;
+  if(!content){alert('내용을 입력하세요.');return;}
+  $('wSubmit').disabled=true;$('wSubmit').textContent='저장...';
+  apiFetch(API+'/notes'+(editingId?'/'+editingId:''),{method:editingId?'PUT':'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({category:cat,title:title,content:content,author:'스윙파머',pinned:pinned})})
+  .then(function(r){if(!r.ok){alert(r.data.error);return;}closeWrite();loadNotes();})
+  .catch(function(e){alert(e.message);})
+  .finally(function(){$('wSubmit').disabled=false;$('wSubmit').textContent='등록';});
 });
 
-// === 삭제 ===
-$('btnDelete').addEventListener('click', async ()=>{
-  if(!currentNoteId) return;
-  if(!confirm('이 메모를 삭제할까요?')) return;
-  try{
-    await deleteDoc(doc(db,'notes',currentNoteId));
-    await loadNotes();
-  }catch(e){ alert('삭제 실패: '+e.message); }
+function editNote(id){
+  fetch(API+'/notes/'+id).then(function(r){return r.json();}).then(function(n){
+    if(n.error){alert(n.error);return;}
+    editingId=id;$('wTitle').textContent='수정';
+    $('fCategory').value=n.category||'';$('fTitle').value=n.title||'';$('fContent').value=n.content||'';$('fPinned').checked=!!n.is_pinned;
+    $('writeModal').classList.add('active');document.body.style.overflow='hidden';
+  }).catch(function(e){alert(e.message);});
+}
+function deleteNote(id){
+  if(!confirm('삭제할까요?'))return;
+  apiFetch(API+'/notes/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({})})
+  .then(function(r){if(!r.ok){alert(r.data.error);return;}closeView();loadNotes();}).catch(function(e){alert(e.message);});
+}
+
+// ── 일괄삭제 ──
+$('btnBulkDel').addEventListener('click',function(){
+  var ids=[];document.querySelectorAll('.note-chk-input:checked').forEach(function(c){ids.push(parseInt(c.value));});
+  if(!ids.length)return;
+  if(!confirm(ids.length+'건 삭제할까요?'))return;
+  var done=0,fail=0,total=ids.length;
+  ids.forEach(function(id){
+    apiFetch(API+'/notes/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({})})
+    .then(function(r){if(!r.ok)fail++;else done++;}).catch(function(){fail++;})
+    .finally(function(){if(done+fail===total){if(fail)alert(done+'건 삭제, '+fail+'건 실패');loadNotes();}});
+  });
 });
 
-// === 전체삭제 ===
-$('btnDeleteAll').addEventListener('click', async ()=>{
-  if(notes.length===0){ alert('삭제할 메모가 없습니다.'); return; }
-  if(!confirm('정말 모든 메모('+notes.length+'개)를 삭제할까요?\n되돌릴 수 없습니다!')) return;
-  if(!confirm('한 번 더 확인합니다. 전체 삭제를 진행할까요?')) return;
-  $('btnDeleteAll').disabled = true; $('btnDeleteAll').textContent = '삭제 중...';
-  try{
-    for(const n of notes){ await deleteDoc(doc(db,'notes',n.id)); }
-    await loadNotes();
-    alert('전체 삭제 완료.');
-  }catch(e){ alert('삭제 중 오류: '+e.message); }
-  $('btnDeleteAll').disabled = false; $('btnDeleteAll').textContent = '🗑 전체삭제';
-});
-
-// === 선택삭제 ===
-$('btnSelectMode').addEventListener('click', ()=> setSelectMode(true));
-$('btnSelectCancel').addEventListener('click', ()=> setSelectMode(false));
-$('checkAll').addEventListener('change', ()=>{
-  const on = $('checkAll').checked;
-  document.querySelectorAll('.note-check').forEach(c=> c.checked = on);
-  updateSelectCount();
-});
-$('noteList').addEventListener('change', e=>{
-  if(e.target.classList.contains('note-check')) updateSelectCount();
-});
-$('btnDeleteSelected').addEventListener('click', async ()=>{
-  const ids = Array.from(document.querySelectorAll('.note-check:checked')).map(c=>c.dataset.id);
-  if(ids.length===0){ alert('선택된 메모가 없습니다.'); return; }
-  if(!confirm('선택한 '+ids.length+'개 메모를 삭제할까요?')) return;
-  $('btnDeleteSelected').disabled = true; $('btnDeleteSelected').textContent = '삭제 중...';
-  try{
-    for(const id of ids){ await deleteDoc(doc(db,'notes',id)); }
-    await loadNotes();
-    setSelectMode(false);
-    alert(ids.length+'개 삭제 완료.');
-  }catch(e){ alert('삭제 중 오류: '+e.message); }
-  $('btnDeleteSelected').disabled = false; $('btnDeleteSelected').textContent = '선택 삭제';
-});
+loadCategories().then(function(){loadNotes();});
+})();
 </script>
-
 <script src="/common.js?v=4"></script>
 </body>
 </html>
