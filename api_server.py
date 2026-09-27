@@ -151,9 +151,13 @@ def re_search():
             if parts[0]: where.append('area_m2>=:amin'); params['amin'] = float(parts[0])
             if parts[1]: where.append('area_m2<=:amax'); params['amax'] = float(parts[1])
 
-    # 금액 범위
-    if price_min: where.append('price>=:pmin'); params['pmin'] = int(price_min)
-    if price_max: where.append('price<=:pmax'); params['pmax'] = int(price_max)
+    # 금액 범위 (매매=price, 전세/월세=deposit)
+    if price_min:
+        where.append("(CASE WHEN deal_type='S' THEN price ELSE NVL(deposit,0) END)>=:pmin")
+        params['pmin'] = int(price_min)
+    if price_max:
+        where.append("(CASE WHEN deal_type='S' THEN price ELSE NVL(deposit,0) END)<=:pmax")
+        params['pmax'] = int(price_max)
 
     # 건물명 검색 (쉼표로 여러 개 OR 검색)
     if name:
