@@ -35,13 +35,20 @@ def get_conn():
         config_dir=WALLET_DIR, wallet_location=WALLET_DIR,
         wallet_password=os.environ.get('ORACLE_WALLET_PASSWORD', ''))
 
+def _convert(val):
+    """Oracle 타입 → Python 기본 타입 변환"""
+    if val is None: return None
+    if isinstance(val, datetime): return val.strftime('%Y-%m-%d %H:%M:%S')
+    if hasattr(val, 'read'): return val.read()  # LOB → str
+    return val
+
 def rows_to_list(cur, rows):
     cols = [c[0].lower() for c in cur.description]
-    return [dict(zip(cols, r)) for r in rows]
+    return [dict(zip(cols, [_convert(v) for v in r])) for r in rows]
 
 def row_to_dict(cur, row):
     cols = [c[0].lower() for c in cur.description]
-    return dict(zip(cols, row))
+    return dict(zip(cols, [_convert(v) for v in row]))
 
 def dt_str(val):
     if val is None: return None
