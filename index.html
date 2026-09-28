@@ -122,8 +122,10 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
   <div class="fav-body" id="favBody">
     <div class="fav-toolbar" id="favToolbar">
       <select id="presetSelect"><option value="">프리셋 선택…</option></select>
-      <button onclick="savePreset()">💾 저장</button>
-      <button onclick="deletePreset()">🗑️ 삭제</button>
+      <button onclick="savePreset()" title="현재 프리셋에 덮어쓰기">💾 덮어쓰기</button>
+      <button onclick="saveAsPreset()" title="새 이름으로 저장">📥 새로저장</button>
+      <button onclick="renamePreset()" title="이름변경">✏️</button>
+      <button onclick="deletePreset()" title="삭제">🗑️</button>
       <button onclick="exportFav()">📤 내보내기</button>
       <button onclick="importFav()">📥 가져오기</button>
       <button id="btnEditFav" onclick="toggleEditMode()">✏️ 순서편집</button>
@@ -532,23 +534,38 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
   });
 
   window.savePreset = function(){
-    if(!favs.length){ alert('즐겨찾기가 비어있습니다.'); return; }
+    // 💾 덮어쓰기 — 선택된 프리셋에 바로 저장
     var current = presetSelect.value;
-    if(current){
-      // 선택된 프리셋 → 바로 덮어쓰기
-      presets[current] = JSON.parse(JSON.stringify(favs));
-      localStorage.setItem(PRESET_KEY, JSON.stringify(presets));
-      renderPresets();
-      presetSelect.value = current;
-      return;
-    }
-    // 선택 없으면 새 이름 입력
-    var name = prompt('프리셋 이름:');
+    if(!current){ alert('덮어쓸 프리셋을 먼저 선택하세요.\n새로 만들려면 📥 새로저장을 누르세요.'); return; }
+    if(!favs.length){ alert('즐겨찾기가 비어있습니다.'); return; }
+    presets[current] = JSON.parse(JSON.stringify(favs));
+    localStorage.setItem(PRESET_KEY, JSON.stringify(presets));
+    renderPresets();
+    presetSelect.value = current;
+  };
+
+  window.saveAsPreset = function(){
+    // 📥 새로저장
+    if(!favs.length){ alert('즐겨찾기가 비어있습니다.'); return; }
+    var name = prompt('새 프리셋 이름:');
     if(!name) return;
+    if(presets[name]){ if(!confirm('"'+name+'" 이미 있습니다. 덮어쓸까요?')) return; }
     presets[name] = JSON.parse(JSON.stringify(favs));
     localStorage.setItem(PRESET_KEY, JSON.stringify(presets));
     renderPresets();
     presetSelect.value = name;
+  };
+
+  window.renamePreset = function(){
+    var current = presetSelect.value;
+    if(!current){ alert('이름을 바꿀 프리셋을 선택하세요.'); return; }
+    var newName = prompt('새 이름:', current);
+    if(!newName || newName === current) return;
+    presets[newName] = presets[current];
+    delete presets[current];
+    localStorage.setItem(PRESET_KEY, JSON.stringify(presets));
+    renderPresets();
+    presetSelect.value = newName;
   };
 
   window.deletePreset = function(){
