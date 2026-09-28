@@ -533,7 +533,17 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
 
   window.savePreset = function(){
     if(!favs.length){ alert('즐겨찾기가 비어있습니다.'); return; }
-    var name = prompt('프리셋 이름을 입력하세요:', presetSelect.value || '');
+    var current = presetSelect.value;
+    if(current){
+      // 선택된 프리셋 → 바로 덮어쓰기
+      presets[current] = JSON.parse(JSON.stringify(favs));
+      localStorage.setItem(PRESET_KEY, JSON.stringify(presets));
+      renderPresets();
+      presetSelect.value = current;
+      return;
+    }
+    // 선택 없으면 새 이름 입력
+    var name = prompt('프리셋 이름:');
     if(!name) return;
     presets[name] = JSON.parse(JSON.stringify(favs));
     localStorage.setItem(PRESET_KEY, JSON.stringify(presets));
