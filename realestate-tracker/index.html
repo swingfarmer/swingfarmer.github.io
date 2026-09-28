@@ -129,6 +129,12 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
     <span style="font-size:13px;color:#888">~</span>
     <input type="number" id="fBuildTo" placeholder="끝" style="width:64px;min-width:64px;flex:none" min="1970" max="2030">
   </div>
+  <div class="filter-row" style="margin-top:-4px;gap:6px">
+    <span style="font-size:12px;color:#666;font-weight:600">🔖 즐겨찾기</span>
+    <select id="fBookmark" style="max-width:160px;font-size:12px"><option value="">저장된 검색 불러오기</option></select>
+    <button id="btnBmSave" style="font-size:11px;padding:4px 10px;border:1px solid #1F4E78;border-radius:4px;background:#fff;color:#1F4E78;cursor:pointer;font-family:inherit;font-weight:600">💾 현재 조건 저장</button>
+    <button id="btnBmDel" style="font-size:11px;padding:4px 10px;border:1px solid #ddd;border-radius:4px;background:#fff;color:#999;cursor:pointer;font-family:inherit">🗑️ 삭제</button>
+  </div>
   <div class="cnt" id="recentCnt"></div>
   <div class="tbl-wrap"><table class="tbl"><thead><tr><th>지역</th><th>건물명</th><th>동</th><th>전용면적</th><th>층</th><th>금액</th><th>유형</th><th>준공</th><th>거래일</th></tr></thead><tbody id="recentBody"><tr><td colspan="9" class="loading">로딩...</td></tr></tbody></table></div>
   <div class="pager" id="pager"></div>
@@ -349,6 +355,90 @@ document.querySelectorAll('.tab').forEach(function(tab){
     if(tab.dataset.tab==='yearly')loadYearly();
   });
 });
+// ── 검색조건 즐겨찾기 ──
+var BM_KEY='sf_re_bookmarks';
+function loadBookmarks(){try{return JSON.parse(localStorage.getItem(BM_KEY))||{};}catch(e){return {};}}
+function saveBookmarks(bm){localStorage.setItem(BM_KEY,JSON.stringify(bm));}
+function renderBookmarks(){
+  var bm=loadBookmarks(),sel=document.getElementById('fBookmark');
+  sel.innerHTML='<option value="">저장된 검색 불러오기</option>';
+  Object.keys(bm).forEach(function(name){
+    var o=document.createElement('option');o.value=name;o.textContent=name;sel.appendChild(o);
+  });
+}
+function getCurrentFilters(){
+  var typeMap={'lblS':'S','lblJ':'J','lblW':'W'};var types=[];
+  ['lblS','lblJ','lblW'].forEach(function(id){if(!document.getElementById(id).classList.contains('off'))types.push(typeMap[id]);});
+  return {
+    region:document.getElementById('fRegion').value,
+    dong:document.getElementById('fDong').value,
+    types:types,
+    yearFrom:document.getElementById('fYearFrom').value,
+    yearTo:document.getElementById('fYearTo').value,
+    areaMin:document.getElementById('fAreaMin').value,
+    areaMax:document.getElementById('fAreaMax').value,
+    priceMin:document.getElementById('fPriceMin').value,
+    priceMax:document.getElementById('fPriceMax').value,
+    buildFrom:document.getElementById('fBuildFrom').value,
+    buildTo:document.getElementById('fBuildTo').value,
+    search:document.getElementById('fSearch').value,
+    prop:PROP
+  };
+}
+function applyFilters(f){
+  // 탭 전환
+  if(f.prop && f.prop!==PROP){
+    PROP=f.prop;
+    document.querySelectorAll('.prop-tab').forEach(function(t){t.classList.toggle('active',t.dataset.prop===PROP);});
+    loadRegions();
+  }
+  if(f.region){document.getElementById('fRegion').value=f.region;loadDongs();}
+  setTimeout(function(){
+    if(f.dong)document.getElementById('fDong').value=f.dong;
+    // types
+    var onMap={'S':'lblS','J':'lblJ','W':'lblW'};
+    var clsMap={'lblS':'on-trade','lblJ':'on-jeonse','lblW':'on-wolse'};
+    ['lblS','lblJ','lblW'].forEach(function(id){
+      var el=document.getElementById(id);
+      var t=id==='lblS'?'S':id==='lblJ'?'J':'W';
+      if(f.types && f.types.indexOf(t)>=0){el.classList.remove('off');el.classList.add(clsMap[id]);}
+      else{el.classList.add('off');el.classList.remove(clsMap[id]);}
+    });
+    document.getElementById('fYearFrom').value=f.yearFrom||'';
+    document.getElementById('fYearTo').value=f.yearTo||'';
+    document.getElementById('fAreaMin').value=f.areaMin||'';
+    document.getElementById('fAreaMax').value=f.areaMax||'';
+    document.getElementById('fPriceMin').value=f.priceMin||'';
+    document.getElementById('fPriceMax').value=f.priceMax||'';
+    document.getElementById('fBuildFrom').value=f.buildFrom||'';
+    document.getElementById('fBuildTo').value=f.buildTo||'';
+    document.getElementById('fSearch').value=f.search||'';
+    PAGE=0;loadRecent();
+  },300);
+}
+document.getElementById('btnBmSave').addEventListener('click',function(){
+  var bm=loadBookmarks();
+  var existing=Object.keys(bm);
+  var def=document.getElementById('fBookmark').value||'';
+  var name=prompt('저장할 이름'+(existing.length?' (기존 이름 입력 시 덮어쓰기)':''),def);
+  if(!name)return;
+  bm[name]=getCurrentFilters();
+  saveBookmarks(bm);
+  renderBookmarks();
+  document.getElementById('fBookmark').value=name;
+});
+document.getElementById('btnBmDel').addEventListener('click',function(){
+  var name=document.getElementById('fBookmark').value;
+  if(!name){alert('삭제할 즐겨찾기를 선택하세요.');return;}
+  if(!confirm('"'+name+'" 삭제할까요?'))return;
+  var bm=loadBookmarks();delete bm[name];saveBookmarks(bm);renderBookmarks();
+});
+document.getElementById('fBookmark').addEventListener('change',function(){
+  var name=this.value;if(!name)return;
+  var bm=loadBookmarks();if(bm[name])applyFilters(bm[name]);
+});
+renderBookmarks();
+
 document.getElementById('fRegion').addEventListener('change',function(){loadDongs();PAGE=0;loadRecent()});
 document.getElementById('fDong').addEventListener('change',function(){PAGE=0;loadRecent()});
 ['lblS','lblJ','lblW'].forEach(function(id){
