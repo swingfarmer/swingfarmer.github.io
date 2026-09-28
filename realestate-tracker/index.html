@@ -132,8 +132,10 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
   <div class="filter-row" style="margin-top:-4px;gap:6px">
     <span style="font-size:12px;color:#666;font-weight:600">🔖 즐겨찾기</span>
     <select id="fBookmark" style="max-width:160px;font-size:12px"><option value="">저장된 검색 불러오기</option></select>
-    <button id="btnBmSave" style="font-size:11px;padding:4px 10px;border:1px solid #1F4E78;border-radius:4px;background:#fff;color:#1F4E78;cursor:pointer;font-family:inherit;font-weight:600">💾 현재 조건 저장</button>
-    <button id="btnBmDel" style="font-size:11px;padding:4px 10px;border:1px solid #ddd;border-radius:4px;background:#fff;color:#999;cursor:pointer;font-family:inherit">🗑️ 삭제</button>
+    <button id="btnBmOverwrite" style="font-size:11px;padding:4px 10px;border:1px solid #1F4E78;border-radius:4px;background:#fff;color:#1F4E78;cursor:pointer;font-family:inherit;font-weight:600" title="선택된 항목에 덮어쓰기">💾 덮어쓰기</button>
+    <button id="btnBmSave" style="font-size:11px;padding:4px 10px;border:1px solid #03c75a;border-radius:4px;background:#fff;color:#03c75a;cursor:pointer;font-family:inherit;font-weight:600" title="새 이름으로 저장">📥 새로저장</button>
+    <button id="btnBmRename" style="font-size:11px;padding:4px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;color:#888;cursor:pointer;font-family:inherit" title="이름변경">✏️</button>
+    <button id="btnBmDel" style="font-size:11px;padding:4px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;color:#999;cursor:pointer;font-family:inherit" title="삭제">🗑️</button>
   </div>
   <div class="cnt" id="recentCnt"></div>
   <div class="tbl-wrap"><table class="tbl"><thead><tr><th>지역</th><th>건물명</th><th>동</th><th>전용면적</th><th>층</th><th>금액</th><th>유형</th><th>준공</th><th>거래일</th></tr></thead><tbody id="recentBody"><tr><td colspan="9" class="loading">로딩...</td></tr></tbody></table></div>
@@ -416,16 +418,31 @@ function applyFilters(f){
     PAGE=0;loadRecent();
   },300);
 }
-document.getElementById('btnBmSave').addEventListener('click',function(){
+document.getElementById('btnBmOverwrite').addEventListener('click',function(){
+  var name=document.getElementById('fBookmark').value;
+  if(!name){alert('덮어쓸 즐겨찾기를 먼저 선택하세요.\n새로 만들려면 📥 새로저장을 누르세요.');return;}
   var bm=loadBookmarks();
-  var existing=Object.keys(bm);
-  var def=document.getElementById('fBookmark').value||'';
-  var name=prompt('저장할 이름'+(existing.length?' (기존 이름 입력 시 덮어쓰기)':''),def);
+  bm[name]=getCurrentFilters();
+  saveBookmarks(bm);
+});
+document.getElementById('btnBmSave').addEventListener('click',function(){
+  var name=prompt('새 즐겨찾기 이름:');
   if(!name)return;
+  var bm=loadBookmarks();
+  if(bm[name]){if(!confirm('"'+name+'" 이미 있습니다. 덮어쓸까요?'))return;}
   bm[name]=getCurrentFilters();
   saveBookmarks(bm);
   renderBookmarks();
   document.getElementById('fBookmark').value=name;
+});
+document.getElementById('btnBmRename').addEventListener('click',function(){
+  var name=document.getElementById('fBookmark').value;
+  if(!name){alert('이름을 바꿀 즐겨찾기를 선택하세요.');return;}
+  var newName=prompt('새 이름:',name);
+  if(!newName||newName===name)return;
+  var bm=loadBookmarks();bm[newName]=bm[name];delete bm[name];
+  saveBookmarks(bm);renderBookmarks();
+  document.getElementById('fBookmark').value=newName;
 });
 document.getElementById('btnBmDel').addEventListener('click',function(){
   var name=document.getElementById('fBookmark').value;
