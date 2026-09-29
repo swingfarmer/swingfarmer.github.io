@@ -500,6 +500,114 @@ def delete_note(note_id):
     conn.commit(); cur.close(); conn.close()
     return jsonify({'ok': True})
 
+# ══ exchange rates (수출입은행) ══
+@app.route('/api/rates/exchange')
+def rates_exchange():
+    """환율 조회. ?cur=USD,JPY,EUR &days=90 &from=2026-01-01 &to=2026-09-29"""
+    cur_filter = request.args.get('cur', '')  # 쉼표 구분 통화코드
+    days = request.args.get('days', '')
+    date_from = request.args.get('from', '')
+    date_to = request.args.get('to', '')
+    latest = request.args.get('latest', '')  # latest=1 → 최신 1일
+
+    where = []; params = {}
+    if cur_filter:
+        curs = [c.strip() for c in cur_filter.split(',') if c.strip()]
+        if curs:
+            ph = ','.join([f':c{i}' for i in range(len(curs))])
+            where.append(f'cur_unit IN ({ph})')
+            for i, c in enumerate(curs): params[f'c{i}'] = c
+
+    if latest == '1':
+        where.append('rate_date = (SELECT MAX(rate_date) FROM exchange_rates)')
+    else:
+        if days:
+            where.append(f"rate_date >= TRUNC(SYSDATE) - :days")
+            params['days'] = int(days)
+        if date_from:
+            where.append("rate_date >= TO_DATE(:df, 'YYYY-MM-DD')")
+            params['df'] = date_from
+        if date_to:
+            where.append("rate_date <= TO_DATE(:dt, 'YYYY-MM-DD')")
+            params['dt'] = date_to
+
+    w = ' AND '.join(where) if where else '1=1'
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute(f"""SELECT TO_CHAR(rate_date,'YYYY-MM-DD') AS rate_date, cur_unit, cur_nm,
+        deal_bas_r, ttb, tts, bkpr, kftc_deal_bas_r, kftc_bkpr,
+        yy_efee_r, ten_dd_efee_r
+        FROM exchange_rates WHERE {w} ORDER BY rate_date DESC, cur_unit""", params)
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify({'count': len(data), 'data': data})
+
+@app.route('/api/rates/exchange/currencies')
+def rates_currencies():
+    """DB에 있는 통화 목록."""
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("""SELECT cur_unit, cur_nm, COUNT(*) cnt,
+        TO_CHAR(MIN(rate_date),'YYYY-MM-DD') first_date,
+        TO_CHAR(MAX(rate_date),'YYYY-MM-DD') last_date
+        FROM exchange_rates GROUP BY cur_unit, cur_nm ORDER BY cnt DESC""")
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify(data)
+
+@app.route('/api/rates/interest')
+def rates_interest():
+    """금리 조회. ?type=AP02,AP03 &days=90 &item=한국은행 기준금리"""
+    dtype = request.args.get('type', '')
+    days = request.args.get('days', '')
+    date_from = request.args.get('from', '')
+    date_to = request.args.get('to', '')
+    item = request.args.get('item', '')
+    latest = request.args.get('latest', '')
+
+    where = []; params = {}
+    if dtype:
+        types = [t.strip() for t in dtype.split(',') if t.strip()]
+        if types:
+            ph = ','.join([f':t{i}' for i in range(len(types))])
+            where.append(f'data_type IN ({ph})')
+            for i, t in enumerate(types): params[f't{i}'] = t
+    if item:
+        where.append("item_nm LIKE '%'||:item||'%'")
+        params['item'] = item
+    if latest == '1':
+        where.append('rate_date = (SELECT MAX(rate_date) FROM interest_rates)')
+    else:
+        if days:
+            where.append(f"rate_date >= TRUNC(SYSDATE) - :days")
+            params['days'] = int(days)
+        if date_from:
+            where.append("rate_date >= TO_DATE(:df, 'YYYY-MM-DD')")
+            params['df'] = date_from
+        if date_to:
+            where.append("rate_date <= TO_DATE(:dt, 'YYYY-MM-DD')")
+            params['dt'] = date_to
+
+    w = ' AND '.join(where) if where else '1=1'
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute(f"""SELECT TO_CHAR(rate_date,'YYYY-MM-DD') AS rate_date,
+        data_type, item_code, item_nm, rate
+        FROM interest_rates WHERE {w} ORDER BY rate_date DESC, data_type, item_code""", params)
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify({'count': len(data), 'data': data})
+
+@app.route('/api/rates/interest/items')
+def rates_interest_items():
+    """DB에 있는 금리 항목 목록."""
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("""SELECT data_type, item_code, item_nm, COUNT(*) cnt,
+        TO_CHAR(MIN(rate_date),'YYYY-MM-DD') first_date,
+        TO_CHAR(MAX(rate_date),'YYYY-MM-DD') last_date
+        FROM interest_rates GROUP BY data_type, item_code, item_nm
+        ORDER BY data_type, cnt DESC""")
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify(data)
+
 # ══ comments ══
 @app.route('/api/posts/<int:post_id>/comments', methods=['POST'])
 def add_comment(post_id):
