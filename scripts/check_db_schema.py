@@ -137,8 +137,54 @@ if 'NOTES' not in tables:
 else:
     cur.execute("SELECT COUNT(*) FROM notes"); print(f"\nNOTES: {cur.fetchone()[0]}건")
 
+# ── EXCHANGE_RATES ──
+if 'EXCHANGE_RATES' not in tables:
+    print("\n[+] EXCHANGE_RATES 생성...")
+    cur.execute("""CREATE TABLE exchange_rates (
+        id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        rate_date DATE NOT NULL,
+        cur_unit VARCHAR2(10) NOT NULL,
+        cur_nm VARCHAR2(40),
+        ttb NUMBER(18,4),
+        tts NUMBER(18,4),
+        deal_bas_r NUMBER(18,4),
+        bkpr NUMBER(18,4),
+        yy_efee_r NUMBER(10,4),
+        ten_dd_efee_r NUMBER(10,4),
+        kftc_deal_bas_r NUMBER(18,4),
+        kftc_bkpr NUMBER(18,4),
+        created_at TIMESTAMP DEFAULT SYSTIMESTAMP,
+        CONSTRAINT uq_exrate UNIQUE (rate_date, cur_unit)
+    )""")
+    cur.execute("CREATE INDEX idx_exrate_date ON exchange_rates(rate_date DESC)")
+    cur.execute("CREATE INDEX idx_exrate_cur ON exchange_rates(cur_unit)")
+    conn.commit()
+    print("  → 완료")
+else:
+    cur.execute("SELECT COUNT(*) FROM exchange_rates"); print(f"\nEXCHANGE_RATES: {cur.fetchone()[0]}건")
+
+# ── INTEREST_RATES ──
+if 'INTEREST_RATES' not in tables:
+    print("\n[+] INTEREST_RATES 생성...")
+    cur.execute("""CREATE TABLE interest_rates (
+        id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        rate_date DATE NOT NULL,
+        data_type VARCHAR2(10) NOT NULL,
+        item_code VARCHAR2(20),
+        item_nm VARCHAR2(80),
+        rate NUMBER(10,4),
+        created_at TIMESTAMP DEFAULT SYSTIMESTAMP,
+        CONSTRAINT uq_intrate UNIQUE (rate_date, data_type, item_code)
+    )""")
+    cur.execute("CREATE INDEX idx_intrate_date ON interest_rates(rate_date DESC)")
+    cur.execute("CREATE INDEX idx_intrate_type ON interest_rates(data_type)")
+    conn.commit()
+    print("  → 완료")
+else:
+    cur.execute("SELECT COUNT(*) FROM interest_rates"); print(f"\nINTEREST_RATES: {cur.fetchone()[0]}건")
+
 # 전체 확인
-for tbl in ['CATEGORIES','POSTS','COMMENTS','NOTE_CATEGORIES','NOTES']:
+for tbl in ['CATEGORIES','POSTS','COMMENTS','NOTE_CATEGORIES','NOTES','EXCHANGE_RATES','INTEREST_RATES']:
     if tbl in tables or tbl == 'CATEGORIES':
         try:
             cur.execute(f"SELECT column_name, data_type FROM user_tab_columns WHERE table_name='{tbl}' ORDER BY column_id")
