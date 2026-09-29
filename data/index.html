@@ -122,8 +122,8 @@ function tryFallbackCDN(){console.warn("1차CDN실패");var s=document.createEle
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" onload="onChartLoad()" onerror="tryFallbackCDN()"></script>
 <script>
-var DATA_URL = '/data/rates.json';
-var HIST_URL = '/data/rates_history.json';
+var ORACLE_API = 'https://swingfarmer.duckdns.org/api';
+var GOLD_URL = '/data/rates.json';
 var histData = [];
 var miniCharts = {};
 var mainChart = null;
@@ -131,13 +131,23 @@ var currentDays = 30;
 
 async function load() {
   try {
-    var r = await fetch(DATA_URL + '?t=' + Date.now());
+    // 환율: Oracle API (수출입은행 매매기준율)
+    var r = await fetch(ORACLE_API + '/rates/exchange?latest=1');
     var d = await r.json();
-    document.getElementById('updated').textContent = '업데이트: ' + d.updated;
-    document.getElementById('usd').textContent = d.rates.USD_KRW.toLocaleString();
-    document.getElementById('jpy').textContent = d.rates.JPY100_KRW.toLocaleString();
-    document.getElementById('cny').textContent = d.rates.CNY_KRW.toLocaleString();
-    document.getElementById('gold').textContent = d.rates.GOLD_KRW_G ? d.rates.GOLD_KRW_G.toLocaleString() : '—';
+    var byC = {};
+    (d.data||[]).forEach(function(row){ byC[row.cur_unit] = row; });
+    var usd = byC['USD'], jpy = byC['JPY(100)'], cny = byC['CNH'] || byC['CNY'];
+    if(usd) document.getElementById('usd').textContent = Number(usd.deal_bas_r).toLocaleString();
+    if(jpy) document.getElementById('jpy').textContent = Number(jpy.deal_bas_r).toLocaleString();
+    if(cny) document.getElementById('cny').textContent = Number(cny.deal_bas_r).toLocaleString();
+    if(d.data && d.data.length > 0) document.getElementById('updated').textContent = '업데이트: ' + d.data[0].rate_date + ' (수출입은행 매매기준율)';
+
+    // 금시세: yfinance (기존)
+    try {
+      var gr = await fetch(GOLD_URL + '?t=' + Date.now());
+      var gd = await gr.json();
+      if(gd.rates && gd.rates.GOLD_KRW_G) document.getElementById('gold').textContent = gd.rates.GOLD_KRW_G.toLocaleString();
+    } catch(e2) { console.log('금시세 로드 실패'); }
   } catch(e) {
     document.getElementById('updated').textContent = '데이터 로드 실패';
   }
@@ -145,10 +155,44 @@ async function load() {
 
 async function loadHistory() {
   try {
-    var r = await fetch(HIST_URL + '?t=' + Date.now());
-    if (!r.ok) { console.log('히스토리 파일 없음 (HTTP ' + r.status + ')'); return; }
-    histData = await r.json();
-    if (!histData || !Array.isArray(histData) || histData.length === 0) { console.log('히스토리 데이터 비어있음'); return; }
+    // Oracle API에서 히스토리 로드
+    var r = await fetch(ORACLE_API + '/rates/exchange?days=365&cur=USD,JPY(100),CNH');
+    var d = await r.json();
+    var rows = d.data || [];
+    if (!rows.length) { console.log('히스토리 없음'); return; }
+
+    // 날짜별 그룹핑 → histData 형태로 변환
+    var byDate = {};
+    rows.forEach(function(row) {
+      if(!byDate[row.rate_date]) byDate[row.rate_date] = {};
+      var val = Number(row.deal_bas_r || row.kftc_deal_bas_r || 0);
+      if(row.cur_unit === 'USD') byDate[row.rate_date].USD_KRW = val;
+      if(row.cur_unit === 'JPY(100)') byDate[row.rate_date].JPY100_KRW = val;
+      if(row.cur_unit === 'CNH' || row.cur_unit === 'CNY') byDate[row.rate_date].CNY_KRW = val;
+    });
+
+    // 금시세 히스토리 (yfinance rates_history.json에서)
+    var goldHist = {};
+    try {
+      var gr = await fetch('/data/rates_history.json?t=' + Date.now());
+      if(gr.ok) {
+        var gd = await gr.json();
+        gd.forEach(function(h){ if(h.GOLD_KRW_G) goldHist[h.date] = h.GOLD_KRW_G; });
+      }
+    } catch(e) {}
+
+    histData = Object.keys(byDate).sort().map(function(date) {
+      var o = byDate[date];
+      return {
+        date: date,
+        USD_KRW: o.USD_KRW || 0,
+        JPY100_KRW: o.JPY100_KRW || 0,
+        CNY_KRW: o.CNY_KRW || 0,
+        GOLD_KRW_G: goldHist[date] || null
+      };
+    });
+
+    if (histData.length === 0) return;
 
     document.getElementById('histSection').style.display = 'block';
     document.getElementById('histCount').textContent = '(' + histData.length + '일치)';
@@ -163,7 +207,6 @@ async function loadHistory() {
     } else {
       document.getElementById('histMsg').style.display = 'none';
       document.getElementById('histCharts').style.display = 'block';
-      // DOM이 업데이트된 후 차트 렌더링
       setTimeout(function() { renderAllCharts(currentDays); }, 100);
     }
   } catch(e) { console.error('히스토리 로드 실패:', e); }
