@@ -9,44 +9,88 @@
    ============================================ */
 
 /* ── 인증 게이트 (눈가림) ── */
-(function(){
+/* ── Firebase 초기화 (공용) ── */
+var _sfFirebaseReady = (function(){
   var ADMIN_UID = '1JrHgD2bpTRjrS2jw7MbpHciBph1';
   var FB_CFG = {apiKey:'AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY',authDomain:'swingfarmer-board01.firebaseapp.com',projectId:'swingfarmer-board01'};
+  var _auth = null;
+  var _resolve;
+  var _promise = new Promise(function(r){ _resolve = r; });
 
-  // 이미 인증된 세션이면 게이트 안 띄움 (빠른 체크)
+  window._sfAuth = null;  // 외부 접근용
+
+  return {
+    promise: _promise,
+    init: function(mods) {
+      var initializeApp = mods[0].initializeApp, getApps = mods[0].getApps;
+      var getAuth = mods[1].getAuth;
+      var app = getApps().length ? getApps()[0] : initializeApp(FB_CFG);
+      _auth = getAuth(app);
+      window._sfAuth = _auth;
+      _resolve(_auth);
+      return { auth: _auth, mods: mods, ADMIN_UID: ADMIN_UID, FB_CFG: FB_CFG };
+    }
+  };
+})();
+
+/* ── API 토큰 부착 fetch (공용) ── */
+window.sfApiFetch = function(url, opts) {
+  opts = opts || {};
+  var method = (opts.method || 'GET').toUpperCase();
+
+  // GET은 토큰 불필요
+  if (method === 'GET') {
+    return fetch(url, opts).then(function(r) {
+      return r.json().then(function(d) { return {ok: r.ok, status: r.status, data: d}; });
+    });
+  }
+
+  // POST/PUT/DELETE: Firebase ID Token 부착
+  if (!window._sfAuth || !window._sfAuth.currentUser) {
+    return Promise.resolve({ok: false, status: 401, data: {error: '로그인 필요'}});
+  }
+
+  return window._sfAuth.currentUser.getIdToken().then(function(token) {
+    opts.headers = opts.headers || {};
+    opts.headers['Authorization'] = 'Bearer ' + token;
+    return fetch(url, opts).then(function(r) {
+      return r.json().then(function(d) { return {ok: r.ok, status: r.status, data: d}; });
+    });
+  });
+};
+
+(function(){
+  var ADMIN_UID = '1JrHgD2bpTRjrS2jw7MbpHciBph1';
+
+  // 이미 인증된 세션 체크
   var cached = false;
   try { cached = sessionStorage.getItem('sf_authed') === '1'; } catch(e){}
-  if (cached) return;
 
-  // 오버레이 즉시 삽입 (FOUC 방지)
-  var overlay = document.createElement('div');
-  overlay.id = 'sf-auth-gate';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(245,247,250,0.97);display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,sans-serif';
-  overlay.innerHTML = '<div style="text-align:center;max-width:360px;padding:40px">'
-    + '<div style="font-size:48px;margin-bottom:16px">🔒</div>'
-    + '<div style="font-size:20px;font-weight:800;color:#1F4E78;margin-bottom:8px">스윙파머 금융도구</div>'
-    + '<div style="font-size:14px;color:#666;margin-bottom:24px;line-height:1.6">개인 전용 공간입니다.<br>관리자 로그인이 필요합니다.</div>'
-    + '<button id="sf-gate-login" style="background:#1F4E78;color:#fff;border:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 2px 10px rgba(31,78,120,0.3)">🔑 Google 로그인</button>'
-    + '<div id="sf-gate-msg" style="margin-top:16px;font-size:13px;color:#dc2626;display:none"></div>'
-    + '</div>';
+  // 캐시 안 됐으면 게이트 오버레이 삽입
+  if (!cached) {
+    var overlay = document.createElement('div');
+    overlay.id = 'sf-auth-gate';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(245,247,250,0.97);display:flex;align-items:center;justify-content:center;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,sans-serif';
+    overlay.innerHTML = '<div style="text-align:center;max-width:360px;padding:40px">'
+      + '<div style="font-size:48px;margin-bottom:16px">🔒</div>'
+      + '<div style="font-size:20px;font-weight:800;color:#1F4E78;margin-bottom:8px">스윙파머 금융도구</div>'
+      + '<div style="font-size:14px;color:#666;margin-bottom:24px;line-height:1.6">개인 전용 공간입니다.<br>관리자 로그인이 필요합니다.</div>'
+      + '<button id="sf-gate-login" style="background:#1F4E78;color:#fff;border:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 2px 10px rgba(31,78,120,0.3)">🔑 Google 로그인</button>'
+      + '<div id="sf-gate-msg" style="margin-top:16px;font-size:13px;color:#dc2626;display:none"></div>'
+      + '</div>';
+    if (document.body) document.body.appendChild(overlay);
+    else document.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(overlay); });
+  }
 
-  // DOM 준비 전이면 documentElement에 바로 삽입
-  if (document.body) document.body.appendChild(overlay);
-  else document.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(overlay); });
-
-  // Firebase 동적 로드 + 인증 체크
+  // Firebase 항상 로드 (게이트 + API 토큰 둘 다 필요)
   Promise.all([
     import('https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js'),
     import('https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js')
   ]).then(function(mods){
-    var initializeApp = mods[0].initializeApp, getApps = mods[0].getApps;
-    var getAuth = mods[1].getAuth, onAuthStateChanged = mods[1].onAuthStateChanged;
+    var fb = _sfFirebaseReady.init(mods);
+    var auth = fb.auth;
+    var onAuthStateChanged = mods[1].onAuthStateChanged;
     var GoogleAuthProvider = mods[1].GoogleAuthProvider, signInWithPopup = mods[1].signInWithPopup;
-
-    var app = getApps().length ? getApps()[0] : initializeApp(FB_CFG);
-    var auth = getAuth(app);
-    var provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
 
     function unlock(){
       try { sessionStorage.setItem('sf_authed','1'); } catch(e){}
@@ -60,25 +104,28 @@
 
     onAuthStateChanged(auth, function(user){
       if(user && user.uid === ADMIN_UID){ unlock(); }
-      else if(user){ showErr('관리자 계정이 아닙니다. (' + (user.email||'') + ')'); }
+      else if(user && !cached){ showErr('관리자 계정이 아닙니다. (' + (user.email||'') + ')'); }
     });
 
-    // 로그인 버튼
-    function bindLogin(){
-      var btn = document.getElementById('sf-gate-login');
-      if(!btn) return;
-      btn.addEventListener('click', function(){
-        btn.textContent = '로그인 중...'; btn.disabled = true;
-        signInWithPopup(auth, provider).catch(function(e){
-          btn.textContent = '🔑 Google 로그인'; btn.disabled = false;
-          if(e.code !== 'auth/popup-closed-by-user') showErr('로그인 실패: ' + e.message);
+    // 게이트 로그인 버튼 (캐시 안 됐을 때만)
+    if (!cached) {
+      var provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      function bindLogin(){
+        var btn = document.getElementById('sf-gate-login');
+        if(!btn) return;
+        btn.addEventListener('click', function(){
+          btn.textContent = '로그인 중...'; btn.disabled = true;
+          signInWithPopup(auth, provider).catch(function(e){
+            btn.textContent = '🔑 Google 로그인'; btn.disabled = false;
+            if(e.code !== 'auth/popup-closed-by-user') showErr('로그인 실패: ' + e.message);
+          });
         });
-      });
+      }
+      if(document.getElementById('sf-gate-login')) bindLogin();
+      else document.addEventListener('DOMContentLoaded', bindLogin);
     }
-    if(document.getElementById('sf-gate-login')) bindLogin();
-    else document.addEventListener('DOMContentLoaded', bindLogin);
   }).catch(function(e){
-    // Firebase 로드 실패 시 게이트 해제 (오프라인 등)
     console.warn('Auth gate: Firebase load failed', e);
     var g = document.getElementById('sf-auth-gate');
     if(g) g.style.display = 'none';
