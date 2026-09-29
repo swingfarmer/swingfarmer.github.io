@@ -183,8 +183,27 @@ if 'INTEREST_RATES' not in tables:
 else:
     cur.execute("SELECT COUNT(*) FROM interest_rates"); print(f"\nINTEREST_RATES: {cur.fetchone()[0]}건")
 
+# ── GOLD_PRICES ──
+if 'GOLD_PRICES' not in tables:
+    print("\n[+] GOLD_PRICES 생성...")
+    cur.execute("""CREATE TABLE gold_prices (
+        id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        price_date DATE NOT NULL,
+        price_usd NUMBER(12,2),
+        price_krw_g NUMBER(12,0),
+        usd_krw NUMBER(12,4),
+        source VARCHAR2(20) DEFAULT 'yfinance',
+        created_at TIMESTAMP DEFAULT SYSTIMESTAMP,
+        CONSTRAINT uq_gold_date UNIQUE (price_date)
+    )""")
+    cur.execute("CREATE INDEX idx_gold_date ON gold_prices(price_date DESC)")
+    conn.commit()
+    print("  → 완료")
+else:
+    cur.execute("SELECT COUNT(*) FROM gold_prices"); print(f"\nGOLD_PRICES: {cur.fetchone()[0]}건")
+
 # 전체 확인
-for tbl in ['CATEGORIES','POSTS','COMMENTS','NOTE_CATEGORIES','NOTES','EXCHANGE_RATES','INTEREST_RATES']:
+for tbl in ['CATEGORIES','POSTS','COMMENTS','NOTE_CATEGORIES','NOTES','EXCHANGE_RATES','INTEREST_RATES','GOLD_PRICES']:
     if tbl in tables or tbl == 'CATEGORIES':
         try:
             cur.execute(f"SELECT column_name, data_type FROM user_tab_columns WHERE table_name='{tbl}' ORDER BY column_id")
