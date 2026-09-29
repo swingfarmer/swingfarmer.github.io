@@ -18,10 +18,14 @@ API 키: ~/.env_secrets → KOREAEXIM_API_KEY
 import os, sys, json, time, argparse
 from datetime import datetime, timedelta, timezone
 import urllib.request
+import ssl
 import oracledb
 
 KST = timezone(timedelta(hours=9))
 BASE_URL = "https://oapi.koreaexim.go.kr/site/program/financial/exchangeJSON"
+SSL_CTX = ssl.create_default_context()
+SSL_CTX.check_hostname = False
+SSL_CTX.verify_mode = ssl.CERT_NONE
 
 def load_env():
     f = os.path.expanduser('~/.env_secrets')
@@ -54,7 +58,7 @@ def fetch_api(data_type, search_date):
     url = f"{BASE_URL}?authkey={key}&searchdate={search_date}&data={data_type}"
     try:
         req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=15, context=SSL_CTX) as resp:
             raw = resp.read().decode('utf-8')
         data = json.loads(raw)
         if not data:
@@ -147,7 +151,7 @@ def save_interest_rates(conn, rate_date_str, data_type, items):
     return inserted
 
 def collect_date(conn, date_str, verbose=True):
-    """특정 날짜 AP01+AP02+AP03 수집."""
+    """특정 날짜 AP01 환율 수집. (AP02/AP03은 수출입은행 미지원 → 한국은행 ECOS API로 대체 예정)"""
     total = 0
     api_calls = 0
 
@@ -160,30 +164,6 @@ def collect_date(conn, date_str, verbose=True):
         if verbose: print(f"  AP01 환율: {cnt}건")
     else:
         if verbose: print(f"  AP01 환율: 데이터 없음 (비영업일?)")
-
-    time.sleep(0.3)
-
-    # AP02 대출금리
-    data = fetch_api('AP02', date_str)
-    api_calls += 1
-    if data:
-        cnt = save_interest_rates(conn, date_str, 'AP02', data)
-        total += cnt
-        if verbose: print(f"  AP02 대출금리: {cnt}건")
-    else:
-        if verbose: print(f"  AP02 대출금리: 데이터 없음")
-
-    time.sleep(0.3)
-
-    # AP03 국제금리
-    data = fetch_api('AP03', date_str)
-    api_calls += 1
-    if data:
-        cnt = save_interest_rates(conn, date_str, 'AP03', data)
-        total += cnt
-        if verbose: print(f"  AP03 국제금리: {cnt}건")
-    else:
-        if verbose: print(f"  AP03 국제금리: 데이터 없음")
 
     return total, api_calls
 
@@ -245,8 +225,8 @@ def main():
                 skipped += 1
                 continue
 
-            # 일 1,000회 제한 체크 (날짜당 3회 호출)
-            if total_api_calls + 3 > 990:
+            # 일 1,000회 제한 체크 (AP01만 = 날짜당 1회 호출)
+            if total_api_calls + 1 > 990:
                 print(f"\n⚠ API 호출 제한 근접 ({total_api_calls}회). 중단합니다.")
                 print(f"  다음 실행 시 --backfill으로 이어서 수집하세요.")
                 break
