@@ -22,20 +22,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',san
 .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
 .section{margin-bottom:28px}
 .section-title{font-size:15px;font-weight:700;margin-bottom:12px;padding-left:2px}
-.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:20px}
 .rate-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:border-color .15s}
 .rate-card:hover,.rate-card.selected{border-color:var(--accent)}
 .rate-card.selected{background:var(--card-hover)}
-.rate-name{font-size:11px;color:var(--text-dim);font-weight:600;margin-bottom:4px}
+.rate-name{font-size:11px;color:var(--text-dim);font-weight:600;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rate-value{font-size:22px;font-weight:800}
 .rate-change{font-size:12px;font-weight:600;margin-top:2px}
 .up{color:var(--red)}.down{color:var(--green)}.flat{color:var(--text-dim)}
 .chart-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px}
 .chart-box h3{font-size:14px;font-weight:700;margin-bottom:12px}
-.period-tabs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap}
+.chart-controls{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
 .period-tab{padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text-dim);font-size:11px;cursor:pointer;font-weight:600}
 .period-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
-.chart-wrap{position:relative;height:300px}
+.date-input{background:var(--card-hover);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:4px 8px;width:110px}
+.date-input::-webkit-calendar-picker-indicator{filter:invert(1)}
+.btn-sm{padding:4px 10px;border:1px solid var(--accent);border-radius:6px;background:var(--accent);color:#fff;font-size:11px;cursor:pointer;font-weight:600}
+.btn-reset{padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text-dim);font-size:11px;cursor:pointer;font-weight:600}
+.chart-hint{font-size:10px;color:var(--text-dim);margin-left:auto}
+.chart-wrap{position:relative;height:350px}
 .tbl-wrap{overflow-x:auto;margin-top:16px}
 table{width:100%;border-collapse:collapse;font-size:12px}
 th,td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}
@@ -43,9 +48,11 @@ th{background:var(--card);color:var(--text-dim);font-weight:700;position:sticky;
 td:first-child,th:first-child{text-align:left}
 .loading{text-align:center;padding:60px 20px;color:var(--text-dim)}
 .empty{text-align:center;padding:40px 20px;color:var(--text-dim);font-size:14px}
-@media(max-width:600px){.card-grid{grid-template-columns:repeat(2,1fr)}.chart-wrap{height:220px}}
+@media(max-width:600px){.card-grid{grid-template-columns:repeat(2,1fr)}.chart-wrap{height:250px}.chart-hint{display:none}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -70,7 +77,15 @@ td:first-child,th:first-child{text-align:left}
     </div>
     <div class="chart-box">
       <h3 id="fxChartTitle">환율 추이</h3>
-      <div class="period-tabs" id="fxPeriodTabs"></div>
+      <div class="chart-controls">
+        <div id="fxPeriodTabs"></div>
+        <input type="date" class="date-input" id="fxDateFrom">
+        <span style="color:var(--text-dim);font-size:11px">~</span>
+        <input type="date" class="date-input" id="fxDateTo">
+        <button class="btn-sm" onclick="applyFxDateRange()">조회</button>
+        <button class="btn-reset" onclick="resetFxZoom()">리셋</button>
+        <span class="chart-hint">🖱️ 휠=줌 / 드래그=이동</span>
+      </div>
       <div class="chart-wrap"><canvas id="fxChart"></canvas></div>
     </div>
     <div class="chart-box">
@@ -82,12 +97,20 @@ td:first-child,th:first-child{text-align:left}
   <!-- ══ 금리 탭 ══ -->
   <div id="tab-interest" style="display:none">
     <div class="section">
-      <div class="section-title">📊 주요 금리</div>
+      <div class="section-title">📊 금리 현황</div>
       <div class="card-grid" id="intCards"></div>
     </div>
     <div class="chart-box">
       <h3 id="intChartTitle">금리 추이</h3>
-      <div class="period-tabs" id="intPeriodTabs"></div>
+      <div class="chart-controls">
+        <div id="intPeriodTabs"></div>
+        <input type="date" class="date-input" id="intDateFrom">
+        <span style="color:var(--text-dim);font-size:11px">~</span>
+        <input type="date" class="date-input" id="intDateTo">
+        <button class="btn-sm" onclick="applyIntDateRange()">조회</button>
+        <button class="btn-reset" onclick="resetIntZoom()">리셋</button>
+        <span class="chart-hint">🖱️ 휠=줌 / 드래그=이동</span>
+      </div>
       <div class="chart-wrap"><canvas id="intChart"></canvas></div>
     </div>
     <div class="chart-box">
@@ -102,14 +125,15 @@ td:first-child,th:first-child{text-align:left}
 const API = 'https://swingfarmer.duckdns.org/api';
 const PERIODS = [
   {label:'1개월',days:30},{label:'3개월',days:90},{label:'6개월',days:180},
-  {label:'1년',days:365},{label:'2년',days:730},{label:'전체',days:0}
+  {label:'1년',days:365},{label:'2년',days:730},{label:'3년',days:1095},
+  {label:'5년',days:1825},{label:'10년',days:3650},{label:'전체',days:0}
 ];
-// 주요 통화 (카드에 표시할 순서)
 const MAIN_CUR = ['USD','JPY(100)','EUR','CNH','GBP','CAD','AUD','HKD','CHF'];
+const COLORS = ['#3b82f6','#ef4444','#22c55e','#eab308','#a855f7','#ec4899','#14b8a6','#f97316','#6366f1','#f43f5e','#06b6d4','#84cc16'];
 
 let fxData=[], intData=[], fxChart=null, intChart=null;
 let selectedFx=['USD','JPY(100)','EUR'], selectedInt=[];
-let fxPeriod=90, intPeriod=90;
+let fxPeriod=90, intPeriod=365;
 
 // ── 탭 전환 ──
 document.querySelectorAll('.tabs .tab').forEach(btn=>{
@@ -126,18 +150,41 @@ document.querySelectorAll('.tabs .tab').forEach(btn=>{
 function fmt(v,d=2){if(v==null)return'-';return Number(v).toLocaleString('ko-KR',{minimumFractionDigits:d,maximumFractionDigits:d});}
 function chgClass(v){if(v>0)return'up';if(v<0)return'down';return'flat';}
 function chgSign(v){return v>0?'+'+fmt(v):fmt(v);}
+function filterByPeriod(data, days){
+  if(!days) return data;
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()-days);
+  return data.filter(r=>new Date(r.rate_date)>=cutoff);
+}
+function filterByRange(data, from, to){
+  return data.filter(r=>{
+    const d=r.rate_date;
+    return (!from || d>=from) && (!to || d<=to);
+  });
+}
 
-// ── 환율 로드 ──
+const zoomOptions = {
+  zoom:{
+    wheel:{enabled:true},
+    pinch:{enabled:true},
+    mode:'x',
+  },
+  pan:{
+    enabled:true,
+    mode:'x',
+  }
+};
+
+// ══════════════ 환율 ══════════════
 async function loadFx(){
   document.getElementById('fxCards').innerHTML='<div class="loading">로딩 중...</div>';
   try{
     const [latest,hist]=await Promise.all([
       fetch(API+'/rates/exchange?latest=1').then(r=>r.json()),
-      fetch(API+'/rates/exchange?days=730').then(r=>r.json())
+      fetch(API+'/rates/exchange?days=3650').then(r=>r.json())
     ]);
     fxData=hist.data||[];
     renderFxCards(latest.data||[]);
-    renderFxPeriodTabs();
+    renderPeriodTabs('fxPeriodTabs', fxPeriod, setFxPeriod);
     renderFxChart();
     renderFxTable();
     if(latest.data&&latest.data.length>0){
@@ -149,19 +196,14 @@ async function loadFx(){
 }
 
 function renderFxCards(latestData){
-  // 최신일 데이터를 통화별로
   const byC={};
   latestData.forEach(r=>{byC[r.cur_unit]=r;});
-  // 전일 대비 계산 (fxData에서)
   const dates=[...new Set(fxData.map(r=>r.rate_date))].sort();
   const prevDate=dates.length>=2?dates[dates.length-2]:null;
   const prevByC={};
   if(prevDate) fxData.filter(r=>r.rate_date===prevDate).forEach(r=>{prevByC[r.cur_unit]=r;});
-
   const order=MAIN_CUR.filter(c=>byC[c]);
-  // 나머지 통화도 추가
   Object.keys(byC).forEach(c=>{if(!order.includes(c))order.push(c);});
-
   let html='';
   order.forEach(c=>{
     const r=byC[c];
@@ -183,36 +225,42 @@ function renderFxCards(latestData){
 function toggleFx(cur){
   const i=selectedFx.indexOf(cur);
   if(i>=0)selectedFx.splice(i,1); else selectedFx.push(cur);
-  // 카드 UI 업데이트
   document.querySelectorAll('#fxCards .rate-card').forEach(el=>{
     el.classList.toggle('selected',selectedFx.includes(el.dataset.cur));
   });
   renderFxChart();
 }
 
-function renderFxPeriodTabs(){
+function renderPeriodTabs(containerId, activeDays, setFn){
   let html='';
   PERIODS.forEach(p=>{
-    const cls=p.days===fxPeriod?'active':'';
-    html+=`<button class="period-tab ${cls}" onclick="setFxPeriod(${p.days})">${p.label}</button>`;
+    const cls=p.days===activeDays?'active':'';
+    html+=`<button class="period-tab ${cls}" onclick="${setFn.name}(${p.days})">${p.label}</button>`;
   });
-  document.getElementById('fxPeriodTabs').innerHTML=html;
+  document.getElementById(containerId).innerHTML=html;
 }
 
-function setFxPeriod(d){fxPeriod=d;renderFxPeriodTabs();renderFxChart();renderFxTable();}
+function setFxPeriod(d){fxPeriod=d;renderPeriodTabs('fxPeriodTabs',fxPeriod,setFxPeriod);renderFxChart();renderFxTable();}
 
-function renderFxChart(){
-  const filtered=fxPeriod>0?fxData.filter(r=>{
-    const dt=new Date(r.rate_date);
-    const cutoff=new Date();cutoff.setDate(cutoff.getDate()-fxPeriod);
-    return dt>=cutoff;
-  }):fxData;
+function applyFxDateRange(){
+  const from=document.getElementById('fxDateFrom').value;
+  const to=document.getElementById('fxDateTo').value;
+  if(!from&&!to)return;
+  fxPeriod=-1; // custom
+  renderPeriodTabs('fxPeriodTabs',-1,setFxPeriod);
+  renderFxChart(from,to);
+  renderFxTable(from,to);
+}
 
-  // 날짜별·통화별 정리
+function resetFxZoom(){if(fxChart)fxChart.resetZoom();}
+
+function renderFxChart(dateFrom,dateTo){
+  let filtered;
+  if(dateFrom||dateTo) filtered=filterByRange(fxData,dateFrom,dateTo);
+  else filtered=filterByPeriod(fxData,fxPeriod);
+
   const dates=[...new Set(filtered.map(r=>r.rate_date))].sort();
   const datasets=[];
-  const colors=['#3b82f6','#ef4444','#22c55e','#eab308','#a855f7','#ec4899','#14b8a6','#f97316','#6366f1'];
-
   selectedFx.forEach((cur,i)=>{
     const byDate={};
     filtered.filter(r=>r.cur_unit===cur).forEach(r=>{
@@ -221,14 +269,10 @@ function renderFxChart(){
     datasets.push({
       label:cur,
       data:dates.map(d=>byDate[d]||null),
-      borderColor:colors[i%colors.length],
-      backgroundColor:colors[i%colors.length]+'20',
-      borderWidth:2,pointRadius:0,tension:0.3,fill:false,
-      spanGaps:true,
-      yAxisID: i===0?'y':'y'  // 단일 축 (통화 단위 다르면 복잡해지지만 일단 단일)
+      borderColor:COLORS[i%COLORS.length],
+      borderWidth:2,pointRadius:0,tension:0.3,fill:false,spanGaps:true
     });
   });
-
   document.getElementById('fxChartTitle').textContent=
     selectedFx.length>0?selectedFx.join(', ')+' 환율 추이':'통화를 선택하세요';
 
@@ -239,74 +283,64 @@ function renderFxChart(){
     options:{
       responsive:true,maintainAspectRatio:false,
       interaction:{mode:'index',intersect:false},
-      plugins:{legend:{labels:{color:'#e4e4e7',font:{size:11}}},
-        tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+fmt(ctx.parsed.y)}}},
+      plugins:{
+        legend:{labels:{color:'#e4e4e7',font:{size:11}}},
+        tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+fmt(ctx.parsed.y)}},
+        zoom:zoomOptions
+      },
       scales:{
-        x:{ticks:{color:'#71717a',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2d3a'}},
+        x:{ticks:{color:'#71717a',font:{size:10},maxTicksLimit:12},grid:{color:'#2a2d3a'}},
         y:{ticks:{color:'#71717a',font:{size:10},callback:v=>fmt(v,0)},grid:{color:'#2a2d3a'}}
       }
     }
   });
 }
 
-function renderFxTable(){
-  const filtered=fxPeriod>0?fxData.filter(r=>{
-    const dt=new Date(r.rate_date);
-    const cutoff=new Date();cutoff.setDate(cutoff.getDate()-fxPeriod);
-    return dt>=cutoff;
-  }):fxData;
+function renderFxTable(dateFrom,dateTo){
+  let filtered;
+  if(dateFrom||dateTo) filtered=filterByRange(fxData,dateFrom,dateTo);
+  else filtered=filterByPeriod(fxData,fxPeriod);
 
   const dates=[...new Set(filtered.map(r=>r.rate_date))].sort().reverse();
   const curs=selectedFx.length>0?selectedFx:MAIN_CUR;
-
-  if(dates.length===0){
-    document.getElementById('fxTable').innerHTML='<div class="empty">데이터 없음</div>';return;
-  }
+  if(dates.length===0){document.getElementById('fxTable').innerHTML='<div class="empty">데이터 없음</div>';return;}
   let html='<table><thead><tr><th>날짜</th>';
   curs.forEach(c=>{html+=`<th>${c}</th>`;});
   html+='</tr></thead><tbody>';
-
-  // 날짜별 그룹
   const byDate={};
   filtered.forEach(r=>{
     if(!byDate[r.rate_date])byDate[r.rate_date]={};
     byDate[r.rate_date][r.cur_unit]=r.deal_bas_r||r.kftc_deal_bas_r||0;
   });
-
-  dates.slice(0,100).forEach(d=>{
+  dates.slice(0,200).forEach(d=>{
     html+=`<tr><td>${d}</td>`;
-    curs.forEach(c=>{
-      const v=byDate[d]?.[c];
-      html+=`<td>${v?fmt(v):'-'}</td>`;
-    });
+    curs.forEach(c=>{html+=`<td>${byDate[d]?.[c]?fmt(byDate[d][c]):'-'}</td>`;});
     html+='</tr>';
   });
   html+='</tbody></table>';
-  if(dates.length>100) html+=`<div style="text-align:center;padding:10px;color:var(--text-dim);font-size:12px">최근 100일 표시 (전체 ${dates.length}일)</div>`;
+  if(dates.length>200) html+=`<div style="text-align:center;padding:10px;color:var(--text-dim);font-size:12px">최근 200일 표시 (전체 ${dates.length}일)</div>`;
   document.getElementById('fxTable').innerHTML=html;
 }
 
-// ── 금리 로드 ──
+// ══════════════ 금리 ══════════════
 async function loadInt(){
   document.getElementById('intCards').innerHTML='<div class="loading">로딩 중...</div>';
   try{
-    const [latest,hist,items]=await Promise.all([
+    const [latest,hist]=await Promise.all([
       fetch(API+'/rates/interest?latest=1').then(r=>r.json()),
-      fetch(API+'/rates/interest?days=730').then(r=>r.json()),
-      fetch(API+'/rates/interest/items').then(r=>r.json())
+      fetch(API+'/rates/interest?days=3650').then(r=>r.json())
     ]);
     intData=hist.data||[];
-    // 금리 항목 목록에서 주요 항목 자동 선택
-    const allItems=(items||[]).map(it=>it.item_code);
-    if(selectedInt.length===0 && allItems.length>0){
-      selectedInt=allItems.slice(0,5);
+    if(selectedInt.length===0){
+      const codes=[...new Set((latest.data||[]).map(r=>r.item_code))];
+      selectedInt=codes.slice(0,5);
     }
     renderIntCards(latest.data||[]);
-    renderIntPeriodTabs();
+    renderPeriodTabs('intPeriodTabs',intPeriod,setIntPeriod);
     renderIntChart();
     renderIntTable();
   }catch(e){
-    document.getElementById('intCards').innerHTML='<div class="empty">데이터 로드 실패: '+e.message+'</div>';
+    document.getElementById('intCards').innerHTML='<div class="empty">금리 데이터를 수집하면 여기에 표시됩니다.<br><small>한국은행 ECOS API 수집 필요</small></div>';
   }
 }
 
@@ -314,34 +348,25 @@ function renderIntCards(latestData){
   if(!latestData.length){
     document.getElementById('intCards').innerHTML='<div class="empty">금리 데이터 수집 후 표시됩니다</div>';return;
   }
-  // 전일 대비
   const dates=[...new Set(intData.map(r=>r.rate_date))].sort();
   const prevDate=dates.length>=2?dates[dates.length-2]:null;
   const prevByItem={};
   if(prevDate) intData.filter(r=>r.rate_date===prevDate).forEach(r=>{
-    prevByItem[r.data_type+'_'+r.item_code]=r.rate;
+    prevByItem[r.item_code]=r.rate;
   });
-
-  // AP02(대출금리) 먼저, AP03(국제금리) 다음
-  const sorted=[...latestData].sort((a,b)=>{
-    if(a.data_type!==b.data_type)return a.data_type<b.data_type?-1:1;
-    return 0;
+  // 중복 제거 (같은 item_code의 최신만)
+  const seen={};
+  const unique=[];
+  latestData.forEach(r=>{
+    if(!seen[r.item_code]){seen[r.item_code]=true;unique.push(r);}
   });
-
   let html='';
-  let curType='';
-  sorted.forEach(r=>{
-    if(r.data_type!==curType){
-      curType=r.data_type;
-      // 타입 레이블은 카드 앞에 삽입하지 않음 (grid 깨짐 방지)
-    }
-    const key=r.data_type+'_'+r.item_code;
-    const prev=prevByItem[key];
+  unique.forEach(r=>{
+    const prev=prevByItem[r.item_code];
     const chg=prev!=null&&r.rate!=null?r.rate-prev:0;
     const sel=selectedInt.includes(r.item_code)?'selected':'';
-    const typeLabel=r.data_type==='AP02'?'[대출]':'[국제]';
     html+=`<div class="rate-card ${sel}" data-item="${r.item_code}" onclick="toggleInt('${r.item_code.replace(/'/g,"\\'")}')">
-      <div class="rate-name">${typeLabel} ${r.item_nm||r.item_code}</div>
+      <div class="rate-name">${r.item_nm||r.item_code}</div>
       <div class="rate-value">${r.rate!=null?fmt(r.rate)+'%':'-'}</div>
       <div class="rate-change ${chgClass(chg)}">${chg?chgSign(chg)+'%p':''}</div>
     </div>`;
@@ -358,40 +383,40 @@ function toggleInt(code){
   renderIntChart();
 }
 
-function renderIntPeriodTabs(){
-  let html='';
-  PERIODS.forEach(p=>{
-    const cls=p.days===intPeriod?'active':'';
-    html+=`<button class="period-tab ${cls}" onclick="setIntPeriod(${p.days})">${p.label}</button>`;
-  });
-  document.getElementById('intPeriodTabs').innerHTML=html;
+function setIntPeriod(d){intPeriod=d;renderPeriodTabs('intPeriodTabs',intPeriod,setIntPeriod);renderIntChart();renderIntTable();}
+
+function applyIntDateRange(){
+  const from=document.getElementById('intDateFrom').value;
+  const to=document.getElementById('intDateTo').value;
+  if(!from&&!to)return;
+  intPeriod=-1;
+  renderPeriodTabs('intPeriodTabs',-1,setIntPeriod);
+  renderIntChart(from,to);
+  renderIntTable(from,to);
 }
 
-function setIntPeriod(d){intPeriod=d;renderIntPeriodTabs();renderIntChart();renderIntTable();}
+function resetIntZoom(){if(intChart)intChart.resetZoom();}
 
-function renderIntChart(){
-  const filtered=intPeriod>0?intData.filter(r=>{
-    const dt=new Date(r.rate_date);
-    const cutoff=new Date();cutoff.setDate(cutoff.getDate()-intPeriod);
-    return dt>=cutoff;
-  }):intData;
+function renderIntChart(dateFrom,dateTo){
+  let filtered;
+  if(dateFrom||dateTo) filtered=filterByRange(intData,dateFrom,dateTo);
+  else filtered=filterByPeriod(intData,intPeriod);
 
   const dates=[...new Set(filtered.map(r=>r.rate_date))].sort();
   const datasets=[];
-  const colors=['#3b82f6','#ef4444','#22c55e','#eab308','#a855f7','#ec4899','#14b8a6','#f97316','#6366f1'];
+  const nmMap={};
+  filtered.forEach(r=>{nmMap[r.item_code]=r.item_nm||r.item_code;});
 
   selectedInt.forEach((code,i)=>{
     const byDate={};
     filtered.filter(r=>r.item_code===code).forEach(r=>{byDate[r.rate_date]=r.rate;});
-    const nm=filtered.find(r=>r.item_code===code)?.item_nm||code;
     datasets.push({
-      label:nm,
+      label:nmMap[code]||code,
       data:dates.map(d=>byDate[d]||null),
-      borderColor:colors[i%colors.length],
+      borderColor:COLORS[i%COLORS.length],
       borderWidth:2,pointRadius:0,tension:0.3,fill:false,spanGaps:true
     });
   });
-
   document.getElementById('intChartTitle').textContent=
     selectedInt.length>0?'금리 추이':'금리 항목을 선택하세요';
 
@@ -402,49 +427,40 @@ function renderIntChart(){
     options:{
       responsive:true,maintainAspectRatio:false,
       interaction:{mode:'index',intersect:false},
-      plugins:{legend:{labels:{color:'#e4e4e7',font:{size:11}}},
-        tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+fmt(ctx.parsed.y)+'%'}}},
+      plugins:{
+        legend:{labels:{color:'#e4e4e7',font:{size:11}}},
+        tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+fmt(ctx.parsed.y)+'%'}},
+        zoom:zoomOptions
+      },
       scales:{
-        x:{ticks:{color:'#71717a',font:{size:10},maxTicksLimit:10},grid:{color:'#2a2d3a'}},
+        x:{ticks:{color:'#71717a',font:{size:10},maxTicksLimit:12},grid:{color:'#2a2d3a'}},
         y:{ticks:{color:'#71717a',font:{size:10},callback:v=>v+'%'},grid:{color:'#2a2d3a'}}
       }
     }
   });
 }
 
-function renderIntTable(){
-  const filtered=intPeriod>0?intData.filter(r=>{
-    const dt=new Date(r.rate_date);
-    const cutoff=new Date();cutoff.setDate(cutoff.getDate()-intPeriod);
-    return dt>=cutoff;
-  }):intData;
+function renderIntTable(dateFrom,dateTo){
+  let filtered;
+  if(dateFrom||dateTo) filtered=filterByRange(intData,dateFrom,dateTo);
+  else filtered=filterByPeriod(intData,intPeriod);
 
   const dates=[...new Set(filtered.map(r=>r.rate_date))].sort().reverse();
   const items=selectedInt.length>0?selectedInt:[...new Set(filtered.map(r=>r.item_code))].slice(0,8);
-
-  if(dates.length===0){
-    document.getElementById('intTable').innerHTML='<div class="empty">데이터 없음</div>';return;
-  }
-  // 항목명 매핑
+  if(dates.length===0){document.getElementById('intTable').innerHTML='<div class="empty">데이터 없음</div>';return;}
   const nmMap={};
   filtered.forEach(r=>{nmMap[r.item_code]=r.item_nm||r.item_code;});
-
   let html='<table><thead><tr><th>날짜</th>';
-  items.forEach(c=>{html+=`<th>${(nmMap[c]||c).substring(0,10)}</th>`;});
+  items.forEach(c=>{html+=`<th>${(nmMap[c]||c).substring(0,12)}</th>`;});
   html+='</tr></thead><tbody>';
-
   const byDate={};
   filtered.forEach(r=>{
     if(!byDate[r.rate_date])byDate[r.rate_date]={};
     byDate[r.rate_date][r.item_code]=r.rate;
   });
-
-  dates.slice(0,100).forEach(d=>{
+  dates.slice(0,200).forEach(d=>{
     html+=`<tr><td>${d}</td>`;
-    items.forEach(c=>{
-      const v=byDate[d]?.[c];
-      html+=`<td>${v!=null?fmt(v)+'%':'-'}</td>`;
-    });
+    items.forEach(c=>{html+=`<td>${byDate[d]?.[c]!=null?fmt(byDate[d][c])+'%':'-'}</td>`;});
     html+='</tr>';
   });
   html+='</tbody></table>';
