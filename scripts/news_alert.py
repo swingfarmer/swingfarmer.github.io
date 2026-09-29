@@ -26,8 +26,7 @@ NAVER_CLIENT_SECRET = os.environ.get("NAVER_CLIENT_SECRET", "")
 NAVER_API_URL = "https://naverapihub.apigw.ntruss.com/search/v1/news"
 
 # 텔레그램
-BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+from telegram_helper import send_all as _send_all
 
 # 경로
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -132,25 +131,7 @@ def dedupe_top(all_items, n=TOP_N):
 
 
 def send_telegram(text):
-    if not BOT_TOKEN or not CHAT_ID:
-        print("⚠️ 텔레그램 설정 없음, 스킵")
-        return False
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": CHAT_ID,
-        "text": text,
-        "parse_mode": "HTML",
-        "disable_web_page_preview": True,
-    }
-    try:
-        r = requests.post(url, json=payload, timeout=10)
-        if r.status_code == 200:
-            return True
-        print(f"⚠️ 텔레그램 {r.status_code}: {r.text[:100]}")
-        return False
-    except Exception as e:
-        print(f"⚠️ 텔레그램 에러: {e}")
-        return False
+    return _send_all(text)
 
 
 def format_telegram(category, items):

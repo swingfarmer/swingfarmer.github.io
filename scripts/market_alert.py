@@ -11,8 +11,7 @@ import os, sys, json
 import urllib.request
 from datetime import datetime, timezone, timedelta
 
-TELEGRAM_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
-TELEGRAM_CHAT  = os.environ.get('TELEGRAM_CHAT_ID', '')
+from telegram_helper import send_all as send_telegram_all
 
 KST = timezone(timedelta(hours=9))
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -26,25 +25,7 @@ NEWS_CATS = ['economy', 'stock', 'breaking']  # 경제, 증시, 속보
 
 
 def send_telegram(text):
-    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT:
-        print('  텔레그램 미설정')
-        return False
-    url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
-    body = json.dumps({
-        'chat_id': TELEGRAM_CHAT,
-        'text': text,
-        'parse_mode': 'HTML',
-        'disable_web_page_preview': True,
-    }).encode('utf-8')
-    req = urllib.request.Request(url, data=body, headers={
-        'Content-Type': 'application/json',
-    })
-    try:
-        urllib.request.urlopen(req, timeout=10)
-        return True
-    except Exception as e:
-        print(f'  텔레그램 전송 실패: {e}')
-        return False
+    return send_telegram_all(text)
 
 
 def fmt_num(val, decimals=2):

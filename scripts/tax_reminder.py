@@ -8,8 +8,7 @@ import json
 import urllib.request
 from datetime import date, timedelta
 
-BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
-CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '')
+from telegram_helper import send_all as _send_all
 
 # ── 세금 일정 (tax-calendar와 동일) ──
 EVENTS = {
@@ -82,22 +81,7 @@ EVENTS = {
 
 
 def send_telegram(text):
-    """텔레그램 메시지 발송."""
-    url = f'https://api.telegram.org/bot{BOT_TOKEN}/sendMessage'
-    payload = json.dumps({
-        'chat_id': CHAT_ID,
-        'text': text,
-        'parse_mode': 'HTML',
-    }).encode('utf-8')
-    req = urllib.request.Request(url, data=payload, headers={
-        'Content-Type': 'application/json',
-    })
-    try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            return resp.status == 200
-    except Exception as e:
-        print(f'❌ 텔레그램 발송 실패: {e}')
-        return False
+    return _send_all(text)
 
 
 def main():
