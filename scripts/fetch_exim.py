@@ -35,7 +35,11 @@ def load_env():
                 os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 load_env()
 
-API_KEY = os.environ.get('KOREAEXIM_API_KEY', '')
+API_KEYS = {
+    'AP01': os.environ.get('KOREAEXIM_API_KEY', ''),
+    'AP02': os.environ.get('KOREAEXIM_API_KEY_AP02', '') or os.environ.get('KOREAEXIM_API_KEY', ''),
+    'AP03': os.environ.get('KOREAEXIM_API_KEY_AP03', '') or os.environ.get('KOREAEXIM_API_KEY', ''),
+}
 WALLET_DIR = os.path.expanduser('~/wallet')
 
 def get_conn():
@@ -46,7 +50,8 @@ def get_conn():
 
 def fetch_api(data_type, search_date):
     """수출입은행 API 호출. result=1 성공, 그 외 실패/비영업일."""
-    url = f"{BASE_URL}?authkey={API_KEY}&searchdate={search_date}&data={data_type}"
+    key = API_KEYS.get(data_type, API_KEYS['AP01'])
+    url = f"{BASE_URL}?authkey={key}&searchdate={search_date}&data={data_type}"
     try:
         req = urllib.request.Request(url)
         with urllib.request.urlopen(req, timeout=15) as resp:
@@ -189,9 +194,12 @@ def main():
     parser.add_argument('--dry', action='store_true', help='API만 호출, DB 저장 안 함')
     args = parser.parse_args()
 
-    if not API_KEY:
+    if not API_KEYS['AP01']:
         print("❌ KOREAEXIM_API_KEY가 설정되지 않았습니다. ~/.env_secrets 확인")
         sys.exit(1)
+    missing = [k for k, v in API_KEYS.items() if not v]
+    if missing:
+        print(f"⚠ {', '.join(missing)} 키 미설정 — AP01 키로 대체 시도")
 
     now = datetime.now(KST)
     print(f"📊 수출입은행 API 수집 시작: {now.strftime('%Y-%m-%d %H:%M KST')}")
