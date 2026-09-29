@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
 """
 스윙파머 API 서버 (Flask + Oracle Autonomous DB)
-비밀번호 인증 없음 — 보안은 클라이언트 Firebase Auth 게이트에 위임
-보류A(보안1단계)에서 서버 토큰 검증 추가 예정
+보안1단계: Firebase ID Token 검증 (POST/PUT/DELETE)
+읽기(GET)는 인증 불필요
 """
 import os
 from datetime import datetime
+from functools import wraps
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import oracledb
+
+# Firebase 토큰 검증용
+import json, time
+import urllib.request
+import ssl
 
 def load_env():
     f = os.path.expanduser('~/.env_secrets')
@@ -29,6 +35,56 @@ WALLET_DIR = os.path.expanduser('~/wallet')
 DB_USER = 'ADMIN'
 DB_PASSWORD = os.environ.get('ORACLE_DB_PASSWORD', '')
 DSN = 'db1007_medium'
+
+# ── Firebase 토큰 검증 ──
+FIREBASE_PROJECT_ID = 'swingfarmer-board01'
+ADMIN_UID = '1JrHgD2bpTRjrS2jw7MbpHciBph1'
+GOOGLE_CERTS_URL = 'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com'
+_certs_cache = {'certs': None, 'expires': 0}
+
+def _fetch_google_certs():
+    """Google 공개 인증서 (캐시 1시간)."""
+    now = time.time()
+    if _certs_cache['certs'] and now < _certs_cache['expires']:
+        return _certs_cache['certs']
+    try:
+        req = urllib.request.Request(GOOGLE_CERTS_URL)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+        _certs_cache['certs'] = data
+        _certs_cache['expires'] = now + 3600
+        return data
+    except Exception as e:
+        print(f'⚠ Google certs fetch 실패: {e}')
+        return _certs_cache['certs']  # 기존 캐시 반환
+
+def verify_firebase_token(id_token):
+    """Firebase ID Token 검증 → uid 또는 None."""
+    try:
+        from google.oauth2 import id_token as google_id_token
+        from google.auth.transport import requests as google_requests
+        claims = google_id_token.verify_firebase_token(
+            id_token, google_requests.Request(), audience=FIREBASE_PROJECT_ID)
+        return claims.get('uid')
+    except Exception as e:
+        print(f'⚠ 토큰 검증 실패: {e}')
+        return None
+
+def require_auth(f):
+    """POST/PUT/DELETE 인증 데코레이터."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer '):
+            return jsonify({'error': '인증 토큰이 필요합니다.'}), 401
+        token = auth_header[7:]
+        uid = verify_firebase_token(token)
+        if not uid:
+            return jsonify({'error': '유효하지 않은 토큰입니다.'}), 401
+        if uid != ADMIN_UID:
+            return jsonify({'error': '관리자 권한이 필요합니다.'}), 403
+        return f(*args, **kwargs)
+    return decorated
 
 def get_conn():
     return oracledb.connect(user=DB_USER, password=DB_PASSWORD, dsn=DSN,
@@ -242,6 +298,7 @@ def list_categories():
     return jsonify(data)
 
 @app.route('/api/categories', methods=['POST'])
+@require_auth
 def add_category():
     d = request.get_json()
     if not d: return jsonify({'error': 'JSON 필요'}), 400
@@ -256,6 +313,7 @@ def add_category():
     return jsonify({'ok': True}), 201
 
 @app.route('/api/categories/<int:cat_id>', methods=['PUT'])
+@require_auth
 def update_category(cat_id):
     d = request.get_json()
     if not d: return jsonify({'error': 'JSON 필요'}), 400
@@ -267,6 +325,7 @@ def update_category(cat_id):
     return jsonify({'ok': True})
 
 @app.route('/api/categories/<int:cat_id>', methods=['DELETE'])
+@require_auth
 def delete_category(cat_id):
     conn = get_conn(); cur = conn.cursor()
     cur.execute("SELECT COUNT(*) FROM posts WHERE category=:c", {'c': str(cat_id)})
@@ -333,6 +392,7 @@ def get_post(post_id):
     return jsonify(post)
 
 @app.route('/api/posts', methods=['POST'])
+@require_auth
 def create_post():
     d = request.get_json()
     if not d: return jsonify({'error': 'JSON 필요'}), 400
@@ -353,6 +413,7 @@ def create_post():
     return jsonify({'ok': True, 'id': new_id}), 201
 
 @app.route('/api/posts/<int:post_id>', methods=['PUT'])
+@require_auth
 def update_post(post_id):
     d = request.get_json()
     if not d: return jsonify({'error': 'JSON 필요'}), 400
@@ -372,6 +433,7 @@ def update_post(post_id):
     return jsonify({'ok': True})
 
 @app.route('/api/posts/<int:post_id>', methods=['DELETE'])
+@require_auth
 def delete_post(post_id):
     conn = get_conn(); cur = conn.cursor()
     cur.execute("SELECT id FROM posts WHERE id=:id", {'id': post_id})
@@ -390,6 +452,7 @@ def list_note_categories():
     return jsonify(data)
 
 @app.route('/api/note-categories', methods=['POST'])
+@require_auth
 def add_note_category():
     d = request.get_json()
     if not d: return jsonify({'error': 'JSON 필요'}), 400
@@ -402,6 +465,7 @@ def add_note_category():
     return jsonify({'ok': True}), 201
 
 @app.route('/api/note-categories/<int:cat_id>', methods=['DELETE'])
+@require_auth
 def delete_note_category(cat_id):
     conn = get_conn(); cur = conn.cursor()
     cur.execute("SELECT COUNT(*) FROM notes WHERE category=:c", {'c': str(cat_id)})
@@ -454,6 +518,7 @@ def get_note(note_id):
     return jsonify(note)
 
 @app.route('/api/notes', methods=['POST'])
+@require_auth
 def create_note():
     d = request.get_json()
     if not d: return jsonify({'error': 'JSON 필요'}), 400
@@ -473,6 +538,7 @@ def create_note():
     return jsonify({'ok': True, 'id': new_id}), 201
 
 @app.route('/api/notes/<int:note_id>', methods=['PUT'])
+@require_auth
 def update_note(note_id):
     d = request.get_json()
     if not d: return jsonify({'error': 'JSON 필요'}), 400
@@ -492,6 +558,7 @@ def update_note(note_id):
     return jsonify({'ok': True})
 
 @app.route('/api/notes/<int:note_id>', methods=['DELETE'])
+@require_auth
 def delete_note(note_id):
     conn = get_conn(); cur = conn.cursor()
     cur.execute("SELECT id FROM notes WHERE id=:id", {'id': note_id})
@@ -656,6 +723,7 @@ def rates_gold_summary():
 
 # ══ comments ══
 @app.route('/api/posts/<int:post_id>/comments', methods=['POST'])
+@require_auth
 def add_comment(post_id):
     d = request.get_json()
     if not d: return jsonify({'error': 'JSON 필요'}), 400
@@ -671,6 +739,7 @@ def add_comment(post_id):
     return jsonify({'ok': True}), 201
 
 @app.route('/api/comments/<int:comment_id>', methods=['DELETE'])
+@require_auth
 def delete_comment(comment_id):
     conn = get_conn(); cur = conn.cursor()
     cur.execute("DELETE FROM comments WHERE id=:id", {'id': comment_id})
