@@ -608,6 +608,52 @@ def rates_interest_items():
     cur.close(); conn.close()
     return jsonify(data)
 
+# ══ gold prices (금시세) ══
+@app.route('/api/rates/gold')
+def rates_gold():
+    """금시세 조회. ?days=365 &from=2020-01-01 &to=2026-09-29 &latest=1 &unit=usd|krw"""
+    days = request.args.get('days', '')
+    date_from = request.args.get('from', '')
+    date_to = request.args.get('to', '')
+    latest = request.args.get('latest', '')
+    unit = request.args.get('unit', '')  # usd or krw
+
+    where = []; params = {}
+    if latest == '1':
+        where.append('price_date = (SELECT MAX(price_date) FROM gold_prices)')
+    else:
+        if days:
+            where.append("price_date >= TRUNC(SYSDATE) - :days")
+            params['days'] = int(days)
+        if date_from:
+            where.append("price_date >= TO_DATE(:df, 'YYYY-MM-DD')")
+            params['df'] = date_from
+        if date_to:
+            where.append("price_date <= TO_DATE(:dt, 'YYYY-MM-DD')")
+            params['dt'] = date_to
+
+    w = ' AND '.join(where) if where else '1=1'
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute(f"""SELECT TO_CHAR(price_date,'YYYY-MM-DD') AS price_date,
+        price_usd, price_krw_g, usd_krw, source
+        FROM gold_prices WHERE {w} ORDER BY price_date DESC""", params)
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify({'count': len(data), 'data': data})
+
+@app.route('/api/rates/gold/summary')
+def rates_gold_summary():
+    """금시세 요약 (총 건수, 범위, KRW 변환 건수)."""
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("""SELECT COUNT(*) total,
+        COUNT(price_krw_g) krw_count,
+        TO_CHAR(MIN(price_date),'YYYY-MM-DD') first_date,
+        TO_CHAR(MAX(price_date),'YYYY-MM-DD') last_date
+        FROM gold_prices""")
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify(data[0] if data else {})
+
 # ══ comments ══
 @app.route('/api/posts/<int:post_id>/comments', methods=['POST'])
 def add_comment(post_id):
