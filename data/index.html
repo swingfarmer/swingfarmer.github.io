@@ -218,7 +218,11 @@ function showChange() {
   setChg('usd-chg', today.USD_KRW, prev.USD_KRW);
   setChg('jpy-chg', today.JPY100_KRW, prev.JPY100_KRW);
   setChg('cny-chg', today.CNY_KRW, prev.CNY_KRW);
-  if (today.GOLD_KRW_G && prev.GOLD_KRW_G) setChg('gold-chg', today.GOLD_KRW_G, prev.GOLD_KRW_G);
+  // 금시세: histData에서 금 있는 최근 2일 찾아서 비교
+  var goldDays = histData.filter(function(d){ return d.GOLD_KRW_G && d.GOLD_KRW_G > 0; });
+  if (goldDays.length >= 2) {
+    setChg('gold-chg', goldDays[goldDays.length-1].GOLD_KRW_G, goldDays[goldDays.length-2].GOLD_KRW_G);
+  }
 }
 
 function setChg(id, cur, prev) {
