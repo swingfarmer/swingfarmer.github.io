@@ -34,11 +34,11 @@
 .filter-row input{flex:1;min-width:160px}
 .cnt{font-size:12px;color:#888;margin-bottom:8px}
 .tbl{width:100%;border-collapse:collapse;font-size:12.5px}
-.tbl 
+.tbl th{background:#1F4E78;color:white;padding:8px 6px;font-size:12px;font-weight:600;position:sticky;top:0}
 .tbl th:nth-child(1),.tbl th:nth-child(2),.tbl th:nth-child(3){text-align:left}
 .tbl td:nth-child(1),.tbl td:nth-child(2),.tbl td:nth-child(3){text-align:left}
 .tbl td{padding:7px 6px;text-align:right;border-bottom:1px solid #eee}
-.tbl tr:hover td{background:#f0f5fa}
+.tbl tr:hover td{background:#e8f0fe;transition:background .1s}
 .tbl-wrap{max-height:600px;overflow-y:auto;border:1px solid #ddd;border-radius:8px}
 .price{color:#dc2626;font-weight:700}
 .jeonse{color:#2563eb;font-weight:700}
@@ -51,7 +51,7 @@
 .region-card:hover{transform:translateY(-2px);box-shadow:0 3px 8px rgba(0,0,0,.12)}
 .region-card h4{color:#1F4E78;font-size:14px;margin-bottom:6px}
 .region-card .avg-price{font-size:18px;font-weight:800;color:#dc2626}
-.region-card 
+.region-card .sub{font-size:12px;color:#888;margin-top:4px}
 .yearly-chart{background:white;border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:18px}
 .yearly-chart h3{color:#1F4E78;font-size:15px;margin-bottom:12px}
 .chart-container{position:relative;height:250px}
@@ -60,7 +60,7 @@
 .pager button:disabled{opacity:.4;cursor:default}
 .pager span{font-size:13px;color:#666}
 .chk-group{display:inline-flex;gap:0;align-items:center;border:1px solid #ddd;border-radius:6px;overflow:hidden;flex:none}
-.chk-
+.chk-label{padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer;border-right:1px solid #ddd;transition:all .15s;font-family:inherit;user-select:none}
 .chk-label:last-child{border-right:none}
 .chk-label input{display:none}
 .chk-label.on-trade{background:#fee2e2;color:#991b1b}
@@ -68,6 +68,26 @@
 .chk-label.on-wolse{background:#d1fae5;color:#065f46}
 .chk-label.off{background:#e5e5e5;color:#aaa;text-decoration:line-through}
 .loading{text-align:center;padding:60px;color:#888}
+/* 다크모드 대응 */
+body.sf-dark .tbl-wrap{border-color:#2c333f}
+body.sf-dark .tbl td{border-bottom-color:#2c333f;color:#d8dde5}
+body.sf-dark .tbl th{background:#2a4a6e;color:#d8dde5}
+body.sf-dark .tbl tr:hover td{background:#2a3a50!important;color:#fff}
+body.sf-dark .tabs{background:#2a313d}
+body.sf-dark .tab{color:#aab3c0}
+body.sf-dark .tab.active{background:#1F4E78;color:#fff}
+body.sf-dark .region-card{background:#1e242e;box-shadow:0 1px 3px rgba(0,0,0,.3);border:1px solid #2c333f}
+body.sf-dark .region-card:hover{box-shadow:0 3px 8px rgba(0,0,0,.4)}
+body.sf-dark .region-card h4{color:#6ba3e0}
+body.sf-dark .yearly-chart{background:#1e242e;box-shadow:0 1px 3px rgba(0,0,0,.3);border:1px solid #2c333f}
+body.sf-dark .yearly-chart h3{color:#6ba3e0}
+body.sf-dark .pager button{background:#2a313d;color:#d8dde5;border-color:#3a4250}
+body.sf-dark .pager span{color:#aab3c0}
+body.sf-dark .filter-row select,body.sf-dark .filter-row input{background:#2a313d;color:#e8ecf2;border-color:#3a4250}
+body.sf-dark .cnt{color:#aab3c0}
+body.sf-dark .chk-label.off{background:#2a313d;color:#666}
+body.sf-dark .chk-group{border-color:#3a4250}
+body.sf-dark .prop-tabs{background:#162d4a}
 @media(max-width:600px){.summary-cards{grid-template-columns:repeat(2,1fr)}.region-grid{grid-template-columns:1fr}.filter-row input{min-width:60px}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -105,7 +125,7 @@
     <select id="fYearFrom"></select>
     <span style="font-size:13px;color:#888">~</span>
     <select id="fYearTo"></select>
-    <input type="text" id="fSearch" placeholder="건물명 검색 (쉼표로 여러개: 콤비,홍우)" style="min-width:140px">
+    <input type="text" id="fSearch" placeholder="건물명 검색 (쉼표로 여러개: 콤비,홍우)" style="width:200px;min-width:120px;flex:none">
   </div>
   <div class="filter-row" style="margin-top:-6px">
     <span style="font-size:12px;color:#666;font-weight:600">전용면적(㎡)</span>
