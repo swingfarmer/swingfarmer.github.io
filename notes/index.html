@@ -168,11 +168,18 @@ a{color:#333;text-decoration:none}
   <div class="w-selectors"><select id="fCategory"></select></div>
   <div class="w-title-row"><input type="text" id="fTitle" placeholder="제목 (빈칸이면 메모로 저장)" maxlength="200"></div>
   <div class="w-media-bar">
-    <button class="w-media-btn disabled" disabled><span class="ico">🖼️</span><span class="lbl">사진</span></button>
+    <button class="w-media-btn" id="tbPhoto"><span class="ico">🖼️</span><span class="lbl">사진</span></button>
     <button class="w-media-btn" id="tbHr"><span class="ico">—</span><span class="lbl">구분선</span></button>
     <button class="w-media-btn disabled" disabled><span class="ico">📎</span><span class="lbl">파일</span></button>
     <button class="w-media-btn" id="tbLink"><span class="ico">🔗</span><span class="lbl">링크</span></button>
     <button class="w-media-btn" id="tbImg"><span class="ico">🌐</span><span class="lbl">이미지URL</span></button>
+  </div>
+  <input type="file" id="fileInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none">
+  <div class="w-format-bar" style="display:flex;gap:2px;padding:6px 24px;border-bottom:1px solid #f0f0f0;align-items:center">
+    <button class="w-fmt" id="tbBold" title="굵게" style="padding:4px 7px;border:none;background:none;cursor:pointer;font-size:14px;color:#555;border-radius:3px"><b>B</b></button>
+    <button class="w-fmt" id="tbItalic" title="기울임" style="padding:4px 7px;border:none;background:none;cursor:pointer;font-size:14px;color:#555;border-radius:3px"><i>I</i></button>
+    <button class="w-fmt" id="tbUnder" title="밑줄" style="padding:4px 7px;border:none;background:none;cursor:pointer;font-size:14px;color:#555;border-radius:3px"><u>U</u></button>
+    <button class="w-fmt" id="tbStrike" title="취소선" style="padding:4px 7px;border:none;background:none;cursor:pointer;font-size:14px;color:#555;border-radius:3px"><s>S</s></button>
   </div>
   <div class="w-content"><textarea id="fContent" placeholder="내용을 입력하세요."></textarea></div>
   <div class="w-pin-row"><label><input type="checkbox" id="fPinned" style="width:15px;height:15px"> 📌 상단 고정</label></div>
@@ -333,6 +340,10 @@ function renderView(n){
   body=body.replace(/\[이미지:(https?:\/\/[^\]]+)\]/g,'<img src="$1" alt="">');
   body=body.replace(/\[링크:(https?:\/\/[^\|]+)\|([^\]]+)\]/g,'<a href="$1" target="_blank" rel="noopener">$2 ↗</a>');
   body=body.replace(/────+/g,'<hr>');
+  body=body.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+  body=body.replace(/\*(.+?)\*/g,'<i>$1</i>');
+  body=body.replace(/__(.+?)__/g,'<u>$1</u>');
+  body=body.replace(/~~(.+?)~~/g,'<s>$1</s>');
   $('vBody').innerHTML=body.replace(/\n/g,'<br>');
   $('vActions').innerHTML='<button class="v-btn" data-act="edit" data-id="'+n.id+'">수정</button><button class="v-btn red" data-act="del" data-id="'+n.id+'">삭제</button><button class="v-btn v-close">닫기</button>';
   $('vActions').querySelector('.v-close').addEventListener('click',closeView);
@@ -354,9 +365,25 @@ $('wCancel').addEventListener('click',closeWrite);
 $('writeModal').addEventListener('click',function(e){if(e.target===$('writeModal'))closeWrite();});
 
 function insertAt(ta,txt){var s=ta.selectionStart,e=ta.selectionEnd,v=ta.value;ta.value=v.substring(0,s)+txt+v.substring(e);ta.selectionStart=ta.selectionEnd=s+txt.length;ta.focus();}
+function wrapSel(ta,b,a){var s=ta.selectionStart,e=ta.selectionEnd;if(s===e)return;var sel=ta.value.substring(s,e);ta.value=ta.value.substring(0,s)+b+sel+a+ta.value.substring(e);ta.selectionStart=s+b.length;ta.selectionEnd=s+b.length+sel.length;ta.focus();}
 $('tbHr').addEventListener('click',function(){insertAt($('fContent'),'\n────────────────────\n');});
 $('tbImg').addEventListener('click',function(){var u=prompt('이미지 URL');if(u&&u.trim())insertAt($('fContent'),'[이미지:'+u.trim()+']');});
 $('tbLink').addEventListener('click',function(){var u=prompt('링크 URL');if(!u)return;var l=prompt('표시 텍스트',u.trim());insertAt($('fContent'),'[링크:'+u.trim()+'|'+(l||u.trim())+']');});
+$('tbBold').addEventListener('click',function(){wrapSel($('fContent'),'**','**');});
+$('tbItalic').addEventListener('click',function(){wrapSel($('fContent'),'*','*');});
+$('tbUnder').addEventListener('click',function(){wrapSel($('fContent'),'__','__');});
+$('tbStrike').addEventListener('click',function(){wrapSel($('fContent'),'~~','~~');});
+$('tbPhoto').addEventListener('click',function(){$('fileInput').click();});
+$('fileInput').addEventListener('change',function(){
+  var file=this.files[0];if(!file)return;
+  if(file.size>10*1024*1024){alert('10MB 이하만 가능합니다.');this.value='';return;}
+  var lbl=$('tbPhoto').querySelector('.lbl');lbl.textContent='업로드중...';
+  var fd=new FormData();fd.append('file',file);
+  apiFetch(API+'/upload',{method:'POST',body:fd})
+  .then(function(r){if(!r.ok){alert(r.data.error||'업로드 실패');return;}insertAt($('fContent'),'[이미지:'+r.data.url+']');})
+  .catch(function(e){alert('업로드 실패: '+e.message);})
+  .finally(function(){lbl.textContent='사진';$('fileInput').value='';});
+});
 
 $('wSubmit').addEventListener('click',function(){
   var cat=$('fCategory').value,title=$('fTitle').value.trim(),content=$('fContent').value.trim(),pinned=$('fPinned').checked;
