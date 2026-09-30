@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>연금저축·IRP 세액공제 계산기 (2026) | 스윙파머</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Pretendard',system-ui,-apple-system,sans-serif;background:#f5f7fa;color:#333;padding:16px;max-width:720px;margin:0 auto}
+.back-link{display:inline-block;margin-bottom:8px;font-size:13px;color:#1F4E78;text-decoration:none;font-weight:600}
+.back-link:hover{text-decoration:underline}
+header h1{font-size:20px;color:#1F4E78;margin:0}
+.desc{font-size:12.5px;color:#888;margin:8px 0 16px;line-height:1.7}
+.panel{background:white;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:14px}
+.panel h2{font-size:15px;color:#1F4E78;margin-bottom:12px}
+.input-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.input-row label{font-size:13px;color:#444;min-width:160px}
+.input-row input{font-size:13px;border:1px solid #ccc;border-radius:6px;padding:7px 9px;font-family:inherit;width:160px}
+.input-row input:focus{outline:2px solid #1F4E78}
+.btn{border:none;border-radius:6px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-blue{background:#1F4E78;color:white}
+.btn-blue:hover{background:#163d5e}
+.stat-sub{font-size:12px;color:#888}
+.won-kor{font-size:12px;color:#1F4E78;font-weight:600;margin-top:3px;min-height:15px}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:12px}
+.stat{background:#f0f5fa;padding:14px;border-radius:6px;border-left:4px solid #1F4E78}
+.stat.green{border-left-color:#10b981}
+.stat.amber{border-left-color:#f59e0b}
+.stat-label{font-size:12px;color:#666;margin-bottom:4px}
+.stat-value{font-size:18px;font-weight:700;color:#1F4E78}
+.stat.green .stat-value{color:#10b981}
+.stat.amber .stat-value{color:#f59e0b}
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid #eee}
+th{background:#1F4E78;color:white;font-weight:600}
+td:first-child,th:first-child{text-align:left}
+.bar-wrap{background:#e5e7eb;border-radius:4px;height:24px;margin-top:8px;position:relative;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .5s}
+.bar-label{position:absolute;right:6px;top:3px;font-size:11px;color:#333;font-weight:600}
+.tip{font-size:12px;color:#666;margin-top:8px;padding:10px;background:#f8fafc;border-radius:6px;border:1px solid #e5e7eb}
+.badge{display:inline-block;background:#1F4E78;color:white;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-right:4px}
+.manual{background:#fff;border:1px solid #e0e0e0;padding:20px;border-radius:8px;margin-top:20px;line-height:1.7;font-size:14px}
+.manual h3{color:#1F4E78;margin-top:18px;margin-bottom:8px;font-size:15px}
+.manual h3:first-child{margin-top:0}
+@media(max-width:600px){
+  .input-row{flex-direction:column;align-items:stretch;gap:4px}
+  .input-row label{min-width:auto}
+  .input-row input{width:100%}
+  .summary-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<a href="/" class="back-link">← 메인으로</a>
+<header><h1>💰 연금저축·IRP 세액공제 계산기 (2026)</h1></header>
+<p class="desc">연금저축과 IRP 납입액을 입력하면 <b>세액공제 한도, 공제율, 실제 환급 예상액</b>을 바로 계산합니다. 연금저축 단독 600만원, 합산 900만원 한도.</p>
+
+<div class="panel">
+  <h2>① 소득 정보</h2>
+  <div class="input-row">
+    <label>총급여 (연, 원)</label>
+    <input type="number" id="totalSalary" value="55000000" step="1000000">
+    <div class="won-kor" id="salaryKor"></div>
+  </div>
+  <div id="rateInfo" style="font-size:12px;color:#1F4E78;font-weight:600;margin-top:4px"></div>
+</div>
+
+<div class="panel">
+  <h2>② 연간 납입액</h2>
+  <div class="input-row">
+    <label>연금저축 납입액 (연, 원)</label>
+    <input type="number" id="pensionAmt" value="6000000" step="100000">
+    <div class="won-kor" id="pensionKor"></div>
+  </div>
+  <div class="input-row">
+    <label>IRP 추가 납입액 (연, 원)</label>
+    <input type="number" id="irpAmt" value="3000000" step="100000">
+    <div class="won-kor" id="irpKor"></div>
+  </div>
+  <p class="stat-sub" style="margin-top:4px">※ IRP 단독도 최대 900만원까지 공제 인정. 연금저축이 없으면 IRP만으로 900만원 가능.</p>
+</div>
+
+<button class="btn btn-blue" id="calcBtn" style="width:100%;margin-bottom:14px" onclick="calculate()">📊 세액공제 계산</button>
+
+<div id="resultArea" style="display:none">
+  <div class="panel">
+    <h2>📋 세액공제 결과</h2>
+    <div class="summary-grid" id="summaryGrid"></div>
+
+    <div style="margin-top:16px">
+      <div style="font-size:13px;color:#444;margin-bottom:4px"><b>공제 한도 사용률</b></div>
+      <div class="bar-wrap">
+        <div class="bar-fill" id="usageBar" style="background:linear-gradient(90deg,#1F4E78,#3b82f6);width:0"></div>
+        <div class="bar-label" id="usageLabel">0%</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>📊 상세 내역</h2>
+    <table id="detailTable">
+      <thead><tr><th>항목</th><th>금액</th><th>비고</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h2>💡 최적화 제안</h2>
+    <div id="tipArea"></div>
+  </div>
+
+  <div class="panel">
+    <h2>📈 납입 시나리오 비교</h2>
+    <p class="stat-sub" style="margin-bottom:8px">납입액별 세액공제 환급액 비교 (현재 공제율 기준)</p>
+    <table id="scenarioTable">
+      <thead><tr><th>연금저축</th><th>IRP</th><th>합계</th><th>공제대상</th><th>환급액</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="manual">
+  <h3>2026년 세액공제 규정</h3>
+  <table style="margin:0">
+    <thead><tr><th>구분</th><th>한도</th><th>비고</th></tr></thead>
+    <tbody>
+      <tr><td>연금저축 단독</td><td>연 600만원</td><td>펀드·보험 합산</td></tr>
+      <tr><td>연금저축 + IRP</td><td>연 900만원</td><td>IRP로 추가 300만원</td></tr>
+      <tr><td>IRP 단독</td><td>연 900만원</td><td>연금저축 없이도 가능</td></tr>
+    </tbody>
+  </table>
+
+  <h3>공제율</h3>
+  <p><badge class="badge">16.5%</badge> 총급여 5,500만원 이하 (종합소득금액 4,500만원 이하)<br>
+  <badge class="badge">13.2%</badge> 총급여 5,500만원 초과 (지방소득세 포함)</p>
+
+  <h3>주의사항</h3>
+  <p>• 만 55세 이전 중도해지 시 그간 공제받은 금액 + 운용수익에 <b>16.5% 기타소득세</b> 부과<br>
+  • 연금 수령 시 <b>연금소득세 3.3~5.5%</b> 과세 (연 1,500만원 초과 시 종합소득 합산)<br>
+  • 연금저축 연간 총 납입 한도는 1,800만원 (세액공제 한도 600만원과 별개)<br>
+  • 공제액이 산출세액보다 크면 초과분은 환급 불가</p>
+</div>
+
+<script>
+function wonToKorean(n) {
+  if (n === 0) return '0원';
+  var abs = Math.abs(n), sign = n < 0 ? '-' : '';
+  if (abs >= 100000000) {
+    var eok = Math.floor(abs / 100000000);
+    var man = Math.floor((abs % 100000000) / 10000);
+    return sign + eok + '억' + (man > 0 ? ' ' + man.toLocaleString() + '만' : '') + '원';
+  }
+  if (abs >= 10000) return sign + Math.floor(abs / 10000).toLocaleString() + '만' + (abs % 10000 > 0 ? Math.floor(abs % 10000) : '') + '원';
+  return sign + abs.toLocaleString() + '원';
+}
+
+function updateKor(inputId, korId) {
+  var v = parseInt(document.getElementById(inputId).value) || 0;
+  document.getElementById(korId).textContent = wonToKorean(v);
+}
+
+function updateRate() {
+  var salary = parseInt(document.getElementById('totalSalary').value) || 0;
+  var rate = salary <= 55000000 ? 16.5 : 13.2;
+  document.getElementById('rateInfo').textContent = '→ 공제율: ' + rate + '% (총급여 5,500만원 ' + (salary <= 55000000 ? '이하' : '초과') + ')';
+}
+
+document.getElementById('totalSalary').addEventListener('input', function(){ updateKor('totalSalary','salaryKor'); updateRate(); });
+document.getElementById('pensionAmt').addEventListener('input', function(){ updateKor('pensionAmt','pensionKor'); });
+document.getElementById('irpAmt').addEventListener('input', function(){ updateKor('irpAmt','irpKor'); });
+
+updateKor('totalSalary','salaryKor'); updateKor('pensionAmt','pensionKor'); updateKor('irpAmt','irpKor'); updateRate();
+
+function calcDeduction(salary, pension, irp) {
+  var rate = salary <= 55000000 ? 0.165 : 0.132;
+  var pensionCapped = Math.min(pension, 6000000); // 연금저축 단독 600만
+  var irpEligible = irp;
+  var totalInput = pensionCapped + irpEligible;
+  var deductible = Math.min(totalInput, 9000000); // 합산 900만
+  // IRP 기여분 재계산
+  var irpUsed = Math.min(irpEligible, deductible - pensionCapped);
+  if (irpUsed < 0) irpUsed = 0;
+  var actualPension = Math.min(pensionCapped, deductible);
+  var refund = Math.round(deductible * rate);
+
+  return {
+    rate: rate, ratePercent: rate * 100,
+    pensionInput: pension, irpInput: irp,
+    pensionCapped: actualPension, irpUsed: irpUsed,
+    deductible: deductible, refund: refund,
+    pensionOver: Math.max(0, pension - 6000000),
+    totalOver: Math.max(0, totalInput - 9000000),
+    usagePercent: Math.round(deductible / 9000000 * 100)
+  };
+}
+
+function calculate() {
+  var salary = parseInt(document.getElementById('totalSalary').value) || 0;
+  var pension = parseInt(document.getElementById('pensionAmt').value) || 0;
+  var irp = parseInt(document.getElementById('irpAmt').value) || 0;
+
+  var r = calcDeduction(salary, pension, irp);
+
+  // 요약 카드
+  document.getElementById('summaryGrid').innerHTML =
+    '<div class="stat green"><div class="stat-label">예상 환급액</div><div class="stat-value">' + wonToKorean(r.refund) + '</div><div class="stat-sub">공제율 ' + r.ratePercent + '%</div></div>' +
+    '<div class="stat"><div class="stat-label">공제 대상 합계</div><div class="stat-value">' + wonToKorean(r.deductible) + '</div><div class="stat-sub">한도 900만원 중</div></div>' +
+    '<div class="stat' + (r.totalOver > 0 ? ' amber' : '') + '"><div class="stat-label">한도 초과분</div><div class="stat-value">' + wonToKorean(r.pensionOver + r.totalOver) + '</div><div class="stat-sub">' + (r.totalOver > 0 ? '공제 불가' : '없음') + '</div></div>';
+
+  // 사용률 바
+  document.getElementById('usageBar').style.width = Math.min(r.usagePercent, 100) + '%';
+  document.getElementById('usageLabel').textContent = r.usagePercent + '% (' + wonToKorean(r.deductible) + ' / 900만원)';
+
+  // 상세 테이블
+  var tbody = document.querySelector('#detailTable tbody');
+  var rows = [
+    ['연금저축 납입', wonToKorean(r.pensionInput), r.pensionOver > 0 ? '한도 초과 ' + wonToKorean(r.pensionOver) : '한도 600만원 이내'],
+    ['연금저축 공제 인정', wonToKorean(r.pensionCapped), '최대 600만원'],
+    ['IRP 납입', wonToKorean(r.irpInput), ''],
+    ['IRP 공제 인정', wonToKorean(r.irpUsed), '합산 900만원 한도 내'],
+    ['공제 대상 합계', '<b>' + wonToKorean(r.deductible) + '</b>', '연금저축 + IRP'],
+    ['공제율', r.ratePercent + '%', salary <= 55000000 ? '총급여 5,500만 이하' : '총급여 5,500만 초과'],
+    ['<b>세액공제 환급액</b>', '<b style="color:#10b981">' + wonToKorean(r.refund) + '</b>', r.deductible + ' × ' + r.ratePercent + '%']
+  ];
+  tbody.innerHTML = rows.map(function(row) {
+    return '<tr><td>' + row[0] + '</td><td>' + row[1] + '</td><td style="color:#888;font-size:12px">' + row[2] + '</td></tr>';
+  }).join('');
+
+  // 최적화 제안
+  var tips = [];
+  if (r.deductible < 9000000) {
+    var gap = 9000000 - r.deductible;
+    var extraRefund = Math.round(gap * r.rate);
+    tips.push('<div class="tip">💡 <b>' + wonToKorean(gap) + '</b>을 더 납입하면 한도를 꽉 채워 <b>' + wonToKorean(extraRefund) + '</b>을 추가 환급받을 수 있습니다.</div>');
+  }
+  if (r.pensionOver > 0) {
+    tips.push('<div class="tip">⚠️ 연금저축 <b>' + wonToKorean(r.pensionOver) + '</b>이 600만원 한도를 초과했습니다. 초과분은 세액공제 대상에서 제외됩니다.</div>');
+  }
+  if (r.totalOver > 0) {
+    tips.push('<div class="tip">⚠️ 합산 <b>' + wonToKorean(r.totalOver) + '</b>이 900만원 한도를 초과했습니다. 초과분은 공제 불가합니다.</div>');
+  }
+  if (r.deductible >= 9000000) {
+    tips.push('<div class="tip">✅ 한도 900만원을 꽉 채웠습니다. 최대 환급액 <b>' + wonToKorean(r.refund) + '</b>을 받을 수 있습니다.</div>');
+  }
+  if (salary > 55000000 && salary <= 60000000) {
+    tips.push('<div class="tip">📌 총급여가 5,500만원 경계에 있습니다. 5,500만원 이하면 공제율이 13.2% → 16.5%로 올라 <b>' + wonToKorean(Math.round(r.deductible * 0.033)) + '</b>을 더 받습니다.</div>');
+  }
+  document.getElementById('tipArea').innerHTML = tips.length > 0 ? tips.join('') : '<div class="tip">특별한 제안 사항이 없습니다.</div>';
+
+  // 시나리오 테이블
+  var scenarios = [
+    [0, 0], [3000000, 0], [6000000, 0],
+    [6000000, 1000000], [6000000, 2000000], [6000000, 3000000],
+    [4000000, 5000000], [0, 9000000]
+  ];
+  var stbody = document.querySelector('#scenarioTable tbody');
+  stbody.innerHTML = scenarios.map(function(s) {
+    var sc = calcDeduction(salary, s[0], s[1]);
+    var isCurrent = s[0] === pension && s[1] === irp;
+    var cls = isCurrent ? ' style="background:#ecfdf5;font-weight:600"' : '';
+    return '<tr' + cls + '><td>' + wonToKorean(s[0]) + '</td><td>' + wonToKorean(s[1]) + '</td><td>' + wonToKorean(s[0] + s[1]) + '</td><td>' + wonToKorean(sc.deductible) + '</td><td>' + wonToKorean(sc.refund) + '</td></tr>';
+  }).join('');
+
+  document.getElementById('resultArea').style.display = 'block';
+  document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+<script src="/common.js?v=5"></script>
+</body>
+</html>
