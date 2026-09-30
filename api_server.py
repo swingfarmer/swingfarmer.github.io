@@ -4,7 +4,7 @@
 보안1단계: Firebase ID Token 검증 (POST/PUT/DELETE)
 읽기(GET)는 인증 불필요
 """
-import os
+import os, uuid
 from datetime import datetime
 from functools import wraps
 from flask import Flask, request, jsonify
@@ -37,6 +37,12 @@ from flask_limiter.util import get_remote_address
 limiter = Limiter(get_remote_address, app=app,
     default_limits=["60/minute"],   # GET 기본: 60회/분
     storage_uri="memory://")
+
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
+
+@app.errorhandler(413)
+def too_large(e):
+    return jsonify({'error': '파일 크기가 10MB를 초과합니다.'}), 413
 
 @app.errorhandler(429)
 def rate_limit_handler(e):
@@ -732,6 +738,69 @@ def rates_gold_summary():
     data = rows_to_list(cur, cur.fetchall())
     cur.close(); conn.close()
     return jsonify(data[0] if data else {})
+
+# ══ file upload ══
+UPLOAD_DIR = os.path.expanduser('~/uploads')
+ALLOWED_MIME = {'image/jpeg', 'image/png', 'image/gif', 'image/webp'}
+ALLOWED_EXT = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
+
+@app.route('/api/upload', methods=['POST'])
+@require_auth
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'error': '파일이 없습니다.'}), 400
+    f = request.files['file']
+    if not f.filename:
+        return jsonify({'error': '파일이 없습니다.'}), 400
+    if f.content_type not in ALLOWED_MIME:
+        return jsonify({'error': '이미지 파일만 가능합니다. (jpg, png, gif, webp)'}), 400
+    ext = os.path.splitext(f.filename)[1].lower()
+    if ext not in ALLOWED_EXT:
+        ext = '.jpg'
+    now = datetime.now()
+    subdir = now.strftime('%Y/%m')
+    upload_dir = os.path.join(UPLOAD_DIR, subdir)
+    os.makedirs(upload_dir, exist_ok=True)
+    stored_name = uuid.uuid4().hex[:12] + ext
+    stored_path = f'{subdir}/{stored_name}'
+    full_path = os.path.join(upload_dir, stored_name)
+    f.save(full_path)
+    file_size = os.path.getsize(full_path)
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("""INSERT INTO attachments (original_name, stored_path, file_size, mime_type, created_at)
+        VALUES (:orig, :path, :size, :mime, SYSTIMESTAMP)""",
+        {'orig': f.filename, 'path': stored_path, 'size': file_size, 'mime': f.content_type})
+    conn.commit()
+    cur.execute("SELECT MAX(id) FROM attachments"); file_id = cur.fetchone()[0]
+    cur.close(); conn.close()
+    url = f'https://swingfarmer.duckdns.org/uploads/{stored_path}'
+    return jsonify({'ok': True, 'id': file_id, 'url': url, 'name': f.filename, 'size': file_size}), 201
+
+@app.route('/api/files/<int:file_id>', methods=['DELETE'])
+@require_auth
+def delete_file(file_id):
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT stored_path FROM attachments WHERE id=:id", {'id': file_id})
+    row = cur.fetchone()
+    if not row: cur.close(); conn.close(); return jsonify({'error': '파일을 찾을 수 없습니다.'}), 404
+    full_path = os.path.join(UPLOAD_DIR, row[0])
+    if os.path.exists(full_path):
+        os.remove(full_path)
+    cur.execute("DELETE FROM attachments WHERE id=:id", {'id': file_id})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/files', methods=['GET'])
+def list_files():
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("""SELECT id, original_name, stored_path, file_size, mime_type, created_at
+        FROM attachments ORDER BY created_at DESC FETCH FIRST 100 ROWS ONLY""")
+    data = rows_to_list(cur, cur.fetchall())
+    for d in data:
+        d['url'] = f"https://swingfarmer.duckdns.org/uploads/{d['stored_path']}"
+        d['created_at'] = dt_str(d.get('created_at'))
+    cur.close(); conn.close()
+    return jsonify({'data': data})
 
 # ══ comments ══
 @app.route('/api/posts/<int:post_id>/comments', methods=['POST'])
