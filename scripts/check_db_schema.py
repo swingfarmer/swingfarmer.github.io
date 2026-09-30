@@ -62,7 +62,6 @@ else:
     cur.execute("SELECT column_name FROM user_tab_columns WHERE table_name='POSTS'")
     cols = [r[0] for r in cur.fetchall()]
     print(f"\nPOSTS 컬럼: {cols}")
-    # post_type → category 마이그레이션
     if 'POST_TYPE' in cols and 'CATEGORY' not in cols:
         print("[~] POST_TYPE → CATEGORY 리네임...")
         cur.execute("ALTER TABLE posts RENAME COLUMN post_type TO category")
@@ -95,7 +94,21 @@ else:
 
 # ── ATTACHMENTS ──
 if 'ATTACHMENTS' not in tables:
-    print("\n[i] ATTACHMENTS 미생성 (Phase 2에서 생성 예정)")
+    print("\n[+] ATTACHMENTS 생성...")
+    cur.execute("""CREATE TABLE attachments (
+        id NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        original_name VARCHAR2(200),
+        stored_path VARCHAR2(300) NOT NULL,
+        file_size NUMBER,
+        mime_type VARCHAR2(50),
+        post_id NUMBER,
+        note_id NUMBER,
+        created_at TIMESTAMP DEFAULT SYSTIMESTAMP
+    )""")
+    cur.execute("CREATE INDEX idx_attach_post ON attachments(post_id)")
+    cur.execute("CREATE INDEX idx_attach_note ON attachments(note_id)")
+    conn.commit()
+    print("  → 완료")
 else:
     cur.execute("SELECT COUNT(*) FROM attachments"); print(f"\nATTACHMENTS: {cur.fetchone()[0]}건")
 
@@ -108,7 +121,6 @@ if 'NOTE_CATEGORIES' not in tables:
         sort_order NUMBER DEFAULT 0,
         created_at TIMESTAMP DEFAULT SYSTIMESTAMP
     )""")
-    # 기본 카테고리 삽입
     for i, name in enumerate(['메모', '시장관찰', '종목분석', '매매기록'], 1):
         cur.execute("INSERT INTO note_categories (name, sort_order) VALUES (:n, :s)", {'n': name, 's': i})
     conn.commit()
@@ -203,7 +215,7 @@ else:
     cur.execute("SELECT COUNT(*) FROM gold_prices"); print(f"\nGOLD_PRICES: {cur.fetchone()[0]}건")
 
 # 전체 확인
-for tbl in ['CATEGORIES','POSTS','COMMENTS','NOTE_CATEGORIES','NOTES','EXCHANGE_RATES','INTEREST_RATES','GOLD_PRICES']:
+for tbl in ['CATEGORIES','POSTS','COMMENTS','ATTACHMENTS','NOTE_CATEGORIES','NOTES','EXCHANGE_RATES','INTEREST_RATES','GOLD_PRICES']:
     if tbl in tables or tbl == 'CATEGORIES':
         try:
             cur.execute(f"SELECT column_name, data_type FROM user_tab_columns WHERE table_name='{tbl}' ORDER BY column_id")
