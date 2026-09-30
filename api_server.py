@@ -31,6 +31,17 @@ load_env()
 app = Flask(__name__)
 CORS(app, origins=['https://swingfarmer.github.io'])
 
+# ── Rate Limiting ──
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+limiter = Limiter(get_remote_address, app=app,
+    default_limits=["60/minute"],   # GET 기본: 60회/분
+    storage_uri="memory://")
+
+@app.errorhandler(429)
+def rate_limit_handler(e):
+    return jsonify({'error': '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.'}), 429
+
 WALLET_DIR = os.path.expanduser('~/wallet')
 DB_USER = 'ADMIN'
 DB_PASSWORD = os.environ.get('ORACLE_DB_PASSWORD', '')
@@ -71,8 +82,9 @@ def verify_firebase_token(id_token):
         return None
 
 def require_auth(f):
-    """POST/PUT/DELETE 인증 데코레이터."""
+    """POST/PUT/DELETE 인증 + Rate Limit 데코레이터."""
     @wraps(f)
+    @limiter.limit("10/minute")  # 쓰기: 10회/분
     def decorated(*args, **kwargs):
         auth_header = request.headers.get('Authorization', '')
         if not auth_header.startswith('Bearer '):
