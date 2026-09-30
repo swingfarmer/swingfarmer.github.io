@@ -101,6 +101,9 @@ a{color:#333;text-decoration:none}
 .w-topbar{display:flex;align-items:center;padding:14px 24px;border-bottom:1px solid #e5e5e5}
 .w-topbar h2{font-size:17px;font-weight:800;color:#333;flex:1}
 .w-cancel{padding:6px 14px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-size:13px;font-family:inherit;color:#555;margin-right:8px}
+.w-preview{padding:6px 14px;border:1px solid #1F4E78;border-radius:4px;background:#fff;cursor:pointer;font-size:13px;font-family:inherit;color:#1F4E78;margin-right:auto}
+.w-preview:hover{background:#f0f5fa}
+.w-preview.active{background:#1F4E78;color:white}
 .w-submit{padding:6px 20px;border:none;border-radius:4px;background:#03c75a;color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
 .w-submit:hover{background:#02b350}
 .w-selectors{display:flex;gap:10px;padding:14px 24px;border-bottom:1px solid #f0f0f0;flex-wrap:wrap}
@@ -185,7 +188,7 @@ a{color:#333;text-decoration:none}
 
 <!-- 글쓰기 -->
 <div class="modal-overlay" id="writeModal"><div class="modal-inner"><div class="w-box">
-  <div class="w-topbar"><h2 id="wTitle">글쓰기</h2><button class="w-cancel" id="wCancel">취소</button><button class="w-submit" id="wSubmit">등록</button></div>
+  <div class="w-topbar"><h2 id="wTitle">글쓰기</h2><button class="w-preview" id="wPreview">미리보기</button><button class="w-cancel" id="wCancel">취소</button><button class="w-submit" id="wSubmit">등록</button></div>
   <div class="w-selectors">
     <select id="fCategory"></select>
     <input type="text" id="fAuthor" placeholder="작성자" maxlength="20" style="max-width:160px">
@@ -206,7 +209,7 @@ a{color:#333;text-decoration:none}
     <button class="w-fmt" id="tbUnder" title="밑줄 (선택 후)"><u>U</u></button>
     <button class="w-fmt" id="tbStrike" title="취소선 (선택 후)"><s>S</s></button>
   </div>
-  <div class="w-content"><textarea id="fContent" placeholder="내용을 입력하세요."></textarea></div>
+  <div class="w-content"><textarea id="fContent" placeholder="내용을 입력하세요."></textarea><div id="fPreview" class="v-body" style="display:none;min-height:300px;padding:18px 24px;border-top:1px solid #f0f0f0"></div></div>
   <div class="w-pin-row"><label><input type="checkbox" id="fPinned" style="width:15px;height:15px"> 📌 상단 고정</label></div>
 </div></div></div>
 
@@ -375,6 +378,30 @@ $('btnWrite').addEventListener('click',openWrite);
 function closeWrite(){$('writeModal').classList.remove('active');document.body.style.overflow='';}
 $('wCancel').addEventListener('click',closeWrite);
 $('writeModal').addEventListener('click',function(e){if(e.target===$('writeModal'))closeWrite();});
+
+// 미리보기 토글
+function formatBody(text){
+  var h=esc(text);
+  h=h.replace(/\[이미지:(https?:\/\/[^\]]+)\]/g,'<img src="$1" alt="이미지">');
+  h=h.replace(/\[링크:(https?:\/\/[^\|]+)\|([^\]]+)\]/g,'<a href="$1" target="_blank" rel="noopener">$2 ↗</a>');
+  h=h.replace(/────+/g,'<hr>');
+  h=h.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+  h=h.replace(/\*(.+?)\*/g,'<i>$1</i>');
+  h=h.replace(/__(.+?)__/g,'<u>$1</u>');
+  h=h.replace(/~~(.+?)~~/g,'<s>$1</s>');
+  return h.replace(/\n/g,'<br>');
+}
+$('wPreview').addEventListener('click',function(){
+  var ta=$('fContent'),pv=$('fPreview'),btn=this;
+  if(ta.style.display!=='none'){
+    pv.innerHTML=formatBody(ta.value);
+    ta.style.display='none';pv.style.display='block';
+    btn.textContent='편집';btn.classList.add('active');
+  } else {
+    ta.style.display='';pv.style.display='none';
+    btn.textContent='미리보기';btn.classList.remove('active');
+  }
+});
 
 function insertAt(ta,txt){var s=ta.selectionStart,e=ta.selectionEnd,v=ta.value;ta.value=v.substring(0,s)+txt+v.substring(e);ta.selectionStart=ta.selectionEnd=s+txt.length;ta.focus();}
 function wrapSel(ta,b,a){var s=ta.selectionStart,e=ta.selectionEnd;if(s===e)return;var sel=ta.value.substring(s,e);ta.value=ta.value.substring(0,s)+b+sel+a+ta.value.substring(e);ta.selectionStart=s+b.length;ta.selectionEnd=s+b.length+sel.length;ta.focus();}
