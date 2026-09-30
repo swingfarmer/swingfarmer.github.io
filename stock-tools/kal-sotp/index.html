@@ -7,36 +7,26 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>대한항공 SOTP 기업가치 계산기 | 스윙파머</title>
 <meta name="description" content="대한항공을 여객·화물·항공우주 3개 사업부로 쪼개 SOTP(부분별 합산) 방식으로 적정 시가총액을 추정. 순이익·비중·멀티플을 조정해 보수/중립/강세 시나리오 비교.">
+<link rel="stylesheet" href="/common.css?v=1">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
-  .wrap { max-width: 780px; margin: 0 auto; padding: 16px; }
-  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
-  header .wrap { padding: 0; display: block; }
-  header h1 { font-size: 18px; color: #1F4E78; margin: 0; }
-  .back-link { display: inline-block; margin-bottom: 8px; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
-  .back-link:hover { text-decoration: underline; }
-  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
-  .panel { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
-  .section-label { font-size: 14px; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #eef0f3; color: #1F4E78; }
-  .input-row { margin-bottom: 13px; }
-  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #333; }
-  .stat-sub { font-size: 11px; font-weight: 500; color: #888; }
-  input[type="number"] { width: 100%; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; background: #FFF2CC; font-weight: 600; color: #0000FF; }
+:root { --sf-max-w: 780px; }
+header { background: var(--sf-surface); border-bottom: 3px solid var(--sf-brand); padding: 18px 16px; }
+header .wrap { padding: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+header h1 { font-size: 20px; color: var(--sf-brand); margin: 0; border-bottom: none; }
+.back-link { margin-left: auto; }
+.final, .result-hero { background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+header 
   input:focus { outline: 2px solid #1F4E78; }
   .unit-suffix { font-size: 12px; color: #888; margin-top: 3px; }
-
   .toggle-row { display: flex; gap: 8px; margin-bottom: 6px; }
   .toggle-opt { flex: 1; padding: 9px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; background: #eef2f7; color: #1F4E78; border: 2px solid transparent; text-align: center; }
   .toggle-opt.active { background: #1F4E78; color: white; }
-
   .preset-row { display: flex; gap: 8px; margin-bottom: 14px; }
   .preset-btn { flex: 1; padding: 11px 6px; border-radius: 9px; font-size: 13px; font-weight: 700; cursor: pointer; border: 2px solid #e5e7eb; background: white; text-align: center; line-height: 1.3; }
   .preset-btn small { display: block; font-size: 10px; font-weight: 500; opacity: .75; margin-top: 2px; }
   .preset-btn.cons { color: #16a34a; } .preset-btn.cons.active { background: #16a34a; color: white; border-color: #16a34a; }
   .preset-btn.neut { color: #1F4E78; } .preset-btn.neut.active { background: #1F4E78; color: white; border-color: #1F4E78; }
   .preset-btn.bull { color: #dc2626; } .preset-btn.bull.active { background: #dc2626; color: white; border-color: #dc2626; }
-
   /* 사업부 테이블 */
   table.seg { width: 100%; border-collapse: collapse; font-size: 13px; }
   table.seg th { background: #f8fafc; padding: 8px 6px; border-bottom: 2px solid #e5e7eb; font-size: 11.5px; color: #555; }
@@ -47,19 +37,16 @@
   table.seg tr.sum td { border-top: 2px solid #1F4E78; font-weight: 800; }
   .seg-pax { border-left: 3px solid #3b82f6; } .seg-cargo { border-left: 3px solid #f59e0b; } .seg-aero { border-left: 3px solid #8b5cf6; }
   .weight-warn { font-size: 11.5px; color: #dc2626; margin-top: 6px; font-weight: 600; display: none; }
-
   /* 결과 hero */
   .result-hero { border-radius: 14px; padding: 22px; text-align: center; margin-bottom: 16px; color: white; background: linear-gradient(135deg, #1F4E78, #2d6da3); }
-  .result-hero .rh-label { font-size: 13px; opacity: .9; margin-bottom: 4px; }
+  .result-hero .rh-
   .result-hero .rh-mktcap { font-size: 32px; font-weight: 800; }
   .result-hero .rh-multiple { font-size: 13px; opacity: .95; margin-top: 6px; }
-
   .compare-row { display: flex; gap: 12px; margin-bottom: 16px; }
   .compare-box { flex: 1; background: white; border-radius: 12px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); text-align: center; }
-  .compare-box .cb-label { font-size: 11.5px; color: #888; }
+  .compare-box .cb-
   .compare-box .cb-val { font-size: 19px; font-weight: 800; margin-top: 3px; }
   .compare-box.up .cb-val { color: #16a34a; } .compare-box.down .cb-val { color: #dc2626; }
-
   .bar-wrap { margin: 12px 0; }
   .seg-bar { height: 30px; border-radius: 6px; overflow: hidden; display: flex; font-size: 11px; color: white; font-weight: 700; }
   .bar-pax { background: #3b82f6; } .bar-cargo { background: #f59e0b; } .bar-aero { background: #8b5cf6; }
@@ -67,13 +54,9 @@
   .bar-legend { display: flex; gap: 14px; margin-top: 8px; font-size: 11.5px; color: #666; flex-wrap: wrap; }
   .bar-legend span { display: flex; align-items: center; gap: 4px; }
   .dot { width: 10px; height: 10px; border-radius: 2px; }
-
   .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; font-style: normal; cursor: pointer; margin-left: 4px; }
-  .info-box { display: none; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #1e40af; line-height: 1.7; margin-top: 8px; }
   .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; line-height: 1.7; margin-top: 14px; }
   .warn-strong { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #991b1b; line-height: 1.7; margin-bottom: 16px; }
-  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; margin-top: 8px; font-size: 12.5px; line-height: 1.8; color: #6b5618; }
-  .manual .badge { display: inline-block; background: #1F4E78; color: white; font-size: 11px; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
   footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
 </style>
 </head>

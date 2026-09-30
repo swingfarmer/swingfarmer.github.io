@@ -6,26 +6,22 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>목표주가 역산 계산기 | 스윙파머</title>
 <meta name="description" content="매수가·수량·목표금액 중 아무거나 입력하면 나머지를 자동 역산. 종목별 목표 설정과 마일스톤 진행 추적.">
+<link rel="stylesheet" href="/common.css?v=1">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
-  .wrap { max-width: 1000px; margin: 0 auto; padding: 16px; }
-  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
-  header .wrap { padding: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  header h1 { font-size: 20px; color: #1F4E78; margin: 0; }
-  .back-link { margin-left: auto; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
-  .back-link:hover { text-decoration: underline; }
-  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
-
+:root { --sf-max-w: 1000px; }
+header { background: var(--sf-surface); border-bottom: 3px solid var(--sf-brand); padding: 18px 16px; }
+header .wrap { padding: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+header h1 { font-size: 20px; color: var(--sf-brand); margin: 0; border-bottom: none; }
+.back-link { margin-left: auto; }
+header 
   /* 요약 카드 */
   .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
   @media (max-width: 700px) { .summary-grid { grid-template-columns: 1fr 1fr; } }
   .sum-card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
-  .sum-card .s-label { font-size: 11.5px; color: #888; margin-bottom: 4px; }
+  .sum-card .s-
   .sum-card .s-val { font-size: 19px; font-weight: 800; color: #1F4E78; }
   .sum-card .s-kor { font-size: 11px; color: #aaa; margin-top: 2px; }
   .sum-card.profit .s-val { color: #16a34a; }
-
   /* 전체 진행바 */
   .total-progress { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
   .tp-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
@@ -37,11 +33,10 @@
   .mb-point { position: absolute; top: 10px; width: 20px; height: 20px; border-radius: 50%; background: white; border: 3px solid #cbd5e1; transform: translateX(-50%); transition: all .3s; }
   .mb-point.reached { border-color: #16a34a; background: #16a34a; }
   .mb-point.current { border-color: #1F4E78; background: #1F4E78; box-shadow: 0 0 0 4px rgba(31,78,120,.2); }
-  .mb-label { position: absolute; top: 34px; font-size: 10.5px; color: #666; transform: translateX(-50%); white-space: nowrap; text-align: center; }
+  .mb-
   .mb-label b { display: block; color: #333; font-size: 11px; }
   .mb-current-marker { position: absolute; top: 6px; width: 2px; height: 28px; background: #dc2626; transform: translateX(-50%); z-index: 3; }
   .mb-current-flag { position: absolute; top: -10px; font-size: 10px; color: #dc2626; font-weight: 700; transform: translateX(-50%); white-space: nowrap; }
-
   /* 테이블 */
   .table-wrap { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06); overflow-x: auto; margin-bottom: 16px; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 860px; }
@@ -64,22 +59,17 @@
   .del-btn { background: #fee2e2; color: #dc2626; border: none; width: 26px; height: 26px; border-radius: 5px; cursor: pointer; font-size: 14px; }
   .add-row-btn { background: #eff6ff; color: #1F4E78; border: 1px dashed #93c5fd; border-radius: 8px; padding: 10px; width: 100%; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 16px; }
   .add-row-btn:hover { background: #dbeafe; }
-
   /* 차트 */
   .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
   @media (max-width: 700px) { .chart-grid { grid-template-columns: 1fr; } }
   .chart-card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
   .chart-card h3 { font-size: 14px; color: #1F4E78; margin-bottom: 12px; }
   .chart-wrap { position: relative; height: 240px; }
-
   .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
   .btn { border: none; border-radius: 6px; padding: 9px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
   .btn-blue { background: #1F4E78; color: white; }
   .btn-green { background: #10b981; color: white; }
   .btn-gray { background: #9ca3af; color: white; }
-
-  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; font-size: 13px; line-height: 1.8; color: #6b5618; }
-  .manual .badge { display: inline-block; background: #1F4E78; color: white; font-size: 11px; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
   footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
 </style>
 </head>

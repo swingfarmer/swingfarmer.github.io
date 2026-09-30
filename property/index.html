@@ -5,26 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>상가 수익률 분석기</title>
+<link rel="stylesheet" href="/common.css?v=1">
 <style>
-*{box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:1200px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a}
-h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:8px}
-.desc{color:#555;font-size:14px;margin-bottom:24px}
-.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}
-.back-link:hover{text-decoration:underline}
-.panel{background:white;border-radius:8px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:20px}
-.panel h2{margin-top:0;color:#1F4E78;font-size:18px}
+:root { --sf-max-w: 1200px; }
+.final { background: linear-gradient(135deg, #1F4E78, #2563eb); }
 .panel h3{color:#1F4E78;font-size:15px;margin-top:18px;margin-bottom:8px}
-.section-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin:16px 0 8px 0;grid-column:1/-1}
-.section-label:first-child{margin-top:0}
-.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
-.input-row{display:flex;flex-direction:column}
-label{font-size:13px;font-weight:600;margin-bottom:4px;color:#333}
-input[type="number"],select{padding:10px;font-size:15px;border:1px solid #ccc;border-radius:4px;background:#FFF2CC;font-weight:600;color:#0000FF}
-input:focus,select:focus{outline:2px solid #1F4E78;background:#FFFACD}
 input[readonly]{background:#f0f0f0;color:#666}
 .text-input{padding:10px;font-size:14px;border:1px solid #ccc;border-radius:4px;background:#fff;color:#333}
-
 /* 탭 */
 .tabs{display:flex;gap:4px;background:#e5e7eb;padding:4px;border-radius:10px;margin-bottom:20px;flex-wrap:wrap}
 .tab{flex:1;min-width:120px;padding:12px 16px;border:none;background:transparent;cursor:pointer;font-size:14px;font-weight:600;color:#666;border-radius:8px;transition:all 0.15s}
@@ -32,17 +19,10 @@ input[readonly]{background:#f0f0f0;color:#666}
 .tab.active{background:white;color:#1F4E78;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
 .tab-content{display:none}
 .tab-content.active{display:block}
-
 /* 결과 테이블 */
-.calc-table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}
-.calc-table td{padding:8px 12px;border-bottom:1px solid #eee}
-.calc-table td:first-child{color:#555}
-.calc-table td:nth-child(2){text-align:right;font-weight:600;color:#1a1a1a;font-variant-numeric:tabular-nums}
-.calc-table td:nth-child(3){font-size:12px;color:#888}
 .calc-table tr.highlight td{background:#fff9e6;font-weight:700}
 .calc-table tr.subtotal td:nth-child(2){color:#1F4E78;font-size:15px}
 .calc-table tr.subtotal td{border-top:2px solid #1F4E78}
-
 /* 7가지 수익률 */
 .yield-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
 @media(max-width:700px){.yield-grid{grid-template-columns:1fr}}
@@ -50,24 +30,22 @@ input[readonly]{background:#f0f0f0;color:#666}
 .yield-card.star{background:#fff8e8;border-left-color:#d97706}
 .yield-card.star2{background:#ecfdf5;border-left-color:#10b981}
 .yield-card.warn{background:#fef2f2;border-left-color:#dc2626}
-.yield-label{font-size:12px;color:#666;margin-bottom:3px}
+.yield-
 .yield-name{font-size:13px;font-weight:600;margin-bottom:4px}
 .yield-value{font-size:22px;font-weight:800;color:#1F4E78;font-variant-numeric:tabular-nums}
 .yield-card.star .yield-value{color:#b45309}
 .yield-card.star2 .yield-value{color:#059669}
 .yield-card.warn .yield-value{color:#b91c1c}
 .yield-desc{font-size:11px;color:#888;margin-top:3px}
-
 /* 시나리오 테이블 */
-.scenario-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
-.scenario-table th{background:#1F4E78;color:white;padding:8px 6px;text-align:right;font-weight:600;font-size:11px}
+.scenario-
+.scenario-table 
 .scenario-table th:first-child{text-align:left}
 .scenario-table td{padding:6px;border-bottom:1px solid #eee;text-align:right;font-variant-numeric:tabular-nums}
 .scenario-table td:first-child{font-weight:600;text-align:left}
 .scenario-table tr.current{background:#fff8e8}
 .scenario-table tr.current td{font-weight:700}
 .scenario-wrap{overflow-x:auto;border:1px solid #ddd;border-radius:6px}
-
 /* 비교 */
 .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
 @media(max-width:700px){.compare-grid{grid-template-columns:1fr}}
@@ -79,21 +57,12 @@ input[readonly]{background:#f0f0f0;color:#666}
 .compare-row.total{border-top:2px solid #1F4E78;margin-top:6px;padding-top:8px;font-weight:700}
 .compare-row.total .v{color:#1F4E78;font-size:15px}
 .verdict{background:linear-gradient(135deg,#1F4E78,#2563eb);color:white;padding:18px;border-radius:8px;text-align:center;margin-top:14px}
-.verdict-label{font-size:13px;opacity:0.9;margin-bottom:4px}
+.verdict-
 .verdict-text{font-size:16px;font-weight:700}
-
 /* 사용설명서 */
-.manual{background:#fff;border:1px solid #e0e0e0;padding:20px;border-radius:8px;margin-top:30px;line-height:1.7;font-size:14px}
-.manual h3{color:#1F4E78;margin-top:18px;margin-bottom:8px;font-size:15px}
-.manual h3:first-child{margin-top:0}
-.manual ul{padding-left:20px;margin:6px 0}
-.manual li{margin-bottom:4px}
-.badge{display:inline-block;background:#1F4E78;color:white;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-right:4px}
-.warn-box{background:#fef3c7;border-left:4px solid #d97706;padding:10px 14px;margin-top:10px;border-radius:4px;font-size:13px;color:#92400e}
-.info-box{background:#dbeafe;border-left:4px solid #2563eb;padding:10px 14px;margin-top:10px;border-radius:4px;font-size:13px;color:#1e3a8a}
 </style>
 </head>
-<body>
+<body class="sf-narrow">
 
 <a href="/" class="back-link">← 메인으로</a>
 

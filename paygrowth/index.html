@@ -7,24 +7,20 @@
 <meta name="robots" content="noindex, nofollow">
 <title>누적 연봉·실수령액 계산기 | 스윙파머</title>
 <meta name="description" content="연봉 인상률·부양가족·비과세 수당·자녀세액공제 반영 누적 실수령액 계산기. 2026년 4대보험 요율 기준.">
+<link rel="stylesheet" href="/common.css?v=1">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
-  .wrap { max-width: 1100px; margin: 0 auto; padding: 16px; }
-  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
-  header .wrap { padding: 0; }
-  header h1 { font-size: 20px; color: #1F4E78; }
-  .back-link { display: inline-block; margin-bottom: 8px; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
-  .back-link:hover { text-decoration: underline; }
-  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
-  .panel { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 14px; }
+:root { --sf-max-w: 1100px; }
+header { background: var(--sf-surface); border-bottom: 3px solid var(--sf-brand); padding: 18px 16px; }
+header .wrap { padding: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+header h1 { font-size: 20px; color: var(--sf-brand); margin: 0; border-bottom: none; }
+.back-link { margin-left: auto; }
+header 
   .panel h2 { font-size: 15px; color: #1F4E78; margin-bottom: 10px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .btn { border: none; border-radius: 6px; padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
   .btn-blue { background: #1F4E78; color: white; }
   .btn-gray { background: #9ca3af; color: white; }
-  input, select { font-size: 13px; border: 1px solid #ccc; border-radius: 6px; padding: 7px 9px; font-family: inherit; width: 100%; }
+  input, 
   input:focus, select:focus { outline: 2px solid #1F4E78; }
-
   .cloud-area { display: none; align-items: center; gap: 8px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; flex-wrap: wrap; }
   .cloud-area.on { display: flex; }
   .cloud-lbl { font-size: 12px; font-weight: 700; color: #0369a1; }
@@ -32,21 +28,17 @@
   #saveStatus { font-size: 11.5px; color: #0369a1; margin-left: 4px; }
   #saveStatus.dirty { color: #b45309; }
   #saveStatus.error { color: #dc2626; }
-
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 14px; margin-bottom: 6px; }
   .fld { display: flex; flex-direction: column; gap: 4px; position: relative; }
-  .fld label { font-size: 12px; color: #444; font-weight: 600; }
+  .fld 
   .fld small { font-size: 10.5px; color: #999; font-weight: 400; }
-  .fld input, .fld select { text-align: right; }
+  .fld input, .fld 
   .readable-hint { font-size: 11px; color: #1F4E78; font-weight: 600; margin-top: 2px; min-height: 14px; }
-
   details.adv { margin-top: 10px; border-top: 1px dashed #e5e7eb; padding-top: 10px; }
   details.adv summary { cursor: pointer; font-size: 12.5px; color: #1F4E78; font-weight: 600; }
   details.adv .grid { margin-top: 10px; }
-
   .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #92400e; margin-bottom: 14px; line-height: 1.6; }
   .note b { color: #78350f; }
-
   .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 14px; }
   .sc { background: white; border-radius: 10px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); border-top: 3px solid #1F4E78; }
   .sc.accent { border-top-color: #dc2626; }
@@ -54,7 +46,6 @@
   .sc .val { font-size: 18px; font-weight: 700; color: #1F4E78; }
   .sc.accent .val { color: #dc2626; }
   .sc .sub { font-size: 11px; color: #888; margin-top: 4px; }
-
   .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 820px; }
   th, td { padding: 7px 8px; text-align: right; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
@@ -67,19 +58,14 @@
   td.cum { font-weight: 700; color: #dc2626; }
   tfoot td { font-weight: 700; border-top: 2px solid #ccc; background: #f4f6f8; }
   tfoot td:first-child { background: #f4f6f8; }
-
   .compare-wrap { overflow-x: auto; margin-top: 4px; }
   table.compare { min-width: 500px; }
   table.compare th:first-child, table.compare td:first-child { text-align: left; min-width: 100px; }
-
   footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
-
   body.sf-dark table th:first-child { background: #2a4a6e !important; }
   body.sf-dark table td:first-child { background: #1e242e !important; }
-  body.sf-dark input, body.sf-dark select { background: #1e242e; color: #ddd; border-color: #444; }
-
+  body.sf-dark input, body.sf-dark 
   @media (max-width: 640px) {
-    .wrap { padding: 12px; }
     .sc .val { font-size: 15px; }
   }
 </style>
