@@ -5,14 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>공지 & 문의 게시판</title>
+<link rel="stylesheet" href="/common.css?v=1">
 <style>
+:root { --sf-max-w: 900px; }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:900px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a}
-.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}
-.back-link:hover{text-decoration:underline}
-h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:6px;font-size:22px}
-.desc{color:#555;font-size:13.5px;margin-bottom:18px}
-
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
 .filter-tabs{display:flex;gap:4px;background:#e5e7eb;padding:4px;border-radius:8px}
 .ftab{padding:8px 16px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:700;color:#666;border-radius:6px;font-family:inherit}
@@ -23,21 +19,19 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 .btn-gray{background:#9ca3af;color:white}
 .btn-red{background:#dc2626;color:white}
 .btn-sm{padding:5px 11px;font-size:12px}
-
 .post-list{display:flex;flex-direction:column;gap:10px}
 .post{background:white;border-radius:10px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.08);border-left:4px solid #e5e7eb;cursor:pointer;transition:all .15s}
 .post:hover{box-shadow:0 2px 8px rgba(0,0,0,.12)}
 .post.notice{border-left-color:#dc2626;background:#fffbfb}
 .post.pinned{border-left-color:#d97706;background:#fffbeb}
 .post-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
-.badge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px}
 .badge.notice{background:#fee2e2;color:#b91c1c}
 .badge.question{background:#dbeafe;color:#1e40af}
 .badge.pin{background:#fed7aa;color:#9a3412}
 .post-title{font-size:15px;font-weight:700;color:#1a1a1a;flex:1}
 .post-meta{font-size:12px;color:#999;display:flex;gap:10px;flex-wrap:wrap}
-.post-body{margin-top:10px;padding-top:10px;border-top:1px solid #f0f0f0;font-size:14px;line-height:1.7;color:#333;white-space:pre-wrap;word-break:break-word;display:none}
-.post.open .post-body{display:block}
+.post-
+.post.open .post-
 .post-actions{margin-top:12px;display:flex;gap:6px;flex-wrap:wrap}
 .replies{margin-top:14px;padding-top:12px;border-top:1px dashed #ddd}
 .reply-empty{font-size:12px;color:#aaa;padding:4px 0 10px}
@@ -50,34 +44,31 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 .reply-date{font-size:11px;color:#aaa;margin-right:auto}
 .reply-del{background:none;border:none;color:#ccc;cursor:pointer;font-size:12px;padding:0 4px}
 .reply-del:hover{color:#dc2626}
-.reply-text-body{color:#333;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.reply-text-
 .reply-form{display:flex;gap:6px;flex-wrap:wrap}
 .reply-form .reply-author{width:90px;padding:7px 9px;font-size:13px;border:1px solid #ccc;border-radius:6px;background:#FFF2CC;font-family:inherit}
 .reply-form .reply-text{flex:1;min-width:140px;padding:7px 9px;font-size:13px;border:1px solid #ccc;border-radius:6px;background:#FFF2CC;font-family:inherit}
 .reply-form input:focus{outline:2px solid #1F4E78;background:#FFFACD}
-
 .empty{text-align:center;color:#999;padding:50px 20px;background:white;border-radius:10px}
 .loading{text-align:center;color:#888;padding:40px}
-
 /* 모달 */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:20px}
 .modal-bg.active{display:flex}
 .modal{background:white;border-radius:12px;max-width:540px;width:100%;max-height:90vh;overflow-y:auto;padding:24px}
 .modal h2{color:#1F4E78;font-size:18px;margin-bottom:16px}
 .field{display:flex;flex-direction:column;margin-bottom:12px}
-.field label{font-size:13px;font-weight:600;margin-bottom:5px;color:#444}
+.field 
 .field input,.field select,.field textarea{padding:10px;font-size:14px;border:1px solid #ccc;border-radius:6px;font-family:inherit}
 .field input,.field textarea{background:#FFF2CC}
 .field textarea{min-height:140px;resize:vertical;line-height:1.6}
 .field input:focus,.field textarea:focus,.field select:focus{outline:2px solid #1F4E78;background:#FFFACD}
 .field .hint{font-size:11px;color:#888;margin-top:3px}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
-
 .notice-box{background:#dbeafe;border-left:4px solid #2563eb;padding:12px 16px;border-radius:6px;font-size:12.5px;color:#1e3a8a;line-height:1.7;margin-bottom:16px}
 .admin-only{display:none}
 </style>
 </head>
-<body>
+<body class="sf-narrow">
 
 <a href="/" class="back-link">← 메인으로</a>
 <h1>📢 공지 & 문의 게시판</h1>

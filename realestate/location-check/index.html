@@ -5,58 +5,48 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>입지 체크리스트 | 스윙파머</title>
 <meta name="description" content="역세권·학군·호재·환경 등 입지 요소를 가중치로 직접 평가해 점수화. 여러 매물을 같은 기준으로 비교.">
+<link rel="stylesheet" href="/common.css?v=1">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #f5f7fa; color: #333; line-height: 1.5; padding-bottom: 60px; }
-  .wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
-  header { background: white; border-bottom: 3px solid #1F4E78; padding: 18px 16px; }
-  header .wrap { padding: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  header h1 { font-size: 20px; color: #1F4E78; margin: 0; }
-  .back-link { margin-left: auto; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
-  .back-link:hover { text-decoration: underline; }
-  .desc { font-size: 12.5px; color: #888; margin: 8px 0 16px; line-height: 1.7; }
-  .panel { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 16px; }
+:root { --sf-max-w: 760px; }
+header { background: var(--sf-surface); border-bottom: 3px solid var(--sf-brand); padding: 18px 16px; }
+header .wrap { padding: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+header h1 { font-size: 20px; color: var(--sf-brand); margin: 0; border-bottom: none; }
+.back-link { margin-left: auto; }
+.final, .result-hero { background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+header 
   .panel h2 { font-size: 15px; color: #1F4E78; margin-bottom: 4px; }
   .panel .ptext { font-size: 12.5px; color: #888; margin-bottom: 14px; }
-
   .name-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
   .name-row input { flex: 1; padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 6px; background: #FFF2CC; font-weight: 600; color: #1F4E78; }
-
   .item { border-bottom: 1px solid #f0f0f0; padding: 12px 0; }
   .item:last-child { border-bottom: none; }
   .item-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
   .item-name { font-size: 14px; font-weight: 600; flex: 1; }
   .item-weight { font-size: 11px; color: #888; }
-  .weight-select { padding: 4px 6px; font-size: 12px; border: 1px solid #ccc; border-radius: 5px; background: #fff; }
+  .weight-
   .score-btns { display: flex; gap: 5px; }
   .score-btn { flex: 1; padding: 8px 0; font-size: 13px; border: 1px solid #ddd; border-radius: 6px; background: #fff; cursor: pointer; color: #666; transition: all .1s; }
   .score-btn.active { background: #1F4E78; color: white; border-color: #1F4E78; font-weight: 700; }
   .score-labels { display: flex; justify-content: space-between; font-size: 10px; color: #aaa; margin-top: 3px; padding: 0 2px; }
-
   .add-item { display: flex; gap: 8px; margin-top: 12px; }
   .add-item input { flex: 1; padding: 9px; font-size: 13px; border: 1px solid #ccc; border-radius: 6px; }
   .add-item button { background: #1F4E78; color: white; border: none; border-radius: 6px; padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
   .del-item { background: #fee2e2; color: #dc2626; border: none; width: 26px; height: 26px; border-radius: 5px; cursor: pointer; font-size: 14px; flex: 0 0 auto; }
-
   .result-hero { background: linear-gradient(135deg, #1F4E78, #2d6da3); color: white; border-radius: 14px; padding: 22px; text-align: center; margin-bottom: 16px; }
-  .result-hero .label { font-size: 13px; opacity: .9; margin-bottom: 4px; }
+  .result-hero .
   .result-hero .value { font-size: 40px; font-weight: 800; }
   .result-hero .value span { font-size: 18px; opacity: .8; }
   .result-hero .grade { font-size: 15px; font-weight: 700; margin-top: 6px; }
-
   .gauge { height: 14px; background: rgba(255,255,255,.25); border-radius: 7px; overflow: hidden; margin: 12px 0 4px; }
   .gauge-fill { height: 100%; background: white; border-radius: 7px; transition: width .3s; }
-
   table.detail { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 6px; }
   table.detail th { text-align: left; padding: 8px; background: #f8fafc; color: #555; font-weight: 600; border-bottom: 2px solid #e5e7eb; }
   table.detail td { padding: 8px; border-bottom: 1px solid #f0f0f0; }
   table.detail td.num { text-align: right; font-variant-numeric: tabular-nums; }
-
   .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
   .btn { border: none; border-radius: 6px; padding: 9px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
   .btn-blue { background: #1F4E78; color: white; }
   .btn-gray { background: #9ca3af; color: white; }
-  .manual { background: #fffef5; border: 1px solid #f0e6c0; border-radius: 12px; padding: 16px; margin-top: 8px; font-size: 13px; line-height: 1.8; color: #6b5618; }
 </style>
 </head>
 <body>

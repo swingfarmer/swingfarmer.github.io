@@ -5,14 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>배당 포트폴리오 관리기</title>
+<link rel="stylesheet" href="/common.css?v=1">
 <style>
+:root { --sf-max-w: 1000px; }
+.final { background: linear-gradient(135deg, #1F4E78, #2563eb); }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;max-width:1000px;margin:0 auto;padding:20px;background:#f5f7fa;color:#1a1a1a;font-feature-settings:"tnum"}
-.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}
-.back-link:hover{text-decoration:underline}
-h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:6px;font-size:22px}
-.desc{color:#555;font-size:13.5px;margin-bottom:18px}
-
 /* 탭 */
 .tabs{display:flex;gap:4px;background:#e5e7eb;padding:4px;border-radius:10px;margin-bottom:20px}
 .tab{flex:1;padding:11px;border:none;background:transparent;cursor:pointer;font-size:14px;font-weight:700;color:#666;border-radius:8px;transition:all .15s;font-family:inherit}
@@ -20,11 +17,7 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 .tab.active{background:white;color:#1F4E78;box-shadow:0 1px 3px rgba(0,0,0,.1)}
 .tab-content{display:none}
 .tab-content.active{display:block}
-
-.panel{background:white;border-radius:10px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:18px}
-.panel h2{color:#1F4E78;font-size:17px;margin-bottom:14px}
 .panel h2 .sub{font-size:12px;color:#888;font-weight:400;margin-left:6px}
-
 /* 요약 카드 */
 .summary-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:18px}
 .scard{padding:20px;border-radius:10px;color:white}
@@ -35,15 +28,13 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 .scard .lbl{font-size:13px;opacity:.9;margin-bottom:6px}
 .scard .val{font-size:21px;font-weight:800;letter-spacing:-.5px;line-height:1.25}
 .scard .sub{font-size:12px;opacity:.85;margin-top:4px}
-
 .chart-wrap{position:relative;width:100%}
 .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media(max-width:760px){.chart-grid{grid-template-columns:1fr}}
-
 /* 입력 폼 */
 .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:14px}
 .field{display:flex;flex-direction:column}
-.field label{font-size:12px;font-weight:600;margin-bottom:4px;color:#444}
+.field 
 .field input,.field select{padding:9px;font-size:14px;border:1px solid #ccc;border-radius:6px;background:#FFF2CC;font-weight:600;color:#0000FF;font-family:inherit}
 .field input[type=text]{color:#1a1a1a}
 .field input:focus,.field select:focus{outline:2px solid #1F4E78;background:#FFFACD}
@@ -54,10 +45,9 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 .btn-red{background:#dc2626;color:white}
 .btn-green{background:#10b981;color:white}
 .btn-sm{padding:5px 10px;font-size:12px}
-
 /* 종목 테이블 */
 .holdings{width:100%;border-collapse:collapse;font-size:13px}
-.holdings th{background:#1F4E78;color:white;padding:9px 8px;text-align:right;font-weight:600;font-size:12px}
+.holdings 
 .holdings th:first-child,.holdings td:first-child{text-align:left}
 .holdings td{padding:9px 8px;text-align:right;border-bottom:1px solid #eee}
 .holdings tr:hover td{background:#f8fafc}
@@ -66,21 +56,15 @@ h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bott
 .flag.kr{background:#dbeafe;color:#1e40af}
 .flag.us{background:#fee2e2;color:#b91c1c}
 .empty{text-align:center;color:#999;padding:40px 20px;font-size:14px}
-
 .notice{background:#dbeafe;border-left:4px solid #2563eb;padding:12px 16px;border-radius:6px;font-size:12.5px;color:#1e3a8a;line-height:1.7;margin-bottom:16px}
 .save-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;margin-bottom:16px}
 .save-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
 .save-note{font-size:11.5px;color:#166534;line-height:1.7;border-top:1px solid #bbf7d0;padding-top:9px}
-.manual{background:#fff;border:1px solid #e0e0e0;padding:20px;border-radius:8px;line-height:1.8;font-size:13.5px}
-.manual h3{color:#1F4E78;margin:16px 0 8px;font-size:15px}
-.manual h3:first-child{margin-top:0}
-.manual ul{padding-left:20px;margin:6px 0}
-.manual li{margin-bottom:5px}
 .manual b{color:#1F4E78}
 .edit-badge{background:#fef3c7;color:#92400e;font-size:11px;padding:2px 8px;border-radius:8px;margin-left:8px;font-weight:600}
 </style>
 </head>
-<body>
+<body class="sf-narrow">
 
 <a href="/" class="back-link">← 메인으로</a>
 <h1>💰 배당 포트폴리오 관리기</h1>

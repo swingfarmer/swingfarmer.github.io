@@ -5,52 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>파이어족 계산기</title>
+<link rel="stylesheet" href="/common.css?v=1">
 <style>
-  * { box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; max-width: 1100px; margin: 0 auto; padding: 20px; background: #f5f7fa; color: #1a1a1a; }
-  h1 { color: #1F4E78; border-bottom: 3px solid #1F4E78; padding-bottom: 10px; margin-bottom: 8px; }
-  .desc { color: #555; font-size: 14px; margin-bottom: 24px; }
-  .back-link { display: inline-block; margin-bottom: 16px; color: #1F4E78; text-decoration: none; font-size: 14px; }
-  .back-link:hover { text-decoration: underline; }
-  .panel { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 20px; }
-  .panel h2 { margin-top: 0; color: #1F4E78; font-size: 18px; }
-  .section-label { font-size: 12px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px 0; grid-column: 1 / -1; }
-  .section-label:first-child { margin-top: 0; }
-  .inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
-  .input-row { display: flex; flex-direction: column; }
-  label { font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #333; }
-  input[type="number"] { padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 4px; background: #FFF2CC; font-weight: 600; color: #0000FF; }
+:root { --sf-max-w: 1100px; }
+* { box-sizing: border-box; }
   input[type="number"]:focus { outline: 2px solid #1F4E78; background: #FFFACD; }
   .computed { background: #e8f4f8; padding: 10px 12px; border-radius: 6px; margin-top: 10px; font-size: 13px; color: #1F4E78; grid-column: 1 / -1; }
   .computed b { font-size: 15px; color: #0d3a5c; }
   .hero { background: linear-gradient(135deg, #1F4E78, #2563eb); color: white; padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px; }
-  .hero-label { font-size: 14px; opacity: 0.9; margin-bottom: 8px; }
+  .hero-
   .hero-value { font-size: 38px; font-weight: 800; letter-spacing: -1px; }
   .hero-sub { font-size: 14px; opacity: 0.85; margin-top: 8px; }
   .verdict { margin-top: 16px; padding: 10px 16px; border-radius: 6px; font-weight: 700; display: inline-block; }
   .verdict.ok { background: #10b981; color: white; }
   .verdict.warn { background: #f59e0b; color: white; }
   .verdict.bad { background: #ef4444; color: white; }
-  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
-  .stat { background: #f0f5fa; padding: 14px; border-radius: 6px; border-left: 4px solid #1F4E78; }
-  .stat-label { font-size: 12px; color: #666; margin-bottom: 4px; }
-  .stat-value { font-size: 18px; font-weight: 700; color: #1F4E78; }
-  .stat-sub { font-size: 12px; color: #888; margin-top: 2px; }
-  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
-  th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid #eee; }
-  th { background: #1F4E78; color: white; font-weight: 600; position: sticky; top: 0; }
-  td:first-child, th:first-child { text-align: center; }
+  .stat-
   tr.retired { background: #f2f2f2; color: #777; }
   tr.pension { background: #ecfdf5; }
-  tr.death { background: #fef3c7; font-weight: 600; }
+  tr.dea
   tr.negative td { color: #dc2626 !important; font-weight: 600; }
-  .table-wrap { max-height: 500px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; }
-  .manual { background: #fff; border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; margin-top: 30px; line-height: 1.7; font-size: 14px; }
-  .manual h3 { color: #1F4E78; margin-top: 18px; margin-bottom: 8px; font-size: 15px; }
-  .manual h3:first-child { margin-top: 0; }
-  .manual ul { padding-left: 20px; margin: 6px 0; }
-  .manual li { margin-bottom: 4px; }
-  .badge { display: inline-block; background: #1F4E78; color: white; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-right: 4px; }
   .won-kor { font-size: 12px; color: #1F4E78; font-weight: 600; margin-top: 3px; min-height: 15px; }
   .info-btn { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:50%; background:#dbeafe; color:#1e3a8a; font-size:11px; font-weight:700; cursor:pointer; border:none; margin-left:6px; vertical-align:middle; }
   .info-btn:hover { background:#93c5fd; }
@@ -58,13 +32,13 @@
   .sf-modal-bg.active { display:flex; }
   .sf-modal { background:white; border-radius:12px; max-width:520px; width:100%; max-height:85vh; overflow-y:auto; padding:24px; box-shadow:0 10px 40px rgba(0,0,0,0.3); }
   .sf-modal h3 { color:#1F4E78; margin:0 0 12px 0; font-size:18px; border-bottom:2px solid #1F4E78; padding-bottom:8px; }
-  .sf-modal .modal-body { font-size:13.5px; line-height:1.8; color:#333; }
+  .sf-modal .modal-
   .sf-modal .modal-body b { color:#1F4E78; }
   .sf-modal-close { float:right; background:#e5e7eb; border:none; width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:14px; margin-top:-6px; }
   .sf-modal-close:hover { background:#d1d5db; }
 </style>
 </head>
-<body>
+<body class="sf-narrow">
 
 <a href="../" class="back-link">← 메인으로</a>
 

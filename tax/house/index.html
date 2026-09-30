@@ -8,38 +8,22 @@
 <meta name="robots" content="noindex, nofollow">
 <title>양도소득세 계산기 (주택)</title>
 <meta name="description" content="주택 양도세. 지금·2028·2029 3시나리오 세금 자동 비교. 장특공 20억/10억 한도 신설 반영. 다주택·조정지역·비과세 옵션.">
+<link rel="stylesheet" href="/common.css?v=1">
 <style>
-  * { box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif; max-width: 1100px; margin: 0 auto; padding: 20px; background: #f5f7fa; color: #1a1a1a; }
-  h1 { color: #1F4E78; border-bottom: 3px solid #1F4E78; padding-bottom: 10px; margin-bottom: 8px; }
-  .desc { color: #555; font-size: 14px; margin-bottom: 24px; }
-  .back-link { display: inline-block; margin-bottom: 16px; color: #1F4E78; text-decoration: none; font-size: 14px; }
-  .back-link:hover { text-decoration: underline; }
-  .panel { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 20px; }
-  .panel h2 { margin-top: 0; color: #1F4E78; font-size: 18px; }
-  .section-label { font-size: 12px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 8px 0; grid-column: 1 / -1; }
-  .section-label:first-child { margin-top: 0; }
-  .inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
-  .input-row { display: flex; flex-direction: column; }
-  label { font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #333; }
+:root { --sf-max-w: 1100px; }
+* { box-sizing: border-box; }
   input[type="text"], select { padding: 10px; font-size: 15px; border: 1px solid #ccc; border-radius: 4px; background: #FFF2CC; font-weight: 600; color: #0000FF; font-family: inherit; }
   select { background: #fff; color: #333; font-weight: 500; }
-  input:focus, select:focus { outline: 2px solid #1F4E78; background: #FFFACD; }
   .date-group { display: flex; align-items: center; gap: 4px; }
   .date-group input { text-align: center; padding: 10px 6px; }
   .date-group .yy { max-width: 74px; }
   .date-group .mm, .date-group .dd { max-width: 54px; }
   .date-group .sep { color: #888; font-weight: 700; }
   .kor-hint { font-size: 11px; color: #059669; margin-top: 3px; min-height: 14px; font-weight: 500; }
-  .calc-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  .calc-table td { padding: 10px 12px; border-bottom: 1px solid #eee; }
-  .calc-table td:first-child { color: #555; }
-  .calc-table td:nth-child(2) { text-align: right; font-weight: 600; color: #1a1a1a; font-variant-numeric: tabular-nums; }
-  .calc-table td:nth-child(3) { font-size: 12px; color: #888; max-width: 280px; }
   .calc-table tr.highlight td:nth-child(2) { color: #1F4E78; font-size: 16px; }
-  .cmp-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .cmp-
   .cmp-table th, .cmp-table td { padding: 10px 8px; border-bottom: 1px solid #eee; text-align: right; vertical-align: top; }
-  .cmp-table th { background: #eef2f7; color: #1F4E78; font-weight: 700; font-size: 13px; }
+  .cmp-table 
   .cmp-table th.now { background: #dcfce7; color: #166534; }
   .cmp-table th.y28 { background: #fef3c7; color: #92400e; }
   .cmp-table th.y29 { background: #fee2e2; color: #991b1b; }
@@ -47,17 +31,7 @@
   .cmp-table td.big { font-size: 15px; font-weight: 700; color: #dc2626; background: #fef2f2; }
   .cmp-table td small { color: #999; font-weight: 400; font-size: 11px; display: block; margin-top: 2px; }
   .badge-cap { display: inline-block; background: #fee2e2; color: #dc2626; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 700; margin-left: 4px; }
-  .final { background: linear-gradient(135deg, #d97706, #ea580c); color: white; padding: 24px; border-radius: 10px; text-align: center; margin-bottom: 20px; }
-  .final-label { font-size: 14px; opacity: 0.9; margin-bottom: 6px; }
-  .final-value { font-size: 36px; font-weight: 800; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
-  .final-sub { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.3); font-size: 14px; opacity: 0.95; }
-  .manual { background: #fff; border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; margin-top: 30px; line-height: 1.7; font-size: 14px; }
-  .manual h3 { color: #1F4E78; margin-top: 18px; margin-bottom: 8px; font-size: 15px; }
-  .manual h3:first-child { margin-top: 0; }
-  .manual ul { padding-left: 20px; margin: 6px 0; }
-  .manual li { margin-bottom: 4px; }
-  .badge { display: inline-block; background: #1F4E78; color: white; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-right: 4px; }
-  .warn-box { background: #fef3c7; border-left: 4px solid #d97706; padding: 10px 14px; margin-top: 10px; border-radius: 4px; font-size: 13px; color: #92400e; }
+  .final-
   .warn-box b { color: #b45309; }
   /* 클라우드 */
   .cloud-bar { display: none; align-items: center; gap: 8px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; flex-wrap: wrap; }
@@ -68,7 +42,7 @@
   .btn.gray { background: #9ca3af; color: #fff; border-color: #9ca3af; }
 </style>
 </head>
-<body>
+<body class="sf-narrow">
 
 <a href="/" class="back-link">← 메인으로</a>
 
