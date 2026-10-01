@@ -168,6 +168,7 @@ function injectStyles(){
 .sfs-tool-btn svg{flex-shrink:0}
 
 .sfs-slot-list{flex:1;overflow-y:auto;padding:8px 12px;min-height:120px}
+.sfs-slot-list::after{content:'';display:block;height:350px}
 .sfs-empty{text-align:center;padding:40px 20px;color:#999;font-size:14px}
 
 .sfs-slot{display:flex;align-items:center;gap:8px;padding:12px;margin:4px 0;border-radius:12px;background:#fafafa;border:1px solid #f0f0f0;transition:all .15s;cursor:default}
@@ -190,6 +191,8 @@ function injectStyles(){
 .sfs-act.load:hover{background:#0066D6}
 .sfs-act.overwrite{background:#f0fdf4;color:#16a34a}
 .sfs-act.overwrite:hover{background:#dcfce7}
+.sfs-act.export{background:#f0f4ff;color:#007AFF}
+.sfs-act.export:hover{background:#dde8ff}
 .sfs-act.rename{background:#f0f0f0;color:#666}
 .sfs-act.rename:hover{background:#e5e5e5}
 .sfs-act.delete{background:#fff;color:#dc2626}
@@ -231,6 +234,7 @@ function render(){
       + '<div class="sfs-slot-actions">'
       + '<button class="sfs-act rename" onclick="window._sfSlots.rename('+i+')" title="이름 수정">✏️</button>'
       + '<button class="sfs-act overwrite" onclick="window._sfSlots.overwrite('+i+')" title="현재 값으로 덮어쓰기">💾</button>'
+      + '<button class="sfs-act export" onclick="window._sfSlots.exportOne('+i+')" title="내보내기">📤</button>'
       + '<button class="sfs-act load" onclick="window._sfSlots.load('+i+')">불러오기</button>'
       + '<button class="sfs-act delete" onclick="window._sfSlots.del('+i+')" title="삭제">🗑️</button>'
       + '</div></div>';
@@ -390,12 +394,28 @@ window._sfSlots = {
     }catch(e){ alert('덮어쓰기 실패: '+e.message); }
   },
 
+  exportOne: function(i){
+    var s = _slots[i];
+    if(!s) return;
+    var pageTitle = document.title.replace(/[^\w가-힣\s-]/g,'').trim().replace(/\s+/g,'_') || KEY;
+    var slotName = (s.name||'unnamed').replace(/[^\w가-힣\s-]/g,'').trim().replace(/\s+/g,'_');
+    var d = new Date(s.savedAt || Date.now());
+    var ts = d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'_'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');
+    var fname = pageTitle + '_' + slotName + '_' + ts + '.json';
+    const blob = new Blob([JSON.stringify({ calcKey: KEY, pageTitle: document.title, slots: [s], exportedAt: new Date().toISOString() }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = fname;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  },
+
   exportAll: function(){
     if(!_slots.length){ alert('내보낼 데이터가 없어요.'); return; }
     var pageTitle = document.title.replace(/[^\w가-힣\s-]/g,'').trim().replace(/\s+/g,'_') || KEY;
     var now = new Date();
     var ts = now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'_'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0');
-    var fname = pageTitle + '_' + ts + '.json';
+    var fname = pageTitle + '_전체_' + _slots.length + '개_' + ts + '.json';
     const blob = new Blob([JSON.stringify({ calcKey: KEY, pageTitle: document.title, slots: _slots, exportedAt: now.toISOString() }, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
