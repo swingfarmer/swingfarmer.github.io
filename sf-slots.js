@@ -110,13 +110,13 @@ function injectModal(){
   </div>
 
   <div class="sfs-toolbar">
-    <button onclick="window._sfSlots.exportAll()" class="sfs-tool-btn" title="내보내기">
+    <button onclick="window._sfSlots.exportAll()" class="sfs-tool-btn" title="전체 내보내기">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M4 6l4-4 4 4M3 12h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      내보내기
+      전체 내보내기
     </button>
-    <button onclick="window._sfSlots.importFile()" class="sfs-tool-btn" title="가져오기">
+    <button onclick="window._sfSlots.importFile()" class="sfs-tool-btn" title="전체 가져오기">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 10V2M4 6l4 4 4-4M3 12h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      가져오기
+      전체 가져오기
     </button>
     <input type="file" id="sfsImportInput" accept=".json" style="display:none">
   </div>
