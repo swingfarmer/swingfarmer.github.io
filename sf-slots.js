@@ -201,6 +201,45 @@ function injectStyles(){
 .sfs-footer{padding:12px 20px;border-top:1px solid #f0f0f0;text-align:center}
 .sfs-footer span{font-size:12px;color:#999}
 
+/* ── 다크모드 ── */
+body.sf-dark #sfSlotOverlay{background:rgba(0,0,0,.6)}
+body.sf-dark #sfSlotSheet{background:#1a1d27;box-shadow:0 -4px 40px rgba(0,0,0,.5)}
+body.sf-dark .sfs-header{border-color:#2a2d3a}
+body.sf-dark .sfs-title{color:#e4e4e7}
+body.sf-dark .sfs-close{color:#71717a}
+body.sf-dark .sfs-close:hover{background:#2a2d3a;color:#e4e4e7}
+body.sf-dark .sfs-save-new input{background:#222532;border-color:#2a2d3a;color:#e4e4e7}
+body.sf-dark .sfs-save-new input:focus{border-color:#3b82f6;background:#1a1d27}
+body.sf-dark .sfs-save-new input::placeholder{color:#71717a}
+body.sf-dark .sfs-btn-save{background:#3b82f6}
+body.sf-dark .sfs-btn-save:hover{background:#2563eb}
+body.sf-dark .sfs-btn-save:disabled{background:#2a2d3a;color:#71717a}
+body.sf-dark .sfs-toolbar{border-color:#2a2d3a}
+body.sf-dark .sfs-tool-btn{border-color:#2a2d3a;color:#71717a}
+body.sf-dark .sfs-tool-btn:hover{border-color:#3b82f6;color:#3b82f6}
+body.sf-dark .sfs-slot{background:#222532;border-color:#2a2d3a}
+body.sf-dark .sfs-slot:hover{background:#2a2d3a;border-color:#3b82f6}
+body.sf-dark .sfs-slot.sfs-focus{background:#1e2a45;border-color:#3b82f6;box-shadow:0 0 0 2px rgba(59,130,246,.2)}
+body.sf-dark .sfs-slot-name{color:#e4e4e7}
+body.sf-dark .sfs-slot-time{color:#71717a}
+body.sf-dark .sfs-order button{background:#2a2d3a;color:#71717a}
+body.sf-dark .sfs-order button:hover{background:#3b82f6;color:#fff}
+body.sf-dark .sfs-order button:disabled{background:#222532;color:#3a3d4a}
+body.sf-dark .sfs-act.load{background:#3b82f6}
+body.sf-dark .sfs-act.load:hover{background:#2563eb}
+body.sf-dark .sfs-act.overwrite{background:#1a2e1a;color:#22c55e}
+body.sf-dark .sfs-act.overwrite:hover{background:#1e3a1e}
+body.sf-dark .sfs-act.export{background:#1a2040;color:#3b82f6}
+body.sf-dark .sfs-act.export:hover{background:#1e2a50}
+body.sf-dark .sfs-act.rename{background:#2a2d3a;color:#a0a0a0}
+body.sf-dark .sfs-act.rename:hover{background:#3a3d4a}
+body.sf-dark .sfs-act.delete{background:#2a1a1a;color:#ef4444}
+body.sf-dark .sfs-act.delete:hover{background:#3a1e1e}
+body.sf-dark .sfs-footer{border-color:#2a2d3a}
+body.sf-dark .sfs-footer span{color:#71717a}
+body.sf-dark .sfs-empty{color:#71717a}
+body.sf-dark #sfSlotTrigger{background:#3b82f6;box-shadow:0 4px 16px rgba(59,130,246,.3)}
+
 `;
   document.head.appendChild(s);
 }
@@ -465,6 +504,11 @@ async function handleImport(e){
 // ── 트리거 버튼 자동 주입 ──
 // 페이지에 #sfSlotTrigger가 없으면 자동으로 생성
 document.addEventListener('DOMContentLoaded', function(){
+  // 다크모드 감지: common-dark.css 로드 여부 또는 body 배경색 확인
+  var isDark = document.querySelector('link[href*="common-dark"]') ||
+    getComputedStyle(document.body).backgroundColor.match(/rgb\(\s*15,\s*17,\s*23/);
+  if(isDark) document.body.classList.add('sf-dark');
+
   // 기존 버튼이 있으면 연결만
   const existing = $('sfSlotTrigger') || $('btnCloudOpen');
   if(existing){
