@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>실적 민감도 계산기</title>
-<link rel="stylesheet" href="/common.css?v=3">
+<link rel="stylesheet" href="/common.css?v=4">
 <style>
 :root { --sf-max-w: 620px; }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -194,6 +194,40 @@ link('costRange','costNum');link('fxRange','fxNum');
 syncLabels();compute();
 </script>
 
+<script>
+window.CALC_KEY = 'sensitivity';
+window.slGetState = function(){
+  return {
+    name: document.getElementById('name').value,
+    baseOP: document.getElementById('baseOP').value,
+    baseNI: document.getElementById('baseNI').value,
+    costName: document.getElementById('costName').value,
+    costUnit: document.getElementById('costUnit').value,
+    costCoef: document.getElementById('costCoef').value,
+    fxCoef: document.getElementById('fxCoef').value,
+    costNum: document.getElementById('costNum').value,
+    costRange: document.getElementById('costRange').value,
+    fxNum: document.getElementById('fxNum').value,
+    fxRange: document.getElementById('fxRange').value,
+  };
+};
+window.slSetState = function(d){
+  if(!d) return;
+  if(d.name !== undefined) document.getElementById('name').value = d.name;
+  if(d.baseOP !== undefined) document.getElementById('baseOP').value = d.baseOP;
+  if(d.baseNI !== undefined) document.getElementById('baseNI').value = d.baseNI;
+  if(d.costName !== undefined) document.getElementById('costName').value = d.costName;
+  if(d.costUnit !== undefined) document.getElementById('costUnit').value = d.costUnit;
+  if(d.costCoef !== undefined) document.getElementById('costCoef').value = d.costCoef;
+  if(d.fxCoef !== undefined) document.getElementById('fxCoef').value = d.fxCoef;
+  if(d.costNum !== undefined) document.getElementById('costNum').value = d.costNum;
+  if(d.costRange !== undefined) document.getElementById('costRange').value = d.costRange;
+  if(d.fxNum !== undefined) document.getElementById('fxNum').value = d.fxNum;
+  if(d.fxRange !== undefined) document.getElementById('fxRange').value = d.fxRange;
+  if(typeof compute === 'function') compute();
+};
+</script>
+<script src="/sf-slots.js?v=1"></script>
 <script src="/common.js?v=5"></script>
 </body>
 </html>

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>물타기·불타기 평단 계산기</title>
-<link rel="stylesheet" href="/common.css?v=3">
+<link rel="stylesheet" href="/common.css?v=4">
 <style>
 :root { --sf-max-w: 1100px; }
 .final { background: linear-gradient(135deg, #1F4E78, #2563eb); }
@@ -442,6 +442,38 @@ calcTarget();
 calcBreakeven();
 </script>
 
+<script>
+window.CALC_KEY = 'avg_calc';
+window.slGetState = function(){
+  return {
+    currency: document.getElementById('currency').value,
+    avgPrice: document.getElementById('avgPrice').value,
+    avgQty: document.getElementById('avgQty').value,
+    curPrice: document.getElementById('curPrice').value,
+    t_avgPrice: document.getElementById('t_avgPrice').value,
+    t_avgQty: document.getElementById('t_avgQty').value,
+    t_buyPrice: document.getElementById('t_buyPrice').value,
+    t_targetAvg: document.getElementById('t_targetAvg').value,
+    b_avgPrice: document.getElementById('b_avgPrice').value,
+    b_curPrice: document.getElementById('b_curPrice').value,
+  };
+};
+window.slSetState = function(d){
+  if(!d) return;
+  if(d.currency !== undefined) document.getElementById('currency').value = d.currency;
+  if(d.avgPrice !== undefined) document.getElementById('avgPrice').value = d.avgPrice;
+  if(d.avgQty !== undefined) document.getElementById('avgQty').value = d.avgQty;
+  if(d.curPrice !== undefined) document.getElementById('curPrice').value = d.curPrice;
+  if(d.t_avgPrice !== undefined) document.getElementById('t_avgPrice').value = d.t_avgPrice;
+  if(d.t_avgQty !== undefined) document.getElementById('t_avgQty').value = d.t_avgQty;
+  if(d.t_buyPrice !== undefined) document.getElementById('t_buyPrice').value = d.t_buyPrice;
+  if(d.t_targetAvg !== undefined) document.getElementById('t_targetAvg').value = d.t_targetAvg;
+  if(d.b_avgPrice !== undefined) document.getElementById('b_avgPrice').value = d.b_avgPrice;
+  if(d.b_curPrice !== undefined) document.getElementById('b_curPrice').value = d.b_curPrice;
+  if(typeof calcAvg === 'function') calcAvg();
+};
+</script>
+<script src="/sf-slots.js?v=1"></script>
 <script src="/common.js?v=5"></script>
 </body>
 </html>

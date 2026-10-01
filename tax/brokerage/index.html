@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>부동산 중개수수료 계산기</title>
-<link rel="stylesheet" href="/common.css?v=3">
+<link rel="stylesheet" href="/common.css?v=4">
 <style>
 :root { --sf-max-w: 1100px; }
 .final { background: linear-gradient(135deg, #d97706, #ea580c); }
@@ -201,7 +201,31 @@ document.querySelectorAll('input, select').forEach(el => {
   el.addEventListener('change', calculate);
 });
 calculate();
+
+// ── 슬롯 연동 ──
+window.CALC_KEY = 'brokerage';
+window.slGetState = function(){
+  return {
+    dealType: document.getElementById('dealType').value,
+    propertyType: document.getElementById('propertyType').value,
+    price: document.getElementById('price').value,
+    deposit: document.getElementById('deposit').value,
+    monthly: document.getElementById('monthly').value,
+    customRate: document.getElementById('customRate').value
+  };
+};
+window.slSetState = function(d){
+  if(!d) return;
+  if(d.dealType) document.getElementById('dealType').value = d.dealType;
+  if(d.propertyType) document.getElementById('propertyType').value = d.propertyType;
+  if(d.price !== undefined) document.getElementById('price').value = d.price;
+  if(d.deposit !== undefined) document.getElementById('deposit').value = d.deposit;
+  if(d.monthly !== undefined) document.getElementById('monthly').value = d.monthly;
+  if(d.customRate !== undefined) document.getElementById('customRate').value = d.customRate;
+  calculate();
+};
 </script>
+<script src="/sf-slots.js?v=1"></script>
 <script src="/common.js?v=5"></script>
 </body>
 </html>

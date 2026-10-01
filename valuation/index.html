@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>적정주가 계산기 (밸류에이션)</title>
-<link rel="stylesheet" href="/common.css?v=3">
+<link rel="stylesheet" href="/common.css?v=4">
 <style>
 :root { --sf-max-w: 920px; }
 .final { background: linear-gradient(135deg, #1F4E78, #2563eb); }
@@ -400,6 +400,50 @@ load();
 calcAll();
 </script>
 
+<script>
+window.CALC_KEY = 'valuation';
+window.slGetState = function(){
+  return {
+    curPrice: document.getElementById('curPrice').value,
+    gDps: document.getElementById('gDps').value,
+    gReq: document.getElementById('gReq').value,
+    gGrow: document.getElementById('gGrow').value,
+    mEps: document.getElementById('mEps').value,
+    mPer: document.getElementById('mPer').value,
+    mBps: document.getElementById('mBps').value,
+    mPbr: document.getElementById('mPbr').value,
+    dFcf: document.getElementById('dFcf').value,
+    dGrow: document.getElementById('dGrow').value,
+    dWacc: document.getElementById('dWacc').value,
+    dTerm: document.getElementById('dTerm').value,
+    rBps: document.getElementById('rBps').value,
+    rRoe: document.getElementById('rRoe').value,
+    rReq: document.getElementById('rReq').value,
+    rYears: document.getElementById('rYears').value,
+  };
+};
+window.slSetState = function(d){
+  if(!d) return;
+  if(d.curPrice !== undefined) document.getElementById('curPrice').value = d.curPrice;
+  if(d.gDps !== undefined) document.getElementById('gDps').value = d.gDps;
+  if(d.gReq !== undefined) document.getElementById('gReq').value = d.gReq;
+  if(d.gGrow !== undefined) document.getElementById('gGrow').value = d.gGrow;
+  if(d.mEps !== undefined) document.getElementById('mEps').value = d.mEps;
+  if(d.mPer !== undefined) document.getElementById('mPer').value = d.mPer;
+  if(d.mBps !== undefined) document.getElementById('mBps').value = d.mBps;
+  if(d.mPbr !== undefined) document.getElementById('mPbr').value = d.mPbr;
+  if(d.dFcf !== undefined) document.getElementById('dFcf').value = d.dFcf;
+  if(d.dGrow !== undefined) document.getElementById('dGrow').value = d.dGrow;
+  if(d.dWacc !== undefined) document.getElementById('dWacc').value = d.dWacc;
+  if(d.dTerm !== undefined) document.getElementById('dTerm').value = d.dTerm;
+  if(d.rBps !== undefined) document.getElementById('rBps').value = d.rBps;
+  if(d.rRoe !== undefined) document.getElementById('rRoe').value = d.rRoe;
+  if(d.rReq !== undefined) document.getElementById('rReq').value = d.rReq;
+  if(d.rYears !== undefined) document.getElementById('rYears').value = d.rYears;
+  if(typeof calcAll === 'function') calcAll();
+};
+</script>
+<script src="/sf-slots.js?v=1"></script>
 <script src="/common.js?v=5"></script>
 </body>
 </html>

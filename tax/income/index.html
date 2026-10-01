@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>근로소득세 (월 원천징수)</title>
-<link rel="stylesheet" href="/common.css?v=3">
+<link rel="stylesheet" href="/common.css?v=4">
 <style>
 :root { --sf-max-w: 1100px; }
 .final { background: linear-gradient(135deg, #10b981, #059669); }
@@ -320,6 +320,28 @@ document.querySelectorAll('input, select').forEach(el => {
 });
 calculate();
 </script>
+<script>
+window.CALC_KEY = 'income_tax';
+window.slGetState = function(){
+  return {
+    monthly: document.getElementById('monthly').value,
+    nontax: document.getElementById('nontax').value,
+    family: document.getElementById('family').value,
+    kidsAged: document.getElementById('kidsAged').value,
+    ratio: document.getElementById('ratio').value,
+  };
+};
+window.slSetState = function(d){
+  if(!d) return;
+  if(d.monthly !== undefined) document.getElementById('monthly').value = d.monthly;
+  if(d.nontax !== undefined) document.getElementById('nontax').value = d.nontax;
+  if(d.family !== undefined) document.getElementById('family').value = d.family;
+  if(d.kidsAged !== undefined) document.getElementById('kidsAged').value = d.kidsAged;
+  if(d.ratio !== undefined) document.getElementById('ratio').value = d.ratio;
+  if(typeof calculate === 'function') calculate();
+};
+</script>
+<script src="/sf-slots.js?v=1"></script>
 <script src="/common.js?v=5"></script>
 </body>
 </html>

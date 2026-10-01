@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>갈아타기 손익 계산기 | 스윙파머</title>
 <meta name="description" content="집 팔고 다른 집 사는 갈아타기, 양도세·취득세·중개비까지 포함한 실제 드는 돈과 손익을 계산. (2026년 기준)">
-<link rel="stylesheet" href="/common.css?v=3">
+<link rel="stylesheet" href="/common.css?v=4">
 <style>
 :root { --sf-max-w: 760px; }
 header { background: var(--sf-surface); border-bottom: 3px solid var(--sf-brand); padding: 18px 16px; }
@@ -146,6 +146,40 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   </div>
 </div>
 
+<script>
+window.CALC_KEY = 'home_swap';
+window.slGetState = function(){
+  return {
+    sellPrice: document.getElementById('sellPrice').value,
+    buyPriceOld: document.getElementById('buyPriceOld').value,
+    holdYears: document.getElementById('holdYears').value,
+    oneHouse: document.getElementById('oneHouse').value,
+    lived2y: document.getElementById('lived2y').value,
+    buyPriceNew: document.getElementById('buyPriceNew').value,
+    tempTwo: document.getElementById('tempTwo').value,
+    regulated: document.getElementById('regulated').value,
+    sellFeeRate: document.getElementById('sellFeeRate').value,
+    buyFeeRate: document.getElementById('buyFeeRate').value,
+    etcCost: document.getElementById('etcCost').value,
+  };
+};
+window.slSetState = function(d){
+  if(!d) return;
+  if(d.sellPrice !== undefined) document.getElementById('sellPrice').value = d.sellPrice;
+  if(d.buyPriceOld !== undefined) document.getElementById('buyPriceOld').value = d.buyPriceOld;
+  if(d.holdYears !== undefined) document.getElementById('holdYears').value = d.holdYears;
+  if(d.oneHouse !== undefined) document.getElementById('oneHouse').value = d.oneHouse;
+  if(d.lived2y !== undefined) document.getElementById('lived2y').value = d.lived2y;
+  if(d.buyPriceNew !== undefined) document.getElementById('buyPriceNew').value = d.buyPriceNew;
+  if(d.tempTwo !== undefined) document.getElementById('tempTwo').value = d.tempTwo;
+  if(d.regulated !== undefined) document.getElementById('regulated').value = d.regulated;
+  if(d.sellFeeRate !== undefined) document.getElementById('sellFeeRate').value = d.sellFeeRate;
+  if(d.buyFeeRate !== undefined) document.getElementById('buyFeeRate').value = d.buyFeeRate;
+  if(d.etcCost !== undefined) document.getElementById('etcCost').value = d.etcCost;
+  if(typeof calculate === 'function') calculate();
+};
+</script>
+<script src="/sf-slots.js?v=1"></script>
 <script src="/common.js?v=5"></script>
 <script>
 const $ = id => document.getElementById(id);

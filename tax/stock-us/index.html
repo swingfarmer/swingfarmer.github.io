@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>해외주식 수수료·세금 계산기</title>
-<link rel="stylesheet" href="/common.css?v=3">
+<link rel="stylesheet" href="/common.css?v=4">
 <style>
 :root { --sf-max-w: 1100px; }
 .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}@media(max-width:700px){.compare-grid{grid-template-columns:1fr}}.compare-box{background:white;border-radius:8px;padding:18px;border:2px solid #e5e7eb}.compare-box.person{border-top:4px solid #3b82f6}.compare-box.corp{border-top:4px solid #8b5cf6}.compare-box h3{margin-top:0;font-size:16px;color:#1F4E78}.row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:13px}.row .v{font-weight:600;font-variant-numeric:tabular-nums}.row.subtotal{border-top:1px solid #1F4E78;margin-top:4px;padding-top:8px;font-weight:600}.row.total{border-top:2px solid #1F4E78;margin-top:8px;padding-top:10px;font-weight:700;font-size:14px}.row.total .v{color:#1F4E78}.row.net{font-size:15px;color:#10b981;font-weight:700;margin-top:6px}.row.net.negative{color:#dc2626}
@@ -304,6 +304,40 @@ document.querySelectorAll('input, select').forEach(el => {
 });
 calculate();
 </script>
+<script>
+window.CALC_KEY = 'stock_us';
+window.slGetState = function(){
+  return {
+    buy: document.getElementById('buy').value,
+    sell: document.getElementById('sell').value,
+    buyFx: document.getElementById('buyFx').value,
+    sellFx: document.getElementById('sellFx').value,
+    brokerRate: document.getElementById('brokerRate').value,
+    secFee: document.getElementById('secFee').value,
+    fxFee: document.getElementById('fxFee').value,
+    fxDirection: document.getElementById('fxDirection').value,
+    cgtRate: document.getElementById('cgtRate').value,
+    corpMode: document.getElementById('corpMode').value,
+    corpTaxRate: document.getElementById('corpTaxRate').value,
+  };
+};
+window.slSetState = function(d){
+  if(!d) return;
+  if(d.buy !== undefined) document.getElementById('buy').value = d.buy;
+  if(d.sell !== undefined) document.getElementById('sell').value = d.sell;
+  if(d.buyFx !== undefined) document.getElementById('buyFx').value = d.buyFx;
+  if(d.sellFx !== undefined) document.getElementById('sellFx').value = d.sellFx;
+  if(d.brokerRate !== undefined) document.getElementById('brokerRate').value = d.brokerRate;
+  if(d.secFee !== undefined) document.getElementById('secFee').value = d.secFee;
+  if(d.fxFee !== undefined) document.getElementById('fxFee').value = d.fxFee;
+  if(d.fxDirection !== undefined) document.getElementById('fxDirection').value = d.fxDirection;
+  if(d.cgtRate !== undefined) document.getElementById('cgtRate').value = d.cgtRate;
+  if(d.corpMode !== undefined) document.getElementById('corpMode').value = d.corpMode;
+  if(d.corpTaxRate !== undefined) document.getElementById('corpTaxRate').value = d.corpTaxRate;
+  if(typeof calculate === 'function') calculate();
+};
+</script>
+<script src="/sf-slots.js?v=1"></script>
 <script src="/common.js?v=5"></script>
 </body>
 </html>
