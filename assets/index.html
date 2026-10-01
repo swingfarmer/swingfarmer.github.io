@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#1F4E78">
 <link rel="icon" type="image/png" href="/assets/icon-192.png">
 <link rel="apple-touch-icon" href="/assets/icon-192.png">
-<link rel="stylesheet" href="/common.css?v=3">
+<link rel="stylesheet" href="/common.css?v=4">
 <style>
 :root { --sf-max-w: 960px; }
 .final, .result-hero { background: linear-gradient(135deg, #1F4E78, #2d6da3); }
@@ -156,9 +156,8 @@
   <!-- 관리자 클라우드 (로그인 시에만 노출) -->
   <div id="cloudArea" style="display:none;align-items:center;gap:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin-bottom:14px;flex-wrap:wrap">
     <span style="font-size:12px;font-weight:700;color:#0369a1">☁️ 관리자</span>
-    <button id="btnCloudOpen" class="btn btn-sky" type="button">클라우드 스냅샷</button>
+    
     <span id="cloudWho" style="font-size:11px;color:#0369a1"></span>
-    <button id="btnCloudLogout" class="btn btn-gray" type="button" style="margin-left:auto">로그아웃</button>
   </div>
   <button id="btnAdminLogin" class="btn" type="button" style="display:none;background:#fff;color:#444;border:1px solid #ddd;margin-bottom:14px">🔑 관리자 로그인</button>
   <div id="uidInfo" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:13px;color:#92400e;margin-bottom:14px;line-height:1.7"></div>
@@ -847,45 +846,21 @@ renderAll();
     $('installGuide').innerHTML = '아래 버튼을 누르거나, 크롬 주소창 오른쪽 <b>설치 아이콘(⊕)</b>을 클릭하세요.';
   }
 })();
+
+// ── sf-slots 연동 ──
+window.CALC_KEY = 'assets';
+window.slGetState = assetGetState;
+window.slSetState = assetSetState;
 </script>
 <!-- 클라우드 스냅샷 모달 -->
-<div id="slotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:16px">
-  <div style="background:white;border-radius:16px;max-width:460px;width:100%;max-height:90vh;overflow:auto;padding:20px">
-    <div style="display:flex;align-items:center;margin-bottom:14px">
-      <h3 style="font-size:16px;color:#1F4E78;margin:0">☁️ 클라우드 스냅샷</h3>
-      <button id="slotClose" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
-    </div>
-    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:16px">
-      <div style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">💾 현재 자산 상태를 저장</div>
-      <div style="font-size:11.5px;color:#0369a1;margin-bottom:8px">날짜별로 저장하면 자산 변화를 추적할 수 있어요. (예: "2026-06")</div>
-      <div style="display:flex;gap:8px">
-        <input type="text" id="slotName" placeholder="이름 (예: 2026-06 월말)" maxlength="30" style="flex:1;padding:9px;font-size:13px;border:1px solid #ccc;border-radius:6px">
-        <button id="slotSaveBtn" style="background:#0ea5e9;color:white;border:none;padding:9px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">저장</button>
-      </div>
-    </div>
-    <div style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px">📋 저장된 스냅샷</div>
-    <div style="display:flex;gap:6px;margin-bottom:10px">
-      <button class="tab active" id="slotTabMonth" onclick="window._slotSwitchTab('month')" style="font-size:12.5px;padding:7px 13px">📅 월별 <span id="cntMonth">0</span></button>
-      <button class="tab" id="slotTabOther" onclick="window._slotSwitchTab('other')" style="font-size:12.5px;padding:7px 13px">📝 기타 <span id="cntOther">0</span></button>
-    </div>
-    <div id="slotSelectBar" style="display:none;align-items:center;gap:8px;margin-bottom:8px;font-size:12px">
-      <label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:#555"><input type="checkbox" id="slotSelectAll" onclick="window._slotToggleAll(this.checked)"> 전체선택</label>
-      <span id="slotSelCount" style="color:#888"></span>
-      <button id="slotDelSelected" onclick="window._slotDeleteSelected()" style="margin-left:auto;background:#dc2626;color:white;border:none;padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;display:none">선택 삭제</button>
-    </div>
-    <div id="slotList" style="display:flex;flex-direction:column;gap:8px">
-      <div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>
-    </div>
-  </div>
-</div>
 
+
+<script src="/sf-slots.js?v=1"></script>
 <script src="/common.js?v=5"></script>
 <script type="module">
 // === 관리자 클라우드 저장 (Firebase) ===
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
-
 const firebaseConfig = {
   apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
   authDomain: "swingfarmer-board01.firebaseapp.com",
@@ -935,8 +910,6 @@ onAuthStateChanged(auth, user=>{
     gid('btnAdminLogin').style.display = 'none';
     gid('cloudWho').textContent = '☁️ ' + (user.displayName||user.email||'관리자');
     // 추이용 스냅샷 미리 로드 + 이번 달 자동 스냅샷
-    loadSlots().then(async snaps=>{
-      _slotsCache = snaps;
       if(window.assetSetSnapshots) window.assetSetSnapshots(snaps);
       const now = new Date();
       const ym = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
@@ -948,9 +921,6 @@ onAuthStateChanged(auth, user=>{
           const totalA = (st.assets||[]).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
           const totalD = (st.debts||[]).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
           const entry = { name: ym, data: JSON.parse(JSON.stringify(st)), net: totalA-totalD, savedAt: new Date().toISOString(), auto: true };
-          _slotsCache.push(entry);
-          await saveSlots(_slotsCache);
-          if(window.assetSetSnapshots) window.assetSetSnapshots(_slotsCache);
         }catch(e){}
       }
     });
@@ -971,12 +941,9 @@ onAuthStateChanged(auth, user=>{
 });
 window._adminSignout = ()=> signOut(auth);
 
-const docRef = () => doc(db, 'calc_data', ADMIN_UID);
-async function loadSlots(){
   try{ const snap=await getDoc(docRef()); if(snap.exists() && snap.data()[CALC_KEY] && Array.isArray(snap.data()[CALC_KEY].slots)) return snap.data()[CALC_KEY].slots; }catch(e){}
   return [];
 }
-async function saveSlots(slots){
   const ref=docRef(); let existing={};
   try{ const snap=await getDoc(ref); if(snap.exists()) existing=snap.data(); }catch(e){}
   existing[CALC_KEY] = { slots: slots, updatedAt: new Date().toISOString() };
@@ -988,21 +955,15 @@ function slotItemHtml(s, realIdx){
   const netTxt = net!==null ? ' · 순자산 '+(Math.abs(net)>=1e8?(net/1e8).toFixed(2)+'억':Math.round(net/1e4)+'만') : '';
   const autoTxt = s.auto ? ' <span style="background:#dbeafe;color:#1e40af;font-size:9px;padding:1px 5px;border-radius:4px">자동</span>' : '';
   return '<div style="display:flex;align-items:center;gap:6px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px">'+
-    '<input type="checkbox" class="slotChk" data-idx="'+realIdx+'" onclick="window._slotChkChange()" style="width:16px;height:16px;flex:0 0 auto">'+
     '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.name||'(이름없음)')+autoTxt+'</div>'+
     '<div style="font-size:11px;color:#999">'+t+netTxt+'</div></div>'+
-    '<button onclick="window._slotRename('+realIdx+')" title="이름 수정" style="background:#e5e7eb;color:#444;border:none;padding:6px 9px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">✏️</button>'+
-    '<button onclick="window._slotLoad('+realIdx+')" style="background:#0284c7;color:white;border:none;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">불러오기</button></div>';
 }
 let _slotTab = 'month';
 window._slotSwitchTab = function(tab){
   _slotTab = tab;
   gid('slotTabMonth').classList.toggle('active', tab==='month');
   gid('slotTabOther').classList.toggle('active', tab==='other');
-  renderSlots(_slotsCache);
 };
-function renderSlots(slots){
-  const box=gid('slotList');
   if(!slots || slots.length===0){
     box.innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 스냅샷이 없어요.<br>위에서 이름을 정해 저장해보세요.</div>';
     gid('cntMonth').textContent='0'; gid('cntOther').textContent='0';
@@ -1026,88 +987,48 @@ function renderSlots(slots){
   box.innerHTML = list.map(x=>slotItemHtml(x.s, x.i)).join('');
   gid('slotSelectBar').style.display='flex';
   gid('slotSelectAll').checked = false;
-  window._slotChkChange();
 }
-window._slotChkChange = function(){
-  const chks = Array.from(document.querySelectorAll('.slotChk'));
   const sel = chks.filter(c=>c.checked);
   gid('slotSelCount').textContent = sel.length>0 ? sel.length+'개 선택' : '';
   gid('slotDelSelected').style.display = sel.length>0 ? 'inline-block' : 'none';
   gid('slotSelectAll').checked = chks.length>0 && sel.length===chks.length;
 };
 window._slotToggleAll = function(checked){
-  document.querySelectorAll('.slotChk').forEach(c=>c.checked=checked);
-  window._slotChkChange();
 };
-window._slotDeleteSelected = async function(){
-  const idxs = Array.from(document.querySelectorAll('.slotChk:checked')).map(c=>parseInt(c.dataset.idx));
   if(idxs.length===0) return;
   if(!confirm(idxs.length+'개 스냅샷을 삭제할까요? 되돌릴 수 없어요.')) return;
   try{
     // 큰 인덱스부터 제거(인덱스 밀림 방지)
-    idxs.sort((a,b)=>b-a).forEach(i=>_slotsCache.splice(i,1));
-    await saveSlots(_slotsCache);
-    renderSlots(_slotsCache);
-    if(window.assetSetSnapshots) window.assetSetSnapshots(_slotsCache);
   }catch(e){ alert('삭제 실패: '+e.message); }
 };
-let _slotsCache=[];
-async function refreshSlots(){ gid('slotList').innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>'; _slotsCache=await loadSlots(); renderSlots(_slotsCache); if(window.assetSetSnapshots) window.assetSetSnapshots(_slotsCache); }
 
-gid('btnCloudOpen').addEventListener('click', async ()=>{
   if(!currentUser || currentUser.uid!==ADMIN_UID){ alert('관리자 로그인이 필요합니다.'); return; }
   // 기본 이름: 이번 달
   const now=new Date();
-  gid('slotName').value = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  gid('slotModal').style.display='flex'; await refreshSlots();
 });
-gid('slotClose').addEventListener('click', ()=> gid('slotModal').style.display='none');
-gid('slotModal').addEventListener('click', e=>{ if(e.target===gid('slotModal')) gid('slotModal').style.display='none'; });
-gid('slotSaveBtn').addEventListener('click', async ()=>{
-  const name=gid('slotName').value.trim();
   if(!name){ alert('이름을 입력하세요.'); return; }
-  const idx=_slotsCache.findIndex(s=>s.name===name);
   if(idx>=0 && !confirm('"'+name+'" 스냅샷이 이미 있어요. 덮어쓸까요?')) return;
-  gid('slotSaveBtn').disabled=true; gid('slotSaveBtn').textContent='저장 중...';
   try{
     const st = window.assetGetState();
     const totalA = (st.assets||[]).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
     const totalD = (st.debts||[]).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
     const entry={ name, data: JSON.parse(JSON.stringify(st)), net: totalA-totalD, savedAt: new Date().toISOString() };
-    if(idx>=0) _slotsCache[idx]=entry; else _slotsCache.push(entry);
-    await saveSlots(_slotsCache); renderSlots(_slotsCache);
-    if(window.assetSetSnapshots) window.assetSetSnapshots(_slotsCache);
     alert('✅ "'+name+'" 저장 완료.');
   }catch(e){ alert('저장 실패: '+e.message); }
-  gid('slotSaveBtn').disabled=false; gid('slotSaveBtn').textContent='저장';
 });
-window._slotLoad=function(i){
-  const s=_slotsCache[i]; if(!s) return;
   if(!confirm('"'+s.name+'"을(를) 불러올까요? 현재 입력이 교체됩니다.')) return;
-  window.assetSetState(s.data); gid('slotModal').style.display='none'; alert('✅ "'+s.name+'" 불러왔어요.');
 };
-window._slotDelete=async function(i){
-  const s=_slotsCache[i]; if(!s) return;
   if(!confirm('"'+s.name+'"을(를) 삭제할까요?')) return;
-  try{ _slotsCache.splice(i,1); await saveSlots(_slotsCache); renderSlots(_slotsCache); if(window.assetSetSnapshots) window.assetSetSnapshots(_slotsCache); }catch(e){ alert('삭제 실패: '+e.message); }
 };
-window._slotRename=async function(i){
-  const s=_slotsCache[i]; if(!s) return;
   const newName = prompt('스냅샷 이름을 수정하세요.\n(월별 추이에 넣으려면 "2026-06" 형식으로)', s.name||'');
   if(newName===null) return;
   const trimmed = newName.trim();
   if(!trimmed){ alert('이름을 비울 수 없어요.'); return; }
   if(trimmed===s.name) return;
   // 같은 이름 중복 체크
-  if(_slotsCache.some((x,idx)=>idx!==i && x.name===trimmed)){ alert('같은 이름이 이미 있어요.'); return; }
   try{
-    _slotsCache[i].name = trimmed;
-    await saveSlots(_slotsCache);
-    renderSlots(_slotsCache);
-    if(window.assetSetSnapshots) window.assetSetSnapshots(_slotsCache);
   }catch(e){ alert('수정 실패: '+e.message); }
 };
-gid('btnCloudLogout').addEventListener('click', async ()=>{
   if(confirm('로그아웃 할까요?')){ try{ await signOut(auth); alert('로그아웃 됐어요.'); }catch(e){ alert('로그아웃 실패: '+e.message); } }
 });
 </script>

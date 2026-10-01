@@ -126,15 +126,9 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   /* Dark compareProceeds label */
   body.sf-dark #compareProceeds { color: #6ba3e0 !important; }
   /* Dark modal */
-  body.sf-dark #slotModal > div { background: #1e242e !important; color: #d8dde5 !important; }
-  body.sf-dark #slotModal h3 { color: #6ba3e0 !important; }
-  body.sf-dark #slotModal input[type="text"] { background: #2a3548 !important; color: #d8dde5 !important; border-color: #475569 !important; }
-  body.sf-dark #slotList > div { background: #2a3548 !important; border-color: #475569 !important; }
-  body.sf-dark #slotList > div > div > div:first-child { color: #6ba3e0 !important; }
   body.sf-dark #slotSaveBox { background: #172a3a !important; border-color: #0369a1 !important; }
   body.sf-dark #slotSaveTitle { color: #7dd3fc !important; }
   body.sf-dark #slotSaveHint { color: #7dd3fc !important; }
-  body.sf-dark #slotListLabel { color: #cbd5e1 !important; }
   body.sf-dark #slotClose { color: #cbd5e1 !important; }
   @media (max-width: 640px) {
     .sc .val { font-size: 14px; }
@@ -156,7 +150,6 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
     <span class="cloud-lbl">☁️ 관리자</span>
     <span id="cloudWho"></span>
     <span id="saveStatus"></span>
-    <button id="btnCloudLogout" class="btn btn-gray" type="button" style="margin-left:auto">로그아웃</button>
   </div>
   <button id="btnAdminLogin" class="btn" type="button" style="display:none;background:#fff;color:#444;border:1px solid #ddd;margin-bottom:12px">🔑 관리자 로그인</button>
   <div id="uidInfo" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:13px;color:#92400e;margin-bottom:12px;line-height:1.7"></div>
@@ -288,7 +281,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
     <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
       <button id="btnCalc" class="btn btn-blue">계산하기</button>
       <button id="btnReset" class="btn btn-gray" type="button">🔄 입력값 초기화</button>
-      <button id="btnCloudOpen" class="btn btn-gray" type="button" style="display:none">☁️ 시나리오 저장/불러오기</button>
+      
     </div>
   </div>
 
@@ -326,32 +319,11 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
 </div>
 
 <!-- 클라우드 시나리오 슬롯 모달 -->
-<div id="slotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;align-items:center;justify-content:center;padding:16px">
-  <div style="background:white;border-radius:16px;max-width:460px;width:100%;max-height:90vh;overflow:auto;padding:20px">
-    <div style="display:flex;align-items:center;margin-bottom:14px">
-      <h3 style="font-size:16px;color:#1F4E78;margin:0">☁️ 시나리오 저장/불러오기</h3>
-      <button id="slotClose" style="margin-left:auto;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
-    </div>
-    <div id="slotSaveBox" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:14px;margin-bottom:16px">
-      <div id="slotSaveTitle" style="font-size:13px;font-weight:600;color:#0369a1;margin-bottom:8px">💾 현재 입력값을 저장</div>
-      <div style="display:flex;gap:8px">
-        <input type="text" id="slotName" placeholder="시나리오 이름 (예: 남양주 임야)" maxlength="30" style="flex:1;padding:9px;font-size:13px;border:1px solid #ccc;border-radius:6px">
-        <button id="slotSaveBtn" style="background:#0ea5e9;color:white;border:none;padding:9px 16px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">저장</button>
-      </div>
-      <div id="slotSaveHint" style="font-size:11px;color:#0369a1;margin-top:6px">같은 이름으로 다시 저장하면 덮어쓰기됩니다</div>
-    </div>
-    <div id="slotListLabel" style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px">📋 저장된 시나리오</div>
-    <div id="slotList" style="display:flex;flex-direction:column;gap:8px">
-      <div style="color:#999;font-size:13px;text-align:center;padding:20px">불러오는 중...</div>
-    </div>
-  </div>
-</div>
+
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
-
 const firebaseConfig = {
   apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
   authDomain: "swingfarmer-board01.firebaseapp.com",
@@ -390,12 +362,9 @@ $('btnAdminLogin').addEventListener('click', async () => {
     } else { alert('로그인 실패: ' + (e.message || code)); }
   }
 });
-$('btnCloudLogout').addEventListener('click', async () => {
   if (confirm('로그아웃?')) { try { await signOut(auth); } catch (e) {} }
 });
 window._ltSignout = () => signOut(auth);
-
-const docRef = () => doc(db, 'calc_data', ADMIN_UID);
 
 async function cloudPull() {
   try {
@@ -445,7 +414,6 @@ onAuthStateChanged(auth, async user => {
     $('btnAdminLogin').style.display = 'none';
     $('cloudWho').textContent = '☁️ ' + (user.displayName || user.email || '관리자');
     if ($('uidInfo')) $('uidInfo').style.display = 'none';
-    $('btnCloudOpen').style.display = 'inline-block';
     await cloudPull();
     cloudReady = true;
     setSaveStatus('saved');
@@ -463,7 +431,6 @@ onAuthStateChanged(auth, async user => {
     cloudReady = false;
     $('cloudArea').classList.remove('on');
     if ($('uidInfo')) $('uidInfo').style.display = 'none';
-    $('btnCloudOpen').style.display = 'none';
   }
 });
 
@@ -914,18 +881,10 @@ function renderCompare(r) {
 // ============= Slot 저장/불러오기 (클라우드 시나리오) =============
 function openSlotModal() {
   if (!currentUser || currentUser.uid !== ADMIN_UID) { alert('관리자 로그인이 필요합니다.'); return; }
-  $('slotName').value = '';
-  $('slotModal').style.display = 'flex';
-  renderSlots();
 }
-function closeSlotModal() { $('slotModal').style.display = 'none'; }
 
-$('btnCloudOpen').addEventListener('click', openSlotModal);
 $('slotClose').addEventListener('click', closeSlotModal);
-$('slotModal').addEventListener('click', e => { if (e.target === $('slotModal')) closeSlotModal(); });
 
-$('slotSaveBtn').addEventListener('click', () => {
-  const name = $('slotName').value.trim();
   if (!name) { alert('시나리오 이름을 입력하세요'); return; }
   const idx = slots_.findIndex(s => s.name === name);
   if (idx >= 0 && !confirm('"' + name + '" 시나리오가 이미 있어요. 덮어쓸까요?')) return;
@@ -934,8 +893,6 @@ $('slotSaveBtn').addEventListener('click', () => {
   else slots_.push(entry);
   saveLocal();
   schedulePush();
-  renderSlots();
-  $('slotName').value = '';
   alert('✅ "' + name + '" 저장 완료');
 });
 
@@ -954,11 +911,8 @@ window._ltSlotDelete = function(i) {
   slots_.splice(i, 1);
   saveLocal();
   schedulePush();
-  renderSlots();
 };
 
-function renderSlots() {
-  const box = $('slotList');
   if (!slots_ || slots_.length === 0) {
     box.innerHTML = '<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 시나리오가 없어요.<br>위에서 이름을 정해 저장해보세요.</div>';
     return;
@@ -991,7 +945,13 @@ loadLocal();
 updateHints();
 updateAllPyeongHints();
 updateDateCalc();
+
+// ── sf-slots 연동 ──
+window.CALC_KEY = 'landtax';
+window.slGetState = collectInputs;
+window.slSetState = applyInputs;
 </script>
+<script src="/sf-slots.js?v=1"></script>
 <script src="/common.js?v=5"></script>
 </body>
 </html>
