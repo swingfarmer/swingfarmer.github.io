@@ -250,7 +250,9 @@ function fmtDate(iso){
   const y = d.getFullYear();
   const m = String(d.getMonth()+1).padStart(2,'0');
   const dd = String(d.getDate()).padStart(2,'0');
-  return y+'.'+m+'.'+dd;
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  return y+'.'+m+'.'+dd+' '+hh+':'+mm;
 }
 
 // ── 액션들 ──
@@ -335,19 +337,27 @@ window._sfSlots = {
 
   moveUp: async function(i){
     if(i <= 0) return;
+    var list = $('sfsSlotList');
+    var slotEl = list.querySelector('[data-idx="'+i+'"]');
+    var h = slotEl ? slotEl.offsetHeight + 8 : 0; // slot height + margin
     var item = _slots.splice(i, 1)[0];
     _slots.splice(i-1, 0, item);
     _focusIdx = i-1;
     render();
+    if(h) list.scrollTop = Math.max(0, list.scrollTop - h);
     try{ await saveSlots(_slots); }catch(e){ alert('순서 저장 실패: '+e.message); }
   },
 
   moveDown: async function(i){
     if(i >= _slots.length-1) return;
+    var list = $('sfsSlotList');
+    var slotEl = list.querySelector('[data-idx="'+i+'"]');
+    var h = slotEl ? slotEl.offsetHeight + 8 : 0;
     var item = _slots.splice(i, 1)[0];
     _slots.splice(i+1, 0, item);
     _focusIdx = i+1;
     render();
+    if(h) list.scrollTop += h;
     try{ await saveSlots(_slots); }catch(e){ alert('순서 저장 실패: '+e.message); }
   },
 
@@ -382,10 +392,14 @@ window._sfSlots = {
 
   exportAll: function(){
     if(!_slots.length){ alert('내보낼 데이터가 없어요.'); return; }
-    const blob = new Blob([JSON.stringify({ calcKey: KEY, slots: _slots, exportedAt: new Date().toISOString() }, null, 2)], { type: 'application/json' });
+    var pageTitle = document.title.replace(/[^\w가-힣\s-]/g,'').trim().replace(/\s+/g,'_') || KEY;
+    var now = new Date();
+    var ts = now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0')+'_'+String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0');
+    var fname = pageTitle + '_' + ts + '.json';
+    const blob = new Blob([JSON.stringify({ calcKey: KEY, pageTitle: document.title, slots: _slots, exportedAt: now.toISOString() }, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'sf_' + KEY + '_' + new Date().toISOString().slice(0,10) + '.json';
+    a.download = fname;
     a.click();
     URL.revokeObjectURL(a.href);
   },
