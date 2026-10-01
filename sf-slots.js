@@ -172,11 +172,12 @@ function injectStyles(){
 
 .sfs-slot{display:flex;align-items:center;gap:8px;padding:12px;margin:4px 0;border-radius:12px;background:#fafafa;border:1px solid #f0f0f0;transition:all .15s;cursor:default}
 .sfs-slot:hover{background:#f5f7fa;border-color:#e0e0e0}
-.sfs-slot.dragging{opacity:.5;background:#e8f0fe}
+.sfs-slot.sfs-focus{background:#eef4ff;border-color:#007AFF;box-shadow:0 0 0 2px rgba(0,122,255,.15)}
 
-.sfs-drag{cursor:grab;color:#ccc;padding:2px;flex-shrink:0;touch-action:none}
-.sfs-drag:active{cursor:grabbing}
-.sfs-drag svg{display:block}
+.sfs-order{display:flex;flex-direction:column;gap:1px;flex-shrink:0}
+.sfs-order button{width:24px;height:16px;border:none;border-radius:3px;background:#f0f0f0;color:#999;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9px;padding:0;transition:all .12s;line-height:1}
+.sfs-order button:hover{background:#007AFF;color:#fff}
+.sfs-order button:disabled{opacity:.15;cursor:default;background:#f0f0f0;color:#999}
 
 .sfs-slot-info{flex:1;min-width:0}
 .sfs-slot-name{font-size:14px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -197,12 +198,13 @@ function injectStyles(){
 .sfs-footer{padding:12px 20px;border-top:1px solid #f0f0f0;text-align:center}
 .sfs-footer span{font-size:12px;color:#999}
 
-.sfs-drop-line{height:3px;background:#007AFF;border-radius:2px;margin:2px 12px;transition:opacity .15s}
 `;
   document.head.appendChild(s);
 }
 
 // ── 렌더링 ──
+var _focusIdx = -1; // 이동 후 하이라이트할 인덱스
+
 function render(){
   const box = $('sfsSlotList');
   const count = $('sfsCount');
@@ -210,13 +212,21 @@ function render(){
 
   if(!_slots.length){
     box.innerHTML = '<div class="sfs-empty">저장된 항목이 없어요.<br>위에서 이름을 입력하고 저장하세요.</div>';
+    _focusIdx = -1;
     return;
   }
 
+  const len = _slots.length;
   box.innerHTML = _slots.map(function(s, i){
-    const t = s.savedAt ? relativeTime(s.savedAt) : '';
-    return '<div class="sfs-slot" data-idx="'+i+'" draggable="true">'
-      + '<div class="sfs-drag" title="드래그로 순서 변경"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="4" r="1.5"/><circle cx="11" cy="4" r="1.5"/><circle cx="5" cy="8" r="1.5"/><circle cx="11" cy="8" r="1.5"/><circle cx="5" cy="12" r="1.5"/><circle cx="11" cy="12" r="1.5"/></svg></div>'
+    const t = s.savedAt ? fmtDate(s.savedAt) : '';
+    const focused = (i === _focusIdx) ? ' sfs-focus' : '';
+    return '<div class="sfs-slot'+focused+'" data-idx="'+i+'">'
+      + '<div class="sfs-order">'
+      + '<button onclick="window._sfSlots.moveTop('+i+')" title="맨 위로"'+(i===0?' disabled':'')+'>⏫</button>'
+      + '<button onclick="window._sfSlots.moveUp('+i+')" title="위로"'+(i===0?' disabled':'')+'>▲</button>'
+      + '<button onclick="window._sfSlots.moveDown('+i+')" title="아래로"'+(i>=len-1?' disabled':'')+'>▼</button>'
+      + '<button onclick="window._sfSlots.moveBottom('+i+')" title="맨 아래로"'+(i>=len-1?' disabled':'')+'>⏬</button>'
+      + '</div>'
       + '<div class="sfs-slot-info"><div class="sfs-slot-name">'+ esc(s.name||'(이름없음)') +'</div><div class="sfs-slot-time">'+t+'</div></div>'
       + '<div class="sfs-slot-actions">'
       + '<button class="sfs-act rename" onclick="window._sfSlots.rename('+i+')" title="이름 수정">✏️</button>'
@@ -226,52 +236,21 @@ function render(){
       + '</div></div>';
   }).join('');
 
-  initDrag();
+  // 이동 후 해당 슬롯으로 스크롤 + 하이라이트 유지
+  if(_focusIdx >= 0 && _focusIdx < len){
+    var el = box.querySelector('[data-idx="'+_focusIdx+'"]');
+    if(el) el.scrollIntoView({ block:'nearest', behavior:'smooth' });
+  }
 }
 
 function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 
-function relativeTime(iso){
+function fmtDate(iso){
   const d = new Date(iso);
-  const now = Date.now();
-  const diff = now - d.getTime();
-  if(diff < 60000) return '방금';
-  if(diff < 3600000) return Math.floor(diff/60000) + '분 전';
-  if(diff < 86400000) return Math.floor(diff/3600000) + '시간 전';
-  if(diff < 604800000) return Math.floor(diff/86400000) + '일 전';
-  return d.toLocaleDateString('ko-KR');
-}
-
-// ── 드래그 순서변경 ──
-function initDrag(){
-  const list = $('sfsSlotList');
-  let dragIdx = null;
-
-  list.querySelectorAll('.sfs-slot').forEach(function(el){
-    el.addEventListener('dragstart', function(e){
-      dragIdx = +el.dataset.idx;
-      el.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    el.addEventListener('dragend', function(){
-      el.classList.remove('dragging');
-      dragIdx = null;
-      list.querySelectorAll('.sfs-drop-line').forEach(function(d){ d.remove(); });
-    });
-    el.addEventListener('dragover', function(e){
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-    });
-    el.addEventListener('drop', async function(e){
-      e.preventDefault();
-      const dropIdx = +el.dataset.idx;
-      if(dragIdx === null || dragIdx === dropIdx) return;
-      const item = _slots.splice(dragIdx, 1)[0];
-      _slots.splice(dropIdx, 0, item);
-      render();
-      try{ await saveSlots(_slots); }catch(err){ alert('순서 저장 실패: '+err.message); }
-    });
-  });
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return y+'.'+m+'.'+dd;
 }
 
 // ── 액션들 ──
@@ -291,6 +270,7 @@ async function doSave(){
     if(existing >= 0) _slots[existing] = entry;
     else _slots.push(entry);
     await saveSlots(_slots);
+    _focusIdx = -1;
     render();
     nameInput.value = '';
   }catch(e){
@@ -312,6 +292,7 @@ window._sfSlots = {
     $('sfSlotOverlay').classList.add('open');
     $('sfsSlotList').innerHTML = '<div class="sfs-empty">불러오는 중…</div>';
     _slots = await loadSlots();
+    _focusIdx = -1;
     render();
   },
 
@@ -335,6 +316,7 @@ window._sfSlots = {
     try{
       _slots.splice(i, 1);
       await saveSlots(_slots);
+      _focusIdx = -1;
       render();
     }catch(e){ alert('삭제 실패: '+e.message); }
   },
@@ -349,6 +331,42 @@ window._sfSlots = {
       await saveSlots(_slots);
       render();
     }catch(e){ alert('수정 실패: '+e.message); }
+  },
+
+  moveUp: async function(i){
+    if(i <= 0) return;
+    var item = _slots.splice(i, 1)[0];
+    _slots.splice(i-1, 0, item);
+    _focusIdx = i-1;
+    render();
+    try{ await saveSlots(_slots); }catch(e){ alert('순서 저장 실패: '+e.message); }
+  },
+
+  moveDown: async function(i){
+    if(i >= _slots.length-1) return;
+    var item = _slots.splice(i, 1)[0];
+    _slots.splice(i+1, 0, item);
+    _focusIdx = i+1;
+    render();
+    try{ await saveSlots(_slots); }catch(e){ alert('순서 저장 실패: '+e.message); }
+  },
+
+  moveTop: async function(i){
+    if(i <= 0) return;
+    var item = _slots.splice(i, 1)[0];
+    _slots.splice(0, 0, item);
+    _focusIdx = 0;
+    render();
+    try{ await saveSlots(_slots); }catch(e){ alert('순서 저장 실패: '+e.message); }
+  },
+
+  moveBottom: async function(i){
+    if(i >= _slots.length-1) return;
+    var item = _slots.splice(i, 1)[0];
+    _slots.push(item);
+    _focusIdx = _slots.length-1;
+    render();
+    try{ await saveSlots(_slots); }catch(e){ alert('순서 저장 실패: '+e.message); }
   },
 
   overwrite: async function(i){
