@@ -425,7 +425,6 @@ calculate();
   </div>
 </div>
 
-<script src="/common.js?v=5"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
@@ -439,6 +438,8 @@ getRedirectResult(auth).catch(()=>{});
 if(location.hash==='#admin'||location.hash==='#관리자'){ gid('btnAdminLogin').style.display='inline-block'; }
 gid('btnAdminLogin').addEventListener('click', async()=>{ try{ await signInWithPopup(auth,provider); }catch(e){ const code=e&&e.code; if(code==='auth/popup-blocked'||code==='auth/cancelled-popup-request'||code==='auth/popup-closed-by-user'||code==='auth/operation-not-supported-in-this-environment'){ try{ await signInWithRedirect(auth,provider); }catch(e2){ alert('로그인 실패: '+e2.message); } } else { alert('로그인 실패: '+(e.message||code)); } } });
 onAuthStateChanged(auth, user=>{ currentUser=user; const isAdmin=user&&user.uid===ADMIN_UID;
+  /* common.js 게이트 해제 */
+  if(isAdmin){ try{sessionStorage.setItem('sf_authed','1');}catch(e){} var g=document.getElementById('sf-auth-gate'); if(g)g.style.display='none'; }
   if(isAdmin){ gid('cloudArea').style.display='inline-flex'; gid('btnAdminLogin').style.display='none'; gid('cloudWho').textContent='☁️ '+(user.displayName||user.email||'관리자'); gid('uidInfo').style.display='none'; }
   else if(user&&!isAdmin){ gid('cloudArea').style.display='none'; gid('btnAdminLogin').style.display='none'; gid('uidInfo').style.display='block'; gid('uidInfo').innerHTML='로그인됨: <b>'+(user.email||'')+'</b><br>이 계정 UID:<br><code style="font-size:11px;word-break:break-all">'+user.uid+'</code><br><button onclick="window._ecSignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer;margin-top:4px">로그아웃</button>'; }
   else { gid('cloudArea').style.display='none'; gid('uidInfo').style.display='none'; } });
