@@ -141,11 +141,11 @@ function chgSign(v){return v>0?'+'+fmt(v):fmt(v);}
 function filterByPeriod(data, days){
   if(!days) return data;
   const cutoff=new Date();cutoff.setDate(cutoff.getDate()-days);
-  return data.filter(r=>new Date(r.rate_date)>=cutoff);
+  return data.filter(r=>new Date(r.rate_date||r.price_date)>=cutoff);
 }
 function filterByRange(data, from, to){
   return data.filter(r=>{
-    const d=r.rate_date;
+    const d=r.rate_date||r.price_date;
     return (!from || d>=from) && (!to || d<=to);
   });
 }
