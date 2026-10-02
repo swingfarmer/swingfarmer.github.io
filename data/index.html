@@ -171,13 +171,13 @@ async function loadHistory() {
       if(row.cur_unit === 'CNH' || row.cur_unit === 'CNY') byDate[row.rate_date].CNY_KRW = val;
     });
 
-    // 금시세 히스토리 (yfinance rates_history.json에서)
+    // 금시세 히스토리 (Oracle DB API)
     var goldHist = {};
     try {
-      var gr = await fetch('/data/rates_history.json?t=' + Date.now());
+      var gr = await fetch(ORACLE_API + '/rates/gold?days=365');
       if(gr.ok) {
         var gd = await gr.json();
-        gd.forEach(function(h){ if(h.GOLD_KRW_G) goldHist[h.date] = h.GOLD_KRW_G; });
+        (gd.data||[]).forEach(function(h){ if(h.price_krw_g) goldHist[h.price_date] = Number(h.price_krw_g); });
       }
     } catch(e) {}
 
