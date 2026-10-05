@@ -82,7 +82,7 @@ def verify_firebase_token(id_token):
         from google.auth.transport import requests as google_requests
         claims = google_id_token.verify_firebase_token(
             id_token, google_requests.Request(), audience=FIREBASE_PROJECT_ID)
-        return claims.get('uid')
+        return claims.get('sub')
     except Exception as e:
         print(f'⚠ 토큰 검증 실패: {e}')
         return None
@@ -256,10 +256,13 @@ def re_search():
 
     w = ' AND '.join(where)
     conn = get_conn(); cur = conn.cursor()
-    cur.execute(f"SELECT COUNT(*) FROM real_estate WHERE {w}", params)
+    cur.execute(f"""SELECT COUNT(*) FROM (
+        SELECT DISTINCT region, name, dong, area_m2, floor_no, deal_type, price, deposit, monthly_rent,
+               deal_year, deal_month, deal_day, build_year
+        FROM real_estate WHERE {w})""", params)
     total = cur.fetchone()[0]
     cur.execute(f"""SELECT * FROM (SELECT a.*, ROWNUM rn FROM (
-        SELECT region, name, dong, area_m2 AS area, floor_no AS floor, deal_type, price, deposit, monthly_rent,
+        SELECT DISTINCT region, name, dong, area_m2 AS area, floor_no AS floor, deal_type, price, deposit, monthly_rent,
                deal_year, deal_month, deal_day, build_year
         FROM real_estate WHERE {w}
         ORDER BY deal_year DESC, deal_month DESC, deal_day DESC
@@ -768,8 +771,8 @@ def upload_file():
     file_size = os.path.getsize(full_path)
     conn = get_conn(); cur = conn.cursor()
     cur.execute("""INSERT INTO attachments (original_name, stored_path, file_size, mime_type, created_at)
-        VALUES (:orig, :path, :size, :mime, SYSTIMESTAMP)""",
-        {'orig': f.filename, 'path': stored_path, 'size': file_size, 'mime': f.content_type})
+        VALUES (:orig, :path, :fsize, :mtype, SYSTIMESTAMP)""",
+        {'orig': f.filename, 'path': stored_path, 'fsize': file_size, 'mtype': f.content_type})
     conn.commit()
     cur.execute("SELECT MAX(id) FROM attachments"); file_id = cur.fetchone()[0]
     cur.close(); conn.close()
