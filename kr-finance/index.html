@@ -85,6 +85,7 @@ th.group-hdr{background:#161922;font-size:10px;color:var(--accent);border-bottom
 
   <div class="controls" id="controls">
     <input type="text" class="search-box" id="search" placeholder="종목명 또는 코드 검색…">
+    <button class="filter-btn" id="sepTaxFilter" onclick="toggleSepTax()" style="display:none">💰 분리과세</button>
   </div>
   <div class="stats-bar" id="statsBar"></div>
   <!-- 저장된 비교 세트 -->
@@ -124,6 +125,9 @@ th.group-hdr{background:#161922;font-size:10px;color:var(--accent);border-bottom
         <div>• <b>PER</b> — 주가÷EPS. 낮을수록 저평가 (업종별 상대 비교)</div>
         <div>• <b>PBR</b> — 주가÷BPS. 1 미만이면 자산 대비 저평가</div>
         <div>• <b>52주고/저</b> — 최근 1년간 최고·최저가</div>
+        <div>• <b>배당성향</b> — DPS÷EPS. 이익 중 배당 비율</div>
+        <div>• <b>분리과세</b> — 고배당 9% 분리과세 적격 판정</div>
+        <div style="margin-left:16px;font-size:11px">조건1: 배당성향 ≥ 40%<br>조건2: 배당성향 ≥ 25% AND 전년대비 배당금 10%↑</div>
       </div>
       <div>
         <div style="font-weight:700;color:var(--text);margin-bottom:6px">🎨 색상</div>
@@ -157,7 +161,8 @@ th.group-hdr{background:#161922;font-size:10px;color:var(--accent);border-bottom
 <script>
 (function(){
 var stocks=[], filtered=[], selected=new Set();
-var sortKey='revenue', sortDir=-1, activeSector='';
+var sortKey='revenue', sortDir=-1, activeSector='', sepTaxOnly=false;
+var currentPeriodInfo=null; // {year, period} for prev year loading
 var periodData={};
 var hasYoY=false;
 var priceMap={}; // prices.json 데이터
@@ -177,6 +182,8 @@ function getCols(){
     {key:'debt_ratio',label:'부채비율',unit:'%'},
     {key:'dividend',label:'배당금',unit:'원'},
     {key:'div_yield',label:'배당률',unit:'%'},
+    {key:'_payout',label:'배당성향',unit:'%',price:true},
+    {key:'_sep_tax',label:'분리과세',nosort:false,price:true},
     {key:'ebitda',label:'EBITDA',unit:'억'},
     {key:'da',label:'D&A',unit:'억'},
   ];
@@ -196,6 +203,7 @@ function getCols(){
   return cols;
 }
 var hasPrices=false;
+var prevDivMap={}; // code → 전년 배당금
 
 function fmt(v,unit){
   if(v===null||v===undefined) return '-';
@@ -222,6 +230,24 @@ function pv(code,key,stock){
     var ev=mcap+(nd||0);
     return Math.round(ev/ebitda*10)/10;
   }
+  // 배당성향 = DPS * PER / price * 100
+  if(key==='_payout'){
+    var price=p.price, per=p.per, dps=stock?stock.dividend:null;
+    if(!price||!per||per<=0||!dps||dps<=0) return null;
+    return Math.round(dps*per/price*1000)/10;
+  }
+  // 분리과세 판정: 1=조건1, 2=조건2, 0=미충족
+  if(key==='_sep_tax'){
+    var price2=p.price, per2=p.per, dps2=stock?stock.dividend:null;
+    if(!price2||!per2||per2<=0||!dps2||dps2<=0) return 0;
+    var payout2=dps2*per2/price2*100;
+    if(payout2>=40) return 1;
+    if(payout2>=25 && prevDivMap[stock.code]!==undefined){
+      var prev=prevDivMap[stock.code];
+      if(prev>0 && (dps2-prev)/prev*100>=10) return 2;
+    }
+    return 0;
+  }
   var map={'_price':'price','_mcap':'market_cap','_per':'per','_pbr':'pbr',
            '_high52':'high_52w','_low52':'low_52w','_div_yield_price':'div_yield'};
   var k=map[key];
@@ -237,6 +263,7 @@ function colorClass(v,key){
     return v>0?'up':v<0?'down':'';
   }
   if(key==='op'||key==='ni') return v<0?'down':'';
+  if(key==='_payout') return v>=40?'up':v>=25?'gold':'';
   if(key==='_per') return v<10?'up':v>30?'down':'';
   if(key==='_pbr') return v<1?'up':v>3?'down':'';
   if(key==='_ev_ebitda') return v<7?'up':v>20?'down':'';
@@ -294,10 +321,16 @@ function renderBody(){
         td.style.textAlign='left';
       } else {
         var v=c.price?pv(s.code,c.key,s):s[c.key];
+        if(c.key==='_sep_tax'){
+          if(v===1){td.innerHTML='✅ <span style="font-size:10px;color:var(--text-dim)">조건1</span>';td.style.textAlign='center';}
+          else if(v===2){td.innerHTML='✅ <span style="font-size:10px;color:var(--text-dim)">조건2</span>';td.style.textAlign='center';}
+          else{td.textContent='-';td.style.textAlign='center';td.style.color='var(--text-dim)';}
+        } else {
         var display=(c.key.indexOf('yoy')>=0)&&v<=-999?'적전':fmt(v,c.unit);
         td.textContent=display;
         var cc=colorClass(v,c.key);
         if(cc) td.className=cc;
+        }
       }
       tr.appendChild(td);
     });
@@ -319,11 +352,23 @@ function sort(){
   });
 }
 
+window.toggleSepTax=function(){
+  sepTaxOnly=!sepTaxOnly;
+  var btn=document.getElementById('sepTaxFilter');
+  btn.classList.toggle('active',sepTaxOnly);
+  applyFilters();
+};
+
 function applyFilters(){
   var q=document.getElementById('search').value.trim().toLowerCase();
   filtered=stocks.filter(function(s){
-    return(!q||s.name.toLowerCase().indexOf(q)>=0||s.code.indexOf(q)>=0)
-      &&(!activeSector||s.sector===activeSector);
+    if(q && s.name.toLowerCase().indexOf(q)<0 && s.code.indexOf(q)<0) return false;
+    if(activeSector && s.sector!==activeSector) return false;
+    if(sepTaxOnly && hasPrices){
+      var v=pv(s.code,'_sep_tax',s);
+      if(!v || v===0) return false;
+    }
+    return true;
   });
   sort(); renderBody(); updateStats();
 }
@@ -447,7 +492,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeCompare
 function buildSectorFilters(){
   var ctrl=document.getElementById('controls');
   // 기존 필터 버튼 제거 (검색 박스 빼고)
-  ctrl.querySelectorAll('.filter-btn').forEach(function(b){b.remove();});
+  ctrl.querySelectorAll('.filter-btn:not(#sepTaxFilter)').forEach(function(b){b.remove();});
 
   var sectors={};
   stocks.forEach(function(s){sectors[s.sector]=(sectors[s.sector]||0)+1;});
@@ -479,8 +524,27 @@ function render(){buildHead();applyFilters();}
 
 document.getElementById('search').addEventListener('input',function(){applyFilters();});
 
-function loadData(url, label){
+function loadPrevYearDividends(year){
+  var prevFile='/data/kr/'+(parseInt(year)-1)+'-annual.json';
+  prevDivMap={};
+  fetch(prevFile)
+    .then(function(r){if(!r.ok) throw new Error('no prev');return r.json();})
+    .then(function(data){
+      (data.stocks||[]).forEach(function(s){
+        if(s.dividend && s.dividend>0) prevDivMap[s.code]=s.dividend;
+      });
+      render();
+    })
+    .catch(function(){prevDivMap={};});
+}
+
+function loadData(url, label, periodInfo){
   document.getElementById('tbody').innerHTML='<tr><td colspan="16" style="text-align:center;padding:40px">로딩 중...</td></tr>';
+  currentPeriodInfo=periodInfo||null;
+  prevDivMap={};
+  sepTaxOnly=false;
+  var stb=document.getElementById('sepTaxFilter');
+  if(stb) stb.classList.remove('active');
   fetch(url)
     .then(function(r){return r.json();})
     .then(function(data){
@@ -496,8 +560,16 @@ function loadData(url, label){
         '기준: '+(info)+' · 업데이트: '+(data.updated||'')+' · 출처: '+(data.source||'OpenDART');
       if(data.compare_yoy) document.getElementById('updated').textContent+=' · YoY비교: '+data.compare_yoy;
 
+      // 분리과세 필터 버튼: 주가 데이터 있을 때만
+      if(stb) stb.style.display=hasPrices?'':'none';
+
       buildSectorFilters();
       render();
+
+      // 연간 데이터면 전년도 배당금 로드 (조건2용)
+      if(currentPeriodInfo && currentPeriodInfo.period==='annual'){
+        loadPrevYearDividends(currentPeriodInfo.year);
+      }
     })
     .catch(function(e){
       document.getElementById('tbody').innerHTML=
@@ -522,6 +594,8 @@ function loadPrices(){
       if(hasPrices){
         var u=document.getElementById('updated');
         u.textContent+=' · 주가: '+(data.updated||'');
+        var stb=document.getElementById('sepTaxFilter');
+        if(stb) stb.style.display='';
       }
       render(); // 컬럼 추가 반영
     })
@@ -548,13 +622,13 @@ function loadPeriodIndex(){
         btn.addEventListener('click',function(){
           bar.querySelectorAll('.period-btn').forEach(function(b){b.classList.remove('active');});
           btn.classList.add('active');
-          loadData('/data/kr/'+p.file, p.label);
+          loadData('/data/kr/'+p.file, p.label, {year:p.year,period:p.period});
         });
         bar.appendChild(btn);
       });
 
       if(periods.length>0){
-        loadData('/data/kr/'+periods[0].file, periods[0].label);
+        loadData('/data/kr/'+periods[0].file, periods[0].label, {year:periods[0].year,period:periods[0].period});
       } else {
         loadData('/data/kospi200.json','');
       }
