@@ -19,13 +19,9 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   .btn-blue { background: #1F4E78; color: white; }
   .btn-gray { background: #9ca3af; color: white; }
   input:focus, select:focus { outline: 2px solid #1F4E78; }
-  .cloud-area { display: none; align-items: center; gap: 8px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; flex-wrap: wrap; }
-  .cloud-area.on { display: flex; }
+
   .cloud-lbl { font-size: 12px; font-weight: 700; color: #0369a1; }
-  #cloudWho { font-size: 11.5px; color: #0369a1; }
-  #saveStatus { font-size: 11.5px; color: #0369a1; margin-left: 4px; }
-  #saveStatus.dirty { color: #b45309; }
-  #saveStatus.error { color: #dc2626; }
+
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 14px; margin-bottom: 6px; }
   .fld { display: flex; flex-direction: column; gap: 4px; position: relative; }
   .fld small { font-size: 10.5px; color: #999; font-weight: 400; }
@@ -76,16 +72,9 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
 </header>
 
 <div class="wrap">
-  <p class="desc">연봉 인상률을 반영해 연차별 <b>4대보험·소득세·지방소득세</b>를 공제한 실수령액과 누적액을 계산합니다. 비과세 수당·자녀세액공제까지 반영. 2026년 확정 요율 기준. 국세청 <a href="https://teht.hometax.go.kr/websquare/websquare.wq?w2xPath=/ui/pp/index_pp.xml" target="_blank" rel="noopener" style="color:#1F4E78">홈택스 원천징수세액 자동계산</a> 결과와는 오차가 있을 수 있습니다. 관리자 로그인 시 클라우드 저장.</p>
+  <p class="desc">연봉 인상률을 반영해 연차별 <b>4대보험·소득세·지방소득세</b>를 공제한 실수령액과 누적액을 계산합니다. 비과세 수당·자녀세액공제까지 반영. 2026년 확정 요율 기준. 국세청 <a href="https://teht.hometax.go.kr/websquare/websquare.wq?w2xPath=/ui/pp/index_pp.xml" target="_blank" rel="noopener" style="color:#1F4E78">홈택스 원천징수세액 자동계산</a> 결과와는 오차가 있을 수 있습니다. 저장 관리(💾 버튼)로 시나리오 저장·비교 가능.</p>
 
-  <div id="cloudArea" class="cloud-area">
-    <span class="cloud-lbl">☁️ 관리자</span>
-    <span id="cloudWho"></span>
-    <span id="saveStatus"></span>
-    <button id="btnCloudLogout" class="btn btn-gray" type="button" style="margin-left:auto">로그아웃</button>
-  </div>
-  <button id="btnAdminLogin" class="btn" type="button" style="display:none;background:#fff;color:#444;border:1px solid #ddd;margin-bottom:12px">🔑 관리자 로그인</button>
-  <div id="uidInfo" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:13px;color:#92400e;margin-bottom:12px;line-height:1.7"></div>
+  <!-- sf-slots.js가 저장 관리 제공 -->
 
   <div class="note">
     ⚠️ <b>근사치 계산입니다.</b> 실제 원천징수는 국세청 <b>근로소득 간이세액표</b>(구간별 조견표)를 그대로 적용하며, 이 계산기는 표 대신 <b>산출 로직</b>(근로소득공제→인적공제→연금·건강보험 소득공제→세율→근로소득세액공제→자녀세액공제)을 직접 계산합니다. 최종 확정 세액은 연말정산으로 정산됩니다.
@@ -206,155 +195,29 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   <footer>© 스윙파머 · 누적 연봉 계산기</footer>
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
-  authDomain: "swingfarmer-board01.firebaseapp.com",
-  projectId: "swingfarmer-board01",
-  storageBucket: "swingfarmer-board01.firebasestorage.app",
-  messagingSenderId: "312575044644",
-  appId: "1:312575044644:web:81d754eb1d90f25454fcb1"
-};
-const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1";
-const CALC_KEY = "paygrowth";
-const STORE_KEY = "sf_paygrowth_v1";
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
-provider.setCustomParameters({ prompt: 'select_account' });
-const $ = id => document.getElementById(id);
-
-let currentUser = null;
-let cloudReady = false;
-let pushTimer = null;
-
-getRedirectResult(auth).catch(()=>{});
-if (location.hash === '#admin' || location.hash === '#관리자') {
-  $('btnAdminLogin').style.display = 'inline-block';
-}
-
-$('btnAdminLogin').addEventListener('click', async () => {
-  try { await signInWithPopup(auth, provider); }
-  catch (e) {
-    const code = e && e.code;
-    if (code === 'auth/popup-blocked' || code === 'auth/cancelled-popup-request' || code === 'auth/popup-closed-by-user' || code === 'auth/operation-not-supported-in-this-environment') {
-      try { await signInWithRedirect(auth, provider); } catch (e2) { alert('로그인 실패: ' + e2.message); }
-    } else { alert('로그인 실패: ' + (e.message || code)); }
-  }
-});
-$('btnCloudLogout').addEventListener('click', async () => {
-  if (confirm('로그아웃?')) { try { await signOut(auth); } catch (e) {} }
-});
-window._pgSignout = () => signOut(auth);
-
-const docRef = () => doc(db, 'calc_data', ADMIN_UID);
-
-async function cloudPull() {
-  try {
-    const snap = await getDoc(docRef());
-    if (snap.exists() && snap.data()[CALC_KEY]) {
-      const cloud = snap.data()[CALC_KEY];
-      if (cloud.inputs) applyInputs(cloud.inputs);
-      saveLocal();
-    }
-  } catch (e) { console.log('cloud pull fail:', e.message); }
-}
-async function cloudPush() {
-  if (!cloudReady) return;
-  setSaveStatus('saving');
-  try {
-    await setDoc(docRef(), { [CALC_KEY]: { inputs: collectInputs(), updatedAt: new Date().toISOString() } }, { merge: true });
-    setSaveStatus('saved');
-  } catch (e) {
-    console.log('cloud push fail:', e.message);
-    setSaveStatus('error');
-  }
-}
-function schedulePush() {
-  if (!cloudReady) return;
-  setSaveStatus('dirty');
-  clearTimeout(pushTimer);
-  pushTimer = setTimeout(cloudPush, 800);
-}
-function setSaveStatus(status) {
-  const el = $('saveStatus');
-  if (!el) return;
-  el.className = '';
-  if (status === 'dirty') { el.textContent = '· 저장 대기'; el.className = 'dirty'; }
-  else if (status === 'saving') { el.textContent = '· 저장 중...'; }
-  else if (status === 'saved') { el.textContent = '· ☁️ 동기화됨'; }
-  else if (status === 'error') { el.textContent = '· ⚠️ 저장 실패'; el.className = 'error'; }
-  else { el.textContent = ''; }
-}
-
-onAuthStateChanged(auth, async user => {
-  currentUser = user;
-  const isAdmin = user && user.uid === ADMIN_UID;
-  if (isAdmin) {
-    $('cloudArea').classList.add('on');
-    $('btnAdminLogin').style.display = 'none';
-    $('cloudWho').textContent = '☁️ ' + (user.displayName || user.email || '관리자');
-    if ($('uidInfo')) $('uidInfo').style.display = 'none';
-    await cloudPull();
-    updateHints();
-    cloudReady = true;
-    setSaveStatus('saved');
-    cloudPush();
-  } else if (user && !isAdmin) {
-    $('cloudArea').classList.remove('on');
-    $('btnAdminLogin').style.display = 'none';
-    const box = $('uidInfo');
-    if (box) {
-      box.style.display = 'block';
-      box.innerHTML = '로그인됨: <b>' + (user.email || '') + '</b><br>UID: <code style="font-size:11px;word-break:break-all">' + user.uid + '</code><br><button onclick="window._pgSignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer;margin-top:4px">로그아웃</button>';
-    }
-    cloudReady = false;
-  } else {
-    cloudReady = false;
-    $('cloudArea').classList.remove('on');
-    if ($('uidInfo')) $('uidInfo').style.display = 'none';
-  }
-});
-
-// ============= Input collection / apply =============
-const INPUT_IDS = ['inSalary','inRaise','inYears','inDependents','inNontax','inChildren','rPension','rHealth','rLtc','rEmp','rPensionCap','rPensionFloor'];
-function collectInputs() {
-  const o = {};
-  for (const id of INPUT_IDS) o[id] = $(id).value;
+<script>
+window.CALC_KEY = 'paygrowth';
+window.slGetState = function(){
+  var ids = ['inSalary','inRaise','inYears','inDependents','inNontax','inChildren','rPension','rHealth','rLtc','rEmp','rPensionCap','rPensionFloor'];
+  var o = {};
+  for(var i=0;i<ids.length;i++) o[ids[i]] = document.getElementById(ids[i]).value;
   return o;
-}
-function applyInputs(o) {
-  for (const id of INPUT_IDS) if (o[id] !== undefined) $(id).value = o[id];
-}
-function onChange() {
-  saveLocal();
-  schedulePush();
-}
-function saveLocal() {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(collectInputs())); } catch (e) {}
-}
-function loadLocal() {
-  try {
-    const raw = localStorage.getItem(STORE_KEY);
-    if (raw) applyInputs(JSON.parse(raw));
-  } catch (e) {}
-}
-
-INPUT_IDS.forEach(id => {
-  $(id).addEventListener('change', onChange);
-});
+};
+window.slSetState = function(d){
+  if(!d) return;
+  var ids = ['inSalary','inRaise','inYears','inDependents','inNontax','inChildren','rPension','rHealth','rLtc','rEmp','rPensionCap','rPensionFloor'];
+  for(var i=0;i<ids.length;i++) if(d[ids[i]] !== undefined) document.getElementById(ids[i]).value = d[ids[i]];
+  if(typeof updateHints === 'function') updateHints();
+  if(typeof calculate === 'function') calculate();
+};
+</script>
+<script src="/sf-slots.js?v=1"></script>
+<script>
+const $ = id => document.getElementById(id);
 
 $('btnReset').addEventListener('click', () => {
   if (!confirm('입력값을 초기값으로 되돌리시겠습니까?')) return;
-  const defaults = { inSalary:'40,000,000', inRaise:'5', inYears:'10', inDependents:'1', inNontax:'200,000', inChildren:'0', rPension:'4.75', rHealth:'3.595', rLtc:'13.14', rEmp:'0.9', rPensionCap:'6,370,000', rPensionFloor:'400,000' };
-  applyInputs(defaults);
-  updateHints();
-  onChange();
+  window.slSetState({ inSalary:'40,000,000', inRaise:'5', inYears:'10', inDependents:'1', inNontax:'200,000', inChildren:'0', rPension:'4.75', rHealth:'3.595', rLtc:'13.14', rEmp:'0.9', rPensionCap:'6,370,000', rPensionFloor:'400,000' });
 });
 
 // ============= Utils =============
@@ -611,7 +474,6 @@ document.querySelectorAll('.panel input, .panel select').forEach(el => {
 });
 
 // ============= Init =============
-loadLocal();
 updateHints();
 </script>
 <script src="/common.js?v=5"></script>
