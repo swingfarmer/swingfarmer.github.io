@@ -8,19 +8,14 @@
 <link rel="stylesheet" href="/common.css?v=4">
 <style>
 :root { --sf-max-w: 800px; }
-/* 카드사 컬러 */
 .issuer-롯데{--ic:#e53935}.issuer-삼성{--ic:#1565c0}.issuer-현대{--ic:#00695c}.issuer-국민{--ic:#f9a825}
 .issuer-신한{--ic:#0d47a1}.issuer-하나{--ic:#009688}.issuer-우리{--ic:#1976d2}.issuer-BC{--ic:#e91e63}
 .issuer-NH{--ic:#2e7d32}.issuer-씨티{--ic:#0277bd}.issuer-기타{--ic:#546e7a}
-
-/* 카드 슬라이더 */
 .slider-wrap{position:relative;margin-bottom:24px}
 .slider{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:16px;padding:8px 4px 16px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .slider::-webkit-scrollbar{display:none}
 .card-item{flex:0 0 100%;max-width:400px;scroll-snap-align:center;margin:0 auto}
 @media(min-width:500px){.card-item{flex:0 0 calc(50% - 8px)}}
-
-/* 카드 비주얼 */
 .card-visual{border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.12);background:white;cursor:pointer;transition:transform .15s}
 .card-visual:hover{transform:translateY(-2px)}
 .card-visual.cancelled{opacity:0.55}
@@ -29,7 +24,9 @@
 .card-chip{width:40px;height:28px;background:linear-gradient(135deg,#ffd54f,#ffb300);border-radius:6px;margin-bottom:14px}
 .card-name{font-size:20px;font-weight:800;letter-spacing:1px}
 .card-since{font-size:11px;opacity:0.7;margin-top:4px;letter-spacing:1px}
-.cancel-badge{position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.25);color:white;font-size:11px;font-weight:700;padding:4px 10px;border-radius:12px}
+.card-dday{position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.25);color:white;font-size:12px;font-weight:700;padding:4px 10px;border-radius:12px}
+.card-dday.urgent{background:rgba(229,57,53,0.8)}
+.cancel-badge{position:absolute;top:16px;right:16px;background:rgba(0,0,0,0.3);color:white;font-size:11px;font-weight:700;padding:4px 10px;border-radius:12px}
 .card-bottom{padding:20px 22px}
 .spending-label{font-size:12px;color:#888;margin-bottom:4px}
 .spending-amount{font-size:28px;font-weight:800;color:#1a1a1a;margin-bottom:12px}
@@ -43,34 +40,30 @@
 .progress-fill.full{background:#4caf50}
 .progress-fill.over{background:#e53935}
 .card-info{border-top:1px solid #eee;padding-top:14px}
-.info-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px}
 .info-label{color:#888}
 .info-val{font-weight:700;color:#1a1a1a}
 .info-val.benefit{color:#1976d2;font-size:16px}
-.info-val.cancel-date{color:#e53935;background:#fce4ec;padding:4px 12px;border-radius:8px;font-size:13px}
-.info-val.benefit-date{color:#888;font-size:11px;margin-top:2px}
-
-/* 페이지 인디케이터 */
+.info-val.cancel-date{color:#e53935}
+.info-val.dim{color:#aaa;font-size:12px}
+.info-val.done{color:#4caf50}
+.alert-row{background:#fce4ec;border-radius:8px;padding:8px 12px;margin-top:6px}
+.alert-row .info-label{color:#e53935;font-weight:700}
+.memo-text{font-size:11px;color:#888;margin-top:10px;line-height:1.5;border-top:1px solid #eee;padding-top:8px}
 .dots{display:flex;justify-content:center;gap:6px;margin-top:8px}
 .dot{width:8px;height:8px;border-radius:50%;background:#ccc;transition:all .2s}
 .dot.active{background:#1976d2;width:20px;border-radius:4px}
-
-/* 버튼 */
 .fab{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;background:#1F4E78;color:white;border:none;font-size:28px;box-shadow:0 4px 12px rgba(0,0,0,0.3);cursor:pointer;z-index:5;display:flex;align-items:center;justify-content:center}
 .fab:hover{transform:scale(1.05)}
-
-/* 정렬 */
 .sort-bar{display:flex;gap:6px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
 .sort-btn{padding:6px 14px;border:1px solid #ddd;border-radius:8px;background:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:#666}
 .sort-btn.active{background:#1F4E78;color:white;border-color:#1F4E78}
 .summary{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
-.summary-chip{background:white;border:1px solid #e5e7eb;border-radius:10px;padding:10px 16px;font-size:12px;flex:1;min-width:120px;text-align:center}
+.summary-chip{background:white;border:1px solid #e5e7eb;border-radius:10px;padding:10px 16px;font-size:12px;flex:1;min-width:100px;text-align:center}
 .summary-chip .sv{font-size:18px;font-weight:800;display:block;margin-top:2px}
-
-/* 모달 */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:20;display:none;align-items:center;justify-content:center;padding:20px}
 .modal-bg.show{display:flex}
-.modal{background:white;border-radius:16px;max-width:500px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;position:relative}
+.modal{background:white;border-radius:16px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;position:relative}
 .modal h2{font-size:18px;font-weight:800;margin-bottom:20px}
 .modal .close{position:absolute;top:14px;right:18px;background:none;border:none;font-size:20px;cursor:pointer;color:#888}
 .field{margin-bottom:14px}
@@ -78,11 +71,13 @@
 .field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;font-family:inherit;box-sizing:border-box}
 .field textarea{height:60px;resize:vertical}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.section-label{font-size:12px;font-weight:700;color:#1F4E78;margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid #eee}
 .btn-save{width:100%;padding:12px;background:#1F4E78;color:white;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
 .btn-save:hover{opacity:0.9}
 .btn-del{width:100%;padding:10px;background:white;color:#e53935;border:1px solid #e53935;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
 .empty-msg{text-align:center;padding:60px 20px;color:#999;font-size:14px}
-.memo-text{font-size:11px;color:#888;margin-top:8px;line-height:1.5}
+.toggle-row{display:flex;align-items:center;gap:8px;padding:6px 0}
+.toggle-row label{font-size:13px;color:#555;margin:0}
 </style>
 </head>
 <body>
@@ -90,38 +85,33 @@
   <div class="header">
     <h1>💳 카드풍차 <span>관리</span></h1>
     <div class="header-meta">
-      <div class="updated" id="cardCount">카드 0장</div>
+      <div class="updated" id="cardCount">카드 0장 · 예상 혜택 0원</div>
       <a href="/" class="back-link">← 메인으로</a>
     </div>
   </div>
-
   <div class="summary" id="summary"></div>
-
   <div class="sort-bar">
     <span style="font-size:12px;color:#888;font-weight:700">정렬</span>
     <button class="sort-btn active" data-sort="order" onclick="setSort('order')">등록순</button>
     <button class="sort-btn" data-sort="spending" onclick="setSort('spending')">지출순</button>
+    <button class="sort-btn" data-sort="deadline" onclick="setSort('deadline')">마감 임박순</button>
     <button class="sort-btn" data-sort="cancel" onclick="setSort('cancel')">탈회 임박순</button>
   </div>
-
   <div class="slider-wrap">
     <div class="slider" id="slider"></div>
     <div class="dots" id="dots"></div>
   </div>
-
-  <div id="emptyMsg" class="empty-msg" style="display:none">
-    카드가 없습니다. + 버튼으로 카드를 추가하세요.
-  </div>
+  <div id="emptyMsg" class="empty-msg" style="display:none">카드가 없습니다. + 버튼으로 카드를 추가하세요.</div>
 </div>
-
 <button class="fab" onclick="openModal()" title="카드 추가">+</button>
 
-<!-- 추가/수정 모달 -->
 <div class="modal-bg" id="modal">
   <div class="modal">
     <button class="close" onclick="closeModal()">✕</button>
-    <h2 id="modalTitle">카드 추가</h2>
+    <h2 id="modalTitle">카드 등록</h2>
     <input type="hidden" id="editId">
+
+    <div class="section-label">카드 정보</div>
     <div class="row2">
       <div class="field"><label>카드사</label>
         <select id="fIssuer">
@@ -133,27 +123,37 @@
       <div class="field"><label>카드명</label><input type="text" id="fName" placeholder="LOCA LIKIT 1.5"></div>
     </div>
     <div class="row2">
-      <div class="field"><label>월 실적 목표 (원)</label><input type="number" id="fTarget" placeholder="300000"></div>
-      <div class="field"><label>이번 달 지출 (원)</label><input type="number" id="fSpending" placeholder="0"></div>
+      <div class="field"><label>실적 조건 금액 (원)</label><input type="number" id="fTarget" placeholder="300000"></div>
+      <div class="field"><label>현재 사용 금액 (원)</label><input type="number" id="fSpending" placeholder="0"></div>
     </div>
     <div class="row2">
-      <div class="field"><label>사용 시작</label><input type="date" id="fStart"></div>
-      <div class="field"><label>사용 종료</label><input type="date" id="fEnd"></div>
-    </div>
-    <div class="row2">
-      <div class="field"><label>받을 혜택 (원)</label><input type="number" id="fBenefit" placeholder="0"></div>
-      <div class="field"><label>혜택 지급일</label><input type="date" id="fBenefitDate"></div>
-    </div>
-    <div class="row2">
+      <div class="field"><label>이벤트 혜택 금액 (원)</label><input type="number" id="fBenefit" placeholder="120000"></div>
       <div class="field"><label>연회비 (원)</label><input type="number" id="fFee" placeholder="0"></div>
-      <div class="field"><label>탈회 예정일</label><input type="date" id="fCancel"></div>
     </div>
-    <div class="field"><label>메모</label><textarea id="fMemo" placeholder="카드 혜택, 주의사항 등"></textarea></div>
-    <div class="field" id="cancelledField" style="display:none">
-      <label><input type="checkbox" id="fCancelled"> 해지 완료</label>
+
+    <div class="section-label">주요 일정</div>
+    <div class="row2">
+      <div class="field"><label>발급일</label><input type="date" id="fStart"></div>
+      <div class="field"><label>실적 마감일</label><input type="date" id="fDeadline"></div>
     </div>
+    <div class="row2">
+      <div class="field"><label>혜택 지급일</label><input type="date" id="fBenefitDate"></div>
+      <div class="field"><label>해지 가능일</label><input type="date" id="fCancelAvail"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>다음 신규 이벤트 가능일</label><input type="date" id="fNextEvent"></div>
+      <div class="field"></div>
+    </div>
+
+    <div class="section-label">상태</div>
+    <div class="toggle-row"><input type="checkbox" id="fBenefitDone"><label for="fBenefitDone">혜택 수령 완료</label></div>
+    <div class="toggle-row" id="cancelledField" style="display:none"><input type="checkbox" id="fCancelled"><label for="fCancelled">카드 해지 완료</label></div>
+
+    <div class="section-label">메모</div>
+    <div class="field"><textarea id="fMemo" placeholder="이벤트 조건이나 참고할 내용"></textarea></div>
+
     <button class="btn-save" onclick="saveCard()">저장</button>
-    <button class="btn-del" id="btnDel" style="display:none" onclick="deleteCard()">삭제</button>
+    <button class="btn-del" id="btnDel" style="display:none" onclick="deleteCard()">카드 삭제</button>
   </div>
 </div>
 
@@ -169,225 +169,218 @@ const app = initializeApp({
 });
 const db = getFirestore(app);
 const auth = getAuth(app);
+let cards=[], currentSort='order', uid=null;
 
-let cards = [];
-let currentSort = 'order';
-let uid = null;
+onAuthStateChanged(auth, u => { if(!u) return; uid=u.uid; loadCards(); });
 
-onAuthStateChanged(auth, u => {
-  if (!u) return;
-  uid = u.uid;
-  loadCards();
-});
-
-async function loadCards() {
-  const snap = await getDocs(collection(db, 'users', uid, 'cards'));
-  cards = [];
-  snap.forEach(d => cards.push({ id: d.id, ...d.data() }));
-  renderAll();
+async function loadCards(){
+  const snap=await getDocs(collection(db,'users',uid,'cards'));
+  cards=[]; snap.forEach(d=>cards.push({id:d.id,...d.data()})); renderAll();
 }
 
-function renderAll() {
-  sortCards();
-  renderSlider();
-  renderSummary();
-  document.getElementById('cardCount').textContent = `카드 ${cards.length}장`;
-  document.getElementById('emptyMsg').style.display = cards.length ? 'none' : '';
+function dday(dateStr){
+  if(!dateStr) return null;
+  const d=new Date(dateStr), now=new Date();
+  now.setHours(0,0,0,0); d.setHours(0,0,0,0);
+  return Math.ceil((d-now)/(86400000));
 }
 
-function sortCards() {
-  if (currentSort === 'spending') {
-    cards.sort((a, b) => (b.currentSpending || 0) - (a.currentSpending || 0));
-  } else if (currentSort === 'cancel') {
-    cards.sort((a, b) => {
-      const da = a.cancelDate || '9999';
-      const db2 = b.cancelDate || '9999';
-      return da < db2 ? -1 : da > db2 ? 1 : 0;
-    });
-  } else {
-    cards.sort((a, b) => (a.order || 0) - (b.order || 0));
-  }
+function renderAll(){
+  sortCards(); renderSlider(); renderSummary();
+  const totalBenefit=cards.reduce((s,c)=>s+(c.benefitAmount||0),0);
+  document.getElementById('cardCount').textContent=`카드 ${cards.length}장 · 예상 혜택 ${totalBenefit.toLocaleString()}원`;
+  document.getElementById('emptyMsg').style.display=cards.length?'none':'';
 }
 
-function renderSlider() {
-  const sl = document.getElementById('slider');
-  const dots = document.getElementById('dots');
-  sl.innerHTML = '';
-  dots.innerHTML = '';
-  cards.forEach((c, i) => {
-    sl.innerHTML += buildCard(c, i);
-    dots.innerHTML += `<div class="dot${i === 0 ? ' active' : ''}" data-i="${i}"></div>`;
+function sortCards(){
+  if(currentSort==='spending') cards.sort((a,b)=>(b.currentSpending||0)-(a.currentSpending||0));
+  else if(currentSort==='deadline') cards.sort((a,b)=>{const da=a.deadline||'9999',db2=b.deadline||'9999';return da<db2?-1:da>db2?1:0;});
+  else if(currentSort==='cancel') cards.sort((a,b)=>{const da=a.cancelAvail||'9999',db2=b.cancelAvail||'9999';return da<db2?-1:da>db2?1:0;});
+  else cards.sort((a,b)=>(a.order||0)-(b.order||0));
+}
+
+function renderSlider(){
+  const sl=document.getElementById('slider'), dots=document.getElementById('dots');
+  sl.innerHTML=''; dots.innerHTML='';
+  cards.forEach((c,i)=>{
+    sl.innerHTML+=buildCard(c,i);
+    dots.innerHTML+=`<div class="dot${i===0?' active':''}" data-i="${i}"></div>`;
   });
-  // Scroll observer for dots
-  const items = sl.querySelectorAll('.card-item');
-  if (!items.length) return;
-  const obs = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        const idx = e.target.dataset.idx;
-        dots.querySelectorAll('.dot').forEach(d => d.classList.toggle('active', d.dataset.i === idx));
-      }
-    });
-  }, { root: sl, threshold: 0.6 });
-  items.forEach(it => obs.observe(it));
+  const items=sl.querySelectorAll('.card-item');
+  if(!items.length) return;
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{if(e.isIntersecting){
+      const idx=e.target.dataset.idx;
+      dots.querySelectorAll('.dot').forEach(d=>d.classList.toggle('active',d.dataset.i===idx));
+    }});
+  },{root:sl,threshold:0.6});
+  items.forEach(it=>obs.observe(it));
 }
 
-function buildCard(c, idx) {
-  const issuerClass = `issuer-${c.issuer || '기타'}`;
-  const pct = c.monthlyTarget > 0 ? Math.round((c.currentSpending || 0) / c.monthlyTarget * 100) : 0;
-  const remain = (c.monthlyTarget || 0) - (c.currentSpending || 0);
-  const fillClass = pct >= 100 ? (pct > 100 ? 'over' : 'full') : '';
-  const fillW = Math.min(pct, 100);
-  const remainClass = remain > 0 ? 'under' : 'over';
-  const remainText = remain > 0 ? `${Math.abs(remain).toLocaleString()}원 남음` : remain === 0 ? '달성!' : `${Math.abs(remain).toLocaleString()}원 초과`;
-  const since = c.usageStart ? c.usageStart.replace(/-/g, '').substring(0, 6) : '';
-  const cancelledCls = c.cancelled ? ' cancelled' : '';
-  const cancelBadge = c.cancelled ? '<div class="cancel-badge">해지 완료</div>' : '';
+function buildCard(c,idx){
+  const ic=`issuer-${c.issuer||'기타'}`;
+  const pct=c.monthlyTarget>0?Math.round((c.currentSpending||0)/c.monthlyTarget*100):0;
+  const remain=(c.monthlyTarget||0)-(c.currentSpending||0);
+  const fillClass=pct>=100?(pct>100?'over':'full'):'';
+  const fillW=Math.min(pct,100);
+  const remainClass=remain>0?'under':'over';
+  const remainText=remain>0?`${remain.toLocaleString()}원 남음`:remain===0?'달성!':
+    `${Math.abs(remain).toLocaleString()}원 초과`;
+  const since=c.usageStart?c.usageStart.replace(/-/g,'').substring(0,6):'';
+  const cancelledCls=c.cancelled?' cancelled':'';
 
-  let infoHTML = '';
-  if (c.usageStart || c.usageEnd) {
-    infoHTML += `<div class="info-row"><span class="info-label">사용 기간</span><span class="info-val">${fmtDate(c.usageStart)} ~ ${fmtDate(c.usageEnd)}</span></div>`;
+  // D-day 배지
+  let badge='';
+  if(c.cancelled){
+    badge='<div class="cancel-badge">해지 완료</div>';
+  } else if(c.deadline){
+    const dd=dday(c.deadline);
+    if(dd!==null){
+      const urgent=dd<=7?'urgent':'';
+      badge=`<div class="card-dday ${urgent}">실적마감 ${dd>0?'D-'+dd:dd===0?'D-Day':'만료'}</div>`;
+    }
   }
-  if (c.benefitAmount) {
-    infoHTML += `<div class="info-row"><span class="info-label">받을 혜택</span><span class="info-val benefit">${(c.benefitAmount||0).toLocaleString()}원</span></div>`;
-    if (c.benefitDate) infoHTML += `<div class="info-row"><span class="info-label"></span><span class="info-val benefit-date">지급일: ${fmtDate(c.benefitDate)}</span></div>`;
+
+  let info='';
+  if(c.usageStart) info+=row('발급일',fmtD(c.usageStart));
+  if(c.deadline){
+    const dd=dday(c.deadline);
+    const ddText=dd!==null?` · ${dd>0?'D-'+dd:dd===0?'D-Day':'만료'}`:'';
+    info+=row('실적 마감일',fmtD(c.deadline)+ddText);
   }
-  if (c.cancelDate) {
-    infoHTML += `<div class="info-row" style="background:#fce4ec;border-radius:8px;padding:8px 12px;margin-top:4px"><span class="info-label" style="color:#e53935;font-weight:700">탈회 예정일</span><span class="info-val cancel-date">${fmtDate(c.cancelDate)}</span></div>`;
+  if(c.benefitAmount){
+    const cls=c.benefitDone?'done':'benefit';
+    const mark=c.benefitDone?'✅ ':'';
+    info+=`<div class="info-row"><span class="info-label">이벤트 혜택</span><span class="info-val ${cls}">${mark}${c.benefitAmount.toLocaleString()}원</span></div>`;
   }
-  if (c.memo) {
-    infoHTML += `<div class="memo-text">📝 ${c.memo}</div>`;
+  if(c.benefitDate) info+=row('혜택 지급일',fmtD(c.benefitDate));
+  if(c.cancelAvail){
+    const dd=dday(c.cancelAvail);
+    const ddText=dd!==null&&dd>0?` · D-${dd}`:(dd!==null&&dd<=0?' · 가능':'');
+    info+=`<div class="info-row alert-row"><span class="info-label">해지 가능일</span><span class="info-val cancel-date">${fmtD(c.cancelAvail)}${ddText}</span></div>`;
   }
+  if(c.nextEvent) info+=row('다음 이벤트 가능',fmtD(c.nextEvent),'dim');
+
+  const memoHTML=c.memo?`<div class="memo-text">📝 ${c.memo}</div>`:'';
 
   return `<div class="card-item" data-idx="${idx}">
-  <div class="card-visual ${issuerClass}${cancelledCls}" onclick="window._editCard('${c.id}')">
-    <div class="card-top">${cancelBadge}
-      <div class="card-issuer">${c.issuer || ''}</div>
+  <div class="card-visual ${ic}${cancelledCls}" onclick="window._editCard('${c.id}')">
+    <div class="card-top">${badge}
+      <div class="card-issuer">${c.issuer||''}</div>
       <div class="card-chip"></div>
-      <div class="card-name">${c.cardName || ''}</div>
-      ${since ? `<div class="card-since">MEMBER SINCE ${since}</div>` : ''}
+      <div class="card-name">${c.cardName||''}</div>
+      ${since?`<div class="card-since">MEMBER SINCE ${since}</div>`:''}
     </div>
     <div class="card-bottom">
       <div class="spending-label">이번 달 지출</div>
-      <div class="spending-amount">${(c.currentSpending || 0).toLocaleString()}원</div>
+      <div class="spending-amount">${(c.currentSpending||0).toLocaleString()}원</div>
       <div class="progress-row">
         <span class="progress-label">실적 달성률</span>
         <span class="progress-remain ${remainClass}">${remainText}</span>
       </div>
       <div class="progress-bar"><div class="progress-fill ${fillClass}" style="width:${fillW}%"></div></div>
-      ${infoHTML ? `<div class="card-info">${infoHTML}</div>` : ''}
+      ${info?`<div class="card-info">${info}</div>`:''}
+      ${memoHTML}
     </div>
   </div>
 </div>`;
 }
 
-function fmtDate(d) {
-  if (!d) return '';
-  return d.replace(/-/g, '.');
-}
+function row(l,v,cls){return `<div class="info-row"><span class="info-label">${l}</span><span class="info-val${cls?' '+cls:''}">${v}</span></div>`;}
+function fmtD(d){return d?d.replace(/-/g,'.'):''}
 
-function renderSummary() {
-  const total = cards.reduce((s, c) => s + (c.currentSpending || 0), 0);
-  const totalBenefit = cards.reduce((s, c) => s + (c.benefitAmount || 0), 0);
-  const totalFee = cards.reduce((s, c) => s + (c.annualFee || 0), 0);
-  const active = cards.filter(c => !c.cancelled).length;
-  document.getElementById('summary').innerHTML = `
+function renderSummary(){
+  const total=cards.reduce((s,c)=>s+(c.currentSpending||0),0);
+  const totalB=cards.reduce((s,c)=>s+(c.benefitAmount||0),0);
+  const totalF=cards.reduce((s,c)=>s+(c.annualFee||0),0);
+  const active=cards.filter(c=>!c.cancelled).length;
+  document.getElementById('summary').innerHTML=`
     <div class="summary-chip"><span style="color:#888">총 지출</span><span class="sv">${total.toLocaleString()}원</span></div>
-    <div class="summary-chip"><span style="color:#888">총 혜택</span><span class="sv" style="color:#1976d2">${totalBenefit.toLocaleString()}원</span></div>
-    <div class="summary-chip"><span style="color:#888">연회비 합계</span><span class="sv">${totalFee.toLocaleString()}원</span></div>
-    <div class="summary-chip"><span style="color:#888">활성 카드</span><span class="sv">${active}장</span></div>
-  `;
+    <div class="summary-chip"><span style="color:#888">총 혜택</span><span class="sv" style="color:#1976d2">${totalB.toLocaleString()}원</span></div>
+    <div class="summary-chip"><span style="color:#888">연회비</span><span class="sv">${totalF.toLocaleString()}원</span></div>
+    <div class="summary-chip"><span style="color:#888">활성</span><span class="sv">${active}장</span></div>`;
 }
 
-// Modal
-window.openModal = function(id) {
+const FIELDS=['fIssuer','fName','fTarget','fSpending','fBenefit','fFee','fStart','fDeadline','fBenefitDate','fCancelAvail','fNextEvent','fMemo','fBenefitDone','fCancelled'];
+window.openModal=function(){
   document.getElementById('modal').classList.add('show');
-  document.getElementById('editId').value = '';
-  document.getElementById('modalTitle').textContent = '카드 추가';
-  document.getElementById('btnDel').style.display = 'none';
-  document.getElementById('cancelledField').style.display = 'none';
-  ['fIssuer','fName','fTarget','fSpending','fStart','fEnd','fBenefit','fBenefitDate','fFee','fCancel','fMemo'].forEach(id2 => {
-    const el = document.getElementById(id2);
-    if (el.type === 'checkbox') el.checked = false;
-    else el.value = '';
-  });
+  document.getElementById('editId').value='';
+  document.getElementById('modalTitle').textContent='카드 등록';
+  document.getElementById('btnDel').style.display='none';
+  document.getElementById('cancelledField').style.display='none';
+  FIELDS.forEach(id=>{const el=document.getElementById(id);if(el.type==='checkbox')el.checked=false;else el.value='';});
 };
 
-window._editCard = function(id) {
-  const c = cards.find(x => x.id === id);
-  if (!c) return;
+window._editCard=function(id){
+  const c=cards.find(x=>x.id===id);if(!c) return;
   document.getElementById('modal').classList.add('show');
-  document.getElementById('editId').value = id;
-  document.getElementById('modalTitle').textContent = '카드 수정';
-  document.getElementById('btnDel').style.display = '';
-  document.getElementById('cancelledField').style.display = '';
-  document.getElementById('fIssuer').value = c.issuer || '기타';
-  document.getElementById('fName').value = c.cardName || '';
-  document.getElementById('fTarget').value = c.monthlyTarget || '';
-  document.getElementById('fSpending').value = c.currentSpending || '';
-  document.getElementById('fStart').value = c.usageStart || '';
-  document.getElementById('fEnd').value = c.usageEnd || '';
-  document.getElementById('fBenefit').value = c.benefitAmount || '';
-  document.getElementById('fBenefitDate').value = c.benefitDate || '';
-  document.getElementById('fFee').value = c.annualFee || '';
-  document.getElementById('fCancel').value = c.cancelDate || '';
-  document.getElementById('fMemo').value = c.memo || '';
-  document.getElementById('fCancelled').checked = !!c.cancelled;
+  document.getElementById('editId').value=id;
+  document.getElementById('modalTitle').textContent='카드 수정';
+  document.getElementById('btnDel').style.display='';
+  document.getElementById('cancelledField').style.display='';
+  document.getElementById('fIssuer').value=c.issuer||'기타';
+  document.getElementById('fName').value=c.cardName||'';
+  document.getElementById('fTarget').value=c.monthlyTarget||'';
+  document.getElementById('fSpending').value=c.currentSpending||'';
+  document.getElementById('fBenefit').value=c.benefitAmount||'';
+  document.getElementById('fFee').value=c.annualFee||'';
+  document.getElementById('fStart').value=c.usageStart||'';
+  document.getElementById('fDeadline').value=c.deadline||'';
+  document.getElementById('fBenefitDate').value=c.benefitDate||'';
+  document.getElementById('fCancelAvail').value=c.cancelAvail||'';
+  document.getElementById('fNextEvent').value=c.nextEvent||'';
+  document.getElementById('fMemo').value=c.memo||'';
+  document.getElementById('fBenefitDone').checked=!!c.benefitDone;
+  document.getElementById('fCancelled').checked=!!c.cancelled;
 };
 
-window.closeModal = function() {
-  document.getElementById('modal').classList.remove('show');
-};
+window.closeModal=function(){document.getElementById('modal').classList.remove('show');};
 
-window.saveCard = async function() {
-  const editId = document.getElementById('editId').value;
-  const data = {
-    issuer: document.getElementById('fIssuer').value,
-    cardName: document.getElementById('fName').value.trim(),
-    monthlyTarget: parseInt(document.getElementById('fTarget').value) || 0,
-    currentSpending: parseInt(document.getElementById('fSpending').value) || 0,
-    usageStart: document.getElementById('fStart').value,
-    usageEnd: document.getElementById('fEnd').value,
-    benefitAmount: parseInt(document.getElementById('fBenefit').value) || 0,
-    benefitDate: document.getElementById('fBenefitDate').value,
-    annualFee: parseInt(document.getElementById('fFee').value) || 0,
-    cancelDate: document.getElementById('fCancel').value,
-    memo: document.getElementById('fMemo').value.trim(),
-    cancelled: document.getElementById('fCancelled').checked,
-    updatedAt: Timestamp.now()
+window.saveCard=async function(){
+  const editId=document.getElementById('editId').value;
+  const data={
+    issuer:document.getElementById('fIssuer').value,
+    cardName:document.getElementById('fName').value.trim(),
+    monthlyTarget:parseInt(document.getElementById('fTarget').value)||0,
+    currentSpending:parseInt(document.getElementById('fSpending').value)||0,
+    benefitAmount:parseInt(document.getElementById('fBenefit').value)||0,
+    annualFee:parseInt(document.getElementById('fFee').value)||0,
+    usageStart:document.getElementById('fStart').value,
+    deadline:document.getElementById('fDeadline').value,
+    benefitDate:document.getElementById('fBenefitDate').value,
+    cancelAvail:document.getElementById('fCancelAvail').value,
+    nextEvent:document.getElementById('fNextEvent').value,
+    memo:document.getElementById('fMemo').value.trim(),
+    benefitDone:document.getElementById('fBenefitDone').checked,
+    cancelled:document.getElementById('fCancelled').checked,
+    updatedAt:Timestamp.now()
   };
-  if (!data.cardName) { alert('카드명을 입력하세요.'); return; }
-
-  if (editId) {
-    await setDoc(doc(db, 'users', uid, 'cards', editId), data, { merge: true });
+  if(!data.cardName){alert('카드명을 입력하세요.');return;}
+  if(editId){
+    await setDoc(doc(db,'users',uid,'cards',editId),data,{merge:true});
   } else {
-    data.order = cards.length;
-    data.createdAt = Timestamp.now();
-    const newId = 'card_' + Date.now();
-    await setDoc(doc(db, 'users', uid, 'cards', newId), data);
+    data.order=cards.length;
+    data.createdAt=Timestamp.now();
+    await setDoc(doc(db,'users',uid,'cards','card_'+Date.now()),data);
   }
-  closeModal();
-  await loadCards();
+  closeModal(); await loadCards();
 };
 
-window.deleteCard = async function() {
-  const editId = document.getElementById('editId').value;
-  if (!editId) return;
-  if (!confirm('이 카드를 삭제할까요?')) return;
-  await deleteDoc(doc(db, 'users', uid, 'cards', editId));
-  closeModal();
-  await loadCards();
+window.deleteCard=async function(){
+  const editId=document.getElementById('editId').value;
+  if(!editId||!confirm('이 카드를 삭제할까요?')) return;
+  await deleteDoc(doc(db,'users',uid,'cards',editId));
+  closeModal(); await loadCards();
 };
 
-window.setSort = function(s) {
-  currentSort = s;
-  document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === s));
+window.setSort=function(s){
+  currentSort=s;
+  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.toggle('active',b.dataset.sort===s));
   renderAll();
 };
 
-// Close modal on backdrop click
-document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) closeModal(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 </script>
 <script src="/common.js?v=5"></script>
 </body>
