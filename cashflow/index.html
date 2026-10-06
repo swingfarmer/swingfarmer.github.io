@@ -63,10 +63,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   /* Ref note */
   .ref-note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 14px; font-size: 12.5px; color: #92400e; margin-bottom: 14px; line-height: 1.6; }
   /* Cloud area */
-  .cloud-area { display: none; align-items: center; gap: 8px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; flex-wrap: wrap; }
-  .cloud-area.on { display: flex; }
-  .cloud-lbl { font-size: 12px; font-weight: 700; color: #0369a1; }
-  #cloudWho { font-size: 11.5px; color: #0369a1; }
+
   #saveStatus { font-size: 11.5px; color: #0369a1; margin-left: 4px; }
   #saveStatus.dirty { color: #b45309; }
   #saveStatus.saving { color: #0369a1; }
@@ -86,17 +83,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
 </header>
 
 <div class="wrap">
-  <p class="desc">월별 수입·지출을 카테고리별로 기록하고 <b>연간 순증감·저축률</b>을 확인. 유튜브 파이어족 사례가 <b>참고사례</b> 탭에 벤치마크로 들어있습니다. 데이터는 이 브라우저에 저장되며, 관리자 로그인 시 클라우드 자동 동기화(800ms 디바운스).</p>
-
-  <!-- Cloud status (admin only) -->
-  <div id="cloudArea" class="cloud-area">
-    <span class="cloud-lbl">☁️ 관리자</span>
-    <span id="cloudWho"></span>
-    <span id="saveStatus"></span>
-    <button id="btnCloudLogout" class="btn btn-gray" type="button" style="margin-left:auto">로그아웃</button>
-  </div>
-  <button id="btnAdminLogin" class="btn" type="button" style="display:none;background:#fff;color:#444;border:1px solid #ddd;margin-bottom:12px">🔑 관리자 로그인</button>
-  <div id="uidInfo" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:13px;color:#92400e;margin-bottom:12px;line-height:1.7"></div>
+  <p class="desc">월별 수입·지출을 카테고리별로 기록하고 <b>연간 순증감·저축률</b>을 확인. 유튜브 파이어족 사례가 <b>참고사례</b> 탭에 벤치마크로 들어있습니다. 저장 관리(💾 버튼)로 시나리오 저장·비교 가능.</p>
 
   <!-- Controls -->
   <div class="panel">
@@ -171,130 +158,22 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   <footer>© 스윙파머 · 현금흐름</footer>
 </div>
 
-<script type="module">
-// ============= Firebase =============
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
-  authDomain: "swingfarmer-board01.firebaseapp.com",
-  projectId: "swingfarmer-board01",
-  storageBucket: "swingfarmer-board01.firebasestorage.app",
-  messagingSenderId: "312575044644",
-  appId: "1:312575044644:web:81d754eb1d90f25454fcb1"
+<script>
+window.CALC_KEY = 'cashflow';
+window.slGetState = function(){ return { years: state.years, threshold: state.threshold }; };
+window.slSetState = function(d){
+  if(!d) return;
+  if(d.years && typeof d.years === 'object') state.years = d.years;
+  if(typeof d.threshold === 'number') state.threshold = d.threshold;
+  var ti = document.getElementById('thresholdInput');
+  if(ti && typeof fmt === 'function') ti.value = fmt(state.threshold);
+  if(typeof renderAll === 'function') renderAll();
 };
-const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1";
-const CALC_KEY = "cashflow";
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
-provider.setCustomParameters({ prompt: 'select_account' });
+</script>
+<script src="/sf-slots.js?v=1"></script>
+<script>
 const gid = id => document.getElementById(id);
 
-let currentUser = null;
-let cloudReady = false;
-let pushTimer = null;
-
-getRedirectResult(auth).catch(()=>{});
-if (location.hash === '#admin' || location.hash === '#관리자') {
-  gid('btnAdminLogin').style.display = 'inline-block';
-}
-
-gid('btnAdminLogin').addEventListener('click', async () => {
-  try { await signInWithPopup(auth, provider); }
-  catch (e) {
-    const code = e && e.code;
-    if (code === 'auth/popup-blocked' || code === 'auth/cancelled-popup-request' || code === 'auth/popup-closed-by-user' || code === 'auth/operation-not-supported-in-this-environment') {
-      try { await signInWithRedirect(auth, provider); } catch (e2) { alert('로그인 실패: ' + e2.message); }
-    } else { alert('로그인 실패: ' + (e.message || code)); }
-  }
-});
-gid('btnCloudLogout').addEventListener('click', async () => {
-  if (confirm('로그아웃 하시겠어요?')) { try { await signOut(auth); } catch (e) {} }
-});
-window._cfSignout = () => signOut(auth);
-
-const docRef = () => doc(db, 'calc_data', ADMIN_UID);
-
-async function cloudPull() {
-  try {
-    const snap = await getDoc(docRef());
-    if (snap.exists() && snap.data()[CALC_KEY]) {
-      const cloud = snap.data()[CALC_KEY];
-      if (cloud.years && typeof cloud.years === 'object') {
-        state.years = Object.assign({}, state.years, cloud.years);
-      }
-      if (typeof cloud.threshold === 'number') state.threshold = cloud.threshold;
-      saveLocal();
-    }
-  } catch (e) { console.log('cloud pull fail:', e.message); }
-}
-
-async function cloudPush() {
-  if (!cloudReady) return;
-  setSaveStatus('saving');
-  try {
-    await setDoc(docRef(), { [CALC_KEY]: { years: state.years, threshold: state.threshold, updatedAt: new Date().toISOString() } }, { merge: true });
-    setSaveStatus('saved');
-  } catch (e) {
-    console.log('cloud push fail:', e.message);
-    setSaveStatus('error');
-  }
-}
-
-function schedulePush() {
-  if (!cloudReady) return;
-  setSaveStatus('dirty');
-  clearTimeout(pushTimer);
-  pushTimer = setTimeout(cloudPush, 800);
-}
-
-function setSaveStatus(status) {
-  const el = gid('saveStatus');
-  if (!el) return;
-  el.className = '';
-  if (status === 'dirty') { el.textContent = '· 저장 대기'; el.className = 'dirty'; }
-  else if (status === 'saving') { el.textContent = '· 저장 중...'; el.className = 'saving'; }
-  else if (status === 'saved') { el.textContent = '· ☁️ 동기화됨'; }
-  else if (status === 'error') { el.textContent = '· ⚠️ 저장 실패'; el.className = 'error'; }
-  else { el.textContent = ''; }
-}
-
-onAuthStateChanged(auth, async user => {
-  currentUser = user;
-  const isAdmin = user && user.uid === ADMIN_UID;
-  if (isAdmin) {
-    gid('cloudArea').classList.add('on');
-    gid('btnAdminLogin').style.display = 'none';
-    gid('cloudWho').textContent = '☁️ ' + (user.displayName || user.email || '관리자');
-    if (gid('uidInfo')) gid('uidInfo').style.display = 'none';
-    await cloudPull();
-    thresholdInput.value = fmt(state.threshold);
-    renderAll();
-    cloudReady = true;
-    setSaveStatus('saved');
-    cloudPush(); // 로그인 전 로컬 편집분이 있으면 함께 올려둠
-  } else if (user && !isAdmin) {
-    gid('cloudArea').classList.remove('on');
-    gid('btnAdminLogin').style.display = 'none';
-    const box = gid('uidInfo');
-    if (box) {
-      box.style.display = 'block';
-      box.innerHTML = '로그인됨: <b>' + (user.email || '') + '</b><br>이 계정 UID:<br><code style="font-size:11px;word-break:break-all">' + user.uid + '</code><br><button onclick="window._cfSignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer;margin-top:4px">로그아웃</button>';
-    }
-    cloudReady = false;
-  } else {
-    cloudReady = false;
-    gid('cloudArea').classList.remove('on');
-    if (gid('uidInfo')) gid('uidInfo').style.display = 'none';
-  }
-});
-
-// ============= Schema =============
-const STORE_KEY = 'sf_cashflow_v1';
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const SCHEMA = {
   income: [
@@ -425,19 +304,7 @@ function parseNum(s) {
 }
 
 // ============= LocalStorage =============
-function loadLocal() {
-  try {
-    const raw = localStorage.getItem(STORE_KEY);
-    if (raw) {
-      const d = JSON.parse(raw);
-      if (d.years && typeof d.years === 'object') state.years = d.years;
-      if (typeof d.threshold === 'number') state.threshold = d.threshold;
-    }
-  } catch (e) {}
-}
-function saveLocal() {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
-}
+
 
 // ============= Aggregations =============
 function catSum(src, section, key) {
@@ -615,8 +482,7 @@ function renderActiveTab() {
 function renderAll() { renderActiveTab(); }
 
 function onChange() {
-  saveLocal();
-  schedulePush();
+  renderAll();
 }
 
 // ============= Handlers =============
@@ -667,7 +533,6 @@ gid('btnClearYear').addEventListener('click', () => {
 });
 
 // ============= Init =============
-loadLocal();
 thresholdInput.value = fmt(state.threshold) || '0';
 renderAll();
 </script>
