@@ -158,15 +158,12 @@
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 
-const app = initializeApp({
-  apiKey:"AIzaSyBgczBnJSdOPl0IxSJkynFcDGmV52W_eAQ",
-  authDomain:"swingfarmer-board01.firebaseapp.com",
-  projectId:"swingfarmer-board01"
-});
+/* common.js _sfFirebaseReady에서 config 가져옴 — API 키 인라인 제거 */
+const app = getApps().length ? getApps()[0] : initializeApp(_sfFirebaseReady.FB_CFG);
 const db = getFirestore(app);
 const auth = getAuth(app);
 let cards=[], currentSort='order', uid=null;
