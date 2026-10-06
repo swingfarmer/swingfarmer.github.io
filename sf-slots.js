@@ -327,6 +327,9 @@ async function doSave(){
 
 // ── 공개 API ──
 window._sfSlots = {
+  // 외부에서 슬롯 목록 조회 (읽기 전용)
+  getSlots: function(){ return loadSlots(); },
+
   open: async function(){
     if(!window._sfAuth || !window._sfAuth.currentUser || window._sfAuth.currentUser.uid !== ADMIN_UID){
       alert('관리자 로그인이 필요합니다.');
