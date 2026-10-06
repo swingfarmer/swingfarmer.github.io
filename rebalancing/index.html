@@ -74,6 +74,36 @@
 .modal.show{display:flex}
 .modal-box{background:white;border-radius:14px;padding:24px;width:90%;max-width:460px;max-height:80vh;overflow-y:auto}
 .loaded-slot{display:none;background:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:13px;color:#1e40af;font-weight:600}
+/* 히스토리 비교 */
+.hist-btn{background:#1F4E78;color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:18px}
+.hist-btn:hover{background:#2d6ba3}
+.hist-panel{display:none;margin-bottom:18px}
+.hist-panel.open{display:block}
+.hist-list{max-height:320px;overflow-y:auto;margin-bottom:12px}
+.hist-slot{display:flex;align-items:center;gap:10px;padding:10px 14px;margin:4px 0;border-radius:8px;background:#fafafa;border:1px solid #f0f0f0;cursor:pointer;transition:all .15s}
+.hist-slot:hover{background:#f0f5fa;border-color:#93c5fd}
+.hist-slot.checked{background:#eef4ff;border-color:#007AFF}
+.hist-slot input[type=checkbox]{width:18px;height:18px;accent-color:#007AFF;cursor:pointer}
+.hist-slot-info{flex:1;min-width:0}
+.hist-slot-name{font-size:14px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist-slot-meta{font-size:11px;color:#999;margin-top:2px}
+.hist-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hist-compare-btn{background:#007AFF;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.hist-compare-btn:disabled{background:#ccc;cursor:default}
+.hist-compare-btn:hover:not(:disabled){background:#0066D6}
+.hist-msg{font-size:12px;color:#888}
+.cmp-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
+.cmp-table th{background:#f0f5fa;padding:8px 10px;text-align:right;font-weight:700;color:#1F4E78;border-bottom:2px solid #e0e4eb;white-space:nowrap}
+.cmp-table th:first-child{text-align:left}
+.cmp-table td{padding:7px 10px;text-align:right;border-bottom:1px solid #eee}
+.cmp-table td:first-child{text-align:left;font-weight:600;color:#444}
+.cmp-table tr.cmp-group td{background:#f0f5fa;font-weight:700;color:#1F4E78;border-top:2px solid #e0e4eb}
+.cmp-table tr.cmp-total td{background:#1F4E78;color:#fff;font-weight:700}
+.cmp-diff-pos{color:#dc2626;font-weight:600}
+.cmp-diff-neg{color:#0369a1;font-weight:600}
+.cmp-chart-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:18px 0}
+@media(max-width:800px){.cmp-chart-row{grid-template-columns:1fr}}
+.cmp-chart-box{position:relative;height:280px;width:100%}
 @media(max-width:600px){
   .summary-cards{grid-template-columns:repeat(2,1fr)}
   .item-row{grid-template-columns:1fr 55px 110px 26px;gap:4px}
@@ -370,7 +400,314 @@ if(!groups.length)initDefault();
 renderGroups();
 recalc();
 try{var prev=localStorage.getItem('sf_rb_loaded_slot');if(prev)window._showLoadedSlot(prev);}catch(e){}
+
+// ── 히스토리 비교 ──
+var _histSlots = [];
+var _histChecked = new Set();
+var _histChartBar = null, _histChartPie = null;
+
+async function histLoad(){
+  var btn = gid('histLoadBtn');
+  btn.textContent = '불러오는 중…';
+  btn.disabled = true;
+  try {
+    if(!window._sfSlots || !window._sfSlots.getSlots){
+      alert('sf-slots.js가 로드되지 않았습니다.');
+      return;
+    }
+    _histSlots = await window._sfSlots.getSlots();
+    if(!_histSlots.length){
+      alert('저장된 슬롯이 없습니다.\n먼저 리밸런싱 결과를 저장하세요.');
+      return;
+    }
+    // 날짜순 정렬 (최신 먼저)
+    _histSlots.sort(function(a,b){ return (b.savedAt||'').localeCompare(a.savedAt||''); });
+    _histChecked.clear();
+    gid('histPanel').classList.add('open');
+    gid('histResult').innerHTML = '';
+    histRender();
+  } catch(e) {
+    alert('슬롯 불러오기 실패: ' + e.message);
+  }
+  btn.textContent = '슬롯 불러오기';
+  btn.disabled = false;
+}
+
+function histRender(){
+  var box = gid('histList');
+  if(!_histSlots.length){ box.innerHTML = '<div style="text-align:center;color:#999;padding:20px">저장된 슬롯이 없습니다.</div>'; return; }
+  box.innerHTML = _histSlots.map(function(s, i){
+    var checked = _histChecked.has(i);
+    var dt = s.savedAt ? histFmtDate(s.savedAt) : '날짜 없음';
+    // 간단 요약: 총 평가액
+    var totalVal = 0;
+    if(s.data && s.data.groups){
+      s.data.groups.forEach(function(g){ if(g.items) g.items.forEach(function(it){ totalVal += (it.currentVal||0); }); });
+    }
+    return '<label class="hist-slot' + (checked?' checked':'') + '" onclick="histToggle('+i+',event)">'
+      + '<input type="checkbox" ' + (checked?'checked':'') + ' data-idx="'+i+'">'
+      + '<div class="hist-slot-info">'
+      + '<div class="hist-slot-name">' + esc(s.name||'(이름없음)') + '</div>'
+      + '<div class="hist-slot-meta">' + dt + ' · 평가 ' + fmtWon(totalVal) + '</div>'
+      + '</div></label>';
+  }).join('');
+  histUpdateBtn();
+}
+
+function histToggle(idx, e){
+  if(e) e.preventDefault();
+  if(_histChecked.has(idx)){
+    _histChecked.delete(idx);
+  } else {
+    if(_histChecked.size >= 3){
+      gid('histMsg').textContent = '최대 3개까지 선택 가능';
+      return;
+    }
+    _histChecked.add(idx);
+  }
+  histRender();
+}
+
+function histUpdateBtn(){
+  var n = _histChecked.size;
+  var btn = gid('histCompareBtn');
+  var msg = gid('histMsg');
+  if(n < 2){ btn.disabled = true; msg.textContent = '2~3개를 선택하세요 (현재 '+n+'개)'; }
+  else { btn.disabled = false; msg.textContent = n + '개 선택됨'; }
+}
+
+function histFmtDate(iso){
+  var d = new Date(iso);
+  return d.getFullYear()+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
+function histCompare(){
+  var selected = [];
+  _histChecked.forEach(function(idx){ selected.push(_histSlots[idx]); });
+  // 시간순 정렬 (오래된→최신)
+  selected.sort(function(a,b){ return (a.savedAt||'').localeCompare(b.savedAt||''); });
+
+  // 모든 자산군 이름 수집 (순서 유지)
+  var allGroups = [];
+  var groupSet = {};
+  selected.forEach(function(s){
+    if(!s.data||!s.data.groups) return;
+    s.data.groups.forEach(function(g){
+      var nm = g.name||'(미입력)';
+      if(!groupSet[nm]){ groupSet[nm]=true; allGroups.push(nm); }
+    });
+  });
+
+  // 슬롯별 데이터 추출
+  var snapshots = selected.map(function(s){
+    var d = s.data || {};
+    var gs = d.groups || [];
+    var extra = parseNum(d.extraCash);
+    var totalVal = 0;
+    var byGroup = {};
+    gs.forEach(function(g){
+      var nm = g.name||'(미입력)';
+      var gVal = 0;
+      (g.items||[]).forEach(function(it){ gVal += (it.currentVal||0); });
+      totalVal += gVal;
+      byGroup[nm] = { val: gVal, targetPct: g.targetPct||0, items: g.items||[] };
+    });
+    return { name: s.name, savedAt: s.savedAt, extra: extra, totalVal: totalVal, totalWithExtra: totalVal+extra, byGroup: byGroup };
+  });
+
+  // 비교 테이블 생성
+  var cols = snapshots.length;
+  var html = '<h3 style="margin:18px 0 8px">📊 비교 결과</h3>';
+
+  // 차트 영역
+  html += '<div class="cmp-chart-row">';
+  html += '<div class="panel"><h3 style="font-size:14px;margin-bottom:8px">자산군 평가액 비교</h3><div class="cmp-chart-box"><canvas id="histChartBar"></canvas></div></div>';
+  html += '<div class="panel"><h3 style="font-size:14px;margin-bottom:8px">비중 변화</h3><div class="cmp-chart-box"><canvas id="histChartPie"></canvas></div></div>';
+  html += '</div>';
+
+  html += '<div style="overflow-x:auto"><table class="cmp-table"><thead><tr><th>구분</th>';
+  snapshots.forEach(function(sn){
+    var dt = sn.savedAt ? histFmtDate(sn.savedAt) : '';
+    html += '<th>' + esc(sn.name||'(이름없음)') + '<br><span style="font-weight:400;font-size:11px;color:#888">' + dt + '</span></th>';
+  });
+  // 차이 컬럼 (2개일 때만)
+  if(cols === 2){
+    html += '<th>변화</th>';
+  }
+  html += '</tr></thead><tbody>';
+
+  // 총 평가액
+  html += '<tr><td>총 평가액</td>';
+  snapshots.forEach(function(sn){ html += '<td>' + fmtWon(sn.totalVal) + '</td>'; });
+  if(cols===2){
+    var diff = snapshots[1].totalVal - snapshots[0].totalVal;
+    html += '<td class="'+(diff>=0?'cmp-diff-pos':'cmp-diff-neg')+'">'+(diff>=0?'+':'')+fmtWon(diff)+'</td>';
+  }
+  html += '</tr>';
+
+  // 추가투자금
+  html += '<tr><td>추가투자금</td>';
+  snapshots.forEach(function(sn){ html += '<td>' + (sn.extra?fmtWon(sn.extra):'-') + '</td>'; });
+  if(cols===2){
+    var diffE = snapshots[1].extra - snapshots[0].extra;
+    html += '<td>'+(diffE?((diffE>=0?'+':'')+fmtWon(diffE)):'-')+'</td>';
+  }
+  html += '</tr>';
+
+  // 기준 총액
+  html += '<tr><td>기준 총액 (포함)</td>';
+  snapshots.forEach(function(sn){ html += '<td>' + fmtWon(sn.totalWithExtra) + '</td>'; });
+  if(cols===2){
+    var diffT = snapshots[1].totalWithExtra - snapshots[0].totalWithExtra;
+    html += '<td class="'+(diffT>=0?'cmp-diff-pos':'cmp-diff-neg')+'">'+(diffT>=0?'+':'')+fmtWon(diffT)+'</td>';
+  }
+  html += '</tr>';
+
+  // 자산군별
+  allGroups.forEach(function(gName){
+    html += '<tr class="cmp-group"><td>' + esc(gName) + '</td>';
+    snapshots.forEach(function(sn){
+      var g = sn.byGroup[gName];
+      if(g){
+        var pct = sn.totalWithExtra>0 ? (g.val/sn.totalWithExtra*100).toFixed(1) : '0.0';
+        html += '<td>' + fmtWon(g.val) + ' <span style="font-size:11px;color:#888">(' + pct + '%)</span></td>';
+      } else {
+        html += '<td style="color:#ccc">-</td>';
+      }
+    });
+    if(cols===2){
+      var g0 = snapshots[0].byGroup[gName], g1 = snapshots[1].byGroup[gName];
+      var v0 = g0?g0.val:0, v1 = g1?g1.val:0;
+      var dv = v1 - v0;
+      html += '<td class="'+(dv>=0?'cmp-diff-pos':'cmp-diff-neg')+'">'+(dv>=0?'+':'')+fmtWon(dv)+'</td>';
+    }
+    html += '</tr>';
+
+    // 종목별 (all items across snapshots)
+    var allItems = {};
+    snapshots.forEach(function(sn){
+      var g = sn.byGroup[gName];
+      if(g && g.items) g.items.forEach(function(it){
+        var nm = it.name||'(미입력)';
+        if(!allItems[nm]) allItems[nm] = true;
+      });
+    });
+    Object.keys(allItems).forEach(function(itName){
+      html += '<tr><td style="padding-left:24px;color:#666">└ ' + esc(itName) + '</td>';
+      snapshots.forEach(function(sn){
+        var g = sn.byGroup[gName];
+        var found = null;
+        if(g && g.items) g.items.forEach(function(it){ if((it.name||'(미입력)')===itName) found=it; });
+        if(found){
+          html += '<td>' + fmtWon(found.currentVal||0) + '</td>';
+        } else {
+          html += '<td style="color:#ccc">-</td>';
+        }
+      });
+      if(cols===2){
+        var f0=null, f1=null;
+        var ga = snapshots[0].byGroup[gName], gb = snapshots[1].byGroup[gName];
+        if(ga&&ga.items) ga.items.forEach(function(it){ if((it.name||'(미입력)')===itName) f0=it; });
+        if(gb&&gb.items) gb.items.forEach(function(it){ if((it.name||'(미입력)')===itName) f1=it; });
+        var va = f0?(f0.currentVal||0):0, vb = f1?(f1.currentVal||0):0;
+        var dd = vb - va;
+        html += '<td class="'+(dd>=0?'cmp-diff-pos':'cmp-diff-neg')+'">'+(dd>=0?'+':'')+fmtWon(dd)+'</td>';
+      }
+      html += '</tr>';
+    });
+  });
+
+  html += '</tbody></table></div>';
+
+  gid('histResult').innerHTML = html;
+
+  // 차트 렌더
+  histRenderCharts(snapshots, allGroups);
+
+  // 스크롤
+  gid('histResult').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function histRenderCharts(snapshots, allGroups){
+  if(_histChartBar) _histChartBar.destroy();
+  if(_histChartPie) _histChartPie.destroy();
+  if(!allGroups.length) return;
+
+  var colors = ['#1F4E78','#2563eb','#10b981','#f59e0b','#dc2626','#8b5cf6','#ec4899','#06b6d4'];
+
+  // 바 차트: 자산군별 평가액 비교
+  var barDatasets = snapshots.map(function(sn, si){
+    return {
+      label: sn.name || '슬롯'+(si+1),
+      data: allGroups.map(function(gName){ var g=sn.byGroup[gName]; return g?g.val:0; }),
+      backgroundColor: colors[si % colors.length] + (si===0?'CC':'88'),
+      borderRadius: 4
+    };
+  });
+  var barEl = document.getElementById('histChartBar');
+  if(barEl){
+    _histChartBar = new Chart(barEl, {
+      type:'bar',
+      data:{ labels: allGroups, datasets: barDatasets },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ position:'top', labels:{ font:{ size:12 } } } },
+        scales:{ y:{ beginAtZero:true, ticks:{ callback:function(v){
+          if(v>=100000000) return (v/100000000).toFixed(0)+'억';
+          if(v>=10000) return (v/10000).toFixed(0)+'만';
+          return v;
+        }}}}
+      }
+    });
+  }
+
+  // 라인 차트 or 그룹 바: 비중 변화
+  var pctDatasets = allGroups.map(function(gName, gi){
+    return {
+      label: gName,
+      data: snapshots.map(function(sn){ var g=sn.byGroup[gName]; return g&&sn.totalWithExtra>0 ? Math.round(g.val/sn.totalWithExtra*1000)/10 : 0; }),
+      backgroundColor: colors[gi % colors.length],
+      borderColor: colors[gi % colors.length],
+      borderWidth: 2,
+      fill: false,
+      tension: 0.3
+    };
+  });
+  var pctLabels = snapshots.map(function(sn){ return sn.name||''; });
+  var pieEl = document.getElementById('histChartPie');
+  if(pieEl){
+    _histChartPie = new Chart(pieEl, {
+      type: snapshots.length === 2 ? 'bar' : 'bar',
+      data:{ labels: pctLabels, datasets: allGroups.map(function(gName, gi){
+        return {
+          label: gName,
+          data: snapshots.map(function(sn){ var g=sn.byGroup[gName]; return g&&sn.totalWithExtra>0 ? Math.round(g.val/sn.totalWithExtra*1000)/10 : 0; }),
+          backgroundColor: colors[gi % colors.length],
+          borderRadius: 3
+        };
+      })},
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ position:'top', labels:{ font:{ size:11 } } } },
+        scales:{ x:{ stacked:true }, y:{ stacked:true, max:100, ticks:{ callback:function(v){return v+'%';} } } }
+      }
+    });
+  }
+}
 </script>
+
+<!-- 히스토리 비교 -->
+<div class="panel">
+  <h2>📅 히스토리 비교</h2>
+  <p style="font-size:13px;color:#666;margin-bottom:12px">저장된 슬롯 중 2~3개를 선택해서 자산 배분·평가금액 변화를 비교합니다.</p>
+  <button class="hist-btn" id="histLoadBtn" onclick="histLoad()">슬롯 불러오기</button>
+  <div class="hist-panel" id="histPanel">
+    <div class="hist-list" id="histList"></div>
+    <div class="hist-actions">
+      <button class="hist-compare-btn" id="histCompareBtn" disabled onclick="histCompare()">비교하기</button>
+      <span class="hist-msg" id="histMsg">2~3개를 선택하세요</span>
+    </div>
+    <div id="histResult"></div>
+  </div>
+</div>
 
 <!-- Firebase 클라우드 저장 -->
 <script type="module">
