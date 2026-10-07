@@ -205,6 +205,21 @@ let pwAction = null; // {type:'edit'|'delete', post}
 const $ = id => document.getElementById(id);
 const esc = s => (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+// WYSIWYG 서식
+function execFmt(cmd){$('fContent').focus();document.execCommand(cmd,false,null);}
+$('tbBold').addEventListener('click',()=>execFmt('bold'));
+$('tbItalic').addEventListener('click',()=>execFmt('italic'));
+$('tbUnder').addEventListener('click',()=>execFmt('underline'));
+$('tbStrike').addEventListener('click',()=>execFmt('strikeThrough'));
+function updateBoardFmt(){
+  $('tbBold').classList.toggle('active',document.queryCommandState('bold'));
+  $('tbItalic').classList.toggle('active',document.queryCommandState('italic'));
+  $('tbUnder').classList.toggle('active',document.queryCommandState('underline'));
+  $('tbStrike').classList.toggle('active',document.queryCommandState('strikeThrough'));
+}
+$('fContent').addEventListener('keyup',updateBoardFmt);
+$('fContent').addEventListener('mouseup',updateBoardFmt);
+
 // 비밀번호 해시 (SHA-256) — 원본 비번을 저장하지 않음
 async function hashPw(pw){
   const enc = new TextEncoder().encode(pw + '_sf_salt_2026');
@@ -369,21 +384,6 @@ document.querySelectorAll('.ftab').forEach(t=>{
     render();
   });
 });
-
-// WYSIWYG 서식
-function execFmt(cmd){$('fContent').focus();document.execCommand(cmd,false,null);}
-$('tbBold').addEventListener('click',function(){execFmt('bold');});
-$('tbItalic').addEventListener('click',function(){execFmt('italic');});
-$('tbUnder').addEventListener('click',function(){execFmt('underline');});
-$('tbStrike').addEventListener('click',function(){execFmt('strikeThrough');});
-function updateBoardFmt(){
-  $('tbBold').classList.toggle('active',document.queryCommandState('bold'));
-  $('tbItalic').classList.toggle('active',document.queryCommandState('italic'));
-  $('tbUnder').classList.toggle('active',document.queryCommandState('underline'));
-  $('tbStrike').classList.toggle('active',document.queryCommandState('strikeThrough'));
-}
-$('fContent').addEventListener('keyup',updateBoardFmt);
-$('fContent').addEventListener('mouseup',updateBoardFmt);
 
 // === 글쓰기 모달 ===
 function openWrite(){
