@@ -126,9 +126,12 @@ th.group-hdr{background:#161922;font-size:10px;color:var(--accent);border-bottom
         <div>• <b>PBR</b> — 주가÷BPS. 1 미만이면 자산 대비 저평가</div>
         <div>• <b>52주고/저</b> — 최근 1년간 최고·최저가</div>
         <div>• <b>배당성향</b> — DPS÷EPS. 이익 중 배당 비율</div>
-        <div>• <b>분리과세</b> — 고배당 9% 분리과세 적격 판정</div>
-        <div style="margin-left:16px;font-size:11px">조건1: 배당성향 ≥ 40%<br>조건2: 배당성향 ≥ 25% AND 전년대비 배당금 10%↑</div>
-        <div style="margin-left:16px;font-size:11px;color:#dc2626">⚠️ 현금배당만 반영. 자사주 소각 미포함 — 실제 분리과세 대상과 차이 있을 수 있음</div>
+        <div>• <b>배당성향</b> — DPS÷EPS. 현금배당 기준</div>
+        <div>• <b>조정성향</b> — (현금배당총액 + 자사주소각 추정액) ÷ 순이익. 분리과세 판정에 사용</div>
+        <div style="margin-left:16px;font-size:11px">자사주 소각액 = DART 소각 수량 × 현재가 (추정치)</div>
+        <div>• <b>분리과세</b> — 고배당 9% 분리과세 적격 판정 (조정성향 기준)</div>
+        <div style="margin-left:16px;font-size:11px">조건1: 조정배당성향 ≥ 40%<br>조건2: 조정배당성향 ≥ 25% AND 전년대비 배당금 10%↑</div>
+        <div style="margin-left:16px;font-size:11px;color:#f59e0b">⚠️ 자사주 소각액은 소각수량×현재가 추정. 법적 기준(취득가액)과 차이 있을 수 있음</div>
       </div>
       <div>
         <div style="font-weight:700;color:var(--text);margin-bottom:6px">🎨 색상</div>
@@ -184,6 +187,7 @@ function getCols(){
     {key:'dividend',label:'배당금',unit:'원'},
     {key:'div_yield',label:'배당률',unit:'%'},
     {key:'_payout',label:'배당성향',unit:'%',price:true},
+    {key:'_adj_payout',label:'조정성향',unit:'%',price:true},
     {key:'_sep_tax',label:'분리과세',nosort:false,price:true},
     {key:'ebitda',label:'EBITDA',unit:'억'},
     {key:'da',label:'D&A',unit:'억'},
@@ -215,6 +219,7 @@ function fmt(v,unit){
   if(unit==='%') return v.toFixed(1)+'%';
   if(unit==='원') return v.toLocaleString()+'원';
   if(unit==='배') return v.toFixed(1);
+  if(unit==='주') return v?v.toLocaleString()+'주':'-';
   return v;
 }
 
@@ -231,21 +236,46 @@ function pv(code,key,stock){
     var ev=mcap+(nd||0);
     return Math.round(ev/ebitda*10)/10;
   }
-  // 배당성향 = DPS * PER / price * 100
+  // 배당성향 = DPS * PER / price * 100 (현금배당만)
   if(key==='_payout'){
     var price=p.price, per=p.per, dps=stock?stock.dividend:null;
     if(!price||!per||per<=0||!dps||dps<=0) return null;
     return Math.round(dps*per/price*1000)/10;
   }
-  // 분리과세 판정: 1=조건1, 2=조건2, 0=미충족
+  // 조정 배당성향 = (현금배당총액 + 자사주소각금액) / 순이익 * 100
+  if(key==='_adj_payout'){
+    var ni=stock?stock.ni:null;
+    if(!ni||ni<=0) return null;
+    var tdiv=stock?stock.total_div_amt:null;  // 억원
+    var bbqty=stock?(stock.buyback_cancel_qty||0):0;  // 소각 수량(주)
+    var bbamt=0;
+    if(bbqty>0 && p.price){
+      bbamt=Math.round(bbqty*p.price/100000000); // 주 × 원 → 억원
+    }
+    var cashDiv=tdiv;
+    if(!cashDiv){
+      // fallback: DPS 기반
+      var dps3=stock?stock.dividend:null;
+      if(!dps3||dps3<=0) return null;
+      var eps3=p.per>0?(p.price/p.per):0;
+      if(eps3<=0) return null;
+      return Math.round(dps3/eps3*1000)/10; // 소각 없으면 기본과 동일
+    }
+    var total=cashDiv+bbamt;
+    return Math.round(total/ni*1000)/10;
+  }
+  // 분리과세 판정: 조정배당성향 기준, 1=조건1, 2=조건2, 0=미충족
   if(key==='_sep_tax'){
-    var price2=p.price, per2=p.per, dps2=stock?stock.dividend:null;
-    if(!price2||!per2||per2<=0||!dps2||dps2<=0) return 0;
-    var payout2=dps2*per2/price2*100;
-    if(payout2>=40) return 1;
-    if(payout2>=25 && prevDivMap[stock.code]!==undefined){
+    // 조정배당성향 우선 사용
+    var adjPo=pv(code,'_adj_payout',stock);
+    // fallback: 기본 배당성향
+    if(adjPo===null) adjPo=pv(code,'_payout',stock);
+    if(adjPo===null) return 0;
+    if(adjPo>=40) return 1;
+    if(adjPo>=25 && prevDivMap[stock.code]!==undefined){
       var prev=prevDivMap[stock.code];
-      if(prev>0 && (dps2-prev)/prev*100>=10) return 2;
+      var dps2=stock?stock.dividend:0;
+      if(prev>0 && dps2>0 && (dps2-prev)/prev*100>=10) return 2;
     }
     return 0;
   }
@@ -264,7 +294,7 @@ function colorClass(v,key){
     return v>0?'up':v<0?'down':'';
   }
   if(key==='op'||key==='ni') return v<0?'down':'';
-  if(key==='_payout') return v>=40?'up':v>=25?'gold':'';
+  if(key==='_payout'||key==='_adj_payout') return v>=40?'up':v>=25?'gold':'';
   if(key==='_per') return v<10?'up':v>30?'down':'';
   if(key==='_pbr') return v<1?'up':v>3?'down':'';
   if(key==='_ev_ebitda') return v<7?'up':v>20?'down':'';
@@ -460,9 +490,10 @@ window.openCompare=function(){
   var labels=[['매출액','revenue','억'],['영업이익','op','억'],['순이익','ni','억'],
     ['EBITDA','ebitda','억'],['D&A','da','억'],
     ['OPM','opm','%'],['NIM','nim','%'],['ROE','roe','%'],['ROA','roa','%'],
-    ['부채비율','debt_ratio','%'],['배당금','dividend','원'],['배당률','div_yield','%']];
+    ['부채비율','debt_ratio','%'],['배당금','dividend','원'],['배당률','div_yield','%'],
+    ['소각수량','buyback_cancel_qty','주']];
   if(hasYoY) labels.push(['매출YoY','revenue_yoy','%'],['OP YoY','op_yoy','%']);
-  if(hasPrices) labels.push(['현재가','_price','원'],['시총','_mcap','억'],['EV/EBITDA','_ev_ebitda','배'],['PER','_per','배'],['PBR','_pbr','배']);
+  if(hasPrices) labels.push(['현재가','_price','원'],['시총','_mcap','억'],['배당성향','_payout','%'],['조정성향','_adj_payout','%'],['EV/EBITDA','_ev_ebitda','배'],['PER','_per','배'],['PBR','_pbr','배']);
 
   var html='<div style="overflow-x:auto"><table style="min-width:auto;font-size:13px"><thead><tr><th style="text-align:left;min-width:100px">항목</th>';
   arr.forEach(function(s){html+='<th style="text-align:right;min-width:100px">'+s.name+'</th>';});
