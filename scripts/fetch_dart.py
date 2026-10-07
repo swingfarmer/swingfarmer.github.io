@@ -209,7 +209,7 @@ def fetch_dividend(corp_code, year, reprt_code):
         se = item.get('se','')
         stock_knd = item.get('stock_knd', '')
         # DPS (보통주)
-        if '주당' in se and '배당' in se and '우선' not in stock_knd:
+        if '주당' in se and '현금배당' in se and '우선' not in stock_knd:
             val = str(item.get('thstrm','0')).replace(',','').replace(' ','').replace('-','0')
             try: dps = int(float(val))
             except: pass
