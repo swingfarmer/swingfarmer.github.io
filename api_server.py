@@ -830,5 +830,173 @@ def delete_comment(comment_id):
     conn.commit(); cur.close(); conn.close()
     return jsonify({'ok': True})
 
+# ══ board (공지 & 문의 — 비밀번호 기반) ══
+import hashlib
+
+def _board_hash(pw):
+    return hashlib.sha256((pw + '_sf_salt_2026').encode()).hexdigest()
+
+@app.route('/api/board', methods=['GET'])
+def board_list():
+    page = int(request.args.get('page', 1))
+    per = int(request.args.get('per_page', 20))
+    ptype = request.args.get('type', '')
+    search = request.args.get('q', '')
+    where = ['1=1']; params = {}
+    if ptype: where.append('post_type=:ptype'); params['ptype'] = ptype
+    if search:
+        where.append("(UPPER(title) LIKE '%'||UPPER(:q)||'%' OR UPPER(CAST(content AS VARCHAR2(4000))) LIKE '%'||UPPER(:q2)||'%')")
+        params['q'] = search; params['q2'] = search
+    w = ' AND '.join(where)
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute(f"SELECT COUNT(*) FROM board_posts WHERE {w}", params)
+    total = cur.fetchone()[0]
+    offset = (page - 1) * per
+    cur.execute(f"""SELECT * FROM (SELECT a.*, ROWNUM rn FROM (
+        SELECT id, post_type, title, author, is_pinned, views, created_at, updated_at
+        FROM board_posts WHERE {w} ORDER BY is_pinned DESC NULLS LAST, created_at DESC
+    ) a WHERE ROWNUM <= :maxrow) WHERE rn > :minrow""",
+        {**params, 'maxrow': offset + per, 'minrow': offset})
+    posts = rows_to_list(cur, cur.fetchall())
+    if posts:
+        ids = [p['id'] for p in posts]
+        ph = ','.join([f':cid{i}' for i in range(len(ids))])
+        cp = {f'cid{i}': ids[i] for i in range(len(ids))}
+        cur.execute(f"SELECT post_id, COUNT(*) cnt FROM board_replies WHERE post_id IN ({ph}) GROUP BY post_id", cp)
+        cc = {r[0]: r[1] for r in cur.fetchall()}
+        for p in posts:
+            p['reply_count'] = cc.get(p['id'], 0)
+            p['created_at'] = dt_str(p.get('created_at'))
+            p['updated_at'] = dt_str(p.get('updated_at'))
+    cur.close(); conn.close()
+    return jsonify({'total': total, 'page': page, 'per_page': per, 'pages': (total+per-1)//per, 'data': posts})
+
+@app.route('/api/board/<int:pid>', methods=['GET'])
+def board_get(pid):
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("UPDATE board_posts SET views=NVL(views,0)+1 WHERE id=:id", {'id': pid})
+    conn.commit()
+    cur.execute("SELECT * FROM board_posts WHERE id=:id", {'id': pid})
+    row = cur.fetchone()
+    if not row: cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
+    post = row_to_dict(cur, row)
+    post['created_at'] = dt_str(post.get('created_at'))
+    post['updated_at'] = dt_str(post.get('updated_at'))
+    post.pop('pw_hash', None)  # 비번 해시 노출 금지
+    cur.execute("SELECT id,post_id,author,content,created_at FROM board_replies WHERE post_id=:pid ORDER BY created_at", {'pid': pid})
+    replies = rows_to_list(cur, cur.fetchall())
+    for r in replies: r['created_at'] = dt_str(r.get('created_at'))
+    post['replies'] = replies; cur.close(); conn.close()
+    return jsonify(post)
+
+@app.route('/api/board', methods=['POST'])
+def board_create():
+    d = request.get_json()
+    if not d: return jsonify({'error': 'JSON 필요'}), 400
+    post_type = d.get('type', 'question')
+    title = (d.get('title') or '').strip()
+    content = (d.get('content') or '').strip()
+    author = (d.get('author') or '').strip() or '익명'
+    pw = (d.get('password') or '').strip()
+    pinned = 1 if d.get('pinned') else 0
+    if not title: return jsonify({'error': '제목을 입력하세요.'}), 400
+    if not content: return jsonify({'error': '내용을 입력하세요.'}), 400
+    if post_type == 'notice':
+        # 공지는 관리자 인증 필요
+        tok = request.headers.get('Authorization', '').replace('Bearer ', '')
+        if not tok:
+            return jsonify({'error': '관리자 인증이 필요합니다.'}), 401
+        uid = verify_firebase_token(tok)
+        if not uid:
+            return jsonify({'error': '인증 실패'}), 401
+    else:
+        if len(pw) < 4: return jsonify({'error': '비밀번호를 4자 이상 입력하세요.'}), 400
+    pw_hash = _board_hash(pw) if pw else None
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("""INSERT INTO board_posts (post_type, title, author, content, pw_hash, is_pinned, views, created_at)
+        VALUES (:ptype, :title, :author, :content, :pw, :pinned, 0, SYSTIMESTAMP)""",
+        {'ptype': post_type, 'title': title, 'author': author, 'content': content,
+         'pw': pw_hash, 'pinned': pinned})
+    conn.commit()
+    cur.execute("SELECT MAX(id) FROM board_posts"); new_id = cur.fetchone()[0]
+    cur.close(); conn.close()
+    return jsonify({'ok': True, 'id': new_id}), 201
+
+@app.route('/api/board/<int:pid>', methods=['PUT'])
+def board_update(pid):
+    d = request.get_json()
+    if not d: return jsonify({'error': 'JSON 필요'}), 400
+    pw = (d.get('password') or '').strip()
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT pw_hash, post_type FROM board_posts WHERE id=:id", {'id': pid})
+    row = cur.fetchone()
+    if not row: cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
+    stored_hash, ptype = row
+    # 인증: 관리자 토큰 또는 비밀번호
+    admin_ok = False
+    tok = request.headers.get('Authorization', '').replace('Bearer ', '')
+    if tok:
+        uid = verify_firebase_token(tok)
+        if uid: admin_ok = True
+    if not admin_ok:
+        if not pw: cur.close(); conn.close(); return jsonify({'error': '비밀번호를 입력하세요.'}), 403
+        if _board_hash(pw) != stored_hash: cur.close(); conn.close(); return jsonify({'error': '비밀번호가 틀렸습니다.'}), 403
+    title = (d.get('title') or '').strip()
+    content = (d.get('content') or '').strip()
+    author = (d.get('author') or '').strip() or '익명'
+    pinned = 1 if d.get('pinned') else 0
+    if not title or not content: cur.close(); conn.close(); return jsonify({'error': '제목과 내용을 입력하세요.'}), 400
+    cur.execute("""UPDATE board_posts SET title=:title, author=:author, content=:content,
+        is_pinned=:pinned, updated_at=SYSTIMESTAMP WHERE id=:id""",
+        {'title': title, 'author': author, 'content': content, 'pinned': pinned, 'id': pid})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/board/<int:pid>', methods=['DELETE'])
+def board_delete(pid):
+    d = request.get_json() or {}
+    pw = (d.get('password') or '').strip()
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT pw_hash FROM board_posts WHERE id=:id", {'id': pid})
+    row = cur.fetchone()
+    if not row: cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
+    stored_hash = row[0]
+    admin_ok = False
+    tok = request.headers.get('Authorization', '').replace('Bearer ', '')
+    if tok:
+        uid = verify_firebase_token(tok)
+        if uid: admin_ok = True
+    if not admin_ok:
+        if not pw: cur.close(); conn.close(); return jsonify({'error': '비밀번호를 입력하세요.'}), 403
+        if _board_hash(pw) != stored_hash: cur.close(); conn.close(); return jsonify({'error': '비밀번호가 틀렸습니다.'}), 403
+    cur.execute("DELETE FROM board_replies WHERE post_id=:id", {'id': pid})
+    cur.execute("DELETE FROM board_posts WHERE id=:id", {'id': pid})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/board/<int:pid>/replies', methods=['POST'])
+def board_add_reply(pid):
+    d = request.get_json()
+    if not d: return jsonify({'error': 'JSON 필요'}), 400
+    author = (d.get('author') or '').strip() or '익명'
+    content = (d.get('content') or '').strip()
+    if not content: return jsonify({'error': '내용을 입력하세요.'}), 400
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT id FROM board_posts WHERE id=:id", {'id': pid})
+    if not cur.fetchone(): cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
+    cur.execute("INSERT INTO board_replies (post_id,author,content,created_at) VALUES (:pid,:a,:c,SYSTIMESTAMP)",
+        {'pid': pid, 'a': author, 'c': content})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True}), 201
+
+@app.route('/api/board/replies/<int:rid>', methods=['DELETE'])
+@require_auth
+def board_delete_reply(rid):
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("DELETE FROM board_replies WHERE id=:id", {'id': rid})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
