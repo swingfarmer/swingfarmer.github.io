@@ -56,9 +56,16 @@
 .modal h2{color:#1F4E78;font-size:18px;margin-bottom:16px}
 .field{display:flex;flex-direction:column;margin-bottom:12px}
 .field input,.field select,.field textarea{padding:10px;font-size:14px;border:1px solid #ccc;border-radius:6px;font-family:inherit}
-.field input,.field textarea{background:#FFF2CC}
-.field textarea{min-height:140px;resize:vertical;line-height:1.6}
-.field input:focus,.field textarea:focus,.field select:focus{outline:2px solid #1F4E78;background:#FFFACD}
+.field input{background:#FFF2CC}
+.field .wysiwyg{min-height:140px;line-height:1.6;background:#FFF2CC;padding:10px;font-size:14px;border:1px solid #ccc;border-radius:6px;font-family:inherit;outline:none;overflow-y:auto}
+.field .wysiwyg:focus{outline:2px solid #1F4E78;background:#FFFACD}
+.field .wysiwyg:empty::before{content:attr(data-placeholder);color:#bbb;pointer-events:none}
+.field .wysiwyg img{max-width:100%;border-radius:4px;margin:8px 0;display:block}
+.field input:focus,.field select:focus{outline:2px solid #1F4E78;background:#FFFACD}
+.w-fmt-bar{display:flex;gap:2px;margin-bottom:6px}
+.w-fmt-bar button{padding:4px 7px;border:none;background:none;cursor:pointer;font-size:14px;color:#555;border-radius:3px;font-family:inherit}
+.w-fmt-bar button:hover{background:#f0f0f0}
+.w-fmt-bar button.active{background:#e0e7ef;color:#1F4E78}
 .field .hint{font-size:11px;color:#888;margin-top:3px}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
 .notice-box{background:#dbeafe;border-left:4px solid #2563eb;padding:12px 16px;border-radius:6px;font-size:12.5px;color:#1e3a8a;line-height:1.7;margin-bottom:16px}
@@ -121,7 +128,13 @@
     </div>
     <div class="field">
       <label>내용</label>
-      <textarea id="fContent" placeholder="내용을 입력하세요"></textarea>
+      <div class="w-fmt-bar">
+        <button type="button" id="tbBold" title="굵게"><b>B</b></button>
+        <button type="button" id="tbItalic" title="기울임"><i>I</i></button>
+        <button type="button" id="tbUnder" title="밑줄"><u>U</u></button>
+        <button type="button" id="tbStrike" title="취소선"><s>S</s></button>
+      </div>
+      <div id="fContent" class="wysiwyg" contenteditable="true" data-placeholder="내용을 입력하세요"></div>
     </div>
     <div class="field" id="pwField">
       <label id="pwLabel">비밀번호 <span style="color:#888;font-weight:400">(본인 글 수정·삭제용)</span></label>
@@ -280,7 +293,7 @@ function render(){
         <span>🕒 ${fmtDate(p.createdAt)}</span>
         <span class="view-count">👁 ${p.views||0}</span>
       </div>
-      <div class="post-body">${esc(p.content)}
+      <div class="post-body">${p.content}
         <div class="post-actions" onclick="event.stopPropagation()">
           <button class="btn btn-gray btn-sm" onclick="window.editPost('${p.id}')">수정</button>
           <button class="btn btn-red btn-sm" onclick="window.deletePost('${p.id}')">삭제</button>
@@ -357,11 +370,25 @@ document.querySelectorAll('.ftab').forEach(t=>{
   });
 });
 
+// WYSIWYG 서식
+function execFmt(cmd){$('fContent').focus();document.execCommand(cmd,false,null);}
+$('tbBold').addEventListener('click',function(){execFmt('bold');});
+$('tbItalic').addEventListener('click',function(){execFmt('italic');});
+$('tbUnder').addEventListener('click',function(){execFmt('underline');});
+$('tbStrike').addEventListener('click',function(){execFmt('strikeThrough');});
+$('fContent').addEventListener('keyup',function(){
+  $('tbBold').classList.toggle('active',document.queryCommandState('bold'));
+  $('tbItalic').classList.toggle('active',document.queryCommandState('italic'));
+  $('tbUnder').classList.toggle('active',document.queryCommandState('underline'));
+  $('tbStrike').classList.toggle('active',document.queryCommandState('strikeThrough'));
+});
+$('fContent').addEventListener('mouseup',$('fContent').onkeyup);
+
 // === 글쓰기 모달 ===
 function openWrite(){
   editingId = null;
   $('modalTitle').textContent = '✏️ 글쓰기';
-  $('fType').value = 'question'; $('fTitle').value=''; $('fAuthor').value=''; $('fContent').value=''; $('fPw').value=''; $('fPinned').checked=false;
+  $('fType').value = 'question'; $('fTitle').value=''; $('fAuthor').value=''; $('fContent').innerHTML=''; $('fPw').value=''; $('fPinned').checked=false;
   $('pwField').style.display = 'flex';  // 비번칸 복구
   updateTypeUI();
   $('writeModal').classList.add('active');
@@ -395,7 +422,7 @@ $('btnSubmit').addEventListener('click', async ()=>{
   const type = $('fType').value;
   const title = $('fTitle').value.trim();
   const author = $('fAuthor').value.trim() || '익명';
-  const content = $('fContent').value.trim();
+  const content = $('fContent').innerHTML.trim();
   const pw = $('fPw').value;
   const pinned = $('fPinned').checked;
 
@@ -456,7 +483,7 @@ function fillEdit(p){
   $('fType').value = p.type;
   $('fTitle').value = p.title;
   $('fAuthor').value = p.author;
-  $('fContent').value = p.content;
+  $('fContent').innerHTML = p.content;
   $('fPw').value = '';  // 수정 시 비번 재입력 불필요 (이미 통과)
   $('fPinned').checked = !!p.pinned;
   updateTypeUI();

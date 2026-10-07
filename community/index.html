@@ -118,9 +118,12 @@ a{color:#333;text-decoration:none}
 .w-fmt:hover{background:#f0f0f0}
 .w-fmt.disabled{opacity:.3;cursor:not-allowed}.w-fmt.disabled:hover{background:none}
 .w-fmt-sep{width:1px;height:18px;background:#ddd;margin:0 6px}
-.w-content textarea{width:100%;min-height:300px;border:none;padding:18px 24px;font-size:15px;line-height:1.8;resize:vertical;font-family:inherit;color:#333}
-.w-content textarea::placeholder{color:#bbb}
-.w-content textarea:focus{outline:none}
+.w-content .wysiwyg{width:100%;min-height:300px;border:none;padding:18px 24px;font-size:15px;line-height:1.8;font-family:inherit;color:#333;overflow-y:auto;outline:none}
+.w-content .wysiwyg:empty::before{content:attr(data-placeholder);color:#bbb;pointer-events:none}
+.w-content .wysiwyg img{max-width:100%;border-radius:4px;margin:10px 0;display:block}
+.w-content .wysiwyg a{color:#1a73e8;text-decoration:underline}
+.w-content .wysiwyg hr{border:none;border-top:1px solid #e5e5e5;margin:20px 0}
+.w-fmt.active{background:#e0e7ef;color:#1F4E78}
 .w-pin-row{display:flex;padding:8px 24px;align-items:center;gap:6px;border-top:1px solid #f0f0f0}
 /* 카테고리 관리 모달 */
 .sm-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1002;align-items:center;justify-content:center;padding:20px}
@@ -180,7 +183,7 @@ a{color:#333;text-decoration:none}
 
 <!-- 글쓰기 -->
 <div class="modal-overlay" id="writeModal"><div class="modal-inner"><div class="w-box">
-  <div class="w-topbar"><h2 id="wTitle">글쓰기</h2><button class="w-preview" id="wPreview">미리보기</button><button class="w-cancel" id="wCancel">취소</button><button class="w-submit" id="wSubmit">등록</button></div>
+  <div class="w-topbar"><h2 id="wTitle">글쓰기</h2><button class="w-cancel" id="wCancel">취소</button><button class="w-submit" id="wSubmit">등록</button></div>
   <div class="w-selectors">
     <select id="fCategory"></select>
     <input type="text" id="fAuthor" placeholder="작성자" maxlength="20" style="max-width:160px">
@@ -201,7 +204,7 @@ a{color:#333;text-decoration:none}
     <button class="w-fmt" id="tbUnder" title="밑줄 (선택 후)"><u>U</u></button>
     <button class="w-fmt" id="tbStrike" title="취소선 (선택 후)"><s>S</s></button>
   </div>
-  <div class="w-content"><textarea id="fContent" placeholder="내용을 입력하세요."></textarea><div id="fPreview" class="v-body" style="display:none;min-height:300px;padding:18px 24px;border-top:1px solid #f0f0f0"></div></div>
+  <div class="w-content"><div id="fContent" class="wysiwyg" contenteditable="true" data-placeholder="내용을 입력하세요."></div></div>
   <div class="w-pin-row"><label><input type="checkbox" id="fPinned" style="width:15px;height:15px"> 📌 상단 고정</label></div>
 </div></div></div>
 
@@ -321,15 +324,7 @@ function renderView(p){
   var cn=catName(p.category);
   $('vBadge').innerHTML=(p.is_pinned?'<span class="pin-tag">📌 고정</span> ':'')+(cn?'<span class="cat-tag">'+esc(cn)+'</span>':'');
   $('vTitle').textContent=p.title;$('vAuthor').textContent=p.author||'익명';$('vDate').textContent=fmtDate(p.created_at);$('vViews').textContent='조회 '+(p.views||0);
-  var body=esc(p.content);
-  body=body.replace(/\[이미지:(https?:\/\/[^\]]+)\]/g,'<img src="$1" alt="이미지">');
-  body=body.replace(/\[링크:(https?:\/\/[^\|]+)\|([^\]]+)\]/g,'<a href="$1" target="_blank" rel="noopener">$2 ↗</a>');
-  body=body.replace(/────+/g,'<hr>');
-  body=body.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
-  body=body.replace(/\*(.+?)\*/g,'<i>$1</i>');
-  body=body.replace(/__(.+?)__/g,'<u>$1</u>');
-  body=body.replace(/~~(.+?)~~/g,'<s>$1</s>');
-  $('vBody').innerHTML=body.replace(/\n/g,'<br>');
+  $('vBody').innerHTML=p.content||'';
   $('vActions').innerHTML='<button class="v-btn" data-act="edit" data-id="'+p.id+'">수정</button><button class="v-btn red" data-act="del" data-id="'+p.id+'">삭제</button><button class="v-btn v-close">닫기</button>';
   $('vActions').querySelector('.v-close').addEventListener('click',closeView);
   $('vActions').querySelector('[data-act="edit"]').addEventListener('click',function(){closeView();editPost(parseInt(this.dataset.id));});
@@ -362,7 +357,7 @@ $('viewModal').addEventListener('click',function(e){if(e.target===$('viewModal')
 // ── 글쓰기 ──
 function openWrite(){
   editingId=null;$('wTitle').textContent='글쓰기';
-  $('fCategory').value='';$('fTitle').value='';$('fAuthor').value='스윙파머';$('fContent').value='';$('fPinned').checked=false;
+  $('fCategory').value='';$('fTitle').value='';$('fAuthor').value='스윙파머';$('fContent').innerHTML='';$('fPinned').checked=false;
   $('writeModal').classList.add('active');document.body.style.overflow='hidden';
   setTimeout(function(){$('fTitle').focus();},100);
 }
@@ -371,40 +366,28 @@ function closeWrite(){$('writeModal').classList.remove('active');document.body.s
 $('wCancel').addEventListener('click',closeWrite);
 $('writeModal').addEventListener('click',function(e){if(e.target===$('writeModal'))closeWrite();});
 
-// 미리보기 토글
-function formatBody(text){
-  var h=esc(text);
-  h=h.replace(/\[이미지:(https?:\/\/[^\]]+)\]/g,'<img src="$1" alt="이미지">');
-  h=h.replace(/\[링크:(https?:\/\/[^\|]+)\|([^\]]+)\]/g,'<a href="$1" target="_blank" rel="noopener">$2 ↗</a>');
-  h=h.replace(/────+/g,'<hr>');
-  h=h.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
-  h=h.replace(/\*(.+?)\*/g,'<i>$1</i>');
-  h=h.replace(/__(.+?)__/g,'<u>$1</u>');
-  h=h.replace(/~~(.+?)~~/g,'<s>$1</s>');
-  return h.replace(/\n/g,'<br>');
-}
-$('wPreview').addEventListener('click',function(){
-  var ta=$('fContent'),pv=$('fPreview'),btn=this;
-  if(ta.style.display!=='none'){
-    pv.innerHTML=formatBody(ta.value);
-    ta.style.display='none';pv.style.display='block';
-    btn.textContent='편집';btn.classList.add('active');
-  } else {
-    ta.style.display='';pv.style.display='none';
-    btn.textContent='미리보기';btn.classList.remove('active');
-  }
-});
+// WYSIWYG 헬퍼
+function execFmt(cmd,val){$('fContent').focus();document.execCommand(cmd,false,val||null);}
+function insertHtml(html){$('fContent').focus();document.execCommand('insertHTML',false,html);}
 
-function insertAt(ta,txt){var s=ta.selectionStart,e=ta.selectionEnd,v=ta.value;ta.value=v.substring(0,s)+txt+v.substring(e);ta.selectionStart=ta.selectionEnd=s+txt.length;ta.focus();}
-function wrapSel(ta,b,a){var s=ta.selectionStart,e=ta.selectionEnd;if(s===e)return;var sel=ta.value.substring(s,e);ta.value=ta.value.substring(0,s)+b+sel+a+ta.value.substring(e);ta.selectionStart=s+b.length;ta.selectionEnd=s+b.length+sel.length;ta.focus();}
-$('tbHr').addEventListener('click',function(){insertAt($('fContent'),'\n────────────────────\n');});
-$('tbImg').addEventListener('click',function(){var u=prompt('이미지 URL (https://...)');if(u&&u.trim())insertAt($('fContent'),'[이미지:'+u.trim()+']');});
-$('tbLink').addEventListener('click',function(){var u=prompt('링크 URL');if(!u||!u.trim())return;var l=prompt('표시할 텍스트',u.trim());insertAt($('fContent'),'[링크:'+u.trim()+'|'+(l||u.trim())+']');});
+// 서식 버튼 상태 업데이트
+$('fContent').addEventListener('keyup',updateFmtBtns);
+$('fContent').addEventListener('mouseup',updateFmtBtns);
+function updateFmtBtns(){
+  $('tbBold').classList.toggle('active',document.queryCommandState('bold'));
+  $('tbItalic').classList.toggle('active',document.queryCommandState('italic'));
+  $('tbUnder').classList.toggle('active',document.queryCommandState('underline'));
+  $('tbStrike').classList.toggle('active',document.queryCommandState('strikeThrough'));
+}
+
+$('tbHr').addEventListener('click',function(){insertHtml('<hr>');});
+$('tbImg').addEventListener('click',function(){var u=prompt('이미지 URL (https://...)');if(u&&u.trim())insertHtml('<img src="'+u.trim()+'" alt="이미지">');});
+$('tbLink').addEventListener('click',function(){var u=prompt('링크 URL');if(!u||!u.trim())return;var l=prompt('표시할 텍스트',u.trim());insertHtml('<a href="'+u.trim()+'" target="_blank" rel="noopener">'+(l||u.trim())+' ↗</a>');});
 // 서식 버튼
-$('tbBold').addEventListener('click',function(){wrapSel($('fContent'),'**','**');});
-$('tbItalic').addEventListener('click',function(){wrapSel($('fContent'),'*','*');});
-$('tbUnder').addEventListener('click',function(){wrapSel($('fContent'),'__','__');});
-$('tbStrike').addEventListener('click',function(){wrapSel($('fContent'),'~~','~~');});
+$('tbBold').addEventListener('click',function(){execFmt('bold');});
+$('tbItalic').addEventListener('click',function(){execFmt('italic');});
+$('tbUnder').addEventListener('click',function(){execFmt('underline');});
+$('tbStrike').addEventListener('click',function(){execFmt('strikeThrough');});
 // 사진 업로드
 $('tbPhoto').addEventListener('click',function(){$('fileInput').click();});
 $('fileInput').addEventListener('change',function(){
@@ -413,13 +396,13 @@ $('fileInput').addEventListener('change',function(){
   var lbl=$('tbPhoto').querySelector('.lbl');lbl.textContent='업로드중...';
   var fd=new FormData();fd.append('file',file);
   apiFetch(API+'/upload',{method:'POST',body:fd})
-  .then(function(r){if(!r.ok){alert(r.data.error||'업로드 실패');return;}insertAt($('fContent'),'[이미지:'+r.data.url+']');})
+  .then(function(r){if(!r.ok){alert(r.data.error||'업로드 실패');return;}insertHtml('<img src="'+r.data.url+'" alt="이미지">');})
   .catch(function(e){alert('업로드 실패: '+e.message);})
   .finally(function(){lbl.textContent='사진';$('fileInput').value='';});
 });
 
 $('wSubmit').addEventListener('click',function(){
-  var category=$('fCategory').value,title=$('fTitle').value.trim(),author=$('fAuthor').value.trim()||'익명',content=$('fContent').value.trim(),pinned=$('fPinned').checked;
+  var category=$('fCategory').value,title=$('fTitle').value.trim(),author=$('fAuthor').value.trim()||'익명',content=$('fContent').innerHTML.trim(),pinned=$('fPinned').checked;
   if(!title){alert('제목을 입력하세요.');return;}
   if(!content){alert('내용을 입력하세요.');return;}
   $('wSubmit').disabled=true;$('wSubmit').textContent='저장 중...';
@@ -435,7 +418,7 @@ function editPost(id){
     if(p.error){alert(p.error);return;}
     editingId=id;$('wTitle').textContent='글 수정';
     $('fCategory').value=p.category||'';$('fTitle').value=p.title||'';$('fAuthor').value=p.author||'';
-    $('fContent').value=p.content||'';$('fPinned').checked=!!p.is_pinned;
+    $('fContent').innerHTML=p.content||'';$('fPinned').checked=!!p.is_pinned;
     $('writeModal').classList.add('active');document.body.style.overflow='hidden';
   }).catch(function(e){alert('오류: '+e.message);});
 }
