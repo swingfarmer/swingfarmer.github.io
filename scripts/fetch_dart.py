@@ -196,20 +196,72 @@ def extract_short_debt(full_items):
 
 
 def fetch_dividend(corp_code, year, reprt_code):
-    """DART 배당 API (alotMatter) — 주당 배당금 추출."""
+    """DART 배당 API (alotMatter) — 주당 배당금 + 현금배당총액 추출."""
     data = api_call('alotMatter', {
         'corp_code': corp_code,
         'bsns_year': year,
         'reprt_code': reprt_code
     })
-    if not data or data.get('status') != '000': return 0
+    if not data or data.get('status') != '000': return 0, None
+    dps = 0
+    total_div_amt = None  # 백만원 → 억원 변환
     for item in data.get('list', []):
         se = item.get('se','')
-        if '주당' in se and '배당' in se:
+        stock_knd = item.get('stock_knd', '')
+        # DPS (보통주)
+        if '주당' in se and '배당' in se and '우선' not in stock_knd:
             val = str(item.get('thstrm','0')).replace(',','').replace(' ','').replace('-','0')
-            try: return int(float(val))
+            try: dps = int(float(val))
             except: pass
-    return 0
+        # 현금배당금총액 (백만원)
+        if '현금배당금총액' in se:
+            val = str(item.get('thstrm','0')).replace(',','').replace(' ','').replace('-','0')
+            try: total_div_amt = round(float(val) / 100)  # 백만원 → 억원
+            except: pass
+    return dps, total_div_amt
+
+
+def fetch_buyback_cancel(corp_code, year, reprt_code):
+    """DART 자기주식 취득/처분 현황 — 소각 수량 추출.
+    총계 행만 사용 (대/중/소분류가 모두 '총계'인 행) → 중복 합산 방지.
+    총계 행이 없으면 개별 행 합산 fallback.
+    """
+    data = api_call('tesstkAcqsDspsSttus', {
+        'corp_code': corp_code,
+        'bsns_year': year,
+        'reprt_code': reprt_code
+    })
+    if not data or data.get('status') != '000': return 0
+
+    total_from_summary = 0
+    total_from_detail = 0
+    found_summary = False
+
+    for item in data.get('list', []):
+        stock_knd = item.get('stock_knd', '')
+        # 보통주만 (우선주 제외)
+        if '우선' in stock_knd:
+            continue
+
+        cancel_str = str(item.get('change_qy_incnr', '0')).replace(',', '').replace(' ', '').replace('-', '0')
+        try:
+            cancel = int(float(cancel_str))
+        except:
+            cancel = 0
+
+        if cancel <= 0:
+            continue
+
+        mth1 = item.get('acqs_mth1', '')
+        mth3 = item.get('acqs_mth3', '')
+        # 총계 행 확인
+        if '총계' in mth1 or '총계' in mth3:
+            total_from_summary += cancel
+            found_summary = True
+        else:
+            total_from_detail += cancel
+
+    return total_from_summary if found_summary else total_from_detail
 
 
 def safe_pct(a, b):
@@ -248,7 +300,8 @@ def process_stock(stock, corp_code, year, reprt_code):
     eq  = extract_account(items, '자본총계')
     ast = extract_account(items, '자산총계')
     lib = extract_account(items, '부채총계')
-    div = fetch_dividend(corp_code, year, reprt_code)
+    div, total_div_amt = fetch_dividend(corp_code, year, reprt_code)
+    buyback_cancel_qty = fetch_buyback_cancel(corp_code, year, reprt_code)
 
     # 전체계정에서 EBITDA 관련 항목 추출
     full = fetch_full_accounts(corp_code, year, reprt_code)
@@ -272,6 +325,8 @@ def process_stock(stock, corp_code, year, reprt_code):
         'roe': safe_pct(ni, eq), 'roa': safe_pct(ni, ast),
         'debt_ratio': safe_pct(lib, eq), 'equity': eq,
         'dividend': div or 0, 'div_yield': 0,
+        'total_div_amt': total_div_amt,  # 현금배당총액 (억원)
+        'buyback_cancel_qty': buyback_cancel_qty or 0,  # 자사주 소각 수량 (주)
         'da': da, 'ebitda': ebitda, 'cash': cash,
         'total_debt': total_debt, 'net_debt': net_debt,
     }
