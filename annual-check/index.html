@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>연간 체크리스트 | 스윙파머</title>
+<meta name="description" content="법인·개인 정기납부, 연금·ISA 납입, 자산목표 체크리스트. 월별·분기별·연간 할일을 한눈에.">
+<link rel="stylesheet" href="/common.css?v=4">
+<style>
+:root { --sf-max-w: 860px; }
+header { background: var(--sf-surface); border-bottom: 3px solid var(--sf-brand); padding: 18px 16px; }
+header .wrap { padding: 0; }
+header h1 { font-size: 20px; color: var(--sf-brand); margin: 0; border-bottom: none; }
+header .back-link { display: inline-block; margin-bottom: 6px; }
+
+/* 연도 탭 */
+.year-tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.year-tab { padding: 9px 18px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; background: white; color: var(--sf-brand); border: 2px solid var(--sf-border); position: relative; }
+.year-tab.active { background: var(--sf-brand); color: white; border-color: var(--sf-brand); }
+.year-tab-add { padding: 9px 14px; border-radius: 10px; font-size: 14px; cursor: pointer; background: #f0f9ff; color: var(--sf-brand); border: 2px dashed #bae6fd; font-weight: 700; }
+.year-del { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: #dc2626; color: white; font-size: 11px; border: none; cursor: pointer; display: none; line-height: 18px; text-align: center; }
+.year-tab:hover .year-del { display: block; }
+.year-tab.active .year-del { display: none; }
+
+/* 섹션 카드 */
+.section { background: white; border-radius: 12px; padding: 18px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.section-title { font-size: 15px; font-weight: 800; color: var(--sf-brand); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.section-title .badge { font-size: 11px; background: #eff6ff; color: var(--sf-brand); padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+.section-title .badge-corp { background: #fef3c7; color: #92400e; }
+.section-title .badge-personal { background: #dbeafe; color: #1e3a8a; }
+.section-title .progress { margin-left: auto; font-size: 13px; font-weight: 700; }
+
+/* 구분 태그 */
+.tag-corp { font-size: 10px; padding: 1px 6px; border-radius: 3px; background: #fef3c7; color: #92400e; font-weight: 600; margin-left: 4px; }
+.tag-personal { font-size: 10px; padding: 1px 6px; border-radius: 3px; background: #dbeafe; color: #1e3a8a; font-weight: 600; margin-left: 4px; }
+
+/* 체크 테이블 */
+.check-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.check-tbl th { background: #f8fafc; padding: 8px 6px; text-align: center; font-weight: 700; color: #666; border-bottom: 2px solid var(--sf-border); font-size: 11.5px; }
+.check-tbl td { padding: 7px 6px; text-align: center; border-bottom: 1px solid #f0f0f0; }
+.check-tbl tr:last-child td { border-bottom: none; }
+.check-tbl .row-label { text-align: left; font-weight: 600; color: #333; white-space: nowrap; }
+.check-tbl .ck { width: 22px; height: 22px; cursor: pointer; accent-color: var(--sf-brand); }
+.check-tbl .sub { font-size: 11px; color: #999; font-weight: 400; }
+
+/* 분기/연간 테이블 비고 인풋 */
+.note-input { width: 100%; max-width: 180px; padding: 5px 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 12px; background: var(--sf-input-bg); color: var(--sf-input-text); }
+.note-input:focus { outline: 2px solid var(--sf-brand); background: var(--sf-input-focus); }
+
+/* 납입 트래커 */
+.contrib-card { background: #fafbfc; border-radius: 10px; padding: 14px; margin-bottom: 10px; border: 1px solid #eef0f3; }
+.contrib-card:last-child { margin-bottom: 0; }
+.contrib-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.contrib-num { width: 28px; height: 28px; border-radius: 50%; background: var(--sf-brand); color: white; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.contrib-name { font-size: 14px; font-weight: 700; color: #333; }
+.contrib-limit { margin-left: auto; font-size: 12px; color: #888; }
+.contrib-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.contrib-row:last-child { margin-bottom: 0; }
+.contrib-label { font-size: 12px; color: #666; width: 80px; flex-shrink: 0; }
+.contrib-input { flex: 1; }
+.contrib-input input { width: 100%; padding: 7px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; text-align: right; background: var(--sf-input-bg); color: var(--sf-input-text); }
+.contrib-input input:focus { outline: 2px solid var(--sf-brand); background: var(--sf-input-focus); }
+.contrib-bar { height: 8px; background: #eef0f3; border-radius: 4px; overflow: hidden; margin-top: 6px; }
+.contrib-bar-fill { height: 100%; border-radius: 4px; transition: width .3s; }
+.contrib-pct { font-size: 12px; font-weight: 700; margin-top: 4px; text-align: right; }
+
+/* 자산목표 */
+.goal-card { background: #fafbfc; border-radius: 10px; padding: 14px; margin-bottom: 10px; border: 1px solid #eef0f3; }
+.goal-card:last-child { margin-bottom: 0; }
+.goal-title { font-size: 14px; font-weight: 700; color: #333; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.goal-title .tag { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 600; }
+.goal-note { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 12.5px; min-height: 50px; resize: vertical; font-family: inherit; background: var(--sf-input-bg); color: var(--sf-input-text); line-height: 1.6; }
+.goal-note:focus { outline: 2px solid var(--sf-brand); background: var(--sf-input-focus); }
+.goal-hint { font-size: 11px; color: #999; margin-bottom: 6px; line-height: 1.5; }
+
+/* 요약 */
+.summary-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+@media(max-width:600px) { .summary-grid { grid-template-columns: 1fr; } }
+.summary-card { background: white; border-radius: 10px; padding: 14px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.summary-card .num { font-size: 24px; font-weight: 800; color: var(--sf-brand); }
+.summary-card .lbl { font-size: 12px; color: #888; margin-top: 2px; }
+
+/* 메모 */
+.memo-area { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; min-height: 80px; resize: vertical; font-family: inherit; background: var(--sf-input-bg); color: var(--sf-input-text); }
+.memo-area:focus { outline: 2px solid var(--sf-brand); background: var(--sf-input-focus); }
+
+/* 자동차세 연납 */
+.annual-pay-badge { font-size: 10px; background: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 3px; font-weight: 600; }
+
+/* 인쇄 */
+.btn-print { background: #f3f4f6; border: 1px solid #ddd; border-radius: 8px; padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer; color: #555; }
+.btn-print:hover { background: #e5e7eb; }
+@media print {
+  header, .year-tabs, .year-tab-add, .year-del, .btn-print, .summary-grid { display: none !important; }
+  body { padding-top: 0 !important; background: white !important; }
+  .section { box-shadow: none !important; border: 1px solid #ddd; break-inside: avoid; }
+  .print-title { display: block !important; font-size: 18px; font-weight: 800; color: #1F4E78; margin-bottom: 16px; text-align: center; }
+}
+.print-title { display: none; }
+
+footer { text-align: center; margin-top: 30px; color: #999; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a href="/" class="back-link">← 메인으로</a>
+    <h1>📋 연간 체크리스트</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc">법인·개인 정기납부, 연금·ISA 납입한도, 자산목표를 연도별로 관리합니다. <span class="tag-corp">법인</span> <span class="tag-personal">개인</span></p>
+
+  <!-- 연도 탭 -->
+  <div class="year-tabs" id="yearTabs"></div>
+
+  <!-- 인쇄용 제목 -->
+  <div class="print-title" id="printTitle"></div>
+
+  <!-- 요약 -->
+  <div class="summary-grid" id="summaryArea"></div>
+
+  <!-- 버튼 -->
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="btn-print" onclick="window.print()">🖨️ 인쇄 / PDF</button>
+  </div>
+
+  <!-- 1. 매월 정기납부 -->
+  <div class="section">
+    <div class="section-title">💰 매월 정기납부 <span class="badge">매월</span> <span class="progress" id="monthlyProg"></span></div>
+    <div style="overflow-x:auto">
+      <table class="check-tbl" id="monthlyTbl">
+        <thead><tr>
+          <th style="text-align:left;min-width:130px">항목</th>
+          <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th>
+          <th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th>
+          <th style="min-width:100px">비고</th>
+        </tr></thead>
+        <tbody id="monthlyBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 2. 분기·연간 납부 -->
+  <div class="section">
+    <div class="section-title">🧾 분기·연간 납부 <span class="badge">분기/연간</span> <span class="progress" id="periodicProg"></span></div>
+    <div style="overflow-x:auto">
+      <table class="check-tbl" id="periodicTbl">
+        <thead><tr>
+          <th style="text-align:left;min-width:170px">항목</th>
+          <th>납부시기</th>
+          <th>완료</th>
+          <th style="min-width:140px">비고</th>
+        </tr></thead>
+        <tbody id="periodicBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 3. 연금·ISA 납입 트래커 -->
+  <div class="section">
+    <div class="section-title">🏦 연금·ISA 납입 트래커 <span class="badge">연간 한도</span></div>
+    <div id="contribArea"></div>
+  </div>
+
+  <!-- 4. 자산 목표 -->
+  <div class="section">
+    <div class="section-title">🎯 자산 목표 & 변동사항</div>
+    <div id="goalArea"></div>
+  </div>
+
+  <!-- 5. 연간 메모 -->
+  <div class="section">
+    <div class="section-title">📝 연간 메모 (자유 기록)</div>
+    <textarea class="memo-area" id="yearMemo" placeholder="올해 변동사항, 계획 변경, 특이사항 등 자유롭게 기록..."></textarea>
+  </div>
+
+  <footer>체크리스트 v1 · 스윙파머</footer>
+</div>
+
+<script>
+window.CALC_KEY = 'annual_check';
+window.slGetState = function(){ return getFullState(); };
+window.slSetState = function(d){ if(d) setFullState(d); };
+</script>
+<script src="/sf-slots.js?v=2"></script>
+<script src="/common.js?v=5"></script>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+
+// ── 항목 정의 ──
+// scope: corp=법인, personal=개인, both=공통
+const MONTHLY_ITEMS = [
+  { key: 'natl_pension', label: '① 국민연금', sub: '', scope: 'personal' },
+  { key: 'insurance_4', label: '4대보험료', sub: '건강+장기+고용+산재', scope: 'corp' },
+  { key: 'withholding', label: '원천세', sub: '매월 or 반기', scope: 'corp' },
+  { key: 'yellow_umbrella', label: '노란우산공제', sub: '', scope: 'personal' },
+];
+
+const PERIODIC_ITEMS = [
+  { key: 'vat_q1', label: '부가세 1기 예정', period: '4/25', scope: 'corp' },
+  { key: 'vat_q2', label: '부가세 1기 확정', period: '7/25', scope: 'corp' },
+  { key: 'vat_q3', label: '부가세 2기 예정', period: '10/25', scope: 'corp' },
+  { key: 'vat_q4', label: '부가세 2기 확정', period: '다음해 1/25', scope: 'corp' },
+  { key: 'corp_mid', label: '법인세 중간예납', period: '8/31', scope: 'corp' },
+  { key: 'corp_final', label: '법인세 확정', period: '3/31', scope: 'corp' },
+  { key: 'health_settle', label: '건보료 연말정산', period: '4월 고지', scope: 'corp' },
+  { key: 'income_tax', label: '종합소득세', period: '5/31', scope: 'personal' },
+  { key: 'car_tax_annual', label: '자동차세 연납', period: '1월 (연납 선택 시)', scope: 'personal' },
+  { key: 'car_tax_1', label: '자동차세 1기', period: '6/30', scope: 'personal' },
+  { key: 'car_tax_2', label: '자동차세 2기', period: '12/31', scope: 'personal' },
+  { key: 'prop_tax_1', label: '재산세 1기', period: '7/31', scope: 'personal' },
+  { key: 'prop_tax_2', label: '재산세 2기', period: '9/30', scope: 'personal' },
+];
+
+const CONTRIB_ITEMS = [
+  { key: 'natl_pension_c', num: '①', label: '국민연금', limitLabel: '매월 납부', type: 'monthly', limitAmt: 0, scope: 'personal' },
+  { key: 'pension_deduct', num: '②-1', label: '연금저축 (세액공제용)', limitLabel: '연 600만원', type: 'annual', limitAmt: 600, scope: 'personal' },
+  { key: 'pension_extra', num: '②-2', label: '연금저축 (비공제용)', limitLabel: '연 1,200만원', type: 'annual', limitAmt: 1200, scope: 'personal' },
+  { key: 'pension_isa', num: '②-3', label: '연금저축 (ISA 만기이전)', limitLabel: 'ISA 만기 시', type: 'event', limitAmt: 0, scope: 'personal' },
+  { key: 'irp1_umbrella', num: '③', label: 'IRP1 (노란우산→)', limitLabel: '노란우산 해지 시', type: 'event', limitAmt: 0, scope: 'personal' },
+  { key: 'irp2_corp', num: '④', label: 'IRP2 (법인퇴직금)', limitLabel: '미개설', type: 'event', limitAmt: 0, scope: 'corp' },
+  { key: 'isa_broker', num: '⑤-1', label: '중개형 ISA', limitLabel: '연 2,000만원', type: 'annual', limitAmt: 2000, scope: 'personal' },
+  { key: 'isa_productive', num: '⑤-2', label: '생산적 ISA', limitLabel: '27년~ 미개설', type: 'annual', limitAmt: 2000, scope: 'personal' },
+];
+
+const GOAL_ITEMS = [
+  { key: 'bond', label: '채권 포지션', tag: '점진확대', tagColor: '#2563eb', scope: 'personal',
+    hint: '목표 5억+. 종목/만기/금액 기록. 저쿠폰 미국채 금종세 방어 겸용' },
+  { key: 'office', label: '사무실/상가', tag: '보류', tagColor: '#d97706', scope: 'corp',
+    hint: '재검토 조건: 채권 포지션 충분 + 좋은 매물' },
+  { key: 'housing', label: '주거 (전세→매수?)', tag: '모니터링', tagColor: '#888', scope: 'personal',
+    hint: '' },
+  { key: 'pension_setup', label: '연금 세팅 (ISA→연금저축)', tag: '진행중', tagColor: '#16a34a', scope: 'personal',
+    hint: 'ISA 만기 → 연금저축 이관 세팅 (2026~2027)' },
+  { key: 'finc_tax', label: '금종세 모니터링', tag: '연 2,000만↓', tagColor: '#dc2626', scope: 'personal',
+    hint: '⚠️ 채권이자 + 주식배당 + 예금이자 합산 2,000만원 이하 유지\n• 국내 상장주식 배당\n• 채권 이자 (국내·해외)\n• 예적금 이자\n• 해외주식 배당 (원천징수 후 실수령 기준 아님, 세전 기준)\n• ELS/DLS 수익\n※ 비과세(ISA 내), 분리과세 제외 항목은 합산 안 됨' },
+  { key: 'realestate', label: '부동산 (하남/여의도 등)', tag: '추적', tagColor: '#7c3aed', scope: 'both',
+    hint: '' },
+];
+
+// ── 상태 ──
+let years = {};
+let curYear = new Date().getFullYear().toString();
+
+function defaultYearData(){
+  const d = { monthly: {}, monthlyNotes: {}, periodic: {}, contrib: {}, goals: {}, memo: '', carAnnual: false };
+  MONTHLY_ITEMS.forEach(it => { d.monthly[it.key] = Array(12).fill(false); d.monthlyNotes[it.key] = ''; });
+  PERIODIC_ITEMS.forEach(it => { d.periodic[it.key] = { done: false, note: '' }; });
+  CONTRIB_ITEMS.forEach(it => { d.contrib[it.key] = { amt: '', note: '', status: '' }; });
+  GOAL_ITEMS.forEach(it => { d.goals[it.key] = it.hint || ''; });
+  return d;
+}
+
+function ensureYear(y){
+  if(!years[y]) years[y] = defaultYearData();
+  const yd = years[y];
+  if(!yd.monthlyNotes) yd.monthlyNotes = {};
+  if(yd.carAnnual === undefined) yd.carAnnual = false;
+  MONTHLY_ITEMS.forEach(it => {
+    if(!yd.monthly[it.key]) yd.monthly[it.key] = Array(12).fill(false);
+    if(yd.monthlyNotes[it.key] === undefined) yd.monthlyNotes[it.key] = '';
+  });
+  PERIODIC_ITEMS.forEach(it => { if(!yd.periodic[it.key]) yd.periodic[it.key] = { done: false, note: '' }; });
+  CONTRIB_ITEMS.forEach(it => { if(!yd.contrib[it.key]) yd.contrib[it.key] = { amt: '', note: '', status: '' }; });
+  GOAL_ITEMS.forEach(it => { if(yd.goals[it.key] === undefined) yd.goals[it.key] = ''; });
+  if(!yd.memo) yd.memo = '';
+}
+
+function getFullState(){ return { years, curYear }; }
+function setFullState(d){
+  if(!d) return;
+  years = d.years || {};
+  curYear = d.curYear || new Date().getFullYear().toString();
+  render();
+}
+
+function scopeTag(scope){
+  if(scope === 'corp') return '<span class="tag-corp">법인</span>';
+  if(scope === 'personal') return '<span class="tag-personal">개인</span>';
+  return '<span class="tag-corp">법인</span><span class="tag-personal">개인</span>';
+}
+
+// ── 렌더링 ──
+function render(){
+  ensureYear(curYear);
+  renderYearTabs();
+  renderSummary();
+  renderMonthly();
+  renderPeriodic();
+  renderContrib();
+  renderGoals();
+  $('yearMemo').value = years[curYear].memo || '';
+  $('printTitle').textContent = curYear + '년 연간 체크리스트';
+}
+
+function renderYearTabs(){
+  const allYears = Object.keys(years).sort();
+  if(!allYears.includes(curYear)){ allYears.push(curYear); allYears.sort(); }
+  let html = allYears.map(y => {
+    const delBtn = allYears.length > 1 ? `<button class="year-del" onclick="event.stopPropagation();delYear('${y}')" title="삭제">×</button>` : '';
+    return `<button class="year-tab ${y===curYear?'active':''}" onclick="switchYear('${y}')">${y}년${delBtn}</button>`;
+  }).join('');
+  html += `<button class="year-tab-add" onclick="addYear()">+ 연도</button>`;
+  $('yearTabs').innerHTML = html;
+}
+
+function renderSummary(){
+  const yd = years[curYear];
+  let mTotal = 0, mDone = 0;
+  const curMonth = curYear == new Date().getFullYear() ? new Date().getMonth() : 11;
+  MONTHLY_ITEMS.forEach(it => { for(let m=0;m<=curMonth;m++){ mTotal++; if(yd.monthly[it.key]?.[m]) mDone++; }});
+  let pTotal = PERIODIC_ITEMS.length, pDone = 0;
+  PERIODIC_ITEMS.forEach(it => { if(yd.periodic[it.key]?.done) pDone++; });
+  // 자동차세 연납 시 1기/2기 자동완료 카운트
+  if(yd.carAnnual){
+    if(!yd.periodic.car_tax_1?.done) pDone++;
+    if(!yd.periodic.car_tax_2?.done) pDone++;
+  }
+  let cFilled = 0, cTotal = 0;
+  CONTRIB_ITEMS.forEach(it => { if(it.type==='annual'){ cTotal++; const a=parseFloat((yd.contrib[it.key]?.amt||'').replace(/,/g,''))||0; if(a>0) cFilled++; }});
+  $('summaryArea').innerHTML = `
+    <div class="summary-card"><div class="num">${mTotal>0?Math.round(mDone/mTotal*100):0}%</div><div class="lbl">매월 납부 (${mDone}/${mTotal})</div></div>
+    <div class="summary-card"><div class="num">${Math.min(pDone,pTotal)}/${pTotal}</div><div class="lbl">분기·연간 납부</div></div>
+    <div class="summary-card"><div class="num">${cFilled}/${cTotal}</div><div class="lbl">연간 납입 계좌</div></div>`;
+}
+
+function renderMonthly(){
+  const yd = years[curYear];
+  let total=0, done=0, html='';
+  MONTHLY_ITEMS.forEach(it => {
+    html += `<tr><td class="row-label">${it.label}${it.sub?'<div class="sub">'+it.sub+'</div>':''} ${scopeTag(it.scope)}</td>`;
+    for(let m=0;m<12;m++){
+      const checked = yd.monthly[it.key]?.[m];
+      if(checked) done++;
+      total++;
+      html += `<td><input type="checkbox" class="ck" ${checked?'checked':''} onchange="toggleMonthly('${it.key}',${m},this.checked)"></td>`;
+    }
+    html += `<td><input type="text" class="note-input" style="max-width:120px" value="${(yd.monthlyNotes[it.key]||'').replace(/"/g,'&quot;')}" placeholder="금액/메모" onchange="updateMonthlyNote('${it.key}',this.value)"></td>`;
+    html += '</tr>';
+  });
+  $('monthlyBody').innerHTML = html;
+  $('monthlyProg').textContent = `${done}/${total}`;
+  $('monthlyProg').style.color = done===total?'#16a34a':'#d97706';
+}
+
+function renderPeriodic(){
+  const yd = years[curYear];
+  let total=0, done=0, html='';
+  PERIODIC_ITEMS.forEach(it => {
+    const p = yd.periodic[it.key] || {done:false,note:''};
+    let isDone = p.done;
+    let autoChecked = false;
+    // 자동차세 연납 → 1기/2기 자동체크
+    if(yd.carAnnual && (it.key==='car_tax_1'||it.key==='car_tax_2')){
+      isDone = true;
+      autoChecked = true;
+    }
+    if(isDone) done++;
+    total++;
+    const annualBadge = it.key==='car_tax_annual' ? `<label style="font-size:11px;margin-left:6px;cursor:pointer"><input type="checkbox" ${yd.carAnnual?'checked':''} onchange="toggleCarAnnual(this.checked)" style="margin-right:3px">연납완료</label>` : '';
+    const disabledAttr = autoChecked ? 'disabled title="연납 완료로 자동체크"' : '';
+    const autoLabel = autoChecked ? ' <span class="annual-pay-badge">연납</span>' : '';
+    html += `<tr>
+      <td class="row-label">${it.label} ${scopeTag(it.scope)}${autoLabel}${annualBadge}</td>
+      <td style="font-size:12px;color:#666">${it.period}</td>
+      <td><input type="checkbox" class="ck" ${isDone?'checked':''} ${disabledAttr} onchange="togglePeriodic('${it.key}',this.checked)"></td>
+      <td><input type="text" class="note-input" value="${(p.note||'').replace(/"/g,'&quot;')}" placeholder="금액/메모" onchange="updatePeriodicNote('${it.key}',this.value)"></td>
+    </tr>`;
+  });
+  $('periodicBody').innerHTML = html;
+  $('periodicProg').textContent = `${done}/${total}`;
+  $('periodicProg').style.color = done===total?'#16a34a':'#d97706';
+}
+
+function renderContrib(){
+  const yd = years[curYear];
+  let html = '';
+  CONTRIB_ITEMS.forEach(it => {
+    const c = yd.contrib[it.key] || {amt:'',note:'',status:''};
+    const amt = parseFloat((c.amt||'').replace(/,/g,''))||0;
+    let barHtml='', pctHtml='';
+    if(it.type==='annual' && it.limitAmt>0){
+      const pct = Math.min(100, amt/it.limitAmt*100);
+      const barColor = pct>=100?'#16a34a':pct>0?'#f59e0b':'#ddd';
+      barHtml = `<div class="contrib-bar"><div class="contrib-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>`;
+      pctHtml = `<div class="contrib-pct" style="color:${pct>=100?'#16a34a':'#d97706'}">${amt>0?Math.round(amt).toLocaleString():0} / ${it.limitAmt.toLocaleString()}만원 (${Math.round(pct)}%)</div>`;
+    }
+    let statusBadge = '';
+    if(it.type==='event'){
+      statusBadge = `<select style="font-size:11px;padding:3px 6px;border:1px solid #ddd;border-radius:4px;background:white" onchange="updateContribStatus('${it.key}',this.value)">
+        <option value="" ${!c.status?'selected':''}>—</option>
+        <option value="완료" ${c.status==='완료'?'selected':''}>✅ 완료</option>
+        <option value="진행중" ${c.status==='진행중'?'selected':''}>🔄 진행중</option>
+        <option value="해당없음" ${c.status==='해당없음'?'selected':''}>N/A</option>
+      </select>`;
+    }
+    html += `<div class="contrib-card">
+      <div class="contrib-header">
+        <div class="contrib-num">${it.num}</div>
+        <div class="contrib-name">${it.label} ${scopeTag(it.scope)}</div>
+        <div class="contrib-limit">${it.limitLabel} ${statusBadge}</div>
+      </div>
+      <div class="contrib-row">
+        <div class="contrib-label">${it.type==='monthly'?'월 납입액':'납입액'} (만원)</div>
+        <div class="contrib-input"><input type="text" value="${c.amt}" placeholder="0" inputmode="decimal" onchange="updateContribAmt('${it.key}',this.value)"></div>
+      </div>
+      ${barHtml}${pctHtml}
+      <div class="contrib-row" style="margin-top:6px">
+        <div class="contrib-label">비고</div>
+        <div class="contrib-input"><input type="text" value="${(c.note||'').replace(/"/g,'&quot;')}" placeholder="계좌/증권사/메모" onchange="updateContribNote('${it.key}',this.value)"></div>
+      </div>
+    </div>`;
+  });
+  $('contribArea').innerHTML = html;
+}
+
+function renderGoals(){
+  const yd = years[curYear];
+  let html = '';
+  GOAL_ITEMS.forEach(it => {
+    const note = yd.goals[it.key] || '';
+    html += `<div class="goal-card">
+      <div class="goal-title">${it.label} ${scopeTag(it.scope)} <span class="tag" style="background:${it.tagColor}22;color:${it.tagColor}">${it.tag}</span></div>
+      ${it.hint ? `<div class="goal-hint">${it.hint.replace(/\n/g,'<br>')}</div>` : ''}
+      <textarea class="goal-note" placeholder="${curYear}년 현황/변동사항..."
+        onchange="updateGoal('${it.key}',this.value)">${note.replace(/</g,'&lt;')}</textarea>
+    </div>`;
+  });
+  $('goalArea').innerHTML = html;
+}
+
+// ── 이벤트 ──
+function switchYear(y){ curYear=y; render(); autoSave(); }
+function addYear(){
+  const next = (Math.max(...Object.keys(years).map(Number), parseInt(curYear))+1).toString();
+  ensureYear(next);
+  curYear = next;
+  render(); autoSave();
+}
+function delYear(y){
+  if(Object.keys(years).length <= 1){ alert('최소 1개 연도는 있어야 합니다.'); return; }
+  if(!confirm(y+'년 데이터를 삭제할까요? 복구 불가능합니다.')) return;
+  delete years[y];
+  if(curYear === y) curYear = Object.keys(years).sort().pop();
+  render(); autoSave();
+}
+
+function toggleMonthly(key,month,val){
+  ensureYear(curYear);
+  years[curYear].monthly[key][month] = val;
+  renderSummary();
+  let total=0,done=0;
+  MONTHLY_ITEMS.forEach(it=>{for(let m=0;m<12;m++){total++;if(years[curYear].monthly[it.key]?.[m])done++;}});
+  $('monthlyProg').textContent=`${done}/${total}`;
+  $('monthlyProg').style.color=done===total?'#16a34a':'#d97706';
+  autoSave();
+}
+function updateMonthlyNote(key,val){
+  ensureYear(curYear);
+  years[curYear].monthlyNotes[key] = val;
+  autoSave();
+}
+function togglePeriodic(key,val){
+  ensureYear(curYear);
+  years[curYear].periodic[key].done = val;
+  renderSummary();
+  let total=0,done=0;
+  PERIODIC_ITEMS.forEach(it=>{total++;
+    let isDone = years[curYear].periodic[it.key]?.done;
+    if(years[curYear].carAnnual && (it.key==='car_tax_1'||it.key==='car_tax_2')) isDone=true;
+    if(isDone) done++;
+  });
+  $('periodicProg').textContent=`${done}/${total}`;
+  $('periodicProg').style.color=done===total?'#16a34a':'#d97706';
+  autoSave();
+}
+function updatePeriodicNote(key,val){
+  ensureYear(curYear); years[curYear].periodic[key].note=val; autoSave();
+}
+function toggleCarAnnual(val){
+  ensureYear(curYear);
+  years[curYear].carAnnual = val;
+  if(val) years[curYear].periodic.car_tax_annual.done = true;
+  renderPeriodic(); renderSummary(); autoSave();
+}
+function updateContribAmt(key,val){
+  ensureYear(curYear); years[curYear].contrib[key].amt=val; renderContrib(); renderSummary(); autoSave();
+}
+function updateContribNote(key,val){
+  ensureYear(curYear); years[curYear].contrib[key].note=val; autoSave();
+}
+function updateContribStatus(key,val){
+  ensureYear(curYear); years[curYear].contrib[key].status=val; autoSave();
+}
+function updateGoal(key,val){
+  ensureYear(curYear); years[curYear].goals[key]=val; autoSave();
+}
+$('yearMemo').addEventListener('input', function(){
+  ensureYear(curYear); years[curYear].memo=this.value; autoSave();
+});
+
+function autoSave(){
+  try{ if(window.slGetState) localStorage.setItem('sf_annual_check_v2', JSON.stringify(window.slGetState())); }catch(e){}
+}
+
+// ── 초기화 ──
+ensureYear(curYear);
+render();
+</script>
+</body>
+</html>
