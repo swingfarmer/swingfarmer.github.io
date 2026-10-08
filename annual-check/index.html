@@ -329,7 +329,8 @@ function renderYearTabs(){
   const allYears = Object.keys(years).sort();
   if(!allYears.includes(curYear)){ allYears.push(curYear); allYears.sort(); }
   let html = allYears.map(y => {
-    const delBtn = allYears.length > 1 ? `<span class="year-del" onclick="event.stopPropagation();delYear('${y}')" title="삭제">×</span>` : '';
+    const canDel = allYears.length > 1 && parseInt(y) > new Date().getFullYear();
+    const delBtn = canDel ? `<span class="year-del" onclick="event.stopPropagation();delYear('${y}')" title="삭제">×</span>` : '';
     return `<div class="year-tab ${y===curYear?'active':''}" onclick="switchYear('${y}')">${y}년${delBtn}</div>`;
   }).join('');
   html += `<div class="year-tab-add" onclick="addYear()">+ 연도</div>`;
