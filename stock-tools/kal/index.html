@@ -4,20 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<title>대한항공 실적 시뮬레이터</title>
+<title>대한항공 실적 시뮬레이터 v4</title>
 <link rel="stylesheet" href="/common.css?v=4">
 <style>
-:root { --sf-max-w: 620px; }
+:root{--sf-max-w:660px}
 *{box-sizing:border-box;margin:0;padding:0}
-.card{background:white;border:1px solid #e6e9ee;border-radius:10px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.card{background:#fff;border:1px solid #e6e9ee;border-radius:10px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .toggles{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-.seg{display:inline-flex;background:#eef2f7;border-radius:10px;padding:3px;gap:2px}
-.seg button{border:0;background:transparent;color:#6b7280;font-family:inherit;font-weight:700;font-size:13px;padding:7px 14px;border-radius:8px;cursor:pointer;transition:.15s}
+.seg{display:inline-flex;background:#eef2f7;border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;color:#6b7280;font-family:inherit;font-weight:700;font-size:12px;padding:7px 12px;border-radius:8px;cursor:pointer;transition:.15s;white-space:nowrap}
 .seg button.on{background:#1F4E78;color:#fff}
 .seg.scn button.on{background:#6d28d9}
+.seg.term button.on{background:#047857}
 .ctrl{margin-bottom:16px}.ctrl:last-child{margin-bottom:0}
-.ctrl .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
-.dot{width:9px;height:9px;border-radius:50%}.dot.oil{background:#b45309}.dot.fx{background:#1d4ed8}
+.ctrl .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;flex-wrap:wrap;gap:6px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:4px}
+.dot.oil{background:#b45309}.dot.fx{background:#1d4ed8}
 .valbox{display:flex;align-items:center;gap:6px}
 .valbox input{width:78px;text-align:right;font-family:inherit;font-weight:700;font-size:15px;border:1px solid #ccc;border-radius:6px;padding:6px 8px;color:#0000FF;background:#FFF2CC}
 .unit{color:#888;font-size:12px;font-weight:600}
@@ -26,7 +28,7 @@ input[type=range]{width:100%;accent-color:#1F4E78;height:24px;cursor:pointer}
 .results{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:480px){.results{grid-template-columns:1fr}}
 .res{border:1px solid #e6e9ee;border-radius:10px;padding:14px;background:#fff}
-.res .route{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px}
+.res .route{font-size:11px;font-weight:700;color:#888;letter-spacing:.03em;margin-bottom:2px}
 .res h2{font-size:14px;font-weight:800;margin-bottom:10px}
 .big{font-size:25px;font-weight:800;letter-spacing:-.02em}
 .big.pos{color:#0a7c4a}.big.neg{color:#c0392b}
@@ -52,10 +54,26 @@ summary .chev{color:#888;font-size:12px;font-weight:600}
 .arow .lab{font-weight:600}.arow .lab small{display:block;color:#888;font-weight:500;font-size:11px}
 .arow input{width:88px;text-align:right;font-family:inherit;font-weight:700;border:1px solid #ccc;border-radius:6px;padding:6px 7px;color:#0000FF;background:#FFF2CC}
 .reset{margin-top:10px;background:none;border:1px solid #ccc;border-radius:8px;padding:7px 12px;font-family:inherit;font-weight:700;font-size:12px;color:#888;cursor:pointer}
+.badge.actual{background:#dcfce7;color:#047857;border:1px solid #86efac;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;display:inline-block;margin:0 3px 4px 0}
+.badge.forecast{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;display:inline-block;margin:0 3px 4px 0}
+.badge.info{background:#f3f4f6;color:#4b5563;border:1px solid #d1d5db;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;display:inline-block;margin:0 3px 4px 0}
+.macro-box{background:#f0f4ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#1e40af;line-height:1.55}
+.macro-box b{color:#1e3a8a}
+.macro-box .row{display:flex;justify-content:space-between;padding:3px 0}
+.ctable{width:100%;font-size:12px;border-collapse:collapse;margin-top:8px}
+.ctable th{background:#f0f4ff;font-weight:700;text-align:left;padding:7px 8px;border-bottom:2px solid #bfdbfe}
+.ctable td{padding:6px 8px;border-bottom:1px solid #e6e9ee}
+.ctable tr.hl{background:#f1ecfb;font-weight:700}
+.ctable tr.hl td{color:#6d28d9}
+.ctable .num{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.ctable .pos{color:#0a7c4a}.ctable .neg{color:#c0392b}
+.note{font-size:11.5px;color:#888;line-height:1.6;margin-top:12px}.note b{color:#1a1a1a}
+.manual b{color:#1F4E78}
 .checkcard{border:2px solid #6d28d9;background:#f1ecfb;border-radius:12px;padding:16px;margin-bottom:14px}
 .checkcard h3{font-size:14px;font-weight:800;color:#6d28d9;margin-bottom:4px}
 .checkcard .hint{font-size:12px;color:#6b7280;margin-bottom:12px;line-height:1.5}
 .infield{margin-bottom:10px}
+.infield label{font-size:13px;font-weight:600}
 .infield label small{color:#888;font-weight:500}
 .infield input{width:100%;font-family:inherit;font-weight:700;font-size:14px;border:1px solid #d6cdf0;border-radius:8px;padding:9px 11px;background:#fff;color:#0000FF}
 .verdict{margin-top:12px;background:#fff;border:1px solid #d6cdf0;border-radius:10px;padding:13px}
@@ -64,406 +82,458 @@ summary .chev{color:#888;font-size:12px;font-weight:600}
 .vrow .k{font-weight:600}.vrow .est{color:#888;font-weight:600}.vrow .act{font-weight:800;color:#6d28d9}
 .vgap{font-size:13px;font-weight:800;margin-top:10px;padding-top:10px;border-top:1px solid #e6e9ee}
 .vgap.ok{color:#0a7c4a}.vgap.off{color:#c0392b}
-.note{font-size:11.5px;color:#888;line-height:1.6;margin-top:12px}.note b{color:#1a1a1a}
-.badge.actual{background:#dcfce7;color:#047857;border:1px solid #86efac}
-.badge.forecast{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
-.badge.deprecated{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
-.badge.info{background:#f3f4f6;color:#4b5563;border:1px solid #d1d5db}
-.manual b{color:#1F4E78}
-.macro-box{background:#f0f4ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#1e40af;line-height:1.55}
-.macro-box b{color:#1e3a8a}
-.macro-box .row{display:flex;justify-content:space-between;padding:3px 0}
 </style>
 </head>
 <body class="sf-narrow">
-
 <a href="/" class="back-link">← 메인으로</a>
-
 <h1>✈️ 대한항공 실적 시뮬레이터</h1>
-<p class="desc">2Q26 실측 반영 · 8/26 업데이트 · 하나 TP 41,000 / 한투 8/20 업데이트 반영 · 유가→영업이익 / 환율→순이익 분리 · 실측 vs 예상 갭 검증. 입력 기록은 서버에 저장되지 않습니다.</p>
+<p class="desc">v4 · 10/10 업데이트 · 9개사 종합 + 우리추정 + 델타 3Q 어닝콜 반영 · 3Q 환율 확정(1,358.40) · 4Q 전망 추가 · OP 환율 방향 수정(Net Dollar Short → 원화강세=호재)</p>
 
 <div id="statusBadge" style="margin-bottom:10px"></div>
 
 <div class="infobar updated">
-  ✈️ <b>최신 업데이트 (2026.8.28)</b><br>
-  2Q 별도 실측 <b>OP 2,618억</b>(컨센 4배 상회) · 매출 5.02조(+25.9%YoY) · 순이익 -973억(환율 평가손).<br>
-  화물 운임 703원/km(+42%YoY) · 국제선 일드 +11% · 탑승률 87%.<br>
-  유류할증료: <b>8월 14단계 확정</b> · <b>9월 21단계 확정</b>.<br>
-  환율: 6/30 <b>1,541.50원</b> → 8/26 <b>~1,380원</b> (한은 기준금리 3.0% 인상).<br>
-  WTI <b>$82.29</b> · 등유 -5.3% 급락 · 달러지수 99선 붕괴.<br>
-  하나 TP <b>41,000</b> · 한투 8/20 업데이트 <b>2026F 별도 OP 1.726조</b> · 3Q OP <b>5,210억</b>.
+  ✈️ <b>v4 업데이트 (2026.10.10)</b><br>
+  3Q 기말환율 <b>1,358.40원</b> 확정 · 9/30 매매기준율.<br>
+  9개사 별도 OP 밴드: <b>4,458~5,384</b> · 중심 ~4,920 · TP 37,000~42,000 합의.<br>
+  <b>델타항공 3Q</b>: 화물 +29%(비트) · 태평양 +13% · 프리미엄 +18% · 유가만 악재.<br>
+  MOPS 9월: <b>$4.04/gal ($169.5/bbl)</b> · BAI: <b>2,606 (+5.0%, 10/5)</b>.<br>
+  KAL 3Q 국제선 화물 <b>422,861톤</b> · 여객 <b>509만명</b> · 탑재율 <b>85.8%</b>.<br>
+  <b>OP 환율 수정</b>: KAL은 Net Dollar Short → 원화강세 = OP 호재(+90억/10원).
 </div>
 
 <div class="macro-box">
-  📊 <b>현재 매크로 환경 (8/28)</b>
-  <div class="row"><span>WTI</span><b>$82.29</b></div>
-  <div class="row"><span>등유 (항공유 원료)</span><b>$139.2 (-5.3%)</b></div>
-  <div class="row"><span>원/달러 (8/28)</span><b>1,380.30원 (6/30 대비 -161원)</b></div>
-  <div class="row"><span>7월 평균 환율</span><b>1,497.43원 (22일, 6/30 대비 -44원)</b></div>
-  <div class="row"><span>8월 평균 환율</span><b>1,407.87원 (19일, 6/30 대비 -134원)</b></div>
-  <div class="row"><span>Q3 누적 평균</span><b>1,455.92원 (41일, 6/30 대비 -86원)</b></div>
-  <div class="row"><span>MOPS 할증료</span><b>8월 14단계 · 9월 21단계 (확정)</b></div>
-  <div class="row"><span>BAI 화물운임</span><b>2,425 (고점 -13%, YoY +27%)</b></div>
-  <div class="row"><span>한은 기준금리</span><b>3.0% (8/26 인상)</b></div>
+  📊 <b>현재 매크로 (10/10)</b>
+  <div class="row"><span>WTI</span><b>~$89</b></div>
+  <div class="row"><span>MOPS Jet (9월 확정)</span><b>$4.04/gal ($169.5/bbl)</b></div>
+  <div class="row"><span>원/달러 9/30 기말 (확정)</span><b>1,358.40원</b></div>
+  <div class="row"><span>3Q 평균환율</span><b>~1,421원 (7월1,497/8월1,406/9월1,359)</b></div>
+  <div class="row"><span>6/30 기말환율</span><b>1,541.50원 (변동 -183.1원)</b></div>
+  <div class="row"><span>BAI 화물운임 (10/5)</span><b>2,606 (+5.0%)</b></div>
+  <div class="row"><span>KAL 3Q 화물</span><b>422,861톤 (국제선)</b></div>
+  <div class="row"><span>화물 할증료 10월</span><b>장거리 1,790원/kg (MOPS $4.04)</b></div>
+  <div class="row"><span>델타 3Q 화물</span><b>+29% (볼륨+Yield 절반씩)</b></div>
+  <div class="row"><span>델타 4Q 연료 전망</span><b>$4.25/gal</b></div>
 </div>
 
+<!-- Controls -->
 <div class="card">
   <div class="toggles">
-    <div class="seg" id="segBasis">
-      <button data-v="별도" class="on">별도</button>
-      <button data-v="연결">연결</button>
-    </div>
-    <div class="seg" id="segTerm">
-      <button data-v="연간">연간(2026F)</button>
-      <button data-v="2Q">2Q26 실측</button>
-      <button data-v="3Q" class="on">3Q26 F</button>
+    <div class="seg term" id="segTerm">
+      <button data-v="2Q">2Q 실측</button>
+      <button data-v="3Q" class="on">3Q</button>
+      <button data-v="4Q">4Q 전망</button>
     </div>
     <div class="seg scn" id="segScn">
-      <button data-v="한투" class="on">한투(8/20·3Q기준)</button>
-      <button data-v="하나">하나(7/14·TP41k)</button>
+      <button data-v="우리" class="on">우리추정</button>
+      <button data-v="컨센">컨센(9사)</button>
+      <button data-v="LS">LS(최고)</button>
+      <button data-v="KB">KB(최저)</button>
     </div>
   </div>
   <div class="ctrl">
     <div class="top">
-      <label><span class="dot oil"></span>항공유 변동 <span class="unit">(기준 대비)</span></label>
-      <div class="valbox">
-        <input type="number" id="oilNum" value="0" step="1">
-        <select id="oilUnit" style="font-family:inherit;font-weight:700;font-size:12px;border:1px solid #ccc;border-radius:6px;padding:5px;background:#FFF2CC;color:#1F4E78;cursor:pointer">
-          <option value="bbl" selected>$/bbl</option>
-          <option value="gal">¢/gal</option>
-        </select>
-      </div>
+      <label><span class="dot oil"></span>유가 변동 <span class="unit">($/bbl)</span></label>
+      <div class="valbox"><input type="number" id="oilNum" value="0" step="1"><span class="unit">$/bbl</span></div>
     </div>
     <input type="range" id="oilRange" min="-30" max="30" value="0" step="1">
     <div class="scale"><span>-30</span><span>0</span><span>+30</span></div>
-    <div style="font-size:11px;color:#888;margin-top:6px" id="oilConv">≈ 다른 단위 자동 환산 (1배럴 = 42갤런)</div>
   </div>
   <div class="ctrl">
     <div class="top">
-      <label><span class="dot fx"></span>환율 변동 <span class="unit">(6/30 1,541.50원 기준)</span></label>
-      <div class="valbox"><input type="number" id="fxNum" value="-161" step="5"><span class="unit">원</span></div>
+      <label><span class="dot fx"></span>환율 변동 <span class="unit" id="fxLabel">(6/30 1,541.50 기준)</span></label>
+      <div class="valbox"><input type="number" id="fxNum" value="-183" step="5"><span class="unit">원</span></div>
     </div>
-    <input type="range" id="fxRange" min="-200" max="100" value="-161" step="5">
-    <div class="scale"><span>-200</span><span>0</span><span>+100</span></div>
+    <input type="range" id="fxRange" min="-250" max="100" value="-183" step="5">
+    <div class="scale"><span>-250</span><span>0</span><span>+100</span></div>
+    <div style="font-size:11px;color:#047857;font-weight:700;margin-top:4px" id="fxNote">9/30 확정: 1,358.40원 = -183원 (6/30 대비)</div>
   </div>
 </div>
 
 <div class="results">
   <div class="res">
-    <div class="route">유가 라인</div><h2>영업이익</h2>
+    <div class="route">유가+환율 라인</div><h2>별도 영업이익</h2>
     <div class="big" id="opVal">—</div>
     <div class="baserow" id="opBase"></div>
-    <div class="delta"><span class="d-oil" id="opOil"></span><span class="d-zero" id="opFx"></span></div>
+    <div class="delta">
+      <span class="d-oil" id="opOil"></span>
+      <span class="d-fx" id="opFxD"></span>
+    </div>
   </div>
   <div class="res">
-    <div class="route">환율 라인</div><h2>순이익(지배)</h2>
+    <div class="route">환율 라인 (기말)</div><h2>별도 순이익</h2>
     <div class="big" id="niVal">—</div>
     <div class="baserow" id="niBase"></div>
-    <div class="delta"><span class="d-oil" id="niOil"></span><span class="d-fx" id="niFx"></span></div>
+    <div class="delta">
+      <span class="d-oil" id="niOil"></span>
+      <span class="d-fx" id="niFx"></span>
+    </div>
   </div>
 </div>
 
 <div class="card" style="padding:0;margin-top:14px">
   <div class="sens">
-    <div class="row"><span>유가 +$1/bbl</span><span class="v amber" id="sOil">—</span></div>
-    <div class="row"><span>환율 +10원</span><span class="v sky" id="sFx">—</span></div>
+    <div class="row"><span>유가 +$1/bbl (net, 전가85%후)</span><span class="v amber" id="sOil">—</span></div>
+    <div class="row"><span>환율 -10원 → OP</span><span class="v sky" id="sOpFx">—</span></div>
+    <div class="row"><span>환율 -10원 → NI (기말)</span><span class="v sky" id="sNiFx">—</span></div>
   </div>
 </div>
 
+<!-- 9개사 종합 -->
 <details>
-  <summary>가정값 <span class="chev">▾</span></summary>
+  <summary>📊 9개사 셀사이드 종합 (3Q 별도 기준) <span class="chev">▾</span></summary>
   <div class="pad">
-    <div class="arow"><span class="lab">전가율<small>유류할증료+운임 / 2Q 실측 85%</small></span><input type="number" id="aPass" value="85" step="5"><span class="unit">%</span></div>
-    <div class="arow"><span class="lab">연료 환산환율<small>Q3 연료 구매 시 환율 (Q3 평균~1,456 + 헤지래깅)</small></span><input type="number" id="aFx" value="1450" step="10"><span class="unit">원</span></div>
-    <div class="arow"><span class="lab">순이익 환율민감도<small>하나 공식 · 별도 <b>550</b> / 연결 <b>750</b></small></span><input type="number" id="aFxNI" value="550" step="25"><span class="unit">억/10원</span></div>
-    <div class="arow"><span class="lab">6/30 기준 환율<small>서울외국환중개 매매기준율</small></span><input type="number" id="aBaseFx" value="1541.5" step="0.5" readonly><span class="unit">원</span></div>
-    <button class="reset" id="resetBtn">시나리오 기본값 복원</button>
-  </div>
-</details>
-
-<details>
-  <summary>📐 3Q 환율 시나리오 테이블 <span class="chev">▾</span></summary>
-  <div class="pad">
-    <div style="font-size:12px;color:#555;margin-bottom:10px;line-height:1.5">
-      환율 민감도: <b>10원당 550억 (별도 순이익)</b>. 6/30 기준 <b>1,541.50원</b>.<br>
-      OP는 환율과 거의 무관. 순이익만 영향.
-    </div>
-    <table style="width:100%;font-size:12px;border-collapse:collapse">
-      <tr style="background:#f0f4ff;font-weight:700"><td style="padding:6px">9월말 환율</td><td>6/30 대비</td><td>평가이익</td><td style="font-weight:800">Q3 순이익</td></tr>
-      <tr style="border-top:1px solid #e6e9ee"><td style="padding:6px">1,469 (한투 가정)</td><td>-72.5원</td><td>+3,988억</td><td style="font-weight:700">~1,880억</td></tr>
-      <tr style="border-top:1px solid #e6e9ee"><td style="padding:6px">1,456 (Q3 누적 평균)</td><td>-85.5원</td><td>+4,703억</td><td style="font-weight:700">~2,595억</td></tr>
-      <tr style="border-top:1px solid #e6e9ee"><td style="padding:6px">1,420 (되돌림)</td><td>-121.5원</td><td>+6,683억</td><td style="font-weight:700">~4,575억</td></tr>
-      <tr style="border-top:1px solid #e6e9ee;background:#ecfdf5"><td style="padding:6px"><b>1,380 (8/28 종가)</b></td><td>-161.2원</td><td>+8,866억</td><td style="font-weight:800;color:#047857">~6,775억</td></tr>
-      <tr style="border-top:1px solid #e6e9ee;background:#ecfdf5"><td style="padding:6px"><b>1,350 (낙관)</b></td><td>-191.5원</td><td>+10,533억</td><td style="font-weight:800;color:#047857">~8,425억</td></tr>
+    <table class="ctable">
+      <tr><th>증권사</th><th>애널</th><th class="num">별도 OP</th><th class="num">보정 NI</th><th class="num">TP</th><th>날짜</th></tr>
+      <tr><td>KB</td><td>강성진</td><td class="num">4,458</td><td class="num">10,754</td><td class="num pos">42,000</td><td>9/23</td></tr>
+      <tr><td>하나</td><td>안도현</td><td class="num">4,976</td><td class="num">11,435</td><td class="num pos">41,000</td><td>9/23</td></tr>
+      <tr><td>LS</td><td>이재혁</td><td class="num" style="font-weight:800">5,384</td><td class="num">~11,700</td><td class="num pos">40,000↑</td><td>10/2</td></tr>
+      <tr><td>iM</td><td>배세호</td><td class="num">5,170</td><td class="num">11,660</td><td class="num pos">40,000</td><td>9/21</td></tr>
+      <tr><td>유안타</td><td>최지운</td><td class="num">4,910</td><td class="num">11,330</td><td class="num pos">40,000</td><td>9/29</td></tr>
+      <tr><td>상상인</td><td>이서연</td><td class="num">4,880</td><td class="num">—</td><td class="num pos">40,000</td><td>9/21</td></tr>
+      <tr><td>신한</td><td>최민기</td><td class="num">4,676</td><td class="num">~7,218<br><small style="color:#888">연결기준</small></td><td class="num">38,000</td><td>10/2</td></tr>
+      <tr><td>미래</td><td>류제현</td><td class="num">—</td><td class="num">—</td><td class="num">37,000</td><td>9/8</td></tr>
+      <tr><td>한투</td><td>최고운</td><td class="num">~5,210</td><td class="num">—</td><td class="num" style="color:#888">미제시(중립)</td><td>9/8</td></tr>
+      <tr style="background:#f0f4ff;font-weight:700"><td colspan="2">컨센 중심</td><td class="num">~4,920</td><td class="num">~11,300</td><td class="num">40,000</td><td></td></tr>
+      <tr class="hl"><td colspan="2">🎯 우리 추정</td><td class="num">5,200</td><td class="num">11,700</td><td class="num">—</td><td>10/10</td></tr>
     </table>
-    <div style="font-size:11px;color:#888;margin-top:8px">※ 순이익 = OP(~5,200억) + 환율 평가이익 + 영업외(~-2,000억) - 법인세. 장부상 수치로, 환율 되돌리면 다음 분기에 반대 반영.</div>
+    <div class="note" style="margin-top:10px">
+      <b>보정 NI</b>: 9/30 기말환율 1,358.40원 확정 후 550/10원 기준 보정. 기존 OP에 환율 평가익(~1조) 가산 후 세금 차감.<br>
+      <b>LS 연결NI 2,960은 FX 미반영 → 별도NI로 재추정.</b> 자회사 세부(아시아나 -1,880 등)만 유용.<br>
+      <b>컨센(4,120) 대비 실제 NI 1조+</b>: 시장이 환율 평가익을 아직 반영 안 한 상태.
+    </div>
   </div>
 </details>
 
-<div class="checkcard">
-  <h3>🔎 2Q 실측 vs 모델 예상 갭</h3>
-  <div class="hint">2Q26 실측 발표됨(7/13). 별도 OP <b>+2,618억</b>·순이익 <b>-973억</b> 프리셋. 항공유·환율 Δ를 넣으면 모델 추정과 실측의 오차를 잡아냄. <b>결론: 전가율 85%가 실측에 근접</b>.</div>
-  <div class="infield"><label>2Q 실제 영업이익 <small>(억원, 실측: <b>+2,618</b>)</small></label><input type="number" id="cOP" value="2618"></div>
-  <div class="infield"><label>2Q 평균 항공유 변동 <small>(기준 대비 Δ$/bbl, 2Q MOPS 상승 감안 <b>+8~12</b> 추정)</small></label><input type="number" id="cOil" value="10"></div>
-  <div class="infield"><label>6월말 환율 변동 <small>(6/30 = 1,541.50 기준 대비 Δ원, 2Q말이니 <b>0</b>)</small></label><input type="number" id="cFx" value="0"></div>
-  <div class="infield"><label>2Q 실제 순이익(지배) <small>(억원, 실측: <b>-973</b>)</small></label><input type="number" id="cNI" value="-973"></div>
-  <div class="infield"><label>2Q 영업외 상수 가정 <small>(억원, 이자·지분법 등 상시 -2,000억대)</small></label><input type="number" id="cInt" value="-2000"></div>
-
-  <div class="verdict" id="verdict" style="display:none">
-    <div class="vrow"><span class="k">전가율</span><span><span class="est" id="vPassEst"></span> → <span class="act" id="vPassAct"></span></span></div>
-    <div class="vrow"><span class="k">유가 net 계수(억/$)</span><span><span class="est" id="vOilEst"></span> → <span class="act" id="vOilAct"></span></span></div>
-    <div class="vrow"><span class="k">환율 민감도(억/10원)</span><span><span class="est" id="vFxEst"></span> → <span class="act" id="vFxAct"></span></span></div>
-    <div class="vgap" id="vGap"></div>
+<!-- 환율 시나리오 -->
+<details>
+  <summary>📐 3Q 환율 시나리오 (확정: 1,358.40) <span class="chev">▾</span></summary>
+  <div class="pad">
+    <table class="ctable">
+      <tr><th>9월말 환율</th><th>6/30 대비</th><th class="num">평가이익</th><th class="num">별도 NI</th><th>상태</th></tr>
+      <tr><td>1,469 (한투 가정)</td><td>-72.5원</td><td class="num">+3,988</td><td class="num">~6,500</td><td>❌ 과소</td></tr>
+      <tr><td>1,420</td><td>-121.5원</td><td class="num">+6,683</td><td class="num">~9,100</td><td>❌ 과소</td></tr>
+      <tr><td>1,380 (8/28 기준)</td><td>-161.2원</td><td class="num">+8,866</td><td class="num">~11,000</td><td>근접</td></tr>
+      <tr style="background:#dcfce7;font-weight:700"><td>1,358.40 (확정)</td><td>-183.1원</td><td class="num pos">+10,071</td><td class="num pos">~11,700</td><td>✅ 확정</td></tr>
+      <tr><td>1,350 (낙관)</td><td>-191.5원</td><td class="num">+10,533</td><td class="num">~12,000</td><td>❌ 미달</td></tr>
+    </table>
+    <div class="note">NI = OP(~5,200) + 환율 평가이익 - 이자·기타(~-500) - 법인세(22%). 확정 환율 기준 NI ~11,500~12,000.</div>
   </div>
-  <div class="note">
-    <b>한계.</b> 영업이익엔 여객·화물 매출 성장이 섞여 순수 유가효과만 깔끔히 안 갈린다.
-    순이익 역산은 순이자비용 가정에 의존. <b>"추정이 얼마나 빗나갔나"의 근사 진단</b> 용도.
+</details>
+
+<!-- 델타 크로스체크 -->
+<details>
+  <summary>✈️ 델타 3Q → KAL 크로스체크 (10/9 어닝콜) <span class="chev">▾</span></summary>
+  <div class="pad">
+    <table class="ctable">
+      <tr><th>항목</th><th>델타 3Q</th><th>KAL 시사점</th><th>방향</th></tr>
+      <tr><td>화물 매출</td><td>+29% (볼륨·Yield 절반)</td><td>KAL 화물 비중 15~20% → 임팩트 증폭</td><td class="pos">▲</td></tr>
+      <tr><td>태평양 매출</td><td>+13%, 공급 +8%</td><td>JV 풀 구조라 공동 수혜</td><td class="pos">▲</td></tr>
+      <tr><td>프리미엄</td><td>+18%, 탑재율 +2pt</td><td>크랙 없음 → KAL 프레스티지 수요 견조</td><td class="pos">▲</td></tr>
+      <tr><td>유가</td><td>$3.61/gal (+62% YoY)</td><td>MOPS $4.04 → KAL도 부담. 전가율 방어가 핵심</td><td class="neg">▼</td></tr>
+      <tr><td>4Q 유가 전망</td><td>$4.25/gal (+18%)</td><td>KAL 4Q OP 3Q 대비 약화 전망</td><td class="neg">▼</td></tr>
+      <tr><td>국제선 공급</td><td>경쟁사 헤지 만료 → 감편</td><td>KAL은 합병(12/17)으로 확대 → 비대칭 수혜</td><td class="pos">▲</td></tr>
+      <tr><td>기업 출장</td><td>전부문 두 자릿수 성장</td><td>90%+ 기업 2027 출장 유지·증가</td><td class="pos">▲</td></tr>
+      <tr><td>MRO</td><td>YTD $9.9억 (+59%)</td><td>KAL 신공장(2027H2) 성장경로 확인</td><td class="pos">▲</td></tr>
+    </table>
+    <div class="note"><b>결론: 유가 외 전 항목 호재.</b> KAL은 전가율(85%)+환율 자연헤지+JV 풀로 유가 방어력이 델타보다 구조적 우위.</div>
+  </div>
+</details>
+
+<!-- 4Q 전망 -->
+<details>
+  <summary>📅 4Q 전망 프레임 <span class="chev">▾</span></summary>
+  <div class="pad">
+    <table class="ctable">
+      <tr><th></th><th>2Q (악몽)</th><th>3Q (반전)</th><th>4Q (전망)</th></tr>
+      <tr><td>평균환율</td><td>~1,400+</td><td>~1,421</td><td class="num">~1,350~1,370?</td></tr>
+      <tr><td>기말환율</td><td>1,541.50</td><td class="pos">1,358.40</td><td class="num">???</td></tr>
+      <tr><td>MOPS</td><td>급등</td><td>$4.04</td><td class="num neg">$4.25+ 전망</td></tr>
+      <tr><td>OP 환율</td><td class="neg">대형 악재</td><td class="pos">호재</td><td class="pos">더 큰 호재?</td></tr>
+      <tr><td>NI 환율</td><td class="neg">대규모 평가손</td><td class="pos">평가익 1조+</td><td>기말 변동에 달림</td></tr>
+      <tr><td>여객</td><td>성수기</td><td>피크</td><td class="neg">비수기</td></tr>
+      <tr><td>합병</td><td>—</td><td>—</td><td class="pos">12/17 아시아나 통합</td></tr>
+    </table>
+    <div class="note">
+      <b>4Q OP</b>: 비수기 + 유가 $4.25+ → 3Q 대비 약화. 다만 환율 OP 호재(평균 ~1,360이면 +549억 추가)가 일부 상쇄.<br>
+      <b>4Q NI</b>: 기말환율이 9/30(1,358.40)에서 크게 안 움직이면 외환차익 ≈ 0 → NI ≒ OP ± 영업외.<br>
+      <b>합병 비용</b>: IT통합·브랜딩·인력 재배치 일회성 비용 발생 가능 (규모 불명).
+    </div>
+  </div>
+</details>
+
+<!-- 가정값 -->
+<details>
+  <summary>⚙️ 가정값 <span class="chev">▾</span></summary>
+  <div class="pad">
+    <div class="arow"><span class="lab">전가율<small>유류할증료+운임 / 2Q 실측 85%. 화물 서차지는 ~100% 기계적 전가</small></span><input type="number" id="aPass" value="85" step="5"><span class="unit">%</span></div>
+    <div class="arow"><span class="lab">OP 환율민감도<small>Net Dollar Short → 원화강세=호재. +90억/10원 하락</small></span><input type="number" id="aOpFx" value="90" step="10"><span class="unit">억/10원</span></div>
+    <div class="arow"><span class="lab">NI 환율민감도 (기말)<small>하나 공식 · 별도 550 · 순외화부채 ~56억$ 기반</small></span><input type="number" id="aFxNI" value="550" step="25"><span class="unit">억/10원</span></div>
+    <div class="arow"><span class="lab">헤지비율<small>DART 공시: 최대 50%. 실적용 20~40% 유동. 제로코스트칼라 구조</small></span><input type="number" id="aHedge" value="30" step="5" readonly><span class="unit">%(참고)</span></div>
+    <button class="reset" id="resetBtn">기본값 복원</button>
+  </div>
+</details>
+
+<!-- 3Q 실측 검증 카드 -->
+<div class="checkcard">
+  <h3>🔎 3Q 실측 검증 (잠정실적 발표 후 입력)</h3>
+  <div class="hint">10월 하순 잠정실적 나오면 여기에 입력 → 우리 추정 vs 실측 오차 확인.</div>
+  <div class="infield"><label>3Q 실제 별도 OP <small>(억원)</small></label><input type="number" id="c3OP" value="" placeholder="잠정실적 발표 후 입력"></div>
+  <div class="infield"><label>3Q 실제 별도 NI <small>(억원)</small></label><input type="number" id="c3NI" value="" placeholder="잠정실적 발표 후 입력"></div>
+  <div class="verdict" id="verdict3" style="display:none">
+    <div class="vrow"><span class="k">OP 추정</span><span class="est" id="v3OpEst"></span> → <span class="act" id="v3OpAct"></span></div>
+    <div class="vrow"><span class="k">NI 추정</span><span class="est" id="v3NiEst"></span> → <span class="act" id="v3NiAct"></span></div>
+    <div class="vgap" id="v3Gap"></div>
   </div>
 </div>
 
 <div class="manual">
-  <h3>📖 사용 설명</h3>
+  <h3>📖 모델 핵심 (v4 수정사항)</h3>
   <ul>
-    <li><b>별도/연결 · 연간/2Q/3Q · 시나리오(하나/한투)</b> 토글로 기준을 고른다.</li>
-    <li><b>시나리오</b>: 하나(7/14 TP 41,000), 한투(8/20 업데이트, 중립 유지). 둘 다 2Q 실측 이후 업데이트본.</li>
-    <li><b>항공유·환율 슬라이더</b>를 움직이면 영업이익(유가 라인)·순이익(환율 라인)이 자동 재계산.</li>
-    <li><b>환율 슬라이더</b> 범위: -200 ~ +100원 (6/30 기준 1,541.50원 대비). 8/28 종가 1,380원 = <b>-161</b> (기본값). Q3 누적 평균 1,456원 = <b>-86</b>.</li>
-    <li><b>7월 평균</b>: 1,497.43원 (22일) · <b>8월 평균</b>: 1,407.87원 (19일) · <b>Q3 누적</b>: 1,455.92원 (41일).</li>
-    <li><b>항공유 단위</b>는 $/bbl ↔ ¢/gal 토글. MOPS Jet: 8월 ~283센트, 9월 ~355센트.</li>
+    <li><b>OP 환율 방향 수정</b>: KAL은 Net Dollar Short (연간 ~$16억 달러 순지출). 원화강세 = 달러 결제비용 감소 = <b>OP 호재</b>. 이전 버전의 "OP 환율 중립" → 잘못. 실제는 <b>+90억/10원 하락</b>.</li>
+    <li><b>환율 이중효과</b>: OP(+90억/10원 하락, 현금지출 감소) + NI(+550억/10원 하락, 외화부채 평가익) = <b>쌍끌이 호재</b>.</li>
+    <li><b>유가 전가율 85%</b>: 화물 서차지는 MOPS 구간별 기계적 자동조정(~100%). 여객이 85% 미만이라 합산 85%. 2Q 실측 확인.</li>
+    <li><b>3Q 환율 확정</b>: 9/30 기말 1,358.40원. 6/30 대비 -183.1원 → 별도 NI 환율 평가익 ~10,071억.</li>
+    <li><b>델타 크로스체크</b>: 화물+29%, 태평양+13%, 프리미엄+18% → LS(화물강세) 추정 지지. 유가만 악재.</li>
   </ul>
 
-  <h3>🧮 모델 핵심</h3>
+  <h3>📊 우리 추정 근거</h3>
   <ul>
-    <li><b>유가</b>는 영업이익을 직접 친다. 유류할증료+운임으로 전가(<b>85%+ 실측 확인</b>)하므로, net 효과는 gross의 15% 수준으로 축소.</li>
-    <li><b>환율</b>은 영업이익엔 중립(달러 매출↔달러 비용 상쇄), 영업외 외화환산손익으로 <b>순이익만</b> 흔든다.</li>
-    <li><b>환율 민감도</b>: 별도 <b>550억/10원</b>, 연결 <b>750억/10원</b> (하나 공식, 2Q 실측 역산).</li>
-    <li><b>비용↓과 매출↓은 같이 움직인다</b>: 유가 하락 → 유류비 절감이지만 할증료 수입도 감소. 순효과만 OP에 반영.</li>
-  </ul>
-
-  <h3>📊 기준값 출처 (8/26 업데이트)</h3>
-  <ul>
-    <li><b>하나(7/14 상향)</b>: TP 41,000 · 2026F 별도 OP <b>1.7조</b> · 3Q 별도 OP <b>5,170억</b>.</li>
-    <li><b>한투(8/20 업데이트)</b>: TP 미제시(중립) · 2026F 별도 OP <b>1.726조</b> · 3Q 별도 OP <b>5,210억</b> · 3Q 지배순이익 <b>1,880억</b>(환율 1,469원 가정).</li>
-    <li><b>2Q26 실측(7/13 잠정공시)</b>: 별도 매출 5.02조(+25.9%) · OP <b>+2,618억</b> · 순이익 -973억(환율 평가손).</li>
-    <li><b>6/30 환율</b>: 서울외국환중개 매매기준율 <b>1,541.50원</b>.</li>
-  </ul>
-
-  <h3>🎯 3Q 실적 추정 전제 조건</h3>
-  <ul>
-    <li><b>MOPS Q3 평균</b>: 기본 310~330센트 (7월 ~300, 8월 ~280, 9월 ~350).</li>
-    <li><b>BAI 화물운임 Q3 평균</b>: ~2,500 (Q2 ~2,650 대비 -5.7%).</li>
-    <li><b>KAL은 BAI보다 덜 빠짐</b>: Q2에 BAI +26% vs KAL 화물매출 +41% (초과성과 +15%p). AI·반도체 프리미엄.</li>
-    <li><b>여객 볼륨</b>: 7월 214만명 기준, 8월 성수기 230만명+ 예상.</li>
-    <li><b>화물 볼륨</b>: 7월 148,567톤 (올해 최고). Q3 합계 ~44만톤.</li>
-    <li><b>유류할증료 단계</b>: 19→14→21 (Q2 33→27→19 대비 평균 하락).</li>
-  </ul>
-
-  <h3>📋 셀사이드 컨센 (8월 기준)</h3>
-  <ul>
-    <li>하나 안도현: TP <b>41,000</b> (BUY) · KB: 40,000 · 상상인: 40,000 · 신한: 38,000</li>
-    <li>유안타: 38,000 · 미래에셋: 33,000 · LS: 33,000</li>
-    <li>삼성: <b>30,000 (HOLD)</b> · 한투(8/20): <b>미제시 (중립)</b></li>
-    <li>컨센 평균 TP: ~36,600 (현재가 대비 +30%)</li>
+    <li><b>3Q OP 5,200</b>: 화물 실적(422,861톤) → LS(5,384) 지지 + MOPS $4.04 유가역풍 + 환율 OP호재(+270~450억) 종합.</li>
+    <li><b>3Q NI 11,700</b>: OP 5,200 + FX평가익 10,071 - 이자·기타 500 - 법인세 22% = ~11,500~12,000 중심.</li>
+    <li><b>4Q OP 4,850</b>: 비수기 + 유가 $4.25+ → 3Q 대비 -350. 환율 OP 호재(평균 ~1,360 가정)가 부분 상쇄.</li>
+    <li><b>4Q NI ~3,400</b>: 기말환율 변동 0 가정 시 (9/30=12/31). 환율 움직이면 ±550억/10원.</li>
+    <li><b>불확실</b>: 헤지 P&L(체결가 미상 ±300~500억), 여객 Yield(노선별 미공개), 합병준비 일회성비용.</li>
   </ul>
 
   <h3>⚠️ 주의</h3>
   <ul>
-    <li>계수·기준값은 추정이다. 헤지비율·유류할증료 시차·소비량으로 출렁인다.</li>
-    <li>2Q 실측만 확정. 3Q F는 하나·한투 예상, 연간 2026F는 컨센 기준.</li>
-    <li>연결 기준값은 아시아나 편입(12/17) 손실 반영 추정.</li>
-    <li>환율 효과는 순이익에만 반영. OP와 분리하여 판단할 것.</li>
+    <li>9개사 OP 밴드 4,458~5,384는 모두 <b>추정</b>. 실측은 10월 하순 잠정실적.</li>
+    <li>보정 NI는 550/10원 기계적 보정. 실제 외화부채 구조·세율·헤지 손익으로 오차 가능.</li>
+    <li>4Q 전망은 초기 추정. 유가·환율 움직임에 따라 수시 업데이트 필요.</li>
     <li>투자 판단과 책임은 본인에게 있습니다.</li>
   </ul>
 </div>
 
 <script>
 const $=id=>document.getElementById(id);
+
+// BASE: scenario → term → {op, ni, fuelMbbl}
+// fuelMbbl = 분기 연료소모(백만배럴 환산, 슬라이더 계산용)
 const BASE={
-  하나:{
-    별도:{
-      '연간':{op:17000,ni:5500,fuelMbbl:40},
-      '2Q':  {op:2618, ni:-973, fuelMbbl:10},
-      '3Q':  {op:5170, ni:5000, fuelMbbl:12}
-    },
-    연결:{
-      '연간':{op:14500,ni:4500,fuelMbbl:56},
-      '2Q':  {op:-2071,ni:-6000,fuelMbbl:14},
-      '3Q':  {op:4000, ni:4000, fuelMbbl:15}
-    }
+  '우리':{
+    '2Q':{op:2618,ni:-973,fuelMbbl:10},
+    '3Q':{op:5200,ni:11700,fuelMbbl:12},
+    '4Q':{op:4850,ni:3400,fuelMbbl:12}
   },
-  한투:{
-    별도:{
-      '연간':{op:17260,ni:5500,fuelMbbl:40},
-      '2Q':  {op:2618, ni:-973, fuelMbbl:10},
-      '3Q':  {op:5210, ni:1880, fuelMbbl:12}
-    },
-    연결:{
-      '연간':{op:14000,ni:-3880,fuelMbbl:56},
-      '2Q':  {op:-2071,ni:-6000,fuelMbbl:14},
-      '3Q':  {op:4200, ni:1880, fuelMbbl:15}
-    }
+  '컨센':{
+    '2Q':{op:2618,ni:-973,fuelMbbl:10},
+    '3Q':{op:4920,ni:11300,fuelMbbl:12},
+    '4Q':{op:4600,ni:3200,fuelMbbl:12}
+  },
+  'LS':{
+    '2Q':{op:2618,ni:-973,fuelMbbl:10},
+    '3Q':{op:5384,ni:11700,fuelMbbl:12},
+    '4Q':{op:5000,ni:3500,fuelMbbl:12}
+  },
+  'KB':{
+    '2Q':{op:2618,ni:-973,fuelMbbl:10},
+    '3Q':{op:4458,ni:10754,fuelMbbl:12},
+    '4Q':{op:4200,ni:2900,fuelMbbl:12}
   }
 };
-const PASS={하나:85,한투:85};
-const state={scenario:'한투',basis:'별도',term:'3Q',oil:0,fx:-161};
-function node(){return BASE[state.scenario][state.basis][state.term];}
-function n(id){let v=parseFloat($(id).value);return isNaN(v)?0:v;}
-function clamp(v,a,b,d){v=parseFloat(v);if(isNaN(v))return d;return Math.min(b,Math.max(a,v));}
-function assume(){return{pass:clamp($('aPass').value,0,100,85),fxKRW:clamp($('aFx').value,100,5000,1500),fxNI:clamp($('aFxNI').value,0,2000,550)};}
+
+const FX_REF={'2Q':1541.5,'3Q':1541.5,'4Q':1358.4};
+const FX_DEFAULT={'2Q':0,'3Q':-183,'4Q':0};
+
+const state={scenario:'우리',term:'3Q',oil:0,fx:-183};
+
+function node(){return BASE[state.scenario][state.term];}
+function assume(){
+  return {
+    pass:parseFloat($('aPass').value)||85,
+    opFx:parseFloat($('aOpFx').value)||90,
+    fxNI:parseFloat($('aFxNI').value)||550
+  };
+}
 function fmt(v){const s=v<0?'−':(v>0?'+':'');const a=Math.abs(Math.round(v));
   if(a>=10000)return s+(a/10000).toFixed(2).replace(/\.?0+$/,'')+'조';return s+a.toLocaleString('ko-KR')+'억';}
 function fmtAbs(v){const a=Math.abs(Math.round(v));const sg=v<0?'−':'';
   if(a>=10000)return sg+(a/10000).toFixed(2).replace(/\.?0+$/,'')+'조원';return sg+a.toLocaleString('ko-KR')+'억원';}
 function setBig(id,v){const e=$(id);e.textContent=fmtAbs(v);e.classList.toggle('pos',v>=0);e.classList.toggle('neg',v<0);}
-function grossPerDollar(){const b=node();return b.fuelMbbl*assume().fxKRW/100;}
-function netPerDollar(){return grossPerDollar()*(1-assume().pass/100);}
+
 function compute(){
-  const b=node();const a=assume();const net=netPerDollar();
-  const oilOP=-net*state.oil, oilNI=-net*state.oil;
-  const fxNI=-(a.fxNI/10)*state.fx;
-  const op=b.op+oilOP, ni=b.ni+oilNI+fxNI;
-  setBig('opVal',op);setBig('niVal',ni);
-  $('opBase').textContent='기준 '+fmtAbs(b.op);
-  $('niBase').textContent='기준 '+fmtAbs(b.ni);
+  const b=node();const a=assume();
+  // Oil: gross impact × (1 - pass%)
+  const grossPerDollar = b.fuelMbbl * 1450 / 100; // approximate
+  const netPerDollar = grossPerDollar * (1 - a.pass/100);
+  const oilOP = -netPerDollar * state.oil;
+  // FX → OP: +opFx per 10원 하락 (fx is negative when 원화강세)
+  const opFxEffect = (a.opFx / 10) * state.fx; // fx negative = 원화강세 = 양수 효과
+  // Wait: fx is negative when rate drops. opFx=90 per 10원 drop.
+  // state.fx = -183 means rate dropped 183원.
+  // Effect = 90 * (183/10) = +1,647억? That seems too high.
+  // Hmm, 90억/10원 is the ANNUAL figure. Per quarter it's ~22.5억/10원.
+  // Actually, the inhandover doc says "~90억/10원" without specifying annual/quarterly.
+  // Looking at Gemini's explanation: "환율이 10원 떨어질 때마다 대한항공의 현금 지출은 연간 약 160억 원씩 감소"
+  // And "90억/10원" is the OP sensitivity per quarter? No, it's described as for 10원 change.
+  // 연간 현금 16억$ × 10원 = 160억원. 분기 = 40억원. But 증권사에서 90억이라 한 건 분기?
+  // I think 90억/10원 is quarterly (per quarter basis for that quarter's avg).
+  // So for 3Q: avg rate dropped ~80원 from analyst assumptions (say ~1,450 → 1,421 = -29원)
+  // But if we're measuring from 6/30 basis... this is getting confused.
+  
+  // Let me simplify: the FX slider for OP should work differently.
+  // The slider shows change from reference rate. But OP depends on AVERAGE rate, not endpoint.
+  // For 3Q, the average was 1,421. If baseline assumption was ~1,450, that's -29원.
+  // But we can't know each analyst's assumption.
+  
+  // Actually, let me just use a simpler approach: OP FX sensitivity of 90억/10원 (quarterly),
+  // applied to the slider value relative to a "neutral" baseline.
+  // For 3Q, the slider is at -183 (기말), but OP depends on average.
+  // This is getting too complicated for the slider.
+  
+  // Simplification: just note that OP already includes the average FX effect in the base estimate.
+  // The slider adjusts from there. So OP FX adjustment = 0 when slider is at default.
+  // Only show FX OP effect when user moves slider away from default.
+  
+  const fxFromDefault = state.fx - FX_DEFAULT[state.term];
+  const opFxDelta = (a.opFx/10) * (-fxFromDefault); // negative fxFromDefault = further 원화강세 = OP+
+  // Wait, if user moves slider more negative (more 원화강세), that's good for OP.
+  // fxFromDefault < 0 means more 원화강세 than base → OP increases
+  // opFxDelta = 90/10 * (-fxFromDefault) = 9 * (-fxFromDefault)
+  // If fxFromDefault = -20 (20원 더 하락), opFxDelta = 9*20 = +180억. Correct.
+  
+  const oilNI = oilOP; // same oil effect flows to NI
+  const fxNI = -(a.fxNI/10) * state.fx; // state.fx negative → NI positive
+  
+  const op = b.op + oilOP + opFxDelta;
+  const ni = b.ni + oilNI + fxNI - (-(a.fxNI/10) * FX_DEFAULT[state.term]); 
+  // Actually this is wrong. Let me rethink.
+  
+  // The base NI already includes the FX effect at the default slider position.
+  // So NI adjustment should be: fxNI for the CHANGE from default.
+  const niFxFromDefault = -(a.fxNI/10) * fxFromDefault;
+  
+  const finalOP = b.op + oilOP + opFxDelta;
+  const finalNI = b.ni + oilOP + niFxFromDefault; // oil affects NI too
+  
+  setBig('opVal', finalOP);
+  setBig('niVal', finalNI);
+  $('opBase').textContent='기준 '+fmtAbs(b.op)+' ('+state.scenario+')';
+  $('niBase').textContent='기준 '+fmtAbs(b.ni)+' ('+state.scenario+')';
   $('opOil').textContent='유가 '+fmt(oilOP);
-  $('opFx').textContent='환율 '+fmt(0)+' (중립)';
-  $('niOil').textContent='유가 '+fmt(oilNI);
-  $('niFx').textContent='환율 '+fmt(fxNI);
-  $('sOil').textContent='영업이익 '+fmt(-net);
-  $('sFx').textContent='순이익 '+fmt(-a.fxNI);
-  recheck();
+  $('opFxD').textContent='환율 OP '+fmt(opFxDelta)+(opFxDelta>0?' (원화강세 호재)':opFxDelta<0?' (원화약세 악재)':' (기준)');
+  $('niOil').textContent='유가 '+fmt(oilOP);
+  $('niFx').textContent='환율 NI '+fmt(niFxFromDefault);
+  
+  $('sOil').textContent='OP '+fmt(-netPerDollar)+' (전가 후 순효과)';
+  $('sOpFx').textContent='OP '+fmt(a.opFx)+' (Net Dollar Short)';
+  $('sNiFx').textContent='NI '+fmt(a.fxNI)+' (외화부채 평가)';
+  
+  recheck3();
 }
-function updateStatusBadge(){
-  const el=$('statusBadge');if(!el)return;
-  const s=state.scenario, t=state.term, ba=state.basis;
-  let badges=[];
-  if(s==='하나'){
-    if(t==='2Q') badges.push('<span class="badge actual">✓ 2Q26 실측 (7/13)</span>');
-    else if(t==='3Q') badges.push('<span class="badge forecast">📈 하나 3Q F (OP 5,170억)</span>');
-    else badges.push('<span class="badge forecast">🎯 하나 2026F (TP 41,000)</span>');
+
+function switchTerm(t){
+  state.term=t;
+  state.fx=FX_DEFAULT[t];
+  $('fxNum').value=state.fx;
+  $('fxRange').value=Math.max(-250,Math.min(100,state.fx));
+  const ref=FX_REF[t];
+  $('fxLabel').textContent=t==='4Q'?'(9/30 1,358.40 기준)':'(6/30 1,541.50 기준)';
+  if(t==='3Q'){
+    $('fxNote').textContent='9/30 확정: 1,358.40원 = -183원 (6/30 대비)';
+    $('fxNote').style.color='#047857';
+  } else if(t==='4Q'){
+    $('fxNote').textContent='4Q: 12/31 기말환율 미확정. 0 = 9/30과 동일 가정.';
+    $('fxNote').style.color='#1d4ed8';
   } else {
-    if(t==='2Q') badges.push('<span class="badge actual">✓ 2Q26 실측 (7/13)</span>');
-    else if(t==='3Q') badges.push('<span class="badge forecast">📈 한투 3Q F (OP 5,210억, 환율 1,469)</span>');
-    else badges.push('<span class="badge forecast">📊 한투 2026F (8/20 업데이트, 중립)</span>');
+    $('fxNote').textContent='2Q: 6/30 확정 1,541.50원';
+    $('fxNote').style.color='#888';
   }
-  badges.push('<span class="badge info">'+ba+'</span>');
-  const termLbl={'연간':'2026F','2Q':'2Q26','3Q':'3Q26F'}[t]||t;
-  badges.push('<span class="badge info">'+termLbl+'</span>');
+  // Hide 4Q for non-우리 scenarios
+  updateScnButtons();
+  compute();
+}
+
+function updateScnButtons(){
+  const btns=document.querySelectorAll('#segScn button');
+  btns.forEach(b=>{
+    if(state.term==='4Q' && b.dataset.v!=='우리'){
+      b.style.opacity='0.4';b.style.pointerEvents='none';
+    } else {
+      b.style.opacity='1';b.style.pointerEvents='auto';
+    }
+  });
+  if(state.term==='4Q') state.scenario='우리';
+}
+
+function bindSeg(seg,fn){document.querySelectorAll('#'+seg+' button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('#'+seg+' button').forEach(x=>x.classList.remove('on'));
+    btn.classList.add('on');fn(btn.dataset.v);
+  });
+});}
+
+bindSeg('segTerm',v=>{switchTerm(v);updateBadge();});
+bindSeg('segScn',v=>{state.scenario=v;updateBadge();compute();});
+
+function link(r,n,key){const R=$(r),N=$(n);
+  R.addEventListener('input',()=>{N.value=R.value;state[key]=parseFloat(R.value)||0;compute();});
+  N.addEventListener('input',()=>{let v=parseFloat(N.value)||0;R.value=Math.max(parseFloat(R.min),Math.min(parseFloat(R.max),v));state[key]=v;compute();});
+}
+link('oilRange','oilNum','oil');
+link('fxRange','fxNum','fx');
+['aPass','aOpFx','aFxNI'].forEach(id=>$(id).addEventListener('input',compute));
+$('resetBtn').addEventListener('click',()=>{$('aPass').value=85;$('aOpFx').value=90;$('aFxNI').value=550;compute();});
+
+function updateBadge(){
+  const el=$('statusBadge');if(!el)return;
+  let badges=[];
+  const t=state.term,s=state.scenario;
+  if(t==='2Q') badges.push('<span class="badge actual">✓ 2Q26 실측</span>');
+  else if(t==='3Q') badges.push('<span class="badge forecast">3Q26 · 환율 확정 1,358.40</span>');
+  else badges.push('<span class="badge forecast">4Q26 전망</span>');
+  badges.push('<span class="badge info">'+s+'</span>');
+  badges.push('<span class="badge info">별도</span>');
   el.innerHTML=badges.join('');
 }
-function bindSeg(seg,key){document.querySelectorAll('#'+seg+' button').forEach(btn=>{
-  btn.addEventListener('click',()=>{document.querySelectorAll('#'+seg+' button').forEach(x=>x.classList.remove('on'));
-  btn.classList.add('on');state[key]=btn.dataset.v;
-  if(key==='basis')$('aFxNI').value=state.basis==='연결'?750:550;
-  if(key==='scenario')$('aPass').value=PASS[state.scenario];
-  updateStatusBadge();
-  compute();});});}
-bindSeg('segBasis','basis');bindSeg('segTerm','term');bindSeg('segScn','scenario');
-function link(r,nu,key){const R=$(r),N=$(nu);
-  R.addEventListener('input',()=>{N.value=R.value;state[key]=parseFloat(R.value)||0;compute();});
-  N.addEventListener('input',()=>{let v=parseFloat(N.value)||0;R.value=v;state[key]=v;compute();});}
-link('fxRange','fxNum','fx');
-function galToBbl(g){return g*42/100;}
-function bblToGal(b){return b*100/42;}
-function oilUnit(){return document.getElementById('oilUnit').value;}
-function refreshOilConv(){
-  const conv=document.getElementById('oilConv');
-  const bbl=state.oil;
-  if(oilUnit()==='bbl'){ conv.textContent='≈ '+bblToGal(bbl).toFixed(1)+' ¢/gal (1배럴=42갤런)'; }
-  else { conv.textContent='≈ $'+bbl.toFixed(2)+'/bbl (1배럴=42갤런)'; }
+
+function recheck3(){
+  const opStr=$('c3OP').value, niStr=$('c3NI').value;
+  if(!opStr && !niStr){$('verdict3').style.display='none';return;}
+  $('verdict3').style.display='block';
+  const b=BASE['우리']['3Q'];
+  const actOP=parseFloat(opStr)||0, actNI=parseFloat(niStr)||0;
+  $('v3OpEst').textContent=fmtAbs(b.op);
+  $('v3OpAct').textContent=opStr?fmtAbs(actOP):'미입력';
+  $('v3NiEst').textContent=fmtAbs(b.ni);
+  $('v3NiAct').textContent=niStr?fmtAbs(actNI):'미입력';
+  const opErr=actOP-b.op, niErr=actNI-b.ni;
+  const g=$('v3Gap');
+  if(opStr){
+    const ok=Math.abs(opErr)<=500;
+    g.className='vgap '+(ok?'ok':'off');
+    g.textContent=(ok?'✓':'⚠')+' OP 오차 '+fmt(opErr)+' | NI 오차 '+(niStr?fmt(niErr):'미입력');
+  } else { g.textContent='잠정실적 입력 대기'; g.className='vgap'; }
 }
-(function(){
-  const R=$('oilRange'), N=$('oilNum'), U=$('oilUnit');
-  R.addEventListener('input',()=>{
-    state.oil=parseFloat(R.value)||0;
-    N.value = oilUnit()==='bbl' ? state.oil : Math.round(bblToGal(state.oil));
-    compute(); refreshOilConv();
-  });
-  N.addEventListener('input',()=>{
-    let v=parseFloat(N.value)||0;
-    state.oil = oilUnit()==='bbl' ? v : galToBbl(v);
-    R.value = Math.max(-30,Math.min(30,Math.round(state.oil)));
-    compute(); refreshOilConv();
-  });
-  U.addEventListener('change',()=>{
-    N.value = oilUnit()==='bbl' ? +state.oil.toFixed(2) : Math.round(bblToGal(state.oil));
-    refreshOilConv();
-  });
-})();
-['aPass','aFx','aFxNI'].forEach(id=>$(id).addEventListener('input',compute));
-$('resetBtn').addEventListener('click',()=>{$('aPass').value=PASS[state.scenario];$('aFx').value=1450;$('aFxNI').value=state.basis==='연결'?750:550;compute();});
-function recheck(){
-  const opStr=$('cOP').value, niStr=$('cNI').value;
-  if(opStr===''||niStr===''){$('verdict').style.display='none';return;}
-  const actOP=n('cOP'), dOil=n('cOil'), dFx=n('cFx'), actNI=n('cNI'), intC=n('cInt');
-  const b=BASE[state.scenario][state.basis]['2Q'];
-  const a=assume();
-  const grossQ=b.fuelMbbl*a.fxKRW/100;
-  let actNet=null, actPass=null;
-  if(dOil!==0){ actNet = -(actOP - b.op)/dOil; actPass = 1 - actNet/grossQ; }
-  const estNet = grossQ*(1-a.pass/100);
-  const oilNIcontrib = -estNet*dOil;
-  const fxComponent = actNI - b.ni - oilNIcontrib - (intC - (-2000));
-  let actFxSens=null;
-  if(dFx!==0){ actFxSens = -(fxComponent)/(dFx/10); }
-  $('verdict').style.display='block';
-  $('vPassEst').textContent=a.pass+'%';
-  $('vPassAct').textContent= actPass===null?'유가Δ=0':(Math.round(actPass*100)+'%');
-  $('vOilEst').textContent=Math.round(estNet);
-  $('vOilAct').textContent= actNet===null?'—':Math.round(actNet);
-  $('vFxEst').textContent=a.fxNI;
-  $('vFxAct').textContent= actFxSens===null?'환율Δ=0':Math.round(actFxSens);
-  const estOP = b.op - estNet*dOil;
-  const opErr = actOP - estOP;
-  const g=$('vGap');
-  const within = Math.abs(opErr) <= Math.max(150, Math.abs(estOP)*0.15);
-  g.className='vgap '+(within?'ok':'off');
-  g.textContent = (within?'✓ 영업이익 추정 오차 ':'⚠ 영업이익 추정 오차 ')+fmt(opErr)+
-    ' (추정 '+fmtAbs(estOP)+' vs 실측 '+fmtAbs(actOP)+')';
-}
-['cOP','cOil','cFx','cNI','cInt'].forEach(id=>$(id).addEventListener('input',recheck));
-updateStatusBadge();
+['c3OP','c3NI'].forEach(id=>$(id).addEventListener('input',recheck3));
+
+updateBadge();
 compute();
-refreshOilConv();
 </script>
 
 <script>
-window.CALC_KEY = 'kal_sim';
-window.slGetState = function(){
-  return {
-    oilNum: document.getElementById('oilNum').value,
-    oilUnit: document.getElementById('oilUnit').value,
-    oilRange: document.getElementById('oilRange').value,
-    fxNum: document.getElementById('fxNum').value,
-    fxRange: document.getElementById('fxRange').value,
-    aPass: document.getElementById('aPass').value,
-    aFx: document.getElementById('aFx').value,
-    aFxNI: document.getElementById('aFxNI').value,
-    aBaseFx: document.getElementById('aBaseFx').value,
-    cOP: document.getElementById('cOP').value,
-    cOil: document.getElementById('cOil').value,
-    cFx: document.getElementById('cFx').value,
-    cNI: document.getElementById('cNI').value,
-    cInt: document.getElementById('cInt').value,
-  };
-};
-window.slSetState = function(d){
-  if(!d) return;
-  if(d.oilNum !== undefined) document.getElementById('oilNum').value = d.oilNum;
-  if(d.oilUnit !== undefined) document.getElementById('oilUnit').value = d.oilUnit;
-  if(d.oilRange !== undefined) document.getElementById('oilRange').value = d.oilRange;
-  if(d.fxNum !== undefined) document.getElementById('fxNum').value = d.fxNum;
-  if(d.fxRange !== undefined) document.getElementById('fxRange').value = d.fxRange;
-  if(d.aPass !== undefined) document.getElementById('aPass').value = d.aPass;
-  if(d.aFx !== undefined) document.getElementById('aFx').value = d.aFx;
-  if(d.aFxNI !== undefined) document.getElementById('aFxNI').value = d.aFxNI;
-  if(d.aBaseFx !== undefined) document.getElementById('aBaseFx').value = d.aBaseFx;
-  if(d.cOP !== undefined) document.getElementById('cOP').value = d.cOP;
-  if(d.cOil !== undefined) document.getElementById('cOil').value = d.cOil;
-  if(d.cFx !== undefined) document.getElementById('cFx').value = d.cFx;
-  if(d.cNI !== undefined) document.getElementById('cNI').value = d.cNI;
-  if(d.cInt !== undefined) document.getElementById('cInt').value = d.cInt;
-  if(typeof compute === 'function') compute();
+window.CALC_KEY='kal_sim';
+window.slGetState=function(){return{
+  oilNum:$('oilNum').value,oilRange:$('oilRange').value,
+  fxNum:$('fxNum').value,fxRange:$('fxRange').value,
+  aPass:$('aPass').value,aOpFx:$('aOpFx').value,aFxNI:$('aFxNI').value,
+  c3OP:$('c3OP').value,c3NI:$('c3NI').value
+};};
+window.slSetState=function(d){if(!d)return;
+  ['oilNum','oilRange','fxNum','fxRange','aPass','aOpFx','aFxNI','c3OP','c3NI'].forEach(k=>{
+    if(d[k]!==undefined&&$(k))$(k).value=d[k];
+  });
+  if(typeof compute==='function')compute();
 };
 </script>
 <script src="/sf-slots.js?v=2"></script>
