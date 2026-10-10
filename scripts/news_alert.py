@@ -26,7 +26,10 @@ NAVER_CLIENT_SECRET = os.environ.get("NAVER_CLIENT_SECRET", "")
 NAVER_API_URL = "https://naverapihub.apigw.ntruss.com/search/v1/news"
 
 # 텔레그램
-from telegram_helper import send_all as _send_all
+from telegram_helper import send_all as _send_all, send_dm as _send_dm
+
+# 채널 발송 제외 카테고리 (봇 DM만 발송)
+DM_ONLY_CATS = {"부동산", "하남 감북"}
 
 # 경로
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -146,7 +149,9 @@ def dedupe_top(all_items, n=TOP_N):
     return unique[:n]
 
 
-def send_telegram(text):
+def send_telegram(text, category=""):
+    if category in DM_ONLY_CATS:
+        return _send_dm(text)
     return _send_all(text)
 
 
@@ -190,13 +195,14 @@ def main():
 
         if top:
             msg = format_telegram(cat, top)
-            ok = send_telegram(msg)
-            print(f"  {cat}: {len(top)}개 → 텔레그램 {'✅' if ok else '❌'}")
+            ok = send_telegram(msg, category=cat)
+            dest = "DM만" if cat in DM_ONLY_CATS else "DM+채널"
+            print(f"  {cat}: {len(top)}개 → 텔레그램 {dest} {'✅' if ok else '❌'}")
         else:
             print(f"  {cat}: 0개 (24시간 이내 뉴스 없음)")
             if cat == "하남 감북":
                 now_str = datetime.now(KST).strftime('%m/%d %H:%M')
-                send_telegram(f"📰 <b>{cat} 뉴스</b>  ({now_str})\n\n오늘 관련 뉴스 없음")
+                send_telegram(f"📰 <b>{cat} 뉴스</b>  ({now_str})\n\n오늘 관련 뉴스 없음", category=cat)
 
         time.sleep(1)
 
