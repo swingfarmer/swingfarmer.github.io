@@ -97,12 +97,22 @@ tr:hover{background:rgba(59,130,246,.04)}
   <!-- 서머리 -->
   <div class="summary" id="summary"></div>
 
-  <!-- 시그널 -->
+  <!-- 신규 시그널 -->
   <div id="signals"></div>
+
+  <!-- 구간별 전 종목 현황 -->
+  <h3 style="font-size:15px;font-weight:700;margin:24px 0 12px;border-top:1px solid var(--border);padding-top:16px">📋 구간별 전 종목 현황</h3>
+  <div id="zoneView"></div>
 </div>
 
 <!-- ════ 시그널 이력 탭 ════ -->
 <div id="tab-history" class="tab-content">
+  <div class="date-nav" style="margin-bottom:12px">
+    <span style="font-size:13px;color:var(--text-dim)">날짜 필터:</span>
+    <select id="histDateFilter" onchange="filterHistory(this.value)">
+      <option value="all">전체</option>
+    </select>
+  </div>
   <div class="table-wrap">
     <table id="historyTable">
       <thead>
@@ -111,6 +121,7 @@ tr:hover{background:rgba(59,130,246,.04)}
       <tbody id="historyBody"></tbody>
     </table>
   </div>
+  <div id="histEmpty" class="empty" style="display:none">선택한 날짜에 시그널 없음</div>
   <div class="note">최근 시그널 이력 (날짜별 아카이브 누적)</div>
 </div>
 
@@ -185,7 +196,7 @@ tr:hover{background:rgba(59,130,246,.04)}
     <h3>🔧 사용법</h3>
     <p style="font-size:13px;line-height:2">
       <b>자동 갱신:</b> 매주 금요일 장 마감 후(21:05) 전 종목 스캔 → 텔레그램 알림 + 이 페이지 갱신.<br>
-      <b>텔레그램:</b> 신규 시그널 + 관심종목 현황이 봇 DM + @swingfarmer 채널로 발송됩니다.<br>
+      <b>텔레그램:</b> 신규 시그널 + 구간별 전 종목 + 관심종목 현황이 봇 DM으로만 발송됩니다 (채널 미발송).<br>
       <b>관심종목:</b> 현재 대한항공·현대건설. 변경 시 <code>scripts/fetch_ma_signal.py</code>의 <code>WATCHLIST</code> 수정.<br>
       <b>데이터:</b> KIS Open API 주봉 71주치 → 5WMA/10WMA 계산. Oracle MA_SIGNALS 테이블에 시그널 이력 저장.
     </p>
@@ -201,6 +212,7 @@ tr:hover{background:rgba(59,130,246,.04)}
 <script>
 const BASE = '/data/kr/ma_signal';
 let allHistorySignals = [];
+let allDates = [];
 
 function showTab(id) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -209,40 +221,26 @@ function showTab(id) {
   event.target.classList.add('active');
 }
 
-function ratioColor(ratio) {
-  if (ratio <= 60) return 'var(--red)';
-  if (ratio <= 70) return 'var(--orange)';
-  if (ratio <= 80) return 'var(--green)';
-  return 'var(--text)';
-}
-
-function bucketKr(b) {
-  return {'above_80':'안전','70_80':'재매수↗','60_70':'반환점⚠️','below_60':'매도🔴','downtrend':'하락장'}[b] || b;
-}
-
-function signalKr(t) {
-  return {'ratio_60':'🔴 10W≤60%','ratio_70':'⚠️ 10W≤70%','ratio_80':'🟢 10W≤80%','break_1st':'⚡ 1차이탈','break_2nd':'💥 2차이탈'}[t] || t;
-}
+function ratioColor(r) { return r<=60?'var(--red)':r<=70?'var(--orange)':r<=80?'var(--green)':'var(--text)'; }
+function bucketKr(b) { return {'above_80':'안전','70_80':'재매수↗','60_70':'반환점⚠️','below_60':'매도🔴','downtrend':'하락장'}[b]||b; }
+function signalKr(t) { return {'ratio_60':'🔴 10W≤60%','ratio_70':'⚠️ 10W≤70%','ratio_80':'🟢 10W≤80%','break_1st':'⚡ 1차이탈','break_2nd':'💥 2차이탈'}[t]||t; }
 
 function renderWatchlist(data) {
   const el = document.getElementById('watchlist');
   const wl = data.watchlist || {};
   if (!Object.keys(wl).length) { el.innerHTML = ''; return; }
-
   el.innerHTML = Object.entries(wl).map(([code, ws]) => {
-    const ratio = ws.ratio || 0;
-    const rc = ratioColor(ratio);
+    const ratio = ws.ratio||0, rc = ratioColor(ratio);
     const a5 = ws.above_5wma ? '✅ 위' : '❌ 아래';
-    const bk = bucketKr(ws.ratio_bucket);
     let ride = '-';
     if (ws.threshold_hit) {
-      const gain = ws.ride_start_price ? ((ws.close / ws.ride_start_price - 1) * 100).toFixed(1) : '?';
-      ride = `진행중 +${gain}% (이탈 ${ws.break_count || 0}회)`;
+      const gain = ws.ride_start_price ? ((ws.close/ws.ride_start_price-1)*100).toFixed(1) : '?';
+      ride = `진행중 +${gain}% (이탈 ${ws.break_count||0}회)`;
     }
     return `<div class="watch-card">
-      <div class="wname"><span class="star">⭐</span> ${ws.name || code}</div>
+      <div class="wname"><span class="star">⭐</span> ${ws.name||code}</div>
       <div class="wrow"><span class="wlabel">종가</span><span class="wval">${(ws.close||0).toLocaleString()}원</span></div>
-      <div class="wrow"><span class="wlabel">10W비율</span><span class="wval" style="color:${rc}">${ratio.toFixed(1)}% (${bk})</span></div>
+      <div class="wrow"><span class="wlabel">10W비율</span><span class="wval" style="color:${rc}">${ratio.toFixed(1)}% (${bucketKr(ws.ratio_bucket)})</span></div>
       <div class="wrow"><span class="wlabel">5주선</span><span class="wval">${a5} (${(ws.wma5||0).toLocaleString()})</span></div>
       <div class="wrow"><span class="wlabel">10주선</span><span class="wval">${(ws.wma10||0).toLocaleString()}</span></div>
       <div class="wrow"><span class="wlabel">30%+ 라이드</span><span class="wval">${ride}</span></div>
@@ -256,56 +254,90 @@ function renderSummary(data) {
     <div class="summary-card"><div class="num">${s.total||0}</div><div class="label">분석 종목</div></div>
     <div class="summary-card"><div class="num">${s.uptrend||0}</div><div class="label">상승장 (>10W)</div></div>
     <div class="summary-card"><div class="num">${s.active_rides||0}</div><div class="label">30%+ 라이드</div></div>
-    <div class="summary-card"><div class="num">${(data.signals||[]).length}</div><div class="label">신규 시그널</div></div>
-  `;
+    <div class="summary-card"><div class="num">${(data.signals||[]).length}</div><div class="label">신규 시그널</div></div>`;
 }
 
 function renderSignals(data) {
   const el = document.getElementById('signals');
   const sigs = data.signals || [];
-  if (!sigs.length) {
-    el.innerHTML = '<div class="empty">이번 주 신규 시그널 없음</div>';
-    return;
-  }
-
+  if (!sigs.length) { el.innerHTML = '<div class="empty">이번 주 신규 시그널 없음</div>'; return; }
   const groups = {
-    ratio_60: { title: '🔴 10WMA ≤60% — 매도 구간', cls: 'danger', items: [] },
-    ratio_70: { title: '⚠️ 10WMA ≤70% — 반환점', cls: 'warn', items: [] },
-    ratio_80: { title: '🟢 10WMA ≤80% — 재매수 관점', cls: 'safe', items: [] },
-    break_1st: { title: '⚡ 5WMA 1차 이탈', cls: 'break1', items: [] },
-    break_2nd: { title: '💥 5WMA 2차 이탈', cls: 'break2', items: [] },
+    ratio_60:{title:'🔴 10WMA ≤60% — 매도 구간',cls:'danger',items:[]},
+    ratio_70:{title:'⚠️ 10WMA ≤70% — 반환점',cls:'warn',items:[]},
+    ratio_80:{title:'🟢 10WMA ≤80% — 재매수 관점',cls:'safe',items:[]},
+    break_1st:{title:'⚡ 5WMA 1차 이탈',cls:'break1',items:[]},
+    break_2nd:{title:'💥 5WMA 2차 이탈',cls:'break2',items:[]},
   };
-
-  sigs.forEach(s => { if (groups[s.signal_type]) groups[s.signal_type].items.push(s); });
-
-  el.innerHTML = Object.values(groups).filter(g => g.items.length > 0).map(g => {
+  sigs.forEach(s => { if(groups[s.signal_type]) groups[s.signal_type].items.push(s); });
+  el.innerHTML = Object.values(groups).filter(g=>g.items.length>0).map(g => {
     const rows = g.items.map(s => {
-      let detail = '';
-      if (s.signal_type.startsWith('ratio')) {
-        detail = `${s.ratio?.toFixed(1)}% · 종가 ${(s.close||0).toLocaleString()}`;
-      } else {
-        detail = `누적 ${s.ride_gain_pct>=0?'+':''}${s.ride_gain_pct?.toFixed(1)}% · 고점대비 ${s.peak_drop_pct?.toFixed(1)}%`;
-      }
-      return `<div class="sig-item"><span class="sname">${s.name}</span><span class="sval">${detail}</span></div>`;
+      let d = s.signal_type.startsWith('ratio')
+        ? `${s.ratio?.toFixed(1)}% · 종가 ${(s.close||0).toLocaleString()}`
+        : `누적 ${s.ride_gain_pct>=0?'+':''}${s.ride_gain_pct?.toFixed(1)}% · 고점 ${s.peak_drop_pct?.toFixed(1)}%`;
+      return `<div class="sig-item"><span class="sname">${s.name}</span><span class="sval">${d}</span></div>`;
     }).join('');
     return `<div class="sig-group"><h3 class="${g.cls}">${g.title} (${g.items.length})</h3>${rows}</div>`;
   }).join('');
 }
 
-function renderHistory() {
+// ── 구간별 전 종목 현황 ──
+function renderZoneView(data) {
+  const el = document.getElementById('zoneView');
+  const states = data.all_states || {};
+  const zones = {below_60:[], '60_70':[], '70_80':[]};
+
+  Object.entries(states).forEach(([code, st]) => {
+    if (st.ratio_bucket && zones[st.ratio_bucket] !== undefined) {
+      zones[st.ratio_bucket].push({code, name:st.name||code, close:st.close||0, ratio:st.ratio||0,
+        above5:st.above_5wma, threshold:st.threshold_hit, breaks:st.break_count||0});
+    }
+  });
+  // 비율 낮은순 정렬
+  Object.values(zones).forEach(z => z.sort((a,b) => a.ratio - b.ratio));
+
+  const zoneConfig = [
+    {key:'below_60', title:'🔴 ≤60% 매도 구간', cls:'danger'},
+    {key:'60_70', title:'⚠️ 60-70% 반환점', cls:'warn'},
+    {key:'70_80', title:'🟢 70-80% 재매수 관점', cls:'safe'},
+  ];
+
+  let html = '';
+  zoneConfig.forEach(zc => {
+    const items = zones[zc.key];
+    if (!items.length) return;
+    const rows = items.map(s => {
+      const a5 = s.above5 ? '✅':'❌';
+      const ride = s.threshold ? ` 🚀이탈${s.breaks}` : '';
+      return `<div class="sig-item"><span class="sname">${s.name}</span><span class="sval" style="color:${ratioColor(s.ratio)}">${s.ratio.toFixed(1)}% · ${s.close.toLocaleString()} · 5W${a5}${ride}</span></div>`;
+    }).join('');
+    html += `<div class="sig-group"><h3 class="${zc.cls}">${zc.title} (${items.length})</h3>${rows}</div>`;
+  });
+
+  if (!html) html = '<div class="empty">80% 이하 종목 없음 (모두 안전 구간)</div>';
+  el.innerHTML = html;
+}
+
+// ── 시그널 이력 (날짜 필터) ──
+function filterHistory(dateVal) {
+  const filtered = dateVal === 'all' ? allHistorySignals : allHistorySignals.filter(s => s.signal_date === dateVal);
+  renderHistoryTable(filtered);
+}
+
+function renderHistoryTable(list) {
   const tbody = document.getElementById('historyBody');
-  tbody.innerHTML = allHistorySignals.map(s => {
-    const gain = s.ride_gain_pct != null ? `${s.ride_gain_pct>=0?'+':''}${s.ride_gain_pct?.toFixed(1)}%` : '-';
-    const drop = s.peak_drop_pct != null ? `${s.peak_drop_pct?.toFixed(1)}%` : '-';
+  const empty = document.getElementById('histEmpty');
+  if (!list.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = list.map(s => {
+    const gain = s.ride_gain_pct!=null ? `${s.ride_gain_pct>=0?'+':''}${s.ride_gain_pct?.toFixed(1)}%` : '-';
+    const drop = s.peak_drop_pct!=null ? `${s.peak_drop_pct?.toFixed(1)}%` : '-';
     return `<tr>
       <td>${s.signal_date}</td>
       <td style="font-weight:600">${s.name||s.code}</td>
       <td>${signalKr(s.signal_type)}</td>
       <td>${(s.close||0).toLocaleString()}</td>
       <td style="color:${ratioColor(s.ratio||100)}">${s.ratio?.toFixed(1)||'-'}%</td>
-      <td>${gain}</td>
-      <td>${drop}</td>
-    </tr>`;
+      <td>${gain}</td><td>${drop}</td></tr>`;
   }).join('');
 }
 
@@ -319,56 +351,49 @@ async function loadDate(dateStr) {
     renderWatchlist(data);
     renderSummary(data);
     renderSignals(data);
+    renderZoneView(data);
 
     // 히스토리 누적
-    (data.signals || []).forEach(s => {
+    (data.signals||[]).forEach(s => {
       const key = `${s.signal_date}_${s.code}_${s.signal_type}`;
-      if (!allHistorySignals.find(h => `${h.signal_date}_${h.code}_${h.signal_type}` === key)) {
-        allHistorySignals.push(s);
-      }
+      if (!allHistorySignals.find(h=>`${h.signal_date}_${h.code}_${h.signal_type}`===key)) allHistorySignals.push(s);
     });
-    allHistorySignals.sort((a, b) => b.signal_date.localeCompare(a.signal_date));
-    renderHistory();
-  } catch (e) {
+    allHistorySignals.sort((a,b) => b.signal_date.localeCompare(a.signal_date));
+    renderHistoryTable(allHistorySignals);
+  } catch(e) {
     document.getElementById('dateLabel').textContent = '데이터 없음';
     document.getElementById('signals').innerHTML = '<div class="empty">데이터를 불러올 수 없습니다.</div>';
   }
 }
 
 async function init() {
-  // index.json으로 날짜 목록
   try {
     const resp = await fetch(`${BASE}/index.json`);
     const dates = await resp.json();
+    allDates = dates;
+    // 현재 시그널 탭 날짜 셀렉트
     const sel = document.getElementById('dateSelect');
-    dates.forEach(d => {
-      const opt = document.createElement('option');
-      opt.value = d;
-      opt.textContent = d;
-      sel.appendChild(opt);
-    });
+    dates.forEach(d => { const o=document.createElement('option'); o.value=d; o.textContent=d; sel.appendChild(o); });
+    // 이력 탭 날짜 필터
+    const hSel = document.getElementById('histDateFilter');
+    dates.forEach(d => { const o=document.createElement('option'); o.value=d; o.textContent=d; hSel.appendChild(o); });
 
-    // 모든 날짜 히스토리 수집 (최근 10개만)
-    for (const d of dates.slice(0, 10)) {
+    // 전체 히스토리 수집 (최근 10주)
+    for (const d of dates.slice(0,10)) {
       try {
         const r = await fetch(`${BASE}/${d}.json`);
         const data = await r.json();
-        (data.signals || []).forEach(s => {
+        (data.signals||[]).forEach(s => {
           const key = `${s.signal_date}_${s.code}_${s.signal_type}`;
-          if (!allHistorySignals.find(h => `${h.signal_date}_${h.code}_${h.signal_type}` === key)) {
-            allHistorySignals.push(s);
-          }
+          if (!allHistorySignals.find(h=>`${h.signal_date}_${h.code}_${h.signal_type}`===key)) allHistorySignals.push(s);
         });
-      } catch(e) {}
+      } catch(e){}
     }
-    allHistorySignals.sort((a, b) => b.signal_date.localeCompare(a.signal_date));
-    renderHistory();
-  } catch (e) {}
-
-  // latest 로드
+    allHistorySignals.sort((a,b) => b.signal_date.localeCompare(a.signal_date));
+    renderHistoryTable(allHistorySignals);
+  } catch(e){}
   loadDate('latest');
 }
-
 init();
 </script>
 </body>
