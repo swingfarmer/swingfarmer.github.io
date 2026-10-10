@@ -57,6 +57,14 @@ LATEST_FILE = os.path.join(OUT_DIR, 'latest.json')
 
 CALL_DELAY  = 0.08
 DAYS_BACK   = 500    # ~71주 주봉
+INDEX_FILE  = os.path.join(OUT_DIR, 'index.json')
+
+# ── 관심종목 (텔레그램에 항상 표시) ──
+# 종목코드, 이름 — 변경 시 여기만 수정
+WATCHLIST = [
+    ('003490', '대한항공'),
+    ('000720', '현대건설'),
+]
 
 os.makedirs(OUT_DIR, exist_ok=True)
 
@@ -442,6 +450,31 @@ def build_telegram_msg(date_label, all_signals, summary):
     if active_rides:
         lines.append(f"🚀 30%+ 라이드 진행 중: {active_rides}종목")
 
+    # ── 관심종목 현황 (항상 표시) ──
+    watchlist_states = summary.get('watchlist_states', {})
+    if watchlist_states:
+        lines.append('')
+        lines.append('━━━━━━━━━━━━━━━━━━')
+        lines.append('⭐ <b>관심종목 현황</b>')
+        for code, ws in watchlist_states.items():
+            name = ws.get('name', code)
+            close = ws.get('close', 0)
+            ratio = ws.get('ratio', 0)
+            wma5 = ws.get('wma5', 0)
+            wma10 = ws.get('wma10', 0)
+            above5 = '✅' if ws.get('above_5wma') else '❌'
+            bucket = ws.get('ratio_bucket', '')
+
+            # 비율 구간 한글
+            bucket_kr = {'above_80': '안전', '70_80': '재매수↗', '60_70': '반환점⚠️', 'below_60': '매도🔴', 'downtrend': '하락장'}.get(bucket, bucket)
+            ride_info = ''
+            if ws.get('threshold_hit'):
+                bc = ws.get('break_count', 0)
+                ride_info = f' | 30%+라이드 이탈{bc}회'
+
+            lines.append(f"  {name} {close:,}원")
+            lines.append(f"    10W비율 {ratio:.1f}%({bucket_kr}) | 5W {above5}{ride_info}")
+
     return '\n'.join(lines)
 
 
@@ -533,6 +566,15 @@ def main():
     print(f'   30%+ 라이드: {summary["active_rides"]}개')
     print(f'   신규 시그널: {len(all_signals)}건')
 
+    # ── 관심종목 현황 수집 ──
+    watchlist_states = {}
+    for wcode, wname in WATCHLIST:
+        if wcode in new_states:
+            ws = dict(new_states[wcode])
+            ws['name'] = wname
+            watchlist_states[wcode] = ws
+    summary['watchlist_states'] = watchlist_states
+
     # ── 상태 저장 ──
     with open(STATE_FILE, 'w', encoding='utf-8') as f:
         json.dump(new_states, f, ensure_ascii=False, indent=1)
@@ -542,6 +584,7 @@ def main():
         'date': date_label,
         'summary': summary,
         'signals': all_signals,
+        'watchlist': watchlist_states,
         'all_states': {code: {
             'name': next((s['name'] for s in stocks if s['code'] == code), code),
             **st
@@ -549,6 +592,22 @@ def main():
     }
     with open(LATEST_FILE, 'w', encoding='utf-8') as f:
         json.dump(output, f, ensure_ascii=False, indent=1)
+
+    # ── 날짜별 아카이브 ──
+    archive_path = os.path.join(OUT_DIR, f'{date_label}.json')
+    with open(archive_path, 'w', encoding='utf-8') as f:
+        json.dump(output, f, ensure_ascii=False, indent=1)
+
+    # index.json 갱신
+    index = []
+    if os.path.exists(INDEX_FILE):
+        with open(INDEX_FILE, 'r', encoding='utf-8') as f:
+            index = json.load(f)
+    if date_label not in index:
+        index.append(date_label)
+        index.sort(reverse=True)
+    with open(INDEX_FILE, 'w', encoding='utf-8') as f:
+        json.dump(index, f, ensure_ascii=False)
 
     # ── 시그널 상세 출력 ──
     if all_signals:
