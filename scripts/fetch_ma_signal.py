@@ -70,7 +70,7 @@ os.makedirs(OUT_DIR, exist_ok=True)
 
 # telegram
 sys.path.insert(0, SCRIPT_DIR)
-from telegram_helper import send_all
+from telegram_helper import send_dm
 
 
 # ── 종목 로드 ──
@@ -398,84 +398,116 @@ def analyze_stock(bars, prev_state):
 
 
 # ── 텔레그램 메시지 구성 ──
-def build_telegram_msg(date_label, all_signals, summary):
-    lines = [f'📊 <b>이평선 시그널 — {date_label}</b>\n']
+def build_telegram_msgs(date_label, all_signals, summary, all_states, stocks):
+    """
+    텔레그램 메시지 리스트 반환 (4096자 제한 → 분할).
+    봇 DM 전용 — 전 종목 현황 포함.
+    """
+    # 종목코드→이름 매핑
+    name_map = {s['code']: s['name'] for s in stocks}
 
-    # 10WMA 비율 알림 (위험한 순)
-    r60 = [s for s in all_signals if s['signal_type'] == 'ratio_60']
-    r70 = [s for s in all_signals if s['signal_type'] == 'ratio_70']
-    r80 = [s for s in all_signals if s['signal_type'] == 'ratio_80']
-    b1  = [s for s in all_signals if s['signal_type'] == 'break_1st']
-    b2  = [s for s in all_signals if s['signal_type'] == 'break_2nd']
+    # ── 메시지 1: 요약 + 관심종목 + 신규 시그널 ──
+    lines = [f'📊 <b>이평선 시그널 — {date_label}</b>']
+    lines.append(f"📈 상승장 {summary['uptrend']} / 전체 {summary['total']}")
+    rides = summary.get('active_rides', 0)
+    if rides:
+        lines.append(f"🚀 30%+ 라이드: {rides}종목")
+    lines.append('')
 
-    if r60:
-        lines.append(f'🔴 <b>10WMA 비율 ≤60% — 매도 구간 ({len(r60)})</b>')
-        for s in r60:
-            lines.append(f"  {s['name']} {s['ratio']:.1f}% (종가 {s['close']:,})")
-        lines.append('')
-
-    if r70:
-        lines.append(f'⚠️ <b>10WMA 비율 ≤70% — 반환점 ({len(r70)})</b>')
-        for s in r70:
-            lines.append(f"  {s['name']} {s['ratio']:.1f}% (종가 {s['close']:,})")
-        lines.append('')
-
-    if r80:
-        lines.append(f'🟢 <b>10WMA 비율 ≤80% — 재매수 관점 ({len(r80)})</b>')
-        for s in r80[:10]:
-            lines.append(f"  {s['name']} {s['ratio']:.1f}%")
-        if len(r80) > 10:
-            lines.append(f'  ... 외 {len(r80)-10}종목')
-        lines.append('')
-
-    if b1:
-        lines.append(f'⚡ <b>5WMA 1차 이탈 — 분할매도 고려 ({len(b1)})</b>')
-        for s in b1:
-            lines.append(f"  {s['name']} 누적{s['ride_gain_pct']:+.1f}% 고점대비{s['peak_drop_pct']:.1f}%")
-        lines.append('')
-
-    if b2:
-        lines.append(f'💥 <b>5WMA 2차 이탈 — 매도 고려 ({len(b2)})</b>')
-        for s in b2:
-            lines.append(f"  {s['name']} 누적{s['ride_gain_pct']:+.1f}% 고점대비{s['peak_drop_pct']:.1f}%")
-        lines.append('')
-
-    if not any([r60, r70, r80, b1, b2]):
-        lines.append('변동 없음 — 신규 시그널 없음')
-        lines.append('')
-
-    # 요약
-    lines.append(f"📈 상승장 {summary['uptrend']}종목 / 전체 {summary['total']}")
-    active_rides = summary.get('active_rides', 0)
-    if active_rides:
-        lines.append(f"🚀 30%+ 라이드 진행 중: {active_rides}종목")
-
-    # ── 관심종목 현황 (항상 표시) ──
+    # 관심종목
     watchlist_states = summary.get('watchlist_states', {})
     if watchlist_states:
-        lines.append('')
-        lines.append('━━━━━━━━━━━━━━━━━━')
-        lines.append('⭐ <b>관심종목 현황</b>')
+        lines.append('⭐ <b>관심종목</b>')
         for code, ws in watchlist_states.items():
             name = ws.get('name', code)
             close = ws.get('close', 0)
             ratio = ws.get('ratio', 0)
-            wma5 = ws.get('wma5', 0)
-            wma10 = ws.get('wma10', 0)
             above5 = '✅' if ws.get('above_5wma') else '❌'
             bucket = ws.get('ratio_bucket', '')
-
-            # 비율 구간 한글
-            bucket_kr = {'above_80': '안전', '70_80': '재매수↗', '60_70': '반환점⚠️', 'below_60': '매도🔴', 'downtrend': '하락장'}.get(bucket, bucket)
+            bucket_kr = {'above_80': '안전', '70_80': '재매수↗', '60_70': '반환점⚠️',
+                         'below_60': '매도🔴', 'downtrend': '하락장'}.get(bucket, '')
             ride_info = ''
             if ws.get('threshold_hit'):
-                bc = ws.get('break_count', 0)
-                ride_info = f' | 30%+라이드 이탈{bc}회'
+                ride_info = f' | 라이드 이탈{ws.get("break_count",0)}회'
+            lines.append(f"  {name} {close:,} | 10W {ratio:.1f}%({bucket_kr}) 5W{above5}{ride_info}")
+        lines.append('')
 
-            lines.append(f"  {name} {close:,}원")
-            lines.append(f"    10W비율 {ratio:.1f}%({bucket_kr}) | 5W {above5}{ride_info}")
+    # 5WMA 이탈 시그널
+    b1 = [s for s in all_signals if s['signal_type'] == 'break_1st']
+    b2 = [s for s in all_signals if s['signal_type'] == 'break_2nd']
+    if b2:
+        lines.append(f'💥 <b>5WMA 2차 이탈 ({len(b2)})</b>')
+        for s in b2:
+            lines.append(f"  {s['name']} 누적{s['ride_gain_pct']:+.1f}% 고점{s['peak_drop_pct']:.1f}%")
+        lines.append('')
+    if b1:
+        lines.append(f'⚡ <b>5WMA 1차 이탈 ({len(b1)})</b>')
+        for s in b1:
+            lines.append(f"  {s['name']} 누적{s['ride_gain_pct']:+.1f}% 고점{s['peak_drop_pct']:.1f}%")
+        lines.append('')
 
-    return '\n'.join(lines)
+    msgs = ['\n'.join(lines)]
+
+    # ── 메시지 2+: 구간별 전 종목 현황 ──
+    # 상승장 종목을 비율순 정렬 (낮은 비율=과열 먼저)
+    uptrend = []
+    for code, st in all_states.items():
+        if st.get('ratio_bucket', 'downtrend') == 'downtrend':
+            continue
+        uptrend.append({
+            'code': code,
+            'name': name_map.get(code, code),
+            'close': st.get('close', 0),
+            'ratio': st.get('ratio', 100),
+            'bucket': st.get('ratio_bucket', 'above_80'),
+            'above_5': st.get('above_5wma', False),
+            'threshold': st.get('threshold_hit', False),
+            'breaks': st.get('break_count', 0),
+        })
+    uptrend.sort(key=lambda x: x['ratio'])
+
+    # 구간별 분류
+    zone_60 = [s for s in uptrend if s['bucket'] == 'below_60']
+    zone_70 = [s for s in uptrend if s['bucket'] == '60_70']
+    zone_80 = [s for s in uptrend if s['bucket'] == '70_80']
+
+    def fmt(item):
+        a5 = '✅' if item['above_5'] else '❌'
+        ride = f' 🚀{item["breaks"]}' if item['threshold'] else ''
+        return f"  {item['name']} {item['ratio']:.1f}% {item['close']:,} 5W{a5}{ride}"
+
+    zone_lines = []
+    if zone_60:
+        zone_lines.append(f'🔴 <b>≤60% 매도구간 ({len(zone_60)})</b>')
+        zone_lines.extend([fmt(s) for s in zone_60])
+        zone_lines.append('')
+    if zone_70:
+        zone_lines.append(f'⚠️ <b>60-70% 반환점 ({len(zone_70)})</b>')
+        zone_lines.extend([fmt(s) for s in zone_70])
+        zone_lines.append('')
+    if zone_80:
+        zone_lines.append(f'🟢 <b>70-80% 재매수 ({len(zone_80)})</b>')
+        zone_lines.extend([fmt(s) for s in zone_80])
+        zone_lines.append('')
+
+    if not zone_lines:
+        zone_lines.append('80% 이하 종목 없음')
+
+    # 4096자 제한 분할
+    chunk = []
+    chunk_len = 0
+    for line in zone_lines:
+        line_len = len(line) + 1
+        if chunk_len + line_len > 3800 and chunk:
+            msgs.append('\n'.join(chunk))
+            chunk = []
+            chunk_len = 0
+        chunk.append(line)
+        chunk_len += line_len
+    if chunk:
+        msgs.append('\n'.join(chunk))
+
+    return msgs
 
 
 # ── 메인 ──
@@ -616,10 +648,13 @@ def main():
             print(f"  [{s['signal_type']}] {s['name']} ratio={s.get('ratio','')} "
                   f"gain={s.get('ride_gain_pct','')} peak_drop={s.get('peak_drop_pct','')}")
 
-    # ── 텔레그램 ──
-    msg = build_telegram_msg(date_label, all_signals, summary)
-    send_all(msg)
-    print(f'\n✅ 완료: {date_label}')
+    # ── 텔레그램 (봇 DM만 — 채널은 뉴스+브리핑만) ──
+    msgs = build_telegram_msgs(date_label, all_signals, summary, new_states, stocks)
+    for i, msg in enumerate(msgs):
+        send_dm(msg)
+        if i < len(msgs) - 1:
+            time.sleep(0.3)
+    print(f'\n✅ 완료: {date_label} (텔레그램 {len(msgs)}건 발송)')
 
     if conn:
         conn.close()
