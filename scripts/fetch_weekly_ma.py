@@ -31,8 +31,7 @@ KIS_APP_KEY    = os.environ.get('KIS_APP_KEY', '')
 KIS_APP_SECRET = os.environ.get('KIS_APP_SECRET', '')
 KIS_BASE       = os.environ.get('KIS_BASE_URL',
                                 'https://openapi.koreainvestment.com:9443')
-TELEGRAM_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
-TELEGRAM_CHAT  = os.environ.get('TELEGRAM_CHAT_ID', '')
+from telegram_helper import send_all as _send_all
 
 SCRIPT_DIR  = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR    = os.path.dirname(SCRIPT_DIR)
@@ -189,23 +188,7 @@ def calc_5wma(weekly_bars):
 
 # ── 텔레그램 ──
 def send_telegram(text):
-    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT:
-        print('  ⚠️ 텔레그램 미설정 — 알림 생략')
-        return
-    url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
-    body = json.dumps({
-        'chat_id': TELEGRAM_CHAT,
-        'text': text,
-        'parse_mode': 'HTML',
-        'disable_web_page_preview': True,
-    }).encode('utf-8')
-    req = urllib.request.Request(url, data=body, headers={
-        'Content-Type': 'application/json',
-    })
-    try:
-        urllib.request.urlopen(req, timeout=10)
-    except Exception as e:
-        print(f'  ⚠️ 텔레그램 전송 실패: {e}')
+    return _send_all(text)
 
 
 # ── 메인 ──
