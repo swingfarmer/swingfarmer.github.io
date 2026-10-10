@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>이평선 시그널 · 나의 투자전략</title>
+<link rel="stylesheet" href="/common-dark.css?v=2">
+<style>
+:root { --sf-max-w: 1100px; }
+a{color:var(--accent);text-decoration:none}
+h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.subtitle{color:var(--text-dim);font-size:13px;margin-bottom:18px}
+/* 탭 */
+.tabs{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+.tabs button{background:var(--card);border:1px solid var(--border);color:var(--text-dim);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:all .15s}
+.tabs button.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.tabs button:hover:not(.active){border-color:var(--accent);color:var(--text)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+/* 날짜 선택 */
+.date-nav{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.date-nav select{background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:13px;font-family:inherit}
+.date-nav .current{font-size:15px;font-weight:700;color:var(--accent)}
+/* 관심종목 */
+.watchlist{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-bottom:20px}
+.watch-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px}
+.watch-card .wname{font-size:16px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.watch-card .wname .star{color:var(--gold)}
+.watch-card .wrow{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;border-bottom:1px solid var(--border)}
+.watch-card .wrow:last-child{border:none}
+.watch-card .wlabel{color:var(--text-dim)}
+.watch-card .wval{font-weight:600}
+/* 서머리 카드 */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px}
+.summary-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.summary-card .num{font-size:24px;font-weight:800;color:var(--accent)}
+.summary-card .label{font-size:11px;color:var(--text-dim);margin-top:4px}
+/* 시그널 리스트 */
+.sig-group{margin-bottom:18px}
+.sig-group h3{font-size:14px;font-weight:700;margin-bottom:8px;padding:8px 12px;border-radius:8px}
+.sig-group h3.danger{background:rgba(239,68,68,.12);color:var(--red)}
+.sig-group h3.warn{background:rgba(249,115,22,.12);color:var(--orange)}
+.sig-group h3.safe{background:rgba(34,197,94,.12);color:var(--green)}
+.sig-group h3.break1{background:rgba(59,130,246,.12);color:var(--accent)}
+.sig-group h3.break2{background:rgba(168,85,247,.12);color:#a855f7}
+.sig-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);font-size:13px}
+.sig-item:hover{background:var(--card-hover)}
+.sig-item .sname{font-weight:600}
+.sig-item .sval{color:var(--text-dim)}
+/* 히스토리 테이블 */
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px;background:var(--card);max-height:60vh}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--card);position:sticky;top:0;padding:10px 8px;text-align:left;font-weight:700;border-bottom:2px solid var(--border);font-size:12px;color:var(--text-dim)}
+td{padding:8px;border-bottom:1px solid var(--border);white-space:nowrap}
+tr:hover{background:rgba(59,130,246,.04)}
+/* 전략 설명 */
+.rule-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;line-height:1.8}
+.rule-box h3{font-size:15px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.rule-box .rule-row{display:flex;gap:12px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.rule-box .rule-row:last-child{border:none}
+.rule-box .rule-pct{font-weight:800;min-width:60px;font-size:15px}
+.rule-box .rule-desc{color:var(--text-dim);flex:1}
+.rule-box .rule-action{font-weight:600;min-width:80px;text-align:right}
+.backtest{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px}
+.backtest h3{font-size:15px;font-weight:700;margin-bottom:10px}
+.backtest table{font-size:12px}
+.backtest th,.backtest td{padding:6px 10px}
+.note{font-size:11px;color:var(--text-dim);text-align:center;margin-top:20px;line-height:1.8}
+.empty{text-align:center;padding:40px;color:var(--text-dim)}
+/* 비율 바 */
+.ratio-bar{height:6px;border-radius:3px;background:var(--border);position:relative;margin-top:4px}
+.ratio-fill{height:100%;border-radius:3px;position:absolute;left:0;top:0}
+</style>
+</head>
+<body>
+
+<h1>📊 이평선 시그널</h1>
+<div class="subtitle">나의 투자전략 — 10WMA/종가 비율 + 5WMA 이탈 감지 (매주 금요일 갱신)</div>
+
+<div class="tabs">
+  <button class="active" onclick="showTab('current')">📡 현재 시그널</button>
+  <button onclick="showTab('history')">📋 시그널 이력</button>
+  <button onclick="showTab('guide')">📖 전략 설명</button>
+</div>
+
+<!-- ════ 현재 시그널 탭 ════ -->
+<div id="tab-current" class="tab-content active">
+  <div class="date-nav">
+    <span class="current" id="dateLabel">로딩...</span>
+    <select id="dateSelect" onchange="loadDate(this.value)"></select>
+  </div>
+
+  <!-- 관심종목 -->
+  <div class="watchlist" id="watchlist"></div>
+
+  <!-- 서머리 -->
+  <div class="summary" id="summary"></div>
+
+  <!-- 시그널 -->
+  <div id="signals"></div>
+</div>
+
+<!-- ════ 시그널 이력 탭 ════ -->
+<div id="tab-history" class="tab-content">
+  <div class="table-wrap">
+    <table id="historyTable">
+      <thead>
+        <tr><th>날짜</th><th>종목</th><th>시그널</th><th>종가</th><th>10W비율</th><th>누적수익</th><th>고점대비</th></tr>
+      </thead>
+      <tbody id="historyBody"></tbody>
+    </table>
+  </div>
+  <div class="note">최근 시그널 이력 (날짜별 아카이브 누적)</div>
+</div>
+
+<!-- ════ 전략 설명 탭 ════ -->
+<div id="tab-guide" class="tab-content">
+
+  <div class="rule-box">
+    <h3>📐 전략 1 — 10주선/종가 비율</h3>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px">
+      상승장(종가 > 10주선)에서 10주이동평균선 ÷ 종가 비율로 과열 구간을 판단합니다.
+      비율이 낮을수록 종가가 10주선에서 멀리 벌어진 것 = 과열.
+    </p>
+    <div class="rule-row">
+      <span class="rule-pct" style="color:var(--green)">≤80%</span>
+      <span class="rule-desc">10주선 가까이. 상승 추세 정상 구간.</span>
+      <span class="rule-action" style="color:var(--green)">재매수 관점</span>
+    </div>
+    <div class="rule-row">
+      <span class="rule-pct" style="color:var(--orange)">≤70%</span>
+      <span class="rule-desc">반환점. 상승 모멘텀 확인 필요. MDD 커지기 시작.</span>
+      <span class="rule-action" style="color:var(--orange)">기세 확인</span>
+    </div>
+    <div class="rule-row">
+      <span class="rule-pct" style="color:var(--red)">≤60%</span>
+      <span class="rule-desc">과열 구간. 평균 4주후 마이너스, 승률 25%.</span>
+      <span class="rule-action" style="color:var(--red)">매도</span>
+    </div>
+  </div>
+
+  <div class="rule-box">
+    <h3>⚡ 전략 2 — 5주선 이탈 (30%+ 상승 후)</h3>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px">
+      5주선을 올라탄 뒤 30% 이상 상승한 종목이 5주선 아래로 종가가 내려오면 이탈로 판정합니다.
+      10주선까지 하회하면 라이드 종료.
+    </p>
+    <div class="rule-row">
+      <span class="rule-pct" style="color:var(--accent)">1차 이탈</span>
+      <span class="rule-desc">첫 이탈. 반등 가능성 있으나 경고등. 평균 4주후 -4.2%.</span>
+      <span class="rule-action" style="color:var(--accent)">분할매도 1차</span>
+    </div>
+    <div class="rule-row">
+      <span class="rule-pct" style="color:#a855f7">2차 이탈</span>
+      <span class="rule-desc">재차 이탈. 기간/가격 조정 없이 간다면 주도주가 아닐 수 있음.</span>
+      <span class="rule-action" style="color:#a855f7">매도 고려</span>
+    </div>
+  </div>
+
+  <div class="backtest">
+    <h3>📊 백테스트 결과 (10종목 71주, 2025.6~2026.10)</h3>
+    <table>
+      <thead><tr><th>10W비율 구간</th><th>샘플</th><th>4주후 평균</th><th>승률</th><th>8주 MDD</th></tr></thead>
+      <tbody>
+        <tr><td>85-100%</td><td>274</td><td style="color:var(--green)">+5.8%</td><td>58%</td><td>-11.5%</td></tr>
+        <tr><td>75-85%</td><td>73</td><td style="color:var(--green)">+8.3%</td><td>56%</td><td>-13.1%</td></tr>
+        <tr><td>65-75%</td><td>23</td><td style="color:var(--green)">+7.8%</td><td>65%</td><td>-16.2%</td></tr>
+        <tr><td>55-65%</td><td>4</td><td style="color:var(--red)">-7.8%</td><td>25%</td><td style="color:var(--red)">-26.5%</td></tr>
+      </tbody>
+    </table>
+    <table style="margin-top:14px">
+      <thead><tr><th>5WMA 이탈</th><th>건수</th><th>4주후 평균</th><th>승률</th></tr></thead>
+      <tbody>
+        <tr><td>1차 이탈</td><td>8</td><td style="color:var(--red)">-4.2%</td><td>38%</td></tr>
+        <tr><td>2차 이탈</td><td>2</td><td style="color:var(--text-dim)">+22.1%</td><td>100% (표본부족)</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:11px;color:var(--text-dim);margin-top:10px">
+      ⚠ 71주 10종목 한정 결과. 참고용으로만 활용. 종가 히스토리 DB화 후 장기 검증 예정.
+    </p>
+  </div>
+
+  <div class="rule-box">
+    <h3>🔧 사용법</h3>
+    <p style="font-size:13px;line-height:2">
+      <b>자동 갱신:</b> 매주 금요일 장 마감 후(21:05) 전 종목 스캔 → 텔레그램 알림 + 이 페이지 갱신.<br>
+      <b>텔레그램:</b> 신규 시그널 + 관심종목 현황이 봇 DM + @swingfarmer 채널로 발송됩니다.<br>
+      <b>관심종목:</b> 현재 대한항공·현대건설. 변경 시 <code>scripts/fetch_ma_signal.py</code>의 <code>WATCHLIST</code> 수정.<br>
+      <b>데이터:</b> KIS Open API 주봉 71주치 → 5WMA/10WMA 계산. Oracle MA_SIGNALS 테이블에 시그널 이력 저장.
+    </p>
+  </div>
+</div>
+
+<div class="note">
+  데이터: KIS Open API 주봉 · 매주 금요일 자동 갱신<br>
+  이 페이지의 모든 정보는 투자 판단의 참고용이며 매매 추천이 아닙니다.
+</div>
+
+<script src="/common.js?v=5"></script>
+<script>
+const BASE = '/data/kr/ma_signal';
+let allHistorySignals = [];
+
+function showTab(id) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function ratioColor(ratio) {
+  if (ratio <= 60) return 'var(--red)';
+  if (ratio <= 70) return 'var(--orange)';
+  if (ratio <= 80) return 'var(--green)';
+  return 'var(--text)';
+}
+
+function bucketKr(b) {
+  return {'above_80':'안전','70_80':'재매수↗','60_70':'반환점⚠️','below_60':'매도🔴','downtrend':'하락장'}[b] || b;
+}
+
+function signalKr(t) {
+  return {'ratio_60':'🔴 10W≤60%','ratio_70':'⚠️ 10W≤70%','ratio_80':'🟢 10W≤80%','break_1st':'⚡ 1차이탈','break_2nd':'💥 2차이탈'}[t] || t;
+}
+
+function renderWatchlist(data) {
+  const el = document.getElementById('watchlist');
+  const wl = data.watchlist || {};
+  if (!Object.keys(wl).length) { el.innerHTML = ''; return; }
+
+  el.innerHTML = Object.entries(wl).map(([code, ws]) => {
+    const ratio = ws.ratio || 0;
+    const rc = ratioColor(ratio);
+    const a5 = ws.above_5wma ? '✅ 위' : '❌ 아래';
+    const bk = bucketKr(ws.ratio_bucket);
+    let ride = '-';
+    if (ws.threshold_hit) {
+      const gain = ws.ride_start_price ? ((ws.close / ws.ride_start_price - 1) * 100).toFixed(1) : '?';
+      ride = `진행중 +${gain}% (이탈 ${ws.break_count || 0}회)`;
+    }
+    return `<div class="watch-card">
+      <div class="wname"><span class="star">⭐</span> ${ws.name || code}</div>
+      <div class="wrow"><span class="wlabel">종가</span><span class="wval">${(ws.close||0).toLocaleString()}원</span></div>
+      <div class="wrow"><span class="wlabel">10W비율</span><span class="wval" style="color:${rc}">${ratio.toFixed(1)}% (${bk})</span></div>
+      <div class="wrow"><span class="wlabel">5주선</span><span class="wval">${a5} (${(ws.wma5||0).toLocaleString()})</span></div>
+      <div class="wrow"><span class="wlabel">10주선</span><span class="wval">${(ws.wma10||0).toLocaleString()}</span></div>
+      <div class="wrow"><span class="wlabel">30%+ 라이드</span><span class="wval">${ride}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function renderSummary(data) {
+  const s = data.summary || {};
+  document.getElementById('summary').innerHTML = `
+    <div class="summary-card"><div class="num">${s.total||0}</div><div class="label">분석 종목</div></div>
+    <div class="summary-card"><div class="num">${s.uptrend||0}</div><div class="label">상승장 (>10W)</div></div>
+    <div class="summary-card"><div class="num">${s.active_rides||0}</div><div class="label">30%+ 라이드</div></div>
+    <div class="summary-card"><div class="num">${(data.signals||[]).length}</div><div class="label">신규 시그널</div></div>
+  `;
+}
+
+function renderSignals(data) {
+  const el = document.getElementById('signals');
+  const sigs = data.signals || [];
+  if (!sigs.length) {
+    el.innerHTML = '<div class="empty">이번 주 신규 시그널 없음</div>';
+    return;
+  }
+
+  const groups = {
+    ratio_60: { title: '🔴 10WMA ≤60% — 매도 구간', cls: 'danger', items: [] },
+    ratio_70: { title: '⚠️ 10WMA ≤70% — 반환점', cls: 'warn', items: [] },
+    ratio_80: { title: '🟢 10WMA ≤80% — 재매수 관점', cls: 'safe', items: [] },
+    break_1st: { title: '⚡ 5WMA 1차 이탈', cls: 'break1', items: [] },
+    break_2nd: { title: '💥 5WMA 2차 이탈', cls: 'break2', items: [] },
+  };
+
+  sigs.forEach(s => { if (groups[s.signal_type]) groups[s.signal_type].items.push(s); });
+
+  el.innerHTML = Object.values(groups).filter(g => g.items.length > 0).map(g => {
+    const rows = g.items.map(s => {
+      let detail = '';
+      if (s.signal_type.startsWith('ratio')) {
+        detail = `${s.ratio?.toFixed(1)}% · 종가 ${(s.close||0).toLocaleString()}`;
+      } else {
+        detail = `누적 ${s.ride_gain_pct>=0?'+':''}${s.ride_gain_pct?.toFixed(1)}% · 고점대비 ${s.peak_drop_pct?.toFixed(1)}%`;
+      }
+      return `<div class="sig-item"><span class="sname">${s.name}</span><span class="sval">${detail}</span></div>`;
+    }).join('');
+    return `<div class="sig-group"><h3 class="${g.cls}">${g.title} (${g.items.length})</h3>${rows}</div>`;
+  }).join('');
+}
+
+function renderHistory() {
+  const tbody = document.getElementById('historyBody');
+  tbody.innerHTML = allHistorySignals.map(s => {
+    const gain = s.ride_gain_pct != null ? `${s.ride_gain_pct>=0?'+':''}${s.ride_gain_pct?.toFixed(1)}%` : '-';
+    const drop = s.peak_drop_pct != null ? `${s.peak_drop_pct?.toFixed(1)}%` : '-';
+    return `<tr>
+      <td>${s.signal_date}</td>
+      <td style="font-weight:600">${s.name||s.code}</td>
+      <td>${signalKr(s.signal_type)}</td>
+      <td>${(s.close||0).toLocaleString()}</td>
+      <td style="color:${ratioColor(s.ratio||100)}">${s.ratio?.toFixed(1)||'-'}%</td>
+      <td>${gain}</td>
+      <td>${drop}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadDate(dateStr) {
+  const file = dateStr === 'latest' ? 'latest.json' : `${dateStr}.json`;
+  try {
+    const resp = await fetch(`${BASE}/${file}`);
+    if (!resp.ok) throw new Error('not found');
+    const data = await resp.json();
+    document.getElementById('dateLabel').textContent = data.date || dateStr;
+    renderWatchlist(data);
+    renderSummary(data);
+    renderSignals(data);
+
+    // 히스토리 누적
+    (data.signals || []).forEach(s => {
+      const key = `${s.signal_date}_${s.code}_${s.signal_type}`;
+      if (!allHistorySignals.find(h => `${h.signal_date}_${h.code}_${h.signal_type}` === key)) {
+        allHistorySignals.push(s);
+      }
+    });
+    allHistorySignals.sort((a, b) => b.signal_date.localeCompare(a.signal_date));
+    renderHistory();
+  } catch (e) {
+    document.getElementById('dateLabel').textContent = '데이터 없음';
+    document.getElementById('signals').innerHTML = '<div class="empty">데이터를 불러올 수 없습니다.</div>';
+  }
+}
+
+async function init() {
+  // index.json으로 날짜 목록
+  try {
+    const resp = await fetch(`${BASE}/index.json`);
+    const dates = await resp.json();
+    const sel = document.getElementById('dateSelect');
+    dates.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d;
+      opt.textContent = d;
+      sel.appendChild(opt);
+    });
+
+    // 모든 날짜 히스토리 수집 (최근 10개만)
+    for (const d of dates.slice(0, 10)) {
+      try {
+        const r = await fetch(`${BASE}/${d}.json`);
+        const data = await r.json();
+        (data.signals || []).forEach(s => {
+          const key = `${s.signal_date}_${s.code}_${s.signal_type}`;
+          if (!allHistorySignals.find(h => `${h.signal_date}_${h.code}_${h.signal_type}` === key)) {
+            allHistorySignals.push(s);
+          }
+        });
+      } catch(e) {}
+    }
+    allHistorySignals.sort((a, b) => b.signal_date.localeCompare(a.signal_date));
+    renderHistory();
+  } catch (e) {}
+
+  // latest 로드
+  loadDate('latest');
+}
+
+init();
+</script>
+</body>
+</html>
