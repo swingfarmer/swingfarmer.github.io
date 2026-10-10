@@ -194,6 +194,9 @@ def main():
             print(f"  {cat}: {len(top)}개 → 텔레그램 {'✅' if ok else '❌'}")
         else:
             print(f"  {cat}: 0개 (24시간 이내 뉴스 없음)")
+            if cat == "하남 감북":
+                now_str = datetime.now(KST).strftime('%m/%d %H:%M')
+                send_telegram(f"📰 <b>{cat} 뉴스</b>  ({now_str})\n\n오늘 관련 뉴스 없음")
 
         time.sleep(1)
 
