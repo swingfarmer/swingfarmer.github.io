@@ -118,6 +118,21 @@ def extract_source(url):
     return ""
 
 
+def filter_recent(items, hours=24):
+    """pubDate 기준 N시간 이내 기사만 남김."""
+    from email.utils import parsedate_to_datetime
+    cutoff = datetime.now(KST) - timedelta(hours=hours)
+    recent = []
+    for it in items:
+        try:
+            pub = parsedate_to_datetime(it["pubDate"])
+            if pub >= cutoff:
+                recent.append(it)
+        except Exception:
+            pass  # 파싱 실패한 기사는 버림
+    return recent
+
+
 def dedupe_top(all_items, n=TOP_N):
     """중복 제거 + 최신순 상위 N개"""
     seen = set()
@@ -169,6 +184,7 @@ def main():
                 all_items.extend(items)
             time.sleep(0.3)
 
+        all_items = filter_recent(all_items, hours=24)
         top = dedupe_top(all_items, TOP_N)
         archive["categories"][cat] = {"items": top, "count": len(top)}
 
@@ -177,7 +193,7 @@ def main():
             ok = send_telegram(msg)
             print(f"  {cat}: {len(top)}개 → 텔레그램 {'✅' if ok else '❌'}")
         else:
-            print(f"  {cat}: 0개 (에러: {', '.join(errors)})")
+            print(f"  {cat}: 0개 (24시간 이내 뉴스 없음)")
 
         time.sleep(1)
 
