@@ -1,7 +1,13 @@
 """
 뉴스 텔레그램 알림 + 일별 JSON 아카이브 (NAVER API HUB 버전)
-오라클 VM crontab: 매일 07:30 KST
-부동산/증권/해외증시 각 10개 헤드라인 → 텔레그램 발송 + data/news_archive/YYYY-MM-DD.json 저장
+오라클 VM crontab:
+  07:30 KST — 증권/해외증시 (채널+DM)
+  12:00 KST — 부동산/하남감북 (DM만)
+
+사용법:
+  python3 news_alert.py                     # 전체 카테고리
+  python3 news_alert.py --cats 증권 해외증시  # 지정 카테고리만
+  python3 news_alert.py --cats 부동산 "하남 감북"
 
 환경변수:
   NAVER_CLIENT_ID      — 네이버 클라우드 NAVER API HUB Client ID
@@ -13,6 +19,7 @@ import requests
 import json
 import os
 import re
+import sys
 import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -166,18 +173,43 @@ def format_telegram(category, items):
     return "\n".join(lines)
 
 
+def parse_cats():
+    """--cats 뒤의 카테고리명 파싱. 없으면 전체."""
+    args = sys.argv[1:]
+    if '--cats' not in args:
+        return list(CATEGORIES.keys())
+    idx = args.index('--cats')
+    cats = args[idx+1:]
+    valid = [c for c in cats if c in CATEGORIES]
+    if not valid:
+        print(f"⚠️ 유효한 카테고리 없음: {cats}")
+        print(f"   사용 가능: {list(CATEGORIES.keys())}")
+        sys.exit(1)
+    return valid
+
+
 def main():
     now = datetime.now(KST)
     today = now.strftime("%Y-%m-%d")
-    print(f"뉴스 알림 시작: {now.strftime('%Y-%m-%d %H:%M')}")
+    run_cats = parse_cats()
+    print(f"뉴스 알림 시작: {now.strftime('%Y-%m-%d %H:%M')} — {run_cats}")
 
     if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET:
         print("❌ NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 환경변수 없음")
         return
 
-    archive = {"date": today, "updated": now.strftime("%Y-%m-%d %H:%M KST"), "categories": {}}
+    # 기존 아카이브 로드 (하루 2회 실행 시 머지)
+    ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
+    archive_path = ARCHIVE_DIR / f"{today}.json"
+    if archive_path.exists():
+        with open(archive_path, "r", encoding="utf-8") as f:
+            archive = json.load(f)
+    else:
+        archive = {"date": today, "categories": {}}
+    archive["updated"] = now.strftime("%Y-%m-%d %H:%M KST")
 
-    for cat, queries in CATEGORIES.items():
+    for cat in run_cats:
+        queries = CATEGORIES[cat]
         all_items = []
         errors = []
 
@@ -206,8 +238,6 @@ def main():
 
         time.sleep(1)
 
-    ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
-    archive_path = ARCHIVE_DIR / f"{today}.json"
     with open(archive_path, "w", encoding="utf-8") as f:
         json.dump(archive, f, ensure_ascii=False, indent=1)
     print(f"✅ 아카이브 저장: {archive_path}")

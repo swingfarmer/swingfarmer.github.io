@@ -6,7 +6,7 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta name="robots" content="noindex, nofollow">
 <title>현대건설 원전·SMR·DC 시뮬레이터 | 스윙파머</title>
-<meta name="description" content="현대건설(000720) 원전·SMR·데이터센터 파이프라인 14건 기반 27~35 연도별 매출·영업이익 추정. Bear/Base/Bull 3시나리오.">
+<meta name="description" content="현대건설(000720) 원전·SMR·데이터센터 파이프라인 14건+ 기반 27~35 연도별 매출·영업이익 추정. Bear/Base/Bull 3시나리오.">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js">
 // ── sf-slots 연동 ──
 window.CALC_KEY = 'hd-enc';
@@ -62,20 +62,26 @@ h1{color:#1F4E78;font-size:22px;margin-bottom:4px;border-bottom:none;padding-bot
   .btn.pri{background:#0ea5e9;color:#fff;border-color:#0ea5e9}
   .btn.gray{background:#9ca3af;color:#fff;border-color:#9ca3af}
   .btn.reset{background:#fef2f2;color:#dc2626;border-color:#fca5a5;font-size:12px;padding:6px 10px}
+  .tp-table{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0}
+  .tp-table th,.tp-table td{padding:5px 6px;border-bottom:1px solid #e5e7eb;text-align:center}
+  .tp-table th{background:#eef2f7;color:#1F4E78;font-weight:700;font-size:11px}
+  .tp-table td:first-child{text-align:left;font-weight:500}
+  .cid-box{background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px 14px;margin:8px 0}
+  .cid-box p{margin:4px 0;font-size:12.5px;line-height:1.6}
+  .warn-box{background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin:8px 0;font-size:12.5px;line-height:1.6;color:#991b1b}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div id="cloudArea" class="cloud-bar">
     <span id="cloudWho" style="font-size:12px;color:#0369a1"></span>
-    
   </div>
   <button id="btnAdminLogin" class="admin-btn" type="button">🔑 관리자 로그인</button>
   <div id="uidInfo" class="uid-info"></div>
 
   <h1>⚡ 현대건설 원전·SMR·DC 시뮬레이터</h1>
-  <p class="subtitle">파이프라인 14건+ 기반 연도별 연결 매출·영업이익 추정 (2026~2035)</p>
-  <p class="updated">v3 · 2026.09.09 · 리포트: 미래에셋·신한·메리츠·맥쿼리·BNK · 대미투자 MOU 반영</p>
+  <p class="subtitle">파이프라인 ~54기 기반 연도별 연결 매출·영업이익 추정 (2026~2035)</p>
+  <p class="updated">v4 · 2026.10.10 · 셀사이드 12곳+ (유안타·BNK·신한·KB·미래·메리츠·키움·대신·IBK·유진·LS·한화·IM) · IR 단가확인 · CID 2025 반영</p>
 
   <div class="totals" id="totals"></div>
 
@@ -85,6 +91,7 @@ h1{color:#1F4E78;font-size:22px;margin-bottom:4px;border-bottom:none;padding-bot
     <button class="tab" data-tab="risk" type="button">리스크</button>
   </div>
 
+  <!-- ═══════════ 시뮬레이터 탭 ═══════════ -->
   <div id="tab-sim" class="tab-content active">
     <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
       <button id="btnReset" class="btn reset" type="button">🔄 전체 초기화</button>
@@ -93,7 +100,7 @@ h1{color:#1F4E78;font-size:22px;margin-bottom:4px;border-bottom:none;padding-bot
     <div class="panel"><h2>🏭 대형원전 (AP1000)</h2>
       <div class="proj" id="p-kozloduy">
         <div class="proj-head"><span class="proj-name">코즐로두이 7·8호기 (불가리아)</span><span class="tag nuclear">대형</span></div>
-        <div class="note">WEC AP1000 2기 · 총사업비 ~20조 · 현대 50% · 26 FID → 27 착공 · 27 1H 본계약 예상(BNK)</div>
+        <div class="note">WEC AP1000 2기 · 총사업비 ~20조(신영 18~20조) · 현대 50% = 8~10조 · ESC 설계계약 체결(24.11) · 27 1H 본계약(BNK) · ⚠️ LSTK(고정가) 리스크</div>
         <div class="row"><label>기수</label><input type="range" min="0" max="4" value="2" step="1" data-f="u"><span class="val">2기</span></div>
         <div class="row"><label>기당 EPC</label><input type="range" min="3" max="7" value="5" step="0.5" data-f="p"><span class="val">5.0조</span></div>
         <div class="row"><label>착공</label><select data-f="s"><option value="2027">2027</option><option value="2028" selected>2028</option><option value="2029">2029</option></select></div>
@@ -102,7 +109,7 @@ h1{color:#1F4E78;font-size:22px;margin-bottom:4px;border-bottom:none;padding-bot
       </div>
       <div class="proj" id="p-fermi" style="margin-top:16px">
         <div class="proj-head"><span class="proj-name">페르미 마타도르 (미국 텍사스)</span><span class="tag nuclear">대형</span></div>
-        <div class="note">AP1000 4기 · FEED 완료(6월) · DOE $17.5B 수혜 가능 · IG 백스톱 15년 · EPC 부분계약 추진 중(BNK)</div>
+        <div class="note">AP1000 4기 4.4GW · FEED완료 + COLA접수(NRC 25.9) · DOE $17.5B SCL · 텐서웨이브 앵커(DC 리스, 원전 자금 아님) · 27 본공사 목표 · ⚠️ 자금 $32~40B 미확보</div>
         <div class="row"><label>기수</label><input type="range" min="0" max="4" value="2" step="1" data-f="u"><span class="val">2기</span></div>
         <div class="row"><label>기당 EPC</label><input type="range" min="3" max="7" value="4" step="0.5" data-f="p"><span class="val">4.0조</span></div>
         <div class="row"><label>착공</label><select data-f="s"><option value="2028">2028</option><option value="2029" selected>2029</option><option value="2030">2030</option><option value="2031">2031</option></select></div>
@@ -110,8 +117,8 @@ h1{color:#1F4E78;font-size:22px;margin-bottom:4px;border-bottom:none;padding-bot
         <div class="row"><label>OPM%</label><input type="range" min="3" max="10" value="6" step="0.5" data-f="m"><span class="val">6.0%</span></div>
       </div>
       <div class="proj" id="p-usfleet" style="margin-top:16px">
-        <div class="proj-head"><span class="proj-name">미국 AP1000 fleet (대미투자 8기 MOU)</span><span class="tag nuclear">대형</span></div>
-        <div class="note">🆕 9/18 MOU 서명 예정 · DOE SPV $17.5B · 맥쿼리 기당 $2.5~3B · 현대 몫 추정 4~6기</div>
+        <div class="proj-head"><span class="proj-name">US Project Power (대미투자 8기)</span><span class="tag nuclear">대형</span></div>
+        <div class="note">✅ MOU 서명 완료(9/18) · AP1000 6기 + APR1400 2기 확정 · 총$120B · 3단계 · EPC $7.5~9B(10~12조) · APR1400은 팀코리아(대우 주관) → 현대 몫 AP1000 6기 중심</div>
         <div class="row"><label>기수</label><input type="range" min="0" max="10" value="2" step="1" data-f="u"><span class="val">2기</span></div>
         <div class="row"><label>기당 EPC</label><input type="range" min="2.5" max="5" value="3.5" step="0.5" data-f="p"><span class="val">3.5조</span></div>
         <div class="row"><label>착공</label><select data-f="s"><option value="2029">2029</option><option value="2030" selected>2030</option><option value="2031">2031</option><option value="2032">2032</option></select></div>
@@ -123,7 +130,7 @@ h1{color:#1F4E78;font-size:22px;margin-bottom:4px;border-bottom:none;padding-bot
     <div class="panel"><h2>🔬 SMR (소형모듈원전)</h2>
       <div class="proj smr" id="p-palisades">
         <div class="proj-head"><span class="proj-name">팰리세이즈 SMR-300 (홀텍)</span><span class="tag smr">SMR</span></div>
-        <div class="note">FOAK 2기 680MW · 현대=TI+BOP+시공(60~70%) · 26 2H 파샬 → 27 본계약</div>
+        <div class="note">FOAK 2기 680MW · 현대=TI+BOP+시공(60%) · PSAR 제출(10/8) · LWA전 지반공사 허용(8/28) · DOE $400M · 31중반 상업운전 목표</div>
         <div class="row"><label>기수</label><input type="range" min="0" max="4" value="2" step="1" data-f="u"><span class="val">2기</span></div>
         <div class="row"><label>기당 EPC</label><input type="range" min="1" max="3" value="2" step="0.2" data-f="p"><span class="val">2.0조</span></div>
         <div class="row"><label>착공</label><select data-f="s"><option value="2027" selected>2027</option><option value="2028">2028</option><option value="2029">2029</option></select></div>
@@ -131,8 +138,8 @@ h1{color:#1F4E78;font-size:22px;margin-bottom:4px;border-bottom:none;padding-bot
         <div class="row"><label>OPM%</label><input type="range" min="2" max="8" value="4" step="0.5" data-f="m"><span class="val">4.0%</span></div>
       </div>
       <div class="proj smr" id="p-terra" style="margin-top:16px">
-        <div class="proj-head"><span class="proj-name">테라파워 Kemmerer+NOAK</span><span class="tag smr">SMR</span></div>
-        <div class="note">4세대 SFR · FOAK 벡텔 이양 27년 · NOAK 8기 독점 EPC(Meta PPA)</div>
+        <div class="proj-head"><span class="proj-name">테라파워 Natrium (케머러+NOAK)</span><span class="tag smr">SMR</span></div>
+        <div class="note">4세대 SFR · ✅ FA 체결(8/18) · 케머러 FOAK 착공(벡텔 시공, 30 완공) · NOAK 8기 현대 독점 EPC · Meta PPA 최대 8기(첫 2기 32 가동) · 3사 MOU(현대+테라+HD현대중공업)</div>
         <div class="row"><label>기수</label><input type="range" min="0" max="9" value="3" step="1" data-f="u"><span class="val">3기</span></div>
         <div class="row"><label>기당 EPC</label><input type="range" min="0.8" max="2" value="1.2" step="0.2" data-f="p"><span class="val">1.2조</span></div>
         <div class="row"><label>착공</label><select data-f="s"><option value="2027" selected>2027</option><option value="2028">2028</option><option value="2029">2029</option></select></div>
@@ -140,8 +147,8 @@ h1{color:#1F4E78;font-size:22px;margin-bottom:4px;border-bottom:none;padding-bot
         <div class="row"><label>OPM%</label><input type="range" min="2" max="8" value="5" step="0.5" data-f="m"><span class="val">5.0%</span></div>
       </div>
       <div class="proj smr" id="p-oyster" style="margin-top:16px">
-        <div class="proj-head"><span class="proj-name">Oyster Creek / Cottam 등</span><span class="tag smr">SMR</span></div>
-        <div class="note">홀텍 후속 · 미국 4기 + 영국 1기 · 28~31년 EPC</div>
+        <div class="proj-head"><span class="proj-name">Oyster Creek / Cottam 등 후속</span><span class="tag smr">SMR</span></div>
+        <div class="note">홀텍 후속 · 오이스터크릭 4기(NJ) + 코텀 1.3GW(UK, GDA Step2 통과 26.4) · 인디언포인트·필그림 잠재(각 8기)</div>
         <div class="row"><label>기수</label><input type="range" min="0" max="6" value="0" step="1" data-f="u"><span class="val">0기</span></div>
         <div class="row"><label>기당 EPC</label><input type="range" min="1" max="2.5" value="1.5" step="0.1" data-f="p"><span class="val">1.5조</span></div>
         <div class="row"><label>착공</label><select data-f="s"><option value="2029">2029</option><option value="2030" selected>2030</option><option value="2031">2031</option></select></div>
@@ -161,7 +168,7 @@ h1{color:#1F4E78;font-size:22px;margin-bottom:4px;border-bottom:none;padding-bot
       </div>
       <div class="proj dc" id="p-gas" style="margin-top:16px">
         <div class="proj-head"><span class="proj-name">텍사스 엔시날 가스발전 등</span><span class="tag dc">발전</span></div>
-        <div class="note">대미투자 1호 · 6.3GW · 팀코리아 컨소시엄 · 알래스카 LNG 포함</div>
+        <div class="note">대미투자 Project Star · 6.47GW · $22.3B(30조) · 국내 건설 수혜 30~50%(9~15조) · DL이앤씨● > 삼성물산○ = 현대건설○</div>
         <div class="row"><label>총 EPC</label><input type="range" min="0" max="5" value="0" step="0.5" data-f="total"><span class="val">0.0조</span></div>
         <div class="row"><label>착공</label><select data-f="s"><option value="2027" selected>2027</option><option value="2028">2028</option><option value="2029">2029</option></select></div>
         <div class="row"><label>공기</label><input type="range" min="3" max="6" value="4" step="1" data-f="d"><span class="val">4년</span></div>
@@ -172,7 +179,7 @@ h1{color:#1F4E78;font-size:22px;margin-bottom:4px;border-bottom:none;padding-bot
     <div class="panel"><h2>🏗️ 기존사업 (비원전)</h2>
       <div class="proj base" id="p-base">
         <div class="proj-head"><span class="proj-name">주택+인프라+플랜트+HEC</span><span class="tag base">기존</span></div>
-        <div class="note">수주잔고 104조 · 도정 마진 개선 · 글로벌 EPC 쇼티지 = Seller's Market</div>
+        <div class="note">수주잔고 104조 역대 최대(1H26 22.8조, 연간 68%) · 주택 도정 마진 개선(2Q26 원가율 83.7%) · 현대ENG OPM 4.5~4.7% 안정</div>
         <div class="row"><label>26F 매출</label><input type="range" min="22" max="30" value="26" step="0.5" data-f="base26"><span class="val">26.0조</span></div>
         <div class="row"><label>30F 매출</label><input type="range" min="24" max="35" value="27" step="0.5" data-f="base30"><span class="val">27.0조</span></div>
         <div class="row"><label>26F OPM</label><input type="range" min="2" max="6" value="3.1" step="0.1" data-f="opm26"><span class="val">3.1%</span></div>
@@ -187,9 +194,9 @@ h1{color:#1F4E78;font-size:22px;margin-bottom:4px;border-bottom:none;padding-bot
 
     <div class="panel"><h2>🎯 2030 연결 영업이익 시나리오</h2>
       <div class="scenario">
-        <div class="sc bear"><div class="sc-label">Bear</div><div class="sc-val" id="sc-bear">-</div></div>
-        <div class="sc base"><div class="sc-label">Base</div><div class="sc-val" id="sc-base">-</div></div>
-        <div class="sc bull"><div class="sc-label">Bull</div><div class="sc-val" id="sc-bull">-</div></div>
+        <div class="sc bear"><div class="sc-label">Bear</div><div class="sc-val" id="sc-bear">-</div><div class="note">수주지연+ZATCA</div></div>
+        <div class="sc base"><div class="sc-label">Base</div><div class="sc-val" id="sc-base">-</div><div class="note">9기 본계약</div></div>
+        <div class="sc bull"><div class="sc-label">Bull</div><div class="sc-val" id="sc-bull">-</div><div class="note">14건+ 본계약</div></div>
       </div>
     </div>
 
@@ -200,65 +207,121 @@ h1{color:#1F4E78;font-size:22px;margin-bottom:4px;border-bottom:none;padding-bot
         <tr><td>BNK (9/8)</td><td>1.14조</td><td>1.42조</td><td>-</td><td style="color:#1F4E78;font-weight:700">200,000</td></tr>
         <tr><td>신한 (8/31)</td><td>1.36조</td><td>1.48조</td><td>~1.8조</td><td>170,000</td></tr>
         <tr><td>미래에셋 (9/1)</td><td>1.00조</td><td>1.25조</td><td>~1.6조</td><td>175,000</td></tr>
-        <tr><td>회사 가이던스</td><td>~1.3조</td><td>2.0조</td><td>3.2조+</td><td>-</td></tr>
+        <tr><td>유안타 (9/21)</td><td colspan="3" style="text-align:center;color:#dc2626;font-size:11px">관심주 강등 · OCF/PF/회전연수 3중 약점</td><td style="color:#dc2626;font-weight:700">205,000</td></tr>
+        <tr><td>회사 CID</td><td>~1.3조</td><td>2.0조</td><td>3.2조+</td><td>-</td></tr>
         <tr><td>CFO 언급</td><td>-</td><td>2.0조</td><td>4.0조</td><td>-</td></tr>
-        <tr><td>상상인 Bull</td><td>~1.5조</td><td>~2.5조</td><td>~3.5조</td><td>-</td></tr>
       </table>
+      <p class="note" style="margin-top:6px">12곳 평균 TP ~178,000원 (유안타 205k · BNK/한화 200k · 대신 195k · 메리츠 176k · IM/미래 175k · KB/신한 170k · IBK 160k · 유진 154k · LS 150k)</p>
     </div>
   </div>
 
+  <!-- ═══════════ 통합 요약 탭 ═══════════ -->
   <div id="tab-summary" class="tab-content">
     <div class="panel summary-box">
-      <h3>1. 리포트 5건 통합 (미래에셋·신한·메리츠·맥쿼리·BNK)</h3>
-      <p>셀사이드 7곳 평균 TP ~183,000원. <strong>신한 SOTP 기준 TP의 71%가 원전 옵션값</strong> — 기존사업 가치 ~51,000원, 원전 13.5조(주당 ~121,000원). KB/키움/미래/BNK 4곳 동시 TP 대폭 하향(-17~26%)하면서 톤 유지 = "이전 가격 과했다" 시그널.</p>
-      <p><strong>맥쿼리 핵심:</strong> "정책 기대 → 실제 수주" 전환. DOE SPV 통한 FID 전 기자재 선발주 가능 = 기자재(두산) 먼저, EPC(현대) 다음.</p>
 
-      <h3>2. 역할 레벨업: 시공(C)→EPC 전 과정 (BNK Fig.3)</h3>
-      <p><strong>팀코리아:</strong> 현대 = 시공(C)만. <strong>WEC 협업:</strong> 현대 = BOP 설계+구매+시공 (E+P+C 절반). <strong>홀텍 SMR:</strong> 현대 = NI 빼고 전부 (TI+BOP 설계+구매+시공, 60~70%).</p>
-      <p>→ 몫(수주)이 커질 뿐 아니라 수익성도 제고. 홀텍 SMR 기당 EPC 2.0~2.2조 상향 근거.</p>
+      <h3>1. TP 컨센서스 & 신한 SOTP (핵심 밸류 분해)</h3>
+      <p>셀사이드 12곳+ 평균 TP <strong>~178,000원</strong> (기존 183k에서 하향). KB/키움/미래/BNK 4곳 동시 TP 대폭 하향(-17~26%)하면서 톤 유지 = "이전 가격 과했다" 시그널.</p>
+      <p><strong>신한 SOTP:</strong> 기존사업 41,658억(주당 ~37,000원) + <strong>원전 135,000억(주당 ~121,000원)</strong> + 비영업 15,163억 - 순차입금 1,000억 = TP 170,000원</p>
+      <div class="warn-box">⚠️ <strong>TP의 71%가 원전 옵션값.</strong> 원전 파이프라인 미실현 시 주가 60~70k 가능. 신한 원전 가치 13.5조는 2030년까지 인식 가능분만 반영 → 확률가중 43조의 ~1/3 수준.</div>
 
-      <h3>3. 기당 단가 교차검증 (IR + 맥쿼리 + BNK)</h3>
-      <p>대형원전 AP1000: 현대 EPC 기당 <strong>3.5~5.0조원</strong> (총사업비 50%, IR 확인)</p>
-      <p>홀텍 SMR-300: 현대 EPC 기당 <strong>1.8~2.2조원</strong> (총사업비 60~70%, BNK 역할표 근거)</p>
-      <p>테라파워 NOAK: 현대 EPC 기당 <strong>1.0~1.5조원</strong></p>
-      <p>대형원전 GPM <strong>12~15%</strong> (IR 직접 확인), OPM 5~8%. SMR FOAK "마진보다 경험 우선" → OPM 3~5%.</p>
+      <h3>2. 기당 단가 교차검증 (IR + 신영 + BNK)</h3>
+      <p><strong>IR 확인(25.11, ₩1,420):</strong> 대형원전 현대 몫 = 총사업비 50%, SMR은 60%</p>
+      <table class="tp-table">
+        <tr><th>구분</th><th>총사업비/기</th><th>현대 EPC/기</th><th>GPM</th><th>OPM</th></tr>
+        <tr><td>AP1000 유럽</td><td>~$7B(~9.8조)</td><td>3.5~5.0조</td><td>12~15%</td><td>5~8%</td></tr>
+        <tr><td>AP1000 미국</td><td>~$10~12B</td><td>5~6조</td><td>12~15%</td><td>5~8%</td></tr>
+        <tr><td>홀텍 SMR-300</td><td>2~2.5조</td><td>1.2~1.5조</td><td>-</td><td>3~5%(FOAK)</td></tr>
+        <tr><td>테라파워 NOAK</td><td>-</td><td>1.0~1.5조</td><td>-</td><td>5%+</td></tr>
+      </table>
+      <p class="note">맥쿼리 $2.5~3B은 순수 EPC 도급액이라 2.5~4배 과소. 단가 교정 핵심: 역할 레벨업(BNK Fig.3)으로 BOP 설계+구매+시공 전부 포함 → 총사업비 50%가 현대 몫이 되는 구조.</p>
 
-      <h3>4. 대미투자 원전 8기 MOU (9/7 보도, 9/18 서명 예정)</h3>
-      <p>한미 투자 합의문에 <strong>미국 내 원전 8기 건설 방향성 포함.</strong> "추진을 모색한다" 수준의 프레임워크. 가스복합화력 + 알래스카 LNG도 동시 포함. MOU ≠ 본계약이나 시뮬레이터 US fleet 0→2기 상향 근거.</p>
+      <h3>3. 역할 레벨업: 시공(C)→EPC 전 과정 (BNK Fig.3)</h3>
+      <p><strong>팀코리아:</strong> 현대 = 시공(C)만 · <strong>WEC 협업(불가리아 등):</strong> BOP 설계+구매+시공 (E+P+C 절반) · <strong>홀텍 SMR:</strong> NI 빼고 전부 (TI+BOP 설계+구매+시공, 60%)</p>
 
-      <h3>5. UAE 바라카 실제 매출 곡선 (BNK Fig.7)</h3>
-      <p>3.5조 수주 → 착공 3년차부터 3년간 피크(연 580~660억). 기존 시뮬 대비 <strong>더 후반 편중(back-loaded)</strong>. v3에서 곡선 수정 반영.</p>
+      <h3>4. CID 2025 재무목표 (2025.3 발표)</h3>
+      <div class="cid-box">
+        <p><strong>연결 2030:</strong> 수주 40+조 · 매출 40+조 · OPM 8+% · GPM Low~Mid-Teens</p>
+        <p><strong>에너지 2030:</strong> 수주 7.0조(대형원전 3.7+SMR 1.6+송변전 1.2) · 매출 5.1조</p>
+        <p><strong>역산:</strong> 매출 40조 × OPM 8% = OP 3.2조 → 회사 가이던스 3.2~4.0조와 일치</p>
+        <p><strong>재경본부장:</strong> "불가리아+1건 추가수주만으로 에너지 매출 5조 가능. SMR·송변전 미가정."</p>
+        <p><strong>주주환원:</strong> 배당 800원(+33%), 총주주환원율 25+%(25~27년)</p>
+      </div>
 
-      <h3>6. 2030 연결 OP 3시나리오</h3>
-      <p><strong>Bear 0.8~1.3조:</strong> 수주 지연 + ZATCA + 원전 1.5조</p>
-      <p><strong>Base 1.3~1.8조:</strong> 디폴트 9기(코즐2+페르미2+US2+팰리2+테라1). 원전 ~4조</p>
+      <h3>5. CID 로드맵 vs 현실 (26.10 크로스체크)</h3>
+      <table class="tp-table">
+        <tr><th>항목</th><th>CID 목표</th><th>현실</th><th>판정</th></tr>
+        <tr><td>불가리아 EPC</td><td>25.12</td><td>27 1H 순연</td><td style="color:#dc2626">반쪽</td></tr>
+        <tr><td>스웨덴 우선선정</td><td>25.12</td><td>공동협약만(24.9), 입찰 29년</td><td style="color:#dc2626">미달</td></tr>
+        <tr><td>사우디·UAE 원전</td><td>26년</td><td>0건</td><td style="color:#dc2626">미달</td></tr>
+        <tr><td>팰리세이즈</td><td>25.12 계약</td><td>CPA✓ PSAR 제출(26.10)✓</td><td style="color:#059669">진행 중</td></tr>
+        <tr><td>테라파워</td><td>27년</td><td>FA 26.8 체결, 착공✓</td><td style="color:#059669">앞당겨짐</td></tr>
+        <tr><td>페르미+US Power</td><td>없음</td><td>신규 12기 추가</td><td style="color:#1F4E78;font-weight:700">업사이드</td></tr>
+        <tr><td>네덜란드 FEED</td><td>없음</td><td>FEED 1 체결(26.10.7)</td><td style="color:#1F4E78;font-weight:700">업사이드</td></tr>
+      </table>
+      <div class="warn-box">CID "불가리아 27 1H 본계약 → 29~30 피크" 타임라인이 2030 매출 5.1조의 전제. 1년 추가 지연 시 2030 피크 미도달.</div>
+
+      <h3>6. 파이프라인 확률가중 (₩1,400 기준)</h3>
+      <p>전체 ~54기 · 현대 몫 총 ~$108B(~151조) — 전부 본계약 전제</p>
+      <p><strong>확률가중:</strong> 확실(80%) $12B + 가능(40%) $8B + 장기옵션(15%) $11B = <strong>~$31B(~43조)</strong></p>
+      <p class="note">신한 SOTP 원전 가치 13.5조는 확률가중 43조의 ~1/3 수준 → 보수적.</p>
+
+      <h3>7. 밸류에이션 (FW12M, 키움 26.10)</h3>
+      <table class="tp-table">
+        <tr><th>종목</th><th>PER</th><th>PBR</th><th>비고</th></tr>
+        <tr><td><strong>현대건설</strong></td><td><strong>20.7x</strong></td><td><strong>1.37x</strong></td><td>원전 옵션 프리미엄</td></tr>
+        <tr><td>삼성E&A</td><td>10.5x</td><td>1.55x</td><td>유안타 최선호</td></tr>
+        <tr><td>대우건설</td><td>13.6x</td><td>1.67x</td><td></td></tr>
+        <tr><td>GS건설</td><td>8.5x</td><td>0.54x</td><td></td></tr>
+        <tr><td>DL이앤씨</td><td>6.8x</td><td>0.52x</td><td></td></tr>
+      </table>
+
+      <h3>8. 2030 연결 OP 3시나리오</h3>
+      <p><strong>Bear 0.8~1.3조:</strong> 수주 지연 + ZATCA + 원전 매출 1.5조</p>
+      <p><strong>Base 1.3~1.8조:</strong> 디폴트 9기(코즐2+페르미2+US2+팰리2+테라3). 원전 ~4조</p>
       <p><strong>Bull 1.9~2.8조:</strong> 14건+ 본계약. 원전 7조(회사 가이던스)</p>
+      <p class="note">회사 가이던스 OP 3.2~4.0조는 Bull의 1.5~2배 → 현실화 확률 낮음</p>
 
-      <h3>7. 9~12월 촉매 캘린더</h3>
-      <p><strong>9/18:</strong> 대미투자 원전 8기 MOU 서명</p>
-      <p>10월: 12차 전기본 초안 (신규 원전 +4기 가능)</p>
-      <p>4Q: 팰리세이즈 파샬, 코즐로두이 FID, 페르미 EPC 부분계약, 체코 시공계약</p>
-      <p>12월: 전기본 최종안, WEC 기자재 발주(두산), 베트남 IGA</p>
+      <h3>9. 4Q 촉매 캘린더</h3>
+      <p>✅ <strong>9/18:</strong> 대미투자 원전 8기 MOU 서명 완료</p>
+      <p>✅ <strong>10/7:</strong> 네덜란드 FEED 1 계약 체결 (EDF와 2파전)</p>
+      <p>✅ <strong>10/8:</strong> 팰리세이즈 PSAR 제출</p>
+      <p>📅 <strong>10월:</strong> 12차 전기본 초안 (신규 원전 +4기 가능, 전남 영광+울산 울주)</p>
+      <p>📅 <strong>4Q:</strong> 팰리세이즈 파샬, 코즐로두이 FID, 페르미 EPC 부분계약, 체코 시공계약</p>
+      <p>📅 <strong>12월:</strong> 전기본 최종안, WEC 기자재 발주(두산), 베트남 닌투언2 IGA</p>
     </div>
   </div>
 
+  <!-- ═══════════ 리스크 탭 ═══════════ -->
   <div id="tab-risk" class="tab-content">
     <div class="panel"><h2 style="color:#dc2626;border-bottom-color:#fca5a5">🔻 다운사이드 리스크</h2>
+      <div class="risk-item"><span class="risk-icon">🔴</span><span><strong>원전 본계약 0건 (핵심):</strong> 파이프라인 14건+ 중 본계약 0건. 반복 순연 패턴. 신한 SOTP 71%가 옵션값 → 미실현 시 주가 60~70k.</span></div>
       <div class="risk-item"><span class="risk-icon">🔴</span><span><strong>ZATCA 사우디 세금:</strong> 잠재 0.5~1.5조. DL보다 시효 방어 어려움. 통지 시 충당금 반영.</span></div>
-      <div class="risk-item"><span class="risk-icon">🔴</span><span><strong>원전 EPC 계약 지연:</strong> 파이프라인 14건 중 본계약 0건. 옵션값 71% → 미실현 시 주가 60~70k.</span></div>
-      <div class="risk-item"><span class="risk-icon">🟠</span><span><strong>페르미 자금 미확보:</strong> 원전 4기 $32~40B 미조달. IG 백스톱 확인됐으나 PF 조건부.</span></div>
-      <div class="risk-item"><span class="risk-icon">🟠</span><span><strong>대미투자 MOU ≠ 계약:</strong> "추진을 모색" 수준. 노형(AP1000 vs APR1400) 미확정. 지재권 미해결.</span></div>
-      <div class="risk-item"><span class="risk-icon">🟠</span><span><strong>CB 희석:</strong> 5,000억 전환가 150,607원. 전환 시 2.98% 희석.</span></div>
+      <div class="risk-item"><span class="risk-icon">🔴</span><span><strong>유안타 3중 약점 (관심주 강등):</strong> ①OCF 4년 연속 음수 ②PF 우발채무 14.2조(PF/현금 407% — 7사 최악) ③수주잔고 회전연수 최장. "MOU가 아니라 본계약·착공·현금흐름 반전 필요."</span></div>
+      <div class="risk-item"><span class="risk-icon">🟠</span><span><strong>유안타 리레이팅 4조건:</strong> ①이익→현금 ②PF감당 ③잔고→매출속도 ④이익반복성 — 현대 ①②③ 미달.</span></div>
+      <div class="risk-item"><span class="risk-icon">🟠</span><span><strong>페르미 자금 미확보:</strong> 원전 4기 $32~40B 미조달. 텐서웨이브 앵커는 DC 리스이지 원전 자금 아님. IG 백스톱 확인됐으나 PF 조건부.</span></div>
+      <div class="risk-item"><span class="risk-icon">🟠</span><span><strong>CID 로드맵 순연:</strong> 불가리아 25.12→27 1H, 스웨덴 미달, 사우디·UAE 0건. 1년 추가 지연 시 2030 매출 피크 미도달.</span></div>
+      <div class="risk-item"><span class="risk-icon">🟡</span><span><strong>CB 희석:</strong> 5,000억 전환가 150,607원. 전환 시 2.98% 희석.</span></div>
       <div class="risk-item"><span class="risk-icon">🟡</span><span><strong>코즐로두이 고정가:</strong> 불가리아 정부 fixed price 요구 = LSTK 마진 리스크.</span></div>
-      <div class="risk-item"><span class="risk-icon">🟡</span><span><strong>SMR FOAK 리스크:</strong> 전 세계 완공된 SMR 0기. NuScale UAMPS 취소 전례.</span></div>
+      <div class="risk-item"><span class="risk-icon">🟡</span><span><strong>SMR FOAK 리스크:</strong> 전 세계 완공된 SMR 0기. NuScale UAMPS 취소 전례. SMR FOAK "마진보다 경험 우선" → OPM 3~5%.</span></div>
+      <div class="risk-item"><span class="risk-icon">🟡</span><span><strong>현대ENG 본드콜:</strong> 말레이·우즈벡 진행 중.</span></div>
     </div>
     <div class="panel"><h2 style="color:#059669;border-bottom-color:#a7f3d0">🔺 업사이드 촉매</h2>
-      <div class="risk-item"><span class="risk-icon">🟢</span><span><strong>대미투자 원전 8기 MOU (9/18):</strong> 한미 합의문 서명. 가스발전+LNG도 포함. 두산·현대 동시 수혜.</span></div>
-      <div class="risk-item"><span class="risk-icon">🟢</span><span><strong>파샬 3건 순차 성사:</strong> 팰리(85%)+코즐(70%)+페르미(60%) = 기대값 ~2.2조 추가.</span></div>
-      <div class="risk-item"><span class="risk-icon">🟢</span><span><strong>DOE SPV 4Q 설립:</strong> AP1000 기자재 FID 전 선발주 → 두산 먼저, 현대 후속.</span></div>
-      <div class="risk-item"><span class="risk-icon">🟢</span><span><strong>12차 전기본 +4기:</strong> 전남 영광+울산 울주. 국내 원전 전체 호재.</span></div>
-      <div class="risk-item"><span class="risk-icon">🟢</span><span><strong>EPC 역할 레벨업:</strong> 시공(C)→설계+구매+시공(EPC). 몫 확대+수익성 제고 (BNK).</span></div>
-      <div class="risk-item"><span class="risk-icon">🟢</span><span><strong>수주잔고 104조 + 건설 쇼티지:</strong> Seller's Market. Cherry-picking 가능.</span></div>
+      <div class="risk-item"><span class="risk-icon">✅</span><span><strong>대미투자 MOU 서명 완료(9/18):</strong> 원전 8기(AP1000 6+APR1400 2) + 가스발전 + LNG. 총$120B. CID때 없던 순수 업사이드.</span></div>
+      <div class="risk-item"><span class="risk-icon">✅</span><span><strong>테라파워 FA 체결(8/18) + 착공:</strong> CID 27년 목표보다 앞당겨짐. NOAK 8기 현대 독점 EPC 확보. Meta PPA.</span></div>
+      <div class="risk-item"><span class="risk-icon">✅</span><span><strong>네덜란드 FEED 1 체결(10/7):</strong> 2기 AP1000. EDF와 2파전. FEED 12~18개월, 2035 완공 목표. CID때 없던 신규.</span></div>
+      <div class="risk-item"><span class="risk-icon">🟢</span><span><strong>4Q 파샬 3건:</strong> 팰리세이즈(85%)+코즐로두이(70%)+페르미(60%) = 기대값 ~2.2조 추가.</span></div>
+      <div class="risk-item"><span class="risk-icon">🟢</span><span><strong>12차 전기본 +4기:</strong> 전남 영광+울산 울주. 국내 원전 전체 호재. 신한울 3·4 현대 낙찰 완료.</span></div>
+      <div class="risk-item"><span class="risk-icon">🟢</span><span><strong>DOE SPV 통한 FID 전 기자재 선발주:</strong> 기자재(두산) 먼저 → EPC(현대) 후속. 발주 시점 최대 3년 앞당겨짐(맥쿼리).</span></div>
+      <div class="risk-item"><span class="risk-icon">🟢</span><span><strong>EPC 역할 레벨업 + 건설 쇼티지:</strong> Seller's Market. Cherry-picking 가능. 코스트플러스/물가연동.</span></div>
+      <div class="risk-item"><span class="risk-icon">🟢</span><span><strong>수주잔고 104조 역대 최대:</strong> 1H26 22.8조(연간 68% 달성). 주택 도정 마진 개선 중.</span></div>
+    </div>
+
+    <div class="panel"><h2>🔍 유안타 대항마 시각 (2026.9.21)</h2>
+      <p style="font-size:12.5px;line-height:1.7;color:#555">유안타는 현대건설을 "관심주"로 강등(최선호 삼성E&A, 차선호 삼성물산). 핵심 논거:</p>
+      <div class="risk-item"><span class="risk-icon">📊</span><span><strong>OCF 4년 연속 음수:</strong> 2022~2025 영업활동현금흐름 적자 지속. 이익이 현금으로 안 바뀜.</span></div>
+      <div class="risk-item"><span class="risk-icon">📊</span><span><strong>PF 우발채무 14.2조:</strong> PF/현금성자산 비율 406.6% — 7개사 중 단독 최악.</span></div>
+      <div class="risk-item"><span class="risk-icon">📊</span><span><strong>수주잔고 회전연수:</strong> 업종 내 가장 긴 편. 잔고 크지만 돈 되는 속도 느림.</span></div>
+      <div class="risk-item"><span class="risk-icon">📊</span><span><strong>원전 파이프라인:</strong> 페르미+코즐+팰리 3건 합산 ~$30B(45조), 전부 계약 전 단계.</span></div>
     </div>
   </div>
 </div>
@@ -271,7 +334,7 @@ h1{color:#1F4E78;font-size:22px;margin-bottom:4px;border-bottom:none;padding-bot
 'use strict';
 const $=id=>document.getElementById(id);
 const IDS=['p-kozloduy','p-fermi','p-usfleet','p-palisades','p-terra','p-oyster'];
-// v3: UAE 바라카 실제 곡선 기반 (BNK Fig.7) — 착공 3년차부터 3년간 피크
+// v3→v4: UAE 바라카 실제 곡선 기반 (BNK Fig.7) — 착공 3년차부터 3년간 피크
 const largePat=[0.02,0.05,0.08,0.12,0.16,0.18,0.17,0.12,0.06,0.04];
 const smrPat=[0.12,0.28,0.35,0.25,0,0];
 const smrIds=new Set(['p-palisades','p-terra','p-oyster']);
