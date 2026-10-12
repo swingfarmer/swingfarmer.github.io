@@ -9,43 +9,63 @@
 <style>
 :root { --sf-max-w: 1100px; }
 .final { background: linear-gradient(135deg, #10b981, #059669); }
-input:focus{outline:2px solid #1F4E78;background:#FFFACD}.final.green{background:linear-gradient(135deg,#10b981,#059669)}.final.yellow{background:linear-gradient(135deg,#eab308,#ca8a04)}.final.orange{background:linear-gradient(135deg,#f97316,#ea580c)}.final.red{background:linear-gradient(135deg,#dc2626,#b91c1c)}.final-label{font-size:14px;font-weight:600}.final-value{font-size:28px;font-weight:800}.zone-table{width:100%;border-collapse:collapse;font-size:13px}.zone-table th{background:#1F4E78;color:white;padding:10px;font-size:12px;font-weight:600;text-align:center}.zone-table .zone-table td{padding:10px;border-bottom:1px solid #eee;text-align:center}.zone-table tr.active td{background:#fff8e8;font-weight:700;color:#b45309}.zone-color{display:inline-block;width:16px;height:16px;border-radius:3px;vertical-align:middle;margin-right:6px}
+input:focus{outline:2px solid #1F4E78;background:#FFFACD}
+.final.green{background:linear-gradient(135deg,#10b981,#059669)}
+.final.yellow{background:linear-gradient(135deg,#eab308,#ca8a04)}
+.final.orange{background:linear-gradient(135deg,#f97316,#ea580c)}
+.final.red{background:linear-gradient(135deg,#dc2626,#b91c1c)}
+.final-label{font-size:14px;font-weight:600}
+.final-value{font-size:28px;font-weight:800}
+.zone-table{width:100%;border-collapse:collapse;font-size:13px}
+.zone-table th{background:#1F4E78;color:white;padding:10px;font-size:12px;font-weight:600;text-align:center}
+.zone-table td{padding:10px;border-bottom:1px solid #eee;text-align:center}
+.zone-table tr.active td{background:#fff8e8;font-weight:700;color:#b45309}
+.zone-color{display:inline-block;width:16px;height:16px;border-radius:3px;vertical-align:middle;margin-right:6px}
+.auto-badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px;vertical-align:middle}
+.auto-badge.on{background:#dcfce7;color:#059669}
+.auto-badge.off{background:#fef3c7;color:#92400e}
+.hist-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+.hist-card{border:1px solid #e5e7eb;border-radius:10px;padding:14px;background:#fff}
+.hist-card h3{font-size:14px;margin:0 0 10px;padding-bottom:8px;border-bottom:2px solid #e5e9f0}
+.hist-card h3.kr{color:#1F4E78}.hist-card h3.us{color:#2563eb}
+.hist-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:12.5px;border-bottom:1px solid #f5f5f5}
+.hist-row:last-child{border-bottom:none}
+.hist-label{color:#666}.hist-val{font-weight:700}
+.hist-val.high{color:#dc2626}.hist-val.low{color:#059669}.hist-val.avg{color:#6b7280}
+.hist-note{font-size:10.5px;color:#999;margin-top:2px}
+.src-tag{font-size:10px;color:#999;margin-left:4px}
+@media(max-width:600px){.hist-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body class="sf-narrow">
 
 <a href="/" class="back-link">← 메인으로</a>
 
-<h1>🐂 버핏지수 계산기 (코스피)</h1>
-<p class="desc">워런 버핏이 "주식시장 가치평가의 가장 좋은 단일 지표"라 말한 지수. <b>전체 주식시장 시가총액 ÷ GDP</b>로 계산. 시장이 거품인지 저평가인지 한눈에.</p>
+<h1>🐂 버핏지수 계산기 (코스피+코스닥)</h1>
+<p class="desc">워런 버핏이 "주식시장 가치평가의 가장 좋은 단일 지표"라 말한 지수. <b>전체 주식시장 시가총액 ÷ GDP</b>로 계산.</p>
 
-<div class="source-box">
-  <h3>📡 데이터 소스 (직접 조회 후 입력)</h3>
-  <ul>
-    <li><b>코스피 시가총액:</b> <a href="https://data.krx.co.kr/contents/MDC/MAIN/main/index.cmd" target="_blank">KRX 정보데이터시스템</a> → 통계 → 시장개관 (실시간 업데이트)</li>
-    <li><b>코스피+코스닥 합산:</b> <a href="https://kind.krx.co.kr/main.do" target="_blank">KIND 한국거래소</a> → 시장통계</li>
-    <li><b>한국 명목 GDP:</b> <a href="https://ecos.bok.or.kr/" target="_blank">한국은행 경제통계시스템(ECOS)</a> → 국민계정 → 명목GDP (분기별)</li>
-    <li><b>간편 확인:</b> <a href="https://kr.investing.com/economic-calendar/gdp-905" target="_blank">Investing.com</a> 또는 <a href="https://tradingeconomics.com/south-korea/gdp" target="_blank">Trading Economics</a></li>
-  </ul>
-</div>
+<div id="autoStatus" style="font-size:12px;color:#666;margin-bottom:10px"></div>
 
 <div class="panel">
-  <h2>📥 입력값</h2>
+  <h2>📥 입력값 <span id="badgeAuto" class="auto-badge off">수동</span></h2>
   <div class="inputs">
     <div class="section-label">① 시가총액 (조원)</div>
     <div class="input-row">
       <label>코스피 시가총액 (조원)</label>
       <input type="number" id="kospiCap" value="2300" step="1">
+      <span class="src-tag" id="srcKospi"></span>
     </div>
     <div class="input-row">
       <label>코스닥 시가총액 (조원)</label>
       <input type="number" id="kosdaqCap" value="380" step="1">
+      <span class="src-tag" id="srcKosdaq"></span>
     </div>
 
     <div class="section-label">② 한국 GDP (조원, 명목 연 기준)</div>
     <div class="input-row">
       <label>명목 GDP (조원, 최근 4분기 합)</label>
       <input type="number" id="gdp" value="2400" step="1">
+      <span class="src-tag" id="srcGdp"></span>
     </div>
   </div>
 </div>
@@ -60,15 +80,11 @@ input:focus{outline:2px solid #1F4E78;background:#FFFACD}.final.green{background
   <h2>📊 평가 구간표</h2>
   <table class="zone-table" id="zoneTable">
     <thead>
-      <tr>
-        <th>버핏지수</th>
-        <th>평가</th>
-        <th>의미</th>
-      </tr>
+      <tr><th>버핏지수</th><th>평가</th><th>의미</th></tr>
     </thead>
     <tbody>
       <tr data-min="0" data-max="70">
-        <td>< 70%</td>
+        <td>&lt; 70%</td>
         <td><span class="zone-color" style="background:#10b981"></span>현저한 저평가</td>
         <td>장기 매수 기회</td>
       </tr>
@@ -82,18 +98,86 @@ input:focus{outline:2px solid #1F4E78;background:#FFFACD}.final.green{background
         <td><span class="zone-color" style="background:#eab308"></span>적정 ~ 약간 고평가</td>
         <td>중립</td>
       </tr>
-      <tr data-min="115" data-max="135">
-        <td>115 ~ 135%</td>
+      <tr data-min="115" data-max="150">
+        <td>115 ~ 150%</td>
         <td><span class="zone-color" style="background:#f97316"></span>고평가</td>
         <td>주의 필요</td>
       </tr>
-      <tr data-min="135" data-max="999">
-        <td>> 135%</td>
-        <td><span class="zone-color" style="background:#dc2626"></span>거품 (현저한 고평가)</td>
-        <td>리스크 매우 높음</td>
+      <tr data-min="150" data-max="200">
+        <td>150 ~ 200%</td>
+        <td><span class="zone-color" style="background:#ef4444"></span>과열</td>
+        <td>리스크 높음</td>
+      </tr>
+      <tr data-min="200" data-max="999">
+        <td>&gt; 200%</td>
+        <td><span class="zone-color" style="background:#991b1b"></span>극단적 과열</td>
+        <td>역사적 거품 구간</td>
       </tr>
     </tbody>
   </table>
+  <p style="font-size:11px;color:#999;margin-top:6px">※ 한국 코리아디스카운트 감안 시 80~110%를 적정으로 보는 의견도 있음. 2026년 반도체 2종목이 코스피 시총 48%+ 차지 → 지수 왜곡 감안 필요.</p>
+</div>
+
+<!-- ═══════════ 역대 기록 ═══════════ -->
+<div class="panel">
+  <h2>📈 역대 버핏지수 기록</h2>
+  <div class="hist-grid">
+    <div class="hist-card">
+      <h3 class="kr">🇰🇷 한국 (코스피+코스닥/GDP)</h3>
+      <div class="hist-row">
+        <span class="hist-label">역대 최고</span>
+        <span class="hist-val high" id="kr-high">~261% (2026.5)</span>
+      </div>
+      <div class="hist-note">코스피 7500선, 반도체 슈퍼사이클 + 상법개정</div>
+      <div class="hist-row">
+        <span class="hist-label">코로나 피크</span>
+        <span class="hist-val high">~135% (2021.8)</span>
+      </div>
+      <div class="hist-note">동학개미 강세장, 코스피 3300선</div>
+      <div class="hist-row">
+        <span class="hist-label">10년 평균</span>
+        <span class="hist-val avg">~95% (2014~2024)</span>
+      </div>
+      <div class="hist-row">
+        <span class="hist-label">역대 최저</span>
+        <span class="hist-val low">~48% (2008.10)</span>
+      </div>
+      <div class="hist-note">글로벌 금융위기, 코스피 938선</div>
+    </div>
+    <div class="hist-card">
+      <h3 class="us">🇺🇸 미국 (Wilshire 5000/GDP)</h3>
+      <div class="hist-row">
+        <span class="hist-label">역대 최고</span>
+        <span class="hist-val high" id="us-high">~237% (2026.5)</span>
+      </div>
+      <div class="hist-note">AI 슈퍼사이클, S&P 7000선</div>
+      <div class="hist-row">
+        <span class="hist-label">닷컴 버블</span>
+        <span class="hist-val high">~163% (2000.3)</span>
+      </div>
+      <div class="hist-note">나스닥 5000, 이후 -78% 폭락</div>
+      <div class="hist-row">
+        <span class="hist-label">장기 평균</span>
+        <span class="hist-val avg">~85% (1970~2024)</span>
+      </div>
+      <div class="hist-row">
+        <span class="hist-label">역대 최저</span>
+        <span class="hist-val low">~36% (1982.4)</span>
+      </div>
+      <div class="hist-note">볼커 긴축, 기준금리 20%</div>
+    </div>
+  </div>
+  <p style="font-size:11px;color:#999;margin-top:8px">※ 한국 수치는 헤럴드경제·구루포커스·뉴시스 종합. 미국 수치는 Fed Z.1 + BEA GDP 기준. 미국 해외매출 비중↑ + 저금리로 역사적 평균 대비 구조적 상향 가능.</p>
+</div>
+
+<div class="source-box">
+  <h3>📡 데이터 소스</h3>
+  <ul>
+    <li><b>자동 수집:</b> ECOS API (명목 GDP, 분기별) + KRX (시가총액, 일별) → <code>data/buffett.json</code></li>
+    <li><b>코스피 시가총액:</b> <a href="https://data.krx.co.kr/contents/MDC/MAIN/main/index.cmd" target="_blank">KRX 정보데이터시스템</a></li>
+    <li><b>한국 명목 GDP:</b> <a href="https://ecos.bok.or.kr/" target="_blank">한국은행 ECOS</a> → 국민계정 → 명목GDP</li>
+    <li><b>미국 버핏지수:</b> <a href="https://www.gurufocus.com/stock-market-valuations.php" target="_blank">GuruFocus</a></li>
+  </ul>
 </div>
 
 <div class="manual">
@@ -102,55 +186,44 @@ input:focus{outline:2px solid #1F4E78;background:#FFFACD}.final.green{background
   <h3>① 버핏지수란?</h3>
   <p>워런 버핏이 2001년 Fortune誌 인터뷰에서 "어느 한 시점에서 평가가 어디에 있는지를 보여주는 가장 좋은 단일 지표"라고 한 지표. <b>(전체 주식시장 시가총액 ÷ GDP) × 100</b>으로 계산. 100%는 시장 시가총액이 한 해 GDP와 같다는 의미.</p>
 
-  <h3>② 입력값 가이드</h3>
-  <ul>
-    <li><span class="badge">시가총액</span> 단위는 <b>조원</b>. 예: 2,300조원이면 "2300" 입력. 코스피만 보고 싶으면 코스닥을 0으로.</li>
-    <li><span class="badge">GDP</span> <b>최근 4분기 합산 명목 GDP</b>가 가장 정확. 한국은행 ECOS에서 분기별 GDP를 4개 합산. 또는 연간 GDP 추정치.</li>
-    <li>지수가 작동하는 핵심: 시총·GDP 둘 다 <b>같은 통화·같은 단위</b>여야 함.</li>
-  </ul>
+  <h3>② 자동 갱신</h3>
+  <p><code>fetch_buffett.py</code>가 매월 1일 자동 실행. ECOS에서 명목 GDP(분기별), KRX에서 코스피/코스닥 전체 시가총액을 수집하여 <code>data/buffett.json</code>에 저장. 페이지 로드 시 자동 반영. 수동 입력으로 덮어쓰기도 가능.</p>
 
-  <h3>③ 구간별 평가 기준 (한국 특성 반영)</h3>
-  <ul>
-    <li>버핏의 원래 기준은 미국 시장 기준 (70~80% 적정).</li>
-    <li>한국은 글로벌 평균보다 항상 낮은 편 (코리아 디스카운트) → 80~110% 정도가 한국 적정 구간으로 본다는 의견도 많음.</li>
-    <li>위 구간표는 글로벌 평균 기준. 한국만의 평가는 본인이 추세를 보면서 판단하는 게 좋음.</li>
-  </ul>
-
-  <h3>④ 한계와 주의</h3>
+  <h3>③ 한계와 주의</h3>
   <ul>
     <li>GDP는 분기별로만 발표. 시총은 실시간. 시점 차이 있음.</li>
-    <li>외국기업 상장 비중·해외매출 비중에 따라 의미 달라짐.</li>
-    <li>금리 환경 미반영. 저금리일수록 시장 P/E가 높은 게 정상이라 버핏지수가 높게 나오기 마련.</li>
+    <li>2026년 기준 삼성전자+SK하이닉스가 코스피 시총 48%+ → 2종목 변동이 지수를 좌우. 시장 전체 과열과 다를 수 있음.</li>
+    <li>한국은 글로벌 평균보다 항상 낮은 편 (코리아 디스카운트). 미국과 단순 비교는 부적절.</li>
+    <li>금리 환경 미반영. 저금리일수록 시장 P/E가 높은 게 정상.</li>
+    <li>해외매출 비중↑ 시 시총이 국내 GDP 대비 구조적으로 높아짐 (미국 특히).</li>
     <li>단기 매매 신호 X. 장기 자산배분 판단용.</li>
   </ul>
 </div>
 
 <script>
-const fmt = n => n.toLocaleString('ko-KR');
+const $=id=>document.getElementById(id);
 
 function calculate() {
-  const kospi = parseFloat(document.getElementById('kospiCap').value) || 0;
-  const kosdaq = parseFloat(document.getElementById('kosdaqCap').value) || 0;
-  const gdp = parseFloat(document.getElementById('gdp').value) || 0;
+  const kospi = parseFloat($('kospiCap').value) || 0;
+  const kosdaq = parseFloat($('kosdaqCap').value) || 0;
+  const gdp = parseFloat($('gdp').value) || 0;
 
   const totalCap = kospi + kosdaq;
   const buffett = gdp > 0 ? totalCap / gdp * 100 : 0;
 
-  document.getElementById('buffettValue').textContent = buffett.toFixed(1) + '%';
+  $('buffettValue').textContent = buffett.toFixed(1) + '%';
 
-  // 구간 평가
   let verdict, colorClass;
   if (buffett < 70) { verdict = '🟢 현저한 저평가 — 장기 매수 기회'; colorClass = 'green'; }
   else if (buffett < 90) { verdict = '🟢 적정 (다소 저평가) — 매수에 우호적'; colorClass = 'green'; }
   else if (buffett < 115) { verdict = '🟡 적정 ~ 약간 고평가 — 중립'; colorClass = 'yellow'; }
-  else if (buffett < 135) { verdict = '🟠 고평가 — 주의 필요'; colorClass = 'orange'; }
-  else { verdict = '🔴 거품 (현저한 고평가) — 리스크 매우 높음'; colorClass = 'red'; }
+  else if (buffett < 150) { verdict = '🟠 고평가 — 주의 필요'; colorClass = 'orange'; }
+  else if (buffett < 200) { verdict = '🔴 과열 — 리스크 높음'; colorClass = 'red'; }
+  else { verdict = '🔴 극단적 과열 — 역사적 거품 구간'; colorClass = 'red'; }
 
-  document.getElementById('buffettVerdict').textContent = verdict;
-  const box = document.getElementById('finalBox');
-  box.className = 'final ' + colorClass;
+  $('buffettVerdict').textContent = verdict;
+  $('finalBox').className = 'final ' + colorClass;
 
-  // 구간표 강조
   document.querySelectorAll('#zoneTable tbody tr').forEach(tr => {
     const min = parseFloat(tr.dataset.min);
     const max = parseFloat(tr.dataset.max);
@@ -158,8 +231,62 @@ function calculate() {
   });
 }
 
+// 자동 데이터 로드
+async function loadAutoData() {
+  try {
+    const resp = await fetch('/data/buffett.json?t=' + Date.now());
+    if (!resp.ok) throw new Error(resp.status);
+    const d = await resp.json();
+
+    let loaded = 0;
+
+    if (d.mktcap && d.mktcap.kospi) {
+      $('kospiCap').value = Math.round(d.mktcap.kospi);
+      $('srcKospi').textContent = `← KRX ${d.mktcap.date || ''}`;
+      loaded++;
+    }
+    if (d.mktcap && d.mktcap.kosdaq) {
+      $('kosdaqCap').value = Math.round(d.mktcap.kosdaq);
+      $('srcKosdaq').textContent = `← KRX`;
+      loaded++;
+    }
+    if (d.gdp && d.gdp.value) {
+      $('gdp').value = Math.round(d.gdp.value);
+      $('srcGdp').textContent = `← ECOS ${d.gdp.period || ''}`;
+      loaded++;
+    }
+
+    if (loaded >= 3) {
+      $('badgeAuto').className = 'auto-badge on';
+      $('badgeAuto').textContent = '자동';
+      $('autoStatus').textContent = `✅ 자동 로드 완료 (${d.updated || ''})`;
+    } else if (loaded > 0) {
+      $('badgeAuto').className = 'auto-badge on';
+      $('badgeAuto').textContent = `자동(${loaded}/3)`;
+      $('autoStatus').textContent = `⚠ 일부 자동 로드 (${loaded}/3, ${d.updated || ''})`;
+    }
+
+    // 역대 기록 동적 갱신 (JSON에 있으면)
+    if (d.historical) {
+      if (d.historical.korea && d.historical.korea.all_time_high) {
+        const h = d.historical.korea.all_time_high;
+        $('kr-high').textContent = `~${h.value}% (${h.date})`;
+      }
+      if (d.historical.us && d.historical.us.all_time_high) {
+        const h = d.historical.us.all_time_high;
+        $('us-high').textContent = `~${h.value}% (${h.date})`;
+      }
+    }
+
+    calculate();
+  } catch (e) {
+    $('autoStatus').textContent = '📥 data/buffett.json 없음 — 수동 입력 모드';
+    console.log('자동 데이터 없음:', e.message);
+  }
+}
+
 document.querySelectorAll('input').forEach(el => el.addEventListener('input', calculate));
-calculate();
+loadAutoData();
 </script>
 <script>
 window.CALC_KEY = 'buffett';
