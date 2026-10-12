@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>시장 대시보드 — 스윙파머</title>
+<link rel="stylesheet" href="../common-dark.css?v=2">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --db-bg: #0b0f19;
+  --db-card: #131a2b;
+  --db-card-hover: #192236;
+  --db-border: #1e2a40;
+  --db-text: #c9d1d9;
+  --db-text-dim: #6e7a8a;
+  --db-up: #00d26a;
+  --db-down: #ff4757;
+  --db-flat: #8b949e;
+  --db-accent: #4da6ff;
+  --db-warn: #f0b93a;
+  --db-gauge-bg: #1a2332;
+  --sf-max-w: 1400px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--db-bg);
+  color: var(--db-text);
+  font-family: -apple-system, 'Pretendard', sans-serif;
+  line-height: 1.5;
+  padding: 0;
+}
+.db-wrap { max-width: var(--sf-max-w); margin: 0 auto; padding: 16px 12px 40px; }
+
+/* ── Header ── */
+.db-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0 8px; border-bottom: 1px solid var(--db-border); margin-bottom: 12px;
+}
+.db-header h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
+.db-header h1 span { color: var(--db-accent); }
+.db-ts { font-size: 11px; color: var(--db-text-dim); }
+
+/* ── Diagnosis Panel (always visible) ── */
+.diag-panel {
+  display: grid; grid-template-columns: 200px 1fr; gap: 12px;
+  margin-bottom: 14px;
+}
+.diag-gauge {
+  background: var(--db-card); border: 1px solid var(--db-border); border-radius: 10px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 16px; min-height: 140px;
+}
+.gauge-label { font-size: 11px; color: var(--db-text-dim); margin-bottom: 6px; }
+.gauge-value { font-size: 36px; font-weight: 800; line-height: 1; }
+.gauge-tag {
+  margin-top: 8px; padding: 3px 10px; border-radius: 4px;
+  font-size: 12px; font-weight: 600;
+}
+.gauge-tag.bullish { background: rgba(0,210,106,.15); color: var(--db-up); }
+.gauge-tag.bearish { background: rgba(255,71,87,.15); color: var(--db-down); }
+.gauge-tag.neutral { background: rgba(139,148,158,.15); color: var(--db-flat); }
+.gauge-tag.caution { background: rgba(240,185,58,.15); color: var(--db-warn); }
+
+.diag-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  gap: 8px;
+}
+.d-card {
+  background: var(--db-card); border: 1px solid var(--db-border); border-radius: 8px;
+  padding: 10px 12px; cursor: default; transition: background .15s;
+}
+.d-card:hover { background: var(--db-card-hover); }
+.d-card .lbl { font-size: 10px; color: var(--db-text-dim); text-transform: uppercase; letter-spacing: .3px; }
+.d-card .val { font-size: 20px; font-weight: 700; margin: 2px 0 0; font-variant-numeric: tabular-nums; }
+.d-card .chg { font-size: 11px; font-weight: 600; }
+.chg.up { color: var(--db-up); }
+.chg.down { color: var(--db-down); }
+.chg.flat { color: var(--db-flat); }
+
+/* ── Sub-indicator row ── */
+.sub-row {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 6px; margin-bottom: 14px;
+}
+.s-card {
+  background: var(--db-card); border: 1px solid var(--db-border); border-radius: 6px;
+  padding: 8px 10px;
+}
+.s-card .lbl { font-size: 9px; color: var(--db-text-dim); }
+.s-card .val { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ── Tabs ── */
+.tab-bar {
+  display: flex; gap: 2px; border-bottom: 2px solid var(--db-border);
+  margin-bottom: 14px; overflow-x: auto;
+}
+.tab-btn {
+  background: none; border: none; color: var(--db-text-dim);
+  font-size: 13px; font-weight: 600; padding: 8px 16px; cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  white-space: nowrap; transition: color .15s, border-color .15s;
+}
+.tab-btn:hover { color: var(--db-text); }
+.tab-btn.active { color: var(--db-accent); border-bottom-color: var(--db-accent); }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* ── Chart containers ── */
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.chart-box {
+  background: var(--db-card); border: 1px solid var(--db-border); border-radius: 8px;
+  padding: 14px; position: relative;
+}
+.chart-box.full { grid-column: 1 / -1; }
+.chart-box h3 { font-size: 12px; color: var(--db-text-dim); margin-bottom: 8px; font-weight: 500; }
+.chart-box canvas { width: 100% !important; height: 220px !important; }
+
+/* ── Period selector ── */
+.period-bar { display: flex; gap: 4px; margin-bottom: 10px; }
+.period-btn {
+  background: var(--db-card); border: 1px solid var(--db-border); border-radius: 4px;
+  color: var(--db-text-dim); font-size: 11px; padding: 3px 10px; cursor: pointer;
+}
+.period-btn.active { background: var(--db-accent); color: #fff; border-color: var(--db-accent); }
+
+/* ── Vasily table ── */
+.flow-table {
+  width: 100%; border-collapse: collapse; font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.flow-table th {
+  text-align: right; padding: 6px 8px; color: var(--db-text-dim);
+  font-weight: 500; border-bottom: 1px solid var(--db-border); font-size: 10px;
+}
+.flow-table th:first-child { text-align: left; }
+.flow-table td { text-align: right; padding: 6px 8px; border-bottom: 1px solid rgba(30,42,64,.4); }
+.flow-table td:first-child { text-align: left; color: var(--db-text-dim); }
+.flow-table tr:hover { background: var(--db-card-hover); }
+
+/* ── Placeholder ── */
+.placeholder-msg {
+  text-align: center; padding: 60px 20px; color: var(--db-text-dim); font-size: 13px;
+}
+.placeholder-msg code {
+  display: inline-block; margin-top: 8px; background: var(--db-card);
+  padding: 4px 10px; border-radius: 4px; font-size: 11px;
+}
+
+/* ── Loading ── */
+.loading { text-align: center; padding: 40px; color: var(--db-text-dim); font-size: 12px; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .diag-panel { grid-template-columns: 1fr; }
+  .diag-cards { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .chart-grid { grid-template-columns: 1fr; }
+  .d-card .val { font-size: 17px; }
+}
+@media (max-width: 480px) {
+  .db-wrap { padding: 10px 8px 30px; }
+  .diag-cards { grid-template-columns: 1fr 1fr; }
+  .sub-row { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="db-wrap">
+  <!-- Header -->
+  <div class="db-header">
+    <h1><span>▣</span> 시장 대시보드</h1>
+    <div>
+      <span class="db-ts" id="updateTs">—</span>
+      <a href="/" style="color:var(--db-text-dim);font-size:11px;margin-left:10px;text-decoration:none;">← 홈</a>
+    </div>
+  </div>
+
+  <!-- ① 종합진단판 (always visible) -->
+  <div class="diag-panel">
+    <div class="diag-gauge" id="gaugeBox">
+      <div class="gauge-label">종합 진단</div>
+      <div class="gauge-value" id="gaugeScore">—</div>
+      <div class="gauge-tag neutral" id="gaugeTag">로딩중</div>
+    </div>
+    <div class="diag-cards" id="diagCards">
+      <!-- JS fills -->
+    </div>
+  </div>
+
+  <!-- Sub-indicator row: bonds / yields / commodities -->
+  <div class="sub-row" id="subRow"></div>
+
+  <!-- Tab bar -->
+  <div class="tab-bar" id="tabBar">
+    <button class="tab-btn active" data-tab="indicators">주요지표</button>
+    <button class="tab-btn" data-tab="vasily">바실리</button>
+    <button class="tab-btn" data-tab="bod">S&amp;P 500</button>
+    <button class="tab-btn" data-tab="putcall">풋콜레이쇼</button>
+  </div>
+
+  <!-- ② 주요지표 탭 -->
+  <div class="tab-pane active" id="tab-indicators">
+    <div class="period-bar">
+      <button class="period-btn" data-days="5">1W</button>
+      <button class="period-btn active" data-days="20">1M</button>
+      <button class="period-btn" data-days="60">3M</button>
+      <button class="period-btn" data-days="120">6M</button>
+      <button class="period-btn" data-days="250">1Y</button>
+    </div>
+    <div class="chart-grid" id="chartGrid">
+      <!-- JS fills -->
+    </div>
+  </div>
+
+  <!-- ③ 바실리 (외국인 현선물) -->
+  <div class="tab-pane" id="tab-vasily">
+    <div id="vasilyContent"><div class="loading">데이터 로딩중…</div></div>
+  </div>
+
+  <!-- ④ BOD (S&P 500) -->
+  <div class="tab-pane" id="tab-bod">
+    <div id="bodContent"><div class="loading">데이터 로딩중…</div></div>
+  </div>
+
+  <!-- ⑤ 풋콜레이쇼 -->
+  <div class="tab-pane" id="tab-putcall">
+    <div id="putcallContent"><div class="loading">데이터 로딩중…</div></div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   스윙파머 시장 대시보드  v1
+   데이터: market_indicators.json, market_history.json,
+           dashboard/foreign_flow.json, dashboard/putcall.json
+   ================================================================ */
+
+const DATA_BASE = '../data';
+const API_BASE  = 'https://swingfarmer.duckdns.org/api';
+
+/* ── Helpers ── */
+const fmt = (v, dec=2) => v == null ? '—' : Number(v).toLocaleString('ko-KR', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+const fmtInt = v => v == null ? '—' : Number(v).toLocaleString('ko-KR');
+const pct = v => v == null ? '—' : (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+const chgClass = v => v > 0 ? 'up' : v < 0 ? 'down' : 'flat';
+const arrow = v => v > 0 ? '▲' : v < 0 ? '▼' : '—';
+
+/* ── Chart.js defaults ── */
+Chart.defaults.color = '#6e7a8a';
+Chart.defaults.borderColor = 'rgba(30,42,64,.5)';
+Chart.defaults.font.size = 10;
+Chart.defaults.plugins.legend.display = false;
+Chart.defaults.elements.point.radius = 0;
+Chart.defaults.elements.line.borderWidth = 1.5;
+
+let historyData = [];
+let charts = {};
+let currentDays = 20;
+
+/* ── Key metrics config ── */
+const MAIN_CARDS = [
+  { key: 'kospi',  label: 'KOSPI',   dec: 2 },
+  { key: 'kosdaq', label: 'KOSDAQ',  dec: 2 },
+  { key: 'sp500',  label: 'S&P 500', dec: 2 },
+  { key: 'vix',    label: 'VIX',     dec: 2 },
+  { key: 'usd',    label: 'USD/KRW', dec: 1 },
+  { key: 'wti',    label: 'WTI',     dec: 2 },
+  { key: 'gold',   label: 'GOLD',    dec: 1 },
+  { key: 'nasdaq', label: 'NASDAQ',  dec: 2 },
+];
+
+const SUB_CARDS = [
+  { key: 'dow',    label: 'DOW',     dec: 0 },
+  { key: 't10y',   label: '미국10Y', dec: 3 },
+  { key: 't2y',    label: '미국2Y',  dec: 3 },
+  { key: 't30y',   label: '미국30Y', dec: 3 },
+  { key: 'jpy',    label: 'JPY/KRW', dec: 2 },
+  { key: 'cny',    label: 'CNY/KRW', dec: 2 },
+];
+
+const CHART_ITEMS = [
+  { key: 'kospi',  label: 'KOSPI',   color: '#4da6ff' },
+  { key: 'kosdaq', label: 'KOSDAQ',  color: '#a78bfa' },
+  { key: 'sp500',  label: 'S&P 500', color: '#34d399' },
+  { key: 'nasdaq', label: 'NASDAQ',  color: '#fbbf24' },
+  { key: 'vix',    label: 'VIX',     color: '#f87171' },
+  { key: 'usd',    label: 'USD/KRW', color: '#60a5fa' },
+  { key: 'wti',    label: 'WTI',     color: '#fb923c' },
+  { key: 'gold',   label: 'GOLD',    color: '#fcd34d' },
+  { key: 't10y',   label: '미국채 10Y', color: '#c084fc' },
+  { key: 'dow',    label: 'DOW',     color: '#2dd4bf' },
+];
+
+/* ── Normalize indicator keys ──
+   market_indicators.json의 키 매핑.
+   실제 JSON 구조에 맞게 이 맵을 수정하세요. */
+function normalizeIndicators(raw) {
+  // 여러 가능한 포맷 대응
+  const d = {};
+
+  // 포맷 1: {kospi: {price, change, change_pct}} 객체형
+  // 포맷 2: {kospi: 2650, kospi_chg: 15, kospi_pct: 0.58} 플랫형
+  // 포맷 3: {KOSPI: 2650, ...} 대문자 키
+
+  const keyMap = {
+    'kospi':  ['^KS11', 'KS11', 'KOSPI', 'kospi'],
+    'kosdaq': ['^KQ11', 'KQ11', 'KOSDAQ', 'kosdaq'],
+    'sp500':  ['^GSPC', 'GSPC', 'SP500', 'sp500', 'S&P500'],
+    'nasdaq': ['^IXIC', 'IXIC', 'NASDAQ', 'nasdaq'],
+    'dow':    ['^DJI', 'DJI', 'DOW', 'dow'],
+    'vix':    ['^VIX', 'VIX', 'vix'],
+    't13w':   ['^IRX', 'IRX', 't13w', 'T13W'],
+    't5y':    ['^FVX', 'FVX', 't5y', 'T5Y'],
+    't2y':    ['t2y', 'T2Y', 'US2Y'],
+    't10y':   ['^TNX', 'TNX', 't10y', 'T10Y'],
+    't30y':   ['^TYX', 'TYX', 't30y', 'T30Y'],
+    'wti':    ['CL=F', 'WTI', 'wti', 'OIL'],
+    'usd':    ['USD_KRW', 'usd_krw', 'USD', 'usd', 'USDKRW'],
+    'jpy':    ['JPY_KRW', 'jpy_krw', 'JPY', 'jpy'],
+    'cny':    ['CNY_KRW', 'cny_krw', 'CNY', 'cny'],
+    'gold':   ['GOLD', 'gold', 'GC=F', 'Gold'],
+  };
+
+  for (const [norm, aliases] of Object.entries(keyMap)) {
+    for (const alias of aliases) {
+      if (raw[alias] !== undefined) {
+        const v = raw[alias];
+        if (typeof v === 'object' && v !== null) {
+          d[norm] = { price: v.price ?? v.close ?? v.value ?? v.last, change: v.change ?? v.chg ?? 0, change_pct: v.change_pct ?? v.chg_pct ?? v.pct ?? 0 };
+        } else {
+          d[norm] = { price: Number(v), change: Number(raw[alias + '_chg'] ?? raw[alias + '_change'] ?? 0), change_pct: Number(raw[alias + '_pct'] ?? raw[alias + '_change_pct'] ?? 0) };
+        }
+        break;
+      }
+    }
+  }
+
+  d._ts = raw.timestamp || raw.ts || raw.date || '';
+  return d;
+}
+
+/* ── Render diagnosis cards ── */
+function renderDiag(d) {
+  document.getElementById('updateTs').textContent = d._ts || '—';
+
+  // Main cards
+  const container = document.getElementById('diagCards');
+  container.innerHTML = MAIN_CARDS.map(c => {
+    const v = d[c.key];
+    if (!v) return `<div class="d-card"><div class="lbl">${c.label}</div><div class="val">—</div></div>`;
+    const cls = chgClass(v.change_pct);
+    return `<div class="d-card">
+      <div class="lbl">${c.label}</div>
+      <div class="val">${fmt(v.price, c.dec)}</div>
+      <div class="chg ${cls}">${arrow(v.change_pct)} ${pct(v.change_pct)}</div>
+    </div>`;
+  }).join('');
+
+  // Sub row
+  const subContainer = document.getElementById('subRow');
+  subContainer.innerHTML = SUB_CARDS.map(c => {
+    const v = d[c.key];
+    if (!v) return '';
+    const cls = chgClass(v.change_pct);
+    return `<div class="s-card">
+      <div class="lbl">${c.label}</div>
+      <div class="val" style="color:var(--db-${cls})">${fmt(v.price, c.dec)}</div>
+    </div>`;
+  }).join('');
+
+  // Gauge
+  computeGauge(d);
+}
+
+/* ── Gauge scoring ──
+   간단 로직: VIX, 지수 등락, 환율 변동 기반 점수
+   -100(극도공포) ~ +100(극도낙관) */
+function computeGauge(d) {
+  let score = 0;
+  let factors = 0;
+
+  // VIX: <15 낙관(+20), 15~20 보통(0), 20~25 경계(-10), 25~30 공포(-20), >30 극도(-30)
+  const vix = d.vix?.price;
+  if (vix != null) {
+    if (vix < 13) score += 25;
+    else if (vix < 16) score += 15;
+    else if (vix < 20) score += 5;
+    else if (vix < 25) score -= 10;
+    else if (vix < 30) score -= 25;
+    else score -= 35;
+    factors++;
+  }
+
+  // KOSPI change
+  const kc = d.kospi?.change_pct;
+  if (kc != null) { score += Math.max(-20, Math.min(20, kc * 10)); factors++; }
+
+  // S&P500 change
+  const sc = d.sp500?.change_pct;
+  if (sc != null) { score += Math.max(-15, Math.min(15, sc * 8)); factors++; }
+
+  // USD/KRW: 원화 강세(하락)=긍정
+  const uc = d.usd?.change_pct;
+  if (uc != null) { score += Math.max(-10, Math.min(10, -uc * 5)); factors++; }
+
+  if (factors === 0) { score = 0; }
+  else { score = Math.round(score / factors * 2); }
+  score = Math.max(-100, Math.min(100, score));
+
+  const el = document.getElementById('gaugeScore');
+  const tag = document.getElementById('gaugeTag');
+  el.textContent = score;
+  el.style.color = score > 15 ? 'var(--db-up)' : score < -15 ? 'var(--db-down)' : score > 5 ? 'var(--db-accent)' : score < -5 ? 'var(--db-warn)' : 'var(--db-flat)';
+
+  let label, cls;
+  if (score >= 30) { label = '낙관'; cls = 'bullish'; }
+  else if (score >= 10) { label = '중립 편향 ↑'; cls = 'bullish'; }
+  else if (score > -10) { label = '중립'; cls = 'neutral'; }
+  else if (score > -30) { label = '경계'; cls = 'caution'; }
+  else { label = '공포'; cls = 'bearish'; }
+
+  tag.textContent = label;
+  tag.className = 'gauge-tag ' + cls;
+}
+
+/* ── History Charts ── */
+function normalizeHistory(rawArr) {
+  // market_history.json: 날짜별 배열 [{date:'2026-10-01', kospi:2650, ...}, ...]
+  // 또는 [{timestamp:'...', data:{...}}, ...]
+  return rawArr.map(entry => {
+    if (entry.data) {
+      const n = normalizeIndicators(entry.data);
+      n._date = entry.date || entry.timestamp?.split(' ')[0] || '';
+      return n;
+    }
+    const n = normalizeIndicators(entry);
+    n._date = entry.date || entry.timestamp?.split(' ')[0] || '';
+    return n;
+  });
+}
+
+function renderCharts(days) {
+  currentDays = days;
+  const data = historyData.slice(-days);
+  if (!data.length) return;
+
+  const grid = document.getElementById('chartGrid');
+  grid.innerHTML = '';
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+
+  CHART_ITEMS.forEach(item => {
+    const prices = data.map(d => d[item.key]?.price).filter(v => v != null);
+    const labels = data.map(d => d._date).slice(-prices.length);
+    if (!prices.length) return;
+
+    const box = document.createElement('div');
+    box.className = 'chart-box';
+    box.innerHTML = `<h3>${item.label}</h3><canvas id="ch_${item.key}"></canvas>`;
+    grid.appendChild(box);
+
+    const ctx = box.querySelector('canvas').getContext('2d');
+    charts[item.key] = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data: prices,
+          borderColor: item.color,
+          backgroundColor: item.color + '15',
+          fill: true, tension: 0.3,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          x: { display: true, ticks: { maxTicksLimit: 6, font: { size: 9 } } },
+          y: { display: true, ticks: { maxTicksLimit: 5, font: { size: 9 } } },
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: ctx => fmt(ctx.parsed.y, item.key.startsWith('t') ? 3 : 2)
+            }
+          }
+        }
+      }
+    });
+  });
+}
+
+/* ── ③ Vasily: 외국인 현선물 ── */
+async function loadVasily() {
+  const el = document.getElementById('vasilyContent');
+  try {
+    const res = await fetch(`${DATA_BASE}/dashboard/foreign_flow.json`);
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    renderVasily(data, el);
+  } catch(e) {
+    el.innerHTML = `<div class="placeholder-msg">
+      외국인 현선물 데이터 없음<br>
+      <code>scripts/fetch_foreign_flow.py</code> 실행 후 확인
+    </div>`;
+  }
+}
+
+function renderVasily(data, el) {
+  const rows = data.history || data.data || data;
+  if (!Array.isArray(rows) || !rows.length) {
+    el.innerHTML = '<div class="placeholder-msg">데이터 없음</div>';
+    return;
+  }
+
+  // 최근 데이터 상단 요약
+  const latest = rows[rows.length - 1];
+  const spotNet = latest.spot_foreign_net ?? latest.frgn_net_spot ?? 0;
+  const futNet = latest.futures_foreign_net ?? latest.frgn_net_fut ?? 0;
+  const total = spotNet + futNet;
+  const spotCls = chgClass(spotNet);
+  const futCls = chgClass(futNet);
+  const totalCls = chgClass(total);
+
+  let html = `
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+    <div class="d-card"><div class="lbl">현물 순매수</div>
+      <div class="val" style="color:var(--db-${spotCls})">${fmtInt(spotNet)}</div>
+      <div class="chg ${spotCls}">억원</div></div>
+    <div class="d-card"><div class="lbl">선물 순매수</div>
+      <div class="val" style="color:var(--db-${futCls})">${fmtInt(futNet)}</div>
+      <div class="chg ${futCls}">계약</div></div>
+    <div class="d-card"><div class="lbl">현선물 합산</div>
+      <div class="val" style="color:var(--db-${totalCls})">${total >= 0 ? '매수 우위' : '매도 우위'}</div>
+      <div class="chg ${totalCls}">${total > 0 ? '🟢' : total < 0 ? '🔴' : '⚪'}</div></div>
+  </div>`;
+
+  // 테이블
+  html += `<div class="chart-box full"><h3>외국인 현선물 매매 추이 (최근 ${Math.min(20, rows.length)}일)</h3>
+    <table class="flow-table">
+      <thead><tr><th>날짜</th><th>현물(억원)</th><th>선물(계약)</th><th>콜옵션(억)</th><th>풋옵션(억)</th></tr></thead>
+      <tbody>`;
+  rows.slice(-20).reverse().forEach(r => {
+    const sp = r.spot_foreign_net ?? r.frgn_net_spot ?? '—';
+    const fu = r.futures_foreign_net ?? r.frgn_net_fut ?? '—';
+    const ca = r.call_net ?? '—';
+    const pu = r.put_net ?? '—';
+    html += `<tr>
+      <td>${r.date || '—'}</td>
+      <td class="chg ${chgClass(sp)}">${typeof sp === 'number' ? fmtInt(sp) : sp}</td>
+      <td class="chg ${chgClass(fu)}">${typeof fu === 'number' ? fmtInt(fu) : fu}</td>
+      <td>${typeof ca === 'number' ? fmtInt(ca) : ca}</td>
+      <td>${typeof pu === 'number' ? fmtInt(pu) : pu}</td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+
+  // 차트
+  html += '<div class="chart-grid" style="margin-top:12px;">';
+  html += '<div class="chart-box"><h3>현물 순매수 추이</h3><canvas id="ch_vasily_spot"></canvas></div>';
+  html += '<div class="chart-box"><h3>선물 순매수 추이</h3><canvas id="ch_vasily_fut"></canvas></div>';
+  html += '</div>';
+
+  el.innerHTML = html;
+
+  // Draw charts
+  const recent = rows.slice(-60);
+  const labels = recent.map(r => r.date?.slice(5) || '');
+  const spotData = recent.map(r => r.spot_foreign_net ?? r.frgn_net_spot ?? 0);
+  const futData = recent.map(r => r.futures_foreign_net ?? r.frgn_net_fut ?? 0);
+
+  new Chart(document.getElementById('ch_vasily_spot'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data: spotData, backgroundColor: spotData.map(v => v >= 0 ? 'rgba(0,210,106,.6)' : 'rgba(255,71,87,.6)') }] },
+    options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxTicksLimit: 10 } } } }
+  });
+
+  new Chart(document.getElementById('ch_vasily_fut'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data: futData, backgroundColor: futData.map(v => v >= 0 ? 'rgba(77,166,255,.6)' : 'rgba(248,113,113,.6)') }] },
+    options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxTicksLimit: 10 } } } }
+  });
+}
+
+/* ── ④ BOD: S&P 500 ── */
+async function loadBOD() {
+  const el = document.getElementById('bodContent');
+  if (!historyData.length) {
+    el.innerHTML = '<div class="placeholder-msg">히스토리 데이터 로딩 실패</div>';
+    return;
+  }
+
+  const recent = historyData.slice(-120);
+  const labels = recent.map(d => d._date?.slice(5) || '');
+  const sp = recent.map(d => d.sp500?.price).filter(v => v != null);
+  const nas = recent.map(d => d.nasdaq?.price).filter(v => v != null);
+  const dow = recent.map(d => d.dow?.price).filter(v => v != null);
+  const vixArr = recent.map(d => d.vix?.price).filter(v => v != null);
+
+  if (!sp.length) {
+    el.innerHTML = '<div class="placeholder-msg">S&P 500 히스토리 없음</div>';
+    return;
+  }
+
+  // S&P 500 vs VIX 대비 차트 + 주요 미국 지수 비교
+  el.innerHTML = `
+  <div class="chart-grid">
+    <div class="chart-box full"><h3>S&P 500 (6개월)</h3><canvas id="ch_bod_sp"></canvas></div>
+    <div class="chart-box"><h3>VIX</h3><canvas id="ch_bod_vix"></canvas></div>
+    <div class="chart-box"><h3>미국 3대 지수 수익률 비교</h3><canvas id="ch_bod_comp"></canvas></div>
+  </div>`;
+
+  // S&P 500
+  new Chart(document.getElementById('ch_bod_sp'), {
+    type: 'line',
+    data: { labels: labels.slice(-sp.length), datasets: [{ data: sp, borderColor: '#34d399', fill: { target: 'origin', above: 'rgba(52,211,153,.08)', below: 'rgba(248,113,113,.08)' }, tension: 0.3 }] },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
+
+  // VIX
+  new Chart(document.getElementById('ch_bod_vix'), {
+    type: 'line',
+    data: { labels: labels.slice(-vixArr.length), datasets: [{
+      data: vixArr, borderColor: '#f87171', fill: true,
+      backgroundColor: ctx => {
+        const g = ctx.chart.ctx.createLinearGradient(0,0,0,220);
+        g.addColorStop(0,'rgba(248,113,113,.3)'); g.addColorStop(1,'rgba(248,113,113,.02)'); return g;
+      }, tension: 0.3
+    }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        annotation: { annotations: {
+          line20: { type: 'line', yMin: 20, yMax: 20, borderColor: 'rgba(240,185,58,.4)', borderDash: [4,4], borderWidth: 1 }
+        }}
+      }
+    }
+  });
+
+  // Normalized comparison
+  const minLen = Math.min(sp.length, nas.length, dow.length);
+  if (minLen > 1) {
+    const spN = sp.slice(-minLen).map((v,i,a) => ((v / a[0]) - 1) * 100);
+    const nasN = nas.slice(-minLen).map((v,i,a) => ((v / a[0]) - 1) * 100);
+    const dowN = dow.slice(-minLen).map((v,i,a) => ((v / a[0]) - 1) * 100);
+    new Chart(document.getElementById('ch_bod_comp'), {
+      type: 'line',
+      data: {
+        labels: labels.slice(-minLen),
+        datasets: [
+          { label: 'S&P 500', data: spN, borderColor: '#34d399', tension: 0.3 },
+          { label: 'NASDAQ', data: nasN, borderColor: '#fbbf24', tension: 0.3 },
+          { label: 'DOW', data: dowN, borderColor: '#2dd4bf', tension: 0.3 },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true, labels: { boxWidth: 8, font: { size: 10 } } } },
+        scales: { y: { ticks: { callback: v => v.toFixed(1) + '%' } } }
+      }
+    });
+  }
+}
+
+/* ── ⑤ Put/Call Ratio ── */
+async function loadPutCall() {
+  const el = document.getElementById('putcallContent');
+  try {
+    const res = await fetch(`${DATA_BASE}/dashboard/putcall.json`);
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    renderPutCall(data, el);
+  } catch(e) {
+    el.innerHTML = `<div class="placeholder-msg">
+      풋콜레이쇼 데이터 없음<br>
+      <code>scripts/fetch_putcall.py</code> 실행 후 확인
+    </div>`;
+  }
+}
+
+function renderPutCall(data, el) {
+  const rows = data.history || data.data || data;
+  if (!Array.isArray(rows) || !rows.length) {
+    el.innerHTML = '<div class="placeholder-msg">데이터 없음</div>';
+    return;
+  }
+
+  const latest = rows[rows.length - 1];
+  const pcr = latest.pcr ?? latest.put_call_ratio ?? 0;
+  const pcrCls = pcr > 1.0 ? 'down' : pcr < 0.7 ? 'up' : 'flat';
+  const pcrLabel = pcr > 1.2 ? '극도 공포' : pcr > 1.0 ? '공포' : pcr > 0.8 ? '중립' : pcr > 0.6 ? '낙관' : '극도 낙관';
+
+  let html = `
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+    <div class="d-card"><div class="lbl">P/C Ratio (CBOE)</div>
+      <div class="val" style="color:var(--db-${pcrCls})">${fmt(pcr, 3)}</div>
+      <div class="chg ${pcrCls}">${pcrLabel}</div></div>
+    <div class="d-card"><div class="lbl">5일 평균</div>
+      <div class="val">${fmt(latest.ma5 ?? null, 3)}</div></div>
+    <div class="d-card"><div class="lbl">21일 평균</div>
+      <div class="val">${fmt(latest.ma21 ?? null, 3)}</div></div>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-box full"><h3>Put/Call Ratio 추이</h3><canvas id="ch_pcr"></canvas></div>
+  </div>`;
+
+  el.innerHTML = html;
+
+  const recent = rows.slice(-120);
+  const labels = recent.map(r => (r.date || '').slice(5));
+  const pcrData = recent.map(r => r.pcr ?? r.put_call_ratio ?? null);
+  const ma5 = recent.map(r => r.ma5 ?? null);
+  const ma21 = recent.map(r => r.ma21 ?? null);
+
+  new Chart(document.getElementById('ch_pcr'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'P/C Ratio', data: pcrData, borderColor: '#4da6ff', borderWidth: 1, tension: 0.3 },
+        { label: '5일 MA', data: ma5, borderColor: '#f0b93a', borderWidth: 1, borderDash: [4,2], tension: 0.3 },
+        { label: '21일 MA', data: ma21, borderColor: '#f87171', borderWidth: 1.5, tension: 0.3 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, labels: { boxWidth: 8, font: { size: 10 } } } },
+      scales: {
+        y: {
+          suggestedMin: 0.5, suggestedMax: 1.5,
+          ticks: { callback: v => v.toFixed(1) }
+        }
+      }
+    }
+  });
+}
+
+/* ── Tab switching ── */
+document.getElementById('tabBar').addEventListener('click', e => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+
+  // Lazy load
+  if (btn.dataset.tab === 'vasily') loadVasily();
+  if (btn.dataset.tab === 'bod') loadBOD();
+  if (btn.dataset.tab === 'putcall') loadPutCall();
+});
+
+/* ── Period buttons ── */
+document.querySelector('.period-bar').addEventListener('click', e => {
+  const btn = e.target.closest('.period-btn');
+  if (!btn) return;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCharts(Number(btn.dataset.days));
+});
+
+/* ── Init ── */
+async function init() {
+  try {
+    // 1. Latest indicators
+    const indRes = await fetch(`${DATA_BASE}/market_indicators.json`);
+    if (indRes.ok) {
+      const raw = await indRes.json();
+      const d = normalizeIndicators(raw);
+      renderDiag(d);
+    }
+
+    // 2. History
+    const histRes = await fetch(`${DATA_BASE}/market_history.json`);
+    if (histRes.ok) {
+      const rawHist = await histRes.json();
+      historyData = normalizeHistory(Array.isArray(rawHist) ? rawHist : []);
+      renderCharts(currentDays);
+    }
+  } catch(e) {
+    console.error('Dashboard init error:', e);
+    document.getElementById('diagCards').innerHTML = '<div class="placeholder-msg">데이터 로딩 실패 — market_indicators.json 확인</div>';
+  }
+}
+
+init();
+</script>
+</body>
+</html>
