@@ -171,11 +171,33 @@ input:focus{outline:2px solid #1F4E78;background:#FFFACD}
 </div>
 
 <div class="source-box">
-  <h3>📡 데이터 소스</h3>
+  <h3>📡 데이터 수집 현황</h3>
+  <table style="width:100%;font-size:12.5px;border-collapse:collapse;margin:8px 0">
+    <tr style="border-bottom:2px solid #e5e9f0">
+      <th style="text-align:left;padding:6px;color:#1F4E78">항목</th>
+      <th style="text-align:center;padding:6px;color:#1F4E78">자동</th>
+      <th style="text-align:left;padding:6px;color:#1F4E78">소스 / 비고</th>
+    </tr>
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:6px">명목 GDP</td>
+      <td style="text-align:center;padding:6px;color:#059669;font-weight:700">✅</td>
+      <td style="padding:6px"><a href="https://ecos.bok.or.kr/" target="_blank">ECOS</a> KeyStatisticList · 분기 GDP × 4 연환산 · 분기 1회 갱신</td>
+    </tr>
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:6px">코스피 시총</td>
+      <td style="text-align:center;padding:6px;color:#d97706;font-weight:700">⚠ 부분</td>
+      <td style="padding:6px">prices.json KOSPI200(231종목) 합산 · 전체 KOSPI의 약 85~90% · 매일 갱신</td>
+    </tr>
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:6px">코스닥 시총</td>
+      <td style="text-align:center;padding:6px;color:#dc2626;font-weight:700">❌ 수동</td>
+      <td style="padding:6px">KRX API 차단으로 미수집 · <a href="https://data.krx.co.kr/contents/MDC/MAIN/main/index.cmd" target="_blank">KRX</a>에서 직접 확인 후 입력</td>
+    </tr>
+  </table>
+  <p style="font-size:11px;color:#999;margin-top:6px">⚠ 자동 계산된 버핏지수는 <b>코스닥 미포함 + 코스피 소형주 일부 누락</b>이므로 실제보다 낮게 나옴. 정확한 값은 코스피 전체 시총 + 코스닥 시총을 직접 입력.</p>
+  <h4 style="margin:12px 0 6px;font-size:13px">수동 확인처</h4>
   <ul>
-    <li><b>자동 수집:</b> ECOS API (명목 GDP, 분기별) + KRX (시가총액, 일별) → <code>data/buffett.json</code></li>
-    <li><b>코스피 시가총액:</b> <a href="https://data.krx.co.kr/contents/MDC/MAIN/main/index.cmd" target="_blank">KRX 정보데이터시스템</a></li>
-    <li><b>한국 명목 GDP:</b> <a href="https://ecos.bok.or.kr/" target="_blank">한국은행 ECOS</a> → 국민계정 → 명목GDP</li>
+    <li><b>코스피+코스닥 시총:</b> <a href="https://data.krx.co.kr/contents/MDC/MAIN/main/index.cmd" target="_blank">KRX 정보데이터시스템</a> → 시장개관</li>
     <li><b>미국 버핏지수:</b> <a href="https://www.gurufocus.com/stock-market-valuations.php" target="_blank">GuruFocus</a></li>
   </ul>
 </div>
@@ -187,12 +209,13 @@ input:focus{outline:2px solid #1F4E78;background:#FFFACD}
   <p>워런 버핏이 2001년 Fortune誌 인터뷰에서 "어느 한 시점에서 평가가 어디에 있는지를 보여주는 가장 좋은 단일 지표"라고 한 지표. <b>(전체 주식시장 시가총액 ÷ GDP) × 100</b>으로 계산. 100%는 시장 시가총액이 한 해 GDP와 같다는 의미.</p>
 
   <h3>② 자동 갱신</h3>
-  <p><code>fetch_buffett.py</code>가 매월 1일 자동 실행. ECOS에서 명목 GDP(분기별), KRX에서 코스피/코스닥 전체 시가총액을 수집하여 <code>data/buffett.json</code>에 저장. 페이지 로드 시 자동 반영. 수동 입력으로 덮어쓰기도 가능.</p>
+  <p><code>fetch_buffett.py</code>가 평일 18:35 자동 실행. GDP는 ECOS KeyStatisticList에서 최신 분기 명목GDP(계절조정)를 가져와 ×4 연환산. 시총은 <code>prices.json</code>(KOSPI200, 231종목)을 합산. <b>코스닥과 코스피 소형주는 자동 미포함</b> → KRX에서 직접 확인해 입력하면 정확한 값 산출.</p>
 
   <h3>③ 한계와 주의</h3>
   <ul>
     <li>GDP는 분기별로만 발표. 시총은 실시간. 시점 차이 있음.</li>
-    <li>2026년 기준 삼성전자+SK하이닉스가 코스피 시총 48%+ → 2종목 변동이 지수를 좌우. 시장 전체 과열과 다를 수 있음.</li>
+    <li>자동 시총은 KOSPI200 기준 — 코스닥(~400~500조) + 코스피 비200(~10~15%) 미포함으로 <b>실제보다 10~20% 낮게</b> 나옴.</li>
+    <li>2026년 기준 삼성전자+SK하이닉스가 코스피 시총 48%+ → 2종목 변동이 지수를 좌우.</li>
     <li>한국은 글로벌 평균보다 항상 낮은 편 (코리아 디스카운트). 미국과 단순 비교는 부적절.</li>
     <li>금리 환경 미반영. 저금리일수록 시장 P/E가 높은 게 정상.</li>
     <li>해외매출 비중↑ 시 시총이 국내 GDP 대비 구조적으로 높아짐 (미국 특히).</li>
