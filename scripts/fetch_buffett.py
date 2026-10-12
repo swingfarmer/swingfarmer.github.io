@@ -45,93 +45,52 @@ def load_env():
 load_env()
 
 ECOS_API_KEY = os.environ.get('ECOS_API_KEY', '')
-ECOS_BASE = "https://ecos.bok.or.kr/api/StatisticSearch"
 
 
 # ═══════════════════════════════════════════
-# 1. ECOS — 명목 GDP (분기별)
+# 1. ECOS — 명목 GDP (KeyStatisticList 방식)
 # ═══════════════════════════════════════════
-# 200Y002: 국민소득(생산, 분기및연간, 명목, 원계열)
-# 항목코드 10111: 국내총생산(GDP)
-# 단위: 십억원
-GDP_STAT_CODE = "200Y002"
-GDP_ITEM_CODE = "10111"
-GDP_CYCLE = "Q"  # 분기
+# KeyStatisticList: 주요 경제지표 최신값 API
+# "GDP(명목, 계절조정)" → 분기 GDP (십억원) → ×4 연환산
 
-def fetch_ecos(stat_code, item_code, cycle, start_date, end_date):
-    """ECOS API 호출."""
-    url = f"{ECOS_BASE}/{ECOS_API_KEY}/json/kr/1/100/{stat_code}/{cycle}/{start_date}/{end_date}/{item_code}"
+def get_gdp():
+    """ECOS KeyStatisticList에서 최신 분기 GDP → 연환산 (조원)."""
+    url = f"https://ecos.bok.or.kr/api/KeyStatisticList/{ECOS_API_KEY}/json/kr/1/100"
     try:
         req = urllib.request.Request(url)
         with urllib.request.urlopen(req, timeout=30, context=SSL_CTX) as resp:
             raw = resp.read().decode('utf-8')
         data = json.loads(raw)
-        if 'StatisticSearch' not in data:
-            if 'RESULT' in data:
-                code = data['RESULT'].get('CODE', '')
-                msg = data['RESULT'].get('MESSAGE', '')
-                if code == 'INFO-200':
-                    return []
-                print(f"  ⚠ ECOS 오류: {code} - {msg}")
-            return None
-        return data['StatisticSearch'].get('row', [])
+        rows = data.get('KeyStatisticList', {}).get('row', [])
+
+        for row in rows:
+            nm = row.get('KEYSTAT_NAME', '')
+            if 'GDP' in nm and '명목' in nm:
+                val_str = row.get('DATA_VALUE', '')
+                unit = row.get('UNIT_NAME', '')
+                period = row.get('CYCLE', '')  # e.g. "2026Q2"
+                try:
+                    quarterly = float(val_str)
+                except:
+                    print(f"  ⚠ GDP 파싱 실패: {val_str}")
+                    return None, None
+
+                # 십억원 → 조원, ×4 연환산 (계절조정이라 ×4 가능)
+                if '십억' in unit:
+                    annual_tril = quarterly / 1000 * 4
+                elif '조' in unit:
+                    annual_tril = quarterly * 4
+                else:
+                    annual_tril = quarterly / 1000 * 4
+
+                print(f"  GDP: 분기 {quarterly:,.1f}{unit} ({period}) → 연환산 {annual_tril:,.1f}조원")
+                return round(annual_tril, 1), period
+
+        print("  ❌ KeyStatisticList에서 GDP 항목 못 찾음")
+        return None, None
     except Exception as e:
         print(f"  ⚠ ECOS 호출 실패: {e}")
-        return None
-
-
-def get_gdp():
-    """최근 4분기 명목 GDP 합산 (조원 단위 반환)."""
-    now = datetime.now(KST)
-    # 최근 2년치 분기 데이터 조회
-    start = f"{now.year - 2}Q1"
-    end = f"{now.year}Q4"
-
-    rows = fetch_ecos(GDP_STAT_CODE, GDP_ITEM_CODE, GDP_CYCLE, start, end)
-    if not rows:
-        print("  ❌ GDP 데이터 없음")
         return None, None
-
-    # 분기별 데이터 파싱 (TIME: 2025Q1 등)
-    quarterly = []
-    for r in rows:
-        t = r.get('TIME', '')
-        v = r.get('DATA_VALUE', '')
-        unit = r.get('UNIT_NAME', '')
-        if not t or not v or v == '-':
-            continue
-        try:
-            quarterly.append({'period': t, 'value': float(v), 'unit': unit})
-        except:
-            continue
-
-    quarterly.sort(key=lambda x: x['period'])
-
-    if len(quarterly) < 4:
-        print(f"  ⚠ 분기 데이터 {len(quarterly)}개 (4개 필요)")
-        if quarterly:
-            # 가능한 만큼 사용
-            pass
-        else:
-            return None, None
-
-    # 최근 4분기 합산
-    last4 = quarterly[-4:]
-    total = sum(q['value'] for q in last4)
-    unit = last4[0].get('unit', '십억원')
-    periods = f"{last4[0]['period']}~{last4[-1]['period']}"
-
-    # 십억원 → 조원 변환
-    if '십억' in unit:
-        total_tril = total / 1000  # 십억원 → 조원
-    elif '조' in unit:
-        total_tril = total
-    else:
-        # 기본: 십억원으로 가정
-        total_tril = total / 1000
-
-    print(f"  GDP: {total_tril:.1f}조원 ({periods}, {unit})")
-    return total_tril, periods
 
 
 # ═══════════════════════════════════════════
@@ -241,20 +200,13 @@ def main():
     print(f"🐂 버핏지수 자동 계산: {now.strftime('%Y-%m-%d %H:%M KST')}")
 
     if '--test-ecos' in sys.argv:
-        # ECOS 통계표코드 테스트
-        test_codes = [
-            ("200Y002", "10111", "Q", "명목GDP(분기,원계열)"),
-            ("200Y001", "10111", "Q", "명목GDP(분기,계절조정)"),
-            ("111Y002", "10101", "Q", "국민소득-GDP"),
-        ]
-        for sc, ic, cy, nm in test_codes:
-            print(f"\n테스트: {nm} ({sc}/{ic})")
-            rows = fetch_ecos(sc, ic, cy, "2025Q1", "2026Q4")
-            if rows:
-                for r in rows[-4:]:
-                    print(f"  {r.get('TIME')}: {r.get('DATA_VALUE')} {r.get('UNIT_NAME','')}")
-            else:
-                print("  → 없음")
+        # KeyStatisticList GDP 테스트
+        print("\nKeyStatisticList GDP 테스트:")
+        gdp, period = get_gdp()
+        if gdp:
+            print(f"  ✅ 연환산 GDP: {gdp:,.1f}조원 ({period})")
+        else:
+            print("  ❌ 실패")
         return
 
     if not ECOS_API_KEY:
