@@ -170,6 +170,15 @@ input:focus{outline:2px solid #1F4E78;background:#FFFACD}
   <p style="font-size:11px;color:#999;margin-top:8px">※ 한국 수치는 헤럴드경제·구루포커스·뉴시스 종합. 미국 수치는 Fed Z.1 + BEA GDP 기준. 미국 해외매출 비중↑ + 저금리로 역사적 평균 대비 구조적 상향 가능.</p>
 </div>
 
+<!-- ═══════════ 추이 차트 ═══════════ -->
+<div class="panel">
+  <h2>📉 버핏지수 추이</h2>
+  <div id="chartWrap" style="position:relative;height:300px;margin:8px 0">
+    <canvas id="histChart"></canvas>
+  </div>
+  <p id="chartStatus" style="font-size:11px;color:#999;margin-top:4px"></p>
+</div>
+
 <div class="source-box">
   <h3>📡 데이터 수집 현황</h3>
   <table style="width:100%;font-size:12.5px;border-collapse:collapse;margin:8px 0">
@@ -185,19 +194,19 @@ input:focus{outline:2px solid #1F4E78;background:#FFFACD}
     </tr>
     <tr style="border-bottom:1px solid #eee">
       <td style="padding:6px">코스피 시총</td>
-      <td style="text-align:center;padding:6px;color:#d97706;font-weight:700">⚠ 부분</td>
-      <td style="padding:6px">prices.json KOSPI200(231종목) 합산 · 전체 KOSPI의 약 85~90% · 매일 갱신</td>
+      <td style="text-align:center;padding:6px;color:#059669;font-weight:700">✅</td>
+      <td style="padding:6px"><a href="https://m.stock.naver.com/" target="_blank">네이버 증권</a> 전 종목 합산 · 매일 갱신</td>
     </tr>
     <tr style="border-bottom:1px solid #eee">
       <td style="padding:6px">코스닥 시총</td>
-      <td style="text-align:center;padding:6px;color:#dc2626;font-weight:700">❌ 수동</td>
-      <td style="padding:6px">KRX API 차단으로 미수집 · <a href="https://data.krx.co.kr/contents/MDC/MAIN/main/index.cmd" target="_blank">KRX</a>에서 직접 확인 후 입력</td>
+      <td style="text-align:center;padding:6px;color:#059669;font-weight:700">✅</td>
+      <td style="padding:6px"><a href="https://m.stock.naver.com/" target="_blank">네이버 증권</a> 전 종목 합산 · 매일 갱신</td>
     </tr>
   </table>
-  <p style="font-size:11px;color:#999;margin-top:6px">⚠ 자동 계산된 버핏지수는 <b>코스닥 미포함 + 코스피 소형주 일부 누락</b>이므로 실제보다 낮게 나옴. 정확한 값은 코스피 전체 시총 + 코스닥 시총을 직접 입력.</p>
-  <h4 style="margin:12px 0 6px;font-size:13px">수동 확인처</h4>
+  <p style="font-size:11px;color:#999;margin-top:6px">✅ 전 항목 자동 수집. 수동 입력으로 덮어쓰기도 가능.</p>
+  <h4 style="margin:12px 0 6px;font-size:13px">참고 링크</h4>
   <ul>
-    <li><b>코스피+코스닥 시총:</b> <a href="https://data.krx.co.kr/contents/MDC/MAIN/main/index.cmd" target="_blank">KRX 정보데이터시스템</a> → 시장개관</li>
+    <li><b>KRX 시장개관:</b> <a href="https://data.krx.co.kr/contents/MDC/MAIN/main/index.cmd" target="_blank">KRX 정보데이터시스템</a></li>
     <li><b>미국 버핏지수:</b> <a href="https://www.gurufocus.com/stock-market-valuations.php" target="_blank">GuruFocus</a></li>
   </ul>
 </div>
@@ -209,12 +218,12 @@ input:focus{outline:2px solid #1F4E78;background:#FFFACD}
   <p>워런 버핏이 2001년 Fortune誌 인터뷰에서 "어느 한 시점에서 평가가 어디에 있는지를 보여주는 가장 좋은 단일 지표"라고 한 지표. <b>(전체 주식시장 시가총액 ÷ GDP) × 100</b>으로 계산. 100%는 시장 시가총액이 한 해 GDP와 같다는 의미.</p>
 
   <h3>② 자동 갱신</h3>
-  <p><code>fetch_buffett.py</code>가 평일 18:35 자동 실행. GDP는 ECOS KeyStatisticList에서 최신 분기 명목GDP(계절조정)를 가져와 ×4 연환산. 시총은 <code>prices.json</code>(KOSPI200, 231종목)을 합산. <b>코스닥과 코스피 소형주는 자동 미포함</b> → KRX에서 직접 확인해 입력하면 정확한 값 산출.</p>
+  <p><code>fetch_buffett.py</code>가 평일 18:35 자동 실행. GDP는 ECOS KeyStatisticList에서 최신 분기 명목GDP(계절조정)를 가져와 ×4 연환산. 시총은 <b>네이버 증권 API</b>에서 KOSPI 전 종목 + KOSDAQ 전 종목 시가총액을 각각 합산 (API 2회 호출). 일별 히스토리가 <code>buffett_history.json</code>에 누적되어 추이 차트 표시.</p>
 
   <h3>③ 한계와 주의</h3>
   <ul>
     <li>GDP는 분기별로만 발표. 시총은 실시간. 시점 차이 있음.</li>
-    <li>자동 시총은 KOSPI200 기준 — 코스닥(~400~500조) + 코스피 비200(~10~15%) 미포함으로 <b>실제보다 10~20% 낮게</b> 나옴.</li>
+    <li>네이버 증권 기반 시총은 KOSPI+KOSDAQ 전 종목 합산 (KRX 공식 수치와 거의 일치).</li>
     <li>2026년 기준 삼성전자+SK하이닉스가 코스피 시총 48%+ → 2종목 변동이 지수를 좌우.</li>
     <li>한국은 글로벌 평균보다 항상 낮은 편 (코리아 디스카운트). 미국과 단순 비교는 부적절.</li>
     <li>금리 환경 미반영. 저금리일수록 시장 P/E가 높은 게 정상.</li>
@@ -265,12 +274,12 @@ async function loadAutoData() {
 
     if (d.mktcap && d.mktcap.kospi) {
       $('kospiCap').value = Math.round(d.mktcap.kospi);
-      $('srcKospi').textContent = `← KRX ${d.mktcap.date || ''}`;
+      $('srcKospi').textContent = `← 네이버 ${d.mktcap.kospi_count || ''}종목 (${d.mktcap.date || ''})`;
       loaded++;
     }
     if (d.mktcap && d.mktcap.kosdaq) {
       $('kosdaqCap').value = Math.round(d.mktcap.kosdaq);
-      $('srcKosdaq').textContent = `← KRX`;
+      $('srcKosdaq').textContent = `← 네이버 ${d.mktcap.kosdaq_count || ''}종목`;
       loaded++;
     }
     if (d.gdp && d.gdp.value) {
@@ -310,7 +319,81 @@ async function loadAutoData() {
 
 document.querySelectorAll('input').forEach(el => el.addEventListener('input', calculate));
 loadAutoData();
+
+// ── 추이 차트 ──
+async function loadHistory() {
+  try {
+    const resp = await fetch('/data/buffett_history.json?t=' + Date.now());
+    if (!resp.ok) throw new Error(resp.status);
+    const hist = await resp.json();
+    if (!hist || hist.length < 2) {
+      $('chartStatus').textContent = '📊 데이터 2일 이상 누적되면 차트가 표시됩니다 (' + (hist ? hist.length : 0) + '일치)';
+      return;
+    }
+
+    var labels = hist.map(function(h){ return h.date.slice(5); }); // MM-DD
+    var buffData = hist.map(function(h){ return h.buffett; });
+    var kospiData = hist.map(function(h){ return h.kospi; });
+    var kosdaqData = hist.map(function(h){ return h.kosdaq; });
+
+    var ctx = $('histChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: '버핏지수 (%)',
+            data: buffData,
+            borderColor: '#1F4E78',
+            backgroundColor: 'rgba(31,78,120,0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 3,
+            yAxisID: 'y'
+          },
+          {
+            label: 'KOSPI (조)',
+            data: kospiData,
+            borderColor: '#059669',
+            borderDash: [4,4],
+            pointRadius: 2,
+            tension: 0.3,
+            yAxisID: 'y1'
+          },
+          {
+            label: 'KOSDAQ (조)',
+            data: kosdaqData,
+            borderColor: '#7c3aed',
+            borderDash: [4,4],
+            pointRadius: 2,
+            tension: 0.3,
+            yAxisID: 'y1'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'top', labels: { font: { size: 11 } } }
+        },
+        scales: {
+          y: { position: 'left', title: { display: true, text: '버핏지수 (%)' } },
+          y1: { position: 'right', title: { display: true, text: '시총 (조원)' }, grid: { drawOnChartArea: false } }
+        }
+      }
+    });
+
+    $('chartStatus').textContent = hist.length + '일치 데이터';
+  } catch(e) {
+    $('chartStatus').textContent = '📊 히스토리 데이터 없음 — 수집 시작 후 누적됩니다';
+  }
+}
+loadHistory();
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
 window.CALC_KEY = 'buffett';
 window.slGetState = function(){
