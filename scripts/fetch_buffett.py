@@ -1,17 +1,18 @@
 """
-버핏지수 자동 계산 — ECOS(GDP) + prices.json(시가총액)
+버핏지수 자동 계산 — ECOS(GDP) + 네이버 증권(시가총액)
 =====================================================
-ECOS API: 명목 GDP (분기별)
-prices.json: KOSPI+KOSDAQ 시가총액 (market 필드 기준 분리)
+ECOS API: 명목 GDP (분기별, 연환산)
+네이버 증권 API: KOSPI+KOSDAQ 전체 시가총액 (종목별 합산)
 
-출력: data/buffett.json (프론트 로드용)
+출력:
+  data/buffett.json          — 최신 값 (프론트 로드용)
+  data/buffett_history.json  — 일별 누적 (차트용)
 
 사용법:
-  python3 fetch_buffett.py              # 최신 데이터 수집
-  python3 fetch_buffett.py --test-ecos  # ECOS 통계표코드 탐색
+  python3 scripts/fetch_buffett.py
+  python3 scripts/fetch_buffett.py --test-ecos
 
-크론:
-  평일 18:50 KST (fetch_prices.py 이후)
+크론: 평일 18:35 KST
 
 환경변수:
   ECOS_API_KEY — 한국은행 ECOS Open API 키
@@ -25,10 +26,17 @@ KST = timezone(timedelta(hours=9))
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(SCRIPT_DIR)
 OUT_FILE = os.path.join(ROOT_DIR, "data", "buffett.json")
+HIST_FILE = os.path.join(ROOT_DIR, "data", "buffett_history.json")
 
 SSL_CTX = ssl.create_default_context()
 SSL_CTX.check_hostname = False
 SSL_CTX.verify_mode = ssl.CERT_NONE
+
+NAVER_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'Referer': 'https://m.stock.naver.com/',
+}
+
 
 # ── 환경변수 로드 ──
 def load_env():
@@ -49,9 +57,6 @@ ECOS_API_KEY = os.environ.get('ECOS_API_KEY', '')
 # ═══════════════════════════════════════════
 # 1. ECOS — 명목 GDP (KeyStatisticList 방식)
 # ═══════════════════════════════════════════
-# KeyStatisticList: 주요 경제지표 최신값 API
-# "GDP(명목, 계절조정)" → 분기 GDP (십억원) → ×4 연환산
-
 def get_gdp():
     """ECOS KeyStatisticList에서 최신 분기 GDP → 연환산 (조원)."""
     url = f"https://ecos.bok.or.kr/api/KeyStatisticList/{ECOS_API_KEY}/json/kr/1/100"
@@ -67,14 +72,13 @@ def get_gdp():
             if 'GDP' in nm and '명목' in nm:
                 val_str = row.get('DATA_VALUE', '')
                 unit = row.get('UNIT_NAME', '')
-                period = row.get('CYCLE', '')  # e.g. "2026Q2"
+                period = row.get('CYCLE', '')
                 try:
                     quarterly = float(val_str)
                 except:
                     print(f"  ⚠ GDP 파싱 실패: {val_str}")
                     return None, None
 
-                # 십억원 → 조원, ×4 연환산 (계절조정이라 ×4 가능)
                 if '십억' in unit:
                     annual_tril = quarterly / 1000 * 4
                 elif '조' in unit:
@@ -93,55 +97,57 @@ def get_gdp():
 
 
 # ═══════════════════════════════════════════
-# 2. 시가총액 — prices.json (market 필드 기준 분리)
+# 2. 네이버 증권 — KOSPI/KOSDAQ 전체 시가총액
 # ═══════════════════════════════════════════
-# fetch_prices.py가 KOSPI+KOSDAQ 모두 수집, market 필드로 구분
-# market_cap 단위: 억원
+def fetch_naver_total_mktcap(market, page_size=3000):
+    """네이버 증권 marketValue API로 시장 전체 종목 시총 합산."""
+    url = f"https://m.stock.naver.com/api/stocks/marketValue/{market}?page=1&pageSize={page_size}"
+    try:
+        req = urllib.request.Request(url, headers=NAVER_HEADERS)
+        with urllib.request.urlopen(req, timeout=60, context=SSL_CTX) as resp:
+            raw = resp.read().decode('utf-8')
+        data = json.loads(raw)
+        stocks = data.get('stocks', [])
+        total_count = data.get('totalCount', 0)
 
-PRICES_FILE = os.path.join(ROOT_DIR, "data", "kr", "prices.json")
+        total_won = 0
+        valid = 0
+        for s in stocks:
+            mv = s.get('marketValueRaw')
+            if mv:
+                try:
+                    total_won += int(mv)
+                    valid += 1
+                except:
+                    pass
+
+        total_조 = round(total_won / 1_000_000_000_000, 1)
+        print(f"  {market}: {valid}/{total_count}종목 합산 = {total_조:,.1f}조원")
+
+        if valid < total_count:
+            print(f"  ⚠ {total_count - valid}종목 누락 (pageSize 부족 가능)")
+
+        return total_조, valid
+    except Exception as e:
+        print(f"  ⚠ 네이버 {market} 호출 실패: {e}")
+        return None, 0
+
 
 def get_market_caps():
-    """prices.json에서 KOSPI/KOSDAQ 시가총액 각각 합산."""
-    print("📊 시가총액 조회 (prices.json)...")
-    if not os.path.exists(PRICES_FILE):
-        print(f"  ❌ {PRICES_FILE} 없음")
+    """KOSPI + KOSDAQ 시가총액."""
+    print("📊 시가총액 조회 (네이버 증권 API)...")
+
+    kospi_조, kospi_cnt = fetch_naver_total_mktcap('KOSPI')
+    kosdaq_조, kosdaq_cnt = fetch_naver_total_mktcap('KOSDAQ')
+
+    if kospi_조 is None and kosdaq_조 is None:
         return None
 
-    with open(PRICES_FILE, 'r', encoding='utf-8') as f:
-        data = json.load(f)
+    kospi_조 = kospi_조 or 0
+    kosdaq_조 = kosdaq_조 or 0
+    total_조 = round(kospi_조 + kosdaq_조, 1)
 
-    prices = data.get('prices', {})
-    updated = data.get('updated', '')
-
-    kospi_억 = 0
-    kosdaq_억 = 0
-    kospi_cnt = 0
-    kosdaq_cnt = 0
-
-    for code, info in prices.items():
-        cap = info.get('market_cap', 0)
-        mkt = info.get('market', 'KOSPI')  # 하위 호환: market 없으면 KOSPI
-        if cap and cap > 0:
-            if mkt == 'KOSDAQ':
-                kosdaq_억 += cap
-                kosdaq_cnt += 1
-            else:
-                kospi_억 += cap
-                kospi_cnt += 1
-
-    kospi_조 = round(kospi_억 / 10000, 1)
-    kosdaq_조 = round(kosdaq_억 / 10000, 1)
-    total_조 = round((kospi_억 + kosdaq_억) / 10000, 1)
-
-    print(f"  KOSPI: {kospi_cnt}종목 {kospi_조:,.1f}조원")
-    print(f"  KOSDAQ: {kosdaq_cnt}종목 {kosdaq_조:,.1f}조원")
-    print(f"  합계: {total_조:,.1f}조원 (기준일: {updated})")
-
-    if kosdaq_cnt == 0:
-        print(f"  ⚠ KOSDAQ 데이터 없음 — prices.json에 market 필드 없을 수 있음")
-        note = 'KOSPI만 포함(KOSDAQ 미수집). 수동 보정 가능.'
-    else:
-        note = f'KOSPI {kospi_cnt}종목(시총 1조↑) + KOSDAQ {kosdaq_cnt}종목(시총 5천억↑). 소형주 일부 미포함.'
+    print(f"  합계: {total_조:,.1f}조원")
 
     return {
         'kospi': kospi_조,
@@ -149,14 +155,13 @@ def get_market_caps():
         'total': total_조,
         'kospi_count': kospi_cnt,
         'kosdaq_count': kosdaq_cnt,
-        'date': updated,
-        'source': 'prices.json (KIS Open API)',
-        'note': note,
+        'date': datetime.now(KST).strftime('%Y-%m-%d'),
+        'source': '네이버 증권 (전 종목 합산)',
     }
 
 
 # ═══════════════════════════════════════════
-# 3. 역대 기록 (하드코딩 — 리서치 기반)
+# 3. 역대 기록 (하드코딩)
 # ═══════════════════════════════════════════
 HISTORICAL = {
     "korea": {
@@ -176,14 +181,46 @@ HISTORICAL = {
 
 
 # ═══════════════════════════════════════════
+# 4. 히스토리 누적
+# ═══════════════════════════════════════════
+def save_history(date_str, buffett_index, kospi, kosdaq, total, gdp):
+    """일별 버핏지수 누적 저장."""
+    history = []
+    if os.path.exists(HIST_FILE):
+        try:
+            with open(HIST_FILE, 'r', encoding='utf-8') as f:
+                history = json.load(f)
+        except:
+            history = []
+
+    # 같은 날짜 → 덮어쓰기
+    history = [h for h in history if h.get('date') != date_str]
+    history.append({
+        'date': date_str,
+        'buffett': buffett_index,
+        'kospi': kospi,
+        'kosdaq': kosdaq,
+        'total': total,
+        'gdp': gdp,
+    })
+
+    history.sort(key=lambda x: x['date'])
+
+    with open(HIST_FILE, 'w', encoding='utf-8') as f:
+        json.dump(history, f, ensure_ascii=False, indent=1)
+
+    print(f"  📈 히스토리: {len(history)}일치 누적")
+
+
+# ═══════════════════════════════════════════
 # 메인
 # ═══════════════════════════════════════════
 def main():
     now = datetime.now(KST)
+    today = now.strftime('%Y-%m-%d')
     print(f"🐂 버핏지수 자동 계산: {now.strftime('%Y-%m-%d %H:%M KST')}")
 
     if '--test-ecos' in sys.argv:
-        # KeyStatisticList GDP 테스트
         print("\nKeyStatisticList GDP 테스트:")
         gdp, period = get_gdp()
         if gdp:
@@ -196,7 +233,7 @@ def main():
         print("❌ ECOS_API_KEY 없음")
         sys.exit(1)
 
-    # 기존 데이터 로드 (실패 시 새로 생성)
+    # 기존 데이터
     existing = {}
     if os.path.exists(OUT_FILE):
         with open(OUT_FILE, 'r', encoding='utf-8') as f:
@@ -209,7 +246,7 @@ def main():
     # 2. 시가총액
     mktcap = get_market_caps()
 
-    # 3. 버핏지수 계산
+    # 3. 결과 조립
     result = {
         "updated": now.strftime("%Y-%m-%d %H:%M KST"),
         "gdp": {
@@ -222,14 +259,21 @@ def main():
         "historical": HISTORICAL
     }
 
-    # 버핏지수 계산
+    # 4. 버핏지수 계산
     gdp_val = result.get("gdp", {}).get("value") if result.get("gdp") else None
-    total_cap = result.get("mktcap", {}).get("total") if result.get("mktcap") else None
+    mktcap_data = result.get("mktcap", {})
+    total_cap = mktcap_data.get("total") if mktcap_data else None
+    kospi_cap = mktcap_data.get("kospi", 0) if mktcap_data else 0
+    kosdaq_cap = mktcap_data.get("kosdaq", 0) if mktcap_data else 0
 
     if gdp_val and total_cap and gdp_val > 0:
         buffett = round(total_cap / gdp_val * 100, 1)
         result["buffett_index"] = buffett
-        print(f"\n🐂 버핏지수: {buffett}% = {total_cap:.1f}조 / {gdp_val:.1f}조 × 100")
+        print(f"\n🐂 버핏지수: {buffett}% = {total_cap:,.1f}조 / {gdp_val:,.1f}조 × 100")
+        print(f"   (KOSPI {kospi_cap:,.1f}조 + KOSDAQ {kosdaq_cap:,.1f}조)")
+
+        # 히스토리 누적
+        save_history(today, buffett, kospi_cap, kosdaq_cap, total_cap, gdp_val)
     else:
         result["buffett_index"] = existing.get("buffett_index")
         print("\n⚠ 버핏지수 계산 불가 (데이터 부족)")
