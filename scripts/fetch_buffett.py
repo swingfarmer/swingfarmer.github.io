@@ -16,9 +16,8 @@ KRX data.krx.co.kr: 코스피+코스닥 전체 시가총액 (일별)
 환경변수:
   ECOS_API_KEY — 한국은행 ECOS Open API 키
 """
-import os, sys, json, time
+import os, sys, json
 import urllib.request
-import urllib.parse
 import ssl
 from datetime import datetime, timedelta, timezone
 
@@ -94,82 +93,48 @@ def get_gdp():
 
 
 # ═══════════════════════════════════════════
-# 2. KRX — 코스피/코스닥 전체 시가총액
+# 2. 시가총액 — prices.json 합산 (KOSPI200 기반)
 # ═══════════════════════════════════════════
-KRX_URL = "http://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd"
-KRX_HEADERS = {
-    "User-Agent": "Mozilla/5.0",
-    "Content-Type": "application/x-www-form-urlencoded",
-    "Referer": "http://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd?menuId=MDC0101"
-}
+# fetch_prices.py가 매일 수집하는 data/kr/prices.json 활용
+# market_cap 필드 단위: 억원
+# KOSPI200 ≈ KOSPI 전체의 85~90%. 코스닥 미포함.
 
-def get_krx_mktcap(mkt_id):
-    """KRX에서 시장 전체 시가총액 조회.
-    mkt_id: STK=코스피, KSQ=코스닥
-    반환: 조원 단위 시가총액, 기준일
-    """
-    today = datetime.now(KST).strftime('%Y%m%d')
-    params = urllib.parse.urlencode({
-        "bld": "dbms/MDC/STAT/standard/MDCSTAT00101",
-        "locale": "ko_KR",
-        "trdDd": today,
-        "mktId": mkt_id,
-        "share": "1",
-        "money": "1",
-        "csvxls_isNo": "false",
-    }).encode('utf-8')
-
-    try:
-        req = urllib.request.Request(KRX_URL, data=params, headers=KRX_HEADERS)
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            raw = resp.read().decode('utf-8')
-        data = json.loads(raw)
-
-        # KRX 응답: OutBlock_1 배열, 각 항목에 MKTCAP (시가총액)
-        items = data.get('OutBlock_1', [])
-        if not items:
-            print(f"  ⚠ KRX {mkt_id}: 데이터 없음")
-            return None, None
-
-        # 전체 시가총액 합산 (원 단위)
-        total = 0
-        for item in items:
-            cap_str = item.get('MKTCAP', '0').replace(',', '')
-            try:
-                total += int(cap_str)
-            except:
-                pass
-
-        # 원 → 조원
-        total_tril = total / 1_000_000_000_000
-        trd_dd = items[0].get('TRD_DD', today) if items else today
-
-        return total_tril, trd_dd
-    except Exception as e:
-        print(f"  ⚠ KRX {mkt_id} 호출 실패: {e}")
-        return None, None
-
+PRICES_FILE = os.path.join(ROOT_DIR, "data", "kr", "prices.json")
 
 def get_market_caps():
-    """코스피+코스닥 시가총액 조회."""
-    print("📊 KRX 시가총액 조회...")
-    kospi, date1 = get_krx_mktcap("STK")
-    time.sleep(1)
-    kosdaq, date2 = get_krx_mktcap("KSQ")
+    """prices.json에서 시가총액 합산."""
+    print("📊 시가총액 조회 (prices.json)...")
+    if not os.path.exists(PRICES_FILE):
+        print(f"  ❌ {PRICES_FILE} 없음")
+        return None
 
-    result = {}
-    if kospi is not None:
-        result['kospi'] = round(kospi, 1)
-        print(f"  코스피: {kospi:,.1f}조원")
-    if kosdaq is not None:
-        result['kosdaq'] = round(kosdaq, 1)
-        print(f"  코스닥: {kosdaq:,.1f}조원")
-    if kospi is not None and kosdaq is not None:
-        result['total'] = round(kospi + kosdaq, 1)
-        print(f"  합계: {kospi + kosdaq:,.1f}조원")
-    result['date'] = date1 or date2
+    with open(PRICES_FILE, 'r', encoding='utf-8') as f:
+        data = json.load(f)
 
-    return result if result.get('total') else None
+    prices = data.get('prices', {})
+    updated = data.get('updated', '')
+    count = 0
+    total_억 = 0
+
+    for code, info in prices.items():
+        cap = info.get('market_cap', 0)
+        if cap and cap > 0:
+            total_억 += cap
+            count += 1
+
+    total_조 = round(total_억 / 10000, 1)
+
+    print(f"  {count}종목 합산: {total_조:,.1f}조원 (기준일: {updated})")
+    print(f"  ⚠ KOSPI200 기준 — 전체 KOSPI의 약 85~90%. 코스닥 미포함.")
+
+    return {
+        'kospi200': total_조,
+        'total': total_조,
+        'count': count,
+        'date': updated,
+        'source': 'prices.json (KOSPI200)',
+        'note': 'KOSPI200 기반, KOSPI 전체의 약 85~90%. 코스닥 미포함. 수동 보정 가능.'
+    }
 
 
 # ═══════════════════════════════════════════
@@ -235,13 +200,7 @@ def main():
             "period": gdp_period,
             "source": "한국은행 ECOS"
         } if gdp else existing.get("gdp"),
-        "mktcap": {
-            "kospi": mktcap.get('kospi'),
-            "kosdaq": mktcap.get('kosdaq'),
-            "total": mktcap.get('total'),
-            "date": mktcap.get('date'),
-            "source": "KRX"
-        } if mktcap else existing.get("mktcap"),
+        "mktcap": mktcap if mktcap else existing.get("mktcap"),
         "historical": HISTORICAL
     }
 
