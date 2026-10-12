@@ -99,38 +99,51 @@ def get_gdp():
 # ═══════════════════════════════════════════
 # 2. 네이버 증권 — KOSPI/KOSDAQ 전체 시가총액
 # ═══════════════════════════════════════════
-def fetch_naver_total_mktcap(market, page_size=3000):
-    """네이버 증권 marketValue API로 시장 전체 종목 시총 합산."""
-    url = f"https://m.stock.naver.com/api/stocks/marketValue/{market}?page=1&pageSize={page_size}"
-    try:
-        req = urllib.request.Request(url, headers=NAVER_HEADERS)
-        with urllib.request.urlopen(req, timeout=60, context=SSL_CTX) as resp:
-            raw = resp.read().decode('utf-8')
-        data = json.loads(raw)
-        stocks = data.get('stocks', [])
-        total_count = data.get('totalCount', 0)
+def fetch_naver_total_mktcap(market, page_size=100):
+    """네이버 증권 marketValue API로 시장 전체 종목 시총 합산 (페이지네이션)."""
+    import time
+    total_won = 0
+    valid = 0
+    total_count = 0
+    page = 1
 
-        total_won = 0
-        valid = 0
-        for s in stocks:
-            mv = s.get('marketValueRaw')
-            if mv:
-                try:
-                    total_won += int(mv)
-                    valid += 1
-                except:
-                    pass
+    while True:
+        url = f"https://m.stock.naver.com/api/stocks/marketValue/{market}?page={page}&pageSize={page_size}"
+        try:
+            req = urllib.request.Request(url, headers=NAVER_HEADERS)
+            with urllib.request.urlopen(req, timeout=30, context=SSL_CTX) as resp:
+                raw = resp.read().decode('utf-8')
+            data = json.loads(raw)
+            stocks = data.get('stocks', [])
+            if page == 1:
+                total_count = data.get('totalCount', 0)
 
-        total_조 = round(total_won / 1_000_000_000_000, 1)
-        print(f"  {market}: {valid}/{total_count}종목 합산 = {total_조:,.1f}조원")
+            if not stocks:
+                break
 
-        if valid < total_count:
-            print(f"  ⚠ {total_count - valid}종목 누락 (pageSize 부족 가능)")
+            for s in stocks:
+                if s.get('stockEndType') != 'stock':
+                    continue
+                mv = s.get('marketValueRaw')
+                if mv:
+                    try:
+                        total_won += int(mv)
+                        valid += 1
+                    except:
+                        pass
 
-        return total_조, valid
-    except Exception as e:
-        print(f"  ⚠ 네이버 {market} 호출 실패: {e}")
-        return None, 0
+            if valid >= total_count or len(stocks) < page_size:
+                break
+
+            page += 1
+            time.sleep(0.1)
+        except Exception as e:
+            print(f"  ⚠ 네이버 {market} p{page} 실패: {e}")
+            break
+
+    total_조 = round(total_won / 1_000_000_000_000, 1)
+    print(f"  {market}: {valid}/{total_count}종목 합산 = {total_조:,.1f}조원 ({page}페이지)")
+    return total_조, valid
 
 
 def get_market_caps():
