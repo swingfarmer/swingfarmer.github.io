@@ -1,8 +1,8 @@
 """
-버핏지수 자동 계산 — ECOS(GDP) + KRX(시가총액)
-================================================
+버핏지수 자동 계산 — ECOS(GDP) + prices.json(시가총액)
+=====================================================
 ECOS API: 명목 GDP (분기별)
-KRX data.krx.co.kr: 코스피+코스닥 전체 시가총액 (일별)
+prices.json: KOSPI+KOSDAQ 시가총액 (market 필드 기준 분리)
 
 출력: data/buffett.json (프론트 로드용)
 
@@ -11,7 +11,7 @@ KRX data.krx.co.kr: 코스피+코스닥 전체 시가총액 (일별)
   python3 fetch_buffett.py --test-ecos  # ECOS 통계표코드 탐색
 
 크론:
-  매월 1일 10:00 KST (GDP는 분기발표, 시총은 그때그때)
+  평일 18:50 KST (fetch_prices.py 이후)
 
 환경변수:
   ECOS_API_KEY — 한국은행 ECOS Open API 키
@@ -93,16 +93,15 @@ def get_gdp():
 
 
 # ═══════════════════════════════════════════
-# 2. 시가총액 — prices.json 합산 (KOSPI200 기반)
+# 2. 시가총액 — prices.json (market 필드 기준 분리)
 # ═══════════════════════════════════════════
-# fetch_prices.py가 매일 수집하는 data/kr/prices.json 활용
-# market_cap 필드 단위: 억원
-# KOSPI200 ≈ KOSPI 전체의 85~90%. 코스닥 미포함.
+# fetch_prices.py가 KOSPI+KOSDAQ 모두 수집, market 필드로 구분
+# market_cap 단위: 억원
 
 PRICES_FILE = os.path.join(ROOT_DIR, "data", "kr", "prices.json")
 
 def get_market_caps():
-    """prices.json에서 시가총액 합산."""
+    """prices.json에서 KOSPI/KOSDAQ 시가총액 각각 합산."""
     print("📊 시가총액 조회 (prices.json)...")
     if not os.path.exists(PRICES_FILE):
         print(f"  ❌ {PRICES_FILE} 없음")
@@ -113,27 +112,46 @@ def get_market_caps():
 
     prices = data.get('prices', {})
     updated = data.get('updated', '')
-    count = 0
-    total_억 = 0
+
+    kospi_억 = 0
+    kosdaq_억 = 0
+    kospi_cnt = 0
+    kosdaq_cnt = 0
 
     for code, info in prices.items():
         cap = info.get('market_cap', 0)
+        mkt = info.get('market', 'KOSPI')  # 하위 호환: market 없으면 KOSPI
         if cap and cap > 0:
-            total_억 += cap
-            count += 1
+            if mkt == 'KOSDAQ':
+                kosdaq_억 += cap
+                kosdaq_cnt += 1
+            else:
+                kospi_억 += cap
+                kospi_cnt += 1
 
-    total_조 = round(total_억 / 10000, 1)
+    kospi_조 = round(kospi_억 / 10000, 1)
+    kosdaq_조 = round(kosdaq_억 / 10000, 1)
+    total_조 = round((kospi_억 + kosdaq_억) / 10000, 1)
 
-    print(f"  {count}종목 합산: {total_조:,.1f}조원 (기준일: {updated})")
-    print(f"  ⚠ KOSPI200 기준 — 전체 KOSPI의 약 85~90%. 코스닥 미포함.")
+    print(f"  KOSPI: {kospi_cnt}종목 {kospi_조:,.1f}조원")
+    print(f"  KOSDAQ: {kosdaq_cnt}종목 {kosdaq_조:,.1f}조원")
+    print(f"  합계: {total_조:,.1f}조원 (기준일: {updated})")
+
+    if kosdaq_cnt == 0:
+        print(f"  ⚠ KOSDAQ 데이터 없음 — prices.json에 market 필드 없을 수 있음")
+        note = 'KOSPI만 포함(KOSDAQ 미수집). 수동 보정 가능.'
+    else:
+        note = f'KOSPI {kospi_cnt}종목(시총 1조↑) + KOSDAQ {kosdaq_cnt}종목(시총 5천억↑). 소형주 일부 미포함.'
 
     return {
-        'kospi200': total_조,
+        'kospi': kospi_조,
+        'kosdaq': kosdaq_조,
         'total': total_조,
-        'count': count,
+        'kospi_count': kospi_cnt,
+        'kosdaq_count': kosdaq_cnt,
         'date': updated,
-        'source': 'prices.json (KOSPI200)',
-        'note': 'KOSPI200 기반, KOSPI 전체의 약 85~90%. 코스닥 미포함. 수동 보정 가능.'
+        'source': 'prices.json (KIS Open API)',
+        'note': note,
     }
 
 

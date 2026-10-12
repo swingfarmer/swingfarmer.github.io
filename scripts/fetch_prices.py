@@ -1,7 +1,8 @@
 """
 한국주식 주가 데이터 수집 — KIS Open API
 =========================================
-한투 Open API로 종목 리스트(kospi200_list.csv)의 현재가·시총·52주 고저·PER/PBR 수집.
+한투 Open API로 종목 리스트(kospi200_list.csv + kosdaq_list.csv)의
+현재가·시총·52주 고저·PER/PBR 수집.
 재무 데이터(DART)와 분리 — 이 파일만 매일 갱신.
 
 사용법:
@@ -32,22 +33,31 @@ KIS_BASE       = os.environ.get('KIS_BASE_URL', 'https://openapi.koreainvestment
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR   = os.path.dirname(SCRIPT_DIR)
-STOCK_LIST = os.path.join(SCRIPT_DIR, 'kospi200_list.csv')
+KOSPI_LIST = os.path.join(SCRIPT_DIR, 'kospi200_list.csv')
+KOSDAQ_LIST = os.path.join(SCRIPT_DIR, 'kosdaq_list.csv')
 OUT_FILE   = os.path.join(ROOT_DIR, 'data', 'kr', 'prices.json')
 
 CALL_DELAY = 0.06  # ~16 req/s (KIS 제한: 초당 20)
 
 
-def load_stock_list():
+def load_stock_list_with_market(filepath, market_name):
+    """CSV에서 종목 리스트 로드. market 필드 부여."""
     stocks = []
-    with open(STOCK_LIST, 'r', encoding='utf-8') as f:
+    if not os.path.exists(filepath):
+        print(f'  ⚠ {filepath} 없음 — 건너뜀')
+        return stocks
+    with open(filepath, 'r', encoding='utf-8') as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith('#'):
                 continue
             parts = line.split(',')
             if len(parts) >= 2:
-                stocks.append({'code': parts[0].strip(), 'name': parts[1].strip()})
+                stocks.append({
+                    'code': parts[0].strip(),
+                    'name': parts[1].strip(),
+                    'market': market_name,
+                })
     return stocks
 
 
@@ -125,11 +135,15 @@ def main():
         sys.exit(1)
 
     today = date.today()
-    stocks = load_stock_list()
+
+    # KOSPI + KOSDAQ 합산 로드
+    kospi_stocks = load_stock_list_with_market(KOSPI_LIST, 'KOSPI')
+    kosdaq_stocks = load_stock_list_with_market(KOSDAQ_LIST, 'KOSDAQ')
+    all_stocks = kospi_stocks + kosdaq_stocks
 
     print(f'📈 주가 데이터 수집 (KIS Open API)')
     print(f'   기준일: {today}')
-    print(f'   종목: {len(stocks)}개')
+    print(f'   KOSPI: {len(kospi_stocks)}종목 / KOSDAQ: {len(kosdaq_stocks)}종목 / 합계: {len(all_stocks)}종목')
     print()
 
     token = get_access_token()
@@ -137,9 +151,10 @@ def main():
     prices = {}
     errors = []
 
-    for i, s in enumerate(stocks, 1):
+    for i, s in enumerate(all_stocks, 1):
         code = s['code']
-        print(f'[{i}/{len(stocks)}] {s["name"]} ({code})...', end='', flush=True)
+        mkt = s['market']
+        print(f'[{i}/{len(all_stocks)}] [{mkt}] {s["name"]} ({code})...', end='', flush=True)
 
         out = fetch_stock_price(token, code)
         if not out:
@@ -155,7 +170,10 @@ def main():
             time.sleep(CALL_DELAY)
             continue
 
-        entry = {'price': price}
+        entry = {
+            'price': price,
+            'market': mkt,
+        }
 
         # 시가총액 (억원 변환)
         mcap = safe_int(out.get('hts_avls'))  # HTS 시가총액 (억원 단위)
@@ -210,8 +228,18 @@ def main():
     # 무제한 보관 — 삭제 없음 (오라클 이관 예정)
     import glob
     hist_count = len(glob.glob(os.path.join(hist_dir, '*.json')))
+
+    # 시총 요약
+    kospi_cap = sum(v.get('market_cap', 0) for v in prices.values() if v.get('market') == 'KOSPI')
+    kosdaq_cap = sum(v.get('market_cap', 0) for v in prices.values() if v.get('market') == 'KOSDAQ')
+    kospi_cnt = sum(1 for v in prices.values() if v.get('market') == 'KOSPI')
+    kosdaq_cnt = sum(1 for v in prices.values() if v.get('market') == 'KOSDAQ')
+
     print(f'\n{"="*50}')
     print(f'✅ {len(prices)}종목 → {OUT_FILE}')
+    print(f'   KOSPI: {kospi_cnt}종목 / {kospi_cap/10000:,.1f}조원')
+    print(f'   KOSDAQ: {kosdaq_cnt}종목 / {kosdaq_cap/10000:,.1f}조원')
+    print(f'   합계: {(kospi_cap+kosdaq_cap)/10000:,.1f}조원')
     print(f'   이력: {hist_count}일치 보관 중')
     if errors:
         print(f'❌ 실패: {len(errors)} — {", ".join(errors[:10])}')
