@@ -51,6 +51,8 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
   cursor:pointer;display:flex;align-items:center;gap:4px}
 .sel-tag:hover{background:rgba(59,130,246,.25)}
 .sel-tag .x{font-weight:700}
+.sel-tag .drag-h{cursor:grab;opacity:.5;font-size:10px}
+.sel-tag .drag-h:active{cursor:grabbing}
 
 /* 서머리 */
 .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:16px}
@@ -124,8 +126,10 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
     <div style="display:flex;gap:8px;align-items:center">
       <input type="text" class="picker-search" id="pickerSearch" placeholder="종목명·코드 검색...">
       <div class="picker-actions">
-        <button onclick="saveFavorites()">💾 즐겨찾기 저장</button>
-        <button onclick="loadFavorites()">⭐ 즐겨찾기 불러오기</button>
+        <button onclick="saveFav(1)">💾 저장1</button>
+        <button onclick="loadFav(1)">⭐ 불러오기1</button>
+        <button onclick="saveFav(2)">💾 저장2</button>
+        <button onclick="loadFav(2)">⭐ 불러오기2</button>
         <button onclick="clearSelection()">초기화</button>
       </div>
     </div>
@@ -152,6 +156,7 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
   <button class="preset-btn" data-sort="excess_desc">초과수익률↑</button>
   <button class="preset-btn" data-sort="excess_asc">초과수익률↓</button>
   <button class="preset-btn" data-sort="name">이름순</button>
+  <button class="preset-btn" data-sort="custom">내 순서</button>
 </div>
 
 <!-- 카드 그리드 -->
@@ -203,16 +208,55 @@ function renderPicker() {
   renderSelectedTags();
 }
 
+let orderedCodes = []; // 순서 유지용
+
+function syncOrder() {
+  // selectedCodes 기준으로 orderedCodes 동기화
+  orderedCodes = orderedCodes.filter(c => selectedCodes.has(c));
+  selectedCodes.forEach(c => { if (!orderedCodes.includes(c)) orderedCodes.push(c); });
+}
+
 function renderSelectedTags() {
+  syncOrder();
   const el = document.getElementById('selectedTags');
-  if (!selectedCodes.size) { el.innerHTML=''; return; }
-  el.innerHTML = [...selectedCodes].map(c => {
+  if (!orderedCodes.length) { el.innerHTML=''; return; }
+  el.innerHTML = orderedCodes.map((c,i) => {
     const n = stockMap[c]?.name||c;
-    return `<span class="sel-tag" data-code="${c}">${n} <span class="x">✕</span></span>`;
+    return `<span class="sel-tag" draggable="true" data-code="${c}" data-idx="${i}">
+      <span class="drag-h">☰</span> ${n} <span class="x">✕</span></span>`;
   }).join('');
 }
 
-function clearSelection() { selectedCodes.clear(); renderPicker(); renderCards(); }
+// 태그 드래그 순서 변경
+(function(){
+  const container = document.getElementById('selectedTags');
+  let dragIdx = null;
+  container.addEventListener('dragstart', e => {
+    const tag = e.target.closest('.sel-tag');
+    if (!tag) return;
+    dragIdx = parseInt(tag.dataset.idx);
+    e.dataTransfer.effectAllowed = 'move';
+    tag.style.opacity = '0.4';
+  });
+  container.addEventListener('dragend', e => {
+    const tag = e.target.closest('.sel-tag');
+    if (tag) tag.style.opacity = '1';
+  });
+  container.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect='move'; });
+  container.addEventListener('drop', e => {
+    e.preventDefault();
+    const tag = e.target.closest('.sel-tag');
+    if (!tag || dragIdx === null) return;
+    const dropIdx = parseInt(tag.dataset.idx);
+    if (dragIdx === dropIdx) return;
+    const moved = orderedCodes.splice(dragIdx, 1)[0];
+    orderedCodes.splice(dropIdx, 0, moved);
+    renderSelectedTags();
+    renderCards();
+  });
+})();
+
+function clearSelection() { selectedCodes.clear(); orderedCodes=[]; renderPicker(); renderCards(); }
 
 document.getElementById('pickerGrid').addEventListener('change', e => {
   if (e.target.type!=='checkbox') return;
@@ -316,6 +360,13 @@ function getFiltered() {
 
 function sortData(data) {
   const s=currentSort;
+  // 종목 선택 + 커스텀순서 모드일 때
+  if (s==='custom' && selectedCodes.size) {
+    return [...data].sort((a,b) => {
+      const ai=orderedCodes.indexOf(a.stock_code), bi=orderedCodes.indexOf(b.stock_code);
+      return (ai===-1?999:ai)-(bi===-1?999:bi);
+    });
+  }
   return [...data].sort((a,b) => {
     if (s==='change_pct_desc') return (b.change_pct||0)-(a.change_pct||0);
     if (s==='change_pct_asc') return (a.change_pct||0)-(b.change_pct||0);
@@ -366,31 +417,38 @@ document.querySelector('.sort-bar').addEventListener('click', e => {
 
 document.getElementById('marketFilter').addEventListener('change', renderCards);
 
-// 즐겨찾기
-function saveFavorites() {
+// 즐겨찾기 2슬롯
+function saveFav(slot) {
   if (!selectedCodes.size) { alert('저장할 종목을 먼저 선택하세요.'); return; }
-  localStorage.setItem('sf_price_fav', JSON.stringify([...selectedCodes]));
-  const names = [...selectedCodes].map(c => stockMap[c]?.name || c).join(', ');
-  alert(`⭐ 즐겨찾기 저장 완료 (${selectedCodes.size}종목)\n${names}`);
+  syncOrder();
+  const data = { codes: [...orderedCodes], names: orderedCodes.map(c=>stockMap[c]?.name||c) };
+  localStorage.setItem('sf_price_fav'+slot, JSON.stringify(data));
+  alert(`⭐ 즐겨찾기${slot} 저장 완료 (${data.codes.length}종목)\n${data.names.join(', ')}`);
 }
-
-function loadFavorites() {
+function loadFav(slot) {
   try {
-    const saved = JSON.parse(localStorage.getItem('sf_price_fav') || '[]');
-    if (!saved.length) { alert('저장된 즐겨찾기가 없습니다.'); return; }
-    selectedCodes = new Set(saved);
-    renderPicker();
-    renderCards();
-  } catch(e) { alert('즐겨찾기 불러오기 실패'); }
+    const raw = localStorage.getItem('sf_price_fav'+slot);
+    if (!raw) { alert(`즐겨찾기${slot}이 비어있습니다.`); return; }
+    const data = JSON.parse(raw);
+    const codes = data.codes || data;
+    if (!codes.length) { alert(`즐겨찾기${slot}이 비어있습니다.`); return; }
+    orderedCodes = [...codes];
+    selectedCodes = new Set(codes);
+    renderPicker(); renderCards();
+  } catch(e) { alert('불러오기 실패'); }
 }
 
 (async () => {
   document.getElementById('dateTo').value = today();
   await Promise.all([loadStockMap(), loadDataRange()]);
-  // 저장된 즐겨찾기 자동 로드
+  // 저장된 즐겨찾기1 자동 로드
   try {
-    const saved = JSON.parse(localStorage.getItem('sf_price_fav') || '[]');
-    if (saved.length) { selectedCodes = new Set(saved); renderPicker(); }
+    const raw = localStorage.getItem('sf_price_fav1');
+    if (raw) {
+      const data = JSON.parse(raw);
+      const codes = data.codes || data;
+      if (codes.length) { orderedCodes = [...codes]; selectedCodes = new Set(codes); renderPicker(); }
+    }
   } catch(e) {}
   fetchData();
 })();
