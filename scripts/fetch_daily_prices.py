@@ -94,7 +94,7 @@ def fetch_daily_chart(token, stock_code, start_date, end_date):
         'authorization': f'Bearer {token}',
         'appkey':        KIS_APP_KEY,
         'appsecret':     KIS_APP_SECRET,
-        'tr_id':         'FHKST01010900',
+        'tr_id':         'FHKST03010100',
     })
 
     try:
