@@ -124,6 +124,8 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
     <div style="display:flex;gap:8px;align-items:center">
       <input type="text" class="picker-search" id="pickerSearch" placeholder="종목명·코드 검색...">
       <div class="picker-actions">
+        <button onclick="saveFavorites()">💾 즐겨찾기 저장</button>
+        <button onclick="loadFavorites()">⭐ 즐겨찾기 불러오기</button>
         <button onclick="clearSelection()">초기화</button>
       </div>
     </div>
@@ -364,9 +366,32 @@ document.querySelector('.sort-bar').addEventListener('click', e => {
 
 document.getElementById('marketFilter').addEventListener('change', renderCards);
 
+// 즐겨찾기
+function saveFavorites() {
+  if (!selectedCodes.size) { alert('저장할 종목을 먼저 선택하세요.'); return; }
+  localStorage.setItem('sf_price_fav', JSON.stringify([...selectedCodes]));
+  const names = [...selectedCodes].map(c => stockMap[c]?.name || c).join(', ');
+  alert(`⭐ 즐겨찾기 저장 완료 (${selectedCodes.size}종목)\n${names}`);
+}
+
+function loadFavorites() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('sf_price_fav') || '[]');
+    if (!saved.length) { alert('저장된 즐겨찾기가 없습니다.'); return; }
+    selectedCodes = new Set(saved);
+    renderPicker();
+    renderCards();
+  } catch(e) { alert('즐겨찾기 불러오기 실패'); }
+}
+
 (async () => {
   document.getElementById('dateTo').value = today();
   await Promise.all([loadStockMap(), loadDataRange()]);
+  // 저장된 즐겨찾기 자동 로드
+  try {
+    const saved = JSON.parse(localStorage.getItem('sf_price_fav') || '[]');
+    if (saved.length) { selectedCodes = new Set(saved); renderPicker(); }
+  } catch(e) {}
   fetchData();
 })();
 </script>
