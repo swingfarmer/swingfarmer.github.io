@@ -121,6 +121,7 @@ def fetch_daily_chart(token, stock_code, start_date, end_date):
                 'low':    int(item.get('stck_lwpr', 0) or 0),
                 'close':  int(close),
                 'volume': int(item.get('acml_vol', 0) or 0),
+                'amount': int(item.get('acml_tr_pbmn', 0) or 0),
             })
         except:
             continue
@@ -138,17 +139,17 @@ def save_to_oracle(conn, stock_code, rows):
                 USING (SELECT :code AS stock_code, :dt AS trade_date FROM dual) s
                 ON (t.stock_code = s.stock_code AND t.trade_date = s.trade_date)
                 WHEN NOT MATCHED THEN INSERT
-                    (stock_code, trade_date, open_price, high_price, low_price, close_price, volume)
-                    VALUES (:code2, :dt2, :op, :hi, :lo, :cl, :vol)
+                    (stock_code, trade_date, open_price, high_price, low_price, close_price, volume, trade_amount)
+                    VALUES (:code2, :dt2, :op, :hi, :lo, :cl, :vol, :amt)
                 WHEN MATCHED THEN UPDATE SET
-                    open_price=:op2, high_price=:hi2, low_price=:lo2, close_price=:cl2, volume=:vol2""",
+                    open_price=:op2, high_price=:hi2, low_price=:lo2, close_price=:cl2, volume=:vol2, trade_amount=:amt2""",
                 {
                     'code': stock_code, 'dt': r['date'],
                     'code2': stock_code, 'dt2': r['date'],
                     'op': r['open'], 'hi': r['high'], 'lo': r['low'],
-                    'cl': r['close'], 'vol': r['volume'],
+                    'cl': r['close'], 'vol': r['volume'], 'amt': r.get('amount'),
                     'op2': r['open'], 'hi2': r['high'], 'lo2': r['low'],
-                    'cl2': r['close'], 'vol2': r['volume'],
+                    'cl2': r['close'], 'vol2': r['volume'], 'amt2': r.get('amount'),
                 })
             cnt += 1
         except Exception as e:
