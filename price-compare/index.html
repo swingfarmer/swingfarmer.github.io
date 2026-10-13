@@ -127,6 +127,7 @@ tr:hover{background:rgba(59,130,246,.06)}
   </table>
 </div>
 
+<div class="note" id="rangeNote" style="margin-bottom:8px"></div>
 <div class="note" id="note"></div>
 
 <script>
@@ -192,8 +193,17 @@ document.getElementById('presets').addEventListener('click', e => {
 
 // 데이터 조회
 async function fetchData() {
-  const from = document.getElementById('dateFrom').value;
-  const to = document.getElementById('dateTo').value || today();
+  let from = document.getElementById('dateFrom').value;
+  let to = document.getElementById('dateTo').value || today();
+
+  // 데이터 범위 밖이면 보정
+  if (dataRange.first && from < dataRange.first) {
+    from = dataRange.first;
+    document.getElementById('dateFrom').value = from;
+  }
+  if (dataRange.last && to > dataRange.last) {
+    to = dataRange.last;
+  }
   document.getElementById('dateTo').value = to;
 
   document.getElementById('tbody').innerHTML = '<tr><td colspan="6" class="loading">조회 중...</td></tr>';
@@ -325,10 +335,36 @@ document.querySelector('thead').addEventListener('click', e => {
 document.getElementById('searchInput').addEventListener('input', renderTable);
 document.getElementById('marketFilter').addEventListener('change', renderTable);
 
+// DB 데이터 범위 조회 → 날짜 제한
+let dataRange = { first: null, last: null };
+
+async function loadDataRange() {
+  try {
+    const res = await fetch(`${API}/prices/daily/summary`);
+    const json = await res.json();
+    dataRange.first = json.first_date;
+    dataRange.last = json.last_date;
+
+    const elFrom = document.getElementById('dateFrom');
+    const elTo = document.getElementById('dateTo');
+    if (dataRange.first) {
+      elFrom.min = dataRange.first;
+      elTo.min = dataRange.first;
+    }
+    if (dataRange.last) {
+      elFrom.max = dataRange.last;
+      elTo.max = dataRange.last;
+    }
+    // 안내 표시
+    document.getElementById('rangeNote').textContent =
+      `📅 데이터 범위: ${dataRange.first} ~ ${dataRange.last} (${json.stock_count}종목)`;
+  } catch(e) { console.warn('summary load fail', e); }
+}
+
 // 초기화
 (async () => {
   document.getElementById('dateTo').value = today();
-  await loadStockMap();
+  await Promise.all([loadStockMap(), loadDataRange()]);
   fetchData();
 })();
 </script>
