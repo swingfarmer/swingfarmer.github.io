@@ -159,7 +159,8 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
 
 <!-- 업종 필터 -->
 <div class="sector-filter" id="sectorFilter" style="display:none">
-  <div class="sector-filter-label">🏷️ 업종 필터 <span style="font-size:10px">(복수 선택 가능, 다시 클릭해서 해제)</span></div>
+  <div class="sector-filter-label">🏷️ 업종 필터 <span style="font-size:10px">(복수 선택 가능, 다시 클릭해서 해제)</span>
+    <button class="preset-btn" onclick="clearSectors()" style="padding:2px 10px;font-size:10px;margin-left:6px">초기화</button></div>
   <div class="sector-tags" id="sectorTags"></div>
 </div>
 
@@ -306,7 +307,8 @@ function renderSelectedTags() {
   });
 })();
 
-function clearSelection() { selectedCodes.clear(); orderedCodes=[]; renderPicker(); renderCards(); autoSave(); }
+function clearSelection() { selectedCodes.clear(); orderedCodes=[]; selectedSectors.clear(); renderPicker(); renderCards(); autoSave(); buildSectorFilter(); }
+function clearSectors() { selectedSectors.clear(); buildSectorFilter(); renderCards(); }
 
 document.getElementById('pickerGrid').addEventListener('change', e => {
   if (e.target.type!=='checkbox') return;
