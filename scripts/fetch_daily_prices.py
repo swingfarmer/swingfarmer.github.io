@@ -159,6 +159,38 @@ def save_to_oracle(conn, stock_code, rows):
     return cnt
 
 
+def save_to_oracle_basic(conn, stock_code, rows):
+    """MERGE (거래대금 없는 버전 — 지수용)."""
+    if not rows:
+        return 0
+    cur = conn.cursor()
+    cnt = 0
+    for r in rows:
+        try:
+            cur.execute("""MERGE INTO daily_prices t
+                USING (SELECT :code AS stock_code, :dt AS trade_date FROM dual) s
+                ON (t.stock_code = s.stock_code AND t.trade_date = s.trade_date)
+                WHEN NOT MATCHED THEN INSERT
+                    (stock_code, trade_date, open_price, high_price, low_price, close_price, volume)
+                    VALUES (:code2, :dt2, :op, :hi, :lo, :cl, :vol)
+                WHEN MATCHED THEN UPDATE SET
+                    open_price=:op2, high_price=:hi2, low_price=:lo2, close_price=:cl2, volume=:vol2""",
+                {
+                    'code': stock_code, 'dt': r['date'],
+                    'code2': stock_code, 'dt2': r['date'],
+                    'op': r['open'], 'hi': r['high'], 'lo': r['low'],
+                    'cl': r['close'], 'vol': r['volume'],
+                    'op2': r['open'], 'hi2': r['high'], 'lo2': r['low'],
+                    'cl2': r['close'], 'vol2': r['volume'],
+                })
+            cnt += 1
+        except Exception as e:
+            print(f'    ⚠ {stock_code}/{r["date"]}: {e}')
+    conn.commit()
+    cur.close()
+    return cnt
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='DAILY_PRICES 일일 수집')
@@ -209,6 +241,36 @@ def main():
         # 진행률 (50개마다)
         if i % 50 == 0:
             print(f'  [{i}/{len(all_stocks)}] {total_saved}건 저장...')
+
+    # ── KOSPI·KOSDAQ 지수 (yfinance) ──
+    try:
+        import yfinance as yf
+        idx_start = start_dt.isoformat()
+        idx_end = today.isoformat()
+        for yf_ticker, db_code, label in [('^KS11','KS11','KOSPI'),('^KQ11','KQ11','KOSDAQ')]:
+            try:
+                df = yf.Ticker(yf_ticker).history(start=idx_start, end=idx_end)
+                idx_rows = []
+                for idx_dt, row in df.iterrows():
+                    dt = idx_dt.date() if hasattr(idx_dt, 'date') else idx_dt
+                    cl = row.get('Close')
+                    if cl and cl > 0:
+                        idx_rows.append({
+                            'date': dt,
+                            'open': round(float(row.get('Open',0)),2),
+                            'high': round(float(row.get('High',0)),2),
+                            'low': round(float(row.get('Low',0)),2),
+                            'close': round(float(cl),2),
+                            'volume': int(row.get('Volume',0)),
+                        })
+                if idx_rows:
+                    saved = save_to_oracle_basic(conn, db_code, idx_rows)
+                    total_saved += saved
+                    print(f'  [{label}] {saved}건')
+            except Exception as e:
+                print(f'  [{label}] ⚠ {e}')
+    except ImportError:
+        print('  ⚠ yfinance 없음 — 지수 수집 건너뜀')
 
     # 결과
     cur = conn.cursor()
