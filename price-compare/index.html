@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>기간별 등락률 비교</title>
+<link rel="stylesheet" href="/common-dark.css?v=2">
+<style>
+:root { --sf-max-w: 1400px; }
+a{color:var(--accent);text-decoration:none}
+h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.subtitle{color:var(--text-dim);font-size:13px;margin-bottom:16px}
+
+/* 필터 바 */
+.filter-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.filter-bar input[type=date],.filter-bar select{
+  background:var(--card);border:1px solid var(--border);color:var(--text);
+  padding:7px 10px;border-radius:8px;font-size:13px;font-family:inherit}
+.filter-bar button{background:var(--accent);border:none;color:#fff;padding:8px 18px;
+  border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit}
+.filter-bar button:hover{opacity:.85}
+.filter-bar label{font-size:12px;color:var(--text-dim)}
+
+/* 프리셋 버튼 */
+.presets{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.preset-btn{background:var(--card);border:1px solid var(--border);color:var(--text);
+  padding:6px 14px;border-radius:20px;cursor:pointer;font-size:12px;font-family:inherit;transition:all .12s}
+.preset-btn:hover,.preset-btn.active{border-color:var(--accent);color:var(--accent)}
+
+/* 서머리 */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+.summary-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.summary-card .num{font-size:22px;font-weight:800}
+.summary-card .label{font-size:11px;color:var(--text-dim);margin-top:4px}
+
+/* 검색 */
+.search-wrap{margin-bottom:12px}
+.search-wrap input{width:100%;max-width:360px;background:var(--card);border:1px solid var(--border);
+  color:var(--text);padding:8px 12px;border-radius:8px;font-size:13px;font-family:inherit}
+.search-wrap input::placeholder{color:var(--text-dim)}
+
+/* 테이블 */
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px;background:var(--card);max-height:calc(100vh - 380px)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{position:sticky;top:0;background:var(--bg);padding:10px 8px;text-align:right;font-size:11px;
+  color:var(--text-dim);border-bottom:2px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap}
+th:hover{color:var(--text)}
+th.sorted{color:var(--accent)}
+th:nth-child(1),th:nth-child(2),th:nth-child(3){text-align:left}
+td{padding:8px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap}
+td:nth-child(1),td:nth-child(2),td:nth-child(3){text-align:left}
+tr:hover{background:rgba(59,130,246,.06)}
+.stock-name{font-weight:700;font-size:13px}
+.stock-code{color:var(--text-dim);font-size:10px;margin-left:6px}
+.stock-market{font-size:9px;margin-left:5px;padding:1px 5px;border-radius:3px;font-weight:600}
+.stock-market.kospi{color:#3b82f6;background:rgba(59,130,246,.12)}
+.stock-market.kosdaq{color:#a855f7;background:rgba(168,85,247,.12)}
+.up{color:var(--red)}.down{color:var(--accent)}.flat{color:var(--text-dim)}
+.bar-cell{position:relative;min-width:100px}
+.bar{position:absolute;top:50%;transform:translateY(-50%);height:16px;border-radius:3px;opacity:.25}
+.bar.pos{background:var(--red);right:50%}.bar.neg{background:var(--accent);left:50%}
+.bar-val{position:relative;z-index:1;font-weight:700;font-size:13px}
+
+.note{font-size:11px;color:var(--text-dim);text-align:center;margin-top:16px;line-height:1.8}
+.loading{text-align:center;padding:40px;color:var(--text-dim)}
+</style>
+</head>
+<body>
+<script src="/common.js"></script>
+
+<h1>📊 기간별 등락률 비교</h1>
+<p class="subtitle">KOSPI·KOSDAQ 종목별 종가 변동률 비교 (Oracle DB)</p>
+
+<!-- 프리셋 -->
+<div class="presets" id="presets">
+  <button class="preset-btn" data-days="7">1주</button>
+  <button class="preset-btn" data-days="14">2주</button>
+  <button class="preset-btn" data-days="30">1개월</button>
+  <button class="preset-btn" data-days="60">2개월</button>
+  <button class="preset-btn" data-days="90">3개월</button>
+  <button class="preset-btn" data-from="2026-07-31">7월말~</button>
+</div>
+
+<!-- 필터 -->
+<div class="filter-bar">
+  <label>시작일</label>
+  <input type="date" id="dateFrom" value="2026-07-31">
+  <label>종료일</label>
+  <input type="date" id="dateTo">
+  <select id="marketFilter">
+    <option value="">전체</option>
+    <option value="KOSPI">KOSPI</option>
+    <option value="KOSDAQ">KOSDAQ</option>
+  </select>
+  <button onclick="fetchData()">조회</button>
+</div>
+
+<!-- 서머리 -->
+<div class="summary" id="summary" style="display:none">
+  <div class="summary-card"><div class="num" id="sTotal">-</div><div class="label">종목수</div></div>
+  <div class="summary-card"><div class="num up" id="sUp">-</div><div class="label">상승</div></div>
+  <div class="summary-card"><div class="num down" id="sDown">-</div><div class="label">하락</div></div>
+  <div class="summary-card"><div class="num" id="sAvg">-</div><div class="label">평균 등락률</div></div>
+  <div class="summary-card"><div class="num" id="sMedian">-</div><div class="label">중앙값</div></div>
+</div>
+
+<!-- 검색 -->
+<div class="search-wrap">
+  <input type="text" id="searchInput" placeholder="종목명·코드 검색...">
+</div>
+
+<!-- 테이블 -->
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th data-col="rank">#</th>
+        <th data-col="name" style="min-width:120px">종목명</th>
+        <th data-col="market">시장</th>
+        <th data-col="start_price">시작가</th>
+        <th data-col="end_price">현재가</th>
+        <th data-col="change_pct" class="sorted" style="min-width:180px">등락률 ▼</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<div class="note" id="note"></div>
+
+<script>
+const API = 'https://swingfarmer.duckdns.org/api';
+let stockMap = {};   // code → {name, market, sector}
+let allData = [];    // API 결과 원본
+let sortCol = 'change_pct';
+let sortAsc = false;
+
+// 종목 리스트 로드 (CSV)
+async function loadStockMap() {
+  async function parseCSV(url, market) {
+    try {
+      const res = await fetch(url);
+      const text = await res.text();
+      for (const line of text.split('\n')) {
+        const t = line.trim();
+        if (!t || t.startsWith('#')) continue;
+        const parts = t.split(',');
+        if (parts.length >= 2) {
+          stockMap[parts[0].trim()] = {
+            name: parts[1].trim(),
+            sector: parts.length >= 3 ? parts[2].trim() : '',
+            market: market
+          };
+        }
+      }
+    } catch(e) { console.warn('CSV load fail:', url, e); }
+  }
+  await Promise.all([
+    parseCSV('/scripts/kospi200_list.csv', 'KOSPI'),
+    parseCSV('/scripts/kosdaq_list.csv', 'KOSDAQ')
+  ]);
+}
+
+// 날짜 유틸
+function today() {
+  const d = new Date();
+  return d.toISOString().slice(0, 10);
+}
+function daysAgo(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
+// 프리셋 클릭
+document.getElementById('presets').addEventListener('click', e => {
+  const btn = e.target.closest('.preset-btn');
+  if (!btn) return;
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  if (btn.dataset.days) {
+    document.getElementById('dateFrom').value = daysAgo(parseInt(btn.dataset.days));
+    document.getElementById('dateTo').value = today();
+  } else if (btn.dataset.from) {
+    document.getElementById('dateFrom').value = btn.dataset.from;
+    document.getElementById('dateTo').value = today();
+  }
+  fetchData();
+});
+
+// 데이터 조회
+async function fetchData() {
+  const from = document.getElementById('dateFrom').value;
+  const to = document.getElementById('dateTo').value || today();
+  document.getElementById('dateTo').value = to;
+
+  document.getElementById('tbody').innerHTML = '<tr><td colspan="6" class="loading">조회 중...</td></tr>';
+
+  try {
+    const url = `${API}/prices/daily/changes?from=${from}&to=${to}`;
+    const res = await fetch(url);
+    const json = await res.json();
+
+    allData = (json.data || []).map(d => {
+      const info = stockMap[d.stock_code] || {};
+      return { ...d, name: info.name || d.stock_code, market: info.market || '', sector: info.sector || '' };
+    });
+
+    updateSummary();
+    renderTable();
+    document.getElementById('note').textContent = `기간: ${from} → ${to} · ${allData.length}종목 · Oracle DAILY_PRICES`;
+  } catch(e) {
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="6" class="loading">❌ 조회 실패: ${e.message}</td></tr>`;
+  }
+}
+
+// 서머리
+function updateSummary() {
+  const filtered = getFiltered();
+  const pcts = filtered.map(d => d.change_pct).sort((a,b) => a-b);
+  const up = pcts.filter(p => p > 0).length;
+  const down = pcts.filter(p => p < 0).length;
+  const avg = pcts.length ? (pcts.reduce((s,v) => s+v, 0) / pcts.length) : 0;
+  const median = pcts.length ? pcts[Math.floor(pcts.length/2)] : 0;
+
+  document.getElementById('sTotal').textContent = filtered.length;
+  document.getElementById('sUp').textContent = up;
+  document.getElementById('sDown').textContent = down;
+
+  const avgEl = document.getElementById('sAvg');
+  avgEl.textContent = (avg >= 0 ? '+' : '') + avg.toFixed(2) + '%';
+  avgEl.className = 'num ' + (avg > 0 ? 'up' : avg < 0 ? 'down' : 'flat');
+
+  const medEl = document.getElementById('sMedian');
+  medEl.textContent = (median >= 0 ? '+' : '') + median.toFixed(2) + '%';
+  medEl.className = 'num ' + (median > 0 ? 'up' : median < 0 ? 'down' : 'flat');
+
+  document.getElementById('summary').style.display = 'grid';
+}
+
+// 필터링
+function getFiltered() {
+  const mkt = document.getElementById('marketFilter').value;
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  return allData.filter(d => {
+    if (mkt && d.market !== mkt) return false;
+    if (q && !d.name.toLowerCase().includes(q) && !d.stock_code.includes(q)) return false;
+    return true;
+  });
+}
+
+// 정렬
+function sortData(data) {
+  return [...data].sort((a, b) => {
+    let va = a[sortCol], vb = b[sortCol];
+    if (sortCol === 'name' || sortCol === 'market') {
+      va = va || ''; vb = vb || '';
+      return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    }
+    va = va ?? -Infinity; vb = vb ?? -Infinity;
+    return sortAsc ? va - vb : vb - va;
+  });
+}
+
+// 렌더
+function renderTable() {
+  const filtered = getFiltered();
+  const sorted = sortData(filtered);
+  const maxAbs = Math.max(...filtered.map(d => Math.abs(d.change_pct || 0)), 1);
+
+  const tbody = document.getElementById('tbody');
+  if (!sorted.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="loading">결과 없음</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = sorted.map((d, i) => {
+    const pct = d.change_pct || 0;
+    const cls = pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat';
+    const sign = pct > 0 ? '+' : '';
+    const barW = Math.min(Math.abs(pct) / maxAbs * 50, 50);
+    const barCls = pct >= 0 ? 'pos' : 'neg';
+    const barStyle = pct >= 0
+      ? `right:50%;width:${barW}%`
+      : `left:50%;width:${barW}%`;
+    const mktCls = d.market === 'KOSPI' ? 'kospi' : d.market === 'KOSDAQ' ? 'kosdaq' : '';
+
+    return `<tr>
+      <td>${i+1}</td>
+      <td><span class="stock-name">${d.name}</span><span class="stock-code">${d.stock_code}</span></td>
+      <td><span class="stock-market ${mktCls}">${d.market}</span></td>
+      <td>${(d.start_price||0).toLocaleString()}</td>
+      <td>${(d.end_price||0).toLocaleString()}</td>
+      <td class="bar-cell">
+        <div class="bar ${barCls}" style="${barStyle}"></div>
+        <span class="bar-val ${cls}">${sign}${pct.toFixed(2)}%</span>
+      </td>
+    </tr>`;
+  }).join('');
+
+  updateSummary();
+}
+
+// 헤더 정렬
+document.querySelector('thead').addEventListener('click', e => {
+  const th = e.target.closest('th');
+  if (!th || !th.dataset.col) return;
+  const col = th.dataset.col;
+  if (col === 'rank') return;
+  if (sortCol === col) { sortAsc = !sortAsc; }
+  else { sortCol = col; sortAsc = col === 'name'; }
+
+  document.querySelectorAll('th').forEach(t => {
+    t.classList.remove('sorted');
+    t.textContent = t.textContent.replace(/ [▲▼]/g, '');
+  });
+  th.classList.add('sorted');
+  th.textContent += sortAsc ? ' ▲' : ' ▼';
+  renderTable();
+});
+
+// 검색+필터
+document.getElementById('searchInput').addEventListener('input', renderTable);
+document.getElementById('marketFilter').addEventListener('change', renderTable);
+
+// 초기화
+(async () => {
+  document.getElementById('dateTo').value = today();
+  await loadStockMap();
+  fetchData();
+})();
+</script>
+</body>
+</html>
