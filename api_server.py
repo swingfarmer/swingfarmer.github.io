@@ -998,5 +998,131 @@ def board_delete_reply(rid):
     return jsonify({'ok': True})
 
 
+# ══ DAILY_PRICES (종가 히스토리) ══
+
+@app.route('/api/prices/daily')
+def prices_daily():
+    """
+    종가 히스토리 조회.
+    필수: ?codes=005930,000660  (쉼표 구분, 최대 20개)
+    선택: &from=2026-07-01 &to=2026-10-13 &days=30
+    반환: {count, data: [{stock_code, trade_date, open, high, low, close, volume}, ...]}
+    """
+    codes_raw = request.args.get('codes', '')
+    if not codes_raw:
+        return jsonify({'error': 'codes 파라미터 필요 (예: ?codes=005930,000660)'}), 400
+
+    codes = [c.strip() for c in codes_raw.split(',') if c.strip()][:20]
+    if not codes:
+        return jsonify({'error': '유효한 종목코드 없음'}), 400
+
+    days = request.args.get('days', '')
+    date_from = request.args.get('from', '')
+    date_to = request.args.get('to', '')
+
+    where = []
+    params = {}
+
+    # 종목코드 IN 조건
+    code_binds = []
+    for i, c in enumerate(codes):
+        key = f'c{i}'
+        code_binds.append(f':{key}')
+        params[key] = c
+    where.append(f'stock_code IN ({",".join(code_binds)})')
+
+    if days:
+        where.append("trade_date >= TRUNC(SYSDATE) - :days")
+        params['days'] = int(days)
+    if date_from:
+        where.append("trade_date >= TO_DATE(:df, 'YYYY-MM-DD')")
+        params['df'] = date_from
+    if date_to:
+        where.append("trade_date <= TO_DATE(:dt, 'YYYY-MM-DD')")
+        params['dt'] = date_to
+
+    w = ' AND '.join(where)
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute(f"""SELECT stock_code,
+        TO_CHAR(trade_date,'YYYY-MM-DD') AS trade_date,
+        open_price, high_price, low_price, close_price, volume
+        FROM daily_prices WHERE {w}
+        ORDER BY stock_code, trade_date""", params)
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify({'count': len(data), 'data': data})
+
+
+@app.route('/api/prices/daily/changes')
+def prices_daily_changes():
+    """
+    기간별 등락률 비교.
+    선택: &from=2026-07-01 &to=2026-10-13 (기본: 최근 vs 30일전)
+    반환: [{stock_code, start_date, start_price, end_date, end_price, change_pct}, ...]
+    """
+    date_from = request.args.get('from', '')
+    date_to = request.args.get('to', '')
+
+    conn = get_conn(); cur = conn.cursor()
+
+    # 기준일 결정
+    if date_to:
+        end_sql = "TO_DATE(:dt, 'YYYY-MM-DD')"
+        params_end = {'dt': date_to}
+    else:
+        end_sql = "(SELECT MAX(trade_date) FROM daily_prices)"
+        params_end = {}
+
+    if date_from:
+        start_sql = "TO_DATE(:df, 'YYYY-MM-DD')"
+        params_start = {'df': date_from}
+    else:
+        start_sql = f"({end_sql} - 30)"
+        params_start = dict(params_end)
+
+    params = {**params_start, **params_end}
+
+    cur.execute(f"""
+    WITH end_prices AS (
+        SELECT stock_code, close_price, trade_date,
+            ROW_NUMBER() OVER (PARTITION BY stock_code ORDER BY trade_date DESC) rn
+        FROM daily_prices WHERE trade_date <= {end_sql}
+    ),
+    start_prices AS (
+        SELECT stock_code, close_price, trade_date,
+            ROW_NUMBER() OVER (PARTITION BY stock_code ORDER BY trade_date ASC) rn
+        FROM daily_prices WHERE trade_date >= {start_sql}
+    )
+    SELECT e.stock_code,
+        TO_CHAR(s.trade_date,'YYYY-MM-DD') AS start_date,
+        s.close_price AS start_price,
+        TO_CHAR(e.trade_date,'YYYY-MM-DD') AS end_date,
+        e.close_price AS end_price,
+        ROUND((e.close_price - s.close_price) / s.close_price * 100, 2) AS change_pct
+    FROM end_prices e
+    JOIN start_prices s ON e.stock_code = s.stock_code
+    WHERE e.rn = 1 AND s.rn = 1 AND s.close_price > 0
+    ORDER BY change_pct DESC
+    """, params)
+
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify({'count': len(data), 'data': data})
+
+
+@app.route('/api/prices/daily/summary')
+def prices_daily_summary():
+    """DB 현황 요약."""
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("""SELECT COUNT(*) total_rows,
+        COUNT(DISTINCT stock_code) stock_count,
+        TO_CHAR(MIN(trade_date),'YYYY-MM-DD') first_date,
+        TO_CHAR(MAX(trade_date),'YYYY-MM-DD') last_date
+        FROM daily_prices""")
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify(data[0] if data else {})
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
