@@ -6,6 +6,7 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>기간별 등락률 비교</title>
 <link rel="stylesheet" href="/common-dark.css?v=2">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root { --sf-max-w: 1400px; }
 a{color:var(--accent);text-decoration:none}
@@ -54,11 +55,30 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
 .sel-tag .drag-h{cursor:grab;opacity:.5;font-size:10px}
 .sel-tag .drag-h:active{cursor:grabbing}
 
+/* 업종 필터 */
+.sector-filter{margin-bottom:14px}
+.sector-filter-label{font-size:12px;color:var(--text-dim);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.sector-tags{display:flex;flex-wrap:wrap;gap:4px}
+.sector-tag{background:var(--card);border:1px solid var(--border);color:var(--text-dim);
+  padding:3px 10px;border-radius:14px;cursor:pointer;font-size:11px;font-family:inherit;transition:all .12s}
+.sector-tag:hover{border-color:var(--text);color:var(--text)}
+.sector-tag.active{border-color:var(--accent);color:var(--accent);background:rgba(59,130,246,.1)}
+.sector-tag .cnt{font-size:9px;opacity:.6;margin-left:2px}
+
 /* 서머리 */
 .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:16px}
 .summary-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
 .summary-card .num{font-size:20px;font-weight:800}
 .summary-card .label{font-size:10px;color:var(--text-dim);margin-top:3px}
+
+/* 차트 */
+.chart-section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;display:none}
+.chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.chart-header h3{font-size:14px;font-weight:700;margin:0}
+.chart-controls{display:flex;gap:6px;align-items:center}
+.chart-note{font-size:10px;color:var(--text-dim);margin-top:8px;text-align:center}
+.chart-wrap{position:relative;height:340px}
+@media(max-width:600px){.chart-wrap{height:260px}}
 
 /* 정렬 바 */
 .sort-bar{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
@@ -71,6 +91,7 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
 .sc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
 .sc-name{font-weight:700;font-size:14px}
 .sc-code{color:var(--text-dim);font-size:10px;margin-left:6px}
+.sc-sector{font-size:9px;color:var(--text-dim);margin-left:4px}
 .sc-mkt{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:600}
 .sc-mkt.kospi{color:#3b82f6;background:rgba(59,130,246,.12)}
 .sc-mkt.kosdaq{color:#a855f7;background:rgba(168,85,247,.12)}
@@ -136,6 +157,12 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
   <div class="selected-tags" id="selectedTags"></div>
 </div>
 
+<!-- 업종 필터 -->
+<div class="sector-filter" id="sectorFilter" style="display:none">
+  <div class="sector-filter-label">🏷️ 업종 필터 <span style="font-size:10px">(복수 선택 가능, 다시 클릭해서 해제)</span></div>
+  <div class="sector-tags" id="sectorTags"></div>
+</div>
+
 <!-- 서머리 -->
 <div class="summary" id="summary" style="display:none">
   <div class="summary-card"><div class="num" id="sTotal">-</div><div class="label">종목수</div></div>
@@ -144,6 +171,20 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
   <div class="summary-card"><div class="num" id="sAvg">-</div><div class="label">평균</div></div>
   <div class="summary-card"><div class="num" id="sKospi">-</div><div class="label">KOSPI</div></div>
   <div class="summary-card"><div class="num" id="sKosdaq">-</div><div class="label">KOSDAQ</div></div>
+</div>
+
+<!-- 차트 -->
+<div class="chart-section" id="chartSection">
+  <div class="chart-header">
+    <h3>📈 수익률 추이 비교</h3>
+    <div class="chart-controls">
+      <button class="preset-btn active" data-chart-mode="pct" onclick="setChartMode('pct')">수익률(%)</button>
+      <button class="preset-btn" data-chart-mode="price" onclick="setChartMode('price')">종가(원)</button>
+      <button class="preset-btn" onclick="toggleBenchmark()">벤치마크</button>
+    </div>
+  </div>
+  <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+  <div class="chart-note">선택 종목 2~10개일 때 차트 표시 · 시작일 종가=0% 기준 정규화</div>
 </div>
 
 <!-- 정렬 -->
@@ -172,6 +213,17 @@ let allData = [];
 let selectedCodes = new Set();
 let currentSort = 'change_pct_desc';
 let dataRange = { first: null, last: null };
+let selectedSectors = new Set();
+let chartMode = 'pct';
+let showBenchmark = true;
+let priceChart = null;
+
+// 차트 색상 팔레트
+const CHART_COLORS = [
+  '#3b82f6','#ef4444','#22c55e','#eab308','#a855f7',
+  '#f97316','#06b6d4','#ec4899','#14b8a6','#f43f5e'
+];
+const BENCH_COLORS = { KOSPI: 'rgba(255,255,255,.35)', KOSDAQ: 'rgba(168,85,247,.35)' };
 
 async function loadStockMap() {
   async function parseCSV(url, market) {
@@ -209,7 +261,6 @@ function renderPicker() {
 let orderedCodes = []; // 순서 유지용
 
 function syncOrder() {
-  // selectedCodes 기준으로 orderedCodes 동기화
   orderedCodes = orderedCodes.filter(c => selectedCodes.has(c));
   selectedCodes.forEach(c => { if (!orderedCodes.includes(c)) orderedCodes.push(c); });
 }
@@ -293,6 +344,45 @@ document.getElementById('presets').addEventListener('click', e => {
   fetchData();
 });
 
+// ========== 업종 필터 ==========
+function buildSectorFilter() {
+  const sectorCount = {};
+  allData.forEach(d => {
+    const s = d.sector;
+    if (s && s !== '기타') sectorCount[s] = (sectorCount[s]||0) + 1;
+  });
+  const sectors = Object.entries(sectorCount).sort((a,b) => b[1]-a[1]);
+  const wrap = document.getElementById('sectorFilter');
+  const tags = document.getElementById('sectorTags');
+  if (!sectors.length) { wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  tags.innerHTML = `<button class="sector-tag${selectedSectors.size===0?' active':''}" data-sector="">전체<span class="cnt">${allData.length}</span></button>` +
+    sectors.map(([s,c]) => {
+      const act = selectedSectors.has(s) ? ' active' : '';
+      return `<button class="sector-tag${act}" data-sector="${s}">${s}<span class="cnt">${c}</span></button>`;
+    }).join('');
+}
+
+document.getElementById('sectorTags').addEventListener('click', e => {
+  const btn = e.target.closest('.sector-tag');
+  if (!btn) return;
+  const sec = btn.dataset.sector;
+  if (sec === '') {
+    // "전체" 클릭 → 업종 필터 해제
+    selectedSectors.clear();
+  } else {
+    if (selectedSectors.has(sec)) selectedSectors.delete(sec);
+    else selectedSectors.add(sec);
+  }
+  // active 토글
+  document.querySelectorAll('.sector-tag').forEach(b => {
+    if (b.dataset.sector === '') b.classList.toggle('active', selectedSectors.size===0);
+    else b.classList.toggle('active', selectedSectors.has(b.dataset.sector));
+  });
+  renderCards();
+});
+
+// ========== 데이터 로드 ==========
 async function fetchData() {
   let from = document.getElementById('dateFrom').value;
   let to = document.getElementById('dateTo').value || today();
@@ -323,7 +413,9 @@ async function fetchData() {
         return { ...d, name:info.name||d.stock_code, market:mkt, sector:info.sector||'',
           excess_pct: Math.round(((d.change_pct||0)-bench)*100)/100 };
       });
-    updateSummary(); renderCards();
+    buildSectorFilter();
+    updateSummary();
+    renderCards();
     document.getElementById('note').textContent = `기간: ${from} → ${to} · ${allData.length}종목 · Oracle DAILY_PRICES`;
   } catch(e) { document.getElementById('cardGrid').innerHTML=`<div class="loading">❌ ${e.message}</div>`; }
 }
@@ -353,13 +445,13 @@ function getFiltered() {
   return allData.filter(d => {
     if (mkt && d.market!==mkt) return false;
     if (selectedCodes.size && !selectedCodes.has(d.stock_code)) return false;
+    if (selectedSectors.size && !selectedSectors.has(d.sector)) return false;
     return true;
   });
 }
 
 function sortData(data) {
   const s=currentSort;
-  // 종목 선택 + 커스텀순서 모드일 때
   if (s==='custom' && selectedCodes.size) {
     return [...data].sort((a,b) => {
       const ai=orderedCodes.indexOf(a.stock_code), bi=orderedCodes.indexOf(b.stock_code);
@@ -381,7 +473,7 @@ function renderCards() {
   const grid=document.getElementById('cardGrid');
   if (!sorted.length) {
     grid.innerHTML='<div class="empty">표시할 종목이 없습니다.<br>종목을 선택하거나 필터를 조정해보세요.</div>';
-    updateSummary(); return;
+    updateSummary(); hideChart(); return;
   }
   const maxAbs=Math.max(...filtered.map(d=>Math.abs(d.change_pct||0)),1);
   grid.innerHTML = sorted.map(d => {
@@ -392,8 +484,9 @@ function renderCards() {
     const barStyle=pct>=0?`right:50%;width:${barW}%`:`left:50%;width:${barW}%`;
     const mktCls=d.market==='KOSPI'?'kospi':'kosdaq';
     const bl=d.market==='KOSDAQ'?'KOSDAQ':'KOSPI';
+    const sectorLabel = d.sector && d.sector!=='기타' ? `<span class="sc-sector">${d.sector}</span>` : '';
     return `<div class="stock-card">
-      <div class="sc-header"><div><span class="sc-name">${d.name}</span><span class="sc-code">${d.stock_code}</span></div>
+      <div class="sc-header"><div><span class="sc-name">${d.name}</span><span class="sc-code">${d.stock_code}</span>${sectorLabel}</div>
         <span class="sc-mkt ${mktCls}">${d.market}</span></div>
       <div class="sc-pct ${cls}">${sign}${pct.toFixed(2)}%</div>
       <div class="sc-excess ${exCls}">${bl} 대비 ${exSign}${ex.toFixed(2)}%p</div>
@@ -406,8 +499,180 @@ function renderCards() {
     </div>`;
   }).join('');
   updateSummary();
+
+  // 차트: 선택 종목 2~10개일 때만
+  const chartCodes = selectedCodes.size ? [...selectedCodes] : [];
+  if (chartCodes.length >= 2 && chartCodes.length <= 10) loadChart(chartCodes);
+  else hideChart();
 }
 
+// ========== 차트 ==========
+function hideChart() {
+  document.getElementById('chartSection').style.display='none';
+  if (priceChart) { priceChart.destroy(); priceChart=null; }
+}
+
+function setChartMode(mode) {
+  chartMode = mode;
+  document.querySelectorAll('[data-chart-mode]').forEach(b => b.classList.toggle('active', b.dataset.chartMode===mode));
+  const codes = selectedCodes.size ? [...selectedCodes] : [];
+  if (codes.length >= 2 && codes.length <= 10) loadChart(codes);
+}
+
+function toggleBenchmark() {
+  showBenchmark = !showBenchmark;
+  const codes = selectedCodes.size ? [...selectedCodes] : [];
+  if (codes.length >= 2 && codes.length <= 10) loadChart(codes);
+}
+
+async function loadChart(codes) {
+  const from = document.getElementById('dateFrom').value;
+  const to = document.getElementById('dateTo').value || today();
+  // 종목 + 지수 함께 호출
+  const allCodes = [...codes];
+  if (showBenchmark) { allCodes.push('KS11','KQ11'); }
+  const codesStr = [...new Set(allCodes)].join(',');
+  try {
+    const res = await fetch(`${API}/prices/daily?codes=${codesStr}&from=${from}&to=${to}`);
+    const json = await res.json();
+    drawChart(json.data||[], codes);
+  } catch(e) { console.error('Chart load error', e); }
+}
+
+function drawChart(rawData, stockCodes) {
+  // 종목별로 그룹핑
+  const byCode = {};
+  rawData.forEach(r => {
+    if (!byCode[r.stock_code]) byCode[r.stock_code] = [];
+    byCode[r.stock_code].push(r);
+  });
+
+  // 날짜축 (모든 종목 합쳐서 unique sort)
+  const allDates = [...new Set(rawData.map(r=>r.trade_date))].sort();
+  if (!allDates.length) { hideChart(); return; }
+
+  const datasets = [];
+
+  // 종목 라인
+  stockCodes.forEach((code, i) => {
+    const rows = byCode[code] || [];
+    if (!rows.length) return;
+    const dateMap = {};
+    rows.forEach(r => dateMap[r.trade_date] = r);
+    const basePrice = rows[0]?.close_price || rows[0]?.close || 1;
+    const data = allDates.map(date => {
+      const r = dateMap[date];
+      if (!r) return null;
+      const close = r.close_price ?? r.close ?? 0;
+      return chartMode === 'pct' ? Math.round((close / basePrice - 1) * 10000) / 100 : close;
+    });
+    const name = stockMap[code]?.name || code;
+    datasets.push({
+      label: name,
+      data,
+      borderColor: CHART_COLORS[i % CHART_COLORS.length],
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      tension: 0.1,
+      spanGaps: true
+    });
+  });
+
+  // 벤치마크 (수익률 모드만)
+  if (showBenchmark && chartMode === 'pct') {
+    ['KS11','KQ11'].forEach(idx => {
+      const rows = byCode[idx] || [];
+      if (!rows.length) return;
+      const dateMap = {};
+      rows.forEach(r => dateMap[r.trade_date] = r);
+      const basePrice = rows[0]?.close_price || rows[0]?.close || 1;
+      const data = allDates.map(date => {
+        const r = dateMap[date];
+        if (!r) return null;
+        const close = r.close_price ?? r.close ?? 0;
+        return Math.round((close / basePrice - 1) * 10000) / 100;
+      });
+      const name = idx === 'KS11' ? 'KOSPI' : 'KOSDAQ';
+      datasets.push({
+        label: name,
+        data,
+        borderColor: BENCH_COLORS[name],
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [6, 3],
+        pointRadius: 0,
+        pointHoverRadius: 3,
+        tension: 0.1,
+        spanGaps: true
+      });
+    });
+  }
+
+  if (!datasets.length) { hideChart(); return; }
+
+  document.getElementById('chartSection').style.display = 'block';
+  const ctx = document.getElementById('priceChart').getContext('2d');
+  if (priceChart) priceChart.destroy();
+
+  // 날짜 라벨 간추리기 (너무 많으면)
+  const labels = allDates.map(d => d.slice(5)); // MM-DD
+
+  priceChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#e4e4e7', boxWidth: 14, padding: 12, font: { size: 11 } }
+        },
+        tooltip: {
+          backgroundColor: '#1a1d27',
+          titleColor: '#e4e4e7',
+          bodyColor: '#e4e4e7',
+          borderColor: '#2a2d3a',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => {
+              const v = ctx.parsed.y;
+              if (v === null) return '';
+              if (chartMode === 'pct') return `${ctx.dataset.label}: ${v>=0?'+':''}${v.toFixed(2)}%`;
+              return `${ctx.dataset.label}: ${v.toLocaleString()}원`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#71717a', maxRotation: 0, autoSkipPadding: 20, font: { size: 10 } },
+          grid: { color: 'rgba(42,45,58,.5)' }
+        },
+        y: {
+          ticks: {
+            color: '#71717a', font: { size: 10 },
+            callback: v => chartMode === 'pct' ? v.toFixed(1)+'%' : v.toLocaleString()
+          },
+          grid: { color: 'rgba(42,45,58,.5)' }
+        }
+      }
+    }
+  });
+
+  // 0% 기준선 (수익률 모드)
+  if (chartMode === 'pct') {
+    priceChart.options.plugins.annotation = {
+      annotations: { zero: { type: 'line', yMin: 0, yMax: 0, borderColor: 'rgba(255,255,255,.15)', borderWidth: 1 } }
+    };
+    priceChart.update();
+  }
+}
+
+// ========== 정렬 ==========
 document.querySelector('.sort-bar').addEventListener('click', e => {
   const btn=e.target.closest('.preset-btn'); if(!btn||!btn.dataset.sort) return;
   document.querySelectorAll('.sort-bar .preset-btn').forEach(b=>b.classList.remove('active'));
@@ -460,7 +725,6 @@ function autoRestore() {
 (async () => {
   document.getElementById('dateTo').value = today();
   await Promise.all([loadStockMap(), loadDataRange()]);
-  // 마지막 선택 상태 복원
   autoRestore();
   if (selectedCodes.size) renderPicker();
   fetchData();
