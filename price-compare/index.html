@@ -103,6 +103,8 @@ tr:hover{background:rgba(59,130,246,.06)}
   <div class="summary-card"><div class="num down" id="sDown">-</div><div class="label">하락</div></div>
   <div class="summary-card"><div class="num" id="sAvg">-</div><div class="label">평균 등락률</div></div>
   <div class="summary-card"><div class="num" id="sMedian">-</div><div class="label">중앙값</div></div>
+  <div class="summary-card"><div class="num" id="sKospi">-</div><div class="label">KOSPI</div></div>
+  <div class="summary-card"><div class="num" id="sKosdaq">-</div><div class="label">KOSDAQ</div></div>
 </div>
 
 <!-- 검색 -->
@@ -121,6 +123,7 @@ tr:hover{background:rgba(59,130,246,.06)}
         <th data-col="start_price">시작가</th>
         <th data-col="end_price">현재가</th>
         <th data-col="change_pct" class="sorted" style="min-width:180px">등락률 ▼</th>
+        <th data-col="excess_pct" style="min-width:100px">초과수익률</th>
       </tr>
     </thead>
     <tbody id="tbody"></tbody>
@@ -206,23 +209,41 @@ async function fetchData() {
   }
   document.getElementById('dateTo').value = to;
 
-  document.getElementById('tbody').innerHTML = '<tr><td colspan="6" class="loading">조회 중...</td></tr>';
+  document.getElementById('tbody').innerHTML = '<tr><td colspan="7" class="loading">조회 중...</td></tr>';
 
   try {
     const url = `${API}/prices/daily/changes?from=${from}&to=${to}`;
     const res = await fetch(url);
     const json = await res.json();
 
-    allData = (json.data || []).map(d => {
-      const info = stockMap[d.stock_code] || {};
-      return { ...d, name: info.name || d.stock_code, market: info.market || '', sector: info.sector || '' };
+    // 지수 등락률 추출
+    const indexMap = {};
+    (json.data || []).forEach(d => {
+      if (d.stock_code === 'KS11') indexMap.KOSPI = d.change_pct || 0;
+      if (d.stock_code === 'KQ11') indexMap.KOSDAQ = d.change_pct || 0;
     });
+    window._indexMap = indexMap;
+
+    allData = (json.data || [])
+      .filter(d => d.stock_code !== 'KS11' && d.stock_code !== 'KQ11')
+      .map(d => {
+        const info = stockMap[d.stock_code] || {};
+        const mkt = info.market || '';
+        const bench = mkt === 'KOSDAQ' ? (indexMap.KOSDAQ || 0) : (indexMap.KOSPI || 0);
+        return {
+          ...d,
+          name: info.name || d.stock_code,
+          market: mkt,
+          sector: info.sector || '',
+          excess_pct: Math.round(((d.change_pct || 0) - bench) * 100) / 100,
+        };
+      });
 
     updateSummary();
     renderTable();
     document.getElementById('note').textContent = `기간: ${from} → ${to} · ${allData.length}종목 · Oracle DAILY_PRICES`;
   } catch(e) {
-    document.getElementById('tbody').innerHTML = `<tr><td colspan="6" class="loading">❌ 조회 실패: ${e.message}</td></tr>`;
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="7" class="loading">❌ 조회 실패: ${e.message}</td></tr>`;
   }
 }
 
@@ -246,6 +267,18 @@ function updateSummary() {
   const medEl = document.getElementById('sMedian');
   medEl.textContent = (median >= 0 ? '+' : '') + median.toFixed(2) + '%';
   medEl.className = 'num ' + (median > 0 ? 'up' : median < 0 ? 'down' : 'flat');
+
+  // 지수 표시
+  const im = window._indexMap || {};
+  const kpEl = document.getElementById('sKospi');
+  const kpVal = im.KOSPI || 0;
+  kpEl.textContent = (kpVal >= 0 ? '+' : '') + kpVal.toFixed(2) + '%';
+  kpEl.className = 'num ' + (kpVal > 0 ? 'up' : kpVal < 0 ? 'down' : 'flat');
+
+  const kqEl = document.getElementById('sKosdaq');
+  const kqVal = im.KOSDAQ || 0;
+  kqEl.textContent = (kqVal >= 0 ? '+' : '') + kqVal.toFixed(2) + '%';
+  kqEl.className = 'num ' + (kqVal > 0 ? 'up' : kqVal < 0 ? 'down' : 'flat');
 
   document.getElementById('summary').style.display = 'grid';
 }
@@ -282,7 +315,7 @@ function renderTable() {
 
   const tbody = document.getElementById('tbody');
   if (!sorted.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="loading">결과 없음</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="loading">결과 없음</td></tr>';
     return;
   }
 
@@ -297,6 +330,10 @@ function renderTable() {
       : `left:50%;width:${barW}%`;
     const mktCls = d.market === 'KOSPI' ? 'kospi' : d.market === 'KOSDAQ' ? 'kosdaq' : '';
 
+    const ex = d.excess_pct || 0;
+    const exCls = ex > 0 ? 'up' : ex < 0 ? 'down' : 'flat';
+    const exSign = ex > 0 ? '+' : '';
+
     return `<tr>
       <td>${i+1}</td>
       <td><span class="stock-name">${d.name}</span><span class="stock-code">${d.stock_code}</span></td>
@@ -307,6 +344,7 @@ function renderTable() {
         <div class="bar ${barCls}" style="${barStyle}"></div>
         <span class="bar-val ${cls}">${sign}${pct.toFixed(2)}%</span>
       </td>
+      <td class="${exCls}" style="font-weight:700">${exSign}${ex.toFixed(2)}%</td>
     </tr>`;
   }).join('');
 
