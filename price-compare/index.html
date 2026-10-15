@@ -1,294 +1,1199 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<title>기간별 등락률 비교</title>
-<link rel="stylesheet" href="/common-dark.css?v=2">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<style>
-:root { --sf-max-w: 1400px; }
-a{color:var(--accent);text-decoration:none}
-h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:10px}
-.subtitle{color:var(--text-dim);font-size:13px;margin-bottom:16px}
-.presets{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
-.preset-btn{background:var(--card);border:1px solid var(--border);color:var(--text);
-  padding:6px 14px;border-radius:20px;cursor:pointer;font-size:12px;font-family:inherit;transition:all .12s}
-.preset-btn:hover,.preset-btn.active{border-color:var(--accent);color:var(--accent)}
-.filter-bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
-.filter-bar input[type=date],.filter-bar select{background:var(--card);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:8px;font-size:13px;font-family:inherit}
-.filter-bar label{font-size:12px;color:var(--text-dim)}
-.btn-primary{background:var(--accent);border:none;color:#fff;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit}
-.btn-primary:hover{opacity:.85}
-.picker-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px}
-.picker-toggle{display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
-.picker-toggle h3{font-size:14px;font-weight:700;margin:0}
-.picker-toggle .arrow{font-size:12px;color:var(--text-dim);transition:transform .2s}
-.picker-toggle .arrow.open{transform:rotate(180deg)}
-.picker-body{overflow:hidden;transition:max-height .3s ease;max-height:0}
-.picker-body.open{max-height:600px}
-.picker-controls{display:flex;justify-content:space-between;align-items:center;margin:10px 0;flex-wrap:wrap;gap:8px}
-.picker-search{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:12px;font-family:inherit;width:200px}
-.picker-search::placeholder{color:var(--text-dim)}
-.picker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px;max-height:200px;overflow-y:auto}
-.picker-item{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:4px;cursor:pointer;font-size:12px}
-.picker-item:hover{background:rgba(59,130,246,.06)}
-.picker-item input{accent-color:var(--accent);cursor:pointer}
-.picker-item .pname{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.picker-item .pmkt{font-size:9px;padding:1px 4px;border-radius:3px;font-weight:600;flex-shrink:0}
-.pmkt.kospi{color:#3b82f6;background:rgba(59,130,246,.12)}
-.pmkt.kosdaq{color:#a855f7;background:rgba(168,85,247,.12)}
-.selected-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
-.sel-tag{background:rgba(59,130,246,.15);color:var(--accent);padding:3px 8px;border-radius:12px;font-size:11px;cursor:pointer;display:inline-flex;align-items:center;gap:3px}
-.sel-tag:hover{background:rgba(59,130,246,.25)}
-.sel-tag .x{font-weight:700}
-.sel-tag .move-btn{background:none;border:none;color:var(--accent);cursor:pointer;font-size:10px;padding:0 1px;opacity:.6}
-.sel-tag .move-btn:hover{opacity:1}
-.sector-filter{margin-bottom:14px}
-.sector-filter-label{font-size:12px;color:var(--text-dim);margin-bottom:6px;display:flex;align-items:center;gap:6px}
-.sector-tags{display:flex;flex-wrap:wrap;gap:4px}
-.sector-tag{background:var(--card);border:1px solid var(--border);color:var(--text-dim);padding:3px 10px;border-radius:14px;cursor:pointer;font-size:11px;font-family:inherit;transition:all .12s}
-.sector-tag:hover{border-color:var(--text);color:var(--text)}
-.sector-tag.active{border-color:var(--accent);color:var(--accent);background:rgba(59,130,246,.1)}
-.sector-tag .cnt{font-size:9px;opacity:.6;margin-left:2px}
-.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:16px}
-.summary-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
-.summary-card .num{font-size:20px;font-weight:800}
-.summary-card .label{font-size:10px;color:var(--text-dim);margin-top:3px}
-.chart-section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;display:none}
-.chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
-.chart-header h3{font-size:14px;font-weight:700;margin:0}
-.chart-controls{display:flex;gap:6px;align-items:center}
-.chart-note{font-size:10px;color:var(--text-dim);margin-top:8px;text-align:center}
-.chart-wrap{position:relative;height:340px}
-@media(max-width:600px){.chart-wrap{height:260px}}
-.sort-bar{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
-.sort-bar span{font-size:12px;color:var(--text-dim)}
-.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:16px}
-.stock-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;transition:border-color .12s}
-.stock-card:hover{border-color:var(--accent)}
-.sc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
-.sc-name{font-weight:700;font-size:14px}.sc-code{color:var(--text-dim);font-size:10px;margin-left:6px}
-.sc-sector{font-size:9px;color:var(--text-dim);margin-left:4px}
-.sc-mkt{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:600}
-.sc-mkt.kospi{color:#3b82f6;background:rgba(59,130,246,.12)}
-.sc-mkt.kosdaq{color:#a855f7;background:rgba(168,85,247,.12)}
-.sc-pct{font-size:28px;font-weight:800;margin-bottom:2px}
-.sc-excess{font-size:13px;font-weight:600;margin-bottom:8px}
-.sc-prices{display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim)}
-.sc-prices .val{color:var(--text);font-weight:600}
-.up{color:var(--red)}.down{color:#3b82f6}.flat{color:var(--text-dim)}
-.sc-bar-wrap{height:6px;background:var(--bg);border-radius:3px;margin:8px 0;position:relative;overflow:hidden}
-.sc-bar{height:100%;border-radius:3px;position:absolute;top:0}
-.sc-bar.pos{background:var(--red);right:50%}.sc-bar.neg{background:#3b82f6;left:50%}
-.note{font-size:11px;color:var(--text-dim);text-align:center;margin-top:16px;line-height:1.8}
-.loading{text-align:center;padding:40px;color:var(--text-dim)}
-.empty{text-align:center;padding:60px 20px;color:var(--text-dim);font-size:14px}
-</style>
-</head>
-<body>
-<script src="/common.js"></script>
-<h1>📊 기간별 등락률 비교</h1>
-<p class="subtitle">KOSPI·KOSDAQ 종목별 종가 변동률 비교 (Oracle DB) · 저장 관리(우하단 💾)</p>
+#!/usr/bin/env python3
+"""
+스윙파머 API 서버 (Flask + Oracle Autonomous DB)
+보안1단계: Firebase ID Token 검증 (POST/PUT/DELETE)
+읽기(GET)는 인증 불필요
+"""
+import os, uuid
+from datetime import datetime
+from functools import wraps
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import oracledb
 
-<div class="presets" id="presets">
-  <button class="preset-btn" data-days="7">1주</button>
-  <button class="preset-btn" data-days="14">2주</button>
-  <button class="preset-btn" data-days="30">1개월</button>
-  <button class="preset-btn" data-days="60">2개월</button>
-  <button class="preset-btn" data-days="90">3개월</button>
-  <button class="preset-btn active" data-from="2026-07-31">7월말~</button>
-</div>
-<div class="filter-bar">
-  <label>시작일</label><input type="date" id="dateFrom" value="2026-07-31">
-  <label>종료일</label><input type="date" id="dateTo">
-  <select id="marketFilter"><option value="">전체</option><option value="KOSPI">KOSPI</option><option value="KOSDAQ">KOSDAQ</option></select>
-  <button class="btn-primary" onclick="fetchData()">조회</button>
-  <button class="preset-btn" onclick="clearSelection()">초기화</button>
-</div>
+# Firebase 토큰 검증용
+import json, time
+import urllib.request
+import ssl
 
-<div class="picker-wrap">
-  <div class="picker-toggle" id="pickerToggle">
-    <h3>📌 종목 선택 <span id="selCount" style="font-weight:400;color:var(--text-dim);font-size:12px"></span></h3>
-    <span class="arrow" id="pickerArrow">▼</span>
-  </div>
-  <div class="picker-body" id="pickerBody">
-    <div class="picker-controls">
-      <input type="text" class="picker-search" id="pickerSearch" placeholder="종목명·코드 검색...">
-    </div>
-    <div class="picker-grid" id="pickerGrid"></div>
-  </div>
-  <div class="selected-tags" id="selectedTags"></div>
-</div>
+def load_env():
+    f = os.path.expanduser('~/.env_secrets')
+    if os.path.exists(f):
+        for line in open(f):
+            line = line.strip()
+            if not line or line.startswith('#'): continue
+            if line.startswith('export '): line = line[7:]
+            if '=' in line:
+                k, v = line.split('=', 1)
+                os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+load_env()
 
-<div class="sector-filter" id="sectorFilter" style="display:none">
-  <div class="sector-filter-label">🏷️ 업종 필터 <span style="font-size:10px">(복수 선택 가능)</span>
-    <button class="preset-btn" onclick="clearSectors()" style="padding:2px 10px;font-size:10px;margin-left:6px">초기화</button></div>
-  <div class="sector-tags" id="sectorTags"></div>
-</div>
+app = Flask(__name__)
+CORS(app, origins=['https://swingfarmer.github.io'])
 
-<div class="summary" id="summary" style="display:none">
-  <div class="summary-card"><div class="num" id="sTotal">-</div><div class="label">종목수</div></div>
-  <div class="summary-card"><div class="num up" id="sUp">-</div><div class="label">상승</div></div>
-  <div class="summary-card"><div class="num down" id="sDown">-</div><div class="label">하락</div></div>
-  <div class="summary-card"><div class="num" id="sAvg">-</div><div class="label">평균</div></div>
-  <div class="summary-card"><div class="num" id="sKospi">-</div><div class="label">KOSPI</div></div>
-  <div class="summary-card"><div class="num" id="sKosdaq">-</div><div class="label">KOSDAQ</div></div>
-</div>
+# ── Rate Limiting ──
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+limiter = Limiter(get_remote_address, app=app,
+    default_limits=["60/minute"],   # GET 기본: 60회/분
+    storage_uri="memory://")
 
-<div class="chart-section" id="chartSection">
-  <div class="chart-header"><h3>📈 수익률 추이 비교</h3>
-    <div class="chart-controls">
-      <button class="preset-btn active" data-chart-mode="pct" onclick="setChartMode('pct')">수익률(%)</button>
-      <button class="preset-btn" data-chart-mode="price" onclick="setChartMode('price')">종가(원)</button>
-      <button class="preset-btn" onclick="toggleBenchmark()">벤치마크</button>
-    </div>
-  </div>
-  <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
-  <div class="chart-note">선택 종목 2~10개일 때 차트 표시 · 시작일 종가=0% 기준 정규화</div>
-</div>
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB
 
-<div class="sort-bar">
-  <span>정렬:</span>
-  <button class="preset-btn active" data-sort="change_pct_desc">등락률 높은순</button>
-  <button class="preset-btn" data-sort="change_pct_asc">등락률 낮은순</button>
-  <button class="preset-btn" data-sort="excess_desc">초과수익률↑</button>
-  <button class="preset-btn" data-sort="excess_asc">초과수익률↓</button>
-  <button class="preset-btn" data-sort="name">이름순</button>
-  <button class="preset-btn" data-sort="custom">내 순서</button>
-</div>
-<div class="card-grid" id="cardGrid"><div class="loading">조회 버튼을 누르세요</div></div>
-<div class="note" id="rangeNote"></div>
-<div class="note" id="note"></div>
+@app.errorhandler(413)
+def too_large(e):
+    return jsonify({'error': '파일 크기가 10MB를 초과합니다.'}), 413
 
-<script>
-const API = 'https://swingfarmer.duckdns.org/api';
-let stockMap={}, allData=[], selectedCodes=new Set(), currentSort='change_pct_desc';
-let dataRange={first:null,last:null}, selectedSectors=new Set();
-let chartMode='pct', showBenchmark=true, priceChart=null;
-const CHART_COLORS=['#3b82f6','#ef4444','#22c55e','#eab308','#a855f7','#f97316','#06b6d4','#ec4899','#14b8a6','#f43f5e'];
-const BENCH_COLORS={KOSPI:'rgba(255,255,255,.35)',KOSDAQ:'rgba(168,85,247,.35)'};
+@app.errorhandler(429)
+def rate_limit_handler(e):
+    return jsonify({'error': '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.'}), 429
 
-async function loadStockMap(){
-  async function parseCSV(url,market){try{const r=await fetch(url);const t=await r.text();for(const l of t.split('\n')){const s=l.trim();if(!s||s.startsWith('#'))continue;const p=s.split(',');if(p.length>=2)stockMap[p[0].trim()]={name:p[1].trim(),sector:p.length>=3?p[2].trim():'',market};}}catch(e){}}
-  await Promise.all([parseCSV('/scripts/kospi200_list.csv','KOSPI'),parseCSV('/scripts/kosdaq_list.csv','KOSDAQ')]);
-  renderPicker();
-}
+WALLET_DIR = os.path.expanduser('~/wallet')
+DB_USER = 'ADMIN'
+DB_PASSWORD = os.environ.get('ORACLE_DB_PASSWORD', '')
+DSN = 'db1007_medium'
 
-let pickerOpen=localStorage.getItem('sf_picker_open')==='1';
-function applyPickerState(){document.getElementById('pickerBody').classList.toggle('open',pickerOpen);document.getElementById('pickerArrow').classList.toggle('open',pickerOpen);}
-document.getElementById('pickerToggle').addEventListener('click',()=>{pickerOpen=!pickerOpen;localStorage.setItem('sf_picker_open',pickerOpen?'1':'0');applyPickerState();});
-applyPickerState();
+# ── Firebase 토큰 검증 ──
+FIREBASE_PROJECT_ID = 'swingfarmer-board01'
+ADMIN_UID = '1JrHgD2bpTRjrS2jw7MbpHciBph1'
+GOOGLE_CERTS_URL = 'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com'
+_certs_cache = {'certs': None, 'expires': 0}
 
-function updateSelCount(){document.getElementById('selCount').textContent=selectedCodes.size?`(${selectedCodes.size}종목 선택됨)`:'(체크 시 해당 종목만 표시)';}
-function renderPicker(){
-  const q=document.getElementById('pickerSearch').value.trim().toLowerCase();
-  const entries=Object.entries(stockMap).filter(([c,i])=>!q||i.name.toLowerCase().includes(q)||c.includes(q)).sort((a,b)=>a[1].name.localeCompare(b[1].name));
-  document.getElementById('pickerGrid').innerHTML=entries.slice(0,200).map(([c,i])=>{const ck=selectedCodes.has(c)?'checked':'';const mc=i.market==='KOSPI'?'kospi':'kosdaq';return`<label class="picker-item"><input type="checkbox" value="${c}" ${ck}><span class="pname">${i.name}</span><span class="pmkt ${mc}">${i.market.slice(0,2)}</span></label>`;}).join('');
-  renderSelectedTags();
-}
+def _fetch_google_certs():
+    """Google 공개 인증서 (캐시 1시간)."""
+    now = time.time()
+    if _certs_cache['certs'] and now < _certs_cache['expires']:
+        return _certs_cache['certs']
+    try:
+        req = urllib.request.Request(GOOGLE_CERTS_URL)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+        _certs_cache['certs'] = data
+        _certs_cache['expires'] = now + 3600
+        return data
+    except Exception as e:
+        print(f'⚠ Google certs fetch 실패: {e}')
+        return _certs_cache['certs']  # 기존 캐시 반환
 
-let orderedCodes=[];
-function syncOrder(){orderedCodes=orderedCodes.filter(c=>selectedCodes.has(c));selectedCodes.forEach(c=>{if(!orderedCodes.includes(c))orderedCodes.push(c);});}
-function renderSelectedTags(){
-  syncOrder();updateSelCount();
-  const el=document.getElementById('selectedTags');
-  if(!orderedCodes.length){el.innerHTML='';return;}
-  el.innerHTML=orderedCodes.map((c,i)=>{
-    const n=stockMap[c]?.name||c;
-    const upDis=i===0?'opacity:.2;pointer-events:none':'';
-    const dnDis=i===orderedCodes.length-1?'opacity:.2;pointer-events:none':'';
-    return`<span class="sel-tag" data-code="${c}" data-idx="${i}"><button class="move-btn" data-dir="up" data-idx="${i}" style="${upDis}">◀</button> ${n} <button class="move-btn" data-dir="down" data-idx="${i}" style="${dnDis}">▶</button> <span class="x" data-code="${c}">✕</span></span>`;
-  }).join('');
-}
+def verify_firebase_token(id_token):
+    """Firebase ID Token 검증 → uid 또는 None."""
+    try:
+        from google.oauth2 import id_token as google_id_token
+        from google.auth.transport import requests as google_requests
+        claims = google_id_token.verify_firebase_token(
+            id_token, google_requests.Request(), audience=FIREBASE_PROJECT_ID)
+        return claims.get('sub')
+    except Exception as e:
+        print(f'⚠ 토큰 검증 실패: {e}')
+        return None
 
-document.getElementById('selectedTags').addEventListener('click',e=>{
-  const mb=e.target.closest('.move-btn');
-  if(mb){const idx=parseInt(mb.dataset.idx),dir=mb.dataset.dir;if(dir==='up'&&idx>0)[orderedCodes[idx-1],orderedCodes[idx]]=[orderedCodes[idx],orderedCodes[idx-1]];else if(dir==='down'&&idx<orderedCodes.length-1)[orderedCodes[idx],orderedCodes[idx+1]]=[orderedCodes[idx+1],orderedCodes[idx]];renderSelectedTags();renderCards();return;}
-  const xb=e.target.closest('.x');if(xb){selectedCodes.delete(xb.dataset.code);renderPicker();renderCards();return;}
-});
+def require_auth(f):
+    """POST/PUT/DELETE 인증 + Rate Limit 데코레이터."""
+    @wraps(f)
+    @limiter.limit("10/minute")  # 쓰기: 10회/분
+    def decorated(*args, **kwargs):
+        auth_header = request.headers.get('Authorization', '')
+        if not auth_header.startswith('Bearer '):
+            return jsonify({'error': '인증 토큰이 필요합니다.'}), 401
+        token = auth_header[7:]
+        uid = verify_firebase_token(token)
+        if not uid:
+            return jsonify({'error': '유효하지 않은 토큰입니다.'}), 401
+        if uid != ADMIN_UID:
+            return jsonify({'error': '관리자 권한이 필요합니다.'}), 403
+        return f(*args, **kwargs)
+    return decorated
 
-function clearSelection(){selectedCodes.clear();orderedCodes=[];selectedSectors.clear();renderPicker();renderCards();buildSectorFilter();}
-function clearSectors(){selectedSectors.clear();buildSectorFilter();renderCards();}
+def get_conn():
+    return oracledb.connect(user=DB_USER, password=DB_PASSWORD, dsn=DSN,
+        config_dir=WALLET_DIR, wallet_location=WALLET_DIR,
+        wallet_password=os.environ.get('ORACLE_WALLET_PASSWORD', ''))
 
-document.getElementById('pickerGrid').addEventListener('change',e=>{if(e.target.type!=='checkbox')return;if(e.target.checked)selectedCodes.add(e.target.value);else selectedCodes.delete(e.target.value);renderSelectedTags();renderCards();});
-document.getElementById('pickerSearch').addEventListener('input',renderPicker);
-function today(){return new Date().toISOString().slice(0,10);}
-function daysAgo(n){const d=new Date();d.setDate(d.getDate()-n);return d.toISOString().slice(0,10);}
+def _convert(val):
+    """Oracle 타입 → Python 기본 타입 변환"""
+    if val is None: return None
+    if isinstance(val, datetime): return val.strftime('%Y-%m-%d %H:%M:%S')
+    if hasattr(val, 'read'): return val.read()  # LOB → str
+    return val
 
-async function loadDataRange(){try{const r=await fetch(`${API}/prices/daily/summary`);const j=await r.json();dataRange.first=j.first_date;dataRange.last=j.last_date;const f=document.getElementById('dateFrom'),t=document.getElementById('dateTo');if(dataRange.first){f.min=dataRange.first;t.min=dataRange.first;}if(dataRange.last){f.max=dataRange.last;t.max=dataRange.last;}document.getElementById('rangeNote').textContent=`📅 데이터 범위: ${dataRange.first} ~ ${dataRange.last} (${j.stock_count}종목)`;}catch(e){}}
+def rows_to_list(cur, rows):
+    cols = [c[0].lower() for c in cur.description]
+    return [dict(zip(cols, [_convert(v) for v in r])) for r in rows]
 
-document.getElementById('presets').addEventListener('click',e=>{const b=e.target.closest('.preset-btn');if(!b)return;document.querySelectorAll('#presets .preset-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');if(b.dataset.days){document.getElementById('dateFrom').value=daysAgo(parseInt(b.dataset.days));document.getElementById('dateTo').value=today();}else if(b.dataset.from){document.getElementById('dateFrom').value=b.dataset.from;document.getElementById('dateTo').value=today();}fetchData();});
+def row_to_dict(cur, row):
+    cols = [c[0].lower() for c in cur.description]
+    return dict(zip(cols, [_convert(v) for v in row]))
 
-function buildSectorFilter(){
-  const sc={};allData.forEach(d=>{const s=d.sector;if(s&&s!=='기타')sc[s]=(sc[s]||0)+1;});
-  const sectors=Object.entries(sc).sort((a,b)=>b[1]-a[1]);
-  const wrap=document.getElementById('sectorFilter'),tags=document.getElementById('sectorTags');
-  if(!sectors.length){wrap.style.display='none';return;}
-  wrap.style.display='block';
-  tags.innerHTML=`<button class="sector-tag${selectedSectors.size===0?' active':''}" data-sector="">전체<span class="cnt">${allData.length}</span></button>`+sectors.map(([s,c])=>`<button class="sector-tag${selectedSectors.has(s)?' active':''}" data-sector="${s}">${s}<span class="cnt">${c}</span></button>`).join('');
-}
-document.getElementById('sectorTags').addEventListener('click',e=>{const b=e.target.closest('.sector-tag');if(!b)return;const s=b.dataset.sector;if(s==='')selectedSectors.clear();else{if(selectedSectors.has(s))selectedSectors.delete(s);else selectedSectors.add(s);}document.querySelectorAll('.sector-tag').forEach(x=>{if(x.dataset.sector==='')x.classList.toggle('active',selectedSectors.size===0);else x.classList.toggle('active',selectedSectors.has(x.dataset.sector));});renderCards();});
+def dt_str(val):
+    if val is None: return None
+    if isinstance(val, datetime): return val.strftime('%Y-%m-%d %H:%M:%S')
+    return str(val)
 
-async function fetchData(){
-  let from=document.getElementById('dateFrom').value,to=document.getElementById('dateTo').value||today();
-  if(dataRange.first&&from<dataRange.first){from=dataRange.first;document.getElementById('dateFrom').value=from;}
-  if(dataRange.last&&to>dataRange.last)to=dataRange.last;
-  document.getElementById('dateTo').value=to;
-  document.getElementById('cardGrid').innerHTML='<div class="loading">조회 중...</div>';
-  try{
-    const res=await fetch(`${API}/prices/daily/changes?from=${from}&to=${to}`);const json=await res.json();
-    const im={};(json.data||[]).forEach(d=>{if(d.stock_code==='KS11')im.KOSPI=d.change_pct||0;if(d.stock_code==='KQ11')im.KOSDAQ=d.change_pct||0;});
-    window._indexMap=im;
-    allData=(json.data||[]).filter(d=>d.stock_code!=='KS11'&&d.stock_code!=='KQ11').filter(d=>{if(!d.start_date)return false;return(new Date(d.start_date)-new Date(from))/86400000<=5;}).map(d=>{const i=stockMap[d.stock_code]||{};const m=i.market||'';const b=m==='KOSDAQ'?(im.KOSDAQ||0):(im.KOSPI||0);return{...d,name:i.name||d.stock_code,market:m,sector:i.sector||'',excess_pct:Math.round(((d.change_pct||0)-b)*100)/100};});
-    buildSectorFilter();updateSummary();renderCards();
-    document.getElementById('note').textContent=`기간: ${from} → ${to} · ${allData.length}종목 · Oracle DAILY_PRICES`;
-  }catch(e){document.getElementById('cardGrid').innerHTML=`<div class="loading">❌ ${e.message}</div>`;}
-}
+# ── health ──
+@app.route('/api/health')
+def health():
+    try:
+        conn = get_conn(); cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM real_estate")
+        cnt = cur.fetchone()[0]; cur.close(); conn.close()
+        return jsonify({'status': 'ok', 'real_estate_count': cnt})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
-function updateSummary(){
-  const f=getFiltered(),pcts=f.map(d=>d.change_pct).sort((a,b)=>a-b);
-  const up=pcts.filter(p=>p>0).length,down=pcts.filter(p=>p<0).length,avg=pcts.length?(pcts.reduce((s,v)=>s+v,0)/pcts.length):0;
-  document.getElementById('sTotal').textContent=f.length;document.getElementById('sUp').textContent=up;document.getElementById('sDown').textContent=down;
-  const ae=document.getElementById('sAvg');ae.textContent=(avg>=0?'+':'')+avg.toFixed(2)+'%';ae.className='num '+(avg>0?'up':avg<0?'down':'flat');
-  const im=window._indexMap||{};['KOSPI','KOSDAQ'].forEach(k=>{const el=document.getElementById(k==='KOSPI'?'sKospi':'sKosdaq');const v=im[k]||0;el.textContent=(v>=0?'+':'')+v.toFixed(2)+'%';el.className='num '+(v>0?'up':v<0?'down':'flat');});
-  document.getElementById('summary').style.display='grid';
-}
-function getFiltered(){const m=document.getElementById('marketFilter').value;return allData.filter(d=>{if(m&&d.market!==m)return false;if(selectedCodes.size&&!selectedCodes.has(d.stock_code))return false;if(selectedSectors.size&&!selectedSectors.has(d.sector))return false;return true;});}
-function sortData(data){const s=currentSort;if(s==='custom'&&selectedCodes.size)return[...data].sort((a,b)=>{const ai=orderedCodes.indexOf(a.stock_code),bi=orderedCodes.indexOf(b.stock_code);return(ai===-1?999:ai)-(bi===-1?999:bi);});return[...data].sort((a,b)=>{if(s==='change_pct_desc')return(b.change_pct||0)-(a.change_pct||0);if(s==='change_pct_asc')return(a.change_pct||0)-(b.change_pct||0);if(s==='excess_desc')return(b.excess_pct||0)-(a.excess_pct||0);if(s==='excess_asc')return(a.excess_pct||0)-(b.excess_pct||0);if(s==='name')return(a.name||'').localeCompare(b.name||'');return 0;});}
+# ══ realestate ══
+@app.route('/api/realestate/regions')
+def re_regions():
+    prop = request.args.get('prop_type', 'APT')
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT region, COUNT(*) cnt FROM real_estate WHERE prop_type=:1 GROUP BY region ORDER BY region", [prop])
+    data = [{'region': r[0], 'count': r[1]} for r in cur.fetchall()]
+    cur.close(); conn.close()
+    return jsonify(data)
 
-function renderCards(){
-  const filtered=getFiltered(),sorted=sortData(filtered),grid=document.getElementById('cardGrid');
-  if(!sorted.length){grid.innerHTML='<div class="empty">표시할 종목이 없습니다.</div>';updateSummary();hideChart();return;}
-  const maxAbs=Math.max(...filtered.map(d=>Math.abs(d.change_pct||0)),1);
-  grid.innerHTML=sorted.map(d=>{const pct=d.change_pct||0,c=pct>0?'up':pct<0?'down':'flat',sign=pct>0?'+':'';const ex=d.excess_pct||0,ec=ex>0?'up':ex<0?'down':'flat',es=ex>0?'+':'';const bw=Math.min(Math.abs(pct)/maxAbs*50,50);const bc=pct>=0?'pos':'neg';const bs=pct>=0?`right:50%;width:${bw}%`:`left:50%;width:${bw}%`;const mc=d.market==='KOSPI'?'kospi':'kosdaq';const bl=d.market==='KOSDAQ'?'KOSDAQ':'KOSPI';const sl=d.sector&&d.sector!=='기타'?`<span class="sc-sector">${d.sector}</span>`:'';return`<div class="stock-card"><div class="sc-header"><div><span class="sc-name">${d.name}</span><span class="sc-code">${d.stock_code}</span>${sl}</div><span class="sc-mkt ${mc}">${d.market}</span></div><div class="sc-pct ${c}">${sign}${pct.toFixed(2)}%</div><div class="sc-excess ${ec}">${bl} 대비 ${es}${ex.toFixed(2)}%p</div><div class="sc-bar-wrap"><div class="sc-bar ${bc}" style="${bs}"></div></div><div class="sc-prices"><div>${d.start_date} <span class="val">${(d.start_price||0).toLocaleString()}</span></div><div>→</div><div>${d.end_date} <span class="val">${(d.end_price||0).toLocaleString()}</span></div></div></div>`;}).join('');
-  updateSummary();
-  const cc=selectedCodes.size?[...selectedCodes]:[];if(cc.length>=2&&cc.length<=10)loadChart(cc);else hideChart();
-}
+@app.route('/api/realestate/dongs')
+def re_dongs():
+    region = request.args.get('region', '')
+    prop = request.args.get('prop_type', 'APT')
+    conn = get_conn(); cur = conn.cursor()
+    # 다중 지역 지원 (쉼표 구분)
+    regions = [r.strip() for r in region.split(',') if r.strip()]
+    if len(regions) == 1:
+        cur.execute("SELECT DISTINCT dong FROM real_estate WHERE region=:1 AND prop_type=:2 ORDER BY dong", [regions[0], prop])
+    elif len(regions) > 1:
+        ph = ','.join([f':r{i}' for i in range(len(regions))])
+        p = {f'r{i}': regions[i] for i in range(len(regions))}
+        p['prop'] = prop
+        cur.execute(f"SELECT DISTINCT dong FROM real_estate WHERE region IN ({ph}) AND prop_type=:prop ORDER BY dong", p)
+    else:
+        cur.execute("SELECT DISTINCT dong FROM real_estate WHERE prop_type=:1 ORDER BY dong", [prop])
+    data = [r[0] for r in cur.fetchall()]; cur.close(); conn.close()
+    return jsonify(data)
 
-// ===== 차트 =====
-function hideChart(){document.getElementById('chartSection').style.display='none';if(priceChart){priceChart.destroy();priceChart=null;}}
-function setChartMode(m){chartMode=m;document.querySelectorAll('[data-chart-mode]').forEach(b=>b.classList.toggle('active',b.dataset.chartMode===m));const c=[...selectedCodes];if(c.length>=2&&c.length<=10)loadChart(c);}
-function toggleBenchmark(){showBenchmark=!showBenchmark;const c=[...selectedCodes];if(c.length>=2&&c.length<=10)loadChart(c);}
-async function loadChart(codes){const from=document.getElementById('dateFrom').value,to=document.getElementById('dateTo').value||today();const ac=[...codes];if(showBenchmark)ac.push('KS11','KQ11');try{const r=await fetch(`${API}/prices/daily?codes=${[...new Set(ac)].join(',')}&from=${from}&to=${to}`);const j=await r.json();drawChart(j.data||[],codes);}catch(e){}}
-function drawChart(raw,codes){const bc={};raw.forEach(r=>{if(!bc[r.stock_code])bc[r.stock_code]=[];bc[r.stock_code].push(r);});const ad=[...new Set(raw.map(r=>r.trade_date))].sort();if(!ad.length){hideChart();return;}const ds=[];codes.forEach((c,i)=>{const rows=bc[c]||[];if(!rows.length)return;const dm={};rows.forEach(r=>dm[r.trade_date]=r);const bp=rows[0]?.close_price||1;ds.push({label:stockMap[c]?.name||c,data:ad.map(d=>{const r=dm[d];if(!r)return null;const cl=r.close_price??0;return chartMode==='pct'?Math.round((cl/bp-1)*10000)/100:cl;}),borderColor:CHART_COLORS[i%CHART_COLORS.length],backgroundColor:'transparent',borderWidth:2,pointRadius:0,pointHoverRadius:4,tension:.1,spanGaps:true});});if(showBenchmark&&chartMode==='pct')['KS11','KQ11'].forEach(idx=>{const rows=bc[idx]||[];if(!rows.length)return;const dm={};rows.forEach(r=>dm[r.trade_date]=r);const bp=rows[0]?.close_price||1;const nm=idx==='KS11'?'KOSPI':'KOSDAQ';ds.push({label:nm,data:ad.map(d=>{const r=dm[d];if(!r)return null;return Math.round((r.close_price/bp-1)*10000)/100;}),borderColor:BENCH_COLORS[nm],backgroundColor:'transparent',borderWidth:1.5,borderDash:[6,3],pointRadius:0,tension:.1,spanGaps:true});});if(!ds.length){hideChart();return;}document.getElementById('chartSection').style.display='block';const ctx=document.getElementById('priceChart').getContext('2d');if(priceChart)priceChart.destroy();priceChart=new Chart(ctx,{type:'line',data:{labels:ad.map(d=>d.slice(5)),datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom',labels:{color:'#e4e4e7',boxWidth:14,padding:12,font:{size:11}}},tooltip:{backgroundColor:'#1a1d27',titleColor:'#e4e4e7',bodyColor:'#e4e4e7',borderColor:'#2a2d3a',borderWidth:1,callbacks:{label:c=>{const v=c.parsed.y;if(v===null)return'';return chartMode==='pct'?`${c.dataset.label}: ${v>=0?'+':''}${v.toFixed(2)}%`:`${c.dataset.label}: ${v.toLocaleString()}원`;}}}},scales:{x:{ticks:{color:'#71717a',maxRotation:0,autoSkipPadding:20,font:{size:10}},grid:{color:'rgba(42,45,58,.5)'}},y:{ticks:{color:'#71717a',font:{size:10},callback:v=>chartMode==='pct'?v.toFixed(1)+'%':v.toLocaleString()},grid:{color:'rgba(42,45,58,.5)'}}}}});}
+@app.route('/api/realestate/search')
+def re_search():
+    prop = request.args.get('prop_type', 'APT')
+    region = request.args.get('region', '')
+    dong = request.args.get('dong', '')
+    deal_type_str = request.args.get('deal_type', '')  # 쉼표 구분 문자열
+    year_from = request.args.get('year_from', '')
+    year_to = request.args.get('year_to', '')
+    area_min = request.args.get('area_min', '')
+    area_max = request.args.get('area_max', '')
+    area_range = request.args.get('area', '')  # "60-85" 형태 호환
+    price_min = request.args.get('price_min', '')
+    price_max = request.args.get('price_max', '')
+    build_year_from = request.args.get('build_year_from', '')
+    build_year_to = request.args.get('build_year_to', '')
+    name = request.args.get('name', '')
+    limit = int(request.args.get('limit', request.args.get('per_page', 500)))
+    offset = int(request.args.get('offset', 0))
+    # page 파라미터 호환
+    page = request.args.get('page', '')
+    if page and not request.args.get('offset', ''):
+        offset = (int(page) - 1) * limit
 
-document.querySelector('.sort-bar').addEventListener('click',e=>{const b=e.target.closest('.preset-btn');if(!b||!b.dataset.sort)return;document.querySelectorAll('.sort-bar .preset-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');currentSort=b.dataset.sort;renderCards();});
-document.getElementById('marketFilter').addEventListener('change',renderCards);
+    where = ['prop_type=:prop']; params = {'prop': prop}
 
-// ===== sf-slots.js 연동 =====
-window.CALC_KEY = 'price_compare';
-window.slGetState = function(){syncOrder();return{orderedCodes,dateFrom:document.getElementById('dateFrom').value,dateTo:document.getElementById('dateTo').value};};
-window.slSetState = function(d){if(!d)return;if(d.orderedCodes&&d.orderedCodes.length){orderedCodes=[...d.orderedCodes];selectedCodes=new Set(d.orderedCodes);renderPicker();}if(d.dateFrom)document.getElementById('dateFrom').value=d.dateFrom;if(d.dateTo)document.getElementById('dateTo').value=d.dateTo;fetchData();};
-window.calculate = function(){fetchData();};
+    # 다중 지역 (쉼표 구분)
+    if region:
+        regions = [r.strip() for r in region.split(',') if r.strip()]
+        if len(regions) == 1:
+            where.append('region=:region'); params['region'] = regions[0]
+        else:
+            ph = ','.join([f':rg{i}' for i in range(len(regions))])
+            where.append(f'region IN ({ph})')
+            for i, r in enumerate(regions): params[f'rg{i}'] = r
+    if dong: where.append('dong=:dong'); params['dong'] = dong
 
-(async()=>{document.getElementById('dateTo').value=today();await Promise.all([loadStockMap(),loadDataRange()]);
-  // localStorage 자동복원은 sf-slots.js가 처리
-  if(!selectedCodes.size){try{const r=localStorage.getItem('sf_price_compare_v2');if(r){const d=JSON.parse(r);if(d.orderedCodes){orderedCodes=[...d.orderedCodes];selectedCodes=new Set(d.orderedCodes);renderPicker();}}}catch(e){}}
-  fetchData();
-})();
-</script>
-<script src="/sf-slots.js?v=2"></script>
-</body>
-</html>
+    # 거래유형 (쉼표 구분)
+    if deal_type_str:
+        dts = [d.strip() for d in deal_type_str.split(',') if d.strip()]
+        if dts and len(dts) < 3:
+            ph = ','.join([f':dt{i}' for i in range(len(dts))])
+            where.append(f'deal_type IN ({ph})')
+            for i, dt in enumerate(dts): params[f'dt{i}'] = dt
+
+    if year_from: where.append('deal_year>=:yf'); params['yf'] = int(year_from)
+    if year_to: where.append('deal_year<=:yt'); params['yt'] = int(year_to)
+
+    # 면적: 직접 입력 우선, area 파라미터 호환
+    if area_min:
+        where.append('area_m2>=:amin'); params['amin'] = float(area_min)
+    if area_max:
+        where.append('area_m2<=:amax'); params['amax'] = float(area_max)
+    if area_range and not area_min and not area_max:
+        if '-' in area_range:
+            parts = area_range.split('-')
+            if parts[0]: where.append('area_m2>=:amin'); params['amin'] = float(parts[0])
+            if parts[1]: where.append('area_m2<=:amax'); params['amax'] = float(parts[1])
+
+    # 금액 범위 (매매=price, 전세/월세=deposit)
+    if price_min:
+        where.append("(CASE WHEN deal_type='S' THEN price ELSE NVL(deposit,0) END)>=:pmin")
+        params['pmin'] = int(price_min)
+    if price_max:
+        where.append("(CASE WHEN deal_type='S' THEN price ELSE NVL(deposit,0) END)<=:pmax")
+        params['pmax'] = int(price_max)
+
+    # 건물명 검색 (쉼표로 여러 개 OR 검색)
+    if name:
+        names = [n.strip() for n in name.split(',') if n.strip()]
+        if len(names) == 1:
+            where.append("UPPER(name) LIKE '%'||UPPER(:name)||'%'")
+            params['name'] = names[0]
+        elif names:
+            or_parts = []
+            for i, n in enumerate(names):
+                or_parts.append(f"UPPER(name) LIKE '%'||UPPER(:nm{i})||'%'")
+                params[f'nm{i}'] = n
+            where.append('(' + ' OR '.join(or_parts) + ')')
+
+    # 준공년도
+    if build_year_from:
+        where.append('build_year>=:byf'); params['byf'] = int(build_year_from)
+    if build_year_to:
+        where.append('build_year<=:byt'); params['byt'] = int(build_year_to)
+
+    w = ' AND '.join(where)
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute(f"""SELECT COUNT(*) FROM (
+        SELECT DISTINCT region, name, dong, area_m2, floor_no, deal_type, price, deposit, monthly_rent,
+               deal_year, deal_month, deal_day, build_year
+        FROM real_estate WHERE {w})""", params)
+    total = cur.fetchone()[0]
+    cur.execute(f"""SELECT * FROM (SELECT a.*, ROWNUM rn FROM (
+        SELECT DISTINCT region, name, dong, area_m2 AS area, floor_no AS floor, deal_type, price, deposit, monthly_rent,
+               deal_year, deal_month, deal_day, build_year
+        FROM real_estate WHERE {w}
+        ORDER BY deal_year DESC, deal_month DESC, deal_day DESC
+    ) a WHERE ROWNUM <= :maxrow) WHERE rn > :minrow""",
+        {**params, 'maxrow': offset + limit, 'minrow': offset})
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify({'total': total, 'data': data})
+
+@app.route('/api/realestate/stats')
+def re_stats():
+    prop = request.args.get('prop_type', 'APT')
+    region = request.args.get('region', '')
+    where = ['prop_type=:prop']; params = {'prop': prop}
+    if region:
+        regions = [r.strip() for r in region.split(',') if r.strip()]
+        if len(regions) == 1:
+            where.append('region=:region'); params['region'] = regions[0]
+        else:
+            ph = ','.join([f':rg{i}' for i in range(len(regions))])
+            where.append(f'region IN ({ph})')
+            for i, r in enumerate(regions): params[f'rg{i}'] = r
+    w = ' AND '.join(where)
+    conn = get_conn(); cur = conn.cursor()
+
+    # summary (매매 기준)
+    cur.execute(f"""SELECT COUNT(*), ROUND(AVG(price)), MAX(price), MIN(price)
+        FROM real_estate WHERE {w} AND deal_type='S' AND price>0""", params)
+    row = cur.fetchone()
+    summary = {'count': row[0] or 0, 'avg_price': row[1] or 0, 'max_price': row[2] or 0, 'min_price': row[3] or 0}
+
+    # top 아파트
+    cur.execute(f"""SELECT * FROM (
+        SELECT name, COUNT(*) cnt FROM real_estate WHERE {w} AND name IS NOT NULL
+        GROUP BY name ORDER BY cnt DESC
+    ) WHERE ROWNUM <= 5""", params)
+    top_apts = [{'name': r[0], 'count': r[1]} for r in cur.fetchall()]
+
+    # 연도별
+    cur.execute(f"""SELECT deal_year AS year, ROUND(AVG(price)) avg_price, COUNT(*) count
+        FROM real_estate WHERE {w} AND deal_type='S' AND price>0
+        GROUP BY deal_year ORDER BY deal_year""", params)
+    yearly = rows_to_list(cur, cur.fetchall())
+
+    cur.close(); conn.close()
+    return jsonify({'summary': summary, 'top_apts': top_apts, 'yearly': yearly})
+
+# ══ categories ══
+@app.route('/api/categories', methods=['GET'])
+def list_categories():
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT id, name, sort_order FROM categories ORDER BY sort_order, id")
+    data = rows_to_list(cur, cur.fetchall()); cur.close(); conn.close()
+    return jsonify(data)
+
+@app.route('/api/categories', methods=['POST'])
+@require_auth
+def add_category():
+    d = request.get_json()
+    if not d: return jsonify({'error': 'JSON 필요'}), 400
+    name = (d.get('name') or '').strip()
+    if not name: return jsonify({'error': '카테고리명을 입력하세요.'}), 400
+    if len(name) > 20: return jsonify({'error': '20자 이내로 입력하세요.'}), 400
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT MAX(sort_order) FROM categories")
+    mx = cur.fetchone()[0] or 0
+    cur.execute("INSERT INTO categories (name, sort_order) VALUES (:n, :s)", {'n': name, 's': mx + 1})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True}), 201
+
+@app.route('/api/categories/<int:cat_id>', methods=['PUT'])
+@require_auth
+def update_category(cat_id):
+    d = request.get_json()
+    if not d: return jsonify({'error': 'JSON 필요'}), 400
+    name = (d.get('name') or '').strip()
+    if not name: return jsonify({'error': '카테고리명을 입력하세요.'}), 400
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("UPDATE categories SET name=:n WHERE id=:id", {'n': name, 'id': cat_id})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/categories/<int:cat_id>', methods=['DELETE'])
+@require_auth
+def delete_category(cat_id):
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM posts WHERE category=:c", {'c': str(cat_id)})
+    cnt = cur.fetchone()[0]
+    if cnt > 0:
+        cur.close(); conn.close()
+        return jsonify({'error': f'글 {cnt}건이 있어 삭제 불가. 글을 먼저 이동하세요.'}), 400
+    cur.execute("DELETE FROM categories WHERE id=:id", {'id': cat_id})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
+# ══ posts ══
+@app.route('/api/posts', methods=['GET'])
+def list_posts():
+    page = int(request.args.get('page', 1))
+    per = int(request.args.get('per_page', 20))
+    category = request.args.get('category', '')
+    search = request.args.get('q', '')
+    where = ['1=1']; params = {}
+    if category: where.append('category=:cat'); params['cat'] = category
+    if search:
+        where.append("(UPPER(title) LIKE '%'||UPPER(:q)||'%' OR UPPER(CAST(content AS VARCHAR2(4000))) LIKE '%'||UPPER(:q2)||'%')")
+        params['q'] = search
+        params['q2'] = search
+    w = ' AND '.join(where)
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute(f"SELECT COUNT(*) FROM posts WHERE {w}", params)
+    total = cur.fetchone()[0]
+    offset = (page - 1) * per
+    cur.execute(f"""SELECT * FROM (SELECT a.*, ROWNUM rn FROM (
+        SELECT id, category, title, author, is_pinned, views, created_at, updated_at
+        FROM posts WHERE {w} ORDER BY is_pinned DESC NULLS LAST, created_at DESC
+    ) a WHERE ROWNUM <= :maxrow) WHERE rn > :minrow""",
+        {**params, 'maxrow': offset + per, 'minrow': offset})
+    posts = rows_to_list(cur, cur.fetchall())
+    if posts:
+        ids = [p['id'] for p in posts]
+        ph = ','.join([f':cid{i}' for i in range(len(ids))])
+        cp = {f'cid{i}': ids[i] for i in range(len(ids))}
+        cur.execute(f"SELECT post_id, COUNT(*) cnt FROM comments WHERE post_id IN ({ph}) GROUP BY post_id", cp)
+        cc = {r[0]: r[1] for r in cur.fetchall()}
+        for p in posts:
+            p['comment_count'] = cc.get(p['id'], 0)
+            p['created_at'] = dt_str(p.get('created_at'))
+            p['updated_at'] = dt_str(p.get('updated_at'))
+    cur.close(); conn.close()
+    return jsonify({'total': total, 'page': page, 'per_page': per, 'pages': (total+per-1)//per, 'data': posts})
+
+@app.route('/api/posts/<int:post_id>', methods=['GET'])
+def get_post(post_id):
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("UPDATE posts SET views=NVL(views,0)+1 WHERE id=:id", {'id': post_id})
+    conn.commit()
+    cur.execute("SELECT * FROM posts WHERE id=:id", {'id': post_id})
+    row = cur.fetchone()
+    if not row: cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
+    post = row_to_dict(cur, row)
+    post['created_at'] = dt_str(post.get('created_at'))
+    post['updated_at'] = dt_str(post.get('updated_at'))
+    cur.execute("SELECT id,post_id,author,content,created_at FROM comments WHERE post_id=:pid ORDER BY created_at", {'pid': post_id})
+    comments = rows_to_list(cur, cur.fetchall())
+    for c in comments: c['created_at'] = dt_str(c.get('created_at'))
+    post['comments'] = comments; cur.close(); conn.close()
+    return jsonify(post)
+
+@app.route('/api/posts', methods=['POST'])
+@require_auth
+def create_post():
+    d = request.get_json()
+    if not d: return jsonify({'error': 'JSON 필요'}), 400
+    title = (d.get('title') or '').strip()
+    content = (d.get('content') or '').strip()
+    author = (d.get('author') or '').strip() or '익명'
+    category = d.get('category', '')
+    pinned = 1 if d.get('pinned') else 0
+    if not title: return jsonify({'error': '제목을 입력하세요.'}), 400
+    if not content: return jsonify({'error': '내용을 입력하세요.'}), 400
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("""INSERT INTO posts (category, title, author, content, is_pinned, views, created_at)
+        VALUES (:cat, :title, :author, :content, :pinned, 0, SYSTIMESTAMP)""",
+        {'cat': category, 'title': title, 'author': author, 'content': content, 'pinned': pinned})
+    conn.commit()
+    cur.execute("SELECT MAX(id) FROM posts"); new_id = cur.fetchone()[0]
+    cur.close(); conn.close()
+    return jsonify({'ok': True, 'id': new_id}), 201
+
+@app.route('/api/posts/<int:post_id>', methods=['PUT'])
+@require_auth
+def update_post(post_id):
+    d = request.get_json()
+    if not d: return jsonify({'error': 'JSON 필요'}), 400
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT id FROM posts WHERE id=:id", {'id': post_id})
+    if not cur.fetchone(): cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
+    title = (d.get('title') or '').strip()
+    content = (d.get('content') or '').strip()
+    author = (d.get('author') or '').strip() or '익명'
+    category = d.get('category', '')
+    pinned = 1 if d.get('pinned') else 0
+    if not title or not content: cur.close(); conn.close(); return jsonify({'error': '제목과 내용을 입력하세요.'}), 400
+    cur.execute("""UPDATE posts SET title=:title, author=:author, content=:content,
+        category=:cat, is_pinned=:pinned, updated_at=SYSTIMESTAMP WHERE id=:id""",
+        {'title': title, 'author': author, 'content': content, 'cat': category, 'pinned': pinned, 'id': post_id})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/posts/<int:post_id>', methods=['DELETE'])
+@require_auth
+def delete_post(post_id):
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT id FROM posts WHERE id=:id", {'id': post_id})
+    if not cur.fetchone(): cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
+    cur.execute("DELETE FROM comments WHERE post_id=:id", {'id': post_id})
+    cur.execute("DELETE FROM posts WHERE id=:id", {'id': post_id})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
+# ══ notes (투자메모·일지) ══
+@app.route('/api/note-categories', methods=['GET'])
+def list_note_categories():
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT id, name, sort_order FROM note_categories ORDER BY sort_order, id")
+    data = rows_to_list(cur, cur.fetchall()); cur.close(); conn.close()
+    return jsonify(data)
+
+@app.route('/api/note-categories', methods=['POST'])
+@require_auth
+def add_note_category():
+    d = request.get_json()
+    if not d: return jsonify({'error': 'JSON 필요'}), 400
+    name = (d.get('name') or '').strip()
+    if not name or len(name) > 20: return jsonify({'error': '1~20자 카테고리명을 입력하세요.'}), 400
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT MAX(sort_order) FROM note_categories"); mx = cur.fetchone()[0] or 0
+    cur.execute("INSERT INTO note_categories (name, sort_order) VALUES (:n, :s)", {'n': name, 's': mx + 1})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True}), 201
+
+@app.route('/api/note-categories/<int:cat_id>', methods=['DELETE'])
+@require_auth
+def delete_note_category(cat_id):
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM notes WHERE category=:c", {'c': str(cat_id)})
+    cnt = cur.fetchone()[0]
+    if cnt > 0: cur.close(); conn.close(); return jsonify({'error': f'글 {cnt}건이 있어 삭제 불가.'}), 400
+    cur.execute("DELETE FROM note_categories WHERE id=:id", {'id': cat_id})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/notes', methods=['GET'])
+def list_notes():
+    page = int(request.args.get('page', 1))
+    per = int(request.args.get('per_page', 30))
+    category = request.args.get('category', '')
+    search = request.args.get('q', '')
+    where = ['1=1']; params = {}
+    if category: where.append('category=:cat'); params['cat'] = category
+    if search:
+        where.append("(UPPER(NVL(title,'')) LIKE '%'||UPPER(:q)||'%' OR UPPER(CAST(content AS VARCHAR2(4000))) LIKE '%'||UPPER(:q2)||'%')")
+        params['q'] = search; params['q2'] = search
+    w = ' AND '.join(where)
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute(f"SELECT COUNT(*) FROM notes WHERE {w}", params)
+    total = cur.fetchone()[0]
+    offset = (page - 1) * per
+    cur.execute(f"""SELECT * FROM (SELECT a.*, ROWNUM rn FROM (
+        SELECT id, category, title, author, is_pinned, views, created_at, updated_at
+        FROM notes WHERE {w} ORDER BY is_pinned DESC NULLS LAST, created_at DESC
+    ) a WHERE ROWNUM <= :maxrow) WHERE rn > :minrow""",
+        {**params, 'maxrow': offset + per, 'minrow': offset})
+    notes = rows_to_list(cur, cur.fetchall())
+    for n in notes:
+        n['created_at'] = dt_str(n.get('created_at'))
+        n['updated_at'] = dt_str(n.get('updated_at'))
+    cur.close(); conn.close()
+    return jsonify({'total': total, 'page': page, 'per_page': per, 'pages': (total+per-1)//per, 'data': notes})
+
+@app.route('/api/notes/<int:note_id>', methods=['GET'])
+def get_note(note_id):
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("UPDATE notes SET views=NVL(views,0)+1 WHERE id=:id", {'id': note_id})
+    conn.commit()
+    cur.execute("SELECT * FROM notes WHERE id=:id", {'id': note_id})
+    row = cur.fetchone()
+    if not row: cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
+    note = row_to_dict(cur, row)
+    note['created_at'] = dt_str(note.get('created_at'))
+    note['updated_at'] = dt_str(note.get('updated_at'))
+    cur.close(); conn.close()
+    return jsonify(note)
+
+@app.route('/api/notes', methods=['POST'])
+@require_auth
+def create_note():
+    d = request.get_json()
+    if not d: return jsonify({'error': 'JSON 필요'}), 400
+    title = (d.get('title') or '').strip()
+    content = (d.get('content') or '').strip()
+    author = (d.get('author') or '').strip() or '스윙파머'
+    category = d.get('category', '')
+    is_pinned = 1 if d.get('pinned') else 0
+    if not content: return jsonify({'error': '내용을 입력하세요.'}), 400
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("""INSERT INTO notes (category, title, content, author, is_pinned, views, created_at)
+        VALUES (:cat, :title, :content, :author, :pinned, 0, SYSTIMESTAMP)""",
+        {'cat': category, 'title': title, 'content': content, 'author': author, 'pinned': is_pinned})
+    conn.commit()
+    cur.execute("SELECT MAX(id) FROM notes"); new_id = cur.fetchone()[0]
+    cur.close(); conn.close()
+    return jsonify({'ok': True, 'id': new_id}), 201
+
+@app.route('/api/notes/<int:note_id>', methods=['PUT'])
+@require_auth
+def update_note(note_id):
+    d = request.get_json()
+    if not d: return jsonify({'error': 'JSON 필요'}), 400
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT id FROM notes WHERE id=:id", {'id': note_id})
+    if not cur.fetchone(): cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
+    title = (d.get('title') or '').strip()
+    content = (d.get('content') or '').strip()
+    author = (d.get('author') or '').strip() or '스윙파머'
+    category = d.get('category', '')
+    is_pinned = 1 if d.get('pinned') else 0
+    if not content: cur.close(); conn.close(); return jsonify({'error': '내용을 입력하세요.'}), 400
+    cur.execute("""UPDATE notes SET title=:title, author=:author, content=:content,
+        category=:cat, is_pinned=:pinned, updated_at=SYSTIMESTAMP WHERE id=:id""",
+        {'title': title, 'author': author, 'content': content, 'cat': category, 'pinned': is_pinned, 'id': note_id})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/notes/<int:note_id>', methods=['DELETE'])
+@require_auth
+def delete_note(note_id):
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT id FROM notes WHERE id=:id", {'id': note_id})
+    if not cur.fetchone(): cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
+    cur.execute("DELETE FROM notes WHERE id=:id", {'id': note_id})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
+# ══ exchange rates (수출입은행) ══
+@app.route('/api/rates/exchange')
+def rates_exchange():
+    """환율 조회. ?cur=USD,JPY,EUR &days=90 &from=2026-01-01 &to=2026-09-29"""
+    cur_filter = request.args.get('cur', '')  # 쉼표 구분 통화코드
+    days = request.args.get('days', '')
+    date_from = request.args.get('from', '')
+    date_to = request.args.get('to', '')
+    latest = request.args.get('latest', '')  # latest=1 → 최신 1일
+
+    where = []; params = {}
+    if cur_filter:
+        curs = [c.strip() for c in cur_filter.split(',') if c.strip()]
+        if curs:
+            ph = ','.join([f':c{i}' for i in range(len(curs))])
+            where.append(f'cur_unit IN ({ph})')
+            for i, c in enumerate(curs): params[f'c{i}'] = c
+
+    if latest == '1':
+        where.append('rate_date = (SELECT MAX(rate_date) FROM exchange_rates)')
+    else:
+        if days:
+            where.append(f"rate_date >= TRUNC(SYSDATE) - :days")
+            params['days'] = int(days)
+        if date_from:
+            where.append("rate_date >= TO_DATE(:df, 'YYYY-MM-DD')")
+            params['df'] = date_from
+        if date_to:
+            where.append("rate_date <= TO_DATE(:dt, 'YYYY-MM-DD')")
+            params['dt'] = date_to
+
+    w = ' AND '.join(where) if where else '1=1'
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute(f"""SELECT TO_CHAR(rate_date,'YYYY-MM-DD') AS rate_date, cur_unit, cur_nm,
+        deal_bas_r, ttb, tts, bkpr, kftc_deal_bas_r, kftc_bkpr,
+        yy_efee_r, ten_dd_efee_r
+        FROM exchange_rates WHERE {w} ORDER BY rate_date DESC, cur_unit""", params)
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify({'count': len(data), 'data': data})
+
+@app.route('/api/rates/exchange/currencies')
+def rates_currencies():
+    """DB에 있는 통화 목록."""
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("""SELECT cur_unit, cur_nm, COUNT(*) cnt,
+        TO_CHAR(MIN(rate_date),'YYYY-MM-DD') first_date,
+        TO_CHAR(MAX(rate_date),'YYYY-MM-DD') last_date
+        FROM exchange_rates GROUP BY cur_unit, cur_nm ORDER BY cnt DESC""")
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify(data)
+
+@app.route('/api/rates/interest')
+def rates_interest():
+    """금리 조회. ?type=AP02,AP03 &days=90 &item=한국은행 기준금리"""
+    dtype = request.args.get('type', '')
+    days = request.args.get('days', '')
+    date_from = request.args.get('from', '')
+    date_to = request.args.get('to', '')
+    item = request.args.get('item', '')
+    latest = request.args.get('latest', '')
+
+    where = []; params = {}
+    if dtype:
+        types = [t.strip() for t in dtype.split(',') if t.strip()]
+        if types:
+            ph = ','.join([f':t{i}' for i in range(len(types))])
+            where.append(f'data_type IN ({ph})')
+            for i, t in enumerate(types): params[f't{i}'] = t
+    if item:
+        where.append("item_nm LIKE '%'||:item||'%'")
+        params['item'] = item
+    if latest == '1':
+        where.append('rate_date = (SELECT MAX(rate_date) FROM interest_rates)')
+    else:
+        if days:
+            where.append(f"rate_date >= TRUNC(SYSDATE) - :days")
+            params['days'] = int(days)
+        if date_from:
+            where.append("rate_date >= TO_DATE(:df, 'YYYY-MM-DD')")
+            params['df'] = date_from
+        if date_to:
+            where.append("rate_date <= TO_DATE(:dt, 'YYYY-MM-DD')")
+            params['dt'] = date_to
+
+    w = ' AND '.join(where) if where else '1=1'
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute(f"""SELECT TO_CHAR(rate_date,'YYYY-MM-DD') AS rate_date,
+        data_type, item_code, item_nm, rate
+        FROM interest_rates WHERE {w} ORDER BY rate_date DESC, data_type, item_code""", params)
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify({'count': len(data), 'data': data})
+
+@app.route('/api/rates/interest/items')
+def rates_interest_items():
+    """DB에 있는 금리 항목 목록."""
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("""SELECT data_type, item_code, item_nm, COUNT(*) cnt,
+        TO_CHAR(MIN(rate_date),'YYYY-MM-DD') first_date,
+        TO_CHAR(MAX(rate_date),'YYYY-MM-DD') last_date
+        FROM interest_rates GROUP BY data_type, item_code, item_nm
+        ORDER BY data_type, cnt DESC""")
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify(data)
+
+# ══ gold prices (금시세) ══
+@app.route('/api/rates/gold')
+def rates_gold():
+    """금시세 조회. ?days=365 &from=2020-01-01 &to=2026-09-29 &latest=1 &unit=usd|krw"""
+    days = request.args.get('days', '')
+    date_from = request.args.get('from', '')
+    date_to = request.args.get('to', '')
+    latest = request.args.get('latest', '')
+    unit = request.args.get('unit', '')  # usd or krw
+
+    where = []; params = {}
+    if latest == '1':
+        where.append('price_date = (SELECT MAX(price_date) FROM gold_prices)')
+    else:
+        if days:
+            where.append("price_date >= TRUNC(SYSDATE) - :days")
+            params['days'] = int(days)
+        if date_from:
+            where.append("price_date >= TO_DATE(:df, 'YYYY-MM-DD')")
+            params['df'] = date_from
+        if date_to:
+            where.append("price_date <= TO_DATE(:dt, 'YYYY-MM-DD')")
+            params['dt'] = date_to
+
+    w = ' AND '.join(where) if where else '1=1'
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute(f"""SELECT TO_CHAR(price_date,'YYYY-MM-DD') AS price_date,
+        price_usd, price_krw_g, usd_krw, source
+        FROM gold_prices WHERE {w} ORDER BY price_date DESC""", params)
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify({'count': len(data), 'data': data})
+
+@app.route('/api/rates/gold/summary')
+def rates_gold_summary():
+    """금시세 요약 (총 건수, 범위, KRW 변환 건수)."""
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("""SELECT COUNT(*) total,
+        COUNT(price_krw_g) krw_count,
+        TO_CHAR(MIN(price_date),'YYYY-MM-DD') first_date,
+        TO_CHAR(MAX(price_date),'YYYY-MM-DD') last_date
+        FROM gold_prices""")
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify(data[0] if data else {})
+
+# ══ file upload ══
+UPLOAD_DIR = os.path.expanduser('~/uploads')
+ALLOWED_MIME = {'image/jpeg', 'image/png', 'image/gif', 'image/webp'}
+ALLOWED_EXT = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
+
+@app.route('/api/upload', methods=['POST'])
+@require_auth
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'error': '파일이 없습니다.'}), 400
+    f = request.files['file']
+    if not f.filename:
+        return jsonify({'error': '파일이 없습니다.'}), 400
+    if f.content_type not in ALLOWED_MIME:
+        return jsonify({'error': '이미지 파일만 가능합니다. (jpg, png, gif, webp)'}), 400
+    ext = os.path.splitext(f.filename)[1].lower()
+    if ext not in ALLOWED_EXT:
+        ext = '.jpg'
+    now = datetime.now()
+    subdir = now.strftime('%Y/%m')
+    upload_dir = os.path.join(UPLOAD_DIR, subdir)
+    os.makedirs(upload_dir, exist_ok=True)
+    stored_name = uuid.uuid4().hex[:12] + ext
+    stored_path = f'{subdir}/{stored_name}'
+    full_path = os.path.join(upload_dir, stored_name)
+    f.save(full_path)
+    file_size = os.path.getsize(full_path)
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("""INSERT INTO attachments (original_name, stored_path, file_size, mime_type, created_at)
+        VALUES (:orig, :path, :fsize, :mtype, SYSTIMESTAMP)""",
+        {'orig': f.filename, 'path': stored_path, 'fsize': file_size, 'mtype': f.content_type})
+    conn.commit()
+    cur.execute("SELECT MAX(id) FROM attachments"); file_id = cur.fetchone()[0]
+    cur.close(); conn.close()
+    url = f'https://swingfarmer.duckdns.org/uploads/{stored_path}'
+    return jsonify({'ok': True, 'id': file_id, 'url': url, 'name': f.filename, 'size': file_size}), 201
+
+@app.route('/api/files/<int:file_id>', methods=['DELETE'])
+@require_auth
+def delete_file(file_id):
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT stored_path FROM attachments WHERE id=:id", {'id': file_id})
+    row = cur.fetchone()
+    if not row: cur.close(); conn.close(); return jsonify({'error': '파일을 찾을 수 없습니다.'}), 404
+    full_path = os.path.join(UPLOAD_DIR, row[0])
+    if os.path.exists(full_path):
+        os.remove(full_path)
+    cur.execute("DELETE FROM attachments WHERE id=:id", {'id': file_id})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/files', methods=['GET'])
+def list_files():
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("""SELECT id, original_name, stored_path, file_size, mime_type, created_at
+        FROM attachments ORDER BY created_at DESC FETCH FIRST 100 ROWS ONLY""")
+    data = rows_to_list(cur, cur.fetchall())
+    for d in data:
+        d['url'] = f"https://swingfarmer.duckdns.org/uploads/{d['stored_path']}"
+        d['created_at'] = dt_str(d.get('created_at'))
+    cur.close(); conn.close()
+    return jsonify({'data': data})
+
+# ══ comments ══
+@app.route('/api/posts/<int:post_id>/comments', methods=['POST'])
+@require_auth
+def add_comment(post_id):
+    d = request.get_json()
+    if not d: return jsonify({'error': 'JSON 필요'}), 400
+    author = (d.get('author') or '').strip() or '익명'
+    content = (d.get('content') or '').strip()
+    if not content: return jsonify({'error': '댓글 내용을 입력하세요.'}), 400
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT id FROM posts WHERE id=:id", {'id': post_id})
+    if not cur.fetchone(): cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
+    cur.execute("INSERT INTO comments (post_id,author,content,created_at) VALUES (:pid,:a,:c,SYSTIMESTAMP)",
+        {'pid': post_id, 'a': author, 'c': content})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True}), 201
+
+@app.route('/api/comments/<int:comment_id>', methods=['DELETE'])
+@require_auth
+def delete_comment(comment_id):
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("DELETE FROM comments WHERE id=:id", {'id': comment_id})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
+# ══ board (공지 & 문의 — 비밀번호 기반) ══
+import hashlib
+
+def _board_hash(pw):
+    return hashlib.sha256((pw + '_sf_salt_2026').encode()).hexdigest()
+
+@app.route('/api/board', methods=['GET'])
+def board_list():
+    page = int(request.args.get('page', 1))
+    per = int(request.args.get('per_page', 20))
+    ptype = request.args.get('type', '')
+    search = request.args.get('q', '')
+    where = ['1=1']; params = {}
+    if ptype: where.append('post_type=:ptype'); params['ptype'] = ptype
+    if search:
+        where.append("(UPPER(title) LIKE '%'||UPPER(:q)||'%' OR UPPER(CAST(content AS VARCHAR2(4000))) LIKE '%'||UPPER(:q2)||'%')")
+        params['q'] = search; params['q2'] = search
+    w = ' AND '.join(where)
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute(f"SELECT COUNT(*) FROM board_posts WHERE {w}", params)
+    total = cur.fetchone()[0]
+    offset = (page - 1) * per
+    cur.execute(f"""SELECT * FROM (SELECT a.*, ROWNUM rn FROM (
+        SELECT id, post_type, title, author, is_pinned, views, created_at, updated_at
+        FROM board_posts WHERE {w} ORDER BY is_pinned DESC NULLS LAST, created_at DESC
+    ) a WHERE ROWNUM <= :maxrow) WHERE rn > :minrow""",
+        {**params, 'maxrow': offset + per, 'minrow': offset})
+    posts = rows_to_list(cur, cur.fetchall())
+    if posts:
+        ids = [p['id'] for p in posts]
+        ph = ','.join([f':cid{i}' for i in range(len(ids))])
+        cp = {f'cid{i}': ids[i] for i in range(len(ids))}
+        cur.execute(f"SELECT post_id, COUNT(*) cnt FROM board_replies WHERE post_id IN ({ph}) GROUP BY post_id", cp)
+        cc = {r[0]: r[1] for r in cur.fetchall()}
+        for p in posts:
+            p['reply_count'] = cc.get(p['id'], 0)
+            p['created_at'] = dt_str(p.get('created_at'))
+            p['updated_at'] = dt_str(p.get('updated_at'))
+    cur.close(); conn.close()
+    return jsonify({'total': total, 'page': page, 'per_page': per, 'pages': (total+per-1)//per, 'data': posts})
+
+@app.route('/api/board/<int:pid>', methods=['GET'])
+def board_get(pid):
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("UPDATE board_posts SET views=NVL(views,0)+1 WHERE id=:id", {'id': pid})
+    conn.commit()
+    cur.execute("SELECT * FROM board_posts WHERE id=:id", {'id': pid})
+    row = cur.fetchone()
+    if not row: cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
+    post = row_to_dict(cur, row)
+    post['created_at'] = dt_str(post.get('created_at'))
+    post['updated_at'] = dt_str(post.get('updated_at'))
+    post.pop('pw_hash', None)  # 비번 해시 노출 금지
+    cur.execute("SELECT id,post_id,author,content,created_at FROM board_replies WHERE post_id=:pid ORDER BY created_at", {'pid': pid})
+    replies = rows_to_list(cur, cur.fetchall())
+    for r in replies: r['created_at'] = dt_str(r.get('created_at'))
+    post['replies'] = replies; cur.close(); conn.close()
+    return jsonify(post)
+
+@app.route('/api/board', methods=['POST'])
+def board_create():
+    d = request.get_json()
+    if not d: return jsonify({'error': 'JSON 필요'}), 400
+    post_type = d.get('type', 'question')
+    title = (d.get('title') or '').strip()
+    content = (d.get('content') or '').strip()
+    author = (d.get('author') or '').strip() or '익명'
+    pw = (d.get('password') or '').strip()
+    pinned = 1 if d.get('pinned') else 0
+    if not title: return jsonify({'error': '제목을 입력하세요.'}), 400
+    if not content: return jsonify({'error': '내용을 입력하세요.'}), 400
+    if post_type == 'notice':
+        # 공지는 관리자 인증 필요
+        tok = request.headers.get('Authorization', '').replace('Bearer ', '')
+        if not tok:
+            return jsonify({'error': '관리자 인증이 필요합니다.'}), 401
+        uid = verify_firebase_token(tok)
+        if not uid:
+            return jsonify({'error': '인증 실패'}), 401
+    else:
+        if len(pw) < 4: return jsonify({'error': '비밀번호를 4자 이상 입력하세요.'}), 400
+    pw_hash = _board_hash(pw) if pw else None
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("""INSERT INTO board_posts (post_type, title, author, content, pw_hash, is_pinned, views, created_at)
+        VALUES (:ptype, :title, :author, :content, :pw, :pinned, 0, SYSTIMESTAMP)""",
+        {'ptype': post_type, 'title': title, 'author': author, 'content': content,
+         'pw': pw_hash, 'pinned': pinned})
+    conn.commit()
+    cur.execute("SELECT MAX(id) FROM board_posts"); new_id = cur.fetchone()[0]
+    cur.close(); conn.close()
+    return jsonify({'ok': True, 'id': new_id}), 201
+
+@app.route('/api/board/<int:pid>', methods=['PUT'])
+def board_update(pid):
+    d = request.get_json()
+    if not d: return jsonify({'error': 'JSON 필요'}), 400
+    pw = (d.get('password') or '').strip()
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT pw_hash, post_type FROM board_posts WHERE id=:id", {'id': pid})
+    row = cur.fetchone()
+    if not row: cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
+    stored_hash, ptype = row
+    # 인증: 관리자 토큰 또는 비밀번호
+    admin_ok = False
+    tok = request.headers.get('Authorization', '').replace('Bearer ', '')
+    if tok:
+        uid = verify_firebase_token(tok)
+        if uid: admin_ok = True
+    if not admin_ok:
+        if not pw: cur.close(); conn.close(); return jsonify({'error': '비밀번호를 입력하세요.'}), 403
+        if _board_hash(pw) != stored_hash: cur.close(); conn.close(); return jsonify({'error': '비밀번호가 틀렸습니다.'}), 403
+    title = (d.get('title') or '').strip()
+    content = (d.get('content') or '').strip()
+    author = (d.get('author') or '').strip() or '익명'
+    pinned = 1 if d.get('pinned') else 0
+    if not title or not content: cur.close(); conn.close(); return jsonify({'error': '제목과 내용을 입력하세요.'}), 400
+    cur.execute("""UPDATE board_posts SET title=:title, author=:author, content=:content,
+        is_pinned=:pinned, updated_at=SYSTIMESTAMP WHERE id=:id""",
+        {'title': title, 'author': author, 'content': content, 'pinned': pinned, 'id': pid})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/board/<int:pid>', methods=['DELETE'])
+def board_delete(pid):
+    d = request.get_json() or {}
+    pw = (d.get('password') or '').strip()
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT pw_hash FROM board_posts WHERE id=:id", {'id': pid})
+    row = cur.fetchone()
+    if not row: cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
+    stored_hash = row[0]
+    admin_ok = False
+    tok = request.headers.get('Authorization', '').replace('Bearer ', '')
+    if tok:
+        uid = verify_firebase_token(tok)
+        if uid: admin_ok = True
+    if not admin_ok:
+        if not pw: cur.close(); conn.close(); return jsonify({'error': '비밀번호를 입력하세요.'}), 403
+        if _board_hash(pw) != stored_hash: cur.close(); conn.close(); return jsonify({'error': '비밀번호가 틀렸습니다.'}), 403
+    cur.execute("DELETE FROM board_replies WHERE post_id=:id", {'id': pid})
+    cur.execute("DELETE FROM board_posts WHERE id=:id", {'id': pid})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
+@app.route('/api/board/<int:pid>/replies', methods=['POST'])
+def board_add_reply(pid):
+    d = request.get_json()
+    if not d: return jsonify({'error': 'JSON 필요'}), 400
+    author = (d.get('author') or '').strip() or '익명'
+    content = (d.get('content') or '').strip()
+    if not content: return jsonify({'error': '내용을 입력하세요.'}), 400
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("SELECT id FROM board_posts WHERE id=:id", {'id': pid})
+    if not cur.fetchone(): cur.close(); conn.close(); return jsonify({'error': '글을 찾을 수 없습니다.'}), 404
+    cur.execute("INSERT INTO board_replies (post_id,author,content,created_at) VALUES (:pid,:a,:c,SYSTIMESTAMP)",
+        {'pid': pid, 'a': author, 'c': content})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True}), 201
+
+@app.route('/api/board/replies/<int:rid>', methods=['DELETE'])
+@require_auth
+def board_delete_reply(rid):
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("DELETE FROM board_replies WHERE id=:id", {'id': rid})
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'ok': True})
+
+
+# ══ DAILY_PRICES (종가 히스토리) ══
+
+@app.route('/api/prices/daily')
+def prices_daily():
+    """
+    종가 히스토리 조회.
+    필수: ?codes=005930,000660  (쉼표 구분, 최대 20개)
+    선택: &from=2026-07-01 &to=2026-10-13 &days=30
+    반환: {count, data: [{stock_code, trade_date, open, high, low, close, volume}, ...]}
+    """
+    codes_raw = request.args.get('codes', '')
+    if not codes_raw:
+        return jsonify({'error': 'codes 파라미터 필요 (예: ?codes=005930,000660)'}), 400
+
+    codes = [c.strip() for c in codes_raw.split(',') if c.strip()][:20]
+    if not codes:
+        return jsonify({'error': '유효한 종목코드 없음'}), 400
+
+    days = request.args.get('days', '')
+    date_from = request.args.get('from', '')
+    date_to = request.args.get('to', '')
+
+    where = []
+    params = {}
+
+    # 종목코드 IN 조건
+    code_binds = []
+    for i, c in enumerate(codes):
+        key = f'c{i}'
+        code_binds.append(f':{key}')
+        params[key] = c
+    where.append(f'stock_code IN ({",".join(code_binds)})')
+
+    if days:
+        where.append("trade_date >= TRUNC(SYSDATE) - :days")
+        params['days'] = int(days)
+    if date_from:
+        where.append("trade_date >= TO_DATE(:df, 'YYYY-MM-DD')")
+        params['df'] = date_from
+    if date_to:
+        where.append("trade_date <= TO_DATE(:dt, 'YYYY-MM-DD')")
+        params['dt'] = date_to
+
+    w = ' AND '.join(where)
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute(f"""SELECT stock_code,
+        TO_CHAR(trade_date,'YYYY-MM-DD') AS trade_date,
+        open_price, high_price, low_price, close_price, volume,
+        NVL(trade_amount, 0) AS trade_amount
+        FROM daily_prices WHERE {w}
+        ORDER BY stock_code, trade_date""", params)
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify({'count': len(data), 'data': data})
+
+
+@app.route('/api/prices/daily/changes')
+def prices_daily_changes():
+    """
+    기간별 등락률 비교.
+    선택: &from=2026-07-01 &to=2026-10-13 (기본: 최근 vs 30일전)
+    반환: [{stock_code, start_date, start_price, end_date, end_price, change_pct}, ...]
+    """
+    date_from = request.args.get('from', '')
+    date_to = request.args.get('to', '')
+
+    conn = get_conn(); cur = conn.cursor()
+
+    # 기준일 결정
+    if date_to:
+        end_sql = "TO_DATE(:dt, 'YYYY-MM-DD')"
+        params_end = {'dt': date_to}
+    else:
+        end_sql = "(SELECT MAX(trade_date) FROM daily_prices)"
+        params_end = {}
+
+    if date_from:
+        start_sql = "TO_DATE(:df, 'YYYY-MM-DD')"
+        params_start = {'df': date_from}
+    else:
+        start_sql = f"({end_sql} - 30)"
+        params_start = dict(params_end)
+
+    params = {**params_start, **params_end}
+
+    # avg_trade_amount용 바인드 변수 (from/to 재사용 — 접두사 분리)
+    avg_params = {}
+    if date_from:
+        avg_start_sql = "TO_DATE(:af, 'YYYY-MM-DD')"
+        avg_params['af'] = date_from
+    else:
+        if date_to:
+            avg_start_sql = f"(TO_DATE(:at2, 'YYYY-MM-DD') - 30)"
+            avg_params['at2'] = date_to
+        else:
+            avg_start_sql = "((SELECT MAX(trade_date) FROM daily_prices) - 30)"
+    if date_to:
+        avg_end_sql = "TO_DATE(:at, 'YYYY-MM-DD')"
+        avg_params['at'] = date_to
+    else:
+        avg_end_sql = "(SELECT MAX(trade_date) FROM daily_prices)"
+
+    params = {**params_start, **params_end, **avg_params}
+
+    cur.execute(f"""
+    WITH end_prices AS (
+        SELECT stock_code, close_price, trade_date,
+            ROW_NUMBER() OVER (PARTITION BY stock_code ORDER BY trade_date DESC) rn
+        FROM daily_prices WHERE trade_date <= {end_sql}
+    ),
+    start_prices AS (
+        SELECT stock_code, close_price, trade_date,
+            ROW_NUMBER() OVER (PARTITION BY stock_code ORDER BY trade_date ASC) rn
+        FROM daily_prices WHERE trade_date >= {start_sql}
+    ),
+    avg_vol AS (
+        SELECT stock_code,
+            ROUND(AVG(NVL(trade_amount, 0))) AS avg_trade_amount
+        FROM daily_prices
+        WHERE trade_date >= {avg_start_sql} AND trade_date <= {avg_end_sql}
+        GROUP BY stock_code
+    )
+    SELECT e.stock_code,
+        TO_CHAR(s.trade_date,'YYYY-MM-DD') AS start_date,
+        s.close_price AS start_price,
+        TO_CHAR(e.trade_date,'YYYY-MM-DD') AS end_date,
+        e.close_price AS end_price,
+        ROUND((e.close_price - s.close_price) / s.close_price * 100, 2) AS change_pct,
+        NVL(v.avg_trade_amount, 0) AS avg_trade_amount
+    FROM end_prices e
+    JOIN start_prices s ON e.stock_code = s.stock_code
+    LEFT JOIN avg_vol v ON e.stock_code = v.stock_code
+    WHERE e.rn = 1 AND s.rn = 1 AND s.close_price > 0
+    ORDER BY change_pct DESC
+    """, params)
+
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify({'count': len(data), 'data': data})
+
+
+@app.route('/api/prices/daily/summary')
+def prices_daily_summary():
+    """DB 현황 요약."""
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("""SELECT COUNT(*) total_rows,
+        COUNT(DISTINCT stock_code) stock_count,
+        TO_CHAR(MIN(trade_date),'YYYY-MM-DD') first_date,
+        TO_CHAR(MAX(trade_date),'YYYY-MM-DD') last_date
+        FROM daily_prices""")
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify(data[0] if data else {})
+
+
+# ══ user settings (키-값 저장) ══
+
+@app.route('/api/settings/<key>')
+def get_setting(key):
+    """설정값 조회 (인증 불필요)."""
+    conn = get_conn(); cur = conn.cursor()
+    try:
+        cur.execute("SELECT setting_value FROM user_settings WHERE setting_key = :k", {'k': key})
+        row = cur.fetchone()
+        if not row:
+            return jsonify({'key': key, 'value': None})
+        val = row[0]
+        if hasattr(val, 'read'):
+            val = val.read()
+        return jsonify({'key': key, 'value': val})
+    finally:
+        cur.close(); conn.close()
+
+@app.route('/api/settings/<key>', methods=['POST'])
+@require_auth
+def save_setting(key):
+    """설정값 저장 (인증 필요)."""
+    data = request.get_json(force=True) or {}
+    value = data.get('value', '')
+    if not value:
+        return jsonify({'error': 'value 필요'}), 400
+    if len(value) > 50000:
+        return jsonify({'error': '값이 너무 큼 (50KB 제한)'}), 400
+    conn = get_conn(); cur = conn.cursor()
+    try:
+        cur.execute("""MERGE INTO user_settings t
+            USING (SELECT :k AS setting_key FROM dual) s
+            ON (t.setting_key = s.setting_key)
+            WHEN MATCHED THEN UPDATE SET setting_value = :v, updated_at = SYSTIMESTAMP
+            WHEN NOT MATCHED THEN INSERT (setting_key, setting_value) VALUES (:k, :v)""",
+            {'k': key, 'v': value})
+        conn.commit()
+        return jsonify({'ok': True, 'key': key})
+    finally:
+        cur.close(); conn.close()
+
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=False)
