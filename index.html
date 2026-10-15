@@ -494,14 +494,20 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
     favGrid.classList.toggle('edit-mode', editMode);
   };
   window.moveFav = function(idx, dir){
-    var to = idx + dir;
-    if(to < 0 || to >= favs.length) return;
+    // 같은 그룹(pinned/normal) 안에서만 이동
+    var isPinned = !!favs[idx].pinned;
+    var group = [];
+    favs.forEach(function(f, i){ if(!!f.pinned === isPinned) group.push(i); });
+    var pos = group.indexOf(idx);
+    var toPos = pos + dir;
+    if(toPos < 0 || toPos >= group.length) return;
+    var to = group[toPos];
     var tmp = favs[idx];
     favs[idx] = favs[to];
     favs[to] = tmp;
     saveFavs();
     renderFavGrid();
-    favGrid.classList.add('edit-mode'); // 편집모드 유지
+    favGrid.classList.add('edit-mode');
   };
 
   // 터치 드래그 (모바일)
