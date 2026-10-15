@@ -242,26 +242,26 @@ def main():
         if i % 50 == 0:
             print(f'  [{i}/{len(all_stocks)}] {total_saved}건 저장...')
 
-    # ── KOSPI·KOSDAQ 지수 (yfinance) ──
+    # ── KOSPI·KOSDAQ 지수 (pykrx) ──
     try:
-        import yfinance as yf
-        idx_start = start_dt.isoformat()
-        idx_end = (today + timedelta(days=1)).isoformat()  # yfinance end는 exclusive
-        for yf_ticker, db_code, label in [('^KS11','KS11','KOSPI'),('^KQ11','KQ11','KOSDAQ')]:
+        from pykrx import stock as pykrx_stock
+        idx_start_str = start_dt.strftime('%Y%m%d')
+        idx_end_str = today.strftime('%Y%m%d')
+        for pykrx_ticker, db_code, label in [('1001','KS11','KOSPI'),('2001','KQ11','KOSDAQ')]:
             try:
-                df = yf.Ticker(yf_ticker).history(start=idx_start, end=idx_end)
+                df = pykrx_stock.get_index_ohlcv(idx_start_str, idx_end_str, pykrx_ticker)
                 idx_rows = []
                 for idx_dt, row in df.iterrows():
                     dt = idx_dt.date() if hasattr(idx_dt, 'date') else idx_dt
-                    cl = row.get('Close')
+                    cl = row.get('종가', 0)
                     if cl and cl > 0:
                         idx_rows.append({
                             'date': dt,
-                            'open': round(float(row.get('Open',0)),2),
-                            'high': round(float(row.get('High',0)),2),
-                            'low': round(float(row.get('Low',0)),2),
-                            'close': round(float(cl),2),
-                            'volume': int(row.get('Volume',0)),
+                            'open': round(float(row.get('시가', 0)), 2),
+                            'high': round(float(row.get('고가', 0)), 2),
+                            'low': round(float(row.get('저가', 0)), 2),
+                            'close': round(float(cl), 2),
+                            'volume': int(row.get('거래량', 0)),
                         })
                 if idx_rows:
                     saved = save_to_oracle_basic(conn, db_code, idx_rows)
@@ -270,7 +270,7 @@ def main():
             except Exception as e:
                 print(f'  [{label}] ⚠ {e}')
     except ImportError:
-        print('  ⚠ yfinance 없음 — 지수 수집 건너뜀')
+        print('  ⚠ pykrx 없음 — 지수 수집 건너뜀')
 
     # 결과
     cur = conn.cursor()
