@@ -1045,7 +1045,8 @@ def prices_daily():
     conn = get_conn(); cur = conn.cursor()
     cur.execute(f"""SELECT stock_code,
         TO_CHAR(trade_date,'YYYY-MM-DD') AS trade_date,
-        open_price, high_price, low_price, close_price, volume
+        open_price, high_price, low_price, close_price, volume,
+        NVL(trade_amount, 0) AS trade_amount
         FROM daily_prices WHERE {w}
         ORDER BY stock_code, trade_date""", params)
     data = rows_to_list(cur, cur.fetchall())
@@ -1082,6 +1083,25 @@ def prices_daily_changes():
 
     params = {**params_start, **params_end}
 
+    # avg_trade_amount용 바인드 변수 (from/to 재사용 — 접두사 분리)
+    avg_params = {}
+    if date_from:
+        avg_start_sql = "TO_DATE(:af, 'YYYY-MM-DD')"
+        avg_params['af'] = date_from
+    else:
+        if date_to:
+            avg_start_sql = f"(TO_DATE(:at2, 'YYYY-MM-DD') - 30)"
+            avg_params['at2'] = date_to
+        else:
+            avg_start_sql = "((SELECT MAX(trade_date) FROM daily_prices) - 30)"
+    if date_to:
+        avg_end_sql = "TO_DATE(:at, 'YYYY-MM-DD')"
+        avg_params['at'] = date_to
+    else:
+        avg_end_sql = "(SELECT MAX(trade_date) FROM daily_prices)"
+
+    params = {**params_start, **params_end, **avg_params}
+
     cur.execute(f"""
     WITH end_prices AS (
         SELECT stock_code, close_price, trade_date,
@@ -1092,15 +1112,24 @@ def prices_daily_changes():
         SELECT stock_code, close_price, trade_date,
             ROW_NUMBER() OVER (PARTITION BY stock_code ORDER BY trade_date ASC) rn
         FROM daily_prices WHERE trade_date >= {start_sql}
+    ),
+    avg_vol AS (
+        SELECT stock_code,
+            ROUND(AVG(NVL(trade_amount, 0))) AS avg_trade_amount
+        FROM daily_prices
+        WHERE trade_date >= {avg_start_sql} AND trade_date <= {avg_end_sql}
+        GROUP BY stock_code
     )
     SELECT e.stock_code,
         TO_CHAR(s.trade_date,'YYYY-MM-DD') AS start_date,
         s.close_price AS start_price,
         TO_CHAR(e.trade_date,'YYYY-MM-DD') AS end_date,
         e.close_price AS end_price,
-        ROUND((e.close_price - s.close_price) / s.close_price * 100, 2) AS change_pct
+        ROUND((e.close_price - s.close_price) / s.close_price * 100, 2) AS change_pct,
+        NVL(v.avg_trade_amount, 0) AS avg_trade_amount
     FROM end_prices e
     JOIN start_prices s ON e.stock_code = s.stock_code
+    LEFT JOIN avg_vol v ON e.stock_code = v.stock_code
     WHERE e.rn = 1 AND s.rn = 1 AND s.close_price > 0
     ORDER BY change_pct DESC
     """, params)
