@@ -246,7 +246,7 @@ def main():
     try:
         import yfinance as yf
         idx_start = start_dt.isoformat()
-        idx_end = today.isoformat()
+        idx_end = (today + timedelta(days=1)).isoformat()  # yfinance end는 exclusive
         for yf_ticker, db_code, label in [('^KS11','KS11','KOSPI'),('^KQ11','KQ11','KOSDAQ')]:
             try:
                 df = yf.Ticker(yf_ticker).history(start=idx_start, end=idx_end)
