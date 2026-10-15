@@ -1139,6 +1139,39 @@ def prices_daily_changes():
     return jsonify({'count': len(data), 'data': data})
 
 
+@app.route('/api/prices/daily/sparklines')
+def prices_daily_sparklines():
+    """
+    카드용 미니 스파크라인 — 종목별 일별 거래대금 배열.
+    ?from=2026-07-31&to=2026-10-15
+    반환: {"005930": [5400, 5200, ...], ...}  (백만원 단위)
+    """
+    date_from = request.args.get('from', '')
+    date_to = request.args.get('to', '')
+    if not date_from or not date_to:
+        return jsonify({'error': 'from, to 필수'}), 400
+
+    conn = get_conn(); cur = conn.cursor()
+    cur.execute("""SELECT stock_code, NVL(trade_amount, 0) AS trade_amount
+        FROM daily_prices
+        WHERE trade_date >= TO_DATE(:df, 'YYYY-MM-DD')
+          AND trade_date <= TO_DATE(:dt, 'YYYY-MM-DD')
+          AND stock_code NOT IN ('KS11', 'KQ11')
+        ORDER BY stock_code, trade_date""",
+        {'df': date_from, 'dt': date_to})
+
+    result = {}
+    for row in cur:
+        code = row[0]
+        amt = round((row[1] or 0) / 1_000_000)  # 백만원 단위
+        if code not in result:
+            result[code] = []
+        result[code].append(amt)
+
+    cur.close(); conn.close()
+    return jsonify(result)
+
+
 @app.route('/api/prices/daily/summary')
 def prices_daily_summary():
     """DB 현황 요약."""
