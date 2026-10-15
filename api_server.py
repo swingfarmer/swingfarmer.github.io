@@ -1124,5 +1124,44 @@ def prices_daily_summary():
     return jsonify(data[0] if data else {})
 
 
+# ══ user settings (키-값 저장) ══
+
+@app.route('/api/settings/<key>')
+def get_setting(key):
+    """설정값 조회 (인증 불필요)."""
+    conn = get_conn(); cur = conn.cursor()
+    try:
+        cur.execute("SELECT setting_value FROM user_settings WHERE setting_key = :k", {'k': key})
+        row = cur.fetchone()
+        if not row:
+            return jsonify({'key': key, 'value': None})
+        return jsonify({'key': key, 'value': row[0]})
+    finally:
+        cur.close(); conn.close()
+
+@app.route('/api/settings/<key>', methods=['POST'])
+@require_auth
+def save_setting(key):
+    """설정값 저장 (인증 필요)."""
+    data = request.get_json(force=True) or {}
+    value = data.get('value', '')
+    if not value:
+        return jsonify({'error': 'value 필요'}), 400
+    if len(value) > 50000:
+        return jsonify({'error': '값이 너무 큼 (50KB 제한)'}), 400
+    conn = get_conn(); cur = conn.cursor()
+    try:
+        cur.execute("""MERGE INTO user_settings t
+            USING (SELECT :k AS setting_key FROM dual) s
+            ON (t.setting_key = s.setting_key)
+            WHEN MATCHED THEN UPDATE SET setting_value = :v, updated_at = SYSTIMESTAMP
+            WHEN NOT MATCHED THEN INSERT (setting_key, setting_value) VALUES (:k, :v)""",
+            {'k': key, 'v': value})
+        conn.commit()
+        return jsonify({'ok': True, 'key': key})
+    finally:
+        cur.close(); conn.close()
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
