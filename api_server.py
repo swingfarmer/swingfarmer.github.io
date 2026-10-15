@@ -1135,7 +1135,10 @@ def get_setting(key):
         row = cur.fetchone()
         if not row:
             return jsonify({'key': key, 'value': None})
-        return jsonify({'key': key, 'value': row[0]})
+        val = row[0]
+        if hasattr(val, 'read'):
+            val = val.read()
+        return jsonify({'key': key, 'value': val})
     finally:
         cur.close(); conn.close()
 
