@@ -265,12 +265,17 @@ async function loadStockMap() {
 }
 
 // ========== 종목 선택기 (접기/펼치기) ==========
-let pickerOpen = false;
-document.getElementById('pickerToggle').addEventListener('click', () => {
-  pickerOpen = !pickerOpen;
+let pickerOpen = localStorage.getItem('sf_picker_open') === '1';
+function applyPickerState() {
   document.getElementById('pickerBody').classList.toggle('open', pickerOpen);
   document.getElementById('pickerArrow').classList.toggle('open', pickerOpen);
+}
+document.getElementById('pickerToggle').addEventListener('click', () => {
+  pickerOpen = !pickerOpen;
+  localStorage.setItem('sf_picker_open', pickerOpen ? '1' : '0');
+  applyPickerState();
 });
+applyPickerState();
 
 function updateSelCount() {
   const el = document.getElementById('selCount');
