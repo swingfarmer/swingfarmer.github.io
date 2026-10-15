@@ -175,6 +175,7 @@ def fetch_ohlcv(token, code, end_date, mrkt='J'):
             'low':    safe_int(r.get('stck_lwpr')),
             'close':  safe_int(r.get('stck_clpr')),
             'volume': safe_int(r.get('acml_vol')),
+            'trade_amount': safe_int(r.get('acml_tr_pbmn')),
         })
     # 날짜 오름차순 정렬
     result.sort(key=lambda x: x['date'])
@@ -1015,11 +1016,15 @@ def main():
             continue
 
         latest_price = ohlcv[-1]['close'] if ohlcv else 0
+        # 당일 거래대금 (억원 단위, 소수점 없음)
+        latest_trade_amt = ohlcv[-1].get('trade_amount', 0) if ohlcv else 0
+        trade_amt_eok = round(latest_trade_amt / 100_000_000) if latest_trade_amt else 0
 
         # 2) 기술적 시그널
         sig = detect_signals(ohlcv)
         base = {'code': code, 'name': name, 'sector': sector,
-                'market': market, 'price': latest_price}
+                'market': market, 'price': latest_price,
+                'trade_amt': trade_amt_eok}
 
         for key in ['ma5w_breakout', 'ma20_breakout',
                      'ma50_breakout', 'golden_cross', 'dead_cross',
@@ -1084,6 +1089,7 @@ def main():
             investor_today.append({
                 'code': code, 'name': name, 'sector': sector,
                 'market': market, 'price': latest_price,
+                'trade_amt': trade_amt_eok,
                 'foreign_qty': inv.get('foreign_qty', 0),
                 'foreign_amt': inv.get('foreign_amt', 0),
                 'institution_qty': inv.get('institution_qty', 0),
@@ -1123,12 +1129,16 @@ def main():
         for x in sorted_inst[-15:][::-1] if x['institution_amt'] < 0
     ]
 
+    # 종목별 거래대금 참조용
+    trade_amt_map = {x['code']: x.get('trade_amt', 0) for x in investor_today}
+
     # 연속 순매수
     for s in stocks:
         fc = count_consecutive_buy(inv_hist, s['code'], 'foreign')
         ic = count_consecutive_buy(inv_hist, s['code'], 'institution')
         base = {'code': s['code'], 'name': s['name'],
-                'sector': s['sector'], 'market': s.get('market', 'KOSPI')}
+                'sector': s['sector'], 'market': s.get('market', 'KOSPI'),
+                'trade_amt': trade_amt_map.get(s['code'], 0)}
         if fc >= 3:
             all_signals['foreign_consecutive'].append(
                 {**base, 'consecutive': fc})
@@ -1174,7 +1184,8 @@ def main():
 
             base = {'code': code, 'name': s['name'],
                     'sector': s['sector'],
-                    'market': s.get('market', 'KOSPI')}
+                    'market': s.get('market', 'KOSPI'),
+                    'trade_amt': trade_amt_map.get(code, 0)}
 
             if bull_days >= 3:
                 # 최근 일자 수급 정보 추가
