@@ -5,28 +5,28 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>수익률 계산기 | 스윙파머</title>
-<link rel="stylesheet" href="/common-dark.css?v=2">
+<link rel="stylesheet" href="/common.css?v=4">
 <style>
 :root { --sf-max-w: 860px; }
-h1{font-size:22px;font-weight:800;margin-bottom:4px}
-.subtitle{color:var(--text-dim);font-size:13px;margin-bottom:20px}
+h1{color:#1F4E78;font-size:22px;font-weight:800;margin-bottom:4px;border-bottom:none;padding-bottom:0}
+.subtitle{color:#666;font-size:13px;margin-bottom:20px}
 
-.tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border);overflow-x:auto}
-.tab{background:transparent;border:none;color:var(--text-dim);padding:10px 18px;cursor:pointer;
-  font-size:13px;font-weight:600;font-family:inherit;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
-.tab:hover{color:var(--text)}
-.tab.active{color:#fff;border-bottom-color:var(--accent);background:rgba(59,130,246,.1)}
+.tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid #e5e9f0;overflow-x:auto}
+.tab{background:transparent;border:none;color:#999;padding:10px 18px;cursor:pointer;
+  font-size:13px;font-weight:600;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap}
+.tab:hover{color:#1F4E78}
+.tab.active{color:#1F4E78;border-bottom-color:#1F4E78}
 
-.panel{display:none;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.panel{display:none}
 .panel.active{display:block}
-.panel h2{font-size:16px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.panel h2 .desc{font-size:11px;font-weight:400;color:var(--text-dim)}
+.panel h2{color:#1F4E78;font-size:16px;font-weight:700;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #e5e9f0;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.panel h2 .desc{font-size:11px;font-weight:400;color:#999}
 
 .field{margin-bottom:12px}
-.field label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:4px}
-.field input,.field select{background:var(--bg);border:1px solid var(--border);color:var(--text);
-  padding:8px 12px;border-radius:8px;font-size:14px;font-family:inherit;width:100%;box-sizing:border-box}
-.field input:focus{outline:none;border-color:var(--accent)}
+.field label{display:block;font-size:12px;color:#666;margin-bottom:4px}
+.field input,.field select{background:#fff;border:1px solid #d1d5db;color:#333;
+  padding:8px 12px;border-radius:6px;font-size:14px;font-family:inherit;width:100%;box-sizing:border-box}
+.field input:focus{outline:none;border-color:#1F4E78}
 .field input[type=number]{-moz-appearance:textfield}
 .field input::-webkit-outer-spin-button,.field input::-webkit-inner-spin-button{-webkit-appearance:none}
 
@@ -35,36 +35,36 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px}
 
 .dyn-rows{margin-bottom:12px}
 .dyn-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
-.dyn-row input{background:var(--bg);border:1px solid var(--border);color:var(--text);
+.dyn-row input{background:#fff;border:1px solid #d1d5db;color:#333;
   padding:6px 10px;border-radius:6px;font-size:13px;font-family:inherit;width:100%;box-sizing:border-box}
-.dyn-row .idx{font-size:11px;color:var(--text-dim);width:24px;text-align:center;flex-shrink:0}
+.dyn-row .idx{font-size:11px;color:#999;width:24px;text-align:center;flex-shrink:0}
 .dyn-row .w{flex:0 0 70px}
 .dyn-row .r{flex:1;min-width:80px}
-.dyn-row .del-btn{background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0}
-.add-btn{background:var(--bg);border:1px solid var(--border);color:var(--text-dim);
+.dyn-row .del-btn{background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0}
+.add-btn{background:#f5f7fa;border:1px solid #d1d5db;color:#666;
   padding:5px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit}
-.add-btn:hover{color:var(--text);border-color:var(--text-dim)}
+.add-btn:hover{color:#333;border-color:#999}
 
-.result-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:16px}
-.result-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(42,45,58,.4)}
+.result-box{background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px;margin-top:16px}
+.result-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #e0e7ef}
 .result-row:last-child{border-bottom:none}
-.result-row .rlabel{font-size:13px;color:var(--text-dim)}
+.result-row .rlabel{font-size:13px;color:#666}
 .result-row .rval{font-size:18px;font-weight:800}
-.up{color:var(--red)}.down{color:#3b82f6}.flat{color:var(--text-dim)}
-.result-sub{font-size:11px;color:var(--text-dim);margin-top:4px}
+.up{color:#dc2626}.down{color:#2563eb}.flat{color:#999}
+.result-sub{font-size:11px;color:#999;margin-top:4px}
 
 .btn-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
-.btn{background:var(--accent);border:none;color:#fff;padding:8px 20px;border-radius:8px;
+.btn{background:#1F4E78;border:none;color:#fff;padding:8px 20px;border-radius:8px;
   cursor:pointer;font-size:13px;font-weight:600;font-family:inherit}
 .btn:hover{opacity:.85}
-.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
-.btn-outline:hover{border-color:var(--text-dim)}
+.btn-outline{background:transparent;border:1px solid #d1d5db;color:#333}
+.btn-outline:hover{border-color:#999}
 
 .compound-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}
-.compound-table th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);color:var(--text-dim);font-weight:600}
-.compound-table td{padding:5px 8px;border-bottom:1px solid rgba(42,45,58,.3)}
+.compound-table th{text-align:left;padding:6px 8px;border-bottom:2px solid #e5e9f0;color:#666;font-weight:600}
+.compound-table td{padding:5px 8px;border-bottom:1px solid #f0f2f5}
 
-.note{font-size:11px;color:var(--text-dim);text-align:center;margin-top:20px;line-height:1.8}
+.note{font-size:11px;color:#999;text-align:center;margin-top:20px;line-height:1.8}
 </style>
 </head>
 <body>
