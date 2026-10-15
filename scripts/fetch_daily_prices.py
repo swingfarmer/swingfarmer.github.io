@@ -242,35 +242,72 @@ def main():
         if i % 50 == 0:
             print(f'  [{i}/{len(all_stocks)}] {total_saved}건 저장...')
 
-    # ── KOSPI·KOSDAQ 지수 (pykrx) ──
-    try:
-        from pykrx import stock as pykrx_stock
-        idx_start_str = start_dt.strftime('%Y%m%d')
-        idx_end_str = today.strftime('%Y%m%d')
-        for pykrx_ticker, db_code, label in [('1001','KS11','KOSPI'),('2001','KQ11','KOSDAQ')]:
+    # ── KOSPI·KOSDAQ 지수 (네이버 금융 → yfinance 폴백) ──
+    import xml.etree.ElementTree as ET
+
+    for nv_sym, yf_sym, db_code, label in [
+        ('KOSPI', '^KS11', 'KS11', 'KOSPI'),
+        ('KOSDAQ', '^KQ11', 'KQ11', 'KOSDAQ'),
+    ]:
+        idx_rows = []
+
+        # 1차: 네이버 금융 차트 API (인증 불필요, 당일 데이터 즉시)
+        try:
+            nv_url = f'https://fchart.stock.naver.com/sise.nhn?symbol={nv_sym}&timeframe=day&count={args.days + 5}&requestType=0'
+            nv_req = urllib.request.Request(nv_url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(nv_req, timeout=10) as resp:
+                xml_data = resp.read().decode('utf-8')
+            root = ET.fromstring(xml_data)
+            for item in root.iter('item'):
+                parts = item.get('data', '').split('|')
+                if len(parts) < 6:
+                    continue
+                dt = datetime.strptime(parts[0], '%Y%m%d').date()
+                if dt < start_dt:
+                    continue
+                cl = float(parts[4])
+                if cl > 0:
+                    idx_rows.append({
+                        'date': dt,
+                        'open':   round(float(parts[1]), 2),
+                        'high':   round(float(parts[2]), 2),
+                        'low':    round(float(parts[3]), 2),
+                        'close':  round(cl, 2),
+                        'volume': int(float(parts[5])),
+                    })
+            if idx_rows:
+                print(f'  [{label}] 네이버 {len(idx_rows)}건')
+        except Exception as e:
+            print(f'  [{label}] 네이버 실패({e}), yfinance 시도...')
+
+        # 2차: yfinance 폴백
+        if not idx_rows:
             try:
-                df = pykrx_stock.get_index_ohlcv(idx_start_str, idx_end_str, pykrx_ticker)
-                idx_rows = []
+                import yfinance as yf
+                idx_end = (today + timedelta(days=1)).isoformat()
+                df = yf.Ticker(yf_sym).history(start=start_dt.isoformat(), end=idx_end)
                 for idx_dt, row in df.iterrows():
                     dt = idx_dt.date() if hasattr(idx_dt, 'date') else idx_dt
-                    cl = row.get('종가', 0)
+                    cl = row.get('Close')
                     if cl and cl > 0:
                         idx_rows.append({
                             'date': dt,
-                            'open': round(float(row.get('시가', 0)), 2),
-                            'high': round(float(row.get('고가', 0)), 2),
-                            'low': round(float(row.get('저가', 0)), 2),
-                            'close': round(float(cl), 2),
-                            'volume': int(row.get('거래량', 0)),
+                            'open':   round(float(row.get('Open', 0)), 2),
+                            'high':   round(float(row.get('High', 0)), 2),
+                            'low':    round(float(row.get('Low', 0)), 2),
+                            'close':  round(float(cl), 2),
+                            'volume': int(row.get('Volume', 0)),
                         })
                 if idx_rows:
-                    saved = save_to_oracle_basic(conn, db_code, idx_rows)
-                    total_saved += saved
-                    print(f'  [{label}] {saved}건')
-            except Exception as e:
-                print(f'  [{label}] ⚠ {e}')
-    except ImportError:
-        print('  ⚠ pykrx 없음 — 지수 수집 건너뜀')
+                    print(f'  [{label}] yfinance {len(idx_rows)}건')
+            except Exception as e2:
+                print(f'  [{label}] ⚠ yfinance도 실패: {e2}')
+
+        # DB 저장
+        if idx_rows:
+            saved = save_to_oracle_basic(conn, db_code, idx_rows)
+            total_saved += saved
+            print(f'  [{label}] {saved}건 저장')
 
     # 결과
     cur = conn.cursor()
