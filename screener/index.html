@@ -501,6 +501,7 @@ function getColumns(tab){
   var base = [
     {key:'name',label:'종목',align:'left'},
     {key:'price',label:'현재가',unit:'원'},
+    {key:'trade_amt',label:'거래대금',unit:'억'},
     {key:'sector',label:'업종',align:'left'},
   ];
   if(tab==='_composite')
@@ -557,6 +558,11 @@ function fmt(v,unit){
   if(unit==='원') return v.toLocaleString()+'원';
   if(unit==='%') return v.toFixed(1)+'%';
   if(unit==='x') return v.toFixed(1)+'배';
+  if(unit==='억'){
+    if(v===0) return '-';
+    if(v>=10000) return (v/10000).toFixed(1)+'조';
+    return v.toLocaleString()+'억';
+  }
   if(unit==='만원'){
     if(Math.abs(v)>=100000000) return (v/100000000).toFixed(0)+'억';
     if(Math.abs(v)>=10000) return (v/10000).toFixed(0)+'만';
