@@ -127,6 +127,7 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
       <button onclick="exportFav()">📤 내보내기</button>
       <button onclick="importFav()">📥 가져오기</button>
       <button id="btnEditFav" onclick="toggleEditMode()">✏️ 순서편집</button>
+      <button id="btnRevert" onclick="revertFavs()" style="display:none;color:#dc2626">↩️ 되돌리기</button>
     </div>
     <div id="favGrid" class="fav-grid"></div>
     <div id="favEmpty" class="fav-empty">각 도구 카드의 ☆을 눌러 즐겨찾기에 등록하세요</div>
@@ -488,10 +489,30 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
 
   // ── 편집모드 ──
   var editMode = false;
+  var favBackup = null;
   window.toggleEditMode = function(){
     editMode = !editMode;
+    if(editMode){
+      favBackup = JSON.stringify(favs);
+      document.getElementById('btnRevert').style.display = '';
+    } else {
+      favBackup = null;
+      document.getElementById('btnRevert').style.display = 'none';
+    }
     document.getElementById('btnEditFav').textContent = editMode ? '✅ 완료' : '✏️ 순서편집';
     favGrid.classList.toggle('edit-mode', editMode);
+  };
+  window.revertFavs = function(){
+    if(!favBackup) return;
+    favs = JSON.parse(favBackup);
+    saveFavs();
+    favBackup = null;
+    editMode = false;
+    document.getElementById('btnEditFav').textContent = '✏️ 순서편집';
+    document.getElementById('btnRevert').style.display = 'none';
+    favGrid.classList.remove('edit-mode');
+    renderFavGrid();
+    syncStarButtons();
   };
   window.moveFav = function(idx, dir){
     // 같은 그룹(pinned/normal) 안에서만 이동
