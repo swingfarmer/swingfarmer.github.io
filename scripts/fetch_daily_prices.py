@@ -256,7 +256,7 @@ def main():
             nv_url = f'https://fchart.stock.naver.com/sise.nhn?symbol={nv_sym}&timeframe=day&count={args.days + 5}&requestType=0'
             nv_req = urllib.request.Request(nv_url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(nv_req, timeout=10) as resp:
-                xml_data = resp.read().decode('utf-8')
+                xml_data = resp.read().decode('euc-kr', errors='replace')
             root = ET.fromstring(xml_data)
             for item in root.iter('item'):
                 parts = item.get('data', '').split('|')
