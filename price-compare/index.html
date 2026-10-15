@@ -269,7 +269,7 @@ function renderCards(){
   const filtered=getFiltered(),sorted=sortData(filtered),grid=document.getElementById('cardGrid');
   if(!sorted.length){grid.innerHTML='<div class="empty">표시할 종목이 없습니다.</div>';updateSummary();hideChart();return;}
   const maxAbs=Math.max(...filtered.map(d=>Math.abs(d.change_pct||0)),1);
-  grid.innerHTML=sorted.map(d=>{const pct=d.change_pct||0,c=pct>0?'up':pct<0?'down':'flat',sign=pct>0?'+':'';const ex=d.excess_pct||0,ec=ex>0?'up':ex<0?'down':'flat',es=ex>0?'+':'';const bw=Math.min(Math.abs(pct)/maxAbs*50,50);const bc=pct>=0?'pos':'neg';const bs=pct>=0?`right:50%;width:${bw}%`:`left:50%;width:${bw}%`;const mc=d.market==='KOSPI'?'kospi':'kosdaq';const bl=d.market==='KOSDAQ'?'KOSDAQ':'KOSPI';const sl=d.sector&&d.sector!=='기타'?`<span class="sc-sector">${d.sector}</span>`:'';const vol=d.avg_trade_amount?`<div class="sc-vol"><span>일평균 <span class="val">${fmtAmt(d.avg_trade_amount)}</span></span><span class="sc-spark" id="spark-${d.stock_code}"></span></div>`:'';const sel=selectedCodes.has(d.stock_code)?' selected':'';return`<div class="stock-card${sel}" data-code="${d.stock_code}" style="cursor:pointer"><div class="sc-header"><div><span class="sc-name">${d.name}</span><span class="sc-code">${d.stock_code}</span>${sl}</div><span class="sc-mkt ${mc}">${d.market}</span></div><div class="sc-pct ${c}">${sign}${pct.toFixed(2)}%</div><div class="sc-excess ${ec}">${bl} 대비 ${es}${ex.toFixed(2)}%p</div><div class="sc-bar-wrap"><div class="sc-bar ${bc}" style="${bs}"></div></div><div class="sc-prices"><div>${d.start_date} <span class="val">${(d.start_price||0).toLocaleString()}</span></div><div>→</div><div>${d.end_date} <span class="val">${(d.end_price||0).toLocaleString()}</span></div></div>${vol}</div>`;}).join('');
+  grid.innerHTML=sorted.map(d=>{const pct=d.change_pct||0,c=pct>0?'up':pct<0?'down':'flat',sign=pct>0?'+':'';const ex=d.excess_pct||0,ec=ex>0?'up':ex<0?'down':'flat',es=ex>0?'+':'';const bw=Math.min(Math.abs(pct)/maxAbs*50,50);const bc=pct>=0?'pos':'neg';const bs=pct>=0?`right:50%;width:${bw}%`:`left:50%;width:${bw}%`;const mc=d.market==='KOSPI'?'kospi':'kosdaq';const bl=d.market==='KOSDAQ'?'KOSDAQ':'KOSPI';const sl=d.sector&&d.sector!=='기타'?`<span class="sc-sector">${d.sector}</span>`:'';const vol=d.avg_trade_amount?`<div class="sc-vol"><span>일평균 <span class="val">${fmtAmt(d.avg_trade_amount)}</span></span><span class="sc-spark" id="spark-${d.stock_code}"></span></div>`:'';return`<div class="stock-card" data-code="${d.stock_code}" style="cursor:pointer"><div class="sc-header"><div><span class="sc-name">${d.name}</span><span class="sc-code">${d.stock_code}</span>${sl}</div><span class="sc-mkt ${mc}">${d.market}</span></div><div class="sc-pct ${c}">${sign}${pct.toFixed(2)}%</div><div class="sc-excess ${ec}">${bl} 대비 ${es}${ex.toFixed(2)}%p</div><div class="sc-bar-wrap"><div class="sc-bar ${bc}" style="${bs}"></div></div><div class="sc-prices"><div>${d.start_date} <span class="val">${(d.start_price||0).toLocaleString()}</span></div><div>→</div><div>${d.end_date} <span class="val">${(d.end_price||0).toLocaleString()}</span></div></div>${vol}</div>`;}).join('');
   loadSparklines();
   updateSummary();
   const cc=selectedCodes.size?[...selectedCodes]:[];if(cc.length>=1&&cc.length<=10)loadChart(cc);else hideChart();
@@ -320,13 +320,15 @@ function drawSpark(arr){
   return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block"><polyline points="${fill}" fill="rgba(59,130,246,.12)" stroke="none"/><polyline points="${line}" fill="none" stroke="#3b82f6" stroke-width="1.2" stroke-linejoin="round"/></svg>`;
 }
 
-// ===== 카드 클릭 → 종목 선택 + 차트 =====
+// ===== 카드 클릭 → 해당 종목 차트 바로 보기 =====
 document.getElementById('cardGrid').addEventListener('click',e=>{
   const card=e.target.closest('.stock-card');if(!card)return;
   const code=card.dataset.code;if(!code)return;
-  if(selectedCodes.has(code))selectedCodes.delete(code);else selectedCodes.add(code);
-  renderPicker();renderCards();
-  const sec=document.getElementById('chartSection');if(sec.style.display==='block')sec.scrollIntoView({behavior:'smooth',block:'start'});
+  document.querySelectorAll('.stock-card').forEach(c=>c.classList.remove('selected'));
+  card.classList.add('selected');
+  showVolume=true;document.getElementById('btnVol').classList.add('active');
+  loadChart([code]);
+  setTimeout(()=>document.getElementById('chartSection').scrollIntoView({behavior:'smooth',block:'start'}),100);
 });
 
 document.querySelector('.sort-bar').addEventListener('click',e=>{const b=e.target.closest('.preset-btn');if(!b||!b.dataset.sort)return;document.querySelectorAll('.sort-bar .preset-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');currentSort=b.dataset.sort;renderCards();});
