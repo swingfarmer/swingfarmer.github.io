@@ -31,8 +31,13 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
 
 /* 종목 선택기 */
 .picker-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px}
-.picker-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
-.picker-header h3{font-size:14px;font-weight:700;margin:0}
+.picker-toggle{display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
+.picker-toggle h3{font-size:14px;font-weight:700;margin:0}
+.picker-toggle .arrow{font-size:12px;color:var(--text-dim);transition:transform .2s}
+.picker-toggle .arrow.open{transform:rotate(180deg)}
+.picker-body{overflow:hidden;transition:max-height .3s ease;max-height:0}
+.picker-body.open{max-height:600px}
+.picker-controls{display:flex;justify-content:space-between;align-items:center;margin:10px 0;flex-wrap:wrap;gap:8px}
 .picker-search{background:var(--bg);border:1px solid var(--border);color:var(--text);
   padding:6px 10px;border-radius:6px;font-size:12px;font-family:inherit;width:200px}
 .picker-search::placeholder{color:var(--text-dim)}
@@ -47,13 +52,15 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
 .picker-item .pmkt{font-size:9px;padding:1px 4px;border-radius:3px;font-weight:600;flex-shrink:0}
 .pmkt.kospi{color:#3b82f6;background:rgba(59,130,246,.12)}
 .pmkt.kosdaq{color:#a855f7;background:rgba(168,85,247,.12)}
+
+/* 선택된 종목 태그 (접기 밖) */
 .selected-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
 .sel-tag{background:rgba(59,130,246,.15);color:var(--accent);padding:3px 8px;border-radius:12px;font-size:11px;
-  cursor:pointer;display:flex;align-items:center;gap:4px}
+  cursor:pointer;display:inline-flex;align-items:center;gap:3px}
 .sel-tag:hover{background:rgba(59,130,246,.25)}
 .sel-tag .x{font-weight:700}
-.sel-tag .drag-h{cursor:grab;opacity:.5;font-size:10px}
-.sel-tag .drag-h:active{cursor:grabbing}
+.sel-tag .move-btn{background:none;border:none;color:var(--accent);cursor:pointer;font-size:10px;padding:0 1px;opacity:.6}
+.sel-tag .move-btn:hover{opacity:1}
 
 /* 업종 필터 */
 .sector-filter{margin-bottom:14px}
@@ -108,6 +115,9 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
 .note{font-size:11px;color:var(--text-dim);text-align:center;margin-top:16px;line-height:1.8}
 .loading{text-align:center;padding:40px;color:var(--text-dim)}
 .empty{text-align:center;padding:60px 20px;color:var(--text-dim);font-size:14px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#22c55e;color:#fff;
+  padding:10px 24px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
 </style>
 </head>
 <body>
@@ -142,24 +152,27 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
 
 <!-- 종목 선택기 -->
 <div class="picker-wrap">
-  <div class="picker-header">
-    <h3>📌 종목 선택 <span style="font-weight:400;color:var(--text-dim);font-size:12px">(체크 시 해당 종목만 표시. 미선택 = 전체)</span></h3>
-    <div style="display:flex;gap:8px;align-items:center">
+  <div class="picker-toggle" id="pickerToggle">
+    <h3>📌 종목 선택 <span id="selCount" style="font-weight:400;color:var(--text-dim);font-size:12px"></span></h3>
+    <span class="arrow" id="pickerArrow">▼</span>
+  </div>
+  <div class="picker-body" id="pickerBody">
+    <div class="picker-controls">
       <input type="text" class="picker-search" id="pickerSearch" placeholder="종목명·코드 검색...">
       <div class="picker-actions">
-        <button onclick="saveFav()">💾 저장</button>
-        <button onclick="loadFav()">⭐ 불러오기</button>
+        <button onclick="saveFavDB()">💾 저장</button>
+        <button onclick="loadFavDB()">⭐ 불러오기</button>
         <button onclick="clearSelection()">초기화</button>
       </div>
     </div>
+    <div class="picker-grid" id="pickerGrid"></div>
   </div>
-  <div class="picker-grid" id="pickerGrid"></div>
   <div class="selected-tags" id="selectedTags"></div>
 </div>
 
 <!-- 업종 필터 -->
 <div class="sector-filter" id="sectorFilter" style="display:none">
-  <div class="sector-filter-label">🏷️ 업종 필터 <span style="font-size:10px">(복수 선택 가능, 다시 클릭해서 해제)</span>
+  <div class="sector-filter-label">🏷️ 업종 필터 <span style="font-size:10px">(복수 선택 가능)</span>
     <button class="preset-btn" onclick="clearSectors()" style="padding:2px 10px;font-size:10px;margin-left:6px">초기화</button></div>
   <div class="sector-tags" id="sectorTags"></div>
 </div>
@@ -206,6 +219,7 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
 
 <div class="note" id="rangeNote"></div>
 <div class="note" id="note"></div>
+<div class="toast" id="toast"></div>
 
 <script>
 const API = 'https://swingfarmer.duckdns.org/api';
@@ -219,13 +233,19 @@ let chartMode = 'pct';
 let showBenchmark = true;
 let priceChart = null;
 
-// 차트 색상 팔레트
 const CHART_COLORS = [
   '#3b82f6','#ef4444','#22c55e','#eab308','#a855f7',
   '#f97316','#06b6d4','#ec4899','#14b8a6','#f43f5e'
 ];
 const BENCH_COLORS = { KOSPI: 'rgba(255,255,255,.35)', KOSDAQ: 'rgba(168,85,247,.35)' };
 
+function toast(msg, ms) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), ms || 2000);
+}
+
+// ========== 종목 로드 ==========
 async function loadStockMap() {
   async function parseCSV(url, market) {
     try {
@@ -244,6 +264,19 @@ async function loadStockMap() {
   renderPicker();
 }
 
+// ========== 종목 선택기 (접기/펼치기) ==========
+let pickerOpen = false;
+document.getElementById('pickerToggle').addEventListener('click', () => {
+  pickerOpen = !pickerOpen;
+  document.getElementById('pickerBody').classList.toggle('open', pickerOpen);
+  document.getElementById('pickerArrow').classList.toggle('open', pickerOpen);
+});
+
+function updateSelCount() {
+  const el = document.getElementById('selCount');
+  el.textContent = selectedCodes.size ? `(${selectedCodes.size}종목 선택됨)` : '(체크 시 해당 종목만 표시. 미선택 = 전체)';
+}
+
 function renderPicker() {
   const q = document.getElementById('pickerSearch').value.trim().toLowerCase();
   const grid = document.getElementById('pickerGrid');
@@ -259,7 +292,7 @@ function renderPicker() {
   renderSelectedTags();
 }
 
-let orderedCodes = []; // 순서 유지용
+let orderedCodes = [];
 
 function syncOrder() {
   orderedCodes = orderedCodes.filter(c => selectedCodes.has(c));
@@ -268,44 +301,42 @@ function syncOrder() {
 
 function renderSelectedTags() {
   syncOrder();
+  updateSelCount();
   const el = document.getElementById('selectedTags');
   if (!orderedCodes.length) { el.innerHTML=''; return; }
   el.innerHTML = orderedCodes.map((c,i) => {
     const n = stockMap[c]?.name||c;
-    return `<span class="sel-tag" draggable="true" data-code="${c}" data-idx="${i}">
-      <span class="drag-h">☰</span> ${n} <span class="x">✕</span></span>`;
+    const upDis = i===0 ? 'opacity:.2;pointer-events:none' : '';
+    const dnDis = i===orderedCodes.length-1 ? 'opacity:.2;pointer-events:none' : '';
+    return `<span class="sel-tag" data-code="${c}" data-idx="${i}">
+      <button class="move-btn" data-dir="up" data-idx="${i}" style="${upDis}">◀</button>
+      ${n}
+      <button class="move-btn" data-dir="down" data-idx="${i}" style="${dnDis}">▶</button>
+      <span class="x" data-code="${c}">✕</span></span>`;
   }).join('');
 }
 
-// 태그 드래그 순서 변경
-(function(){
-  const container = document.getElementById('selectedTags');
-  let dragIdx = null;
-  container.addEventListener('dragstart', e => {
-    const tag = e.target.closest('.sel-tag');
-    if (!tag) return;
-    dragIdx = parseInt(tag.dataset.idx);
-    e.dataTransfer.effectAllowed = 'move';
-    tag.style.opacity = '0.4';
-  });
-  container.addEventListener('dragend', e => {
-    const tag = e.target.closest('.sel-tag');
-    if (tag) tag.style.opacity = '1';
-  });
-  container.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect='move'; });
-  container.addEventListener('drop', e => {
-    e.preventDefault();
-    const tag = e.target.closest('.sel-tag');
-    if (!tag || dragIdx === null) return;
-    const dropIdx = parseInt(tag.dataset.idx);
-    if (dragIdx === dropIdx) return;
-    const moved = orderedCodes.splice(dragIdx, 1)[0];
-    orderedCodes.splice(dropIdx, 0, moved);
-    renderSelectedTags();
-    renderCards();
-    autoSave();
-  });
-})();
+// 순서 이동 (◀▶ 버튼)
+document.getElementById('selectedTags').addEventListener('click', e => {
+  const moveBtn = e.target.closest('.move-btn');
+  if (moveBtn) {
+    const idx = parseInt(moveBtn.dataset.idx);
+    const dir = moveBtn.dataset.dir;
+    if (dir === 'up' && idx > 0) {
+      [orderedCodes[idx-1], orderedCodes[idx]] = [orderedCodes[idx], orderedCodes[idx-1]];
+    } else if (dir === 'down' && idx < orderedCodes.length-1) {
+      [orderedCodes[idx], orderedCodes[idx+1]] = [orderedCodes[idx+1], orderedCodes[idx]];
+    }
+    renderSelectedTags(); renderCards(); autoSave();
+    return;
+  }
+  // ✕ 버튼
+  const xBtn = e.target.closest('.x');
+  if (xBtn) {
+    selectedCodes.delete(xBtn.dataset.code); renderPicker(); renderCards(); autoSave();
+    return;
+  }
+});
 
 function clearSelection() { selectedCodes.clear(); orderedCodes=[]; selectedSectors.clear(); renderPicker(); renderCards(); autoSave(); buildSectorFilter(); }
 function clearSectors() { selectedSectors.clear(); buildSectorFilter(); renderCards(); }
@@ -314,11 +345,6 @@ document.getElementById('pickerGrid').addEventListener('change', e => {
   if (e.target.type!=='checkbox') return;
   if (e.target.checked) selectedCodes.add(e.target.value); else selectedCodes.delete(e.target.value);
   renderSelectedTags(); renderCards(); autoSave();
-});
-document.getElementById('selectedTags').addEventListener('click', e => {
-  const tag = e.target.closest('.sel-tag');
-  if (!tag) return;
-  selectedCodes.delete(tag.dataset.code); renderPicker(); renderCards(); autoSave();
 });
 document.getElementById('pickerSearch').addEventListener('input', renderPicker);
 
@@ -346,6 +372,53 @@ document.getElementById('presets').addEventListener('click', e => {
   fetchData();
 });
 
+// ========== 즐겨찾기 (Oracle DB 저장) ==========
+const SETTING_KEY = 'price_compare_fav';
+
+async function saveFavDB() {
+  if (!selectedCodes.size) { alert('저장할 종목을 먼저 선택하세요.'); return; }
+  syncOrder();
+  const names = orderedCodes.map(c => stockMap[c]?.name||c).join(', ');
+  if (!confirm(`현재 선택 ${orderedCodes.length}종목을 저장합니다.\n${names}\n\n기존 저장분은 덮어써집니다. 계속할까요?`)) return;
+  const result = await sfApiFetch(`${API}/settings/${SETTING_KEY}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ value: JSON.stringify(orderedCodes) })
+  });
+  if (result.ok) toast(`💾 저장 완료 (${orderedCodes.length}종목)`);
+  else alert('저장 실패: ' + (result.data?.error || '로그인 필요'));
+}
+
+async function loadFavDB() {
+  try {
+    const res = await fetch(`${API}/settings/${SETTING_KEY}`);
+    const json = await res.json();
+    if (!json.value) { alert('저장된 종목이 없습니다.'); return; }
+    const codes = JSON.parse(json.value);
+    if (!codes.length) { alert('저장된 종목이 없습니다.'); return; }
+    const names = codes.map(c => stockMap[c]?.name||c).join(', ');
+    orderedCodes = [...codes];
+    selectedCodes = new Set(codes);
+    renderPicker(); renderCards(); autoSave();
+    toast(`⭐ ${codes.length}종목 불러옴`);
+  } catch(e) { alert('불러오기 실패'); }
+}
+
+// 자동 저장/복원 (localStorage — 같은 브라우저 내 임시용)
+function autoSave() {
+  syncOrder();
+  if (orderedCodes.length) localStorage.setItem('sf_price_sel', JSON.stringify(orderedCodes));
+  else localStorage.removeItem('sf_price_sel');
+}
+function autoRestore() {
+  try {
+    const raw = localStorage.getItem('sf_price_sel');
+    if (!raw) return;
+    const codes = JSON.parse(raw);
+    if (codes.length) { orderedCodes = [...codes]; selectedCodes = new Set(codes); }
+  } catch(e) {}
+}
+
 // ========== 업종 필터 ==========
 function buildSectorFilter() {
   const sectorCount = {};
@@ -369,14 +442,11 @@ document.getElementById('sectorTags').addEventListener('click', e => {
   const btn = e.target.closest('.sector-tag');
   if (!btn) return;
   const sec = btn.dataset.sector;
-  if (sec === '') {
-    // "전체" 클릭 → 업종 필터 해제
-    selectedSectors.clear();
-  } else {
+  if (sec === '') { selectedSectors.clear(); }
+  else {
     if (selectedSectors.has(sec)) selectedSectors.delete(sec);
     else selectedSectors.add(sec);
   }
-  // active 토글
   document.querySelectorAll('.sector-tag').forEach(b => {
     if (b.dataset.sector === '') b.classList.toggle('active', selectedSectors.size===0);
     else b.classList.toggle('active', selectedSectors.has(b.dataset.sector));
@@ -502,7 +572,6 @@ function renderCards() {
   }).join('');
   updateSummary();
 
-  // 차트: 선택 종목 2~10개일 때만
   const chartCodes = selectedCodes.size ? [...selectedCodes] : [];
   if (chartCodes.length >= 2 && chartCodes.length <= 10) loadChart(chartCodes);
   else hideChart();
@@ -530,7 +599,6 @@ function toggleBenchmark() {
 async function loadChart(codes) {
   const from = document.getElementById('dateFrom').value;
   const to = document.getElementById('dateTo').value || today();
-  // 종목 + 지수 함께 호출
   const allCodes = [...codes];
   if (showBenchmark) { allCodes.push('KS11','KQ11'); }
   const codesStr = [...new Set(allCodes)].join(',');
@@ -542,136 +610,85 @@ async function loadChart(codes) {
 }
 
 function drawChart(rawData, stockCodes) {
-  // 종목별로 그룹핑
   const byCode = {};
   rawData.forEach(r => {
     if (!byCode[r.stock_code]) byCode[r.stock_code] = [];
     byCode[r.stock_code].push(r);
   });
-
-  // 날짜축 (모든 종목 합쳐서 unique sort)
   const allDates = [...new Set(rawData.map(r=>r.trade_date))].sort();
   if (!allDates.length) { hideChart(); return; }
 
   const datasets = [];
-
-  // 종목 라인
   stockCodes.forEach((code, i) => {
     const rows = byCode[code] || [];
     if (!rows.length) return;
-    const dateMap = {};
-    rows.forEach(r => dateMap[r.trade_date] = r);
+    const dateMap = {}; rows.forEach(r => dateMap[r.trade_date] = r);
     const basePrice = rows[0]?.close_price || rows[0]?.close || 1;
     const data = allDates.map(date => {
-      const r = dateMap[date];
-      if (!r) return null;
+      const r = dateMap[date]; if (!r) return null;
       const close = r.close_price ?? r.close ?? 0;
       return chartMode === 'pct' ? Math.round((close / basePrice - 1) * 10000) / 100 : close;
     });
-    const name = stockMap[code]?.name || code;
     datasets.push({
-      label: name,
-      data,
-      borderColor: CHART_COLORS[i % CHART_COLORS.length],
-      backgroundColor: 'transparent',
-      borderWidth: 2,
-      pointRadius: 0,
-      pointHoverRadius: 4,
-      tension: 0.1,
-      spanGaps: true
+      label: stockMap[code]?.name || code, data,
+      borderColor: CHART_COLORS[i % CHART_COLORS.length], backgroundColor: 'transparent',
+      borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.1, spanGaps: true
     });
   });
 
-  // 벤치마크 (수익률 모드만)
   if (showBenchmark && chartMode === 'pct') {
     ['KS11','KQ11'].forEach(idx => {
       const rows = byCode[idx] || [];
       if (!rows.length) return;
-      const dateMap = {};
-      rows.forEach(r => dateMap[r.trade_date] = r);
+      const dateMap = {}; rows.forEach(r => dateMap[r.trade_date] = r);
       const basePrice = rows[0]?.close_price || rows[0]?.close || 1;
       const data = allDates.map(date => {
-        const r = dateMap[date];
-        if (!r) return null;
+        const r = dateMap[date]; if (!r) return null;
         const close = r.close_price ?? r.close ?? 0;
         return Math.round((close / basePrice - 1) * 10000) / 100;
       });
       const name = idx === 'KS11' ? 'KOSPI' : 'KOSDAQ';
       datasets.push({
-        label: name,
-        data,
-        borderColor: BENCH_COLORS[name],
-        backgroundColor: 'transparent',
-        borderWidth: 1.5,
-        borderDash: [6, 3],
-        pointRadius: 0,
-        pointHoverRadius: 3,
-        tension: 0.1,
-        spanGaps: true
+        label: name, data, borderColor: BENCH_COLORS[name], backgroundColor: 'transparent',
+        borderWidth: 1.5, borderDash: [6, 3], pointRadius: 0, pointHoverRadius: 3, tension: 0.1, spanGaps: true
       });
     });
   }
 
   if (!datasets.length) { hideChart(); return; }
-
   document.getElementById('chartSection').style.display = 'block';
   const ctx = document.getElementById('priceChart').getContext('2d');
   if (priceChart) priceChart.destroy();
 
-  // 날짜 라벨 간추리기 (너무 많으면)
-  const labels = allDates.map(d => d.slice(5)); // MM-DD
-
   priceChart = new Chart(ctx, {
     type: 'line',
-    data: { labels, datasets },
+    data: { labels: allDates.map(d => d.slice(5)), datasets },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { color: '#e4e4e7', boxWidth: 14, padding: 12, font: { size: 11 } }
-        },
+        legend: { position: 'bottom', labels: { color: '#e4e4e7', boxWidth: 14, padding: 12, font: { size: 11 } } },
         tooltip: {
-          backgroundColor: '#1a1d27',
-          titleColor: '#e4e4e7',
-          bodyColor: '#e4e4e7',
-          borderColor: '#2a2d3a',
-          borderWidth: 1,
+          backgroundColor: '#1a1d27', titleColor: '#e4e4e7', bodyColor: '#e4e4e7',
+          borderColor: '#2a2d3a', borderWidth: 1,
           callbacks: {
             label: ctx => {
-              const v = ctx.parsed.y;
-              if (v === null) return '';
-              if (chartMode === 'pct') return `${ctx.dataset.label}: ${v>=0?'+':''}${v.toFixed(2)}%`;
-              return `${ctx.dataset.label}: ${v.toLocaleString()}원`;
+              const v = ctx.parsed.y; if (v === null) return '';
+              return chartMode === 'pct' ? `${ctx.dataset.label}: ${v>=0?'+':''}${v.toFixed(2)}%`
+                : `${ctx.dataset.label}: ${v.toLocaleString()}원`;
             }
           }
         }
       },
       scales: {
-        x: {
-          ticks: { color: '#71717a', maxRotation: 0, autoSkipPadding: 20, font: { size: 10 } },
-          grid: { color: 'rgba(42,45,58,.5)' }
-        },
+        x: { ticks: { color: '#71717a', maxRotation: 0, autoSkipPadding: 20, font: { size: 10 } }, grid: { color: 'rgba(42,45,58,.5)' } },
         y: {
-          ticks: {
-            color: '#71717a', font: { size: 10 },
-            callback: v => chartMode === 'pct' ? v.toFixed(1)+'%' : v.toLocaleString()
-          },
+          ticks: { color: '#71717a', font: { size: 10 }, callback: v => chartMode === 'pct' ? v.toFixed(1)+'%' : v.toLocaleString() },
           grid: { color: 'rgba(42,45,58,.5)' }
         }
       }
     }
   });
-
-  // 0% 기준선 (수익률 모드)
-  if (chartMode === 'pct') {
-    priceChart.options.plugins.annotation = {
-      annotations: { zero: { type: 'line', yMin: 0, yMax: 0, borderColor: 'rgba(255,255,255,.15)', borderWidth: 1 } }
-    };
-    priceChart.update();
-  }
 }
 
 // ========== 정렬 ==========
@@ -682,47 +699,6 @@ document.querySelector('.sort-bar').addEventListener('click', e => {
 });
 
 document.getElementById('marketFilter').addEventListener('change', renderCards);
-
-// 별도 저장 (초기화 후에도 복원 가능)
-function saveFav() {
-  if (!selectedCodes.size) { alert('저장할 종목을 먼저 선택하세요.'); return; }
-  syncOrder();
-  localStorage.setItem('sf_price_fav', JSON.stringify(orderedCodes));
-  const names = orderedCodes.map(c=>stockMap[c]?.name||c).join(', ');
-  alert(`💾 저장 완료 (${orderedCodes.length}종목)\n${names}`);
-}
-function loadFav() {
-  try {
-    const raw = localStorage.getItem('sf_price_fav');
-    if (!raw) { alert('저장된 종목이 없습니다.'); return; }
-    const codes = JSON.parse(raw);
-    if (!codes.length) { alert('저장된 종목이 없습니다.'); return; }
-    orderedCodes = [...codes];
-    selectedCodes = new Set(codes);
-    renderPicker(); renderCards(); autoSave();
-  } catch(e) { alert('불러오기 실패'); }
-}
-
-// 자동 저장/복원
-function autoSave() {
-  syncOrder();
-  if (orderedCodes.length) {
-    localStorage.setItem('sf_price_sel', JSON.stringify(orderedCodes));
-  } else {
-    localStorage.removeItem('sf_price_sel');
-  }
-}
-function autoRestore() {
-  try {
-    const raw = localStorage.getItem('sf_price_sel');
-    if (!raw) return;
-    const codes = JSON.parse(raw);
-    if (codes.length) {
-      orderedCodes = [...codes];
-      selectedCodes = new Set(codes);
-    }
-  } catch(e) {}
-}
 
 (async () => {
   document.getElementById('dateTo').value = today();
