@@ -68,6 +68,7 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
 .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:16px}
 .stock-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;transition:border-color .12s}
 .stock-card:hover{border-color:var(--accent)}
+.stock-card.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .sc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
 .sc-name{font-weight:700;font-size:14px}.sc-code{color:var(--text-dim);font-size:10px;margin-left:6px}
 .sc-sector{font-size:9px;color:var(--text-dim);margin-left:4px}
@@ -78,7 +79,8 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
 .sc-excess{font-size:13px;font-weight:600;margin-bottom:8px}
 .sc-prices{display:flex;justify-content:space-between;font-size:12px;color:var(--text-dim)}
 .sc-prices .val{color:var(--text);font-weight:600}
-.sc-vol{font-size:11px;color:var(--text-dim);margin-top:6px;text-align:right}
+.sc-vol{font-size:11px;color:var(--text-dim);margin-top:6px;text-align:right;display:flex;align-items:center;justify-content:space-between}
+.sc-spark{flex-shrink:0}
 .sc-vol .val{color:var(--text);font-weight:600}
 .up{color:var(--red)}.down{color:#3b82f6}.flat{color:var(--text-dim)}
 .sc-bar-wrap{height:6px;background:var(--bg);border-radius:3px;margin:8px 0;position:relative;overflow:hidden}
@@ -267,7 +269,8 @@ function renderCards(){
   const filtered=getFiltered(),sorted=sortData(filtered),grid=document.getElementById('cardGrid');
   if(!sorted.length){grid.innerHTML='<div class="empty">표시할 종목이 없습니다.</div>';updateSummary();hideChart();return;}
   const maxAbs=Math.max(...filtered.map(d=>Math.abs(d.change_pct||0)),1);
-  grid.innerHTML=sorted.map(d=>{const pct=d.change_pct||0,c=pct>0?'up':pct<0?'down':'flat',sign=pct>0?'+':'';const ex=d.excess_pct||0,ec=ex>0?'up':ex<0?'down':'flat',es=ex>0?'+':'';const bw=Math.min(Math.abs(pct)/maxAbs*50,50);const bc=pct>=0?'pos':'neg';const bs=pct>=0?`right:50%;width:${bw}%`:`left:50%;width:${bw}%`;const mc=d.market==='KOSPI'?'kospi':'kosdaq';const bl=d.market==='KOSDAQ'?'KOSDAQ':'KOSPI';const sl=d.sector&&d.sector!=='기타'?`<span class="sc-sector">${d.sector}</span>`:'';const vol=d.avg_trade_amount?`<div class="sc-vol">일평균 거래대금 <span class="val">${fmtAmt(d.avg_trade_amount)}</span></div>`:'';return`<div class="stock-card"><div class="sc-header"><div><span class="sc-name">${d.name}</span><span class="sc-code">${d.stock_code}</span>${sl}</div><span class="sc-mkt ${mc}">${d.market}</span></div><div class="sc-pct ${c}">${sign}${pct.toFixed(2)}%</div><div class="sc-excess ${ec}">${bl} 대비 ${es}${ex.toFixed(2)}%p</div><div class="sc-bar-wrap"><div class="sc-bar ${bc}" style="${bs}"></div></div><div class="sc-prices"><div>${d.start_date} <span class="val">${(d.start_price||0).toLocaleString()}</span></div><div>→</div><div>${d.end_date} <span class="val">${(d.end_price||0).toLocaleString()}</span></div></div>${vol}</div>`;}).join('');
+  grid.innerHTML=sorted.map(d=>{const pct=d.change_pct||0,c=pct>0?'up':pct<0?'down':'flat',sign=pct>0?'+':'';const ex=d.excess_pct||0,ec=ex>0?'up':ex<0?'down':'flat',es=ex>0?'+':'';const bw=Math.min(Math.abs(pct)/maxAbs*50,50);const bc=pct>=0?'pos':'neg';const bs=pct>=0?`right:50%;width:${bw}%`:`left:50%;width:${bw}%`;const mc=d.market==='KOSPI'?'kospi':'kosdaq';const bl=d.market==='KOSDAQ'?'KOSDAQ':'KOSPI';const sl=d.sector&&d.sector!=='기타'?`<span class="sc-sector">${d.sector}</span>`:'';const vol=d.avg_trade_amount?`<div class="sc-vol"><span>일평균 <span class="val">${fmtAmt(d.avg_trade_amount)}</span></span><span class="sc-spark" id="spark-${d.stock_code}"></span></div>`:'';const sel=selectedCodes.has(d.stock_code)?' selected':'';return`<div class="stock-card${sel}" data-code="${d.stock_code}" style="cursor:pointer"><div class="sc-header"><div><span class="sc-name">${d.name}</span><span class="sc-code">${d.stock_code}</span>${sl}</div><span class="sc-mkt ${mc}">${d.market}</span></div><div class="sc-pct ${c}">${sign}${pct.toFixed(2)}%</div><div class="sc-excess ${ec}">${bl} 대비 ${es}${ex.toFixed(2)}%p</div><div class="sc-bar-wrap"><div class="sc-bar ${bc}" style="${bs}"></div></div><div class="sc-prices"><div>${d.start_date} <span class="val">${(d.start_price||0).toLocaleString()}</span></div><div>→</div><div>${d.end_date} <span class="val">${(d.end_price||0).toLocaleString()}</span></div></div>${vol}</div>`;}).join('');
+  loadSparklines();
   updateSummary();
   const cc=selectedCodes.size?[...selectedCodes]:[];if(cc.length>=1&&cc.length<=10)loadChart(cc);else hideChart();
 }
@@ -291,6 +294,40 @@ if(!ds.length){hideChart();return;}
 const hasVol=showVolume&&ds.some(d=>d.yAxisID==='y1');
 document.getElementById('chartSection').style.display='block';const ctx=document.getElementById('priceChart').getContext('2d');if(priceChart)priceChart.destroy();
 priceChart=new Chart(ctx,{data:{labels:ad.map(d=>d.slice(5)),datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom',labels:{color:'#e4e4e7',boxWidth:14,padding:12,font:{size:11},filter:item=>!item.text.includes('거래대금')||showVolume}},tooltip:{backgroundColor:'#1a1d27',titleColor:'#e4e4e7',bodyColor:'#e4e4e7',borderColor:'#2a2d3a',borderWidth:1,callbacks:{label:c=>{const v=c.parsed.y;if(v===null)return'';if(c.dataset.yAxisID==='y1')return`${c.dataset.label}: ${fmtAmt(v)}`;return chartMode==='pct'?`${c.dataset.label}: ${v>=0?'+':''}${v.toFixed(2)}%`:`${c.dataset.label}: ${v.toLocaleString()}원`;}}}},scales:{x:{ticks:{color:'#71717a',maxRotation:0,autoSkipPadding:20,font:{size:10}},grid:{color:'rgba(42,45,58,.5)'}},y:{position:'left',ticks:{color:'#71717a',font:{size:10},callback:v=>chartMode==='pct'?v.toFixed(1)+'%':v.toLocaleString()},grid:{color:'rgba(42,45,58,.5)'}},y1:{display:hasVol,position:'right',ticks:{color:'#71717a80',font:{size:9},callback:v=>fmtAmt(v)},grid:{drawOnChartArea:false}}}}});}
+
+// ===== 스파크라인 =====
+let sparkCache={};
+async function loadSparklines(){
+  const from=document.getElementById('dateFrom').value,to=document.getElementById('dateTo').value||today();
+  const key=from+'_'+to;
+  if(sparkCache._key===key&&Object.keys(sparkCache).length>1){drawAllSparks();return;}
+  try{const r=await fetch(`${API}/prices/daily/sparklines?from=${from}&to=${to}`);sparkCache=await r.json();sparkCache._key=key;drawAllSparks();}catch(e){}}
+function drawAllSparks(){
+  document.querySelectorAll('.sc-spark').forEach(el=>{
+    const code=el.id.replace('spark-','');
+    const pts=sparkCache[code];
+    if(!pts||!pts.length)return;
+    el.innerHTML=drawSpark(pts);
+  });
+}
+function drawSpark(arr){
+  const w=80,h=22,pad=1;
+  const mn=Math.min(...arr),mx=Math.max(...arr),rng=mx-mn||1;
+  const step=w/(arr.length-1||1);
+  const coords=arr.map((v,i)=>[Math.round(i*step), Math.round(pad+(h-2*pad)*(1-(v-mn)/rng))]);
+  const line=coords.map(p=>p.join(',')).join(' ');
+  const fill=line+` ${w},${h} 0,${h}`;
+  return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block"><polyline points="${fill}" fill="rgba(59,130,246,.12)" stroke="none"/><polyline points="${line}" fill="none" stroke="#3b82f6" stroke-width="1.2" stroke-linejoin="round"/></svg>`;
+}
+
+// ===== 카드 클릭 → 종목 선택 + 차트 =====
+document.getElementById('cardGrid').addEventListener('click',e=>{
+  const card=e.target.closest('.stock-card');if(!card)return;
+  const code=card.dataset.code;if(!code)return;
+  if(selectedCodes.has(code))selectedCodes.delete(code);else selectedCodes.add(code);
+  renderPicker();renderCards();
+  const sec=document.getElementById('chartSection');if(sec.style.display==='block')sec.scrollIntoView({behavior:'smooth',block:'start'});
+});
 
 document.querySelector('.sort-bar').addEventListener('click',e=>{const b=e.target.closest('.preset-btn');if(!b||!b.dataset.sort)return;document.querySelectorAll('.sort-bar .preset-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');currentSort=b.dataset.sort;renderCards();});
 document.getElementById('marketFilter').addEventListener('change',renderCards);
