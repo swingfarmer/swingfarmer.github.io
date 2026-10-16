@@ -560,8 +560,27 @@ document.querySelectorAll('input, select').forEach(el => {
 
 // 초기 로드
 loadShinDongA();
-</script>
 
+// ── sf-slots 연동 ──
+window.CALC_KEY = 'redevelopment';
+window.slGetState = function(){
+  var ids = ['projectName','unitsBefore','unitsAfter','floors','zoneArea','existingArea','legalFAR','actualFAR','constructionPerPyung','constructionArea','businessCostRate'];
+  var s = {};
+  ids.forEach(function(id){ s[id] = document.getElementById(id).value; });
+  s.beforeRows = JSON.parse(JSON.stringify(beforeRows));
+  s.afterRows = JSON.parse(JSON.stringify(afterRows));
+  return s;
+};
+window.slSetState = function(d){
+  if(!d) return;
+  var ids = ['projectName','unitsBefore','unitsAfter','floors','zoneArea','existingArea','legalFAR','actualFAR','constructionPerPyung','constructionArea','businessCostRate'];
+  ids.forEach(function(id){ if(d[id]!=null) document.getElementById(id).value = d[id]; });
+  if(d.beforeRows) beforeRows = d.beforeRows;
+  if(d.afterRows) afterRows = d.afterRows;
+  renderBefore(); renderAfter(); calculate();
+};
+</script>
+<script src="/sf-slots.js?v=2"></script>
 <script src="/common.js?v=5"></script>
 </body>
 </html>

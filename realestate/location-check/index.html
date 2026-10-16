@@ -231,6 +231,12 @@ $('placeName').addEventListener('input', save);
 // 초기화
 load();
 render();
+
+// ── sf-slots 연동 ──
+window.CALC_KEY = 'location_check';
+window.slGetState = function(){ return { items: JSON.parse(JSON.stringify(items)), placeName: $('placeName').value }; };
+window.slSetState = function(d){ if(d){ if(d.items) items = d.items; if(d.placeName != null) $('placeName').value = d.placeName; save(); render(); } };
 </script>
+<script src="/sf-slots.js?v=2"></script>
 </body>
 </html>
