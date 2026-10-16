@@ -1422,7 +1422,7 @@ calculate();
 
 <script type="module">
 // === 관리자 클라우드 저장 (Firebase) ===
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 const firebaseConfig = {
   apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
@@ -1435,7 +1435,7 @@ const firebaseConfig = {
 const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1";
 const CALC_KEY = "free"; // 이 계산기 식별자
 
-const app = initializeApp(firebaseConfig);
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: 'select_account' });
@@ -1542,11 +1542,10 @@ async function refreshSlots(){
 });
 
 // ── sf-slots 연동 ──
-window.CALC_KEY = 'free';
 window.slGetState = collectInputs;
 window.slSetState = applyInputs;
 </script>
-
+<script>window.CALC_KEY='free';</script>
 <script src="/sf-slots.js?v=2"></script>
 <script src="/common.js?v=5"></script>
 </body>
