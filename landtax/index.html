@@ -324,6 +324,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
 <script type="module">
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 const firebaseConfig = {
   apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
   authDomain: "swingfarmer-board01.firebaseapp.com",
@@ -338,6 +339,8 @@ const STORE_KEY = "sf_landtax_v1";
 
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
+function docRef() { return doc(db, 'calc_data', ADMIN_UID); }
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: 'select_account' });
 const $ = id => document.getElementById(id);
@@ -360,8 +363,6 @@ $('btnAdminLogin').addEventListener('click', async () => {
       try { await signInWithRedirect(auth, provider); } catch (e2) { alert('로그인 실패: ' + e2.message); }
     } else { alert('로그인 실패: ' + (e.message || code)); }
   }
-});
-  if (confirm('로그아웃?')) { try { await signOut(auth); } catch (e) {} }
 });
 window._ltSignout = () => signOut(auth);
 
