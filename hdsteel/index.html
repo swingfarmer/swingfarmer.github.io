@@ -369,18 +369,7 @@
     </div>
   </section>
 
-  <!-- slots -->
-  <div class="card">
-    <h2>시나리오 저장</h2>
-    <div class="slots">
-      <input id="slotName" placeholder="시나리오 이름" style="flex:1 1 140px">
-      <button id="slotSave">저장</button>
-      <select id="slotList"><option value="">— 불러오기 —</option></select>
-      <button class="ghost" id="slotLoad">불러오기</button>
-      <button class="ghost" id="slotDel">삭제</button>
-      <span class="msg" id="slotMsg"></span>
-    </div>
-  </div>
+
 
   <footer>
     데이터: 신한투자증권(박광래, 2026.7.1) · 에프앤가이드 · 회사 자료 &nbsp;|&nbsp; 사업부별 OP 배분은 추정치(회사 미공개)<br>
@@ -527,7 +516,6 @@ function staticCharts(){
     options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
 }
 
-const KEY='hdsteel_sim_slots';
 function getState(){return{year,scen,
   revGoro:$('revGoro').value,opmGoro:$('opmGoro').value,
   revEaf:$('revEaf').value,opmEaf:$('opmEaf').value,
@@ -541,33 +529,16 @@ function setState(s){
   if(s.pbr!=null)$('pbrRange').value=s.pbr;
   calc();
 }
-const LS={
-  read(){try{return JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){return{};}},
-  write(o){try{localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
-};
-const Store = window.SlotStore || {
-  async list(){return Object.keys(LS.read());},
-  async save(n,d){const o=LS.read();o[n]=d;LS.write(o);},
-  async load(n){return LS.read()[n];},
-  async del(n){const o=LS.read();delete o[n];LS.write(o);}
-};
-async function refreshSlots(){
-  const names=await Store.list();
-  $('slotList').innerHTML='<option value="">— 불러오기 —</option>'+
-    names.map(n=>'<option>'+n+'</option>').join('');
-}
-function toast(t){$('slotMsg').textContent=t;setTimeout(()=>$('slotMsg').textContent='',2000);}
-$('slotSave').onclick=async()=>{const n=$('slotName').value.trim();if(!n)return toast('이름 입력');
-  await Store.save(n,getState());await refreshSlots();toast('저장됨');};
-$('slotLoad').onclick=async()=>{const n=$('slotList').value;if(!n)return;
-  const d=await Store.load(n);if(d)setState(d);toast('불러옴');};
-$('slotDel').onclick=async()=>{const n=$('slotList').value;if(!n)return;
-  await Store.del(n);await refreshSlots();toast('삭제됨');};
+
+// ── sf-slots 연동 ──
+window.CALC_KEY = 'hdsteel_sim';
+window.slGetState = getState;
+window.slSetState = function(d){ if(d) setState(d); };
 
 staticCharts();
 loadPreset();
-refreshSlots();
 </script>
+<script src="/sf-slots.js?v=2"></script>
 <div id="relatedTools" style="display:none;max-width:1120px;margin:30px auto 0;padding:0 16px">
   <h2 style="font-size:14px;font-weight:700;color:#1F4E78;margin-bottom:12px;border-left:3px solid #1F4E78;padding-left:10px">관련 도구</h2>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">

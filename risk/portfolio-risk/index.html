@@ -261,6 +261,12 @@ function loadJson(e){ const f=e.target.files[0]; if(!f)return; const r=new FileR
 function resetAll(){ if(confirm('초기화할까요?')){ rows=[blankRow()]; save(); render(); } }
 
 load(); render();
+
+// ── sf-slots 연동 ──
+window.CALC_KEY = 'portfolio_risk';
+window.slGetState = function(){ return { rows: JSON.parse(JSON.stringify(rows)) }; };
+window.slSetState = function(d){ if(d && d.rows){ rows = d.rows; save(); render(); } };
 </script>
+<script src="/sf-slots.js?v=2"></script>
 </body>
 </html>
