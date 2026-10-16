@@ -322,7 +322,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
 
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 const firebaseConfig = {
   apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
@@ -336,7 +336,7 @@ const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1";
 const CALC_KEY = "landtax";
 const STORE_KEY = "sf_landtax_v1";
 
-const app = initializeApp(firebaseConfig);
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: 'select_account' });
@@ -946,10 +946,10 @@ updateAllPyeongHints();
 updateDateCalc();
 
 // ── sf-slots 연동 ──
-window.CALC_KEY = 'landtax';
 window.slGetState = collectInputs;
-window.slSetState = applyInputs;
+window.slSetState = function(d){ applyInputs(d); calculate(); };
 </script>
+<script>window.CALC_KEY='landtax';</script>
 <script src="/sf-slots.js?v=2"></script>
 <script src="/common.js?v=5"></script>
 </body>
