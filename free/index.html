@@ -1424,6 +1424,7 @@ calculate();
 // === 관리자 클라우드 저장 (Firebase) ===
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 const firebaseConfig = {
   apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
   authDomain: "swingfarmer-board01.firebaseapp.com",
@@ -1437,6 +1438,8 @@ const CALC_KEY = "free"; // 이 계산기 식별자
 
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
+function docRef() { return doc(db, 'calc_data', ADMIN_UID); }
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: 'select_account' });
 const $ = id => document.getElementById(id);
@@ -1535,11 +1538,6 @@ async function refreshSlots(){
   try{
   }catch(e){ alert('삭제 실패: '+e.message); }
 };
-
-  if(confirm('로그아웃 할까요?')){
-    try{ await signOut(auth); alert('로그아웃 됐어요.'); }catch(e){ alert('로그아웃 실패: '+e.message); }
-  }
-});
 
 // ── sf-slots 연동 ──
 window.slGetState = collectInputs;
