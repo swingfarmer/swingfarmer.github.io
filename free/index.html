@@ -1421,10 +1421,8 @@ calculate();
 </script>
 
 <script type="module">
-// === 관리자 클라우드 저장 (Firebase) ===
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 const firebaseConfig = {
   apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
   authDomain: "swingfarmer-board01.firebaseapp.com",
@@ -1434,116 +1432,70 @@ const firebaseConfig = {
   appId: "1:312575044644:web:81d754eb1d90f25454fcb1"
 };
 const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1";
-const CALC_KEY = "free"; // 이 계산기 식별자
-
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
-function docRef() { return doc(db, 'calc_data', ADMIN_UID); }
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: 'select_account' });
-const $ = id => document.getElementById(id);
-
+const gid = id => document.getElementById(id);
 let currentUser = null;
 
-// 관리자 로그인 버튼은 URL에 #admin 있을 때만 노출 (남들 눈에 안 띄게)
+getRedirectResult(auth).catch(()=>{});
 if(location.hash === '#admin' || location.hash === '#관리자'){
-  $('btnAdminLogin').style.display = 'inline-block';
+  gid('btnAdminLogin').style.display = 'inline-block';
 }
-
-$('btnAdminLogin').addEventListener('click', async ()=>{
-  try{ await signInWithPopup(auth, provider); }
-  catch(e){ alert('로그인 실패: '+e.message); }
+gid('btnAdminLogin').addEventListener('click', async () => {
+  try { await signInWithPopup(auth, provider); }
+  catch(e) {
+    const code = e && e.code;
+    if(code==='auth/popup-blocked' || code==='auth/cancelled-popup-request' || code==='auth/popup-closed-by-user' || code==='auth/operation-not-supported-in-this-environment'){
+      try { await signInWithRedirect(auth, provider); } catch(e2) { alert('로그인 실패: '+e2.message); }
+    } else { alert('로그인 실패: '+(e.message||code)); }
+  }
 });
-
-onAuthStateChanged(auth, user=>{
+onAuthStateChanged(auth, user => {
   currentUser = user;
   const isAdmin = user && user.uid === ADMIN_UID;
   if(isAdmin){
-    $('cloudArea').style.display = 'inline-flex';
-    $('btnAdminLogin').style.display = 'none';
-    $('cloudWho').textContent = '☁️ ' + (user.displayName||user.email||'관리자');
+    gid('cloudArea').style.display = 'inline-flex';
+    gid('btnAdminLogin').style.display = 'none';
+    gid('cloudWho').textContent = '☁️ '+(user.displayName||user.email||'관리자');
+    if(gid('uidInfo')) gid('uidInfo').style.display = 'none';
+  } else if(user && !isAdmin){
+    gid('cloudArea').style.display = 'none';
+    gid('btnAdminLogin').style.display = 'none';
+    const box = gid('uidInfo');
+    if(box){
+      box.style.display = 'block';
+      box.innerHTML = '로그인됨: <b>'+(user.email||'')+'</b><br>UID: <code style="font-size:11px;word-break:break-all">'+user.uid+'</code><br><button onclick="window._adminSignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer;margin-top:4px">로그아웃</button>';
+    }
   } else {
-    $('cloudArea').style.display = 'none';
-    // 로그인했지만 관리자 아니면 로그아웃
-    if(user && !isAdmin){ signOut(auth); }
+    gid('cloudArea').style.display = 'none';
+    if(gid('uidInfo')) gid('uidInfo').style.display = 'none';
   }
 });
-
-// 입력값 수집/적용 (PDF 스크립트의 INPUT_IDS와 동일)
-const INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth','homeValue','homeDebt','homeGrowth','move1Age','move1Value','move1Debt','move2Age','move2Value','move2Debt'];
-
-function collectInputs(){
-  const data = {};
-  INPUT_IDS.forEach(id=>{ const el=$(id); if(el) data[id]=el.value; });
-  return data;
-}
-function applyInputs(data){
-  INPUT_IDS.forEach(id=>{ const el=$(id); if(el && data[id]!==undefined){ el.value=data[id]; } });
-  // 갈아타기 값 있으면 패널 켜기
-  if (data['move1Age'] || data['move1Value']) {
-    const mc = $('moveEnable');
-    if (mc) { mc.checked = true; if (typeof toggleMovePanel === 'function') toggleMovePanel(); }
-  }
-  // 재계산 트리거
-  const first=$('currentAge'); if(first){ first.dispatchEvent(new Event('input',{bubbles:true})); }
-}
-
-// === 클라우드 슬롯 (시나리오 여러개) ===
-}
-  const ref = docRef();
-  let existing = {};
-  try{ const snap=await getDoc(ref); if(snap.exists()) existing=snap.data(); }catch(e){}
-  existing[CALC_KEY] = { slots: slots, updatedAt: new Date().toISOString() };
-  await setDoc(ref, existing, {merge:true});
-}
-
-  if(!slots || slots.length===0){
-    box.innerHTML = '<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 시나리오가 없어요.<br>위에서 이름을 정해 저장해보세요.</div>';
-    return;
-  }
-  box.innerHTML = slots.map((s,i)=>{
-    const t = s.savedAt ? new Date(s.savedAt).toLocaleString('ko-KR') : '';
-    return '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px">'+
-      '<div style="flex:1;min-width:0">'+
-        '<div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.name||'(이름없음)')+'</div>'+
-        '<div style="font-size:11px;color:#999">'+t+'</div>'+
-      '</div>'+
-    '</div>';
-  }).join('');
-}
-
-async function refreshSlots(){
-}
-
-  if(!currentUser || currentUser.uid!==ADMIN_UID){ alert('관리자 로그인이 필요합니다.'); return; }
-  await refreshSlots();
-});
-
-  if(!name){ alert('시나리오 이름을 입력하세요.'); return; }
-  // 같은 이름 있으면 덮어쓰기 확인
-  if(idx>=0 && !confirm('"'+name+'" 시나리오가 이미 있어요. 덮어쓸까요?')) return;
-  try{
-    const entry = { name, data: collectInputs(), savedAt: new Date().toISOString() };
-    alert('✅ "'+name+'" 저장 완료.');
-  }catch(e){ alert('저장 실패: '+e.message); }
-});
-
-  if(!s) return;
-  applyInputs(s.data);
-  alert('✅ "'+s.name+'" 불러왔어요.');
-};
-  if(!s) return;
-  if(!confirm('"'+s.name+'" 시나리오를 삭제할까요?')) return;
-  try{
-  }catch(e){ alert('삭제 실패: '+e.message); }
-};
-
-// ── sf-slots 연동 ──
-window.slGetState = collectInputs;
-window.slSetState = applyInputs;
+window._adminSignout = () => signOut(auth);
 </script>
-<script>window.CALC_KEY='free';</script>
+
+<script>
+// ── sf-slots 연동 ──
+window.CALC_KEY = 'free';
+var _INPUT_IDS = ['startYear','currentAge','retireAge','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','returnRate','inflationRate','incomeGrowth','spendingGrowth','homeValue','homeDebt','homeGrowth','move1Age','move1Value','move1Debt','move2Age','move2Value','move2Debt'];
+window.slGetState = function(){
+  var data = {};
+  _INPUT_IDS.forEach(function(id){ var el=document.getElementById(id); if(el) data[id]=el.value; });
+  return data;
+};
+window.slSetState = function(data){
+  if(!data) return;
+  _INPUT_IDS.forEach(function(id){ var el=document.getElementById(id); if(el && data[id]!==undefined) el.value=data[id]; });
+  if(data['move1Age'] || data['move1Value']){
+    var mc=document.getElementById('moveEnable');
+    if(mc){ mc.checked=true; if(typeof toggleMovePanel==='function') toggleMovePanel(); }
+  }
+  var first=document.getElementById('currentAge');
+  if(first) first.dispatchEvent(new Event('input',{bubbles:true}));
+};
+</script>
 <script src="/sf-slots.js?v=2"></script>
 <script src="/common.js?v=5"></script>
 </body>

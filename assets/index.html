@@ -858,10 +858,8 @@ window.slSetState = assetSetState;
 <script src="/sf-slots.js?v=2"></script>
 <script src="/common.js?v=5"></script>
 <script type="module">
-// === 관리자 클라우드 저장 (Firebase) ===
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
 const firebaseConfig = {
   apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
   authDomain: "swingfarmer-board01.firebaseapp.com",
@@ -871,166 +869,48 @@ const firebaseConfig = {
   appId: "1:312575044644:web:81d754eb1d90f25454fcb1"
 };
 const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1";
-const CALC_KEY = "assets";
-
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
-function docRef() { return doc(db, 'calc_data', ADMIN_UID); }
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: 'select_account' });
 const gid = id => document.getElementById(id);
 let currentUser = null;
 
-// PWA(standalone)에선 팝업이 막히므로 리디렉션 방식 사용
-const _isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-// 리디렉션 후 돌아왔을 때 결과 처리
-getRedirectResult(auth).catch(e=>{ if(e && e.code && e.code!=='auth/no-auth-event') console.log('redirect:', e.message); });
-
-if(location.hash === '#admin' || location.hash === '#관리자' || _isStandalone){
+getRedirectResult(auth).catch(()=>{});
+if(location.hash === '#admin' || location.hash === '#관리자'){
   gid('btnAdminLogin').style.display = 'inline-block';
 }
-gid('btnAdminLogin').addEventListener('click', async ()=>{
-  // 팝업 먼저 시도 (PWA에서도 대체로 작동). 실패하면 리디렉션 폴백.
-  try{
-    await signInWithPopup(auth, provider);
-  }catch(e){
+gid('btnAdminLogin').addEventListener('click', async () => {
+  try { await signInWithPopup(auth, provider); }
+  catch(e) {
     const code = e && e.code;
     if(code==='auth/popup-blocked' || code==='auth/cancelled-popup-request' || code==='auth/popup-closed-by-user' || code==='auth/operation-not-supported-in-this-environment'){
-      try{ await signInWithRedirect(auth, provider); }
-      catch(e2){ alert('로그인 실패: '+e2.message); }
-    } else {
-      alert('로그인 실패: '+(e.message||code));
-    }
+      try { await signInWithRedirect(auth, provider); } catch(e2) { alert('로그인 실패: '+e2.message); }
+    } else { alert('로그인 실패: '+(e.message||code)); }
   }
 });
-onAuthStateChanged(auth, user=>{
+onAuthStateChanged(auth, user => {
   currentUser = user;
   const isAdmin = user && user.uid === ADMIN_UID;
   if(isAdmin){
     gid('cloudArea').style.display = 'inline-flex';
     gid('btnAdminLogin').style.display = 'none';
-    gid('cloudWho').textContent = '☁️ ' + (user.displayName||user.email||'관리자');
-    // 추이용 스냅샷 미리 로드 + 이번 달 자동 스냅샷
-      if(window.assetSetSnapshots) window.assetSetSnapshots(snaps);
-      const now = new Date();
-      const ym = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-      const hasThisMonth = snaps.some(s=>s.name===ym);
-      const st = window.assetGetState();
-      const hasData = (st.assets||[]).some(a=>a.amount>0) || (st.debts||[]).some(d=>d.amount>0);
-      if(!hasThisMonth && hasData){
-        try{
-          const totalA = (st.assets||[]).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
-          const totalD = (st.debts||[]).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
-          const entry = { name: ym, data: JSON.parse(JSON.stringify(st)), net: totalA-totalD, savedAt: new Date().toISOString(), auto: true };
-        }catch(e){}
-      }
-    });
+    gid('cloudWho').textContent = '☁️ '+(user.displayName||user.email||'관리자');
+    if(gid('uidInfo')) gid('uidInfo').style.display = 'none';
   } else if(user && !isAdmin){
-    // 로그인은 됐지만 관리자 UID가 아님 → UID를 보여줘서 확인 가능하게
     gid('cloudArea').style.display = 'none';
     gid('btnAdminLogin').style.display = 'none';
     const box = gid('uidInfo');
     if(box){
       box.style.display = 'block';
-      box.innerHTML = '로그인됨: <b>'+(user.email||user.displayName||'')+'</b><br>이 계정의 UID:<br><code style="font-size:11px;word-break:break-all;background:#fff;padding:2px 4px;border-radius:3px">'+user.uid+'</code><br>'+
-        '<span style="font-size:11.5px;color:#92400e">관리자 계정이 아니에요. 이 UID가 본인 것이면 알려주세요(ADMIN_UID 교체). 아니면 <button onclick="window._adminSignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer">로그아웃</button> 후 다른 계정으로.</span>';
+      box.innerHTML = '로그인됨: <b>'+(user.email||'')+'</b><br>UID: <code style="font-size:11px;word-break:break-all">'+user.uid+'</code><br><button onclick="window._adminSignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer;margin-top:4px">로그아웃</button>';
     }
   } else {
     gid('cloudArea').style.display = 'none';
-    const box = gid('uidInfo'); if(box) box.style.display='none';
+    if(gid('uidInfo')) gid('uidInfo').style.display = 'none';
   }
 });
-window._adminSignout = ()=> signOut(auth);
-
-  try{ const snap=await getDoc(docRef()); if(snap.exists() && snap.data()[CALC_KEY] && Array.isArray(snap.data()[CALC_KEY].slots)) return snap.data()[CALC_KEY].slots; }catch(e){}
-  return [];
-}
-  const ref=docRef(); let existing={};
-  try{ const snap=await getDoc(ref); if(snap.exists()) existing=snap.data(); }catch(e){}
-  existing[CALC_KEY] = { slots: slots, updatedAt: new Date().toISOString() };
-  await setDoc(ref, existing, {merge:true});
-}
-function slotItemHtml(s, realIdx){
-  const t=s.savedAt?new Date(s.savedAt).toLocaleString('ko-KR'):'';
-  const net = s.net!==undefined ? s.net : null;
-  const netTxt = net!==null ? ' · 순자산 '+(Math.abs(net)>=1e8?(net/1e8).toFixed(2)+'억':Math.round(net/1e4)+'만') : '';
-  const autoTxt = s.auto ? ' <span style="background:#dbeafe;color:#1e40af;font-size:9px;padding:1px 5px;border-radius:4px">자동</span>' : '';
-  return '<div style="display:flex;align-items:center;gap:6px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px">'+
-    '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.name||'(이름없음)')+autoTxt+'</div>'+
-    '<div style="font-size:11px;color:#999">'+t+netTxt+'</div></div>'+
-}
-let _slotTab = 'month';
-window._slotSwitchTab = function(tab){
-  _slotTab = tab;
-  gid('slotTabMonth').classList.toggle('active', tab==='month');
-  gid('slotTabOther').classList.toggle('active', tab==='other');
-};
-  if(!slots || slots.length===0){
-    box.innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 스냅샷이 없어요.<br>위에서 이름을 정해 저장해보세요.</div>';
-    gid('cntMonth').textContent='0'; gid('cntOther').textContent='0';
-    gid('slotSelectBar').style.display='none';
-    return;
-  }
-  const dateRe = /^\d{4}-\d{2}/;
-  const dated = [], other = [];
-  slots.forEach((s,i)=>{ (dateRe.test(s.name||'') ? dated : other).push({s, i}); });
-  dated.sort((a,b)=> (a.s.name<b.s.name?1:-1));          // 월별 최신 먼저
-  other.sort((a,b)=> (new Date(b.s.savedAt||0)) - (new Date(a.s.savedAt||0))); // 기타 저장순
-  gid('cntMonth').textContent = dated.length;
-  gid('cntOther').textContent = other.length;
-
-  const list = _slotTab==='month' ? dated : other;
-  if(list.length===0){
-    box.innerHTML = '<div style="color:#aaa;font-size:13px;text-align:center;padding:20px">'+(_slotTab==='month'?'날짜(2026-06) 이름으로 저장한 스냅샷이 여기 표시됩니다.':'기타 이름의 스냅샷이 여기 표시됩니다.')+'</div>';
-    gid('slotSelectBar').style.display='none';
-    return;
-  }
-  box.innerHTML = list.map(x=>slotItemHtml(x.s, x.i)).join('');
-  gid('slotSelectBar').style.display='flex';
-  gid('slotSelectAll').checked = false;
-}
-  const sel = chks.filter(c=>c.checked);
-  gid('slotSelCount').textContent = sel.length>0 ? sel.length+'개 선택' : '';
-  gid('slotDelSelected').style.display = sel.length>0 ? 'inline-block' : 'none';
-  gid('slotSelectAll').checked = chks.length>0 && sel.length===chks.length;
-};
-window._slotToggleAll = function(checked){
-};
-  if(idxs.length===0) return;
-  if(!confirm(idxs.length+'개 스냅샷을 삭제할까요? 되돌릴 수 없어요.')) return;
-  try{
-    // 큰 인덱스부터 제거(인덱스 밀림 방지)
-  }catch(e){ alert('삭제 실패: '+e.message); }
-};
-
-  if(!currentUser || currentUser.uid!==ADMIN_UID){ alert('관리자 로그인이 필요합니다.'); return; }
-  // 기본 이름: 이번 달
-  const now=new Date();
-});
-  if(!name){ alert('이름을 입력하세요.'); return; }
-  if(idx>=0 && !confirm('"'+name+'" 스냅샷이 이미 있어요. 덮어쓸까요?')) return;
-  try{
-    const st = window.assetGetState();
-    const totalA = (st.assets||[]).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
-    const totalD = (st.debts||[]).reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
-    const entry={ name, data: JSON.parse(JSON.stringify(st)), net: totalA-totalD, savedAt: new Date().toISOString() };
-    alert('✅ "'+name+'" 저장 완료.');
-  }catch(e){ alert('저장 실패: '+e.message); }
-});
-  if(!confirm('"'+s.name+'"을(를) 불러올까요? 현재 입력이 교체됩니다.')) return;
-};
-  if(!confirm('"'+s.name+'"을(를) 삭제할까요?')) return;
-};
-  const newName = prompt('스냅샷 이름을 수정하세요.\n(월별 추이에 넣으려면 "2026-06" 형식으로)', s.name||'');
-  if(newName===null) return;
-  const trimmed = newName.trim();
-  if(!trimmed){ alert('이름을 비울 수 없어요.'); return; }
-  if(trimmed===s.name) return;
-  // 같은 이름 중복 체크
-  try{
-  }catch(e){ alert('수정 실패: '+e.message); }
-};
+window._adminSignout = () => signOut(auth);
 </script>
 </body>
 </html>
