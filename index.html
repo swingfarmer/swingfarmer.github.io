@@ -91,12 +91,10 @@ header{text-align:center;margin-bottom:30px}
 .star-btn:hover{opacity:1}
 .star-btn.active{opacity:1;color:#f59e0b}
 .card{position:relative}
-/* 프리셋·내보내기 버튼 바 */
+/* 편집 버튼 바 */
 .fav-toolbar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
-.fav-toolbar button,.fav-toolbar select{font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid #d1d5db;background:white;cursor:pointer;font-family:inherit}
+.fav-toolbar button{font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid #d1d5db;background:white;cursor:pointer;font-family:inherit}
 .fav-toolbar button:hover{background:#f3f4f6}
-.fav-toolbar select{min-width:120px}
-.preset-name-input{font-size:11px;padding:5px 8px;border-radius:6px;border:1px solid #d1d5db;width:100px}
 .all-link{text-align:center;margin-top:30px}
 .all-link a{display:inline-block;background:#1F4E78;color:white;text-decoration:none;font-size:13px;font-weight:600;padding:10px 24px;border-radius:8px}
 footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
@@ -119,13 +117,6 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
   </div>
   <div class="fav-body" id="favBody">
     <div class="fav-toolbar" id="favToolbar">
-      <select id="presetSelect"><option value="">프리셋 선택…</option></select>
-      <button onclick="savePreset()" title="현재 프리셋에 덮어쓰기">💾 덮어쓰기</button>
-      <button onclick="saveAsPreset()" title="새 이름으로 저장">📥 새로저장</button>
-      <button onclick="renamePreset()" title="이름변경">✏️</button>
-      <button onclick="deletePreset()" title="삭제">🗑️</button>
-      <button onclick="exportFav()">📤 내보내기</button>
-      <button onclick="importFav()">📥 가져오기</button>
       <button id="btnEditFav" onclick="toggleEditMode()">✏️ 순서편집</button>
       <button id="btnRevert" onclick="revertFavs()" style="display:none;color:#dc2626">↩️ 되돌리기</button>
     </div>
@@ -344,8 +335,7 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
 
   /* ─── 즐겨찾기 시스템 ─── */
   var FAV_KEY = 'sf_favorites';
-  var PRESET_KEY = 'sf_fav_presets';
-  var favs = []; // [{href, icon, title, desc}]
+  var favs = []; // [{href, icon, title, desc, pinned}]
 
   function loadFavs(){ try{ favs = JSON.parse(localStorage.getItem(FAV_KEY)) || []; }catch(e){ favs=[]; } }
   function saveFavs(){ localStorage.setItem(FAV_KEY, JSON.stringify(favs)); }
@@ -355,7 +345,6 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
 
   // 모든 도구 카드에 ☆ 버튼 삽입
   document.querySelectorAll('.tool-grid .card[href], .tool-grid .card a[href]').forEach(function(card){
-    // card가 <a>인 경우만 (div 카드 제외)
     if(card.tagName !== 'A') return;
     var href = card.getAttribute('href');
     var btn = document.createElement('button');
@@ -398,7 +387,6 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
     if(!favs.length){ favEmpty.style.display=''; favGrid.style.display='none'; return; }
     favEmpty.style.display='none'; favGrid.style.display='';
 
-    // 핀 상단 정렬: pinned 먼저, 그 안에서 원래 순서 유지
     var pinnedIdxs = [], normalIdxs = [];
     favs.forEach(function(f, i){ (f.pinned ? pinnedIdxs : normalIdxs).push(i); });
     var ordered = pinnedIdxs.concat(normalIdxs);
@@ -407,7 +395,6 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
     ordered.forEach(function(idx, vi){
       var f = favs[idx];
 
-      // 핀/일반 구분선
       if(hasPinned && vi === pinnedIdxs.length){
         var divider = document.createElement('div');
         divider.className = 'fav-divider';
@@ -449,7 +436,7 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
       });
       a.appendChild(del);
 
-      // ↑↓ 순서 이동 버튼 (편집모드)
+      // ◀▶ 순서 이동 버튼 (편집모드)
       var mvUp = document.createElement('span');
       mvUp.className = 'chip-move';
       mvUp.textContent = '◀';
@@ -487,6 +474,30 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
     });
   }
 
+  // 터치 드래그 (모바일)
+  var touchIdx = -1;
+  favGrid.addEventListener('touchstart', function(e){
+    var chip = e.target.closest('.fav-chip');
+    if(!chip) return;
+    touchIdx = parseInt(chip.getAttribute('data-idx'));
+  }, {passive:true});
+  favGrid.addEventListener('touchend', function(e){
+    if(touchIdx < 0) return;
+    var touch = e.changedTouches[0];
+    var el = document.elementFromPoint(touch.clientX, touch.clientY);
+    var chip = el ? el.closest('.fav-chip') : null;
+    if(chip){
+      var to = parseInt(chip.getAttribute('data-idx'));
+      if(to !== touchIdx){
+        var item = favs.splice(touchIdx, 1)[0];
+        favs.splice(to, 0, item);
+        saveFavs();
+        renderFavGrid();
+      }
+    }
+    touchIdx = -1;
+  });
+
   // ── 편집모드 ──
   var editMode = false;
   var favBackup = null;
@@ -515,7 +526,6 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
     syncStarButtons();
   };
   window.moveFav = function(idx, dir){
-    // 같은 그룹(pinned/normal) 안에서만 이동
     var isPinned = !!favs[idx].pinned;
     var group = [];
     favs.forEach(function(f, i){ if(!!f.pinned === isPinned) group.push(i); });
@@ -530,30 +540,6 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
     renderFavGrid();
     favGrid.classList.add('edit-mode');
   };
-
-  // 터치 드래그 (모바일)
-  var touchIdx = -1;
-  favGrid.addEventListener('touchstart', function(e){
-    var chip = e.target.closest('.fav-chip');
-    if(!chip) return;
-    touchIdx = parseInt(chip.getAttribute('data-idx'));
-  }, {passive:true});
-  favGrid.addEventListener('touchend', function(e){
-    if(touchIdx < 0) return;
-    var touch = e.changedTouches[0];
-    var el = document.elementFromPoint(touch.clientX, touch.clientY);
-    var chip = el ? el.closest('.fav-chip') : null;
-    if(chip){
-      var to = parseInt(chip.getAttribute('data-idx'));
-      if(to !== touchIdx){
-        var item = favs.splice(touchIdx, 1)[0];
-        favs.splice(to, 0, item);
-        saveFavs();
-        renderFavGrid();
-      }
-    }
-    touchIdx = -1;
-  });
 
   // 패널 내 ☆ 동기화
   function syncStarButtons(){
@@ -578,117 +564,28 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
     try{ localStorage.setItem('sf_fav_collapsed', favCollapsed?'1':'0'); }catch(e){}
   });
 
-  /* ─── 프리셋 ─── */
-  var presets = {};
-  try{ presets = JSON.parse(localStorage.getItem(PRESET_KEY)) || {}; }catch(e){ presets={}; }
-  var presetSelect = document.getElementById('presetSelect');
+  // 초기화
+  loadFavs();
+  renderFavGrid();
 
-  function renderPresets(){
-    // 기존 옵션 제거 (첫번째 빼고)
-    while(presetSelect.options.length > 1) presetSelect.remove(1);
-    Object.keys(presets).forEach(function(name){
-      var opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name + ' ('+presets[name].length+'개)';
-      presetSelect.appendChild(opt);
-    });
-  }
+  /* ─── sf-slots.js 연동 ─── */
+  window.CALC_KEY = 'main_favorites';
 
-  presetSelect.addEventListener('change', function(){
-    var name = presetSelect.value;
-    if(!name) return;
-    if(presets[name]){
-      favs = JSON.parse(JSON.stringify(presets[name]));
+  window.slGetState = function(){
+    return { favs: JSON.parse(JSON.stringify(favs)) };
+  };
+
+  window.slSetState = function(data){
+    if(data && Array.isArray(data.favs)){
+      favs = data.favs;
       saveFavs();
       renderFavGrid();
       syncStarButtons();
     }
-  });
-
-  window.savePreset = function(){
-    // 💾 덮어쓰기 — 선택된 프리셋에 바로 저장
-    var current = presetSelect.value;
-    if(!current){ alert('덮어쓸 프리셋을 먼저 선택하세요.\n새로 만들려면 📥 새로저장을 누르세요.'); return; }
-    if(!favs.length){ alert('즐겨찾기가 비어있습니다.'); return; }
-    presets[current] = JSON.parse(JSON.stringify(favs));
-    localStorage.setItem(PRESET_KEY, JSON.stringify(presets));
-    renderPresets();
-    presetSelect.value = current;
   };
-
-  window.saveAsPreset = function(){
-    // 📥 새로저장
-    if(!favs.length){ alert('즐겨찾기가 비어있습니다.'); return; }
-    var name = prompt('새 프리셋 이름:');
-    if(!name) return;
-    if(presets[name]){ if(!confirm('"'+name+'" 이미 있습니다. 덮어쓸까요?')) return; }
-    presets[name] = JSON.parse(JSON.stringify(favs));
-    localStorage.setItem(PRESET_KEY, JSON.stringify(presets));
-    renderPresets();
-    presetSelect.value = name;
-  };
-
-  window.renamePreset = function(){
-    var current = presetSelect.value;
-    if(!current){ alert('이름을 바꿀 프리셋을 선택하세요.'); return; }
-    var newName = prompt('새 이름:', current);
-    if(!newName || newName === current) return;
-    presets[newName] = presets[current];
-    delete presets[current];
-    localStorage.setItem(PRESET_KEY, JSON.stringify(presets));
-    renderPresets();
-    presetSelect.value = newName;
-  };
-
-  window.deletePreset = function(){
-    var name = presetSelect.value;
-    if(!name){ alert('삭제할 프리셋을 선택하세요.'); return; }
-    if(!confirm('"'+name+'" 프리셋을 삭제할까요?')) return;
-    delete presets[name];
-    localStorage.setItem(PRESET_KEY, JSON.stringify(presets));
-    renderPresets();
-  };
-
-  window.exportFav = function(){
-    var data = { favorites: favs, presets: presets };
-    var blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'swingfarmer-favorites.json';
-    a.click();
-    URL.revokeObjectURL(a.href);
-  };
-
-  window.importFav = function(){
-    var input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.addEventListener('change', function(){
-      var file = input.files[0];
-      if(!file) return;
-      var reader = new FileReader();
-      reader.onload = function(){
-        try{
-          var data = JSON.parse(reader.result);
-          if(data.favorites){ favs = data.favorites; saveFavs(); }
-          if(data.presets){ presets = Object.assign(presets, data.presets); localStorage.setItem(PRESET_KEY, JSON.stringify(presets)); }
-          renderFavGrid();
-          syncStarButtons();
-          renderPresets();
-          alert('가져오기 완료!');
-        }catch(e){ alert('파일 형식 오류'); }
-      };
-      reader.readAsText(file);
-    });
-    input.click();
-  };
-
-  // 초기화
-  loadFavs();
-  renderFavGrid();
-  renderPresets();
 })();
 </script>
+<script src="/sf-slots.js?v=2"></script>
 <script src="/common.js?v=5"></script>
 </body>
 </html>
