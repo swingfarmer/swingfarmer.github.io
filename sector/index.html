@@ -119,9 +119,11 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
 <label><input type="checkbox" data-sig="gap_oversold" checked>이격도 과침체 (MA20 대비 -5% 이하)</label>
 <label><input type="checkbox" data-sig="macd_golden" checked>MACD 골든크로스</label>
 <label><input type="checkbox" data-sig="bb_lower" checked>볼린저밴드 하단 이탈 (반등 기대)</label>
+<label><input type="checkbox" data-sig="bb_upper_bull">볼린저밴드 상단 돌파 (추세상승 진입)</label>
 <label><input type="checkbox" data-sig="high20" checked>20일 신고가</label>
 <label><input type="checkbox" data-sig="consec_up" checked>연속 상승 3일+</label>
 <label><input type="checkbox" data-sig="rsi_oversold" checked>RSI 과매도 (30 이하)</label>
+<label><input type="checkbox" data-sig="rsi_overbought_bull">RSI 과매수 (70↑ 모멘텀 상승)</label>
 <label><input type="checkbox" data-sig="golden_cross" checked>골든크로스 (MA5/20)</label>
 
 <div style="font-size:12px;font-weight:700;margin:14px 0 6px;color:#3b82f6">🔵 악재 시그널 (파란 테두리)</div>
@@ -129,9 +131,11 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
 <label><input type="checkbox" data-sig="gap_overbought" checked>이격도 과열 (MA20 대비 +5% 이상)</label>
 <label><input type="checkbox" data-sig="macd_dead" checked>MACD 데드크로스</label>
 <label><input type="checkbox" data-sig="bb_upper" checked>볼린저밴드 상단 이탈 (과열)</label>
+<label><input type="checkbox" data-sig="bb_lower_bear">볼린저밴드 하단 이탈 (추세하락 진입)</label>
 <label><input type="checkbox" data-sig="low20" checked>20일 신저가</label>
 <label><input type="checkbox" data-sig="consec_down" checked>연속 하락 3일+</label>
 <label><input type="checkbox" data-sig="rsi_overbought" checked>RSI 과매수 (70 이상)</label>
+<label><input type="checkbox" data-sig="rsi_oversold_bear">RSI 과매도 (30↓ 추세약화)</label>
 <label><input type="checkbox" data-sig="dead_cross" checked>데드크로스 (MA5/20)</label>
 
 <div class="thresh-row">
@@ -393,8 +397,14 @@ function computeIndicators(code, name, data) {
     var bbSum=0; for(var i=n-20;i<n;i++) bbSum+=closes[i]; var bbMa=bbSum/20;
     var bbVar=0; for(var i=n-20;i<n;i++) bbVar+=(closes[i]-bbMa)*(closes[i]-bbMa); var bbStd=Math.sqrt(bbVar/20);
     var bbUpper=bbMa+2*bbStd, bbLower=bbMa-2*bbStd;
-    if(latest>=bbUpper) extSignals.push({key:'bb_upper',label:'BB 상단돌파',type:'bear'});
-    if(latest<=bbLower) extSignals.push({key:'bb_lower',label:'BB 하단이탈',type:'bull'});
+    if(latest>=bbUpper){
+      extSignals.push({key:'bb_upper',label:'BB 상단돌파',type:'bear'});
+      extSignals.push({key:'bb_upper_bull',label:'BB 상단돌파(추세)',type:'bull'});
+    }
+    if(latest<=bbLower){
+      extSignals.push({key:'bb_lower',label:'BB 하단이탈',type:'bull'});
+      extSignals.push({key:'bb_lower_bear',label:'BB 하단이탈(추세)',type:'bear'});
+    }
   }
   // 5) 20일 신고가/신저가
   if(n>=20){
@@ -412,8 +422,14 @@ function computeIndicators(code, name, data) {
     if(dnCnt>=3) extSignals.push({key:'consec_down',label:'연속하락'+dnCnt+'일',type:'bear'});
   }
   // 7) RSI/골든데드 크로스 (기존 signals에서 extSignals로 복사)
-  if(rsi!==null&&rsi<=30) extSignals.push({key:'rsi_oversold',label:'RSI 과매도('+rsi.toFixed(0)+')',type:'bull'});
-  if(rsi!==null&&rsi>=70) extSignals.push({key:'rsi_overbought',label:'RSI 과매수('+rsi.toFixed(0)+')',type:'bear'});
+  if(rsi!==null&&rsi<=30){
+    extSignals.push({key:'rsi_oversold',label:'RSI 과매도('+rsi.toFixed(0)+')',type:'bull'});
+    extSignals.push({key:'rsi_oversold_bear',label:'RSI 과매도('+rsi.toFixed(0)+',추세)',type:'bear'});
+  }
+  if(rsi!==null&&rsi>=70){
+    extSignals.push({key:'rsi_overbought',label:'RSI 과매수('+rsi.toFixed(0)+')',type:'bear'});
+    extSignals.push({key:'rsi_overbought_bull',label:'RSI 과매수('+rsi.toFixed(0)+',모멘텀)',type:'bull'});
+  }
   // 골든/데드크로스도 ext에 복사
   if(signals.find(function(x){return x.label.indexOf('골든크로스')>=0;})) extSignals.push({key:'golden_cross',label:'MA골든크로스(5/20)',type:'bull'});
   if(signals.find(function(x){return x.label.indexOf('데드크로스')>=0;})) extSignals.push({key:'dead_cross',label:'MA데드크로스(5/20)',type:'bear'});
@@ -650,8 +666,8 @@ function closeChart(){
 // === 시그널 설정 ===
 var SIG_DEFAULTS = {
   enabled: {
-    vol_spike_bull:true, gap_oversold:true, macd_golden:true, bb_lower:true, high20:true, consec_up:true, rsi_oversold:true, golden_cross:true,
-    vol_spike_bear:true, gap_overbought:true, macd_dead:true, bb_upper:true, low20:true, consec_down:true, rsi_overbought:true, dead_cross:true
+    vol_spike_bull:true, gap_oversold:true, macd_golden:true, bb_lower:true, bb_upper_bull:false, high20:true, consec_up:true, rsi_oversold:true, rsi_overbought_bull:false, golden_cross:true,
+    vol_spike_bear:true, gap_overbought:true, macd_dead:true, bb_upper:true, bb_lower_bear:false, low20:true, consec_down:true, rsi_overbought:true, rsi_oversold_bear:false, dead_cross:true
   },
   threshold: 2
 };

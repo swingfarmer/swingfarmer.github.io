@@ -202,8 +202,12 @@ def compute_signals(code, data):
                 signals.append(('dead_cross', 'MA데드크로스(5/20)', 'bear'))
 
     name = SECTOR_NAMES.get(code, code)
-    bull = [s for s in signals if s[2] == 'bull']
-    bear = [s for s in signals if s[2] == 'bear']
+
+    # BB/RSI는 양방향 해석 가능 → 중립 분류
+    NEUTRAL_KEYS = {'bb_upper', 'bb_lower', 'rsi_oversold', 'rsi_overbought'}
+    bull = [s for s in signals if s[2] == 'bull' and s[0] not in NEUTRAL_KEYS]
+    bear = [s for s in signals if s[2] == 'bear' and s[0] not in NEUTRAL_KEYS]
+    neutral = [s for s in signals if s[0] in NEUTRAL_KEYS]
 
     return {
         'code': code,
@@ -217,6 +221,7 @@ def compute_signals(code, data):
         'bear_count': len(bear),
         'bull_signals': bull,
         'bear_signals': bear,
+        'neutral_signals': neutral,
     }
 
 
@@ -243,8 +248,11 @@ def format_message(results):
         for r in has_bull:
             sigs = ', '.join(s[1] for s in r['bull_signals'])
             pct = f"+{r['pct1d']:.2f}" if r['pct1d'] >= 0 else f"{r['pct1d']:.2f}"
+            neu = ', '.join(s[1] for s in r['neutral_signals']) if r['neutral_signals'] else ''
             lines.append(f"  <b>{r['name']}</b> ({pct}%) [{r['bull_count']}개]")
             lines.append(f"    → {sigs}")
+            if neu:
+                lines.append(f"    ⚪ {neu}")
         lines.append('')
 
     if has_bear:
@@ -252,11 +260,24 @@ def format_message(results):
         for r in has_bear:
             sigs = ', '.join(s[1] for s in r['bear_signals'])
             pct = f"+{r['pct1d']:.2f}" if r['pct1d'] >= 0 else f"{r['pct1d']:.2f}"
+            neu = ', '.join(s[1] for s in r['neutral_signals']) if r['neutral_signals'] else ''
             lines.append(f"  <b>{r['name']}</b> ({pct}%) [{r['bear_count']}개]")
             lines.append(f"    → {sigs}")
+            if neu:
+                lines.append(f"    ⚪ {neu}")
         lines.append('')
 
-    no_sig = [r for r in industry if r['bull_count'] == 0 and r['bear_count'] == 0]
+    # 중립만 있는 업종 (호재·악재 0이지만 BB/RSI 시그널 있는 경우)
+    neutral_only = [r for r in industry if r['bull_count'] == 0 and r['bear_count'] == 0 and r['neutral_signals']]
+    if neutral_only:
+        lines.append('⚪ <b>중립 (BB/RSI 양방향)</b>')
+        for r in neutral_only:
+            neu = ', '.join(s[1] for s in r['neutral_signals'])
+            pct = f"+{r['pct1d']:.2f}" if r['pct1d'] >= 0 else f"{r['pct1d']:.2f}"
+            lines.append(f"  {r['name']} ({pct}%) — {neu}")
+        lines.append('')
+
+    no_sig = [r for r in industry if r['bull_count'] == 0 and r['bear_count'] == 0 and not r['neutral_signals']]
     lines.append(f'시그널 없음: {len(no_sig)}개 업종')
 
     # 요약
