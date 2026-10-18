@@ -1228,5 +1228,49 @@ def save_setting(key):
         cur.close(); conn.close()
 
 
+# ══ sector prices (업종지수) ══
+
+@app.route('/api/sector-prices')
+def sector_prices():
+    """
+    업종지수 일봉 데이터.
+    ?days=60  (기본: 60)
+    ?sectors=0001,0008  (선택: 특정 업종만)
+    반환: {sectors: [{code, name}], data: [{sector_code, trade_date, open, high, low, close, volume}]}
+    """
+    days = int(request.args.get('days', 60))
+    sectors_raw = request.args.get('sectors', '')
+
+    conn = get_conn(); cur = conn.cursor()
+
+    where = ["trade_date >= TRUNC(SYSDATE) - :days"]
+    params = {'days': days}
+
+    if sectors_raw:
+        codes = [c.strip() for c in sectors_raw.split(',') if c.strip()][:30]
+        binds = []
+        for i, c in enumerate(codes):
+            key = f's{i}'
+            binds.append(f':{key}')
+            params[key] = c
+        where.append(f'sector_code IN ({",".join(binds)})')
+
+    w = ' AND '.join(where)
+
+    # 업종 목록
+    cur.execute(f"SELECT DISTINCT sector_code, sector_name FROM sector_prices WHERE {w} ORDER BY sector_code", params)
+    sector_list = [{'code': r[0], 'name': r[1]} for r in cur.fetchall()]
+
+    # 일봉 데이터
+    cur.execute(f"""SELECT sector_code,
+        TO_CHAR(trade_date,'YYYY-MM-DD') AS trade_date,
+        open_price, high_price, low_price, close_price, volume, trade_amount
+        FROM sector_prices WHERE {w}
+        ORDER BY sector_code, trade_date""", params)
+    data = rows_to_list(cur, cur.fetchall())
+    cur.close(); conn.close()
+    return jsonify({'sectors': sector_list, 'count': len(data), 'data': data})
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
