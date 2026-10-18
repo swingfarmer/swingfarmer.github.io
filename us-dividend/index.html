@@ -60,7 +60,7 @@
 <!-- Chart.js 이중 CDN -->
 <script>
 var chartLoaded = false;
-function onChartLoad() { chartLoaded = true; console.log('Chart.js 로드 완료'); }
+function onChartLoad() { chartLoaded = true; }
 function tryFallbackCDN() {
   console.warn('Chart.js 1차 CDN 실패, 2차 시도...');
   var s = document.createElement('script');
@@ -207,7 +207,7 @@ function renderChart() {
     });
   });
 
-  if (datasets.length===0||labels.length===0) { console.log('차트 데이터 없음'); return; }
+  if (datasets.length===0||labels.length===0) { return; }
 
   chart = new Chart(canvas, {
     type: 'line',
@@ -225,7 +225,6 @@ function renderChart() {
       }
     }
   });
-  console.log('차트 렌더링 완료: ' + datasets.length + '개 시리즈');
 }
 
 loadData();

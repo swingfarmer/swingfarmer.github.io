@@ -376,7 +376,7 @@ async function cloudPull() {
       if (cloud.inputs) applyInputs(cloud.inputs);
       saveLocal();
     }
-  } catch (e) { console.log('cloud pull fail:', e.message); }
+  } catch (e) { /* cloud pull fail */ }
 }
 async function cloudPush() {
   if (!cloudReady) return;
@@ -385,7 +385,7 @@ async function cloudPush() {
     await setDoc(docRef(), { [CALC_KEY]: { inputs: collectInputs(), slots: slots_, updatedAt: new Date().toISOString() } }, { merge: true });
     setSaveStatus('saved');
   } catch (e) {
-    console.log('cloud push fail:', e.message);
+    /* cloud push fail */
     setSaveStatus('error');
   }
 }
