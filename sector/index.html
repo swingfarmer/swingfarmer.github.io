@@ -68,6 +68,29 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
 .note{font-size:11px;color:var(--text-dim);text-align:center;margin-top:20px;line-height:1.8}
 .loading{text-align:center;padding:60px 0;color:var(--text-dim);font-size:14px}
 .empty-msg{text-align:center;padding:40px 0;color:var(--text-dim);font-size:13px}
+
+.sector-card.sig-bull{border:2.5px solid #ef4444;box-shadow:0 0 8px rgba(239,68,68,.25)}
+.sector-card.sig-bear{border:2.5px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,.25)}
+.sector-card.sig-both{border:2.5px solid;border-image:linear-gradient(135deg,#ef4444,#3b82f6) 1;box-shadow:0 0 8px rgba(168,85,247,.2)}
+.sig-summary{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)}
+.sig-summary .sig-s{font-size:9px;padding:2px 6px;border-radius:8px;font-weight:600}
+.sig-summary .sig-s.bull{color:#ef4444;background:rgba(239,68,68,.12)}
+.sig-summary .sig-s.bear{color:#3b82f6;background:rgba(59,130,246,.12)}
+.sig-settings-btn{background:var(--card);border:1px solid var(--border);color:var(--text-dim);padding:6px 12px;border-radius:20px;cursor:pointer;font-size:12px;font-family:inherit;transition:all .12s}
+.sig-settings-btn:hover{border-color:var(--accent);color:var(--accent)}
+.sig-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9000;align-items:center;justify-content:center}
+.sig-modal-bg.open{display:flex}
+.sig-modal{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;max-width:420px;width:90%;max-height:80vh;overflow-y:auto;color:var(--text)}
+.sig-modal h3{margin:0 0 16px 0;font-size:16px}
+.sig-modal label{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;cursor:pointer}
+.sig-modal input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent)}
+.sig-modal .thresh-row{display:flex;align-items:center;gap:10px;margin:16px 0;padding:12px;background:rgba(255,255,255,.03);border-radius:10px}
+.sig-modal .thresh-row input[type=range]{flex:1;accent-color:var(--accent)}
+.sig-modal .thresh-val{font-size:18px;font-weight:800;min-width:24px;text-align:center}
+.sig-modal .btn-row{display:flex;gap:8px;margin-top:16px}
+.sig-modal button{flex:1;padding:10px;border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit}
+.sig-modal button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sig-count-badge{position:absolute;top:-4px;right:-4px;font-size:9px;font-weight:800;padding:2px 5px;border-radius:8px;color:#fff}
 </style>
 </head>
 <body>
@@ -79,6 +102,49 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
   <button class="preset-btn" data-days="60">60일</button>
   <button class="preset-btn active" data-days="120">120일</button>
   <button class="preset-btn" data-days="200">200일</button>
+
+<div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+  <button class="sig-settings-btn" onclick="openSigSettings()">⚙️ 시그널 설정</button>
+  <span id="sigStatus" style="font-size:11px;color:var(--text-dim)"></span>
+</div>
+
+<div class="sig-modal-bg" id="sigModal">
+<div class="sig-modal">
+<h3>📡 시그널 감지 설정</h3>
+<p style="font-size:12px;color:var(--text-dim);margin:0 0 12px 0">선택한 시그널이 <b>중첩 기준</b> 이상 동시 발생하면 카드 테두리에 표시됩니다.</p>
+
+<div style="font-size:12px;font-weight:700;margin-bottom:6px;color:#ef4444">🔴 호재 시그널 (빨간 테두리)</div>
+<label><input type="checkbox" data-sig="vol_spike_bull" checked>거래량 폭증 + 상승 (당일 거래대금 > 5일평균 ×2)</label>
+<label><input type="checkbox" data-sig="gap_oversold" checked>이격도 과침체 (MA20 대비 -5% 이하)</label>
+<label><input type="checkbox" data-sig="macd_golden" checked>MACD 골든크로스</label>
+<label><input type="checkbox" data-sig="bb_lower" checked>볼린저밴드 하단 이탈 (반등 기대)</label>
+<label><input type="checkbox" data-sig="high20" checked>20일 신고가</label>
+<label><input type="checkbox" data-sig="consec_up" checked>연속 상승 3일+</label>
+<label><input type="checkbox" data-sig="rsi_oversold" checked>RSI 과매도 (30 이하)</label>
+<label><input type="checkbox" data-sig="golden_cross" checked>골든크로스 (MA5/20)</label>
+
+<div style="font-size:12px;font-weight:700;margin:14px 0 6px;color:#3b82f6">🔵 악재 시그널 (파란 테두리)</div>
+<label><input type="checkbox" data-sig="vol_spike_bear" checked>거래량 폭증 + 하락</label>
+<label><input type="checkbox" data-sig="gap_overbought" checked>이격도 과열 (MA20 대비 +5% 이상)</label>
+<label><input type="checkbox" data-sig="macd_dead" checked>MACD 데드크로스</label>
+<label><input type="checkbox" data-sig="bb_upper" checked>볼린저밴드 상단 이탈 (과열)</label>
+<label><input type="checkbox" data-sig="low20" checked>20일 신저가</label>
+<label><input type="checkbox" data-sig="consec_down" checked>연속 하락 3일+</label>
+<label><input type="checkbox" data-sig="rsi_overbought" checked>RSI 과매수 (70 이상)</label>
+<label><input type="checkbox" data-sig="dead_cross" checked>데드크로스 (MA5/20)</label>
+
+<div class="thresh-row">
+  <span style="font-size:13px">중첩 기준:</span>
+  <input type="range" id="threshSlider" min="1" max="5" value="2" oninput="document.getElementById('threshVal').textContent=this.value">
+  <span class="thresh-val" id="threshVal">2</span>
+  <span style="font-size:11px;color:var(--text-dim)">개 이상</span>
+</div>
+
+<div class="btn-row">
+  <button onclick="closeSigSettings()">취소</button>
+  <button class="primary" onclick="saveSigSettings()">적용</button>
+</div>
+</div>
 </div>
 
 <div class="filter-bar">
@@ -294,13 +360,70 @@ function computeIndicators(code, name, data) {
   var avgAmt5 = n>=5 ? amounts.slice(n-5).reduce(function(a,b){return a+b;},0)/5 : 0;
   var avgAmtBn = Math.round(avgAmt5/100)/100; // 억원
 
+  // === 확장 시그널 ===
+  var extSignals = [];
+
+  // 1) 거래량 폭증 (당일 거래대금 > 5일평균 × 2)
+  if(n>=6 && avgAmt5>0){
+    var todayAmt = amounts[n-1];
+    if(todayAmt > avgAmt5*2){
+      if(pct1d>0) extSignals.push({key:'vol_spike_bull',label:'거래량폭증+상승',type:'bull'});
+      else extSignals.push({key:'vol_spike_bear',label:'거래량폭증+하락',type:'bear'});
+    }
+  }
+  // 2) 이격도 과침체/과열
+  if(gap20!==null){
+    if(gap20<=-5) extSignals.push({key:'gap_oversold',label:'이격도 과침체('+gap20.toFixed(1)+'%)',type:'bull'});
+    if(gap20>=5) extSignals.push({key:'gap_overbought',label:'이격도 과열(+'+gap20.toFixed(1)+'%)',type:'bear'});
+  }
+  // 3) MACD (12,26,9)
+  if(n>=35){
+    function ema(arr,p){var m=[arr[0]];var k=2/(p+1);for(var i=1;i<arr.length;i++)m.push(arr[i]*k+m[i-1]*(1-k));return m;}
+    var ema12=ema(closes,12), ema26=ema(closes,26);
+    var macdLine=[]; for(var i=0;i<n;i++) macdLine.push(ema12[i]-ema26[i]);
+    var signal9=ema(macdLine,9);
+    var macdNow=macdLine[n-1]-signal9[n-1];
+    var macdPrev=macdLine[n-2]-signal9[n-2];
+    if(macdPrev<=0 && macdNow>0) extSignals.push({key:'macd_golden',label:'MACD 골든크로스',type:'bull'});
+    if(macdPrev>=0 && macdNow<0) extSignals.push({key:'macd_dead',label:'MACD 데드크로스',type:'bear'});
+  }
+  // 4) 볼린저밴드 (20, 2σ)
+  if(n>=20){
+    var bbSum=0; for(var i=n-20;i<n;i++) bbSum+=closes[i]; var bbMa=bbSum/20;
+    var bbVar=0; for(var i=n-20;i<n;i++) bbVar+=(closes[i]-bbMa)*(closes[i]-bbMa); var bbStd=Math.sqrt(bbVar/20);
+    var bbUpper=bbMa+2*bbStd, bbLower=bbMa-2*bbStd;
+    if(latest>=bbUpper) extSignals.push({key:'bb_upper',label:'BB 상단돌파',type:'bear'});
+    if(latest<=bbLower) extSignals.push({key:'bb_lower',label:'BB 하단이탈',type:'bull'});
+  }
+  // 5) 20일 신고가/신저가
+  if(n>=20){
+    var h20=closes[n-1], l20=closes[n-1];
+    for(var i=n-20;i<n-1;i++){if(closes[i]>h20)h20=closes[i]; if(closes[i]<l20)l20=closes[i];}
+    if(latest>=h20 && pct1d>0) extSignals.push({key:'high20',label:'20일 신고가',type:'bull'});
+    if(latest<=l20 && pct1d<0) extSignals.push({key:'low20',label:'20일 신저가',type:'bear'});
+  }
+  // 6) 연속 상승/하락 3일+
+  if(n>=4){
+    var upCnt=0, dnCnt=0;
+    for(var i=n-1;i>=1;i--){if(closes[i]>closes[i-1])upCnt++;else break;}
+    for(var i=n-1;i>=1;i--){if(closes[i]<closes[i-1])dnCnt++;else break;}
+    if(upCnt>=3) extSignals.push({key:'consec_up',label:'연속상승'+upCnt+'일',type:'bull'});
+    if(dnCnt>=3) extSignals.push({key:'consec_down',label:'연속하락'+dnCnt+'일',type:'bear'});
+  }
+  // 7) RSI/골든데드 크로스 (기존 signals에서 extSignals로 복사)
+  if(rsi!==null&&rsi<=30) extSignals.push({key:'rsi_oversold',label:'RSI 과매도('+rsi.toFixed(0)+')',type:'bull'});
+  if(rsi!==null&&rsi>=70) extSignals.push({key:'rsi_overbought',label:'RSI 과매수('+rsi.toFixed(0)+')',type:'bear'});
+  // 골든/데드크로스도 ext에 복사
+  if(signals.find(function(x){return x.label.indexOf('골든크로스')>=0;})) extSignals.push({key:'golden_cross',label:'MA골든크로스(5/20)',type:'bull'});
+  if(signals.find(function(x){return x.label.indexOf('데드크로스')>=0;})) extSignals.push({key:'dead_cross',label:'MA데드크로스(5/20)',type:'bear'});
+
   return {code:code,name:name,data:data,closes:closes,latest:latest,
     pct1d:pct1d,pct5d:pct5d,pct20d:pct20d,pct60d:pct60d,
     ma5:ma5,ma10:ma10,ma20:ma20,ma50:ma50,
     gap5:gap5,gap10:gap10,gap20:gap20,gap50:gap50,
     above5:above5,above10:above10,above20:above20,above50:above50,
     alignment:alignment,strength:strength,rsi:rsi,signals:signals,
-    avgAmtBn:avgAmtBn,relStr1d:0,relStr5d:0,relStr20d:0};
+    avgAmtBn:avgAmtBn,extSignals:extSignals,relStr1d:0,relStr5d:0,relStr20d:0};
 }
 
 function renderSummary(){
@@ -320,6 +443,13 @@ function renderSummary(){
     '<div class="summary-card"><div class="num" style="color:#ef4444">'+reverse+'</div><div class="label">🔴 역배열</div></div>'+
     '<div class="summary-card"><div class="num" style="font-size:13px;color:#22c55e">'+(best?best.name:'-')+'</div><div class="label">최강 '+(best?pctStr(best.pct1d):'')+'</div></div>'+
     '<div class="summary-card"><div class="num" style="font-size:13px;color:#ef4444">'+(worst?worst.name:'-')+'</div><div class="label">최약 '+(worst?pctStr(worst.pct1d):'')+'</div></div>';
+  // 시그널 카운트
+  var cfg=getSigConfig();
+  var sigBull=ind.filter(function(s){return (s.extSignals||[]).filter(function(x){return x.type==='bull'&&cfg.enabled[x.key];}).length>=cfg.threshold;}).length;
+  var sigBear=ind.filter(function(s){return (s.extSignals||[]).filter(function(x){return x.type==='bear'&&cfg.enabled[x.key];}).length>=cfg.threshold;}).length;
+  document.getElementById('summary').innerHTML+=
+    '<div class="summary-card"><div class="num" style="color:#ef4444">'+sigBull+'</div><div class="label">🔴 호재감지</div></div>'+
+    '<div class="summary-card"><div class="num" style="color:#3b82f6">'+sigBear+'</div><div class="label">🔵 악재감지</div></div>';
 }
 
 function renderCards(){
@@ -393,11 +523,28 @@ function renderCards(){
     var volLine=s.avgAmtBn>0?'<div style="font-size:10px;color:var(--text-dim);margin-top:2px">거래대금(5일평균): '+
       '<span style="font-weight:600">'+formatAmt(s.avgAmtBn)+'</span></div>':'';
 
-    return '<div class="sector-card'+(s.code===selectedCode?' selected':'')+'" data-code="'+s.code+'">'+
+    // 시그널 필터링
+    var cfg = getSigConfig();
+    var bullSigs = (s.extSignals||[]).filter(function(x){return x.type==='bull' && cfg.enabled[x.key];});
+    var bearSigs = (s.extSignals||[]).filter(function(x){return x.type==='bear' && cfg.enabled[x.key];});
+    var sigClass = '';
+    if(bullSigs.length>=cfg.threshold && bearSigs.length>=cfg.threshold) sigClass=' sig-both';
+    else if(bullSigs.length>=cfg.threshold) sigClass=' sig-bull';
+    else if(bearSigs.length>=cfg.threshold) sigClass=' sig-bear';
+
+    var sigHtml='';
+    if(bullSigs.length>0||bearSigs.length>0){
+      sigHtml='<div class="sig-summary">';
+      bullSigs.forEach(function(x){sigHtml+='<span class="sig-s bull">🔴 '+x.label+'</span>';});
+      bearSigs.forEach(function(x){sigHtml+='<span class="sig-s bear">🔵 '+x.label+'</span>';});
+      sigHtml+='</div>';
+    }
+
+    return '<div class="sector-card'+sigClass+(s.code===selectedCode?' selected':'')+'" data-code="'+s.code+'">'+
       '<div class="sc-header"><div><span class="sc-name">'+s.name+'</span><span class="sc-code">'+s.code+'</span>'+ab+'</div>'+
       '<div class="sc-price">'+s.latest.toFixed(2)+'</div></div>'+
       '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">'+pcts+'</div>'+
-      mh+rh+rsLine+volLine+'<div class="sig-tags">'+sigs+'</div></div>';
+      mh+rh+rsLine+volLine+'<div class="sig-tags">'+sigs+'</div>'+sigHtml+'</div>';
   }).join('');
 
   grid.querySelectorAll('.sector-card').forEach(function(card){
@@ -499,6 +646,45 @@ function closeChart(){
   document.querySelectorAll('.sector-card').forEach(function(c){c.classList.remove('selected');});
 }
 
+// === 시그널 설정 ===
+var SIG_DEFAULTS = {
+  enabled: {
+    vol_spike_bull:true, gap_oversold:true, macd_golden:true, bb_lower:true, high20:true, consec_up:true, rsi_oversold:true, golden_cross:true,
+    vol_spike_bear:true, gap_overbought:true, macd_dead:true, bb_upper:true, low20:true, consec_down:true, rsi_overbought:true, dead_cross:true
+  },
+  threshold: 2
+};
+function getSigConfig(){
+  try{var s=localStorage.getItem('sector_sig_config'); if(s) return JSON.parse(s);}catch(e){}
+  return JSON.parse(JSON.stringify(SIG_DEFAULTS));
+}
+function openSigSettings(){
+  var cfg=getSigConfig();
+  document.querySelectorAll('#sigModal [data-sig]').forEach(function(cb){
+    cb.checked = cfg.enabled[cb.dataset.sig] !== false;
+  });
+  document.getElementById('threshSlider').value=cfg.threshold||2;
+  document.getElementById('threshVal').textContent=cfg.threshold||2;
+  document.getElementById('sigModal').classList.add('open');
+}
+function closeSigSettings(){ document.getElementById('sigModal').classList.remove('open'); }
+function saveSigSettings(){
+  var cfg={enabled:{},threshold:parseInt(document.getElementById('threshSlider').value)||2};
+  document.querySelectorAll('#sigModal [data-sig]').forEach(function(cb){
+    cfg.enabled[cb.dataset.sig]=cb.checked;
+  });
+  localStorage.setItem('sector_sig_config', JSON.stringify(cfg));
+  closeSigSettings();
+  renderCards();
+  updateSigStatus();
+}
+function updateSigStatus(){
+  var cfg=getSigConfig();
+  var enabledCnt=Object.values(cfg.enabled).filter(Boolean).length;
+  document.getElementById('sigStatus').textContent='시그널 '+enabledCnt+'개 활성 · 중첩 '+cfg.threshold+'개↑ 감지';
+}
+
+updateSigStatus();
 loadData();
 </script>
 </body>
