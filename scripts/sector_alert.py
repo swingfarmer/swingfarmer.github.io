@@ -272,6 +272,7 @@ def main():
 
     conn = oracledb.connect(
         user='ADMIN',
+        password=os.environ.get('ORACLE_DB_PASSWORD', ''),
         dsn='db1007_medium', config_dir=WALLET_DIR,
         wallet_location=WALLET_DIR,
         wallet_password=os.environ.get('ORACLE_WALLET_PASSWORD', ''))
