@@ -92,8 +92,13 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
   <label style="margin-left:12px">정렬:</label>
   <select id="sortSelect">
     <option value="strength_desc">MA 강도순 ↓</option>
-    <option value="return_desc">등락률 ↓</option>
-    <option value="return_asc">등락률 ↑</option>
+    <option value="return_desc">1D 등락률 ↓</option>
+    <option value="return_asc">1D 등락률 ↑</option>
+    <option value="return5d_desc">5D 등락률 ↓</option>
+    <option value="return5d_asc">5D 등락률 ↑</option>
+    <option value="return20d_desc">20D 등락률 ↓</option>
+    <option value="return20d_asc">20D 등락률 ↑</option>
+    <option value="return60d_desc">60D 등락률 ↓</option>
     <option value="rsi_desc">RSI ↓</option>
     <option value="rsi_asc">RSI ↑</option>
     <option value="name">이름순</option>
@@ -290,6 +295,11 @@ function renderCards(){
   if(sort==='strength_desc') list.sort(function(a,b){return b.strength-a.strength;});
   else if(sort==='return_desc') list.sort(function(a,b){return b.pct1d-a.pct1d;});
   else if(sort==='return_asc') list.sort(function(a,b){return a.pct1d-b.pct1d;});
+  else if(sort==='return5d_desc') list.sort(function(a,b){return (b.pct5d||0)-(a.pct5d||0);});
+  else if(sort==='return5d_asc') list.sort(function(a,b){return (a.pct5d||0)-(b.pct5d||0);});
+  else if(sort==='return20d_desc') list.sort(function(a,b){return (b.pct20d||0)-(a.pct20d||0);});
+  else if(sort==='return20d_asc') list.sort(function(a,b){return (a.pct20d||0)-(b.pct20d||0);});
+  else if(sort==='return60d_desc') list.sort(function(a,b){return (b.pct60d||0)-(a.pct60d||0);});
   else if(sort==='rsi_desc') list.sort(function(a,b){return (b.rsi||0)-(a.rsi||0);});
   else if(sort==='rsi_asc') list.sort(function(a,b){return (a.rsi||50)-(b.rsi||50);});
   else list.sort(function(a,b){return a.name.localeCompare(b.name);});
