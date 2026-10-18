@@ -253,7 +253,8 @@ def format_message(results):
             lines.append(f"    → {sigs}")
             if neu:
                 lines.append(f"    ⚪ {neu}")
-        lines.append('')
+            lines.append('')
+        # 마지막 빈줄은 이미 추가됨
 
     if has_bear:
         lines.append('🔵 <b>악재 시그널</b>')
@@ -265,7 +266,7 @@ def format_message(results):
             lines.append(f"    → {sigs}")
             if neu:
                 lines.append(f"    ⚪ {neu}")
-        lines.append('')
+            lines.append('')
 
     # 중립만 있는 업종 (호재·악재 0이지만 BB/RSI 시그널 있는 경우)
     neutral_only = [r for r in industry if r['bull_count'] == 0 and r['bear_count'] == 0 and r['neutral_signals']]
