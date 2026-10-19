@@ -191,6 +191,11 @@ Core(바이앤홀드) + Tactical(현금대기→낙폭매수) 900개 조합 전�
 
 <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
 
+<b>데이터 갱신 안내</b><br>
+KOSPI 일봉 종가 데이터가 HTML 파일 내에 직접 포함(하드코딩)되어 있어 자동 업데이트되지 않습니다. 데이터 갱신이 필요하면 HTS에서 KOSPI 일봉 CSV(날짜, 종가)를 추출하여 수동 반영합니다. 현재 데이터 범위: 2014.07.24 ~ 2026.10.19 (약 3,000 거래일).
+
+<hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+
 <b>용어 설명</b><br>
 <b>Lev (레버리지 비중)</b>: ATH 낙폭 진입 시 기본 포지션 대비 추가 매수 비율. Lev 50% = 보유 자산의 절반만큼 레버리지 매수.<br>
 <b>DD (Drawdown, 진입 낙폭)</b>: ATH(전고점) 대비 하락률 기준. DD -35% = 전고점에서 35% 빠졌을 때 진입.<br>
@@ -293,8 +298,7 @@ function simulate(levPct,ddThresh,tpTarget,annualCost){
     const gross=levShares*(CLOSES[N-1]-levEntry);
     const cost=levShares*levEntry*dailyCost*levHoldDays;
     const net=gross-cost;
-    log.push({ed:DATES[entryDateIdx],xd:DATES[N-1],ep:levEntry,xp:CLOSES[N-1],gain:fg,days:levHoldDays,net,win:net>0});
-    if(net>0)wins++;else losses++;
+    log.push({ed:DATES[entryDateIdx],xd:DATES[N-1],ep:levEntry,xp:CLOSES[N-1],gain:fg,days:levHoldDays,net,win:null,open:true});
   }
   const ret=equity[N-1]/equity[0]-1;
   const cagr=(Math.pow(1+ret,1/YEARS)-1)*100;
@@ -326,7 +330,7 @@ function renderStats(r){
     <div class="stat-card"><div class="val ${ex>0?'pos':'neg'}">${ex>0?'+':''}${ex.toFixed(2)}%p</div><div class="lbl">초과 CAGR</div></div>
     <div class="stat-card"><div class="val warn">${r.mdd.toFixed(1)}%</div><div class="lbl">MDD</div></div>
     <div class="stat-card"><div class="val">${r.trades}회</div><div class="lbl">거래</div></div>
-    <div class="stat-card"><div class="val ${r.wr>=90?'pos':r.wr>=70?'warn':'neg'}">${r.wr.toFixed(0)}%</div><div class="lbl">승률 (${r.wins}W/${r.losses}L)</div></div>
+    <div class="stat-card"><div class="val ${r.wr>=90?'pos':r.wr>=70?'warn':'neg'}">${r.wr.toFixed(0)}%</div><div class="lbl">승률 (${r.wins}W/${r.losses}L${r.log.some(t=>t.open)?' +1진행중':''})</div></div>
     <div class="stat-card"><div class="val">${r.ret.toFixed(1)}%</div><div class="lbl">총 수익률</div></div>
     <div class="stat-card"><div class="val">${r.calmar.toFixed(3)}</div><div class="lbl">Calmar</div></div>`;
 }
@@ -354,11 +358,12 @@ function renderChart(r){
 function renderTradeLog(r){
   let html='<table><thead><tr><th>#</th><th>진입일</th><th>청산일</th><th>진입가</th><th>청산가</th><th>수익률</th><th>보유</th><th>순이익</th><th></th></tr></thead><tbody>';
   r.log.forEach((t,i)=>{
-    const cls=t.win?'pos':'neg';
-    html+=`<tr><td>${i+1}</td><td>${t.ed}</td><td>${t.xd}</td><td>${t.ep.toFixed(1)}</td><td>${t.xp.toFixed(1)}</td>
+    const cls=t.open?'warn':t.win?'pos':'neg';
+    const icon=t.open?'⏳':t.win?'✅':'❌';
+    html+=`<tr><td>${i+1}</td><td>${t.ed}</td><td>${t.open?'보유중':t.xd}</td><td>${t.ep.toFixed(1)}</td><td>${t.xp.toFixed(1)}</td>
     <td class="${cls}">${t.gain>=0?'+':''}${t.gain.toFixed(1)}%</td><td>${t.days}일</td>
     <td class="${cls}">₩${t.net>=0?'+':''}${Math.round(t.net).toLocaleString()}</td>
-    <td>${t.win?'✅':'❌'}</td></tr>`;
+    <td>${icon}</td></tr>`;
   });
   html+='</tbody></table>';
   document.getElementById('tradeTable').innerHTML=html;
