@@ -232,20 +232,22 @@ let eqChart=null,sweepData=[];
   const rows=[];
   for(const dd of dds){for(const tp of tps){
     const r=simulate(lev,dd,tp,cost);
-    rows.push({dd,tp,cagr:r.cagr,excess:r.excess,wr:r.wr,trades:r.trades,mdd:r.mdd});
+    rows.push({dd,tp,cagr:r.cagr,excess:r.excess,wr:r.wr,closed:r.closed,wins:r.wins,losses:r.losses,hasOpen:r.hasOpen,trades:r.trades,mdd:r.mdd});
   }}
   rows.sort((a,b)=>b.cagr-a.cagr);
   const avg=rows.reduce((s,r)=>s+r.excess,0)/rows.length;
   const above=rows.filter(r=>r.excess>=avg);
   const below=rows.filter(r=>r.excess<avg);
+  function rowHtml(r,bold){
+    const tag=r.wr===100&&r.closed>0?'<span class="tag tag-win">전승</span>':r.excess===Math.max(...rows.map(x=>x.excess))?'<span class="tag tag-freq">최강</span>':'';
+    const openMark=r.hasOpen?' +⏳':'';
+    const cagrCell=bold?`<b>${r.cagr.toFixed(2)}%</b>`:r.cagr.toFixed(2)+'%';
+    return`<td>${tag}</td><td>Lev50% DD${r.dd}% TP+${r.tp}%</td><td>${cagrCell}</td><td class="${r.excess>0?'pos':'neg'}">${r.excess>0?'+':''}${r.excess.toFixed(2)}%p</td><td>${r.wr.toFixed(0)}% (${r.wins}W${r.losses?'/'+r.losses+'L':''}${openMark})</td><td>${r.closed}${r.hasOpen?'+1':''}</td><td class="neg">${r.mdd.toFixed(1)}%</td>`;
+  }
   let html='';
-  above.forEach(r=>{
-    const tag=r.wr===100?'<span class="tag tag-win">전승</span>':r.excess===Math.max(...rows.map(x=>x.excess))?'<span class="tag tag-freq">최강</span>':'';
-    html+=`<tr><td>${tag}</td><td>Lev50% DD${r.dd}% TP+${r.tp}%</td><td><b>${r.cagr.toFixed(2)}%</b></td><td class="${r.excess>0?'pos':'neg'}">${r.excess>0?'+':''}${r.excess.toFixed(2)}%p</td><td>${r.wr.toFixed(0)}%</td><td>${r.trades}</td><td class="neg">${r.mdd.toFixed(1)}%</td></tr>`;
-  });
+  above.forEach(r=>{html+=`<tr>${rowHtml(r,true)}</tr>`;});
   html+=`<tr><td colspan="7" style="text-align:center;color:var(--text-dim);font-size:11px;padding:10px;border-bottom:2px solid var(--border)">── 평균 초과CAGR(${avg.toFixed(2)}%p) 미만 ──</td></tr>`;
-  below.forEach(r=>{
-    html+=`<tr style="opacity:.6"><td></td><td>Lev50% DD${r.dd}% TP+${r.tp}%</td><td>${r.cagr.toFixed(2)}%</td><td class="${r.excess>0?'pos':'neg'}">${r.excess>0?'+':''}${r.excess.toFixed(2)}%p</td><td>${r.wr.toFixed(0)}%</td><td>${r.trades}</td><td class="neg">${r.mdd.toFixed(1)}%</td></tr>`;
+  below.forEach(r=>{html+=`<tr style="opacity:.6">${rowHtml(r,false)}</tr>`;
   });
   document.getElementById('mainTable').innerHTML=html;
 })();
@@ -304,9 +306,11 @@ function simulate(levPct,ddThresh,tpTarget,annualCost){
   const cagr=(Math.pow(1+ret,1/YEARS)-1)*100;
   let eMax=0,mdd=0;
   for(let i=0;i<N;i++){eMax=Math.max(eMax,equity[i]);mdd=Math.min(mdd,(equity[i]/eMax-1)*100);}
-  const wr=trades>0?(wins/trades*100):0;
+  const hasOpen=levShares>0?1:0;
+  const closed=trades-hasOpen;
+  const wr=closed>0?(wins/closed*100):0;
   const calmar=mdd!==0?cagr/Math.abs(mdd):0;
-  return{levPct,ddThresh,tpTarget,ret:ret*100,cagr,mdd,trades,wins,losses,wr,excess:cagr-BNH_CAGR,calmar,log,equity};
+  return{levPct,ddThresh,tpTarget,ret:ret*100,cagr,mdd,trades,closed,wins,losses,hasOpen,wr,excess:cagr-BNH_CAGR,calmar,log,equity};
 }
 
 function runSingle(){
@@ -379,7 +383,7 @@ function runSweep(){
   sweepData=[];
   for(const dd of dds){for(const tp of tps){
     const r=simulate(lev,dd,tp,cost);
-    sweepData.push({dd,tp,cagr:r.cagr,mdd:r.mdd,trades:r.trades,wr:r.wr,excess:r.excess,calmar:r.calmar,wins:r.wins,losses:r.losses});
+    sweepData.push({dd,tp,cagr:r.cagr,mdd:r.mdd,trades:r.trades,closed:r.closed,hasOpen:r.hasOpen,wr:r.wr,excess:r.excess,calmar:r.calmar,wins:r.wins,losses:r.losses});
   }}
   const beats=sweepData.filter(r=>r.excess>0);
   const best=sweepData.reduce((a,b)=>a.cagr>b.cagr?a:b);
@@ -409,10 +413,11 @@ function renderSweepTable(){
   let html='<table><thead><tr><th>#</th><th>DD</th><th>TP</th><th>CAGR</th><th>초과</th><th>MDD</th><th>거래</th><th>승률</th><th>Calmar</th><th></th></tr></thead><tbody>';
   sorted.forEach((r,i)=>{
     const ex=r.excess;const cls=ex>0?'pos':'neg';
-    const badge=r.wr===100?'⭐':r.wr>=90?'✅':'';
+    const badge=r.wr===100&&r.closed>0?'⭐':r.wr>=90?'✅':'';
+    const openMark=r.hasOpen?' +⏳':'';
     html+=`<tr><td>${i+1}</td><td>${r.dd}%</td><td>+${r.tp}%</td><td><b>${r.cagr.toFixed(2)}%</b></td>
     <td class="${cls}">${ex>0?'+':''}${ex.toFixed(2)}%p</td><td class="neg">${r.mdd.toFixed(1)}%</td>
-    <td>${r.trades}</td><td>${r.wr.toFixed(0)}%</td><td>${r.calmar.toFixed(3)}</td><td>${badge}</td></tr>`;
+    <td>${r.closed}${r.hasOpen?'+1':''}</td><td>${r.wr.toFixed(0)}%${openMark}</td><td>${r.calmar.toFixed(3)}</td><td>${badge}</td></tr>`;
   });
   html+='</tbody></table>';
   document.getElementById('sweepTable').innerHTML=html;
