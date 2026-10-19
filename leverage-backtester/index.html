@@ -108,18 +108,12 @@ Core(바이앤홀드) + Tactical(현금대기→낙폭매수) 900개 조합 전�
 </div>
 
 <div class="table-wrap">
-<h3>최적 조합 (일봉 백테스트 결과)</h3>
+<h3>주요 조합 — CAGR 순 (일봉 백테스트 결과)</h3>
+<p style="font-size:12px;color:var(--text-dim);margin-bottom:10px">DD -35~-50%, TP +10~+35%, Lev 50% 기준. B&H 벤치마크: CAGR 9.19%, MDD -43.9%</p>
 <table>
 <thead><tr><th>유형</th><th>조합</th><th>CAGR</th><th>초과</th><th>승률</th><th>거래</th><th>MDD</th></tr></thead>
-<tbody>
-<tr><td><span class="tag tag-freq">CAGR 최강</span></td><td>Lev50% DD-30% TP+15%</td><td>11.72%</td><td class="pos">+2.53%p</td><td>83%</td><td>6</td><td>-50.0%</td></tr>
-<tr><td><span class="tag tag-freq">고빈도</span></td><td>Lev50% DD-30% TP+7%</td><td>11.65%</td><td class="pos">+2.47%p</td><td>89%</td><td>9</td><td>-50.0%</td></tr>
-<tr><td><span class="tag tag-freq">균형</span></td><td>Lev50% DD-30% TP+5%</td><td>11.45%</td><td class="pos">+2.27%p</td><td>90%</td><td>10</td><td>-50.0%</td></tr>
-<tr><td><span class="tag tag-win">승률100%</span></td><td>Lev50% DD-35% TP+25%</td><td>11.15%</td><td class="pos">+1.96%p</td><td>100%</td><td>3</td><td>-48.0%</td></tr>
-<tr><td><span class="tag tag-safe">안전형</span></td><td>Lev20% DD-35% TP+15%</td><td>9.75%</td><td class="pos">+0.56%p</td><td>100%</td><td>3</td><td>-45.6%</td></tr>
-</tbody>
+<tbody id="mainTable"></tbody>
 </table>
-<p style="font-size:12px;color:var(--text-dim);margin-top:8px">B&H 벤치마크: CAGR 9.19%, MDD -43.9% (KOSPI 2026.62→5768.01)</p>
 </div>
 </div>
 
@@ -129,14 +123,13 @@ Core(바이앤홀드) + Tactical(현금대기→낙폭매수) 900개 조합 전�
 
 <h3 style="font-size:13px;color:var(--text-dim);margin-bottom:8px">프리셋 시나리오</h3>
 <div class="presets">
-<button class="preset-btn" onclick="applyPreset(50,-30,15,this)"><span class="tag tag-freq">CAGR최강</span> Lev50 DD-30 TP+15</button>
-<button class="preset-btn" onclick="applyPreset(50,-30,7,this)"><span class="tag tag-freq">고빈도</span> Lev50 DD-30 TP+7</button>
-<button class="preset-btn" onclick="applyPreset(50,-30,5,this)"><span class="tag tag-freq">균형</span> Lev50 DD-30 TP+5</button>
+<button class="preset-btn" onclick="applyPreset(50,-35,15,this)"><span class="tag tag-freq">CAGR최강</span> Lev50 DD-35 TP+15</button>
+<button class="preset-btn" onclick="applyPreset(50,-40,20,this)"><span class="tag tag-win">깊은낙폭</span> Lev50 DD-40 TP+20</button>
+<button class="preset-btn" onclick="applyPreset(50,-45,25,this)"><span class="tag tag-win">극한</span> Lev50 DD-45 TP+25</button>
+<button class="preset-btn" onclick="applyPreset(50,-50,30,this)"><span class="tag tag-safe">폭락전용</span> Lev50 DD-50 TP+30</button>
 <button class="preset-btn" onclick="applyPreset(50,-35,25,this)"><span class="tag tag-win">전승</span> Lev50 DD-35 TP+25</button>
-<button class="preset-btn" onclick="applyPreset(30,-35,20,this)"><span class="tag tag-win">전승30</span> Lev30 DD-35 TP+20</button>
-<button class="preset-btn" onclick="applyPreset(20,-35,15,this)"><span class="tag tag-safe">안전</span> Lev20 DD-35 TP+15</button>
-<button class="preset-btn" onclick="applyPreset(50,-25,3,this)"><span class="tag tag-freq">초고빈도</span> Lev50 DD-25 TP+3</button>
-<button class="preset-btn" onclick="applyPreset(50,-20,3,this)"><span class="tag tag-freq">최고빈도</span> Lev50 DD-20 TP+3</button>
+<button class="preset-btn" onclick="applyPreset(30,-40,15,this)"><span class="tag tag-safe">안전30</span> Lev30 DD-40 TP+15</button>
+<button class="preset-btn" onclick="applyPreset(20,-35,15,this)"><span class="tag tag-safe">안전20</span> Lev20 DD-35 TP+15</button>
 </div>
 
 <div class="input-grid">
@@ -147,8 +140,8 @@ Core(바이앤홀드) + Tactical(현금대기→낙폭매수) 900개 조합 전�
 </div>
 
 <div class="btn-row">
-<button class="btn-primary" onclick="runSingle()">단일 시뮬레이션</button>
-<button class="btn-secondary" onclick="runSweep()">파라미터 스윕 (DD × TP 전체)</button>
+<button class="btn-primary" id="btnSingle" onclick="runSingle()">단일 시뮬레이션</button>
+<button class="btn-secondary" id="btnSweep" onclick="runSweep()">파라미터 스윕 (DD × TP 전체)</button>
 </div>
 </div>
 
@@ -187,8 +180,19 @@ Core(바이앤홀드) + Tactical(현금대기→낙폭매수) 900개 조합 전�
 <div class="guide-body">
 <b>전략 원리</b>: 평소 100% B&H 유지, ATH 대비 설정한 % 이상 하락 시에만 포트폴리오의 일정 비중만큼 레버리지 추가 매수. 익절 목표 달성 시 청산하고 수익을 기본 포지션에 재투자(복리).<br><br>
 <b>단일 시뮬레이션</b>: 파라미터 1개 조합의 자산곡선 + 거래 내역 확인.<br>
-<b>파라미터 스윕</b>: 설정한 레버리지 비중 고정, DD(-3~-40%) × TP(+3~+30%) 전 조합 일괄 비교.<br><br>
+<b>파라미터 스윕</b>: 설정한 레버리지 비중 고정, DD × TP 전 조합 일괄 비교.<br><br>
 <b>주의</b>: 과거 데이터 기반 시뮬레이션이며 미래 수익을 보장하지 않습니다. 레버리지 투자는 원금 손실 위험이 있습니다. 실제 거래 시 슬리피지, 수수료, 세금 등 추가 비용이 발생합니다.
+
+<hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+
+<b>용어 설명</b><br>
+<b>Lev (레버리지 비중)</b>: ATH 낙폭 진입 시 기본 포지션 대비 추가 매수 비율. Lev 50% = 보유 자산의 절반만큼 레버리지 매수.<br>
+<b>DD (Drawdown, 진입 낙폭)</b>: ATH(전고점) 대비 하락률 기준. DD -35% = 전고점에서 35% 빠졌을 때 진입.<br>
+<b>TP (Take Profit, 익절 목표)</b>: 레버리지 포지션의 청산 수익률. TP +20% = 진입가 대비 20% 수익 시 매도.<br>
+<b>CAGR (연평균 복리 수익률)</b>: 기간 전체 수익률을 연 단위 복리로 환산한 값. B&H CAGR 대비 높으면 전략이 시장을 이긴 것.<br>
+<b>MDD (최대 낙폭)</b>: 고점에서 저점까지 가장 크게 빠진 구간의 하락률. 작을수록 안전.<br>
+<b>Calmar (칼마 비율)</b>: CAGR ÷ |MDD|. 리스크 대비 수익 효율. 높을수록 좋음.<br>
+<b>B&H (Buy & Hold)</b>: 매수 후 보유 전략. 모든 전략의 벤치마크 기준.
 </div>
 </div>
 </div>
@@ -208,6 +212,32 @@ let bnhMax=0,BNH_MDD=0;
 for(let i=0;i<N;i++){bnhMax=Math.max(bnhMax,CLOSES[i]);BNH_MDD=Math.min(BNH_MDD,(CLOSES[i]/bnhMax-1)*100);}
 
 let eqChart=null,sweepData=[];
+
+// 메인 테이블 자동 생성
+(function buildMainTable(){
+  const dds=[-35,-40,-45,-50];
+  const tps=[10,15,20,25,30,35];
+  const lev=50,cost=5;
+  const rows=[];
+  for(const dd of dds){for(const tp of tps){
+    const r=simulate(lev,dd,tp,cost);
+    rows.push({dd,tp,cagr:r.cagr,excess:r.excess,wr:r.wr,trades:r.trades,mdd:r.mdd});
+  }}
+  rows.sort((a,b)=>b.cagr-a.cagr);
+  const avg=rows.reduce((s,r)=>s+r.excess,0)/rows.length;
+  const above=rows.filter(r=>r.excess>=avg);
+  const below=rows.filter(r=>r.excess<avg);
+  let html='';
+  above.forEach(r=>{
+    const tag=r.wr===100?'<span class="tag tag-win">전승</span>':r.excess===Math.max(...rows.map(x=>x.excess))?'<span class="tag tag-freq">최강</span>':'';
+    html+=`<tr><td>${tag}</td><td>Lev50% DD${r.dd}% TP+${r.tp}%</td><td><b>${r.cagr.toFixed(2)}%</b></td><td class="${r.excess>0?'pos':'neg'}">${r.excess>0?'+':''}${r.excess.toFixed(2)}%p</td><td>${r.wr.toFixed(0)}%</td><td>${r.trades}</td><td class="neg">${r.mdd.toFixed(1)}%</td></tr>`;
+  });
+  html+=`<tr><td colspan="7" style="text-align:center;color:var(--text-dim);font-size:11px;padding:10px;border-bottom:2px solid var(--border)">── 평균 초과CAGR(${avg.toFixed(2)}%p) 미만 ──</td></tr>`;
+  below.forEach(r=>{
+    html+=`<tr style="opacity:.6"><td></td><td>Lev50% DD${r.dd}% TP+${r.tp}%</td><td>${r.cagr.toFixed(2)}%</td><td class="${r.excess>0?'pos':'neg'}">${r.excess>0?'+':''}${r.excess.toFixed(2)}%p</td><td>${r.wr.toFixed(0)}%</td><td>${r.trades}</td><td class="neg">${r.mdd.toFixed(1)}%</td></tr>`;
+  });
+  document.getElementById('mainTable').innerHTML=html;
+})();
 
 function applyPreset(lev,dd,tp,el){
   document.getElementById('pLev').value=lev;
@@ -277,6 +307,8 @@ function runSingle(){
   const r=simulate(lev,dd,tp,cost);
   document.getElementById('results').style.display='block';
   document.getElementById('sweepResults').style.display='none';
+  document.getElementById('btnSingle').className='btn-primary';
+  document.getElementById('btnSweep').className='btn-secondary';
   renderStats(r);renderChart(r);renderTradeLog(r);
 }
 
@@ -329,8 +361,10 @@ function renderTradeLog(r){
 function runSweep(){
   const lev=+document.getElementById('pLev').value;
   const cost=+document.getElementById('pCost').value;
-  const dds=[-3,-5,-7,-10,-12,-15,-18,-20,-25,-30,-35,-40];
-  const tps=[3,5,7,10,15,20,25,30];
+  document.getElementById('btnSweep').className='btn-primary';
+  document.getElementById('btnSingle').className='btn-secondary';
+  const dds=[-3,-5,-7,-10,-12,-15,-18,-20,-25,-30,-35,-40,-45,-50];
+  const tps=[3,5,7,10,15,20,25,30,35];
   sweepData=[];
   for(const dd of dds){for(const tp of tps){
     const r=simulate(lev,dd,tp,cost);
