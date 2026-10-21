@@ -82,6 +82,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   .bd-table td { padding: 5px; text-align: right; border-bottom: 1px solid #f0f0f0; font-variant-numeric: tabular-nums; }
   .bd-table td:first-child { text-align: left; }
   .dim { color: #888; font-size: 11px; }
+  .confirmed-active input { background: #dcfce7 !important; }
   .fx-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
   .fx-row label { font-size: 12px; color: #555; white-space: nowrap; font-weight: 600; }
   .fx-row input { width: 110px; }
@@ -174,7 +175,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   <!-- 채권 -->
   <div class="tab-body active" id="tab-bond">
     <div class="fx-row" style="margin-bottom:12px">
-      <span class="dim">💡 미국채 기준. 액면·매수단가는 USD, 이자는 현재환율로 원화 환산됩니다.</span>
+      <span class="dim">💡 미국채 기준. 연이자(₩)는 예상환율로 자동계산. 실제 수령 후 <b>확정 이자(₩)</b>에 입력하면 그 값이 금종세에 반영됩니다.</span>
     </div>
     <div style="overflow-x:auto">
     <table class="item-table" id="bondTable">
@@ -185,9 +186,10 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
         <th>수량</th>
         <th>매수환율</th>
         <th>투자금(₩)</th>
-        <th>표면이율%</th>
+        <th>이율%</th>
         <th>연이자($)</th>
-        <th>연이자(₩)</th>
+        <th>연이자(₩)<br><span style="font-weight:400;font-size:9px">예상</span></th>
+        <th style="background:#e8f5e9">확정 이자(₩)<br><span style="font-weight:400;font-size:9px">수령 후 입력</span></th>
         <th></th>
       </tr></thead>
       <tbody id="bondBody"></tbody>
@@ -195,7 +197,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
       <button class="add-btn" onclick="addBond()">+ 미국채 추가</button>
-      <div class="sub-total">이자 소계: <span id="bondSubtotal">0</span>원</div>
+      <div class="sub-total">이자 소계: <span id="bondSubtotal">0</span>원 <span class="dim" id="bondConfNote"></span></div>
     </div>
     <div class="bond-detail" id="bondDetail"></div>
   </div>
@@ -284,15 +286,22 @@ function switchTab(t){
 }
 
 // ── 채권 (미국채) ──
-function addBond(d){ bonds.push(d||{name:'',face:1000,price:0,qty:0,fxBuy:1380,coupon:0}); renderBonds(); }
+function addBond(d){ bonds.push(d||{name:'',face:1000,price:0,qty:0,fxBuy:1380,coupon:0,confirmedKrw:0}); renderBonds(); }
 function delBond(i){ bonds.splice(i,1); renderBonds(); recalc(); }
+function bondEffective(b,fxNow){
+  // 확정값이 있으면 그걸 쓰고, 없으면 자동계산
+  const auto=(b.face||0)*(b.qty||0)*(b.coupon||0)/100*fxNow;
+  return (b.confirmedKrw && b.confirmedKrw>0) ? b.confirmedKrw : auto;
+}
 function renderBonds(){
   const fxNow=parseFloat($('fxNow').value)||1380;
   const tb=$('bondBody'); tb.innerHTML='';
   bonds.forEach((b,i)=>{
     const investKrw=(b.price||0)*(b.qty||0)*(b.fxBuy||0);
     const intUsd=(b.face||0)*(b.qty||0)*(b.coupon||0)/100;
-    const intKrw=intUsd*fxNow;
+    const intKrwAuto=intUsd*fxNow;
+    const hasConfirmed=(b.confirmedKrw && b.confirmedKrw>0);
+    const effective=bondEffective(b,fxNow);
     const tr=document.createElement('tr');
     tr.innerHTML=`
       <td><input class="nm" value="${esc(b.name)}" placeholder="US Treasury" onchange="bonds[${i}].name=this.value;recalc()"></td>
@@ -303,7 +312,8 @@ function renderBonds(){
       <td class="av">${fmt(investKrw)}</td>
       <td><input type="number" value="${b.coupon||''}" placeholder="%" step="0.125" inputmode="decimal" onchange="bonds[${i}].coupon=parseFloat(this.value)||0;renderBonds();recalc()"></td>
       <td class="av">$${fmtD(intUsd)}</td>
-      <td class="av inc">${fmt(intKrw)}</td>
+      <td class="av" style="opacity:${hasConfirmed?'0.4':'1'}">${fmt(intKrwAuto)}</td>
+      <td style="background:#f0fdf4"><input type="number" value="${b.confirmedKrw||''}" placeholder="실수령 입력" inputmode="numeric" style="background:#f0fdf4;font-weight:700;color:#166534" onchange="bonds[${i}].confirmedKrw=parseFloat(this.value)||0;renderBonds();recalc()"></td>
       <td><button class="del-btn" onclick="delBond(${i})">×</button></td>`;
     tb.appendChild(tr);
   });
@@ -359,9 +369,9 @@ function recalc(){
   $('baseTaxable_kor').textContent=wonKor(baseTaxable);
   $('bufferKor').textContent=wonKor(buffer)+' — 예상 못한 이자·배당 대비';
 
-  // 소계
+  // 소계 (확정이자 있으면 그걸 사용)
   let bondT=0;
-  bonds.forEach(b=>{bondT+=(b.face||0)*(b.qty||0)*(b.coupon||0)/100*fxNow;});
+  bonds.forEach(b=>{bondT+=bondEffective(b,fxNow);});
   let stockT=0;
   stocks.forEach(s=>{stockT+=(s.div||0)*(s.qty||0);});
   let depoT=0;
@@ -381,6 +391,8 @@ function recalc(){
   mc.className='sum-card sc-margin'+(margin>=0?' ok':'');
 
   $('bondSubtotal').textContent=fmt(bondT);
+  var confCnt=bonds.filter(b=>b.confirmedKrw&&b.confirmedKrw>0).length;
+  $('bondConfNote').textContent=confCnt>0?'('+confCnt+'건 확정 반영)':'(전부 예상환율 기준)';
   $('stockSubtotal').textContent=fmt(stockT);
   $('depoSubtotal').textContent=fmt(depoT);
 
