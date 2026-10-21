@@ -311,7 +311,20 @@ const $=id=>document.getElementById(id);
 const fmt=n=>Math.round(n).toLocaleString('ko-KR');
 const fmtD=n=>n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 function wonKor(n){var neg=n<0;n=Math.round(Math.abs(n));if(!n)return'0원';var e=Math.floor(n/1e8),m=Math.floor(n%1e8/1e4),p=[];if(e)p.push(e.toLocaleString('ko-KR')+'억');if(m)p.push(m.toLocaleString('ko-KR')+'만');return(neg?'−':'')+p.join(' ')+'원';}
-function toggleInfo(id){var el=$(id);el.style.display=el.style.display==='block'?'none':'block';}
+function toggleInfo(id){
+  var el=$(id);
+  var show=el.style.display!=='block';
+  el.style.display=show?'block':'none';
+  try{var st=JSON.parse(localStorage.getItem('sf_fi_info')||'{}');st[id]=show;localStorage.setItem('sf_fi_info',JSON.stringify(st));}catch(e){}
+}
+// info-box 상태 복원 (첫 방문: baseInfo만 열기)
+(function(){
+  try{
+    var raw=localStorage.getItem('sf_fi_info');
+    if(raw){var st=JSON.parse(raw);for(var k in st){var el=$(k);if(el)el.style.display=st[k]?'block':'none';}}
+    else{var bi=$('baseInfo');if(bi)bi.style.display='block';}
+  }catch(e){var bi=$('baseInfo');if(bi)bi.style.display='block';}
+})();
 function esc(s){return(s||'').replace(/"/g,'&quot;');}
 
 const LIMIT=20000000;
@@ -441,12 +454,8 @@ function recalc(){
   renderHalfDetail(fxH1,fxH2);
   renderMaturityDetail(fxMat);
 
-  // 자동저장
-  try{localStorage.setItem('sf_financial_income_auto',JSON.stringify(
-    {bonds:bonds.slice(),stocks:stocks.slice(),depos:depos.slice(),
-     buffer:$('buffer').value,fxH1:$('fxH1').value,fxH2:$('fxH2').value,
-     fxMaturity:$('fxMaturity').value,baseTaxable:$('baseTaxable').value}
-  ));}catch(e){}
+  // sf-slots autoSave 트리거 (동적 행 변경도 저장)
+  if(typeof window.autoSave==='function') window.autoSave();
 }
 
 function renderHalfDetail(fxH1,fxH2){
@@ -531,20 +540,8 @@ function _loadState(d){
 window.slGetState=function(){return _getState();};
 window.slSetState=function(d){_loadState(d);};
 
-// ── 페이지 로드 시 localStorage에서 자동복원 ──
-(function(){
-  try{
-    var raw=localStorage.getItem('sf_financial_income_auto');
-    if(raw){
-      var d=JSON.parse(raw);
-      if(d&&((d.bonds&&d.bonds.length)||(d.stocks&&d.stocks.length)||(d.depos&&d.depos.length))){
-        _loadState(d);
-        return;
-      }
-    }
-  }catch(e){}
-  recalc();
-})();
+// 초기 렌더 (sf-slots의 autoLoad가 DOMContentLoaded에서 slSetState 호출하면 덮어씀)
+recalc();
 </script>
 </body>
 </html>
