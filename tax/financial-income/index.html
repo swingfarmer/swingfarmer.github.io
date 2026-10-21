@@ -290,8 +290,9 @@ header .back-link{display:inline-block;margin-bottom:6px}
     <h4>8. 주식 배당 / 예금·기타 탭</h4>
     <p>국내주식은 원화 기준. 주당 배당금 × 주수 = 연간 배당. 예금은 예치금 × 이율 × (기간/12) = 이자. 모두 세전 기준으로 금종세에 합산됩니다.</p>
 
-    <h4>9. 슬롯 저장</h4>
-    <p>상단 슬롯에 저장하면 채권·주식·예금 항목 전체와 환율·확정값이 보존됩니다. 다음에 와서 불러오기하면 이어서 관리 가능.</p>
+    <h4>9. 자동저장 & 슬롯</h4>
+    <p><b>자동저장</b>: 입력할 때마다 자동으로 브라우저에 저장됩니다. 새로고침해도 데이터가 유지됩니다. (같은 브라우저·같은 기기 한정)</p>
+    <p><b>슬롯 저장</b>: 상단 슬롯은 이름 붙여 저장하는 기능. 시나리오별로 다른 세팅을 비교하고 싶을 때 사용. 슬롯에서 불러오기하면 자동저장 데이터도 덮어씁니다.</p>
   </div>
 
   <div class="warn-note" style="margin-top:16px">
@@ -500,9 +501,16 @@ document.querySelectorAll('#fxH1,#fxH2,#fxMaturity,#baseTaxable,#buffer').forEac
   el.addEventListener('input',function(){renderBonds();recalc();});
 });
 
-// ── 슬롯 ──
-window.slGetState=function(){return{bonds:bonds.slice(),stocks:stocks.slice(),depos:depos.slice(),buffer:$('buffer').value,fxH1:$('fxH1').value,fxH2:$('fxH2').value,fxMaturity:$('fxMaturity').value,baseTaxable:$('baseTaxable').value};};
-window.slSetState=function(d){if(!d)return;
+// ── 자동저장 (localStorage) ──
+var AUTO_KEY='sf_financial_income_auto';
+function autoSave(){
+  try{localStorage.setItem(AUTO_KEY,JSON.stringify(getState()));}catch(e){}
+}
+function getState(){
+  return{bonds:bonds.slice(),stocks:stocks.slice(),depos:depos.slice(),buffer:$('buffer').value,fxH1:$('fxH1').value,fxH2:$('fxH2').value,fxMaturity:$('fxMaturity').value,baseTaxable:$('baseTaxable').value};
+}
+function loadState(d){
+  if(!d)return;
   bonds=(d.bonds||[]).slice();stocks=(d.stocks||[]).slice();depos=(d.depos||[]).slice();
   if(d.buffer!==undefined)$('buffer').value=d.buffer;
   if(d.fxH1!==undefined)$('fxH1').value=d.fxH1;
@@ -510,8 +518,23 @@ window.slSetState=function(d){if(!d)return;
   if(d.fxNow!==undefined&&!d.fxH1)$('fxH1').value=d.fxNow;
   if(d.fxMaturity!==undefined)$('fxMaturity').value=d.fxMaturity;
   if(d.baseTaxable!==undefined)$('baseTaxable').value=d.baseTaxable;
-  renderBonds();renderStocks();renderDepos();recalc();};
-recalc();
+  renderBonds();renderStocks();renderDepos();recalc();
+}
+
+// recalc 끝에 자동저장 훅
+var _origRecalc=recalc;
+recalc=function(){_origRecalc();autoSave();};
+
+// ── 슬롯 ──
+window.slGetState=function(){return getState();};
+window.slSetState=function(d){loadState(d);};
+
+// 페이지 로드 시 자동복원
+try{
+  var saved=localStorage.getItem(AUTO_KEY);
+  if(saved){var d=JSON.parse(saved);if(d&&(d.bonds&&d.bonds.length||d.stocks&&d.stocks.length||d.depos&&d.depos.length)){loadState(d);}}
+  else{recalc();}
+}catch(e){recalc();}
 </script>
 </body>
 </html>
