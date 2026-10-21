@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>법인 사무실 매매 vs 월세 비교 | 스윙파머</title>
+<meta name="description" content="법인으로 사무실·업무용 오피스텔을 살 때와 월세로 쓸 때, 취득세·감가상각·법인세·시세변동까지 반영해 N년 순비용 비교.">
+<link rel="stylesheet" href="/common.css?v=4">
+<style>
+:root { --sf-max-w: 780px; }
+header { background: var(--sf-surface); border-bottom: 3px solid var(--sf-brand); padding: 18px 16px; }
+header .wrap { padding: 0; }
+header h1 { font-size: 20px; color: var(--sf-brand); margin: 0; border-bottom: none; }
+header .back-link { display: inline-block; margin-bottom: 6px; }
+.final, .result-hero { background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; font-style: normal; cursor: pointer; margin-left: 4px; }
+  /* 토글 */
+  .toggle-row { display: flex; gap: 8px; margin-bottom: 13px; }
+  .toggle-opt { flex: 1; padding: 9px; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; background: #eef2f7; color: #1F4E78; border: 2px solid transparent; text-align: center; transition: all .15s; }
+  .toggle-opt.active { background: #1F4E78; color: white; }
+  /* vs 카드 */
+  .vs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .vs-card { border-radius: 14px; padding: 20px; text-align: center; color: white; }
+  .vs-buy { background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+  .vs-rent { background: linear-gradient(135deg, #b45309, #d97706); }
+  .vs-card .vlabel { font-size: 12px; opacity: .9; }
+  .vs-card .vval { font-size: 22px; font-weight: 800; }
+  .vs-card .vkor { font-size: 11px; opacity: .85; margin-top: 4px; }
+  .winner { text-align: center; font-size: 15px; font-weight: 700; padding: 14px; border-radius: 10px; margin-bottom: 16px; }
+  .winner.buy { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+  .winner.rent { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+  /* 상세표 */
+  table.breakdown { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.breakdown td { padding: 9px 6px; border-bottom: 1px solid #f0f0f0; }
+  table.breakdown td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  table.breakdown tr.group-head td { font-weight: 700; color: #1F4E78; padding-top: 14px; }
+  table.breakdown tr.total td { border-top: 2px solid #1F4E78; font-weight: 700; padding-top: 11px; }
+  .plus { color: #16a34a; } .minus { color: #dc2626; }
+  .dim { color: #888; font-size: 11px; }
+</style>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a href="/" class="back-link">← 메인으로</a>
+    <h1>🏢 법인 사무실 매매 vs 월세 비교</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc">법인으로 사무실·업무용 오피스텔을 <b>매수해서 쓸 때</b>와 <b>월세로 쓸 때</b>, N년간 실질 순비용이 어떻게 다른지 비교합니다. 취득세·감가상각·법인세 절감·시세변동·부가세 환급 여부까지 반영해요.</p>
+
+  <!-- 공통 -->
+  <div class="panel">
+    <div class="section-label common-label">⚙️ 공통 조건</div>
+    <div class="input-row">
+      <label>사용 기간 (년) <span class="stat-sub">몇 년 쓸 건지</span></label>
+      <input type="number" id="years" value="5" inputmode="numeric">
+    </div>
+    <div class="input-row">
+      <label>법인세 실효세율 (%) <span class="stat-sub">비용처리 절세 계산용</span> <span class="info-btn" onclick="toggleInfo('taxInfo')">i</span></label>
+      <input type="number" id="corpTaxRate" value="10" step="1" inputmode="numeric">
+      <div class="info-box" id="taxInfo">중소기업 과세표준 2억 이하 10% (지방세 포함 11%), 2억 초과 20% (22%). 실효세율을 넣으세요. 비용처리 시 절감되는 세율입니다.</div>
+    </div>
+    <div class="input-row">
+      <label>여유자금 운용수익률 (%/년) <span class="stat-sub">보증금 기회비용</span></label>
+      <input type="number" id="investRate" value="4" step="0.1" inputmode="decimal">
+    </div>
+    <div class="input-row">
+      <label>부가세 환급 가능 여부 <span class="info-btn" onclick="toggleInfo('vatInfo')">i</span></label>
+      <div class="toggle-row">
+        <div class="toggle-opt active" data-val="yes" onclick="setVat('yes')">일반과세 (환급 가능)</div>
+        <div class="toggle-opt" data-val="no" onclick="setVat('no')">면세사업자 (환급 불가)</div>
+      </div>
+      <div class="info-box" id="vatInfo">일반과세 법인은 건물분 부가세·월세 VAT를 환급받아 실질 0. 면세사업자(병원·학원·면세위주 법인)는 환급 못 받아 비용으로 남습니다.</div>
+    </div>
+  </div>
+
+  <!-- 매매 -->
+  <div class="panel">
+    <div class="section-label buy-label">🏢 법인 매수</div>
+    <div class="input-row">
+      <label>매매가 (원) <span class="stat-sub">건물+토지, VAT 별도</span></label>
+      <input type="number" id="buyPrice" value="300000000" inputmode="numeric">
+      <div class="won-kor" id="buyPrice_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>건물분 비율 (%) <span class="stat-sub">감가상각·부가세 대상</span> <span class="info-btn" onclick="toggleInfo('bldInfo')">i</span></label>
+      <input type="number" id="buildingRatio" value="50" step="1" inputmode="numeric">
+      <div class="info-box" id="bldInfo">매매가 중 건물 비중. 오피스텔은 보통 40~60%. 계약서에 토지·건물 구분 기재됩니다. 감가상각(건물분만)과 부가세 계산에 사용.</div>
+    </div>
+    <div class="input-row">
+      <label>취득세율 (%) <span class="stat-sub">업무용 오피스텔 4.6%</span></label>
+      <input type="number" id="acqTaxRate" value="4.6" step="0.1" inputmode="decimal">
+    </div>
+    <div class="input-row">
+      <label>매수 부대비용 (원) <span class="stat-sub">중개수수료+법무사비</span></label>
+      <input type="number" id="buyMiscCost" value="3000000" inputmode="numeric">
+      <div class="won-kor" id="buyMiscCost_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>대출금액 (원) <span class="stat-sub">없으면 0</span></label>
+      <input type="number" id="buyLoan" value="150000000" inputmode="numeric">
+      <div class="won-kor" id="buyLoan_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>대출 금리 (%/년) <span class="stat-sub">이자만 납부 가정</span></label>
+      <input type="number" id="buyLoanRate" value="4.5" step="0.1" inputmode="decimal">
+    </div>
+    <div class="input-row">
+      <label>연 재산세 (원) <span class="stat-sub">시군구 고지 기준</span></label>
+      <input type="number" id="annualPropTax" value="500000" inputmode="numeric">
+      <div class="won-kor" id="annualPropTax_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>시세 변동률 (%/년) <span class="stat-sub">마이너스 가능</span> <span class="info-btn" onclick="toggleInfo('priceChgInfo')">i</span></label>
+      <input type="number" id="priceGrowth" value="2" step="0.1" inputmode="decimal">
+      <div class="info-box" id="priceChgInfo">N년 후 매도 시 시세를 결정합니다. 0이면 본전, 마이너스면 하락. 오피스텔은 아파트보다 상승 폭이 작거나 보합이 많습니다. 보수적으로 잡으세요.</div>
+    </div>
+    <div class="input-row">
+      <label>매도 시 중개수수료 (원) <span class="stat-sub">나중에 팔 때</span></label>
+      <input type="number" id="sellBrokerFee" value="2000000" inputmode="numeric">
+      <div class="won-kor" id="sellBrokerFee_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>감가상각 내용연수 (년) <span class="stat-sub">건물 40년 기본</span></label>
+      <input type="number" id="deprLife" value="40" inputmode="numeric">
+    </div>
+  </div>
+
+  <!-- 월세 -->
+  <div class="panel">
+    <div class="section-label" style="color:#b45309">🏠 법인 월세</div>
+    <div class="input-row">
+      <label>보증금 (원) <span class="stat-sub">돌려받는 돈</span></label>
+      <input type="number" id="rentDeposit" value="30000000" inputmode="numeric">
+      <div class="won-kor" id="rentDeposit_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>월세 (원/월) <span class="stat-sub">VAT 별도</span></label>
+      <input type="number" id="monthlyRent" value="1500000" inputmode="numeric">
+      <div class="won-kor" id="monthlyRent_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>월세 중개수수료 (원)</label>
+      <input type="number" id="rentBrokerFee" value="500000" inputmode="numeric">
+      <div class="won-kor" id="rentBrokerFee_kor"></div>
+    </div>
+    <div class="input-row">
+      <label>월세 인상률 (%/년) <span class="stat-sub">계약갱신 시 인상분</span></label>
+      <input type="number" id="rentGrowth" value="2" step="0.1" inputmode="decimal">
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="vs-grid">
+    <div class="vs-card vs-buy">
+      <div class="vlabel">🏢 매매 순비용</div>
+      <div class="vval" id="buyResult">-</div>
+      <div class="vkor" id="buyResultKor"></div>
+    </div>
+    <div class="vs-card vs-rent">
+      <div class="vlabel">🏠 월세 순비용</div>
+      <div class="vval" id="rentResult">-</div>
+      <div class="vkor" id="rentResultKor"></div>
+    </div>
+  </div>
+  <div class="winner" id="winnerBox">-</div>
+
+  <div class="panel">
+    <div class="section-label">📋 상세 비교 (N년 기준)</div>
+    <table class="breakdown">
+      <tbody id="breakdownBody"></tbody>
+    </table>
+  </div>
+
+  <div class="warn-note">
+    ⚠️ <b>참고용 추정입니다.</b> 시세변동률·법인세율·운용수익률 가정에 따라 결과가 크게 달라집니다. 감가상각은 정액법(건물분/내용연수) 기준이며, 실제 세무 처리는 세무사와 확인하세요. 양도차익 법인세는 법인세 일반세율 적용(토지 등 추가세 미반영).
+  </div>
+
+  <div class="manual">
+    <b>📘 계산 방법</b><br>
+    <span class="badge" style="background:#1F4E78;color:white">매매</span> 취득비용 + 이자·재산세 합계 + 매도비용 + 양도법인세 − 시세차익 − 비용처리 절세(감가상각·이자·재산세) = 순비용<br>
+    <span class="badge" style="background:#d97706;color:white">월세</span> 월세 합계 + 보증금 기회비용 + 중개비 − 월세 비용처리 절세 = 순비용<br>
+    핵심은 <b>"매수 후 시세차익+감가상각 절세 vs 월세의 자본 미투입(기회비용)+유연성"</b>의 대결이에요.
+  </div>
+</div>
+
+<script>
+window.CALC_KEY = 'office_buy_vs_rent';
+window.slGetState = function(){
+  return {
+    years: $('years').value,
+    corpTaxRate: $('corpTaxRate').value,
+    investRate: $('investRate').value,
+    vatRefund: _vatRefund,
+    buyPrice: $('buyPrice').value,
+    buildingRatio: $('buildingRatio').value,
+    acqTaxRate: $('acqTaxRate').value,
+    buyMiscCost: $('buyMiscCost').value,
+    buyLoan: $('buyLoan').value,
+    buyLoanRate: $('buyLoanRate').value,
+    annualPropTax: $('annualPropTax').value,
+    priceGrowth: $('priceGrowth').value,
+    sellBrokerFee: $('sellBrokerFee').value,
+    deprLife: $('deprLife').value,
+    rentDeposit: $('rentDeposit').value,
+    monthlyRent: $('monthlyRent').value,
+    rentBrokerFee: $('rentBrokerFee').value,
+    rentGrowth: $('rentGrowth').value,
+  };
+};
+window.slSetState = function(d){
+  if(!d) return;
+  ['years','corpTaxRate','investRate','buyPrice','buildingRatio','acqTaxRate','buyMiscCost','buyLoan','buyLoanRate','annualPropTax','priceGrowth','sellBrokerFee','deprLife','rentDeposit','monthlyRent','rentBrokerFee','rentGrowth'].forEach(function(k){
+    if(d[k] !== undefined) $(k).value = d[k];
+  });
+  if(d.vatRefund !== undefined) setVat(d.vatRefund);
+  if(typeof calculate === 'function') calculate();
+};
+</script>
+<script src="/sf-slots.js?v=2"></script>
+<script src="/common.js?v=5"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+function wonToKorean(n){ var neg=n<0; n=Math.round(Math.abs(n)); if(n===0)return '0원'; var eok=Math.floor(n/1e8),man=Math.floor((n%1e8)/1e4),won=n%1e4,p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(man>0)p.push(man.toLocaleString('ko-KR')+'만'); if(won>0)p.push(won.toLocaleString('ko-KR')); return (neg?'−':'')+p.join(' ')+'원'; }
+function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
+
+let _vatRefund = 'yes';
+function setVat(v){
+  _vatRefund = v;
+  document.querySelectorAll('.toggle-opt').forEach(function(el){
+    el.classList.toggle('active', el.dataset.val === v);
+  });
+  calculate();
+}
+
+const KOR_FIELDS = ['buyPrice','buyMiscCost','buyLoan','annualPropTax','sellBrokerFee','rentDeposit','monthlyRent','rentBrokerFee'];
+function updateKor(){ KOR_FIELDS.forEach(id=>{ var el=$(id), box=$(id+'_kor'); if(el&&box){ var v=parseFloat(el.value)||0; box.textContent=v>0?wonToKorean(v):''; } }); }
+
+function calculate(){
+  const N = parseFloat($('years').value)||0;
+  const taxR = (parseFloat($('corpTaxRate').value)||0)/100;
+  const invR = (parseFloat($('investRate').value)||0)/100;
+  const canRefundVat = (_vatRefund === 'yes');
+
+  // ── 매매 ──
+  const buyPrice = parseFloat($('buyPrice').value)||0;
+  const bldRatio = (parseFloat($('buildingRatio').value)||0)/100;
+  const acqRate = (parseFloat($('acqTaxRate').value)||0)/100;
+  const buyMisc = parseFloat($('buyMiscCost').value)||0;
+  const loan = parseFloat($('buyLoan').value)||0;
+  const loanRate = (parseFloat($('buyLoanRate').value)||0)/100;
+  const propTax = parseFloat($('annualPropTax').value)||0;
+  const priceG = (parseFloat($('priceGrowth').value)||0)/100;
+  const sellBroker = parseFloat($('sellBrokerFee').value)||0;
+  const deprLife = parseFloat($('deprLife').value)||1;
+
+  // 취득세
+  const acqTax = buyPrice * acqRate;
+  // 건물분 부가세 (면세법인이면 비용)
+  const bldVat = buyPrice * bldRatio * 0.1;
+  const bldVatCost = canRefundVat ? 0 : bldVat;
+  // 초기비용
+  const initCost = acqTax + buyMisc + bldVatCost;
+  // 연간 대출이자
+  const annualInterest = loan * loanRate;
+  // 연간 감가상각
+  const annualDepr = (buyPrice * bldRatio) / deprLife;
+  // N년 누적
+  const totalInterest = annualInterest * N;
+  const totalPropTax = propTax * N;
+  // 비용처리 절세 (이자+재산세+감가상각 → 법인세 절감)
+  const deductible = annualInterest + propTax + annualDepr;
+  const totalTaxSaving = deductible * taxR * N;
+  // 시세변동
+  const futurePrice = buyPrice * Math.pow(1+priceG, N);
+  const capitalGain = futurePrice - buyPrice;
+  // 양도차익 법인세 (이익 있을 때만)
+  // 감가상각 누적만큼 장부가 하락 → 과세차익 증가
+  const totalDepr = annualDepr * N;
+  const bookValue = buyPrice - totalDepr; // 장부가
+  const taxableGain = Math.max(0, futurePrice - bookValue);
+  const gainTax = taxableGain * taxR;
+
+  // 매매 순비용 = 초기비용 + 이자합 + 재산세합 + 매도중개비 + 양도법인세 - 시세차익 - 절세합
+  // 시세차익 = futurePrice - buyPrice (실제 현금 회수 증감)
+  const buyNet = initCost + totalInterest + totalPropTax + sellBroker + gainTax - capitalGain - totalTaxSaving;
+
+  // ── 월세 ──
+  const deposit = parseFloat($('rentDeposit').value)||0;
+  const monthRent = parseFloat($('monthlyRent').value)||0;
+  const rentBroker = parseFloat($('rentBrokerFee').value)||0;
+  const rentG = (parseFloat($('rentGrowth').value)||0)/100;
+
+  // 월세 합계 (인상 반영, 연단위)
+  let totalRent = 0;
+  let totalRentVat = 0;
+  for(let y=0; y<N; y++){
+    const yearRent = monthRent * Math.pow(1+rentG, y) * 12;
+    totalRent += yearRent;
+    if(!canRefundVat) totalRentVat += yearRent * 0.1;
+  }
+  // 월세 비용처리 절세
+  const rentTaxSaving = totalRent * taxR;
+  // 보증금 기회비용 (복리)
+  const depositOppCost = deposit * (Math.pow(1+invR, N) - 1);
+  // 월세 순비용 = 월세합 + VAT(면세시) + 보증금기회비용 + 중개비 - 월세절세
+  const rentNet = totalRent + totalRentVat + depositOppCost + rentBroker - rentTaxSaving;
+
+  // ── 표시 ──
+  $('buyResult').textContent = fmt(buyNet);
+  $('buyResultKor').textContent = wonToKorean(buyNet);
+  $('rentResult').textContent = fmt(rentNet);
+  $('rentResultKor').textContent = wonToKorean(rentNet);
+
+  const diff = buyNet - rentNet;
+  const wb = $('winnerBox');
+  if(Math.abs(diff) < buyPrice*0.003){
+    wb.className = 'winner'; wb.style.background='#f1f5f9'; wb.style.color='#475569';
+    wb.textContent = '⚖️ 거의 비슷해요 (차이 '+fmt(Math.abs(diff))+'원)';
+  } else if(diff < 0){
+    wb.className = 'winner buy';
+    wb.textContent = '🏢 매매가 '+fmt(Math.abs(diff))+'원 유리 ('+wonToKorean(Math.abs(diff))+')';
+  } else {
+    wb.className = 'winner rent';
+    wb.textContent = '🏠 월세가 '+fmt(diff)+'원 유리 ('+wonToKorean(diff)+')';
+  }
+
+  // ── 상세표 ──
+  const rows = [];
+  rows.push('<tr class="group-head"><td colspan="2">🏢 매매 비용</td></tr>');
+  rows.push('<tr><td>취득세 ('+((acqRate*100).toFixed(1))+'%)</td><td class="num minus">'+fmt(acqTax)+'</td></tr>');
+  if(bldVatCost > 0) rows.push('<tr><td>건물분 부가세 (환급 불가)</td><td class="num minus">'+fmt(bldVatCost)+'</td></tr>');
+  else rows.push('<tr><td>건물분 부가세 <span class="dim">(환급 → 실질 0)</span></td><td class="num dim">'+fmt(bldVat)+' → 0</td></tr>');
+  rows.push('<tr><td>매수 부대비용 (중개+법무사)</td><td class="num minus">'+fmt(buyMisc)+'</td></tr>');
+  rows.push('<tr><td>대출이자 합계 ('+N+'년)</td><td class="num minus">'+fmt(totalInterest)+'</td></tr>');
+  rows.push('<tr><td>재산세 합계 ('+N+'년)</td><td class="num minus">'+fmt(totalPropTax)+'</td></tr>');
+  rows.push('<tr><td>매도 중개수수료</td><td class="num minus">'+fmt(sellBroker)+'</td></tr>');
+
+  rows.push('<tr class="group-head"><td colspan="2">🏢 매매 절세·회수</td></tr>');
+  rows.push('<tr><td>감가상각 절세 (건물 '+fmt(buyPrice*bldRatio)+' ÷ '+deprLife+'년 × '+((taxR*100).toFixed(0))+'%)</td><td class="num plus">−'+fmt(annualDepr*taxR*N)+'</td></tr>');
+  rows.push('<tr><td>이자·재산세 비용처리 절세</td><td class="num plus">−'+fmt((annualInterest+propTax)*taxR*N)+'</td></tr>');
+  rows.push('<tr><td>시세변동 ('+(priceG>=0?'+':'')+((priceG*100).toFixed(1))+'%/년, '+N+'년)</td><td class="num '+(capitalGain>=0?'plus':'minus')+'">'+
+    (capitalGain>=0?'−':'+') + fmt(Math.abs(capitalGain))+'</td></tr>');
+  rows.push('<tr><td>양도차익 법인세 <span class="dim">(과세차익 '+fmt(taxableGain)+')</span></td><td class="num minus">'+fmt(gainTax)+'</td></tr>');
+  rows.push('<tr class="total"><td>매매 순비용</td><td class="num">'+fmt(buyNet)+'</td></tr>');
+
+  rows.push('<tr class="group-head"><td colspan="2">🏠 월세 비용</td></tr>');
+  rows.push('<tr><td>월세 합계 ('+N+'년, 인상 '+((rentG*100).toFixed(1))+'%/년)</td><td class="num minus">'+fmt(totalRent)+'</td></tr>');
+  if(!canRefundVat) rows.push('<tr><td>월세 VAT (환급 불가)</td><td class="num minus">'+fmt(totalRentVat)+'</td></tr>');
+  else rows.push('<tr><td>월세 VAT <span class="dim">(환급 → 실질 0)</span></td><td class="num dim">'+fmt(totalRent*0.1)+' → 0</td></tr>');
+  rows.push('<tr><td>보증금 기회비용 ('+fmt(deposit)+' × '+((invR*100).toFixed(1))+'%)</td><td class="num minus">'+fmt(depositOppCost)+'</td></tr>');
+  rows.push('<tr><td>중개수수료</td><td class="num minus">'+fmt(rentBroker)+'</td></tr>');
+
+  rows.push('<tr class="group-head"><td colspan="2">🏠 월세 절세</td></tr>');
+  rows.push('<tr><td>월세 비용처리 절세 ('+((taxR*100).toFixed(0))+'%)</td><td class="num plus">−'+fmt(rentTaxSaving)+'</td></tr>');
+  rows.push('<tr class="total"><td>월세 순비용</td><td class="num">'+fmt(rentNet)+'</td></tr>');
+
+  $('breakdownBody').innerHTML = rows.join('');
+  updateKor();
+}
+
+document.querySelectorAll('input').forEach(el=>{ el.addEventListener('input', calculate); });
+calculate();
+</script>
+</body>
+</html>
