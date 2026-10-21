@@ -4,89 +4,92 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>금융소득종합과세 관리 계산기 | 스윙파머</title>
-<meta name="description" content="미국채 이자·국내주식 배당·예금 이자를 합산해 금종세 2,000만원 한도 관리. 과세표준 구간별 세율 경고.">
+<meta name="description" content="미국채 이자·국내주식 배당·예금 이자를 합산해 금종세 2,000만원 한도 관리. 상/하반기 이자 환율 분리, 과세표준 구간별 경고.">
 <link rel="stylesheet" href="/common.css?v=4">
 <style>
-:root { --sf-max-w: 900px; }
-header { background: var(--sf-surface); border-bottom: 3px solid var(--sf-brand); padding: 18px 16px; }
-header .wrap { padding: 0; }
-header h1 { font-size: 20px; color: var(--sf-brand); margin: 0; border-bottom: none; }
-header .back-link { display: inline-block; margin-bottom: 6px; }
-  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; cursor: pointer; margin-left: 4px; }
-  /* 게이지 */
-  .gauge-wrap { background: #f8fafc; border-radius: 14px; padding: 20px; margin-bottom: 16px; border: 1px solid #e2e8f0; }
-  .gauge-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; flex-wrap: wrap; gap: 4px; }
-  .gauge-title { font-size: 14px; font-weight: 700; color: #1F4E78; }
-  .gauge-val { font-size: 26px; font-weight: 800; }
-  .gauge-val .unit { font-size: 13px; font-weight: 600; color: #666; }
-  .gauge-bar-bg { background: #e2e8f0; border-radius: 10px; height: 30px; position: relative; overflow: visible; }
-  .gauge-bar { height: 100%; border-radius: 10px; transition: width .4s, background .3s; min-width: 2px; }
-  .gauge-bar.lv0 { background: linear-gradient(90deg, #22c55e, #4ade80); }
-  .gauge-bar.lv1 { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-  .gauge-bar.lv2 { background: linear-gradient(90deg, #f97316, #fb923c); }
-  .gauge-bar.lv3 { background: linear-gradient(90deg, #ef4444, #f87171); }
-  .gauge-bar.lv4 { background: linear-gradient(90deg, #991b1b, #dc2626); }
-  .gauge-labels { display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-top: 4px; }
-  .gauge-tick { position: absolute; top: -2px; bottom: -2px; width: 2px; background: rgba(0,0,0,.25); z-index: 2; }
-  .gauge-tick-label { position: absolute; bottom: -18px; font-size: 9px; color: #666; white-space: nowrap; transform: translateX(-50%); }
-  /* 경고 */
-  .alert-box { border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; font-size: 13px; line-height: 1.5; }
-  .alert-safe { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
-  .alert-warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
-  .alert-danger { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
-  .alert-critical { background: #450a0a; border: 1px solid #991b1b; color: #fca5a5; }
-  .alert-box b { font-weight: 700; }
-  /* 요약 카드 */
-  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
-  @media (max-width: 600px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
-  .sum-card { border-radius: 10px; padding: 14px 10px; text-align: center; }
-  .sum-card .s-label { font-size: 11px; color: #666; margin-bottom: 4px; }
-  .sum-card .s-val { font-size: 16px; font-weight: 800; }
-  .sum-card .s-kor { font-size: 10px; color: #888; }
-  .sc-bond { background: #eff6ff; } .sc-bond .s-val { color: #1d4ed8; }
-  .sc-stock { background: #fef3c7; } .sc-stock .s-val { color: #92400e; }
-  .sc-depo { background: #f0fdf4; } .sc-depo .s-val { color: #166534; }
-  .sc-margin { background: #fef2f2; border: 1px solid #fecaca; } .sc-margin .s-val { color: #dc2626; }
-  .sc-margin.ok { background: #f0fdf4; border-color: #bbf7d0; } .sc-margin.ok .s-val { color: #166534; }
-  /* 세율 구간 */
-  .bracket-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 16px; }
-  .bracket-title { font-size: 13px; font-weight: 700; color: #1F4E78; margin-bottom: 8px; }
-  .bracket-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-  @media (max-width: 600px) { .bracket-grid { grid-template-columns: repeat(2, 1fr); } }
-  .br-item { padding: 8px; border-radius: 6px; text-align: center; font-size: 11px; background: #f1f5f9; color: #64748b; }
-  .br-item.current { background: #1F4E78; color: white; font-weight: 700; }
-  .br-item.hit { background: #dc2626; color: white; font-weight: 700; }
-  .br-rate { font-size: 16px; font-weight: 800; }
-  /* 탭 */
-  .section-tab { display: flex; gap: 4px; margin-bottom: 0; }
-  .stab { padding: 10px 14px; border-radius: 10px 10px 0 0; font-size: 13px; font-weight: 700; cursor: pointer; background: #eef2f7; color: #666; border: 1px solid #ddd; border-bottom: none; }
-  .stab.active { background: white; color: #1F4E78; border-color: #cbd5e1; }
-  .tab-body { display: none; background: white; border: 1px solid #cbd5e1; border-radius: 0 10px 10px 10px; padding: 16px; margin-bottom: 16px; overflow-x: auto; }
-  .tab-body.active { display: block; }
-  /* 테이블 */
-  .item-table { width: 100%; border-collapse: collapse; font-size: 11.5px; min-width: 600px; }
-  .item-table th { background: #f8fafc; padding: 7px 4px; text-align: center; font-weight: 600; color: #555; border-bottom: 2px solid #e2e8f0; white-space: nowrap; font-size: 10.5px; }
-  .item-table td { padding: 5px 3px; border-bottom: 1px solid #f0f0f0; text-align: center; vertical-align: middle; }
-  .item-table input { width: 100%; padding: 5px 3px; border: 1px solid #ddd; border-radius: 5px; font-size: 11.5px; text-align: right; box-sizing: border-box; }
-  .item-table input.nm { text-align: left; }
-  .av { font-weight: 700; color: #1F4E78; font-variant-numeric: tabular-nums; }
-  .av.inc { color: #16a34a; }
-  .add-btn { display: inline-flex; align-items: center; gap: 4px; padding: 7px 14px; border: 1px dashed #94a3b8; border-radius: 8px; background: transparent; color: #64748b; font-size: 12px; cursor: pointer; margin-top: 8px; }
-  .del-btn { width: 22px; height: 22px; border-radius: 50%; border: none; background: #fee2e2; color: #dc2626; cursor: pointer; font-size: 13px; }
-  .sub-total { text-align: right; font-weight: 700; color: #1F4E78; font-size: 13px; padding-top: 8px; border-top: 2px solid #e2e8f0; margin-top: 8px; }
-  /* 채권 상세 */
-  .bond-detail { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #cbd5e1; }
-  .bd-title { font-size: 12px; font-weight: 700; color: #1d4ed8; margin-bottom: 8px; }
-  .bd-table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 550px; }
-  .bd-table th { background: #eff6ff; padding: 6px; text-align: center; font-weight: 600; font-size: 10px; }
-  .bd-table td { padding: 5px; text-align: right; border-bottom: 1px solid #f0f0f0; font-variant-numeric: tabular-nums; }
-  .bd-table td:first-child { text-align: left; }
-  .dim { color: #888; font-size: 11px; }
-  .confirmed-active input { background: #dcfce7 !important; }
-  .fx-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
-  .fx-row label { font-size: 12px; color: #555; white-space: nowrap; font-weight: 600; }
-  .fx-row input { width: 110px; }
-  .fx-row .fx-note { font-size: 11px; color: #888; }
+:root{--sf-max-w:900px}
+header{background:var(--sf-surface);border-bottom:3px solid var(--sf-brand);padding:18px 16px}
+header .wrap{padding:0} header h1{font-size:20px;color:var(--sf-brand);margin:0;border-bottom:none}
+header .back-link{display:inline-block;margin-bottom:6px}
+.info-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#1F4E78;color:white;font-size:11px;cursor:pointer;margin-left:4px}
+.gauge-wrap{background:#f8fafc;border-radius:14px;padding:20px;margin-bottom:16px;border:1px solid #e2e8f0}
+.gauge-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;flex-wrap:wrap;gap:4px}
+.gauge-title{font-size:14px;font-weight:700;color:#1F4E78}
+.gauge-val{font-size:26px;font-weight:800} .gauge-val .unit{font-size:13px;font-weight:600;color:#666}
+.gauge-bar-bg{background:#e2e8f0;border-radius:10px;height:30px;position:relative;overflow:visible}
+.gauge-bar{height:100%;border-radius:10px;transition:width .4s,background .3s;min-width:2px}
+.gauge-bar.lv0{background:linear-gradient(90deg,#22c55e,#4ade80)}
+.gauge-bar.lv1{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+.gauge-bar.lv2{background:linear-gradient(90deg,#f97316,#fb923c)}
+.gauge-bar.lv3{background:linear-gradient(90deg,#ef4444,#f87171)}
+.gauge-bar.lv4{background:linear-gradient(90deg,#991b1b,#dc2626)}
+.gauge-labels{display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;margin-top:4px}
+.gauge-tick{position:absolute;top:-2px;bottom:-2px;width:2px;background:rgba(0,0,0,.25);z-index:2}
+.gauge-tick-label{position:absolute;bottom:-18px;font-size:9px;color:#666;white-space:nowrap;transform:translateX(-50%)}
+.alert-box{border-radius:10px;padding:14px 16px;margin-bottom:14px;font-size:13px;line-height:1.5}
+.alert-safe{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+.alert-warn{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.alert-danger{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+.alert-critical{background:#450a0a;border:1px solid #991b1b;color:#fca5a5}
+.alert-box b{font-weight:700}
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+@media(max-width:600px){.summary-grid{grid-template-columns:repeat(2,1fr)}}
+.sum-card{border-radius:10px;padding:14px 10px;text-align:center}
+.sum-card .s-label{font-size:11px;color:#666;margin-bottom:4px}
+.sum-card .s-val{font-size:16px;font-weight:800}
+.sum-card .s-kor{font-size:10px;color:#888}
+.sc-bond{background:#eff6ff} .sc-bond .s-val{color:#1d4ed8}
+.sc-stock{background:#fef3c7} .sc-stock .s-val{color:#92400e}
+.sc-depo{background:#f0fdf4} .sc-depo .s-val{color:#166534}
+.sc-margin{background:#fef2f2;border:1px solid #fecaca} .sc-margin .s-val{color:#dc2626}
+.sc-margin.ok{background:#f0fdf4;border-color:#bbf7d0} .sc-margin.ok .s-val{color:#166534}
+.bracket-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:16px}
+.bracket-title{font-size:13px;font-weight:700;color:#1F4E78;margin-bottom:8px}
+.bracket-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+@media(max-width:600px){.bracket-grid{grid-template-columns:repeat(2,1fr)}}
+.br-item{padding:8px;border-radius:6px;text-align:center;font-size:11px;background:#f1f5f9;color:#64748b}
+.br-item.current{background:#1F4E78;color:white;font-weight:700}
+.br-item.hit{background:#dc2626;color:white;font-weight:700}
+.br-rate{font-size:16px;font-weight:800}
+.section-tab{display:flex;gap:4px;margin-bottom:0}
+.stab{padding:10px 14px;border-radius:10px 10px 0 0;font-size:13px;font-weight:700;cursor:pointer;background:#eef2f7;color:#666;border:1px solid #ddd;border-bottom:none}
+.stab.active{background:white;color:#1F4E78;border-color:#cbd5e1}
+.tab-body{display:none;background:white;border:1px solid #cbd5e1;border-radius:0 10px 10px 10px;padding:16px;margin-bottom:16px;overflow-x:auto}
+.tab-body.active{display:block}
+.item-table{width:100%;border-collapse:collapse;font-size:11.5px;min-width:550px}
+.item-table th{background:#f8fafc;padding:7px 4px;text-align:center;font-weight:600;color:#555;border-bottom:2px solid #e2e8f0;white-space:nowrap;font-size:10.5px}
+.item-table td{padding:5px 3px;border-bottom:1px solid #f0f0f0;text-align:center;vertical-align:middle}
+.item-table input{width:100%;padding:5px 3px;border:1px solid #ddd;border-radius:5px;font-size:11.5px;text-align:right;box-sizing:border-box}
+.item-table input.nm{text-align:left}
+.av{font-weight:700;color:#1F4E78;font-variant-numeric:tabular-nums}
+.av.inc{color:#16a34a}
+.add-btn{display:inline-flex;align-items:center;gap:4px;padding:7px 14px;border:1px dashed #94a3b8;border-radius:8px;background:transparent;color:#64748b;font-size:12px;cursor:pointer;margin-top:8px}
+.del-btn{width:22px;height:22px;border-radius:50%;border:none;background:#fee2e2;color:#dc2626;cursor:pointer;font-size:13px}
+.sub-total{text-align:right;font-weight:700;color:#1F4E78;font-size:13px;padding-top:8px;border-top:2px solid #e2e8f0;margin-top:8px}
+.bd-title{font-size:12px;font-weight:700;color:#1d4ed8;margin-bottom:8px}
+.bd-table{width:100%;border-collapse:collapse;font-size:11px;min-width:500px}
+.bd-table th{background:#eff6ff;padding:6px;text-align:center;font-weight:600;font-size:10px}
+.bd-table td{padding:5px;text-align:right;border-bottom:1px solid #f0f0f0;font-variant-numeric:tabular-nums}
+.bd-table td:first-child{text-align:left}
+.dim{color:#888;font-size:11px}
+.fx-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.fx-row label{font-size:12px;color:#555;white-space:nowrap;font-weight:600}
+.fx-row input{width:110px}
+.fx-row .fx-note{font-size:11px;color:#888}
+/* 반기 상세 */
+.half-table{width:100%;border-collapse:collapse;font-size:11.5px;min-width:600px}
+.half-table th{padding:7px 5px;text-align:center;font-weight:600;font-size:10.5px;border-bottom:2px solid #e2e8f0}
+.half-table th.h1{background:#eff6ff;color:#1d4ed8}
+.half-table th.h2{background:#fef3c7;color:#92400e}
+.half-table th.conf{background:#f0fdf4;color:#166534}
+.half-table td{padding:5px 4px;border-bottom:1px solid #f0f0f0;text-align:right;vertical-align:middle}
+.half-table td:first-child{text-align:left}
+.half-table input{width:90px;padding:4px;border:1px solid #ccc;border-radius:4px;font-size:11px;text-align:right}
+.half-table input.conf-input{background:#f0fdf4;font-weight:700;color:#166534;border-color:#86efac}
+.half-table .faded{opacity:.4}
+.half-table tr.total-row td{font-weight:700;border-top:2px solid #1d4ed8;padding-top:8px}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:3px}
+.dot-est{background:#fbbf24} .dot-conf{background:#22c55e}
 </style>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 </head>
@@ -99,35 +102,35 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
 </header>
 
 <div class="wrap">
-  <p class="desc">미국채 이자·국내주식 배당·예금 이자를 합산해 <b>금종세 2,000만원 한도</b>를 관리합니다. 기존 소득과 합산된 <b>과세표준 구간</b>(5,000만·8,800만 점프)까지 경고하고, 미국채는 <b>비과세 환차익</b>까지 분리해서 보여줘요.</p>
+  <p class="desc">미국채 이자·국내주식 배당·예금 이자를 합산해 <b>금종세 2,000만원 한도</b>를 관리합니다. 반기별 환율·확정 이자를 따로 입력해 정밀하게 추적하고, 과세표준 구간 경고까지.</p>
 
-  <!-- 공통 조건 -->
   <div class="panel">
     <div class="section-label common-label">⚙️ 공통 조건</div>
     <div class="fx-row">
-      <label>이자 수령 시 예상 환율 (원/$):</label>
-      <input type="number" id="fxNow" value="1380" step="1" inputmode="numeric" onchange="recalc()">
-      <span class="fx-note">쿠폰 이자 → 원화 환산 (금종세 합산용)</span>
-      <span class="info-btn" onclick="toggleInfo('fxIntInfo')">i</span>
-      <div class="info-box" id="fxIntInfo">이자는 실제 지급일의 환율로 원화 환산되어 금융소득에 잡힙니다. 반기마다 환율이 다를 수 있지만, 여기서는 대표 예상 환율 하나로 추정합니다. 보수적으로 높게 잡으세요.</div>
+      <label>상반기 예상 환율 (원/$):</label>
+      <input type="number" id="fxH1" value="1380" step="1" inputmode="numeric" onchange="recalc()">
+      <span class="fx-note">1~6월 이자 지급 시</span>
+    </div>
+    <div class="fx-row">
+      <label>하반기 예상 환율 (원/$):</label>
+      <input type="number" id="fxH2" value="1400" step="1" inputmode="numeric" onchange="recalc()">
+      <span class="fx-note">7~12월 이자 지급 시</span>
     </div>
     <div class="fx-row">
       <label>만기 시 예상 환율 (원/$):</label>
       <input type="number" id="fxMaturity" value="1400" step="1" inputmode="numeric" onchange="recalc()">
-      <span class="fx-note">비과세 환차익 계산용 (원금 × 환율 차이)</span>
-      <span class="info-btn" onclick="toggleInfo('fxMatInfo')">i</span>
-      <div class="info-box" id="fxMatInfo">만기 시 원금 상환 때 적용되는 환율. 매수환율보다 높으면 비과세 환차익 발생 — 이게 미국채 투자의 핵심 매력입니다. (개인 비과세, 법인은 과세)</div>
+      <span class="fx-note">비과세 환차익 계산용</span>
     </div>
     <div class="input-row">
       <label>기존 과세표준 (원) <span class="stat-sub">근로·사업소득 − 소득공제</span> <span class="info-btn" onclick="toggleInfo('baseInfo')">i</span></label>
       <input type="number" id="baseTaxable" value="50000000" inputmode="numeric" onchange="recalc()">
       <div class="won-kor" id="baseTaxable_kor"></div>
-      <div class="info-box" id="baseInfo">금종세 2,000만 초과 시 초과분이 여기에 합산되어 종합과세. 연봉 7천이면 과세표준 대략 4,000~5,000만원대. 이미 8,800만 이상이면 초과 금융소득 전액이 35%+로 직행합니다.</div>
+      <div class="info-box" id="baseInfo">금종세 2,000만 초과 시 초과분이 합산. 연봉 7천이면 과표 4,000~5,000만원대. 이미 8,800만 이상이면 초과 금융소득 전액 35%+.</div>
     </div>
     <div class="fx-row">
       <label>안전 버퍼 (원):</label>
       <input type="number" id="buffer" value="1000000" inputmode="numeric" onchange="recalc()">
-      <span class="fx-note" id="bufferKor">100만원 — 예상 못한 이자·배당 대비</span>
+      <span class="fx-note" id="bufferKor">100만원</span>
     </div>
   </div>
 
@@ -140,14 +143,8 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
     <div class="gauge-bar-bg" id="gaugeBarBg">
       <div class="gauge-bar lv0" id="gaugeBar" style="width:0%"></div>
     </div>
-    <div class="gauge-labels">
-      <span>0</span>
-      <span id="gaugePct">0%</span>
-      <span id="gaugeMax">2,000만원</span>
-    </div>
+    <div class="gauge-labels"><span>0</span><span id="gaugePct">0%</span><span id="gaugeMax">2,000만원</span></div>
   </div>
-
-  <!-- 경고 -->
   <div id="alertArea"></div>
 
   <!-- 요약 -->
@@ -174,23 +171,11 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
 
   <!-- 채권 -->
   <div class="tab-body active" id="tab-bond">
-    <div class="fx-row" style="margin-bottom:12px">
-      <span class="dim">💡 미국채 기준. 연이자(₩)는 예상환율로 자동계산. 실제 수령 후 <b>확정 이자(₩)</b>에 입력하면 그 값이 금종세에 반영됩니다.</span>
-    </div>
+    <div class="dim" style="margin-bottom:10px">💡 채권 기본 정보를 입력하면 상/하반기 이자가 자동 계산됩니다. 실제 수령 후 <b>확정(₩)</b>에 입력하면 그 값으로 금종세 합산.</div>
     <div style="overflow-x:auto">
     <table class="item-table" id="bondTable">
       <thead><tr>
-        <th>종목명</th>
-        <th>액면($)</th>
-        <th>매수단가($)</th>
-        <th>수량</th>
-        <th>매수환율</th>
-        <th>투자금(₩)</th>
-        <th>이율%</th>
-        <th>연이자($)</th>
-        <th>연이자(₩)<br><span style="font-weight:400;font-size:9px">예상</span></th>
-        <th style="background:#e8f5e9">확정 이자(₩)<br><span style="font-weight:400;font-size:9px">수령 후 입력</span></th>
-        <th></th>
+        <th>종목명</th><th>액면($)</th><th>매수단가($)</th><th>수량</th><th>매수환율</th><th>투자금(₩)</th><th>이율%</th><th>연이자(₩)</th><th></th>
       </tr></thead>
       <tbody id="bondBody"></tbody>
     </table>
@@ -199,22 +184,23 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
       <button class="add-btn" onclick="addBond()">+ 미국채 추가</button>
       <div class="sub-total">이자 소계: <span id="bondSubtotal">0</span>원 <span class="dim" id="bondConfNote"></span></div>
     </div>
-    <div class="bond-detail" id="bondDetail"></div>
+
+    <!-- 반기별 이자 상세 -->
+    <div style="margin-top:16px;padding-top:14px;border-top:1px dashed #cbd5e1" id="halfDetailWrap">
+      <div class="bd-title">📅 반기별 이자 상세 — 예상 vs 확정</div>
+      <div class="dim" style="margin-bottom:8px"><span class="status-dot dot-est"></span>예상 (환율 기준 자동계산) &nbsp; <span class="status-dot dot-conf"></span>확정 (실수령 입력)</div>
+      <div style="overflow-x:auto" id="halfDetailBody"></div>
+    </div>
+
+    <!-- 만기 수령·환차익 -->
+    <div style="margin-top:16px;padding-top:14px;border-top:1px dashed #cbd5e1" id="maturityDetail"></div>
   </div>
 
   <!-- 주식 -->
   <div class="tab-body" id="tab-stock">
     <div style="overflow-x:auto">
     <table class="item-table" id="stockTable">
-      <thead><tr>
-        <th>종목명</th>
-        <th>매수가(₩)</th>
-        <th>주수</th>
-        <th>총 매수금(₩)</th>
-        <th>주당 배당금(₩)</th>
-        <th>연간 배당(₩)</th>
-        <th></th>
-      </tr></thead>
+      <thead><tr><th>종목명</th><th>매수가(₩)</th><th>주수</th><th>총 매수금(₩)</th><th>주당 배당금(₩)</th><th>연간 배당(₩)</th><th></th></tr></thead>
       <tbody id="stockBody"></tbody>
     </table>
     </div>
@@ -228,14 +214,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   <div class="tab-body" id="tab-depo">
     <div style="overflow-x:auto">
     <table class="item-table" id="depoTable">
-      <thead><tr>
-        <th>명칭</th>
-        <th>예치금(₩)</th>
-        <th>이율%</th>
-        <th>기간(월)</th>
-        <th>이자(₩)</th>
-        <th></th>
-      </tr></thead>
+      <thead><tr><th>명칭</th><th>예치금(₩)</th><th>이율%</th><th>기간(월)</th><th>이자(₩)</th><th></th></tr></thead>
       <tbody id="depoBody"></tbody>
     </table>
     </div>
@@ -246,12 +225,12 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   </div>
 
   <div class="warn-note">
-    ⚠️ 금종세 기준: 연간 금융소득(이자+배당) <b>2,000만원 초과</b> 시 초과분이 근로·사업소득에 합산되어 종합과세(6~45%). 2,000만원 이하는 15.4% 분리과세로 종결. 미국채 이자는 원화 환산 기준, 해외 원천세(미국 0%)와 국내 원천세(15.4%)는 별도 고려 필요. 정확한 판단은 세무사 상담 권장.
+    ⚠️ 금종세 기준: 연간 금융소득(이자+배당) <b>2,000만원 초과</b> 시 초과분이 종합과세. 2,000만원 이하 15.4% 분리과세 종결. 미국채: 미국 원천세 0%, 국내 15.4%. 환차익은 개인 비과세(법인 과세).
   </div>
 </div>
 
 <script>
-window.CALC_KEY = 'financial_income_tax';
+window.CALC_KEY='financial_income_tax';
 </script>
 <script src="/sf-slots.js?v=2"></script>
 <script src="/common.js?v=5"></script>
@@ -259,49 +238,47 @@ window.CALC_KEY = 'financial_income_tax';
 const $=id=>document.getElementById(id);
 const fmt=n=>Math.round(n).toLocaleString('ko-KR');
 const fmtD=n=>n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-function wonKor(n){var neg=n<0;n=Math.round(Math.abs(n));if(n===0)return '0원';var eok=Math.floor(n/1e8),man=Math.floor((n%1e8)/1e4),p=[];if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억');if(man>0)p.push(man.toLocaleString('ko-KR')+'만');return(neg?'−':'')+p.join(' ')+'원';}
-function toggleInfo(id){var el=$(id);el.style.display=(el.style.display==='block')?'none':'block';}
+function wonKor(n){var neg=n<0;n=Math.round(Math.abs(n));if(!n)return'0원';var e=Math.floor(n/1e8),m=Math.floor(n%1e8/1e4),p=[];if(e)p.push(e.toLocaleString('ko-KR')+'억');if(m)p.push(m.toLocaleString('ko-KR')+'만');return(neg?'−':'')+p.join(' ')+'원';}
+function toggleInfo(id){var el=$(id);el.style.display=el.style.display==='block'?'none':'block';}
 function esc(s){return(s||'').replace(/"/g,'&quot;');}
 
 const LIMIT=20000000;
-// 종합소득세 구간
 const BRACKETS=[
-  {lo:0,hi:14000000,rate:6,label:'~1,400만'},
-  {lo:14000000,hi:50000000,rate:15,label:'~5,000만'},
-  {lo:50000000,hi:88000000,rate:24,label:'~8,800만'},
-  {lo:88000000,hi:150000000,rate:35,label:'~1.5억'},
-  {lo:150000000,hi:300000000,rate:38,label:'~3억'},
-  {lo:300000000,hi:500000000,rate:40,label:'~5억'},
-  {lo:500000000,hi:1000000000,rate:42,label:'~10억'},
-  {lo:1000000000,hi:Infinity,rate:45,label:'10억~'},
+  {lo:0,hi:14e6,rate:6,label:'~1,400만'},{lo:14e6,hi:50e6,rate:15,label:'~5,000만'},
+  {lo:50e6,hi:88e6,rate:24,label:'~8,800만'},{lo:88e6,hi:15e7,rate:35,label:'~1.5억'},
+  {lo:15e7,hi:3e8,rate:38,label:'~3억'},{lo:3e8,hi:5e8,rate:40,label:'~5억'},
+  {lo:5e8,hi:1e9,rate:42,label:'~10억'},{lo:1e9,hi:Infinity,rate:45,label:'10억~'}
 ];
 
-let bonds=[], stocks=[], depos=[];
+let bonds=[],stocks=[],depos=[];
 
-function switchTab(t){
-  ['bond','stock','depo'].forEach((k,i)=>{
-    document.querySelectorAll('.stab')[i].classList.toggle('active',k===t);
-    $('tab-'+k).classList.toggle('active',k===t);
-  });
+function switchTab(t){['bond','stock','depo'].forEach((k,i)=>{document.querySelectorAll('.stab')[i].classList.toggle('active',k===t);$('tab-'+k).classList.toggle('active',k===t);});}
+
+// ── 채권 ──
+// 각 채권: {name,face,price,qty,fxBuy,coupon, confH1:0, confH2:0}
+// confH1/confH2: 확정 이자(₩). 0이면 예상 사용.
+function addBond(d){bonds.push(d||{name:'',face:1000,price:0,qty:0,fxBuy:1380,coupon:0,confH1:0,confH2:0});renderBonds();recalc();}
+function delBond(i){bonds.splice(i,1);renderBonds();recalc();}
+
+function bondHalfInt(b){
+  // 반기 이자($) = 액면 × 수량 × 이율% / 2
+  return (b.face||0)*(b.qty||0)*(b.coupon||0)/100/2;
+}
+function bondEffectiveH(b,half,fxH1,fxH2){
+  const hi=bondHalfInt(b);
+  const fx=half===1?fxH1:fxH2;
+  const auto=hi*fx;
+  const conf=half===1?(b.confH1||0):(b.confH2||0);
+  return conf>0?conf:auto;
 }
 
-// ── 채권 (미국채) ──
-function addBond(d){ bonds.push(d||{name:'',face:1000,price:0,qty:0,fxBuy:1380,coupon:0,confirmedKrw:0}); renderBonds(); }
-function delBond(i){ bonds.splice(i,1); renderBonds(); recalc(); }
-function bondEffective(b,fxNow){
-  // 확정값이 있으면 그걸 쓰고, 없으면 자동계산
-  const auto=(b.face||0)*(b.qty||0)*(b.coupon||0)/100*fxNow;
-  return (b.confirmedKrw && b.confirmedKrw>0) ? b.confirmedKrw : auto;
-}
 function renderBonds(){
-  const fxNow=parseFloat($('fxNow').value)||1380;
-  const tb=$('bondBody'); tb.innerHTML='';
+  const tb=$('bondBody');tb.innerHTML='';
+  const fxH1=parseFloat($('fxH1').value)||1380;
+  const fxH2=parseFloat($('fxH2').value)||1400;
   bonds.forEach((b,i)=>{
     const investKrw=(b.price||0)*(b.qty||0)*(b.fxBuy||0);
-    const intUsd=(b.face||0)*(b.qty||0)*(b.coupon||0)/100;
-    const intKrwAuto=intUsd*fxNow;
-    const hasConfirmed=(b.confirmedKrw && b.confirmedKrw>0);
-    const effective=bondEffective(b,fxNow);
+    const annualKrw=bondEffectiveH(b,1,fxH1,fxH2)+bondEffectiveH(b,2,fxH1,fxH2);
     const tr=document.createElement('tr');
     tr.innerHTML=`
       <td><input class="nm" value="${esc(b.name)}" placeholder="US Treasury" onchange="bonds[${i}].name=this.value;recalc()"></td>
@@ -311,228 +288,192 @@ function renderBonds(){
       <td><input type="number" value="${b.fxBuy||''}" placeholder="매수환율" inputmode="numeric" onchange="bonds[${i}].fxBuy=parseFloat(this.value)||0;renderBonds();recalc()"></td>
       <td class="av">${fmt(investKrw)}</td>
       <td><input type="number" value="${b.coupon||''}" placeholder="%" step="0.125" inputmode="decimal" onchange="bonds[${i}].coupon=parseFloat(this.value)||0;renderBonds();recalc()"></td>
-      <td class="av">$${fmtD(intUsd)}</td>
-      <td class="av" style="opacity:${hasConfirmed?'0.4':'1'}">${fmt(intKrwAuto)}</td>
-      <td style="background:#f0fdf4"><input type="number" value="${b.confirmedKrw||''}" placeholder="실수령 입력" inputmode="numeric" style="background:#f0fdf4;font-weight:700;color:#166534" onchange="bonds[${i}].confirmedKrw=parseFloat(this.value)||0;renderBonds();recalc()"></td>
+      <td class="av inc">${fmt(annualKrw)}</td>
       <td><button class="del-btn" onclick="delBond(${i})">×</button></td>`;
     tb.appendChild(tr);
   });
 }
 
-// ── 주식 (국내) ──
-function addStock(d){ stocks.push(d||{name:'',price:0,qty:0,div:0}); renderStocks(); }
-function delStock(i){ stocks.splice(i,1); renderStocks(); recalc(); }
+// ── 주식·예금 (변경 없음) ──
+function addStock(d){stocks.push(d||{name:'',price:0,qty:0,div:0});renderStocks();recalc();}
+function delStock(i){stocks.splice(i,1);renderStocks();recalc();}
 function renderStocks(){
-  const tb=$('stockBody'); tb.innerHTML='';
-  stocks.forEach((s,i)=>{
-    const total=(s.price||0)*(s.qty||0);
-    const divT=(s.div||0)*(s.qty||0);
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td><input class="nm" value="${esc(s.name)}" placeholder="종목명" onchange="stocks[${i}].name=this.value;recalc()"></td>
+  const tb=$('stockBody');tb.innerHTML='';
+  stocks.forEach((s,i)=>{const t=(s.price||0)*(s.qty||0),dv=(s.div||0)*(s.qty||0);const tr=document.createElement('tr');
+    tr.innerHTML=`<td><input class="nm" value="${esc(s.name)}" placeholder="종목명" onchange="stocks[${i}].name=this.value;recalc()"></td>
       <td><input type="number" value="${s.price||''}" placeholder="매수가" inputmode="numeric" onchange="stocks[${i}].price=parseFloat(this.value)||0;renderStocks();recalc()"></td>
       <td><input type="number" value="${s.qty||''}" placeholder="주수" inputmode="numeric" onchange="stocks[${i}].qty=parseFloat(this.value)||0;renderStocks();recalc()"></td>
-      <td class="av">${fmt(total)}</td>
+      <td class="av">${fmt(t)}</td>
       <td><input type="number" value="${s.div||''}" placeholder="원/주" inputmode="numeric" onchange="stocks[${i}].div=parseFloat(this.value)||0;renderStocks();recalc()"></td>
-      <td class="av inc">${fmt(divT)}</td>
+      <td class="av inc">${fmt(dv)}</td>
       <td><button class="del-btn" onclick="delStock(${i})">×</button></td>`;
-    tb.appendChild(tr);
-  });
+    tb.appendChild(tr);});
 }
-
-// ── 예금 ──
-function addDepo(d){ depos.push(d||{name:'',amount:0,rate:0,months:12}); renderDepos(); }
-function delDepo(i){ depos.splice(i,1); renderDepos(); recalc(); }
+function addDepo(d){depos.push(d||{name:'',amount:0,rate:0,months:12});renderDepos();recalc();}
+function delDepo(i){depos.splice(i,1);renderDepos();recalc();}
 function renderDepos(){
-  const tb=$('depoBody'); tb.innerHTML='';
-  depos.forEach((d,i)=>{
-    const int=(d.amount||0)*(d.rate||0)/100*(d.months||12)/12;
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td><input class="nm" value="${esc(d.name)}" placeholder="예금명" onchange="depos[${i}].name=this.value;recalc()"></td>
+  const tb=$('depoBody');tb.innerHTML='';
+  depos.forEach((d,i)=>{const int=(d.amount||0)*(d.rate||0)/100*(d.months||12)/12;const tr=document.createElement('tr');
+    tr.innerHTML=`<td><input class="nm" value="${esc(d.name)}" placeholder="예금명" onchange="depos[${i}].name=this.value;recalc()"></td>
       <td><input type="number" value="${d.amount||''}" placeholder="예치금" inputmode="numeric" onchange="depos[${i}].amount=parseFloat(this.value)||0;renderDepos();recalc()"></td>
       <td><input type="number" value="${d.rate||''}" placeholder="%" step="0.1" inputmode="decimal" onchange="depos[${i}].rate=parseFloat(this.value)||0;renderDepos();recalc()"></td>
       <td><input type="number" value="${d.months||''}" placeholder="12" inputmode="numeric" onchange="depos[${i}].months=parseFloat(this.value)||0;renderDepos();recalc()"></td>
       <td class="av inc">${fmt(int)}</td>
       <td><button class="del-btn" onclick="delDepo(${i})">×</button></td>`;
-    tb.appendChild(tr);
-  });
+    tb.appendChild(tr);});
 }
 
 // ── 전체 재계산 ──
 function recalc(){
-  const fxNow=parseFloat($('fxNow').value)||1380;
+  const fxH1=parseFloat($('fxH1').value)||1380;
+  const fxH2=parseFloat($('fxH2').value)||1400;
+  const fxMat=parseFloat($('fxMaturity').value)||1400;
   const buffer=parseFloat($('buffer').value)||0;
   const baseTaxable=parseFloat($('baseTaxable').value)||0;
-
-  // 한글표시
   $('baseTaxable_kor').textContent=wonKor(baseTaxable);
-  $('bufferKor').textContent=wonKor(buffer)+' — 예상 못한 이자·배당 대비';
+  $('bufferKor').textContent=wonKor(buffer);
 
-  // 소계 (확정이자 있으면 그걸 사용)
+  // 소계
   let bondT=0;
-  bonds.forEach(b=>{bondT+=bondEffective(b,fxNow);});
-  let stockT=0;
-  stocks.forEach(s=>{stockT+=(s.div||0)*(s.qty||0);});
-  let depoT=0;
-  depos.forEach(d=>{depoT+=(d.amount||0)*(d.rate||0)/100*(d.months||12)/12;});
+  bonds.forEach(b=>{bondT+=bondEffectiveH(b,1,fxH1,fxH2)+bondEffectiveH(b,2,fxH1,fxH2);});
+  let stockT=0;stocks.forEach(s=>{stockT+=(s.div||0)*(s.qty||0);});
+  let depoT=0;depos.forEach(d=>{depoT+=(d.amount||0)*(d.rate||0)/100*(d.months||12)/12;});
   const total=bondT+stockT+depoT;
   const margin=LIMIT-total-buffer;
 
-  $('sumBond').textContent=fmt(bondT);
-  $('sumBondKor').textContent=wonKor(bondT);
-  $('sumStock').textContent=fmt(stockT);
-  $('sumStockKor').textContent=wonKor(stockT);
-  $('sumDepo').textContent=fmt(depoT);
-  $('sumDepoKor').textContent=wonKor(depoT);
+  $('sumBond').textContent=fmt(bondT);$('sumBondKor').textContent=wonKor(bondT);
+  $('sumStock').textContent=fmt(stockT);$('sumStockKor').textContent=wonKor(stockT);
+  $('sumDepo').textContent=fmt(depoT);$('sumDepoKor').textContent=wonKor(depoT);
   $('sumMargin').textContent=fmt(margin);
   $('sumMarginKor').textContent=margin>=0?wonKor(margin)+' 여유':wonKor(Math.abs(margin))+' 초과!';
-  const mc=$('marginCard');
-  mc.className='sum-card sc-margin'+(margin>=0?' ok':'');
-
+  $('marginCard').className='sum-card sc-margin'+(margin>=0?' ok':'');
   $('bondSubtotal').textContent=fmt(bondT);
-  var confCnt=bonds.filter(b=>b.confirmedKrw&&b.confirmedKrw>0).length;
-  $('bondConfNote').textContent=confCnt>0?'('+confCnt+'건 확정 반영)':'(전부 예상환율 기준)';
+  var cc=bonds.filter(b=>(b.confH1>0)||(b.confH2>0)).length;
+  $('bondConfNote').textContent=cc?'('+cc+'건 확정 포함)':'(전부 예상)';
   $('stockSubtotal').textContent=fmt(stockT);
   $('depoSubtotal').textContent=fmt(depoT);
 
-  // ── 게이지 (2,000만 기준, 초과해도 계속 표시, max 5,000만 스케일) ──
-  const gaugeMax=Math.max(LIMIT, total*1.2, 50000000);
+  // 게이지
+  const gaugeMax=Math.max(LIMIT,total*1.2,5e7);
   const pct=total/gaugeMax*100;
-  const limitPct=LIMIT/gaugeMax*100;
-  const bar=$('gaugeBar');
-  bar.style.width=Math.min(pct,100)+'%';
-  // 레벨
+  const bar=$('gaugeBar');bar.style.width=Math.min(pct,100)+'%';
   const excess=Math.max(0,total-LIMIT);
   const combinedTaxable=baseTaxable+excess;
   let lv=0;
-  if(total<=LIMIT*0.8) lv=0;         // 안전
-  else if(total<=LIMIT) lv=1;         // 주의
-  else if(combinedTaxable<=50000000) lv=2; // 초과(15%구간)
-  else if(combinedTaxable<=88000000) lv=3; // 24%구간
-  else lv=4;                               // 35%+
+  if(total<=LIMIT*.8)lv=0;else if(total<=LIMIT)lv=1;
+  else if(combinedTaxable<=5e7)lv=2;else if(combinedTaxable<=88e6)lv=3;else lv=4;
   bar.className='gauge-bar lv'+lv;
   $('totalIncome').textContent=fmt(total);
-  const gc=$('gaugeColor');
-  gc.style.color=['#166534','#92400e','#ea580c','#dc2626','#7f1d1d'][lv];
-  $('gaugePct').textContent=(total/LIMIT*100).toFixed(1)+'% (한도 대비)';
+  $('gaugeColor').style.color=['#166534','#92400e','#ea580c','#dc2626','#7f1d1d'][lv];
+  $('gaugePct').textContent=(total/LIMIT*100).toFixed(1)+'%';
   $('gaugeMax').textContent=wonKor(gaugeMax);
+  // tick
+  const bg=$('gaugeBarBg');bg.querySelectorAll('.gauge-tick').forEach(e=>e.remove());
+  const tk=document.createElement('div');tk.className='gauge-tick';tk.style.left=(LIMIT/gaugeMax*100)+'%';
+  tk.innerHTML='<div class="gauge-tick-label">2,000만</div>';bg.appendChild(tk);
 
-  // 2,000만 틱 마커
-  const bg=$('gaugeBarBg');
-  bg.querySelectorAll('.gauge-tick').forEach(e=>e.remove());
-  const tick=document.createElement('div');
-  tick.className='gauge-tick';
-  tick.style.left=limitPct+'%';
-  tick.innerHTML='<div class="gauge-tick-label">2,000만</div>';
-  bg.appendChild(tick);
+  // 경고
+  let ah='';
+  if(total<=LIMIT*.8) ah='<div class="alert-box alert-safe">✅ <b>안전</b> — '+wonKor(total)+', 한도 대비 '+(total/LIMIT*100).toFixed(0)+'%. 여유 '+wonKor(margin)+'.</div>';
+  else if(total<=LIMIT) ah='<div class="alert-box alert-warn">⚠️ <b>주의</b> — 80% 이상 소진. 여유 '+wonKor(margin)+'.</div>';
+  else if(combinedTaxable<=5e7) ah='<div class="alert-box alert-danger">🚨 <b>금종세 대상</b> — 초과 '+wonKor(excess)+', 합산 과표 '+wonKor(combinedTaxable)+' → 15% 구간.</div>';
+  else if(combinedTaxable<=88e6) ah='<div class="alert-box alert-danger">🔴 <b>24% 구간 진입</b> — 합산 과표 '+wonKor(combinedTaxable)+'. 5천만 초과분 24%(지방세 포함 26.4%).</div>';
+  else ah='<div class="alert-box alert-critical">🔥 <b>35%+ 직행</b> — 합산 과표 '+wonKor(combinedTaxable)+'. 수익의 40% 가까이 세금. 법인 전환 검토.</div>';
+  $('alertArea').innerHTML=ah;
 
-  // ── 경고 ──
-  let alertHtml='';
-  if(total<=LIMIT*0.8){
-    alertHtml='<div class="alert-box alert-safe">✅ <b>안전</b> — 금융소득 '+wonKor(total)+', 한도 대비 '+(total/LIMIT*100).toFixed(0)+'%. 여유구간 '+wonKor(margin)+' (버퍼 '+wonKor(buffer)+' 포함).</div>';
-  } else if(total<=LIMIT){
-    alertHtml='<div class="alert-box alert-warn">⚠️ <b>주의</b> — 한도 80% 이상 소진. 추가 이자·배당 발생 시 금종세 대상 진입 가능. 여유구간 '+wonKor(margin)+'.</div>';
-  } else if(combinedTaxable<=50000000){
-    alertHtml='<div class="alert-box alert-danger">🚨 <b>금종세 대상</b> — 초과분 '+wonKor(excess)+' 종합과세. 합산 과세표준 '+wonKor(combinedTaxable)+' → <b>15% 구간</b>. 분리과세(15.4%) 대비 추가 부담 제한적.</div>';
-  } else if(combinedTaxable<=88000000){
-    alertHtml='<div class="alert-box alert-danger">🔴 <b>금종세 + 24% 구간 진입</b> — 합산 과세표준 '+wonKor(combinedTaxable)+'. 5,000만 초과분부터 <b>24% 세율</b>(지방세 포함 26.4%) 적용. 분리과세 대비 세금이 눈에 띄게 증가합니다.</div>';
-  } else {
-    alertHtml='<div class="alert-box alert-critical">🔥 <b>35% 이상 구간 직행</b> — 합산 과세표준 '+wonKor(combinedTaxable)+'. 8,800만 초과분은 <b>35%</b>(지방세 포함 38.5%). 수익의 40% 가까이가 세금입니다. 금융소득 분산 또는 법인 전환을 검토하세요.</div>';
-  }
-  $('alertArea').innerHTML=alertHtml;
+  // 과세표준
+  let bh='';
+  BRACKETS.forEach(br=>{let c='';
+    if(baseTaxable>br.lo&&baseTaxable<=br.hi)c='current';
+    if(total>LIMIT&&combinedTaxable>br.lo){if(baseTaxable<=br.lo)c='hit';else if(baseTaxable<=br.hi&&combinedTaxable>br.hi)c='hit';}
+    bh+='<div class="br-item '+c+'"><div class="br-rate">'+br.rate+'%</div>'+br.label+'</div>';});
+  $('bracketGrid').innerHTML=bh;
+  let bn='';
+  if(total<=LIMIT) bn='2,000만 이하 → 15.4% 분리과세 종결.';
+  else{bn='기존 '+wonKor(baseTaxable)+' + 초과 '+wonKor(excess)+' = <b>합산 '+wonKor(combinedTaxable)+'</b>';
+    const ob=BRACKETS.find(b=>baseTaxable>b.lo&&baseTaxable<=b.hi);
+    const nb=BRACKETS.find(b=>combinedTaxable>b.lo&&combinedTaxable<=b.hi);
+    if(ob&&nb&&ob!==nb)bn+=' → <b>'+ob.rate+'% → '+nb.rate+'% 점프!</b>';}
+  $('bracketNote').innerHTML=bn;
 
-  // ── 과세표준 구간 ──
-  let bracketHtml='';
-  BRACKETS.forEach(br=>{
-    let cls='';
-    // 기존 과세표준이 이 구간에 있으면 current
-    if(baseTaxable>br.lo && baseTaxable<=br.hi) cls='current';
-    // 합산 과세표준이 이 구간을 넘으면 hit
-    if(total>LIMIT && combinedTaxable>br.lo){
-      if(baseTaxable<=br.lo) cls='hit'; // 금융소득 때문에 새로 진입
-      else if(baseTaxable>br.lo && baseTaxable<=br.hi && combinedTaxable>br.hi) cls='hit';
-    }
-    bracketHtml+='<div class="br-item '+cls+'"><div class="br-rate">'+br.rate+'%</div>'+br.label+'</div>';
-  });
-  $('bracketGrid').innerHTML=bracketHtml;
-
-  let noteHtml='';
-  if(total<=LIMIT){
-    noteHtml='금융소득 2,000만 이하 → 15.4% 분리과세 종결. 종합과세 해당 없음.';
-  } else {
-    noteHtml='기존 과세표준 '+wonKor(baseTaxable)+' + 초과 금융소득 '+wonKor(excess)+' = <b>합산 과세표준 '+wonKor(combinedTaxable)+'</b>';
-    // 기존 구간 → 합산 구간
-    const oldBr=BRACKETS.find(b=>baseTaxable>b.lo&&baseTaxable<=b.hi);
-    const newBr=BRACKETS.find(b=>combinedTaxable>b.lo&&combinedTaxable<=b.hi);
-    if(oldBr&&newBr&&oldBr!==newBr){
-      noteHtml+=' → 세율 <b>'+oldBr.rate+'% → '+newBr.rate+'%</b> 구간 점프!';
-    }
-  }
-  $('bracketNote').innerHTML=noteHtml;
-
-  // ── 채권 상세 ──
-  renderBondDetail(fxNow);
+  // ── 반기별 상세표 ──
+  renderHalfDetail(fxH1,fxH2);
+  // ── 만기 상세 ──
+  renderMaturityDetail(fxH1,fxMat);
 }
 
-function renderBondDetail(fxInt){
-  const el=$('bondDetail');
+function renderHalfDetail(fxH1,fxH2){
+  const wrap=$('halfDetailWrap');
+  if(!bonds.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  let html='<table class="half-table"><thead><tr><th>종목</th><th>반기이자($)</th>';
+  html+='<th class="h1">상반기 예상(₩)<br><span style="font-weight:400">@'+fmt(fxH1)+'</span></th>';
+  html+='<th class="conf">확정 상(₩)</th>';
+  html+='<th class="h2">하반기 예상(₩)<br><span style="font-weight:400">@'+fmt(fxH2)+'</span></th>';
+  html+='<th class="conf">확정 하(₩)</th>';
+  html+='<th>연합계(₩)</th><th>상태</th></tr></thead><tbody>';
+
+  let sHi$=0,sH1a=0,sH2a=0,sTotal=0;
+  bonds.forEach((b,i)=>{
+    const hi=bondHalfInt(b);
+    const h1auto=hi*fxH1, h2auto=hi*fxH2;
+    const h1eff=bondEffectiveH(b,1,fxH1,fxH2);
+    const h2eff=bondEffectiveH(b,2,fxH1,fxH2);
+    const annT=h1eff+h2eff;
+    const h1c=b.confH1>0, h2c=b.confH2>0;
+    sHi$+=hi;sH1a+=h1eff;sH2a+=h2eff;sTotal+=annT;
+
+    html+='<tr><td>'+(b.name||'-')+'</td><td>$'+fmtD(hi)+'</td>';
+    html+='<td class="'+(h1c?'faded':'')+'">'+ fmt(h1auto)+'</td>';
+    html+='<td><input class="conf-input" type="number" value="'+(b.confH1||'')+'" placeholder="실수령" inputmode="numeric" onchange="bonds['+i+'].confH1=parseFloat(this.value)||0;renderBonds();recalc()"></td>';
+    html+='<td class="'+(h2c?'faded':'')+'">'+ fmt(h2auto)+'</td>';
+    html+='<td><input class="conf-input" type="number" value="'+(b.confH2||'')+'" placeholder="실수령" inputmode="numeric" onchange="bonds['+i+'].confH2=parseFloat(this.value)||0;renderBonds();recalc()"></td>';
+    html+='<td style="font-weight:700;color:#1d4ed8">'+fmt(annT)+'</td>';
+    // 상태
+    let st='';
+    if(h1c&&h2c) st='<span class="status-dot dot-conf"></span>전부 확정';
+    else if(h1c||h2c) st='<span class="status-dot dot-conf"></span><span class="status-dot dot-est"></span>일부 확정';
+    else st='<span class="status-dot dot-est"></span>전부 예상';
+    html+='<td style="font-size:10px;white-space:nowrap">'+st+'</td></tr>';
+  });
+  html+='<tr class="total-row"><td>합계</td><td>$'+fmtD(sHi$)+'</td><td>'+fmt(bonds.reduce((s,b)=>s+bondHalfInt(b)*fxH1,0))+'</td><td></td><td>'+fmt(bonds.reduce((s,b)=>s+bondHalfInt(b)*fxH2,0))+'</td><td></td><td style="color:#1d4ed8">'+fmt(sTotal)+'</td><td></td></tr>';
+  html+='</tbody></table>';
+  $('halfDetailBody').innerHTML=html;
+}
+
+function renderMaturityDetail(fxInt,fxMat){
+  const el=$('maturityDetail');
   if(!bonds.length){el.innerHTML='';return;}
-  const fxMat=parseFloat($('fxMaturity').value)||1400;
-
-  // ── 표1: 이자(과세) ──
-  let html='<div class="bd-title">📊 이자 소득 상세 (과세, 이자환율 '+fmt(parseFloat($('fxNow').value))+'원/$)</div>';
-  html+='<div style="overflow-x:auto;margin-bottom:16px"><table class="bd-table"><thead><tr><th>종목</th><th>투자금($)</th><th>투자금(₩)</th><th>총 액면($)</th><th>연이자($)</th><th>연이자(₩)</th><th>원천세15.4%</th><th>세후이자(₩)</th></tr></thead><tbody>';
-  let sI$=0,sIk=0,sF$=0,sInt$=0,sIntK=0,sTax=0,sAft=0;
+  let html='<div class="bd-title" style="color:#166534">💵 만기 시 수령·비과세 환차익 (만기환율 '+fmt(fxMat)+'원/$)</div>';
+  html+='<div style="overflow-x:auto"><table class="bd-table"><thead><tr><th>종목</th><th>매수환율</th><th>만기수령($)</th><th>만기수령(₩)</th><th>할인차익($)</th><th style="color:#166534">비과세 환차익(₩)</th><th style="color:#1d4ed8">만기 총 수익(₩)</th></tr></thead><tbody>';
+  let sMatK=0,sDisc$=0,sFxG=0,sProfit=0;
   bonds.forEach(b=>{
-    const inv$=(b.price||0)*(b.qty||0);
-    const invK=inv$*(b.fxBuy||0);
-    const face$=(b.face||0)*(b.qty||0);
-    const int$=face$*(b.coupon||0)/100;
-    const intK=int$*fxInt;
-    const tax=intK*0.154;
-    const aft=intK-tax;
-    sI$+=inv$;sIk+=invK;sF$+=face$;sInt$+=int$;sIntK+=intK;sTax+=tax;sAft+=aft;
-    html+='<tr><td>'+(b.name||'-')+'</td><td>$'+fmtD(inv$)+'</td><td>'+fmt(invK)+'</td><td>$'+fmtD(face$)+'</td><td>$'+fmtD(int$)+'</td><td>'+fmt(intK)+'</td><td>'+fmt(tax)+'</td><td>'+fmt(aft)+'</td></tr>';
+    const inv$=(b.price||0)*(b.qty||0);const invK=inv$*(b.fxBuy||0);
+    const face$=(b.face||0)*(b.qty||0);const matK=face$*fxMat;
+    const disc$=face$-inv$;const fxG=inv$*(fxMat-(b.fxBuy||0));const profit=matK-invK;
+    sMatK+=matK;sDisc$+=disc$;sFxG+=fxG;sProfit+=profit;
+    html+='<tr><td>'+(b.name||'-')+'</td><td>'+fmt(b.fxBuy||0)+'</td><td>$'+fmtD(face$)+'</td><td>'+fmt(matK)+'</td>';
+    html+='<td style="color:'+(disc$>=0?'#dc2626':'#666')+'">$'+fmtD(disc$)+'</td>';
+    html+='<td style="color:#166534;font-weight:700">'+fmt(fxG)+'</td>';
+    html+='<td style="color:#1d4ed8;font-weight:700">'+fmt(profit)+'</td></tr>';
   });
-  html+='<tr style="font-weight:700;border-top:2px solid #1d4ed8"><td>합계</td><td>$'+fmtD(sI$)+'</td><td>'+fmt(sIk)+'</td><td>$'+fmtD(sF$)+'</td><td>$'+fmtD(sInt$)+'</td><td>'+fmt(sIntK)+'</td><td>'+fmt(sTax)+'</td><td>'+fmt(sAft)+'</td></tr>';
+  html+='<tr style="font-weight:700;border-top:2px solid #166534"><td>합계</td><td></td><td></td><td>'+fmt(sMatK)+'</td><td>$'+fmtD(sDisc$)+'</td><td style="color:#166534">'+fmt(sFxG)+'</td><td style="color:#1d4ed8">'+fmt(sProfit)+'</td></tr>';
   html+='</tbody></table></div>';
-
-  // ── 표2: 만기 수령·환차익 ──
-  html+='<div class="bd-title" style="color:#166534">💵 만기 시 수령·비과세 환차익 (만기환율 '+fmt(fxMat)+'원/$)</div>';
-  html+='<div style="overflow-x:auto"><table class="bd-table"><thead><tr><th>종목</th><th>매수환율</th><th>만기수령($)</th><th>만기수령(₩)</th><th>할인차익($)<br><span style="font-weight:400;font-size:9px">과세(이자소득)</span></th><th>할인차익(₩)</th><th style="color:#166534">비과세 환차익(₩)<br><span style="font-weight:400;font-size:9px">원금×환율차</span></th><th style="color:#1d4ed8">만기 총 수익(₩)</th></tr></thead><tbody>';
-  let sMatK=0,sDisc$=0,sDiscK=0,sFxG=0,sProfit=0;
-  bonds.forEach(b=>{
-    const inv$=(b.price||0)*(b.qty||0);
-    const invK=inv$*(b.fxBuy||0);
-    const face$=(b.face||0)*(b.qty||0);
-    const matK=face$*fxMat;
-    const disc$=face$-inv$;
-    const discK=disc$*fxMat;
-    const fxG=inv$*(fxMat-(b.fxBuy||0));
-    const profit=matK-invK;
-    sMatK+=matK;sDisc$+=disc$;sDiscK+=discK;sFxG+=fxG;sProfit+=profit;
-    html+='<tr><td>'+(b.name||'-')+'</td><td>'+fmt(b.fxBuy||0)+'</td><td>$'+fmtD(face$)+'</td><td>'+fmt(matK)+'</td><td style="color:'+(disc$>=0?'#dc2626':'#666')+'">$'+fmtD(disc$)+'</td><td>'+fmt(discK)+'</td><td style="color:#166534;font-weight:700">'+fmt(fxG)+'</td><td style="color:#1d4ed8;font-weight:700">'+fmt(profit)+'</td></tr>';
-  });
-  html+='<tr style="font-weight:700;border-top:2px solid #166534"><td>합계</td><td></td><td>$'+fmtD(sF$)+'</td><td>'+fmt(sMatK)+'</td><td>$'+fmtD(sDisc$)+'</td><td>'+fmt(sDiscK)+'</td><td style="color:#166534">'+fmt(sFxG)+'</td><td style="color:#1d4ed8">'+fmt(sProfit)+'</td></tr>';
-  html+='</tbody></table></div>';
-
-  html+='<div class="dim" style="margin-top:8px"><b>과세</b>: 쿠폰이자 + 할인차익(보유기간이자) → 금종세 합산, 원천징수 15.4%.<br><b>비과세</b>: 환차익 = 매수원금($) × (만기환율 − 매수환율). 개인 비과세, 법인은 과세.<br>미국채는 미국 원천세 0%, 국내 15.4%만 적용.</div>';
+  html+='<div class="dim" style="margin-top:6px">비과세 환차익 = 매수원금($) × (만기환율−매수환율). 개인 비과세, 법인 과세.</div>';
   el.innerHTML=html;
 }
 
 // ── 슬롯 ──
-window.slGetState=function(){return{bonds:bonds.slice(),stocks:stocks.slice(),depos:depos.slice(),buffer:$('buffer').value,fxNow:$('fxNow').value,fxMaturity:$('fxMaturity').value,baseTaxable:$('baseTaxable').value};};
-window.slSetState=function(d){
-  if(!d)return;
+window.slGetState=function(){return{bonds:bonds.slice(),stocks:stocks.slice(),depos:depos.slice(),buffer:$('buffer').value,fxH1:$('fxH1').value,fxH2:$('fxH2').value,fxMaturity:$('fxMaturity').value,baseTaxable:$('baseTaxable').value};};
+window.slSetState=function(d){if(!d)return;
   bonds=(d.bonds||[]).slice();stocks=(d.stocks||[]).slice();depos=(d.depos||[]).slice();
   if(d.buffer!==undefined)$('buffer').value=d.buffer;
-  if(d.fxNow!==undefined)$('fxNow').value=d.fxNow;
+  if(d.fxH1!==undefined)$('fxH1').value=d.fxH1;
+  if(d.fxH2!==undefined)$('fxH2').value=d.fxH2;
+  if(d.fxNow!==undefined&&!d.fxH1)$('fxH1').value=d.fxNow; // v3 호환
   if(d.fxMaturity!==undefined)$('fxMaturity').value=d.fxMaturity;
   if(d.baseTaxable!==undefined)$('baseTaxable').value=d.baseTaxable;
-  renderBonds();renderStocks();renderDepos();recalc();
-};
-
+  renderBonds();renderStocks();renderDepos();recalc();};
 recalc();
 </script>
 </body>
