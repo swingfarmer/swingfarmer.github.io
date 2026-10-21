@@ -12,6 +12,7 @@ header{background:var(--sf-surface);border-bottom:3px solid var(--sf-brand);padd
 header .wrap{padding:0} header h1{font-size:20px;color:var(--sf-brand);margin:0;border-bottom:none}
 header .back-link{display:inline-block;margin-bottom:6px}
 .info-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#1F4E78;color:white;font-size:11px;cursor:pointer;margin-left:4px}
+.info-box{display:none}
 /* 공통조건 그리드 */
 .cond-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 @media(max-width:600px){.cond-grid{grid-template-columns:1fr 1fr}}
@@ -439,6 +440,13 @@ function recalc(){
 
   renderHalfDetail(fxH1,fxH2);
   renderMaturityDetail(fxMat);
+
+  // 자동저장
+  try{localStorage.setItem('sf_financial_income_auto',JSON.stringify(
+    {bonds:bonds.slice(),stocks:stocks.slice(),depos:depos.slice(),
+     buffer:$('buffer').value,fxH1:$('fxH1').value,fxH2:$('fxH2').value,
+     fxMaturity:$('fxMaturity').value,baseTaxable:$('baseTaxable').value}
+  ));}catch(e){}
 }
 
 function renderHalfDetail(fxH1,fxH2){
@@ -501,15 +509,13 @@ document.querySelectorAll('#fxH1,#fxH2,#fxMaturity,#baseTaxable,#buffer').forEac
   el.addEventListener('input',function(){renderBonds();recalc();});
 });
 
-// ── 자동저장 (localStorage) ──
-var AUTO_KEY='sf_financial_income_auto';
-function autoSave(){
-  try{localStorage.setItem(AUTO_KEY,JSON.stringify(getState()));}catch(e){}
+// ── 상태 저장/복원 공통 ──
+function _getState(){
+  return{bonds:bonds.slice(),stocks:stocks.slice(),depos:depos.slice(),
+    buffer:$('buffer').value,fxH1:$('fxH1').value,fxH2:$('fxH2').value,
+    fxMaturity:$('fxMaturity').value,baseTaxable:$('baseTaxable').value};
 }
-function getState(){
-  return{bonds:bonds.slice(),stocks:stocks.slice(),depos:depos.slice(),buffer:$('buffer').value,fxH1:$('fxH1').value,fxH2:$('fxH2').value,fxMaturity:$('fxMaturity').value,baseTaxable:$('baseTaxable').value};
-}
-function loadState(d){
+function _loadState(d){
   if(!d)return;
   bonds=(d.bonds||[]).slice();stocks=(d.stocks||[]).slice();depos=(d.depos||[]).slice();
   if(d.buffer!==undefined)$('buffer').value=d.buffer;
@@ -521,20 +527,24 @@ function loadState(d){
   renderBonds();renderStocks();renderDepos();recalc();
 }
 
-// recalc 끝에 자동저장 훅
-var _origRecalc=recalc;
-recalc=function(){_origRecalc();autoSave();};
-
 // ── 슬롯 ──
-window.slGetState=function(){return getState();};
-window.slSetState=function(d){loadState(d);};
+window.slGetState=function(){return _getState();};
+window.slSetState=function(d){_loadState(d);};
 
-// 페이지 로드 시 자동복원
-try{
-  var saved=localStorage.getItem(AUTO_KEY);
-  if(saved){var d=JSON.parse(saved);if(d&&(d.bonds&&d.bonds.length||d.stocks&&d.stocks.length||d.depos&&d.depos.length)){loadState(d);}}
-  else{recalc();}
-}catch(e){recalc();}
+// ── 페이지 로드 시 localStorage에서 자동복원 ──
+(function(){
+  try{
+    var raw=localStorage.getItem('sf_financial_income_auto');
+    if(raw){
+      var d=JSON.parse(raw);
+      if(d&&((d.bonds&&d.bonds.length)||(d.stocks&&d.stocks.length)||(d.depos&&d.depos.length))){
+        _loadState(d);
+        return;
+      }
+    }
+  }catch(e){}
+  recalc();
+})();
 </script>
 </body>
 </html>
