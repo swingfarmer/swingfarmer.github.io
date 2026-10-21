@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>금융소득종합과세 관리 계산기 | 스윙파머</title>
+<meta name="description" content="채권이자·주식배당·예금이자를 합산해 금융소득종합과세(금종세) 2,000만원 한도 대비 여유구간 관리.">
+<link rel="stylesheet" href="/common.css?v=4">
+<style>
+:root { --sf-max-w: 860px; }
+header { background: var(--sf-surface); border-bottom: 3px solid var(--sf-brand); padding: 18px 16px; }
+header .wrap { padding: 0; }
+header h1 { font-size: 20px; color: var(--sf-brand); margin: 0; border-bottom: none; }
+header .back-link { display: inline-block; margin-bottom: 6px; }
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; font-style: normal; cursor: pointer; margin-left: 4px; }
+  /* 게이지 */
+  .gauge-wrap { background: #f8fafc; border-radius: 14px; padding: 20px; margin-bottom: 18px; border: 1px solid #e2e8f0; }
+  .gauge-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .gauge-title { font-size: 14px; font-weight: 700; color: #1F4E78; }
+  .gauge-val { font-size: 28px; font-weight: 800; color: #1F4E78; }
+  .gauge-val .unit { font-size: 14px; font-weight: 600; color: #666; }
+  .gauge-bar-bg { background: #e2e8f0; border-radius: 10px; height: 28px; position: relative; overflow: hidden; }
+  .gauge-bar { height: 100%; border-radius: 10px; transition: width .4s, background .3s; min-width: 2px; }
+  .gauge-bar.safe { background: linear-gradient(90deg, #22c55e, #4ade80); }
+  .gauge-bar.warn { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+  .gauge-bar.danger { background: linear-gradient(90deg, #ef4444, #f87171); }
+  .gauge-labels { display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8; margin-top: 4px; }
+  .gauge-marker { position: absolute; top: 0; bottom: 0; width: 2px; background: #dc2626; }
+  .gauge-marker-label { position: absolute; top: -16px; font-size: 10px; color: #dc2626; font-weight: 700; white-space: nowrap; }
+  /* 요약 카드 */
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  @media (max-width: 600px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
+  .sum-card { border-radius: 10px; padding: 14px 12px; text-align: center; }
+  .sum-card .s-label { font-size: 11px; color: #666; margin-bottom: 4px; }
+  .sum-card .s-val { font-size: 17px; font-weight: 800; }
+  .sum-card .s-kor { font-size: 10px; color: #888; }
+  .sc-bond { background: #eff6ff; } .sc-bond .s-val { color: #1d4ed8; }
+  .sc-stock { background: #fef3c7; } .sc-stock .s-val { color: #92400e; }
+  .sc-depo { background: #f0fdf4; } .sc-depo .s-val { color: #166534; }
+  .sc-margin { background: #fef2f2; border: 1px solid #fecaca; } .sc-margin .s-val { color: #dc2626; }
+  .sc-margin.ok { background: #f0fdf4; border: 1px solid #bbf7d0; } .sc-margin.ok .s-val { color: #166534; }
+  /* 입력 테이블 */
+  .section-tab { display: flex; gap: 4px; margin-bottom: 0; }
+  .stab { padding: 10px 16px; border-radius: 10px 10px 0 0; font-size: 13px; font-weight: 700; cursor: pointer; background: #eef2f7; color: #666; border: 1px solid #ddd; border-bottom: none; }
+  .stab.active { background: white; color: #1F4E78; border-color: #cbd5e1; }
+  .tab-body { display: none; background: white; border: 1px solid #cbd5e1; border-radius: 0 10px 10px 10px; padding: 16px; margin-bottom: 16px; }
+  .tab-body.active { display: block; }
+  .item-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .item-table th { background: #f8fafc; padding: 8px 6px; text-align: center; font-weight: 600; color: #555; border-bottom: 2px solid #e2e8f0; white-space: nowrap; font-size: 11px; }
+  .item-table td { padding: 6px 4px; border-bottom: 1px solid #f0f0f0; text-align: center; vertical-align: middle; }
+  .item-table input { width: 100%; padding: 6px 4px; border: 1px solid #ddd; border-radius: 5px; font-size: 12px; text-align: right; box-sizing: border-box; }
+  .item-table input.name-input { text-align: left; }
+  .item-table .auto-val { font-weight: 700; color: #1F4E78; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .item-table .auto-val.income { color: #16a34a; }
+  .add-btn { display: inline-flex; align-items: center; gap: 4px; padding: 7px 14px; border: 1px dashed #94a3b8; border-radius: 8px; background: transparent; color: #64748b; font-size: 12px; cursor: pointer; margin-top: 8px; }
+  .add-btn:hover { background: #f1f5f9; }
+  .del-btn { width: 24px; height: 24px; border-radius: 50%; border: none; background: #fee2e2; color: #dc2626; cursor: pointer; font-size: 14px; line-height: 1; }
+  .del-btn:hover { background: #fecaca; }
+  .sub-total { text-align: right; font-weight: 700; color: #1F4E78; font-size: 13px; padding-top: 10px; border-top: 2px solid #e2e8f0; margin-top: 8px; }
+  /* 채권 상세 */
+  .bond-detail { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #cbd5e1; }
+  .bond-detail .bd-title { font-size: 12px; font-weight: 700; color: #1d4ed8; margin-bottom: 8px; }
+  .bd-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .bd-table th { background: #eff6ff; padding: 6px; text-align: center; font-weight: 600; }
+  .bd-table td { padding: 6px; text-align: right; border-bottom: 1px solid #f0f0f0; font-variant-numeric: tabular-nums; }
+  .bd-table td:first-child { text-align: left; }
+  /* 버퍼 설정 */
+  .buffer-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .buffer-row label { font-size: 12px; color: #666; white-space: nowrap; }
+  .buffer-row input { width: 120px; }
+</style>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <a href="/" class="back-link">← 메인으로</a>
+    <h1>💰 금융소득종합과세 관리</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc">채권 이자·주식 배당·예금 이자를 합산해 <b>금종세 2,000만원 한도</b> 대비 현황을 관리합니다. 항목을 추가하면 자동 계산되고, 여유구간(안전 버퍼 포함)을 한눈에 볼 수 있어요.</p>
+
+  <div class="buffer-row">
+    <label>안전 버퍼 (원):</label>
+    <input type="number" id="buffer" value="1000000" inputmode="numeric" onchange="recalc()">
+    <span class="dim" id="bufferKor">100만원</span>
+    <span class="info-btn" onclick="toggleInfo('bufInfo')">i</span>
+    <div class="info-box" id="bufInfo" style="margin-top:6px">예상 못한 이자·배당을 대비한 안전마진. 여유구간에서 이만큼 추가로 빼서 계산합니다.</div>
+  </div>
+
+  <!-- 게이지 -->
+  <div class="gauge-wrap">
+    <div class="gauge-top">
+      <div class="gauge-title">연간 금융소득 합계 (세전)</div>
+      <div class="gauge-val"><span id="totalIncome">0</span> <span class="unit">원</span></div>
+    </div>
+    <div class="gauge-bar-bg">
+      <div class="gauge-bar safe" id="gaugeBar" style="width:0%"></div>
+      <div class="gauge-marker" id="gaugeMarker" style="left:100%">
+        <div class="gauge-marker-label">2,000만</div>
+      </div>
+    </div>
+    <div class="gauge-labels">
+      <span>0</span>
+      <span id="gaugePct">0%</span>
+      <span>2,000만원</span>
+    </div>
+  </div>
+
+  <!-- 요약 카드 -->
+  <div class="summary-grid">
+    <div class="sum-card sc-bond"><div class="s-label">📄 채권 이자</div><div class="s-val" id="sumBond">0</div><div class="s-kor" id="sumBondKor"></div></div>
+    <div class="sum-card sc-stock"><div class="s-label">📈 주식 배당</div><div class="s-val" id="sumStock">0</div><div class="s-kor" id="sumStockKor"></div></div>
+    <div class="sum-card sc-depo"><div class="s-label">🏦 예금 이자</div><div class="s-val" id="sumDepo">0</div><div class="s-kor" id="sumDepoKor"></div></div>
+    <div class="sum-card sc-margin" id="marginCard"><div class="s-label">🎯 여유구간</div><div class="s-val" id="sumMargin">0</div><div class="s-kor" id="sumMarginKor"></div></div>
+  </div>
+
+  <!-- 탭 -->
+  <div class="section-tab">
+    <div class="stab active" onclick="switchTab('bond')">📄 채권</div>
+    <div class="stab" onclick="switchTab('stock')">📈 주식 배당</div>
+    <div class="stab" onclick="switchTab('depo')">🏦 예금·기타</div>
+  </div>
+
+  <!-- 채권 탭 -->
+  <div class="tab-body active" id="tab-bond">
+    <table class="item-table" id="bondTable">
+      <thead>
+        <tr>
+          <th style="width:18%">종목명</th>
+          <th style="width:12%">액면가</th>
+          <th style="width:12%">매수단가</th>
+          <th style="width:10%">수량</th>
+          <th style="width:12%">총 투자금</th>
+          <th style="width:8%">표면이율%</th>
+          <th style="width:13%">연간 이자</th>
+          <th style="width:5%"></th>
+        </tr>
+      </thead>
+      <tbody id="bondBody"></tbody>
+    </table>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <button class="add-btn" onclick="addBond()">+ 채권 추가</button>
+      <div class="sub-total">이자 소계: <span id="bondSubtotal">0</span>원</div>
+    </div>
+    <div class="bond-detail" id="bondDetail"></div>
+  </div>
+
+  <!-- 주식 탭 -->
+  <div class="tab-body" id="tab-stock">
+    <table class="item-table" id="stockTable">
+      <thead>
+        <tr>
+          <th style="width:20%">종목명</th>
+          <th style="width:14%">매수가</th>
+          <th style="width:10%">주수</th>
+          <th style="width:16%">총 매수금</th>
+          <th style="width:14%">주당 배당금</th>
+          <th style="width:16%">연간 배당</th>
+          <th style="width:5%"></th>
+        </tr>
+      </thead>
+      <tbody id="stockBody"></tbody>
+    </table>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <button class="add-btn" onclick="addStock()">+ 주식 추가</button>
+      <div class="sub-total">배당 소계: <span id="stockSubtotal">0</span>원</div>
+    </div>
+  </div>
+
+  <!-- 예금 탭 -->
+  <div class="tab-body" id="tab-depo">
+    <table class="item-table" id="depoTable">
+      <thead>
+        <tr>
+          <th style="width:22%">명칭</th>
+          <th style="width:20%">예치금</th>
+          <th style="width:12%">이율%</th>
+          <th style="width:14%">기간(월)</th>
+          <th style="width:20%">이자 (세전)</th>
+          <th style="width:5%"></th>
+        </tr>
+      </thead>
+      <tbody id="depoBody"></tbody>
+    </table>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <button class="add-btn" onclick="addDepo()">+ 예금·기타 추가</button>
+      <div class="sub-total">이자 소계: <span id="depoSubtotal">0</span>원</div>
+    </div>
+  </div>
+
+  <div class="warn-note">
+    ⚠️ <b>금종세 기준:</b> 연간 금융소득(이자+배당) 2,000만원 초과 시 종합과세. 2,000만원 이하는 15.4% 분리과세로 종결. 채권 보유기간이자·할인채 차익·해외채권 이자도 금융소득에 포함됩니다. 정확한 판단은 세무사와 상담하세요.
+  </div>
+
+  <div class="manual">
+    <b>📘 사용법</b><br>
+    각 탭에서 항목을 추가하면 금융소득이 자동 합산됩니다. 게이지가 2,000만원에 가까워지면 경고색으로 변해요.<br>
+    여유구간 = 2,000만 − 총 금융소득 − 안전버퍼. 이 범위 안에서 추가 투자가 안전합니다.
+  </div>
+</div>
+
+<script>
+window.CALC_KEY = 'financial_income_tax';
+</script>
+<script src="/sf-slots.js?v=2"></script>
+<script src="/common.js?v=5"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('ko-KR');
+function wonKor(n){ var neg=n<0; n=Math.round(Math.abs(n)); if(n===0)return '0원'; var eok=Math.floor(n/1e8),man=Math.floor((n%1e8)/1e4),p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(man>0)p.push(man.toLocaleString('ko-KR')+'만'); return (neg?'−':'')+p.join(' ')+'원'; }
+function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
+
+const LIMIT = 20000000;
+let bonds = [], stocks = [], depos = [];
+
+// ── 탭 전환 ──
+function switchTab(tab){
+  document.querySelectorAll('.stab').forEach((el,i)=>{
+    const tabs = ['bond','stock','depo'];
+    el.classList.toggle('active', tabs[i]===tab);
+  });
+  document.querySelectorAll('.tab-body').forEach(el=>el.classList.remove('active'));
+  $('tab-'+tab).classList.add('active');
+}
+
+// ── 채권 ──
+function addBond(data){
+  bonds.push(data || {name:'',face:10000,price:0,qty:0,coupon:0});
+  renderBonds();
+}
+function delBond(i){ bonds.splice(i,1); renderBonds(); recalc(); }
+function renderBonds(){
+  const tb = $('bondBody');
+  tb.innerHTML = '';
+  bonds.forEach((b,i)=>{
+    const total = (b.price||0) * (b.qty||0);
+    const interest = (b.face||0) * (b.qty||0) * (b.coupon||0) / 100;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input class="name-input" value="${esc(b.name)}" placeholder="종목명" onchange="bonds[${i}].name=this.value;recalc()"></td>
+      <td><input type="number" value="${b.face||''}" placeholder="10,000" inputmode="numeric" onchange="bonds[${i}].face=parseFloat(this.value)||0;renderBonds();recalc()"></td>
+      <td><input type="number" value="${b.price||''}" placeholder="매수단가" inputmode="numeric" onchange="bonds[${i}].price=parseFloat(this.value)||0;renderBonds();recalc()"></td>
+      <td><input type="number" value="${b.qty||''}" placeholder="수량" inputmode="numeric" onchange="bonds[${i}].qty=parseFloat(this.value)||0;renderBonds();recalc()"></td>
+      <td class="auto-val">${fmt(total)}</td>
+      <td><input type="number" value="${b.coupon||''}" placeholder="%" step="0.1" inputmode="decimal" onchange="bonds[${i}].coupon=parseFloat(this.value)||0;renderBonds();recalc()"></td>
+      <td class="auto-val income">${fmt(interest)}</td>
+      <td><button class="del-btn" onclick="delBond(${i})">×</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+function esc(s){ return (s||'').replace(/"/g,'&quot;'); }
+
+// ── 주식 ──
+function addStock(data){
+  stocks.push(data || {name:'',price:0,qty:0,div:0});
+  renderStocks();
+}
+function delStock(i){ stocks.splice(i,1); renderStocks(); recalc(); }
+function renderStocks(){
+  const tb = $('stockBody');
+  tb.innerHTML = '';
+  stocks.forEach((s,i)=>{
+    const total = (s.price||0) * (s.qty||0);
+    const divTotal = (s.div||0) * (s.qty||0);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input class="name-input" value="${esc(s.name)}" placeholder="종목명" onchange="stocks[${i}].name=this.value;recalc()"></td>
+      <td><input type="number" value="${s.price||''}" placeholder="매수가" inputmode="numeric" onchange="stocks[${i}].price=parseFloat(this.value)||0;renderStocks();recalc()"></td>
+      <td><input type="number" value="${s.qty||''}" placeholder="주수" inputmode="numeric" onchange="stocks[${i}].qty=parseFloat(this.value)||0;renderStocks();recalc()"></td>
+      <td class="auto-val">${fmt(total)}</td>
+      <td><input type="number" value="${s.div||''}" placeholder="원/주" inputmode="numeric" onchange="stocks[${i}].div=parseFloat(this.value)||0;renderStocks();recalc()"></td>
+      <td class="auto-val income">${fmt(divTotal)}</td>
+      <td><button class="del-btn" onclick="delStock(${i})">×</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+// ── 예금 ──
+function addDepo(data){
+  depos.push(data || {name:'',amount:0,rate:0,months:12});
+  renderDepos();
+}
+function delDepo(i){ depos.splice(i,1); renderDepos(); recalc(); }
+function renderDepos(){
+  const tb = $('depoBody');
+  tb.innerHTML = '';
+  depos.forEach((d,i)=>{
+    const interest = (d.amount||0) * (d.rate||0) / 100 * (d.months||12) / 12;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input class="name-input" value="${esc(d.name)}" placeholder="예금명" onchange="depos[${i}].name=this.value;recalc()"></td>
+      <td><input type="number" value="${d.amount||''}" placeholder="예치금" inputmode="numeric" onchange="depos[${i}].amount=parseFloat(this.value)||0;renderDepos();recalc()"></td>
+      <td><input type="number" value="${d.rate||''}" placeholder="%" step="0.1" inputmode="decimal" onchange="depos[${i}].rate=parseFloat(this.value)||0;renderDepos();recalc()"></td>
+      <td><input type="number" value="${d.months||''}" placeholder="12" inputmode="numeric" onchange="depos[${i}].months=parseFloat(this.value)||0;renderDepos();recalc()"></td>
+      <td class="auto-val income">${fmt(interest)}</td>
+      <td><button class="del-btn" onclick="delDepo(${i})">×</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+// ── 전체 재계산 ──
+function recalc(){
+  const buffer = parseFloat($('buffer').value)||0;
+  $('bufferKor').textContent = wonKor(buffer);
+
+  // 소계
+  let bondTotal = 0;
+  bonds.forEach(b=>{ bondTotal += (b.face||0)*(b.qty||0)*(b.coupon||0)/100; });
+  let stockTotal = 0;
+  stocks.forEach(s=>{ stockTotal += (s.div||0)*(s.qty||0); });
+  let depoTotal = 0;
+  depos.forEach(d=>{ depoTotal += (d.amount||0)*(d.rate||0)/100*(d.months||12)/12; });
+
+  const total = bondTotal + stockTotal + depoTotal;
+  const margin = LIMIT - total - buffer;
+
+  $('sumBond').textContent = fmt(bondTotal);
+  $('sumBondKor').textContent = wonKor(bondTotal);
+  $('sumStock').textContent = fmt(stockTotal);
+  $('sumStockKor').textContent = wonKor(stockTotal);
+  $('sumDepo').textContent = fmt(depoTotal);
+  $('sumDepoKor').textContent = wonKor(depoTotal);
+  $('sumMargin').textContent = fmt(margin);
+  $('sumMarginKor').textContent = margin >= 0 ? wonKor(margin)+' 여유' : wonKor(Math.abs(margin))+' 초과!';
+
+  const mc = $('marginCard');
+  mc.classList.toggle('ok', margin >= 0);
+
+  $('bondSubtotal').textContent = fmt(bondTotal);
+  $('stockSubtotal').textContent = fmt(stockTotal);
+  $('depoSubtotal').textContent = fmt(depoTotal);
+
+  // 게이지
+  $('totalIncome').textContent = fmt(total);
+  const pct = Math.min(total / LIMIT * 100, 120);
+  const bar = $('gaugeBar');
+  bar.style.width = Math.min(pct, 100) + '%';
+  bar.className = 'gauge-bar ' + (pct < 70 ? 'safe' : pct < 95 ? 'warn' : 'danger');
+  $('gaugePct').textContent = pct.toFixed(1) + '%';
+  // 버퍼 마커
+  const bufferPct = (LIMIT - buffer) / LIMIT * 100;
+  // marker at limit stays at 100%
+
+  // 채권 상세
+  renderBondDetail();
+}
+
+function renderBondDetail(){
+  const el = $('bondDetail');
+  if(bonds.length === 0){ el.innerHTML = ''; return; }
+  let html = '<div class="bd-title">📊 채권 투자 상세</div><table class="bd-table"><thead><tr><th>종목</th><th>총 투자금</th><th>총 액면</th><th>연 이자(세전)</th><th>원천세(15.4%)</th><th>세후 이자</th><th>만기 상환차익</th></tr></thead><tbody>';
+  let sumInvest=0,sumFace=0,sumInterest=0,sumTax=0,sumAfter=0,sumGain=0;
+  bonds.forEach(b=>{
+    const invest = (b.price||0)*(b.qty||0);
+    const face = (b.face||0)*(b.qty||0);
+    const interest = face*(b.coupon||0)/100;
+    const tax = interest*0.154;
+    const after = interest - tax;
+    const gain = face - invest; // 만기 상환 시 차익(할인채면 양수)
+    sumInvest+=invest; sumFace+=face; sumInterest+=interest; sumTax+=tax; sumAfter+=after; sumGain+=gain;
+    html += '<tr><td>'+(b.name||'-')+'</td><td>'+fmt(invest)+'</td><td>'+fmt(face)+'</td><td>'+fmt(interest)+'</td><td>'+fmt(tax)+'</td><td>'+fmt(after)+'</td><td style="color:'+(gain>=0?'#16a34a':'#dc2626')+'">'+fmt(gain)+'</td></tr>';
+  });
+  html += '<tr style="font-weight:700;border-top:2px solid #1d4ed8"><td>합계</td><td>'+fmt(sumInvest)+'</td><td>'+fmt(sumFace)+'</td><td>'+fmt(sumInterest)+'</td><td>'+fmt(sumTax)+'</td><td>'+fmt(sumAfter)+'</td><td>'+fmt(sumGain)+'</td></tr>';
+  html += '</tbody></table>';
+  html += '<div class="dim" style="margin-top:6px">만기 상환차익 = 총 액면 − 총 투자금. 할인 매수 시 양수 → 이것도 금융소득 과세 대상(보유기간이자). 세후 이자는 원천징수(15.4%) 기준.</div>';
+  el.innerHTML = html;
+}
+
+// ── 슬롯 저장/복원 ──
+window.slGetState = function(){
+  return { bonds: bonds.slice(), stocks: stocks.slice(), depos: depos.slice(), buffer: $('buffer').value };
+};
+window.slSetState = function(d){
+  if(!d) return;
+  bonds = (d.bonds||[]).slice();
+  stocks = (d.stocks||[]).slice();
+  depos = (d.depos||[]).slice();
+  if(d.buffer !== undefined) $('buffer').value = d.buffer;
+  renderBonds(); renderStocks(); renderDepos(); recalc();
+};
+
+// 초기화
+recalc();
+</script>
+</body>
+</html>
