@@ -347,6 +347,9 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
   function addFav(item){ if(!isFav(item.href)){ favs.push(item); saveFavs(); } }
   function removeFav(href){ favs = favs.filter(function(f){ return f.href !== href; }); saveFavs(); }
 
+  // localStorage에서 즐겨찾기 복원 (★ 버튼 생성 전에 로드해야 active 상태 반영됨)
+  loadFavs();
+
   // 모든 도구 카드에 ☆ 버튼 삽입
   document.querySelectorAll('.tool-grid .card[href], .tool-grid .card a[href]').forEach(function(card){
     if(card.tagName !== 'A') return;
@@ -568,8 +571,7 @@ footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
     try{ localStorage.setItem('sf_fav_collapsed', favCollapsed?'1':'0'); }catch(e){}
   });
 
-  // 초기화
-  loadFavs();
+  // 초기화 (loadFavs는 위에서 이미 호출됨)
   renderFavGrid();
 
   /* ─── sf-slots.js 연동 ─── */
