@@ -221,7 +221,7 @@
   </div>
 
   <!-- ============ 대시보드 탭 ============ -->
-  <div id="dashView">
+  <div id="dashView" style="display:none">
     <div id="dashEmpty" class="panel" style="display:none">
       <div class="empty-hint">아직 입력된 자산이 없어요.<br>"✏️ 입력" 탭에서 자산을 추가해보세요.</div>
     </div>
@@ -799,9 +799,9 @@ load();
 // 첫 방문이면 빈 항목 하나씩
 if(state.assets.length===0) state.assets.push({cat:'현금성',name:'',amount:0});
 if(state.debts.length===0) state.debts.push({cat:'주택담보',name:'',amount:0});
-renderAll();
-// 저장된 탭 복원 (기본: 대시보드)
+// 저장된 탭 복원 (기본: 대시보드) — renderAll 전에 실행해서 깜빡임 방지
 try{ var savedTab = localStorage.getItem('sf_assets_tab'); switchTab(savedTab || 'dash'); }catch(e){ switchTab('dash'); }
+renderAll();
 
 // === PWA 설치 ===
 (function(){
