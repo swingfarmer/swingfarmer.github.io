@@ -454,8 +454,8 @@ function recalc(){
   renderHalfDetail(fxH1,fxH2);
   renderMaturityDetail(fxMat);
 
-  // 자동저장 (sf-slots와 동일 키로 직접 저장 — 동적 행 변경도 반영)
-  try{localStorage.setItem('sf_'+window.CALC_KEY+'_v2',JSON.stringify(window.slGetState()));}catch(e){}
+  // 자동저장 (sf-slots autoLoad 완료 후에만 저장 — 초기 빈 상태 덮어쓰기 방지)
+  if(_canSave){try{localStorage.setItem('sf_'+window.CALC_KEY+'_v2',JSON.stringify(window.slGetState()));}catch(e){}}
 }
 
 function renderHalfDetail(fxH1,fxH2){
@@ -540,7 +540,14 @@ function _loadState(d){
 window.slGetState=function(){return _getState();};
 window.slSetState=function(d){_loadState(d);};
 
-// 초기 렌더 (sf-slots의 autoLoad가 DOMContentLoaded에서 slSetState 호출하면 덮어씀)
+// 자동저장 플래그: sf-slots autoLoad 완료 전까지 저장 금지
+var _canSave=false;
+document.addEventListener('DOMContentLoaded',function(){
+  // sf-slots의 DOMContentLoaded 리스너가 먼저 실행됨 (sf-slots.js가 먼저 로드)
+  // → autoLoad 완료 후 이 리스너 실행 → 저장 활성화
+  _canSave=true;
+});
+// 초기 렌더 (_canSave=false라 빈 상태 저장 안 함)
 recalc();
 </script>
 </body>
