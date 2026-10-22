@@ -202,8 +202,9 @@ function calcReturns(){
   var last=entries[entries.length-1],first=entries[0];
   var cumP=getCumPrincipal(entries.length-1),gain=last.asset-cumP;
   var days=daysBetween(first.date,last.date),years=Math.max(days/365.25,0.01);
-  var simple=cumP>0?gain/cumP:0;
-  var cagr=cumP>0?Math.pow(last.asset/cumP,1/years)-1:0;
+  var sc=startCap||0;
+  var simple=sc>0?gain/sc:0;
+  var cagr=sc>0?Math.pow(last.asset/sc,1/years)-1:0;
   // TWR
   var twr=0;
   if(entries.length>=2){var prod=1;for(var i=1;i<entries.length;i++){var flow=(entries[i].depIn||0)-(entries[i].depOut||0);var beg=entries[i-1].asset+flow;if(beg>0)prod*=(entries[i].asset/beg);}twr=prod-1;}
@@ -241,9 +242,9 @@ function calc8mCycle(){
     var si=closest(anchors[i-1]),ei=closest(anchors[i]);
     if(si===null||ei===null||si>=ei)continue;
     var flow=0;for(var j=si+1;j<=ei;j++)flow+=(entries[j].depIn||0)-(entries[j].depOut||0);
-    var gain=entries[ei].asset-(entries[si].asset+flow);
-    var base=entries[si].asset+flow;
-    results.push({from:entries[si].date,to:entries[ei].date,startA:entries[si].asset,endA:entries[ei].asset,flow:flow,gain:gain,rate:base>0?gain/base:0});
+    var sA=entries[si].asset;
+    var gain=entries[ei].asset-(sA+flow);
+    results.push({from:entries[si].date,to:entries[ei].date,startA:sA,endA:entries[ei].asset,flow:flow,gain:gain,rate:sA>0?gain/sA:0});
   }
   return results;
 }
@@ -256,8 +257,8 @@ function renderTrend(){
   if(ret){
     var rg='<div class="ret-item"><div class="ret-name">💰 실제 내 지갑</div></div>';
     rg+='<div class="ret-item"><div class="ret-name">MWR (XIRR) — 연율</div><div class="ret-val" style="color:'+colVal(ret.mwr)+'">'+(ret.mwr>=0?'+':'')+(ret.mwr*100).toFixed(2)+'%</div><div class="ret-desc">입출금 타이밍·금액 반영한 실제 내 지갑 수익률. Newton-Raphson으로 IRR 역산. 돈을 많이 넣었을 때 수익이 났는지 평가.</div></div>';
-    rg+='<div class="ret-item"><div class="ret-name">단순 누적</div><div class="ret-val" style="color:'+colVal(ret.simple)+'">'+(ret.simple>=0?'+':'')+(ret.simple*100).toFixed(2)+'%</div><div class="ret-desc">= 수익금('+fmtKr(ret.gain)+'원) ÷ 누적원금('+fmtKr(ret.cumP)+'원). '+ret.days+'일간.</div></div>';
-    rg+='<div class="ret-item"><div class="ret-name">CAGR</div><div class="ret-val" style="color:'+colVal(ret.cagr)+'">'+(ret.cagr>=0?'+':'')+(ret.cagr*100).toFixed(2)+'%</div><div class="ret-desc">= (최종÷누적원금)^(365÷'+ret.days+')−1. 연 복리 환산. 예금·부동산 비교용.</div></div>';
+    rg+='<div class="ret-item"><div class="ret-name">단순 누적</div><div class="ret-val" style="color:'+colVal(ret.simple)+'">'+(ret.simple>=0?'+':'')+(ret.simple*100).toFixed(2)+'%</div><div class="ret-desc">= 수익금('+fmtKr(ret.gain)+'원) ÷ 시작금액('+fmtKr(startCap)+'원). '+ret.days+'일간.</div></div>';
+    rg+='<div class="ret-item"><div class="ret-name">CAGR</div><div class="ret-val" style="color:'+colVal(ret.cagr)+'">'+(ret.cagr>=0?'+':'')+(ret.cagr*100).toFixed(2)+'%</div><div class="ret-desc">= (최종÷시작금액)^(365÷'+ret.days+')−1. 연 복리 환산. 예금·부동산 비교용.</div></div>';
     rg+='<div class="ret-item"><div class="ret-name">🎯 순수 투자 실력</div></div>';
     rg+='<div class="ret-item"><div class="ret-name">TWR (시간가중)</div><div class="ret-val" style="color:'+colVal(ret.twr)+'">'+(ret.twr>=0?'+':'')+(ret.twr*100).toFixed(2)+'%</div><div class="ret-desc">= 각 구간 수익률의 복리 곱. 입출금 영향 완전 제거. 벤치마크(코스피 등)와 내 종목 픽 실력 1:1 비교용.</div></div>';
     document.getElementById('retGrid').innerHTML=rg;
@@ -270,7 +271,7 @@ function renderTrend(){
   if(currentDays>0){var cut=new Date();cut.setDate(cut.getDate()-currentDays);var cs=cut.toISOString().slice(0,10);var nf=entries.filter(function(e){return e.date>=cs;});if(nf.length)filtered=nf;else filtered=[entries[entries.length-1]];}
 
   var latest=filtered[filtered.length-1],latIdx=entries.indexOf(latest);
-  var cumL=getCumPrincipal(latIdx),g=latest.asset-cumL,r=cumL>0?(g/cumL*100):0;
+  var cumL=getCumPrincipal(latIdx),g=latest.asset-cumL,r=startCap>0?(g/startCap*100):0;
   var first=filtered[0],pg=latest.asset-first.asset,pr=first.asset?(pg/first.asset*100):0;
   document.getElementById('assetSummary').innerHTML=
     '<div class="asset-card"><div class="label">투자 자산</div><div class="value">'+fmtKr(latest.asset)+'원</div><div class="sub '+(g>=0?'up':'down')+'">'+(g>=0?'▲':'▼')+' '+fmtKr(Math.abs(g))+'원</div></div>'+
@@ -290,9 +291,9 @@ function renderTrend(){
 
   // 벤치마크 차트 (% 수익률, 별도 차트)
   var bmC={KS11:'#dc2626',KQ11:'#f59e0b',GSPC:'#2563eb',IXIC:'#10b981'},bmN={KS11:'코스피',KQ11:'코스닥',GSPC:'S&P 500',IXIC:'나스닥'};
-  var bmDS=[];var firstCumP=getCumPrincipal(entries.indexOf(first));
-  // 내 수익률 %
-  var myPct=filtered.map(function(e){var c=getCumPrincipal(entries.indexOf(e));return c>0?((e.asset-c)/c*100):0;});
+  var bmDS=[];
+  // 내 수익률 % (시작금액 대비)
+  var myPct=filtered.map(function(e){var c=getCumPrincipal(entries.indexOf(e));var g=e.asset-c;return startCap>0?(g/startCap*100):0;});
   bmDS.push({label:'내 수익률',data:myPct,borderColor:'#1F4E78',borderWidth:2.5,pointRadius:filtered.length>60?0:3,fill:false,tension:0.3});
 
   var mhMap={};if(marketHistory.length)marketHistory.forEach(function(m){mhMap[m.date]=m;});
