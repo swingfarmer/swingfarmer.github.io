@@ -102,7 +102,7 @@ footer{text-align:center;margin-top:30px;color:#999;font-size:11px}
     <div style="display:flex;gap:4px"><button class="btn-gray" onclick="exportCSV()">📥 CSV</button><label class="btn-gray" style="cursor:pointer">📤 가져오기<input type="file" accept=".csv" style="display:none" onchange="importCSV(event)"></label></div>
   </div>
   <div style="max-height:400px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px">
-    <table class="history-table"><thead><tr><th>날짜</th><th>투자자산</th><th style="color:#2563eb">입금</th><th style="color:#dc2626">출금</th><th>누적원금</th><th>수익금</th><th>수익률</th><th></th></tr></thead><tbody id="historyBody"></tbody></table>
+    <table class="history-table"><thead><tr><th>날짜</th><th>투자자산</th><th style="color:#2563eb">입금</th><th style="color:#dc2626">출금</th><th>누적원금</th><th>수익금</th><th>수익률<br><span style="font-size:9px;font-weight:400;color:#999">(÷시작금액)</span></th><th></th></tr></thead><tbody id="historyBody"></tbody></table>
   </div>
 </div>
 <footer>© 스윙파머</footer>
@@ -179,7 +179,7 @@ function renderInput(){
   if(!entries.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:#999;padding:16px">데이터 없음</td></tr>';return;}
   var html='';
   for(var i=entries.length-1;i>=0;i--){
-    var e=entries[i],cum=getCumPrincipal(i),gain=e.asset-cum,rate=cum>0?(gain/cum*100):0;
+    var e=entries[i],cum=getCumPrincipal(i),gain=e.asset-cum,rate=startCap>0?(gain/startCap*100):0;
     html+='<tr onclick="editEntry(\''+e.date+'\')">';
     html+='<td>'+e.date+'</td><td>'+fmt(e.asset)+'</td>';
     html+='<td style="color:#2563eb">'+(e.depIn?'+'+fmt(e.depIn):'-')+'</td>';
@@ -255,11 +255,11 @@ function renderTrend(){
   var ret=calcReturns();
   if(ret){
     var rg='<div class="ret-item"><div class="ret-name">💰 실제 내 지갑</div></div>';
-    rg+='<div class="ret-item"><div class="ret-name">MWR (XIRR) — 연율</div><div class="ret-val" style="color:'+colVal(ret.mwr)+'">'+(ret.mwr>=0?'+':'')+(ret.mwr*100).toFixed(2)+'%</div><div class="ret-desc">입출금 타이밍·금액 반영</div></div>';
-    rg+='<div class="ret-item"><div class="ret-name">단순 누적</div><div class="ret-val" style="color:'+colVal(ret.simple)+'">'+(ret.simple>=0?'+':'')+(ret.simple*100).toFixed(2)+'%</div><div class="ret-desc">'+fmt(ret.gain)+'원 / '+ret.days+'일</div></div>';
-    rg+='<div class="ret-item"><div class="ret-name">CAGR</div><div class="ret-val" style="color:'+colVal(ret.cagr)+'">'+(ret.cagr>=0?'+':'')+(ret.cagr*100).toFixed(2)+'%</div><div class="ret-desc">복리 연환산</div></div>';
+    rg+='<div class="ret-item"><div class="ret-name">MWR (XIRR) — 연율</div><div class="ret-val" style="color:'+colVal(ret.mwr)+'">'+(ret.mwr>=0?'+':'')+(ret.mwr*100).toFixed(2)+'%</div><div class="ret-desc">입출금 타이밍·금액 반영한 실제 내 지갑 수익률. Newton-Raphson으로 IRR 역산. 돈을 많이 넣었을 때 수익이 났는지 평가.</div></div>';
+    rg+='<div class="ret-item"><div class="ret-name">단순 누적</div><div class="ret-val" style="color:'+colVal(ret.simple)+'">'+(ret.simple>=0?'+':'')+(ret.simple*100).toFixed(2)+'%</div><div class="ret-desc">= 수익금('+fmtKr(ret.gain)+'원) ÷ 누적원금('+fmtKr(ret.cumP)+'원). '+ret.days+'일간.</div></div>';
+    rg+='<div class="ret-item"><div class="ret-name">CAGR</div><div class="ret-val" style="color:'+colVal(ret.cagr)+'">'+(ret.cagr>=0?'+':'')+(ret.cagr*100).toFixed(2)+'%</div><div class="ret-desc">= (최종÷누적원금)^(365÷'+ret.days+')−1. 연 복리 환산. 예금·부동산 비교용.</div></div>';
     rg+='<div class="ret-item"><div class="ret-name">🎯 순수 투자 실력</div></div>';
-    rg+='<div class="ret-item"><div class="ret-name">TWR (시간가중)</div><div class="ret-val" style="color:'+colVal(ret.twr)+'">'+(ret.twr>=0?'+':'')+(ret.twr*100).toFixed(2)+'%</div><div class="ret-desc">입출금 제거. 벤치마크 비교용</div></div>';
+    rg+='<div class="ret-item"><div class="ret-name">TWR (시간가중)</div><div class="ret-val" style="color:'+colVal(ret.twr)+'">'+(ret.twr>=0?'+':'')+(ret.twr*100).toFixed(2)+'%</div><div class="ret-desc">= 각 구간 수익률의 복리 곱. 입출금 영향 완전 제거. 벤치마크(코스피 등)와 내 종목 픽 실력 1:1 비교용.</div></div>';
     document.getElementById('retGrid').innerHTML=rg;
   }
 
@@ -300,7 +300,7 @@ function renderTrend(){
   document.querySelectorAll('.bm-chk:checked').forEach(function(cb){
     var key=cb.value,bv=null;
     for(var i=0;i<marketHistory.length;i++){if(marketHistory[i].date>=first.date&&marketHistory[i][key]){bv=marketHistory[i][key];break;}}
-    if(!bv){bmWarnMsg='⚠️ '+bmN[key]+': 데이터 범위('+(marketHistory.length?marketHistory[0].date:'없음')+'~)가 입력 시작일('+first.date+')보다 늦어 비교 불가.';return;}
+    if(!bv){bmWarnMsg='⚠️ 벤치마크 비교 불가 — market_history.json 데이터가 '+(marketHistory.length?marketHistory[0].date:'없음')+'부터만 있어서 입력 시작일('+first.date+')과 겹치는 구간이 없음. 크론이 매일 수집 중이므로 시간이 지나면 자동으로 쌓임. 과거 데이터 필요 시 백필 작업 필요 (보류A).';return;}
     hasBM=true;
     var bd=filtered.map(function(e){
       var cl=null;for(var k=0;k<marketHistory.length;k++){if(marketHistory[k].date<=e.date&&marketHistory[k][key])cl=marketHistory[k];}
