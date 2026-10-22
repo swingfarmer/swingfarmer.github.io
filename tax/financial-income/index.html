@@ -336,7 +336,9 @@ const BRACKETS=[
 ];
 let bonds=[],stocks=[],depos=[];
 
-function switchTab(t){['bond','stock','depo'].forEach((k,i)=>{document.querySelectorAll('.stab')[i].classList.toggle('active',k===t);$('tab-'+k).classList.toggle('active',k===t);});}
+function switchTab(t){['bond','stock','depo'].forEach((k,i)=>{document.querySelectorAll('.stab')[i].classList.toggle('active',k===t);$('tab-'+k).classList.toggle('active',k===t);});
+  try{localStorage.setItem('sf_fi_tab',t);}catch(e){}}
+(function(){try{var t=localStorage.getItem('sf_fi_tab');if(t)switchTab(t);}catch(e){}})();
 
 // ── 채권 ──
 function addBond(d){bonds.push(d||{name:'',face:1000,price:0,qty:0,fxBuy:1380,coupon:0,confH1:0,confH2:0});renderBonds();recalc();}
