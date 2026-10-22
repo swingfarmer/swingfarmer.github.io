@@ -13,6 +13,7 @@
 <style>
 :root { --sf-max-w: 960px; }
 .final, .result-hero { background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+  @keyframes fadeSlide { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
   header .sub { font-size: 12px; color: #888; }
   .backlink { margin-left: auto; font-size: 13px; color: #1F4E78; text-decoration: none; font-weight: 600; }
   .backlink:hover { text-decoration: underline; }
@@ -134,7 +135,7 @@
   </div>
 </header>
 
-<div class="wrap" id="mainWrap" style="opacity:0;transition:opacity .15s">
+<div class="wrap" id="mainWrap" style="visibility:hidden">
   <div class="notice">
     💾 입력값은 <b>이 브라우저(localStorage)에만</b> 저장됩니다. 서버로 전송되지 않고 광고도 없습니다. 다른 기기와 공유되지 않으니, 기기를 바꾸면 다시 입력하거나 JSON으로 내보내 옮기세요.
   </div>
@@ -147,14 +148,14 @@
   </div>
 
   <!-- 앱 설치 안내 -->
-  <div id="installBox" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:14px">
+  <div id="installBox" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:14px;animation:fadeSlide .3s ease">
     <div style="font-size:13.5px;font-weight:700;color:#1e40af;margin-bottom:6px">📲 앱으로 설치하기</div>
     <div id="installGuide" style="font-size:12.5px;color:#1e40af;line-height:1.7"></div>
     <button id="btnInstall" style="display:none;background:#1F4E78;color:white;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px">홈 화면에 추가</button>
   </div>
 
   <!-- 관리자 클라우드 (로그인 시에만 노출) -->
-  <div id="cloudArea" style="display:none;align-items:center;gap:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin-bottom:14px;flex-wrap:wrap">
+  <div id="cloudArea" style="display:none;align-items:center;gap:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin-bottom:14px;flex-wrap:wrap;animation:fadeSlide .3s ease">
     <span style="font-size:12px;font-weight:700;color:#0369a1">☁️ 관리자</span>
     
     <span id="cloudWho" style="font-size:11px;color:#0369a1"></span>
@@ -163,7 +164,7 @@
   <div id="uidInfo" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:13px;color:#92400e;margin-bottom:14px;line-height:1.7"></div>
 
   <div class="tabs">
-    <button class="tab active" id="tabDash" onclick="switchTab('dash')">📊 대시보드</button>
+    <button class="tab" id="tabDash" onclick="switchTab('dash')">📊 대시보드</button>
     <button class="tab" id="tabInput" onclick="switchTab('input')">✏️ 입력</button>
   </div>
 
@@ -854,8 +855,8 @@ renderAll();
 window.CALC_KEY = 'assets';
 window.slGetState = assetGetState;
 window.slSetState = assetSetState;
-// 초기화 완료 → 한번에 표시
-requestAnimationFrame(function(){ $('mainWrap').style.opacity = '1'; });
+// 초기화 완료 → common.js 등 동기 스크립트 전부 끝난 후 한번에 표시
+document.addEventListener('DOMContentLoaded', function(){ $('mainWrap').style.visibility = 'visible'; });
 </script>
 <!-- 클라우드 스냅샷 모달 -->
 
