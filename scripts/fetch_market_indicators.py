@@ -45,6 +45,15 @@ INDICATORS = {
     # 한국 지수
     "^KS11":  {"name": "코스피",       "cat": "kr_index", "unit": "pt"},
     "^KQ11":  {"name": "코스닥",       "cat": "kr_index", "unit": "pt"},
+    # 한국 개별종목 (포트폴리오 종목 수익률 비교용)
+    "005930.KS": {"name": "삼성전자",     "cat": "kr_stock", "unit": "₩"},
+    "000660.KS": {"name": "SK하이닉스",   "cat": "kr_stock", "unit": "₩"},
+    "042660.KS": {"name": "한화오션",     "cat": "kr_stock", "unit": "₩"},
+    "010140.KS": {"name": "삼성중공업",   "cat": "kr_stock", "unit": "₩"},
+    "003490.KS": {"name": "대한항공",     "cat": "kr_stock", "unit": "₩"},
+    "000720.KS": {"name": "현대건설",     "cat": "kr_stock", "unit": "₩"},
+    "004020.KS": {"name": "현대제철",     "cat": "kr_stock", "unit": "₩"},
+    "028670.KS": {"name": "팬오션",       "cat": "kr_stock", "unit": "₩"},
 }
 
 
@@ -170,8 +179,8 @@ def main():
     # 4. 히스토리 누적 (플랫 구조 — 차트용)
     hist_entry = {"date": now.strftime("%Y-%m-%d")}
     for ind in indicators:
-        # 키: 티커에서 특수문자 제거 (^GSPC → GSPC, CL=F → CLF)
-        key = ind["ticker"].replace("^", "").replace("=", "")
+        # 키: 티커에서 특수문자 제거 (^GSPC → GSPC, CL=F → CLF, 005930.KS → 005930)
+        key = ind["ticker"].replace("^", "").replace("=", "").replace(".KS", "")
         hist_entry[key] = ind["price"]
     if rates:
         for k in ["USD_KRW", "JPY100_KRW", "CNY_KRW", "GOLD_KRW_G"]:

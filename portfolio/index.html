@@ -185,6 +185,21 @@ footer{text-align:center;margin-top:30px;color:#999;font-size:11px}
   </div>
   <div class="asset-chart-wrap"><canvas id="bmChart"></canvas></div>
   <div id="bmWarn"></div>
+
+  <h3 style="font-size:13px;color:#1F4E78;margin:16px 0 8px">📊 종목 수익률 비교 (%)</h3>
+  <div class="bm-legend" id="stockLegend">
+    <label style="color:#1F4E78;font-weight:700">━ 내 수익률</label>
+    <label><input type="checkbox" class="stk-chk" value="005930" checked> <span style="color:#1e40af">삼성전자</span></label>
+    <label><input type="checkbox" class="stk-chk" value="000660" checked> <span style="color:#7c3aed">SK하이닉스</span></label>
+    <label><input type="checkbox" class="stk-chk" value="042660"> <span style="color:#0891b2">한화오션</span></label>
+    <label><input type="checkbox" class="stk-chk" value="010140"> <span style="color:#0d9488">삼성중공업</span></label>
+    <label><input type="checkbox" class="stk-chk" value="003490"> <span style="color:#ca8a04">대한항공</span></label>
+    <label><input type="checkbox" class="stk-chk" value="000720"> <span style="color:#ea580c">현대건설</span></label>
+    <label><input type="checkbox" class="stk-chk" value="004020"> <span style="color:#be185d">현대제철</span></label>
+    <label><input type="checkbox" class="stk-chk" value="028670"> <span style="color:#65a30d">팬오션</span></label>
+  </div>
+  <div class="asset-chart-wrap"><canvas id="stkChart"></canvas></div>
+  <div id="stkWarn"></div>
 </div>
 
 <!-- ═══ 탭: 입력/수정 ═══ -->
@@ -270,7 +285,7 @@ footer{text-align:center;margin-top:30px;color:#999;font-size:11px}
 
 <script>
 window.CALC_KEY='portfolio_history';
-var entries=[],startCap=0,marketHistory=[],pfData=null,assetCI=null,bmCI=null,dashMiniCI=null,currentDays=365,_canSave=false,editingDate=null;
+var entries=[],startCap=0,marketHistory=[],pfData=null,assetCI=null,bmCI=null,stkCI=null,dashMiniCI=null,currentDays=365,_canSave=false,editingDate=null;
 function fmt(n){return n==null?'-':Number(n).toLocaleString('ko-KR');}
 function fmtKr(n){if(n==null)return'-';var a=Math.abs(n),s=n<0?'-':'';if(a>=1e8)return s+(a/1e8).toFixed(1)+'억';if(a>=1e4)return s+Math.round(a/1e4)+'만';return fmt(n);}
 function parseNum(s){return parseInt(String(s).replace(/[^0-9\-]/g,''),10)||0;}
@@ -301,6 +316,7 @@ document.querySelectorAll('.pf-tab').forEach(function(tab){tab.addEventListener(
 try{var st=localStorage.getItem('pf_active_tab');if(st){var t=document.querySelector('.pf-tab[data-tab="'+st+'"]');if(t)t.click();}}catch(e){}
 document.getElementById('periodBtns').addEventListener('click',function(e){if(!e.target.classList.contains('period-btn'))return;document.querySelectorAll('.period-btn').forEach(function(b){b.classList.remove('active');});e.target.classList.add('active');currentDays=parseInt(e.target.dataset.days);renderTrend();});
 document.querySelectorAll('.bm-chk').forEach(function(cb){cb.addEventListener('change',function(){renderTrend();});});
+document.querySelectorAll('.stk-chk').forEach(function(cb){cb.addEventListener('change',function(){renderTrend();});});
 
 // 시작금액
 document.getElementById('inStartCap').addEventListener('input',function(){
@@ -516,6 +532,23 @@ function renderTrend(){
   document.getElementById('bmWarn').innerHTML=bmWarnMsg?'<div class="bm-warn">'+bmWarnMsg+'</div>':'';
   if(bmCI)bmCI.destroy();
   bmCI=new Chart(document.getElementById('bmChart'),{type:'line',data:{labels:labels,datasets:bmDS},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom',labels:{font:{size:10},usePointStyle:true,pointStyle:'line'}},tooltip:{callbacks:{label:function(ctx){return ctx.parsed.y==null?null:ctx.dataset.label+': '+(ctx.parsed.y>=0?'+':'')+ctx.parsed.y.toFixed(1)+'%';}}}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:9}},grid:{display:false}},y:{ticks:{callback:function(v){return v+'%';},font:{size:10}},grid:{color:'rgba(0,0,0,.06)'}}}}});
+
+  // ═══ 종목 수익률 비교 ═══
+  var stkC={'005930':'#1e40af','000660':'#7c3aed','042660':'#0891b2','010140':'#0d9488','003490':'#ca8a04','000720':'#ea580c','004020':'#be185d','028670':'#65a30d'};
+  var stkN={'005930':'삼성전자','000660':'SK하이닉스','042660':'한화오션','010140':'삼성중공업','003490':'대한항공','000720':'현대건설','004020':'현대제철','028670':'팬오션'};
+  var stkDS=[];
+  stkDS.push({label:'내 수익률',data:myPct,borderColor:'#1F4E78',borderWidth:2.5,pointRadius:filtered.length>60?0:3,fill:false,tension:0.3});
+  var stkWarnMsg='';
+  document.querySelectorAll('.stk-chk:checked').forEach(function(cb){
+    var key=cb.value,sv=null;
+    for(var i=0;i<marketHistory.length;i++){if(marketHistory[i].date>=first.date&&marketHistory[i][key]){sv=marketHistory[i][key];break;}}
+    if(!sv){stkWarnMsg='⚠️ 종목 데이터 없음 — 백필 필요. VM에서 python3 scripts/backfill_stock_history.py 실행.';return;}
+    var sd=filtered.map(function(e){var cl=null;for(var k=0;k<marketHistory.length;k++){if(marketHistory[k].date<=e.date&&marketHistory[k][key])cl=marketHistory[k];}return cl?((cl[key]/sv-1)*100):null;});
+    stkDS.push({label:stkN[key]||key,data:sd,borderColor:stkC[key]||'#888',borderWidth:1.5,pointRadius:0,fill:false,tension:0.3,spanGaps:true,borderDash:[4,3]});
+  });
+  document.getElementById('stkWarn').innerHTML=stkWarnMsg?'<div class="bm-warn">'+stkWarnMsg+'</div>':'';
+  if(stkCI)stkCI.destroy();
+  stkCI=new Chart(document.getElementById('stkChart'),{type:'line',data:{labels:labels,datasets:stkDS},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom',labels:{font:{size:10},usePointStyle:true,pointStyle:'line'}},tooltip:{callbacks:{label:function(ctx){return ctx.parsed.y==null?null:ctx.dataset.label+': '+(ctx.parsed.y>=0?'+':'')+ctx.parsed.y.toFixed(1)+'%';}}}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:9}},grid:{display:false}},y:{ticks:{callback:function(v){return v+'%';},font:{size:10}},grid:{color:'rgba(0,0,0,.06)'}}}}});
 }
 
 // ═══ 포트폴리오 ═══
