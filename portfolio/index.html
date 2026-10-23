@@ -311,12 +311,7 @@ window.slSetState=function(d){
 function triggerSave(){if(_canSave){try{localStorage.setItem('sf_'+CALC_KEY+'_v2',JSON.stringify(window.slGetState()));}catch(e){}}}
 function renderAll(){renderDashboard();renderInput();renderTrend();if(pfData)renderOverview(pfData);}
 
-// 탭
-document.querySelectorAll('.pf-tab').forEach(function(tab){tab.addEventListener('click',function(){document.querySelectorAll('.pf-tab').forEach(function(t){t.classList.remove('active');});document.querySelectorAll('.pf-panel').forEach(function(p){p.classList.remove('active');});tab.classList.add('active');document.getElementById('panel-'+tab.dataset.tab).classList.add('active');try{localStorage.setItem('pf_active_tab',tab.dataset.tab);}catch(e){}if(tab.dataset.tab==='trend')renderTrend();if(tab.dataset.tab==='dash')renderDashboard();});});
-try{var st=localStorage.getItem('pf_active_tab');if(st){var t=document.querySelector('.pf-tab[data-tab="'+st+'"]');if(t)t.click();}}catch(e){}
-document.getElementById('periodBtns').addEventListener('click',function(e){if(!e.target.classList.contains('period-btn'))return;document.querySelectorAll('.period-btn').forEach(function(b){b.classList.remove('active');});e.target.classList.add('active');currentDays=parseInt(e.target.dataset.days);try{localStorage.setItem('pf_period_days',currentDays);}catch(x){}renderTrend();});
-document.querySelectorAll('.bm-chk').forEach(function(cb){cb.addEventListener('change',function(){saveTrendPrefs();renderTrend();});});
-document.querySelectorAll('.stk-chk').forEach(function(cb){cb.addEventListener('change',function(){saveTrendPrefs();renderTrend();});});
+// 체크박스·기간필터 저장/복원
 function saveTrendPrefs(){try{var bm=[],stk=[];document.querySelectorAll('.bm-chk').forEach(function(c){if(c.checked)bm.push(c.value);});document.querySelectorAll('.stk-chk').forEach(function(c){if(c.checked)stk.push(c.value);});localStorage.setItem('pf_bm_chk',JSON.stringify(bm));localStorage.setItem('pf_stk_chk',JSON.stringify(stk));}catch(x){}}
 function loadTrendPrefs(){try{
   var pd=localStorage.getItem('pf_period_days');if(pd!==null){currentDays=parseInt(pd);document.querySelectorAll('.period-btn').forEach(function(b){b.classList.remove('active');if(parseInt(b.dataset.days)===currentDays)b.classList.add('active');});}
@@ -324,6 +319,12 @@ function loadTrendPrefs(){try{
   var stk=localStorage.getItem('pf_stk_chk');if(stk){var arr2=JSON.parse(stk);document.querySelectorAll('.stk-chk').forEach(function(c){c.checked=arr2.indexOf(c.value)>=0;});}
 }catch(x){}}
 loadTrendPrefs();
+// 탭
+document.querySelectorAll('.pf-tab').forEach(function(tab){tab.addEventListener('click',function(){document.querySelectorAll('.pf-tab').forEach(function(t){t.classList.remove('active');});document.querySelectorAll('.pf-panel').forEach(function(p){p.classList.remove('active');});tab.classList.add('active');document.getElementById('panel-'+tab.dataset.tab).classList.add('active');try{localStorage.setItem('pf_active_tab',tab.dataset.tab);}catch(e){}if(tab.dataset.tab==='trend')renderTrend();if(tab.dataset.tab==='dash')renderDashboard();});});
+try{var st=localStorage.getItem('pf_active_tab');if(st){var t=document.querySelector('.pf-tab[data-tab="'+st+'"]');if(t)t.click();}}catch(e){}
+document.getElementById('periodBtns').addEventListener('click',function(e){if(!e.target.classList.contains('period-btn'))return;document.querySelectorAll('.period-btn').forEach(function(b){b.classList.remove('active');});e.target.classList.add('active');currentDays=parseInt(e.target.dataset.days);try{localStorage.setItem('pf_period_days',currentDays);}catch(x){}renderTrend();});
+document.querySelectorAll('.bm-chk').forEach(function(cb){cb.addEventListener('change',function(){saveTrendPrefs();renderTrend();});});
+document.querySelectorAll('.stk-chk').forEach(function(cb){cb.addEventListener('change',function(){saveTrendPrefs();renderTrend();});});
 
 // 시작금액
 document.getElementById('inStartCap').addEventListener('input',function(){
