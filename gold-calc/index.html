@@ -274,8 +274,8 @@ h1 { color: #1F4E78; font-size: 26px; margin-bottom: 4px; border-bottom: none; p
 
 <script>
 window.CALC_KEY = 'gold-calc';
-window.slGetState = gcGetState;
-window.slSetState = gcSetState;
+window.slGetState = function(){ return window.gcGetState ? window.gcGetState() : {}; };
+window.slSetState = function(d){ if(window.gcSetState) window.gcSetState(d); };
 </script>
 <script src="/sf-slots.js?v=2"></script>
 <script src="/common.js?v=5"></script>
@@ -344,7 +344,6 @@ function slotItemHtml(s,idx){
   const KARAT_FACTOR = { '24': 1.000, '18': 0.750, '14': 0.583 };
   const G_PER_DON = 3.75;
   const PRESETS_KEY = 'gold-calc-presets-v2';
-  const LAST_KEY = 'gold-calc-last-v2';
 
   const $ = id => document.getElementById(id);
 
@@ -512,8 +511,8 @@ function slotItemHtml(s,idx){
       $('metaInfo').style.display = 'none';
     }
 
-    // 최근 값 자동 저장
-    saveLast();
+    // sf-slots.js 자동저장 트리거
+    try{ localStorage.setItem('sf_'+CALC_KEY+'_v2', JSON.stringify(window.gcGetState())); }catch(e){}
 
     // data-won 힌트 갱신 (동적)
     if (window.sfRefreshWon) window.sfRefreshWon();
@@ -557,16 +556,7 @@ function slotItemHtml(s,idx){
     calc();
   }
 
-  function saveLast() {
-    try { localStorage.setItem(LAST_KEY, JSON.stringify(collectAll())); } catch(e){}
-  }
-
-  function loadLast() {
-    try {
-      const raw = localStorage.getItem(LAST_KEY);
-      if (raw) applyAll(JSON.parse(raw));
-    } catch(e){}
-  }
+  // saveLast/loadLast 제거 — sf-slots.js가 자동저장/복원 담당
 
   // ---------- Firestore 슬롯 시스템용 훅 ----------
   // 저장 시: 계산 결과 요약(_total) 함께 첨부하여 슬롯 목록에서 미리보기 가능
@@ -591,7 +581,7 @@ function slotItemHtml(s,idx){
     $('karat').value = '18';
     $('decKarat').value = '18';
     document.querySelector('input[name="vat"][value="excl"]').checked = true;
-    try { localStorage.removeItem(LAST_KEY); } catch(e){}
+    try { localStorage.removeItem('sf_'+CALC_KEY+'_v2'); } catch(e){}
     calc();
   }
 
@@ -631,8 +621,7 @@ function slotItemHtml(s,idx){
     btn.disabled = false;
   };
 
-  // 초기 로드
-  loadLast();
+  // 초기 로드 (sf-slots.js autoLoad가 slSetState→applyAll→calc 호출)
   calc();
 })();
 </script>
