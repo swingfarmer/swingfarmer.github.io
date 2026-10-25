@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-선물 투자자별 매매동향 수집
-==========================
+선물 투자자별 매매동향 + KOSPI200 지수 종가 수집
+==================================================
 KRX data.krx.co.kr → Oracle FUTURES_INVESTOR 테이블.
 pykrx 세션 로그인 후 JSON API 호출.
 
@@ -70,19 +70,23 @@ def get_krx_session():
         sys.exit(1)
 
 
-def fetch_krx_data(krxs, start_date, end_date, prt_type="QTY"):
-    """KRX 선물 투자자별 거래실적 JSON 호출.
-    prt_type: QTY=계약수, AMT=거래대금(원)
-    """
+def _krx_headers(krxs):
+    """공통 KRX 요청 헤더."""
     headers = krxs.get_headers()
     headers["User-Agent"] = "Mozilla/5.0"
     headers["Referer"] = "https://data.krx.co.kr/contents/MDC/MDI/outerLoader/index.cmd"
     headers["X-Requested-With"] = "XMLHttpRequest"
     headers["Content-Type"] = "application/x-www-form-urlencoded"
+    return headers
 
+
+def fetch_krx_data(krxs, start_date, end_date, prt_type="QTY"):
+    """KRX 선물 투자자별 거래실적 JSON 호출.
+    prt_type: QTY=계약수, AMT=거래대금(원)
+    """
     resp = krxs.session.post(
         "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd",
-        headers=headers,
+        headers=_krx_headers(krxs),
         data={
             "bld": KRX_BLD,
             "locale": "ko_KR",
@@ -113,6 +117,41 @@ def fetch_krx_data(krxs, start_date, end_date, prt_type="QTY"):
         return []
 
 
+def fetch_kospi200_close(krxs, start_date, end_date):
+    """KRX KOSPI200 지수 종가 조회 → {YYYYMMDD: close_price} dict."""
+    resp = krxs.session.post(
+        "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd",
+        headers=_krx_headers(krxs),
+        data={
+            "bld": "dbms/MDC/STAT/standard/MDCSTAT00301",
+            "locale": "ko_KR",
+            "indIdx": "1028",
+            "indIdx2": "028",
+            "strtDd": start_date,
+            "endDd": end_date,
+            "csvxls_isNo": "false"
+        }
+    )
+
+    if resp.status_code != 200:
+        print(f"  ❌ KOSPI200 HTTP {resp.status_code}")
+        return {}
+
+    try:
+        data = resp.json()
+        result = {}
+        for row in data.get("output", []):
+            dt = row.get("TRD_DD", "").replace("/", "")
+            close_str = row.get("CLSPRC_IDX", "").replace(",", "")
+            if dt and close_str:
+                result[dt] = float(close_str)
+        print(f"  📈 KOSPI200 종가: {len(result)}일치")
+        return result
+    except Exception as e:
+        print(f"  ❌ KOSPI200 파싱 실패: {e}")
+        return {}
+
+
 def parse_number(s):
     """콤마 포함 숫자 문자열 → int. 빈 문자열은 0."""
     if not s or s.strip() == "":
@@ -120,8 +159,11 @@ def parse_number(s):
     return int(s.replace(",", ""))
 
 
-def save_to_oracle(rows_qty, rows_amt):
+def save_to_oracle(rows_qty, rows_amt, kospi200_map=None):
     """Oracle FUTURES_INVESTOR 테이블에 MERGE."""
+    if kospi200_map is None:
+        kospi200_map = {}
+
     conn = oracledb.connect(
         user="ADMIN",
         password=os.environ.get("ORACLE_DB_PASSWORD", ""),
@@ -131,8 +173,9 @@ def save_to_oracle(rows_qty, rows_amt):
         wallet_password=os.environ.get("ORACLE_WALLET_PASSWORD", "")
     )
 
-    # 테이블 없으면 생성
     cur = conn.cursor()
+
+    # 테이블 없으면 생성 (kospi200_close 포함)
     try:
         cur.execute("""CREATE TABLE futures_investor (
             trade_date    DATE NOT NULL,
@@ -144,10 +187,19 @@ def save_to_oracle(rows_qty, rows_amt):
             corp_other_amt    NUMBER(18),
             individual_amt    NUMBER(18),
             foreign_amt       NUMBER(18),
+            kospi200_close    NUMBER(10,2),
             CONSTRAINT pk_futures_investor PRIMARY KEY (trade_date)
         )""")
         conn.commit()
-        print("  ✅ 테이블 생성: FUTURES_INVESTOR")
+        print("  ✅ 테이블 생성: FUTURES_INVESTOR (kospi200_close 포함)")
+    except Exception:
+        pass  # 이미 존재
+
+    # kospi200_close 컬럼 없으면 추가
+    try:
+        cur.execute("ALTER TABLE futures_investor ADD (kospi200_close NUMBER(10,2))")
+        conn.commit()
+        print("  ✅ 컬럼 추가: kospi200_close")
     except Exception:
         pass  # 이미 존재
 
@@ -169,6 +221,10 @@ def save_to_oracle(rows_qty, rows_amt):
         date_data[dt]["individual_amt"] = parse_number(row.get("A09", ""))
         date_data[dt]["foreign_amt"] = parse_number(row.get("A12", ""))
 
+    # KOSPI200 종가 병합
+    for dt in date_data:
+        date_data[dt]["kospi200_close"] = kospi200_map.get(dt)
+
     saved = 0
     for dt, d in date_data.items():
         try:
@@ -179,19 +235,22 @@ def save_to_oracle(rows_qty, rows_amt):
                     institution_qty = :iq, corp_other_qty = :cq,
                     individual_qty = :pq, foreign_qty = :fq,
                     institution_amt = :ia, corp_other_amt = :ca,
-                    individual_amt = :pa, foreign_amt = :fa
+                    individual_amt = :pa, foreign_amt = :fa,
+                    kospi200_close = NVL(:kc, t.kospi200_close)
                 WHEN NOT MATCHED THEN INSERT
                     (trade_date, institution_qty, corp_other_qty,
                      individual_qty, foreign_qty,
                      institution_amt, corp_other_amt,
-                     individual_amt, foreign_amt)
-                VALUES (TO_DATE(:dt,'YYYYMMDD'), :iq, :cq, :pq, :fq, :ia, :ca, :pa, :fa)
+                     individual_amt, foreign_amt,
+                     kospi200_close)
+                VALUES (TO_DATE(:dt,'YYYYMMDD'), :iq, :cq, :pq, :fq, :ia, :ca, :pa, :fa, :kc)
             """, {
                 "dt": dt,
                 "iq": d.get("institution_qty", 0), "cq": d.get("corp_other_qty", 0),
                 "pq": d.get("individual_qty", 0), "fq": d.get("foreign_qty", 0),
                 "ia": d.get("institution_amt", 0), "ca": d.get("corp_other_amt", 0),
-                "pa": d.get("individual_amt", 0), "fa": d.get("foreign_amt", 0)
+                "pa": d.get("individual_amt", 0), "fa": d.get("foreign_amt", 0),
+                "kc": d.get("kospi200_close")
             })
             saved += 1
         except Exception as e:
@@ -200,9 +259,13 @@ def save_to_oracle(rows_qty, rows_amt):
     conn.commit()
 
     # 현재 상태 출력
-    cur.execute("SELECT COUNT(*), MIN(TO_CHAR(trade_date,'YYYY-MM-DD')), MAX(TO_CHAR(trade_date,'YYYY-MM-DD')) FROM futures_investor")
-    cnt, mn, mx = cur.fetchone()
-    print(f"  📊 DB: {cnt}일치 ({mn} ~ {mx})")
+    cur.execute("""SELECT COUNT(*),
+        MIN(TO_CHAR(trade_date,'YYYY-MM-DD')),
+        MAX(TO_CHAR(trade_date,'YYYY-MM-DD')),
+        COUNT(kospi200_close)
+        FROM futures_investor""")
+    cnt, mn, mx, kc_cnt = cur.fetchone()
+    print(f"  📊 DB: {cnt}일치 ({mn} ~ {mx}), KOSPI200 종가 {kc_cnt}일치")
 
     cur.close()
     conn.close()
@@ -222,7 +285,8 @@ def export_json(conn_params=None):
     cur = conn.cursor()
     cur.execute("""SELECT TO_CHAR(trade_date,'YYYY-MM-DD') AS dt,
         institution_qty, corp_other_qty, individual_qty, foreign_qty,
-        institution_amt, corp_other_amt, individual_amt, foreign_amt
+        institution_amt, corp_other_amt, individual_amt, foreign_amt,
+        kospi200_close
         FROM futures_investor ORDER BY trade_date""")
     cols = [c[0].lower() for c in cur.description]
     rows = [dict(zip(cols, r)) for r in cur.fetchall()]
@@ -249,15 +313,14 @@ def main():
     start_str = start_dt.strftime("%Y%m%d")
     end_str = end_dt.strftime("%Y%m%d")
 
-    print(f"📊 선물 투자자별 매매동향 수집")
+    print(f"📊 선물 투자자별 매매동향 + KOSPI200 종가 수집")
     print(f"   기간: {start_str} ~ {end_str}")
 
     # 1. KRX 로그인
     krxs = get_krx_session()
     print("  ✅ KRX 로그인 완료")
 
-    # 2. 데이터 조회 (QTY + AMT)
-    # KRX는 한 번에 최대 ~1년 조회 가능, 길면 분할
+    # 2. 투자자별 데이터 조회 (QTY + AMT)
     chunk_size = 365
     all_qty = []
     all_amt = []
@@ -286,11 +349,16 @@ def main():
         print("  ⚠ 데이터 없음")
         return
 
-    # 3. Oracle 저장
-    saved = save_to_oracle(all_qty, all_amt)
+    # 3. KOSPI200 지수 종가 조회
+    print(f"  📥 KOSPI200 지수 종가...", end="", flush=True)
+    kospi200_map = fetch_kospi200_close(krxs, start_str, end_str)
+    time.sleep(1)
+
+    # 4. Oracle 저장
+    saved = save_to_oracle(all_qty, all_amt, kospi200_map)
     print(f"  ✅ {saved}일치 저장/갱신")
 
-    # 4. JSON 내보내기
+    # 5. JSON 내보내기
     export_json()
 
     print(f"\n{'='*50}")

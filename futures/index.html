@@ -29,6 +29,13 @@
 .expiry-tabs button.active{background:#1F4E78;color:#fff;border-color:#1F4E78}
 .expiry-tabs button.current-tag{position:relative}
 .expiry-tabs button.current-tag::after{content:'NOW';position:absolute;top:-6px;right:-6px;background:#ef5350;color:#fff;font-size:8px;padding:1px 4px;border-radius:3px;font-weight:700}
+.pnl-box{background:#f0f7ff;border:1px solid #bdd7ee;border-radius:10px;padding:16px;margin-bottom:20px;text-align:center}
+.pnl-box.profit{background:#fef2f2;border-color:#fca5a5}
+.pnl-box.loss{background:#eff6ff;border-color:#93c5fd}
+.pnl-box .pnl-title{font-size:12px;color:#666;margin-bottom:6px;font-weight:600}
+.pnl-box .pnl-val{font-size:28px;font-weight:800;letter-spacing:-0.5px}
+.pnl-box .pnl-val.pos{color:#dc2626}.pnl-box .pnl-val.neg{color:#2563eb}
+.pnl-box .pnl-detail{font-size:12px;color:#888;margin-top:6px}
 table.inv-tbl{width:100%;border-collapse:collapse;font-size:13px}
 table.inv-tbl th{background:#f8f9fb;padding:8px;text-align:right;font-weight:600;color:#555;border-bottom:2px solid #e5e9f0}
 table.inv-tbl th:first-child{text-align:left}
@@ -61,8 +68,15 @@ table.inv-tbl td.neg{color:#2563eb;font-weight:600}
       <div class="sub" id="heroSub">—</div>
     </div>
 
+    <div class="pnl-box" id="pnlBox" style="display:none">
+      <div class="pnl-title">외국인 추정 평가손익 (KOSPI200 지수 기준)</div>
+      <div class="pnl-val" id="pnlVal">—</div>
+      <div class="pnl-detail" id="pnlDetail">—</div>
+    </div>
+
     <div class="kpi-row">
       <div class="kpi"><div class="label">환산지수 (가중평균)</div><div class="val" id="kpiEquiv">—</div><div class="val-sub" id="kpiEquivSub"></div></div>
+      <div class="kpi"><div class="label">KOSPI200 종가</div><div class="val" id="kpiK200" style="color:#333">—</div></div>
       <div class="kpi"><div class="label">누적 순매수 금액</div><div class="val" id="kpiAmt">—</div></div>
       <div class="kpi"><div class="label">최근 5일 순매수</div><div class="val" id="kpi5d">—</div></div>
       <div class="kpi"><div class="label">데이터 기간</div><div class="val" id="kpiPeriod" style="font-size:14px;color:#555">—</div></div>
@@ -74,7 +88,7 @@ table.inv-tbl td.neg{color:#2563eb;font-weight:600}
     </div>
 
     <div class="chart-wrap">
-      <h3 id="chartEquivTitle">외국인 환산지수 (pt)</h3>
+      <h3 id="chartEquivTitle">외국인 환산지수 vs KOSPI200 (pt)</h3>
       <canvas id="chartEquiv"></canvas>
     </div>
 
@@ -105,7 +119,7 @@ var API = 'https://swingfarmer.duckdns.org/api';
 var allData = [];
 var expiries = [];
 var currentExpiry = '';
-var selectedExpiry = '';  // '' = 전체기간
+var selectedExpiry = '';
 var chartCum, chartEquiv, chartDaily;
 
 function fmt(n){
@@ -115,6 +129,14 @@ function fmt(n){
   if(abs>=1e8) return (n/1e8).toFixed(0)+'억';
   if(abs>=1e4) return (n/1e4).toFixed(0)+'만';
   return n.toLocaleString('ko-KR');
+}
+function fmtAmt(n){
+  if(n==null) return '—';
+  var abs=Math.abs(n);
+  var sign = n>0?'+':'';
+  if(abs>=1e12) return sign+(n/1e12).toFixed(2)+'조';
+  if(abs>=1e8) return sign+(n/1e8).toFixed(0)+'억';
+  return sign+n.toLocaleString('ko-KR')+'원';
 }
 function fmtSign(n){
   if(n==null) return '—';
@@ -147,7 +169,6 @@ function load(){
 function buildTabs(){
   var wrap = document.getElementById('expiryTabs');
   var html = '<button data-exp="" class="">전체기간</button>';
-  // 최신 만기부터 표시
   var sorted = expiries.slice().reverse();
   sorted.forEach(function(p){
     var isCurrent = (p.key === currentExpiry);
@@ -176,12 +197,11 @@ function render(expiryKey){
   var isExpiry = !!expiryKey;
   var last = data[data.length-1];
 
-  // 만기별 vs 전체 선택
   var cumQ = isExpiry ? last.exp_cum_qty : last.foreign_cum_qty;
   var cumA = isExpiry ? last.exp_cum_amt : last.foreign_cum_amt;
   var eq   = isExpiry ? last.exp_equiv_idx : last.equiv_idx;
+  var k200 = last.kospi200_close;
 
-  // 만기 라벨 찾기
   var expiryLabel = '전체기간';
   if(isExpiry){
     for(var i=0;i<expiries.length;i++){
@@ -199,10 +219,31 @@ function render(expiryKey){
     (cumQ>0?'롱(매수) 포지션':'숏(매도) 포지션') +
     ' | '+data[0].dt+' ~ '+last.dt+' ('+data.length+'일)';
 
+  // P&L 박스
+  var pnlBox = document.getElementById('pnlBox');
+  if(k200 && eq && cumQ !== 0){
+    var pnlPerPt = cumQ * 250000;  // 1pt당 손익
+    var pnlTotal = (k200 - eq) * pnlPerPt;
+    var pnlPt = k200 - eq;
+    pnlBox.style.display = 'block';
+    pnlBox.className = 'pnl-box ' + (pnlTotal >= 0 ? 'profit' : 'loss');
+    var pnlValEl = document.getElementById('pnlVal');
+    pnlValEl.textContent = fmtAmt(pnlTotal);
+    pnlValEl.className = 'pnl-val ' + cls(pnlTotal);
+    document.getElementById('pnlDetail').textContent =
+      'KOSPI200 ' + k200.toFixed(2) + ' − 환산지수 ' + eq.toFixed(1) +
+      ' = ' + (pnlPt>=0?'+':'') + pnlPt.toFixed(1) + 'pt × ' +
+      cumQ.toLocaleString('ko-KR') + '계약 × 25만원';
+  } else {
+    pnlBox.style.display = 'none';
+  }
+
   // KPIs
   document.getElementById('kpiEquiv').textContent = eq ? eq.toFixed(1)+' pt' : '—';
   document.getElementById('kpiEquivSub').textContent =
     (isExpiry && cumQ !== 0) ? '만기 내 가중평균' : '';
+
+  document.getElementById('kpiK200').textContent = k200 ? k200.toFixed(2)+' pt' : '미수집';
 
   var kpiAmtEl = document.getElementById('kpiAmt');
   kpiAmtEl.textContent = fmt(cumA);
@@ -235,13 +276,14 @@ function render(expiryKey){
   var labels = data.map(function(r){return r.dt.slice(5)});
   var cumData = data.map(function(r){return isExpiry ? r.exp_cum_qty : r.foreign_cum_qty});
   var equivData = data.map(function(r){return isExpiry ? r.exp_equiv_idx : r.equiv_idx});
+  var k200Data = data.map(function(r){return r.kospi200_close || null});
   var dailyData = data.map(function(r){return r.foreign_qty||0});
   var dailyColors = dailyData.map(function(v){return v>=0?'rgba(220,38,38,.7)':'rgba(37,99,235,.7)'});
 
   document.getElementById('chartCumTitle').textContent =
     '외국인 누적 순매수 (계약)' + (isExpiry ? ' — '+expiryLabel : '');
   document.getElementById('chartEquivTitle').textContent =
-    '외국인 환산지수 (pt)' + (isExpiry ? ' — '+expiryLabel : '');
+    '환산지수 vs KOSPI200' + (isExpiry ? ' — '+expiryLabel : '');
 
   if(chartCum) chartCum.destroy();
   chartCum = new Chart(document.getElementById('chartCum'),{
@@ -250,11 +292,31 @@ function render(expiryKey){
     options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return fmtSign(c.raw)+'계약'}}}},scales:{y:{ticks:{callback:function(v){return fmt(v)}}}},interaction:{intersect:false,mode:'index'}}
   });
 
+  // 환산지수 + KOSPI200 지수 듀얼 차트
+  var hasK200 = k200Data.some(function(v){return v !== null});
+  var equivDatasets = [{
+    label:'환산지수',
+    data:equivData,
+    borderColor:'#d97706',
+    backgroundColor:'rgba(217,119,6,.08)',
+    fill:false,tension:.3,pointRadius:0,borderWidth:2
+  }];
+  if(hasK200){
+    equivDatasets.push({
+      label:'KOSPI200',
+      data:k200Data,
+      borderColor:'#6366f1',
+      backgroundColor:'rgba(99,102,241,.08)',
+      fill:false,tension:.3,pointRadius:0,borderWidth:2,
+      borderDash:[4,3]
+    });
+  }
+
   if(chartEquiv) chartEquiv.destroy();
   chartEquiv = new Chart(document.getElementById('chartEquiv'),{
     type:'line',
-    data:{labels:labels,datasets:[{data:equivData,borderColor:'#d97706',backgroundColor:'rgba(217,119,6,.08)',fill:true,tension:.3,pointRadius:0,borderWidth:2}]},
-    options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.raw?c.raw.toFixed(1)+' pt':'—'}}}},scales:{y:{ticks:{callback:function(v){return v.toFixed(0)+'pt'}}}},interaction:{intersect:false,mode:'index'}}
+    data:{labels:labels,datasets:equivDatasets},
+    options:{plugins:{legend:{display:hasK200,position:'top'},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+(c.raw?c.raw.toFixed(1)+'pt':'—')}}}},scales:{y:{ticks:{callback:function(v){return v.toFixed(0)+'pt'}}}},interaction:{intersect:false,mode:'index'}}
   });
 
   if(chartDaily) chartDaily.destroy();
@@ -266,7 +328,7 @@ function render(expiryKey){
 
   // Recent table
   var recent = data.slice(-20).reverse();
-  var html = '<thead><tr><th>날짜</th><th>기관</th><th>기타법인</th><th>개인</th><th>외국인</th><th>외국인 누적</th><th>환산지수</th></tr></thead><tbody>';
+  var html = '<thead><tr><th>날짜</th><th>기관</th><th>기타법인</th><th>개인</th><th>외국인</th><th>외국인 누적</th><th>환산지수</th><th>KOSPI200</th></tr></thead><tbody>';
   recent.forEach(function(r){
     var eCum = isExpiry ? r.exp_cum_qty : r.foreign_cum_qty;
     var eIdx = isExpiry ? r.exp_equiv_idx : r.equiv_idx;
@@ -277,6 +339,7 @@ function render(expiryKey){
     html+='<td class="'+cls(r.foreign_qty)+'">'+fmtSign(r.foreign_qty)+'</td>';
     html+='<td class="'+cls(eCum)+'">'+fmtSign(eCum)+'</td>';
     html+='<td>'+(eIdx?eIdx.toFixed(1):'—')+'</td>';
+    html+='<td>'+(r.kospi200_close?r.kospi200_close.toFixed(2):'—')+'</td>';
     html+='</tr>';
   });
   html+='</tbody>';
@@ -285,6 +348,7 @@ function render(expiryKey){
   // 풋노트
   var noteHtml = '※ 데이터: KRX 정보데이터시스템 (data.krx.co.kr) — 코스피200 선물 투자자별 거래실적<br>';
   noteHtml += '※ 환산지수 = 누적순매수금액(원) ÷ (누적순매수계약 × 25만원)<br>';
+  noteHtml += '※ 평가손익 = (KOSPI200 종가 − 환산지수) × 누적계약 × 25만원 — KOSPI200 현물지수 기준 (선물가 아님, 베이시스 차이 존재)<br>';
   if(isExpiry){
     noteHtml += '※ '+expiryLabel+' 기간 누적 — 만기 시작일부터 리셋';
   } else {
