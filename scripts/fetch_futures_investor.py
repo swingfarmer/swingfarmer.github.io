@@ -173,26 +173,26 @@ def save_to_oracle(rows_qty, rows_amt):
     for dt, d in date_data.items():
         try:
             cur.execute("""MERGE INTO futures_investor t
-                USING (SELECT TO_DATE(:1,'YYYYMMDD') AS trade_date FROM dual) s
+                USING (SELECT TO_DATE(:dt,'YYYYMMDD') AS trade_date FROM dual) s
                 ON (t.trade_date = s.trade_date)
                 WHEN MATCHED THEN UPDATE SET
-                    institution_qty = :2, corp_other_qty = :3,
-                    individual_qty = :4, foreign_qty = :5,
-                    institution_amt = :6, corp_other_amt = :7,
-                    individual_amt = :8, foreign_amt = :9
+                    institution_qty = :iq, corp_other_qty = :cq,
+                    individual_qty = :pq, foreign_qty = :fq,
+                    institution_amt = :ia, corp_other_amt = :ca,
+                    individual_amt = :pa, foreign_amt = :fa
                 WHEN NOT MATCHED THEN INSERT
                     (trade_date, institution_qty, corp_other_qty,
                      individual_qty, foreign_qty,
                      institution_amt, corp_other_amt,
                      individual_amt, foreign_amt)
-                VALUES (TO_DATE(:1,'YYYYMMDD'), :2, :3, :4, :5, :6, :7, :8, :9)
-            """, [
-                dt,
-                d.get("institution_qty", 0), d.get("corp_other_qty", 0),
-                d.get("individual_qty", 0), d.get("foreign_qty", 0),
-                d.get("institution_amt", 0), d.get("corp_other_amt", 0),
-                d.get("individual_amt", 0), d.get("foreign_amt", 0)
-            ])
+                VALUES (TO_DATE(:dt,'YYYYMMDD'), :iq, :cq, :pq, :fq, :ia, :ca, :pa, :fa)
+            """, {
+                "dt": dt,
+                "iq": d.get("institution_qty", 0), "cq": d.get("corp_other_qty", 0),
+                "pq": d.get("individual_qty", 0), "fq": d.get("foreign_qty", 0),
+                "ia": d.get("institution_amt", 0), "ca": d.get("corp_other_amt", 0),
+                "pa": d.get("individual_amt", 0), "fa": d.get("foreign_amt", 0)
+            })
             saved += 1
         except Exception as e:
             print(f"  ❌ {dt}: {e}")
