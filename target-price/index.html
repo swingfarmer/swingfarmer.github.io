@@ -192,7 +192,7 @@ function qtyToKorean(n){
   return s+'주';
 }
 const fmtShort = n => { n=Math.round(n); if(Math.abs(n)>=1e8)return (n/1e8).toFixed(1)+'억'; if(Math.abs(n)>=1e4)return Math.round(n/1e4)+'만'; return n.toLocaleString('ko-KR'); };
-const STORE_KEY = 'sf_targetprice_v1';
+const STORE_KEY = 'sf_targetprice_v2';
 const COLORS = ['#1F4E78','#16a34a','#f59e0b','#8b5cf6','#ec4899','#0ea5e9','#ef4444','#14b8a6'];
 
 // 종목 데이터: { name, buyPrice, qty, buyAmount, curPrice, targetPrice, targetAmount }
@@ -205,6 +205,9 @@ function load(){
   if(!rows || rows.length===0) rows=[ blankRow() ];
 }
 function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(rows)); }catch(e){} }
+
+window.tpGetRows = function(){ return rows; };
+window.tpSetRows = function(d){ if(Array.isArray(d)){ rows=d; if(!rows.length) rows=[blankRow()]; render(); } };
 
 // 역산 엔진: 예산(매수금액)·목표금액 고정축
 // - 매수가 변경 → 수량 자동 (예산 유지)

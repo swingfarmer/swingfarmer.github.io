@@ -409,10 +409,10 @@ document.querySelectorAll('input[type=range]').forEach(inp=>{inp.addEventListene
 document.querySelectorAll('select').forEach(s=>s.addEventListener('change',()=>{render();saveLocal();}));
 function eGetState(){const state={};document.querySelectorAll('.proj').forEach(proj=>{const pid=proj.id;state[pid]={};proj.querySelectorAll('[data-f]').forEach(inp=>{state[pid][inp.dataset.f]=inp.value;});});return state;}
 function eSetState(s){if(!s)return;Object.entries(s).forEach(([pid,values])=>{const proj=$(pid);if(!proj)return;Object.entries(values).forEach(([f,v])=>{const inp=proj.querySelector(`[data-f="${f}"]`);if(inp){inp.value=v;if(inp.tagName==='INPUT')updateLabel(inp);}});});render();}
-function saveLocal(){try{localStorage.setItem('sf_hdenc_state_v3',JSON.stringify(eGetState()));}catch(e){}}
-function loadLocal(){try{const r=localStorage.getItem('sf_hdenc_state_v3');if(r)eSetState(JSON.parse(r));}catch(e){}}
+function saveLocal(){try{localStorage.setItem('sf_hd-enc_v2',JSON.stringify(eGetState()));}catch(e){}}
+function loadLocal(){try{const r=localStorage.getItem('sf_hd-enc_v2');if(r)eSetState(JSON.parse(r));}catch(e){}}
 window.eGetState=eGetState;window.eSetState=eSetState;
-$('btnReset').addEventListener('click',()=>{if(!confirm('모든 입력을 초기값으로 되돌릴까요?'))return;try{localStorage.removeItem('sf_hdenc_state_v3');}catch(e){}location.reload();});
+$('btnReset').addEventListener('click',()=>{if(!confirm('모든 입력을 초기값으로 되돌릴까요?'))return;try{localStorage.removeItem('sf_hd-enc_v2');}catch(e){}location.reload();});
 loadLocal();render();
 </script>
 
