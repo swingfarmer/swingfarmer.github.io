@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-선물 투자자별 매매동향 + KOSPI200 지수 종가 수집
-==================================================
+선물 투자자별 매매동향 + KOSPI200/KOSPI 지수 종가 수집
+======================================================
 KRX data.krx.co.kr → Oracle FUTURES_INVESTOR 테이블.
 pykrx 세션 로그인 후 JSON API 호출.
 
@@ -26,7 +26,7 @@ from datetime import datetime, timedelta
 
 import oracledb
 
-# ── 환경변수 로드 (cron에서 실행 시) ──
+# ── 환경변수 로드 ──
 ENV_FILE = os.path.expanduser("~/.env_secrets")
 if os.path.exists(ENV_FILE):
     with open(ENV_FILE) as f:
@@ -42,22 +42,11 @@ WALLET_DIR = os.path.expanduser("~/wallet")
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(SCRIPT_DIR)
 
-# KRX API 설정
 KRX_BLD = "dbms/MDC/STAT/standard/MDCSTAT13102"
-KRX_ISU_CD = "KR___FUK2I"  # KOSPI200 선물
-# A07=기관합계, A08=기타법인, A09=개인, A12=외국인합계
-
-# ── 투자자 코드 매핑 ──
-INVESTOR_MAP = {
-    "A07": "institution",
-    "A08": "corp_other",
-    "A09": "individual",
-    "A12": "foreign"
-}
+KRX_ISU_CD = "KR___FUK2I"
 
 
 def get_krx_session():
-    """pykrx 로그인 세션 반환."""
     try:
         from pykrx.website.comm.webio import get_session
         krxs = get_session()
@@ -71,7 +60,6 @@ def get_krx_session():
 
 
 def _krx_headers(krxs):
-    """공통 KRX 요청 헤더."""
     headers = krxs.get_headers()
     headers["User-Agent"] = "Mozilla/5.0"
     headers["Referer"] = "https://data.krx.co.kr/contents/MDC/MDI/outerLoader/index.cmd"
@@ -81,106 +69,55 @@ def _krx_headers(krxs):
 
 
 def fetch_krx_data(krxs, start_date, end_date, prt_type="QTY"):
-    """KRX 선물 투자자별 거래실적 JSON 호출.
-    prt_type: QTY=계약수, AMT=거래대금(원)
-    """
     resp = krxs.session.post(
         "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd",
         headers=_krx_headers(krxs),
         data={
-            "bld": KRX_BLD,
-            "locale": "ko_KR",
-            "prodId": "",
-            "strtDd": start_date,
-            "endDd": end_date,
-            "inqTpCd": "2",       # 일별추이
-            "prtType": prt_type,
-            "prtCheck": "SUN",    # 순매수
-            "isuCd": KRX_ISU_CD,
-            "aggBasTpCd": "",
-            "strtDdBox1": start_date,
-            "endDdBox1": end_date,
-            "money": "3",
-            "csvxls_isNo": "false"
+            "bld": KRX_BLD, "locale": "ko_KR", "prodId": "",
+            "strtDd": start_date, "endDd": end_date,
+            "inqTpCd": "2", "prtType": prt_type, "prtCheck": "SUN",
+            "isuCd": KRX_ISU_CD, "aggBasTpCd": "",
+            "strtDdBox1": start_date, "endDdBox1": end_date,
+            "money": "3", "csvxls_isNo": "false"
         }
     )
-
     if resp.status_code != 200:
         print(f"  ❌ HTTP {resp.status_code}")
         return []
-
     try:
-        data = resp.json()
-        return data.get("output", [])
+        return resp.json().get("output", [])
     except Exception as e:
         print(f"  ❌ JSON 파싱 실패: {e}")
         return []
 
 
-def fetch_kospi200_close(krxs, start_date, end_date):
-    """KOSPI200 지수 종가 조회 → {YYYYMMDD: close_price} dict.
-    pykrx stock.get_index_ohlcv_by_date 사용 (KRX 로그인 불필요).
-    실패 시 KRX 직접 호출 fallback.
-    """
+def fetch_index_close(start_date, end_date, ticker="1028", name="KOSPI200"):
+    """pykrx로 지수 종가 조회 → {YYYYMMDD: close_price} dict."""
     result = {}
-
-    # 방법1: pykrx 내장 함수 (안정적)
     try:
         from pykrx import stock as pykrx_stock
-        df = pykrx_stock.get_index_ohlcv_by_date(start_date, end_date, "1028")
+        df = pykrx_stock.get_index_ohlcv_by_date(start_date, end_date, ticker)
         if df is not None and len(df) > 0:
             for idx_date, row in df.iterrows():
                 dt = idx_date.strftime("%Y%m%d")
                 close = float(row["종가"])
                 if close > 0:
                     result[dt] = close
-            print(f"  📈 KOSPI200 종가 (pykrx): {len(result)}일치")
-            return result
     except Exception as e:
-        print(f"  ⚠ pykrx index 조회 실패: {e}, fallback 시도...")
-
-    # 방법2: KRX 직접 호출 fallback
-    try:
-        resp = krxs.session.post(
-            "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd",
-            headers=_krx_headers(krxs),
-            data={
-                "bld": "dbms/MDC/STAT/standard/MDCSTAT00301",
-                "locale": "ko_KR",
-                "idxIndMidclssCd": "02",
-                "idxIndCd": "028",
-                "strtDd": start_date,
-                "endDd": end_date,
-                "csvxls_isNo": "false"
-            }
-        )
-        if resp.status_code == 200:
-            data = resp.json()
-            for row in data.get("output", []):
-                dt = row.get("TRD_DD", "").replace("/", "")
-                close_str = row.get("CLSPRC_IDX", "").replace(",", "")
-                if dt and close_str:
-                    result[dt] = float(close_str)
-            print(f"  📈 KOSPI200 종가 (KRX raw): {len(result)}일치")
-        else:
-            print(f"  ❌ KOSPI200 fallback HTTP {resp.status_code}")
-    except Exception as e:
-        print(f"  ❌ KOSPI200 fallback 실패: {e}")
-
+        print(f"  ⚠ {name} pykrx 조회 실패: {e}")
+    print(f"  📈 {name} 종가: {len(result)}일치")
     return result
 
 
 def parse_number(s):
-    """콤마 포함 숫자 문자열 → int. 빈 문자열은 0."""
     if not s or s.strip() == "":
         return 0
     return int(s.replace(",", ""))
 
 
-def save_to_oracle(rows_qty, rows_amt, kospi200_map=None):
-    """Oracle FUTURES_INVESTOR 테이블에 MERGE."""
-    if kospi200_map is None:
-        kospi200_map = {}
+def save_to_oracle(rows_qty, rows_amt, kospi200_map=None, kospi_map=None):
+    if kospi200_map is None: kospi200_map = {}
+    if kospi_map is None: kospi_map = {}
 
     conn = oracledb.connect(
         user="ADMIN",
@@ -190,38 +127,35 @@ def save_to_oracle(rows_qty, rows_amt, kospi200_map=None):
         wallet_location=WALLET_DIR,
         wallet_password=os.environ.get("ORACLE_WALLET_PASSWORD", "")
     )
-
     cur = conn.cursor()
 
-    # 테이블 없으면 생성 (kospi200_close 포함)
+    # 테이블 생성
     try:
         cur.execute("""CREATE TABLE futures_investor (
             trade_date    DATE NOT NULL,
-            institution_qty   NUMBER(12),
-            corp_other_qty    NUMBER(12),
-            individual_qty    NUMBER(12),
-            foreign_qty       NUMBER(12),
-            institution_amt   NUMBER(18),
-            corp_other_amt    NUMBER(18),
-            individual_amt    NUMBER(18),
-            foreign_amt       NUMBER(18),
+            institution_qty   NUMBER(12), corp_other_qty NUMBER(12),
+            individual_qty    NUMBER(12), foreign_qty    NUMBER(12),
+            institution_amt   NUMBER(18), corp_other_amt NUMBER(18),
+            individual_amt    NUMBER(18), foreign_amt    NUMBER(18),
             kospi200_close    NUMBER(10,2),
+            kospi_close       NUMBER(10,2),
             CONSTRAINT pk_futures_investor PRIMARY KEY (trade_date)
         )""")
         conn.commit()
-        print("  ✅ 테이블 생성: FUTURES_INVESTOR (kospi200_close 포함)")
+        print("  ✅ 테이블 생성: FUTURES_INVESTOR")
     except Exception:
-        pass  # 이미 존재
+        pass
 
-    # kospi200_close 컬럼 없으면 추가
-    try:
-        cur.execute("ALTER TABLE futures_investor ADD (kospi200_close NUMBER(10,2))")
-        conn.commit()
-        print("  ✅ 컬럼 추가: kospi200_close")
-    except Exception:
-        pass  # 이미 존재
+    # 컬럼 추가 (기존 테이블용)
+    for col in ['kospi200_close', 'kospi_close']:
+        try:
+            cur.execute(f"ALTER TABLE futures_investor ADD ({col} NUMBER(10,2))")
+            conn.commit()
+            print(f"  ✅ 컬럼 추가: {col}")
+        except Exception:
+            pass
 
-    # QTY/AMT를 날짜별로 병합
+    # 데이터 병합
     date_data = {}
     for row in rows_qty:
         dt = row["TRD_DD"].replace("/", "")
@@ -239,9 +173,9 @@ def save_to_oracle(rows_qty, rows_amt, kospi200_map=None):
         date_data[dt]["individual_amt"] = parse_number(row.get("A09", ""))
         date_data[dt]["foreign_amt"] = parse_number(row.get("A12", ""))
 
-    # KOSPI200 종가 병합
     for dt in date_data:
         date_data[dt]["kospi200_close"] = kospi200_map.get(dt)
+        date_data[dt]["kospi_close"] = kospi_map.get(dt)
 
     saved = 0
     for dt, d in date_data.items():
@@ -254,49 +188,43 @@ def save_to_oracle(rows_qty, rows_amt, kospi200_map=None):
                     individual_qty = :pq, foreign_qty = :fq,
                     institution_amt = :ia, corp_other_amt = :ca,
                     individual_amt = :pa, foreign_amt = :fa,
-                    kospi200_close = NVL(:kc, t.kospi200_close)
+                    kospi200_close = NVL(:kc, t.kospi200_close),
+                    kospi_close = NVL(:kk, t.kospi_close)
                 WHEN NOT MATCHED THEN INSERT
                     (trade_date, institution_qty, corp_other_qty,
                      individual_qty, foreign_qty,
                      institution_amt, corp_other_amt,
                      individual_amt, foreign_amt,
-                     kospi200_close)
-                VALUES (TO_DATE(:dt,'YYYYMMDD'), :iq, :cq, :pq, :fq, :ia, :ca, :pa, :fa, :kc)
+                     kospi200_close, kospi_close)
+                VALUES (TO_DATE(:dt,'YYYYMMDD'), :iq, :cq, :pq, :fq,
+                        :ia, :ca, :pa, :fa, :kc, :kk)
             """, {
                 "dt": dt,
                 "iq": d.get("institution_qty", 0), "cq": d.get("corp_other_qty", 0),
                 "pq": d.get("individual_qty", 0), "fq": d.get("foreign_qty", 0),
                 "ia": d.get("institution_amt", 0), "ca": d.get("corp_other_amt", 0),
                 "pa": d.get("individual_amt", 0), "fa": d.get("foreign_amt", 0),
-                "kc": d.get("kospi200_close")
+                "kc": d.get("kospi200_close"), "kk": d.get("kospi_close")
             })
             saved += 1
         except Exception as e:
             print(f"  ❌ {dt}: {e}")
 
     conn.commit()
-
-    # 현재 상태 출력
-    cur.execute("""SELECT COUNT(*),
-        MIN(TO_CHAR(trade_date,'YYYY-MM-DD')),
+    cur.execute("""SELECT COUNT(*), MIN(TO_CHAR(trade_date,'YYYY-MM-DD')),
         MAX(TO_CHAR(trade_date,'YYYY-MM-DD')),
-        COUNT(kospi200_close)
+        COUNT(kospi200_close), COUNT(kospi_close)
         FROM futures_investor""")
-    cnt, mn, mx, kc_cnt = cur.fetchone()
-    print(f"  📊 DB: {cnt}일치 ({mn} ~ {mx}), KOSPI200 종가 {kc_cnt}일치")
-
-    cur.close()
-    conn.close()
+    cnt, mn, mx, k2cnt, kcnt = cur.fetchone()
+    print(f"  📊 DB: {cnt}일치 ({mn}~{mx}), K200:{k2cnt}일, KOSPI:{kcnt}일")
+    cur.close(); conn.close()
     return saved
 
 
 def export_json(conn_params=None):
-    """Oracle → JSON 파일 (프론트엔드용)."""
     conn = oracledb.connect(
-        user="ADMIN",
-        password=os.environ.get("ORACLE_DB_PASSWORD", ""),
-        dsn="db1007_medium",
-        config_dir=WALLET_DIR,
+        user="ADMIN", password=os.environ.get("ORACLE_DB_PASSWORD", ""),
+        dsn="db1007_medium", config_dir=WALLET_DIR,
         wallet_location=WALLET_DIR,
         wallet_password=os.environ.get("ORACLE_WALLET_PASSWORD", "")
     )
@@ -304,14 +232,11 @@ def export_json(conn_params=None):
     cur.execute("""SELECT TO_CHAR(trade_date,'YYYY-MM-DD') AS dt,
         institution_qty, corp_other_qty, individual_qty, foreign_qty,
         institution_amt, corp_other_amt, individual_amt, foreign_amt,
-        kospi200_close
+        kospi200_close, kospi_close
         FROM futures_investor ORDER BY trade_date""")
     cols = [c[0].lower() for c in cur.description]
     rows = [dict(zip(cols, r)) for r in cur.fetchall()]
-    cur.close()
-    conn.close()
-
-    # JSON 저장
+    cur.close(); conn.close()
     out_path = os.path.join(ROOT_DIR, "data", "futures_investor.json")
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(rows, f, ensure_ascii=False, default=str)
@@ -326,61 +251,48 @@ def main():
 
     days = args.backfill or args.days
     end_dt = datetime.now()
-    start_dt = end_dt - timedelta(days=days + 10)  # 주말 보정
-
+    start_dt = end_dt - timedelta(days=days + 10)
     start_str = start_dt.strftime("%Y%m%d")
     end_str = end_dt.strftime("%Y%m%d")
 
-    print(f"📊 선물 투자자별 매매동향 + KOSPI200 종가 수집")
+    print(f"📊 선물 투자자별 + KOSPI200/KOSPI 종가 수집")
     print(f"   기간: {start_str} ~ {end_str}")
 
     # 1. KRX 로그인
     krxs = get_krx_session()
     print("  ✅ KRX 로그인 완료")
 
-    # 2. 투자자별 데이터 조회 (QTY + AMT)
+    # 2. 투자자별 데이터
     chunk_size = 365
-    all_qty = []
-    all_amt = []
-
+    all_qty, all_amt = [], []
     cur_start = start_dt
     while cur_start < end_dt:
         cur_end = min(cur_start + timedelta(days=chunk_size), end_dt)
-        s = cur_start.strftime("%Y%m%d")
-        e = cur_end.strftime("%Y%m%d")
-
-        print(f"  📥 {s} ~ {e} (QTY)...", end="", flush=True)
+        s, e = cur_start.strftime("%Y%m%d"), cur_end.strftime("%Y%m%d")
+        print(f"  📥 {s}~{e} (QTY)...", end="", flush=True)
         qty = fetch_krx_data(krxs, s, e, "QTY")
-        print(f" {len(qty)}건")
-        all_qty.extend(qty)
-        time.sleep(1)
-
-        print(f"  📥 {s} ~ {e} (AMT)...", end="", flush=True)
+        print(f" {len(qty)}건"); all_qty.extend(qty); time.sleep(1)
+        print(f"  📥 {s}~{e} (AMT)...", end="", flush=True)
         amt = fetch_krx_data(krxs, s, e, "AMT")
-        print(f" {len(amt)}건")
-        all_amt.extend(amt)
-        time.sleep(1)
-
+        print(f" {len(amt)}건"); all_amt.extend(amt); time.sleep(1)
         cur_start = cur_end + timedelta(days=1)
 
     if not all_qty:
-        print("  ⚠ 데이터 없음")
-        return
+        print("  ⚠ 데이터 없음"); return
 
-    # 3. KOSPI200 지수 종가 조회
-    print(f"  📥 KOSPI200 지수 종가...", end="", flush=True)
-    kospi200_map = fetch_kospi200_close(krxs, start_str, end_str)
+    # 3. 지수 종가 (pykrx — KRX 로그인 불필요)
+    kospi200_map = fetch_index_close(start_str, end_str, "1028", "KOSPI200")
+    time.sleep(1)
+    kospi_map = fetch_index_close(start_str, end_str, "1001", "KOSPI")
     time.sleep(1)
 
     # 4. Oracle 저장
-    saved = save_to_oracle(all_qty, all_amt, kospi200_map)
+    saved = save_to_oracle(all_qty, all_amt, kospi200_map, kospi_map)
     print(f"  ✅ {saved}일치 저장/갱신")
 
-    # 5. JSON 내보내기
+    # 5. JSON
     export_json()
-
-    print(f"\n{'='*50}")
-    print(f"✅ 완료")
+    print(f"\n{'='*50}\n✅ 완료")
 
 
 if __name__ == "__main__":

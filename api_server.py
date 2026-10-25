@@ -1329,7 +1329,7 @@ def futures_investor():
     cur.execute("""SELECT TO_CHAR(trade_date,'YYYY-MM-DD') AS dt,
         institution_qty, corp_other_qty, individual_qty, foreign_qty,
         institution_amt, corp_other_amt, individual_amt, foreign_amt,
-        kospi200_close
+        kospi200_close, kospi_close
         FROM futures_investor
         WHERE trade_date >= TRUNC(SYSDATE) - :days
         ORDER BY trade_date""", {'days': days})
