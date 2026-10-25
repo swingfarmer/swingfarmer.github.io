@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="robots" content="noindex, nofollow">
+<title>선물 외국인 포지션 | 스윙파머</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="/common.css?v=4">
+<style>
+:root{--sf-max-w:1100px}
+.dash-hero{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);color:white;border-radius:14px;padding:28px 24px;text-align:center;margin-bottom:20px}
+.dash-hero h2{font-size:14px;opacity:.7;margin-bottom:8px;font-weight:500}
+.dash-hero .big{font-size:42px;font-weight:800;letter-spacing:-1px}
+.dash-hero .sub{font-size:13px;opacity:.6;margin-top:6px}
+.dash-hero .big.short{color:#4fc3f7}.dash-hero .big.long{color:#ef5350}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border:1px solid #e5e9f0;border-radius:10px;padding:14px 16px;text-align:center}
+.kpi .label{font-size:11px;color:#888;margin-bottom:4px;font-weight:600}
+.kpi .val{font-size:20px;font-weight:700;color:#1F4E78}
+.kpi .val.pos{color:#dc2626}.kpi .val.neg{color:#2563eb}
+.chart-wrap{background:#fff;border:1px solid #e5e9f0;border-radius:10px;padding:16px;margin-bottom:16px}
+.chart-wrap h3{font-size:14px;color:#333;margin-bottom:12px;font-weight:600}
+.chart-wrap canvas{max-height:300px}
+.period-btns{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.period-btns button{padding:6px 14px;border:1px solid #d0d5dd;background:#fff;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500}
+.period-btns button.active{background:#1F4E78;color:#fff;border-color:#1F4E78}
+table.inv-tbl{width:100%;border-collapse:collapse;font-size:13px}
+table.inv-tbl th{background:#f8f9fb;padding:8px;text-align:right;font-weight:600;color:#555;border-bottom:2px solid #e5e9f0}
+table.inv-tbl th:first-child{text-align:left}
+table.inv-tbl td{padding:7px 8px;text-align:right;border-bottom:1px solid #f0f2f5}
+table.inv-tbl td:first-child{text-align:left;color:#555}
+table.inv-tbl td.pos{color:#dc2626;font-weight:600}
+table.inv-tbl td.neg{color:#2563eb;font-weight:600}
+.updated{font-size:11px;color:#999;text-align:right;margin-bottom:8px}
+.note{font-size:11px;color:#888;margin-top:12px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p><a href="/" class="back-link">← 홈</a></p>
+  <h1>선물 외국인 포지션 트래커</h1>
+  <p class="sub">KOSPI200 선물 — 투자자별 순매수 누적 & 환산지수</p>
+  <div id="loading" style="text-align:center;padding:40px;color:#888">데이터 로딩 중...</div>
+  <div id="main" style="display:none">
+
+    <div class="dash-hero">
+      <h2>외국인 누적 순매수 포지션</h2>
+      <div class="big" id="heroQty">—</div>
+      <div class="sub" id="heroSub">—</div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi"><div class="label">환산지수 (가중평균)</div><div class="val" id="kpiEquiv">—</div></div>
+      <div class="kpi"><div class="label">누적 순매수 금액</div><div class="val" id="kpiAmt">—</div></div>
+      <div class="kpi"><div class="label">최근 5일 순매수</div><div class="val" id="kpi5d">—</div></div>
+      <div class="kpi"><div class="label">데이터 기간</div><div class="val" id="kpiPeriod" style="font-size:14px;color:#555">—</div></div>
+    </div>
+
+    <div class="period-btns">
+      <button data-days="30">1개월</button>
+      <button data-days="90">3개월</button>
+      <button data-days="180">6개월</button>
+      <button data-days="365" class="active">1년</button>
+    </div>
+
+    <div class="chart-wrap">
+      <h3>외국인 누적 순매수 (계약)</h3>
+      <canvas id="chartCum"></canvas>
+    </div>
+
+    <div class="chart-wrap">
+      <h3>외국인 환산지수 (pt)</h3>
+      <canvas id="chartEquiv"></canvas>
+    </div>
+
+    <div class="chart-wrap">
+      <h3>일별 순매수 (계약)</h3>
+      <canvas id="chartDaily"></canvas>
+    </div>
+
+    <div class="chart-wrap">
+      <h3>투자자별 최근 20일 순매수 (계약)</h3>
+      <div style="overflow-x:auto">
+        <table class="inv-tbl" id="tblRecent"></table>
+      </div>
+    </div>
+
+    <div class="note">
+      ※ 데이터: KRX 정보데이터시스템 (data.krx.co.kr) — 코스피200 선물 투자자별 거래실적<br>
+      ※ 환산지수 = 누적순매수금액(원) ÷ (누적순매수계약 × 25만원)<br>
+      ※ 전체 기간 단순 누적 — 만기 롤오버 미반영 (추후 개선 예정)
+    </div>
+  </div>
+</div>
+
+<script src="/common.js?v=5"></script>
+<script>
+var API = location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://api.swingfarmer.com';
+var allData = [];
+var chartCum, chartEquiv, chartDaily;
+
+function fmt(n){
+  if(n==null) return '—';
+  var abs=Math.abs(n);
+  if(abs>=1e12) return (n/1e12).toFixed(1)+'조';
+  if(abs>=1e8) return (n/1e8).toFixed(0)+'억';
+  if(abs>=1e4) return (n/1e4).toFixed(0)+'만';
+  return n.toLocaleString('ko-KR');
+}
+function fmtSign(n){
+  if(n==null) return '—';
+  return (n>0?'+':'')+fmt(n);
+}
+function cls(n){return n>0?'pos':n<0?'neg':''}
+
+function load(){
+  fetch(API+'/api/futures-investor?days=400')
+    .then(function(r){return r.json()})
+    .then(function(d){
+      allData = d.data || [];
+      if(!allData.length){document.getElementById('loading').textContent='데이터 없음';return;}
+      document.getElementById('loading').style.display='none';
+      document.getElementById('main').style.display='block';
+      render(365);
+    })
+    .catch(function(e){document.getElementById('loading').textContent='로딩 실패: '+e;});
+}
+
+function render(days){
+  var data = allData;
+  if(days < allData.length) data = allData.slice(-days);
+
+  var last = data[data.length-1];
+  var cumQ = last.foreign_cum_qty;
+  var cumA = last.foreign_cum_amt;
+  var eq = last.equiv_idx;
+
+  // Hero
+  var heroEl = document.getElementById('heroQty');
+  heroEl.textContent = fmtSign(cumQ) + '계약';
+  heroEl.className = 'big '+(cumQ>=0?'long':'short');
+  document.getElementById('heroSub').textContent =
+    (cumQ>0?'롱(매수) 포지션':'숏(매도) 포지션') +
+    ' | '+data[0].dt+' ~ '+last.dt;
+
+  // KPIs
+  document.getElementById('kpiEquiv').textContent = eq ? eq.toFixed(1)+' pt' : '—';
+  var kpiAmtEl = document.getElementById('kpiAmt');
+  kpiAmtEl.textContent = fmt(cumA);
+  kpiAmtEl.className = 'val '+cls(cumA);
+
+  var last5 = data.slice(-5).reduce(function(s,r){return s+(r.foreign_qty||0)},0);
+  var kpi5El = document.getElementById('kpi5d');
+  kpi5El.textContent = fmtSign(last5)+'계약';
+  kpi5El.className = 'val '+cls(last5);
+
+  document.getElementById('kpiPeriod').textContent = data[0].dt+' ~ '+last.dt+' ('+data.length+'일)';
+
+  // Charts
+  var labels = data.map(function(r){return r.dt.slice(5)});
+  var cumData = data.map(function(r){return r.foreign_cum_qty});
+  var equivData = data.map(function(r){return r.equiv_idx});
+  var dailyData = data.map(function(r){return r.foreign_qty||0});
+  var dailyColors = dailyData.map(function(v){return v>=0?'rgba(220,38,38,.7)':'rgba(37,99,235,.7)'});
+
+  if(chartCum) chartCum.destroy();
+  chartCum = new Chart(document.getElementById('chartCum'),{
+    type:'line',
+    data:{labels:labels,datasets:[{data:cumData,borderColor:'#1F4E78',backgroundColor:'rgba(31,78,120,.08)',fill:true,tension:.3,pointRadius:0,borderWidth:2}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){return fmt(v)}}}},interaction:{intersect:false,mode:'index'}}
+  });
+
+  if(chartEquiv) chartEquiv.destroy();
+  chartEquiv = new Chart(document.getElementById('chartEquiv'),{
+    type:'line',
+    data:{labels:labels,datasets:[{data:equivData,borderColor:'#d97706',backgroundColor:'rgba(217,119,6,.08)',fill:true,tension:.3,pointRadius:0,borderWidth:2}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){return v.toFixed(0)+'pt'}}}},interaction:{intersect:false,mode:'index'}}
+  });
+
+  if(chartDaily) chartDaily.destroy();
+  chartDaily = new Chart(document.getElementById('chartDaily'),{
+    type:'bar',
+    data:{labels:labels,datasets:[{data:dailyData,backgroundColor:dailyColors}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){return fmt(v)}}}}}
+  });
+
+  // Recent table
+  var recent = data.slice(-20).reverse();
+  var html = '<thead><tr><th>날짜</th><th>기관</th><th>기타법인</th><th>개인</th><th>외국인</th><th>외국인 누적</th></tr></thead><tbody>';
+  recent.forEach(function(r){
+    html+='<tr><td>'+r.dt+'</td>';
+    html+='<td class="'+cls(r.institution_qty)+'">'+fmtSign(r.institution_qty)+'</td>';
+    html+='<td class="'+cls(r.corp_other_qty)+'">'+fmtSign(r.corp_other_qty)+'</td>';
+    html+='<td class="'+cls(r.individual_qty)+'">'+fmtSign(r.individual_qty)+'</td>';
+    html+='<td class="'+cls(r.foreign_qty)+'">'+fmtSign(r.foreign_qty)+'</td>';
+    html+='<td class="'+cls(r.foreign_cum_qty)+'">'+fmtSign(r.foreign_cum_qty)+'</td>';
+    html+='</tr>';
+  });
+  html+='</tbody>';
+  document.getElementById('tblRecent').innerHTML=html;
+}
+
+// Period buttons
+document.querySelectorAll('.period-btns button').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.period-btns button').forEach(function(b){b.classList.remove('active')});
+    btn.classList.add('active');
+    render(parseInt(btn.dataset.days));
+  });
+});
+
+load();
+</script>
+</body>
+</html>
