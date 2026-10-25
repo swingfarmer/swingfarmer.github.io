@@ -853,8 +853,8 @@ renderAll();
 
 // ── sf-slots 연동 ──
 window.CALC_KEY = 'assets';
-window.slGetState = assetGetState;
-window.slSetState = assetSetState;
+window.slGetState = function(){ return window.assetGetState ? window.assetGetState() : {}; };
+window.slSetState = function(d){ if(window.assetSetState) window.assetSetState(d); };
 // 초기화 완료 → common.js 등 동기 스크립트 전부 끝난 후 한번에 표시
 document.addEventListener('DOMContentLoaded', function(){ $('mainWrap').style.visibility = 'visible'; });
 </script>
