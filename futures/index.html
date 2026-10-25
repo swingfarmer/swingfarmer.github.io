@@ -10,11 +10,51 @@
 <link rel="stylesheet" href="/common.css?v=4">
 <style>
 :root{--sf-max-w:1100px}
+.title-row{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.title-row h1{margin-bottom:0}
+.help-btn{width:28px;height:28px;border-radius:50%;border:2px solid #1F4E78;background:#fff;color:#1F4E78;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.help-btn:hover{background:#1F4E78;color:#fff}
+
+/* 모달 */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.open{display:flex}
+.modal-box{background:#fff;border-radius:14px;max-width:640px;width:100%;max-height:85vh;overflow-y:auto;padding:28px 24px}
+.modal-box h2{font-size:18px;margin-bottom:16px;color:#1F4E78}
+.modal-box .close-modal{float:right;background:none;border:none;font-size:22px;cursor:pointer;color:#888;padding:0 4px}
+.modal-box h3{font-size:14px;color:#333;margin:16px 0 6px;font-weight:700}
+.modal-box p{font-size:13px;color:#555;line-height:1.7;margin:0 0 8px}
+.modal-box .sig-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12px}
+.modal-box .sig-table th,.modal-box .sig-table td{padding:8px 10px;border:1px solid #e5e9f0;text-align:left}
+.modal-box .sig-table th{background:#f8f9fb;font-weight:600;color:#555}
+.modal-box .sig-table td.bull{color:#dc2626;font-weight:600}
+.modal-box .sig-table td.bear{color:#2563eb;font-weight:600}
+
 .dash-hero{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);color:white;border-radius:14px;padding:28px 24px;text-align:center;margin-bottom:20px}
 .dash-hero h2{font-size:14px;opacity:.7;margin-bottom:8px;font-weight:500}
 .dash-hero .big{font-size:42px;font-weight:800;letter-spacing:-1px}
 .dash-hero .sub{font-size:13px;opacity:.6;margin-top:6px}
 .dash-hero .big.short{color:#4fc3f7}.dash-hero .big.long{color:#ef5350}
+
+/* 포지션 해석 카드 */
+.signal-card{border-radius:12px;padding:20px;margin-bottom:20px;text-align:center}
+.signal-card.bullish{background:linear-gradient(135deg,#fef2f2,#fee2e2);border:1px solid #fca5a5}
+.signal-card.bearish{background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #93c5fd}
+.signal-card.neutral{background:linear-gradient(135deg,#f9fafb,#f3f4f6);border:1px solid #d1d5db}
+.signal-card .sig-emoji{font-size:32px;margin-bottom:6px}
+.signal-card .sig-label{font-size:18px;font-weight:800;margin-bottom:6px}
+.signal-card.bullish .sig-label{color:#dc2626}
+.signal-card.bearish .sig-label{color:#2563eb}
+.signal-card.neutral .sig-label{color:#6b7280}
+.signal-card .sig-desc{font-size:13px;color:#555;line-height:1.6}
+
+.pnl-box{background:#f0f7ff;border:1px solid #bdd7ee;border-radius:10px;padding:16px;margin-bottom:20px;text-align:center}
+.pnl-box.profit{background:#fef2f2;border-color:#fca5a5}
+.pnl-box.loss{background:#eff6ff;border-color:#93c5fd}
+.pnl-box .pnl-title{font-size:12px;color:#666;margin-bottom:6px;font-weight:600}
+.pnl-box .pnl-val{font-size:28px;font-weight:800;letter-spacing:-0.5px}
+.pnl-box .pnl-val.pos{color:#dc2626}.pnl-box .pnl-val.neg{color:#2563eb}
+.pnl-box .pnl-detail{font-size:12px;color:#888;margin-top:6px}
+
 .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
 .kpi{background:#fff;border:1px solid #e5e9f0;border-radius:10px;padding:14px 16px;text-align:center}
 .kpi .label{font-size:11px;color:#888;margin-bottom:4px;font-weight:600}
@@ -29,13 +69,6 @@
 .expiry-tabs button.active{background:#1F4E78;color:#fff;border-color:#1F4E78}
 .expiry-tabs button.current-tag{position:relative}
 .expiry-tabs button.current-tag::after{content:'NOW';position:absolute;top:-6px;right:-6px;background:#ef5350;color:#fff;font-size:8px;padding:1px 4px;border-radius:3px;font-weight:700}
-.pnl-box{background:#f0f7ff;border:1px solid #bdd7ee;border-radius:10px;padding:16px;margin-bottom:20px;text-align:center}
-.pnl-box.profit{background:#fef2f2;border-color:#fca5a5}
-.pnl-box.loss{background:#eff6ff;border-color:#93c5fd}
-.pnl-box .pnl-title{font-size:12px;color:#666;margin-bottom:6px;font-weight:600}
-.pnl-box .pnl-val{font-size:28px;font-weight:800;letter-spacing:-0.5px}
-.pnl-box .pnl-val.pos{color:#dc2626}.pnl-box .pnl-val.neg{color:#2563eb}
-.pnl-box .pnl-detail{font-size:12px;color:#888;margin-top:6px}
 table.inv-tbl{width:100%;border-collapse:collapse;font-size:13px}
 table.inv-tbl th{background:#f8f9fb;padding:8px;text-align:right;font-weight:600;color:#555;border-bottom:2px solid #e5e9f0}
 table.inv-tbl th:first-child{text-align:left}
@@ -43,7 +76,6 @@ table.inv-tbl td{padding:7px 8px;text-align:right;border-bottom:1px solid #f0f2f
 table.inv-tbl td:first-child{text-align:left;color:#555}
 table.inv-tbl td.pos{color:#dc2626;font-weight:600}
 table.inv-tbl td.neg{color:#2563eb;font-weight:600}
-.updated{font-size:11px;color:#999;text-align:right;margin-bottom:8px}
 .note{font-size:11px;color:#888;margin-top:12px;line-height:1.6}
 .inv-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:16px}
 .inv-card{background:#f8f9fb;border-radius:8px;padding:10px 12px;text-align:center}
@@ -55,8 +87,12 @@ table.inv-tbl td.neg{color:#2563eb;font-weight:600}
 <body>
 <div class="wrap">
   <p><a href="/" class="back-link">← 홈</a></p>
-  <h1>선물 외국인 포지션 트래커</h1>
+  <div class="title-row">
+    <h1>선물 외국인 포지션 트래커</h1>
+    <button class="help-btn" onclick="document.getElementById('helpModal').classList.add('open')">?</button>
+  </div>
   <p class="sub">KOSPI200 선물 — 투자자별 순매수 누적 & 환산지수 (만기별)</p>
+
   <div id="loading" style="text-align:center;padding:40px;color:#888">데이터 로딩 중...</div>
   <div id="main" style="display:none">
 
@@ -66,6 +102,13 @@ table.inv-tbl td.neg{color:#2563eb;font-weight:600}
       <h2 id="heroTitle">외국인 누적 순매수 포지션</h2>
       <div class="big" id="heroQty">—</div>
       <div class="sub" id="heroSub">—</div>
+    </div>
+
+    <!-- 포지션 해석 카드 -->
+    <div class="signal-card neutral" id="signalCard">
+      <div class="sig-emoji" id="sigEmoji">📊</div>
+      <div class="sig-label" id="sigLabel">—</div>
+      <div class="sig-desc" id="sigDesc">—</div>
     </div>
 
     <div class="pnl-box" id="pnlBox" style="display:none">
@@ -86,30 +129,69 @@ table.inv-tbl td.neg{color:#2563eb;font-weight:600}
       <h3 id="chartCumTitle">외국인 누적 순매수 (계약)</h3>
       <canvas id="chartCum"></canvas>
     </div>
-
     <div class="chart-wrap">
-      <h3 id="chartEquivTitle">외국인 환산지수 vs KOSPI200 (pt)</h3>
+      <h3 id="chartEquivTitle">환산지수 vs KOSPI200 (pt)</h3>
       <canvas id="chartEquiv"></canvas>
     </div>
-
     <div class="chart-wrap">
       <h3>투자자별 당기 누적 순매수 (계약)</h3>
       <div class="inv-summary" id="invSummary"></div>
     </div>
-
     <div class="chart-wrap">
       <h3>일별 순매수 (계약)</h3>
       <canvas id="chartDaily"></canvas>
     </div>
-
     <div class="chart-wrap">
       <h3>투자자별 최근 20일 순매수 (계약)</h3>
       <div style="overflow-x:auto">
         <table class="inv-tbl" id="tblRecent"></table>
       </div>
     </div>
-
     <div class="note" id="footNote"></div>
+  </div>
+</div>
+
+<!-- 도움말 모달 -->
+<div class="modal-overlay" id="helpModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-box">
+    <button class="close-modal" onclick="document.getElementById('helpModal').classList.remove('open')">&times;</button>
+    <h2>📖 선물 포지션 트래커 사용법</h2>
+
+    <h3>만기별 탭</h3>
+    <p>KOSPI200 선물은 3/6/9/12월 둘째 목요일에 만기됩니다. 탭을 선택하면 해당 만기 기간만의 누적 순매수로 리셋됩니다. <strong>NOW</strong> 뱃지가 현재 진행 중인 만기입니다. "전체기간"은 만기 롤오버 없이 단순 누적입니다.</p>
+
+    <h3>외국인 누적 순매수</h3>
+    <p>해당 기간 동안 외국인이 선물을 순매수(+, 롱)했는지 순매도(−, 숏)했는지 누적치입니다.<br>
+    <strong>롱(매수)</strong> = 시장 상승에 베팅 / <strong>숏(매도)</strong> = 시장 하락에 베팅</p>
+
+    <h3>환산지수</h3>
+    <p>외국인 누적 포지션의 평균 진입 단가(pt)입니다.<br>
+    <code>누적순매수금액 ÷ (누적계약수 × 25만원)</code><br>
+    외국인이 평균 몇 pt에 포지션을 잡았는지 보여주는 지표입니다.</p>
+
+    <h3>KOSPI200 종가</h3>
+    <p>KOSPI200 현물지수 종가입니다. 실제 선물가와는 베이시스 차이(통상 0~3pt)가 있습니다.</p>
+
+    <h3>추정 평가손익</h3>
+    <p><code>(KOSPI200 종가 − 환산지수) × 누적계약 × 25만원</code><br>
+    외국인이 현재 포지션에서 얼마나 수익/손실 중인지 추정합니다. 숏 포지션이면 부호가 자동 반전됩니다.</p>
+
+    <h3>포지션 해석 카드</h3>
+    <p>외국인의 현재 베팅 방향과 수익/손실 상태를 종합해서 시장 시그널로 표시합니다.</p>
+    <table class="sig-table">
+      <thead><tr><th>포지션</th><th>손익</th><th>해석</th></tr></thead>
+      <tbody>
+        <tr><td class="bull">롱 (매수)</td><td class="bull">수익</td><td>외국인이 상승에 베팅하고 있고, 수익 구간 → 포지션 유지 가능성 높음</td></tr>
+        <tr><td class="bull">롱 (매수)</td><td class="bear">손실</td><td>상승 베팅 중이지만 물린 상태 → 추가 매수 or 손절 분기점</td></tr>
+        <tr><td class="bear">숏 (매도)</td><td class="bear">수익</td><td>하락에 베팅 중이고 수익 구간 → 하락 추세 지속 신호</td></tr>
+        <tr><td class="bear">숏 (매도)</td><td class="bull">손실</td><td>하락 베팅했지만 시장이 올라 손실 → 숏커버 (반등) 가능성</td></tr>
+      </tbody>
+    </table>
+
+    <h3>⚠ 유의사항</h3>
+    <p>• 이 데이터는 투자 참고용이며, 외국인 포지션만으로 시장 방향을 예측할 수 없습니다.<br>
+    • 환산지수는 추정치이며, 실제 외국인 평균 매입단가와 차이가 있을 수 있습니다.<br>
+    • 만기 전후 롤오버 과정에서 데이터 왜곡이 발생할 수 있습니다.</p>
   </div>
 </div>
 
@@ -143,10 +225,9 @@ function fmtSign(n){
   return (n>0?'+':'')+fmt(n);
 }
 function cls(n){return n>0?'pos':n<0?'neg':''}
-
-function filterData(expiryKey){
-  if(!expiryKey) return allData.slice();
-  return allData.filter(function(r){ return r.expiry_key === expiryKey; });
+function filterData(ek){
+  if(!ek) return allData.slice();
+  return allData.filter(function(r){ return r.expiry_key === ek; });
 }
 
 function load(){
@@ -168,11 +249,11 @@ function load(){
 
 function buildTabs(){
   var wrap = document.getElementById('expiryTabs');
-  var html = '<button data-exp="" class="">전체기간</button>';
+  var html = '<button data-exp="">전체기간</button>';
   var sorted = expiries.slice().reverse();
   sorted.forEach(function(p){
-    var isCurrent = (p.key === currentExpiry);
-    html += '<button data-exp="'+p.key+'" class="'+(isCurrent?'current-tag':'')+'">'+p.label+'</button>';
+    var isCur = (p.key === currentExpiry);
+    html += '<button data-exp="'+p.key+'" class="'+(isCur?'current-tag':'')+'">'+p.label+'</button>';
   });
   wrap.innerHTML = html;
   wrap.querySelectorAll('button').forEach(function(btn){
@@ -183,11 +264,67 @@ function buildTabs(){
   });
 }
 
-function activateTab(expiryKey){
+function activateTab(ek){
   document.querySelectorAll('.expiry-tabs button').forEach(function(b){
-    b.classList.toggle('active', b.dataset.exp === expiryKey);
+    b.classList.toggle('active', b.dataset.exp === ek);
   });
-  render(expiryKey);
+  render(ek);
+}
+
+function renderSignalCard(cumQ, eq, k200){
+  var card = document.getElementById('signalCard');
+  var emoji = document.getElementById('sigEmoji');
+  var label = document.getElementById('sigLabel');
+  var desc = document.getElementById('sigDesc');
+
+  if(!cumQ || cumQ === 0){
+    card.className = 'signal-card neutral';
+    emoji.textContent = '➖';
+    label.textContent = '중립 — 포지션 없음';
+    desc.textContent = '현재 만기 기간 내 순매수/순매도 누적이 0입니다.';
+    return;
+  }
+
+  var isLong = cumQ > 0;
+  var posStr = isLong ? '롱(매수)' : '숏(매도)';
+  var posDir = isLong ? '상승' : '하락';
+  var qtyStr = Math.abs(cumQ).toLocaleString('ko-KR');
+
+  if(!k200 || !eq){
+    // KOSPI200 종가 없으면 포지션 방향만 표시
+    card.className = 'signal-card ' + (isLong ? 'bullish' : 'bearish');
+    emoji.textContent = isLong ? '🐂' : '🐻';
+    label.textContent = posStr + ' ' + qtyStr + '계약';
+    desc.textContent = '외국인이 시장 ' + posDir + '에 베팅 중 (환산지수 ' + eq.toFixed(1) + 'pt). KOSPI200 종가 데이터 미수집으로 손익 판단 불가.';
+    return;
+  }
+
+  // 손익 계산 (롱이면 현재가-환산지수 > 0이 수익, 숏이면 반대)
+  var pnlPt = k200 - eq;
+  var isProfit = isLong ? (pnlPt > 0) : (pnlPt < 0);
+  var absPnlPt = Math.abs(pnlPt);
+
+  if(isLong && isProfit){
+    card.className = 'signal-card bullish';
+    emoji.textContent = '🐂💰';
+    label.textContent = posStr + ' · 수익 구간 (+' + absPnlPt.toFixed(1) + 'pt)';
+    desc.textContent = '외국인이 ' + posDir + '에 베팅 중이고, 환산지수(' + eq.toFixed(1) + ')보다 현재가(' + k200.toFixed(1) + ')가 높아 수익 구간입니다. 포지션 유지 가능성이 높습니다.';
+  } else if(isLong && !isProfit){
+    card.className = 'signal-card bearish';
+    emoji.textContent = '🐂📉';
+    label.textContent = posStr + ' · 손실 구간 (−' + absPnlPt.toFixed(1) + 'pt)';
+    desc.textContent = '외국인이 ' + posDir + '에 베팅했지만, 환산지수(' + eq.toFixed(1) + ')보다 현재가(' + k200.toFixed(1) + ')가 낮아 물린 상태입니다. 추가 매수 또는 손절 분기점입니다.';
+  } else if(!isLong && isProfit){
+    card.className = 'signal-card bearish';
+    emoji.textContent = '🐻💰';
+    label.textContent = posStr + ' · 수익 구간 (+' + absPnlPt.toFixed(1) + 'pt)';
+    desc.textContent = '외국인이 ' + posDir + '에 베팅 중이고, 환산지수(' + eq.toFixed(1) + ')보다 현재가(' + k200.toFixed(1) + ')가 낮아 수익 구간입니다. 하락 추세 지속 신호입니다.';
+  } else {
+    card.className = 'signal-card bullish';
+    emoji.textContent = '🐻📈';
+    label.textContent = posStr + ' · 손실 구간 (−' + absPnlPt.toFixed(1) + 'pt)';
+    desc.textContent = '외국인이 ' + posDir + '에 베팅했지만 시장이 올라 손실 중입니다. 숏커버(매수 청산)에 의한 반등 가능성이 있습니다.';
+  }
 }
 
 function render(expiryKey){
@@ -196,7 +333,6 @@ function render(expiryKey){
 
   var isExpiry = !!expiryKey;
   var last = data[data.length-1];
-
   var cumQ = isExpiry ? last.exp_cum_qty : last.foreign_cum_qty;
   var cumA = isExpiry ? last.exp_cum_amt : last.foreign_cum_amt;
   var eq   = isExpiry ? last.exp_equiv_idx : last.equiv_idx;
@@ -216,13 +352,16 @@ function render(expiryKey){
   heroEl.textContent = fmtSign(cumQ) + '계약';
   heroEl.className = 'big '+(cumQ>=0?'long':'short');
   document.getElementById('heroSub').textContent =
-    (cumQ>0?'롱(매수) 포지션':'숏(매도) 포지션') +
+    (cumQ>0?'롱(매수) 포지션':cumQ<0?'숏(매도) 포지션':'중립') +
     ' | '+data[0].dt+' ~ '+last.dt+' ('+data.length+'일)';
+
+  // 시그널 카드
+  renderSignalCard(cumQ, eq, k200);
 
   // P&L 박스
   var pnlBox = document.getElementById('pnlBox');
   if(k200 && eq && cumQ !== 0){
-    var pnlPerPt = cumQ * 250000;  // 1pt당 손익
+    var pnlPerPt = cumQ * 250000;
     var pnlTotal = (k200 - eq) * pnlPerPt;
     var pnlPt = k200 - eq;
     pnlBox.style.display = 'block';
@@ -242,21 +381,17 @@ function render(expiryKey){
   document.getElementById('kpiEquiv').textContent = eq ? eq.toFixed(1)+' pt' : '—';
   document.getElementById('kpiEquivSub').textContent =
     (isExpiry && cumQ !== 0) ? '만기 내 가중평균' : '';
-
   document.getElementById('kpiK200').textContent = k200 ? k200.toFixed(2)+' pt' : '미수집';
-
   var kpiAmtEl = document.getElementById('kpiAmt');
   kpiAmtEl.textContent = fmt(cumA);
   kpiAmtEl.className = 'val '+cls(cumA);
-
   var last5 = data.slice(-5).reduce(function(s,r){return s+(r.foreign_qty||0)},0);
   var kpi5El = document.getElementById('kpi5d');
   kpi5El.textContent = fmtSign(last5)+'계약';
   kpi5El.className = 'val '+cls(last5);
-
   document.getElementById('kpiPeriod').textContent = data[0].dt+' ~ '+last.dt+' ('+data.length+'일)';
 
-  // 투자자별 당기 누적 카드
+  // 투자자별 누적 카드
   var invCum = {institution:0, corp_other:0, individual:0, foreign:0};
   data.forEach(function(r){
     invCum.institution += (r.institution_qty||0);
@@ -292,30 +427,15 @@ function render(expiryKey){
     options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return fmtSign(c.raw)+'계약'}}}},scales:{y:{ticks:{callback:function(v){return fmt(v)}}}},interaction:{intersect:false,mode:'index'}}
   });
 
-  // 환산지수 + KOSPI200 지수 듀얼 차트
   var hasK200 = k200Data.some(function(v){return v !== null});
-  var equivDatasets = [{
-    label:'환산지수',
-    data:equivData,
-    borderColor:'#d97706',
-    backgroundColor:'rgba(217,119,6,.08)',
-    fill:false,tension:.3,pointRadius:0,borderWidth:2
-  }];
+  var eqDS = [{label:'환산지수',data:equivData,borderColor:'#d97706',backgroundColor:'rgba(217,119,6,.08)',fill:false,tension:.3,pointRadius:0,borderWidth:2}];
   if(hasK200){
-    equivDatasets.push({
-      label:'KOSPI200',
-      data:k200Data,
-      borderColor:'#6366f1',
-      backgroundColor:'rgba(99,102,241,.08)',
-      fill:false,tension:.3,pointRadius:0,borderWidth:2,
-      borderDash:[4,3]
-    });
+    eqDS.push({label:'KOSPI200',data:k200Data,borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.08)',fill:false,tension:.3,pointRadius:0,borderWidth:2,borderDash:[4,3]});
   }
-
   if(chartEquiv) chartEquiv.destroy();
   chartEquiv = new Chart(document.getElementById('chartEquiv'),{
     type:'line',
-    data:{labels:labels,datasets:equivDatasets},
+    data:{labels:labels,datasets:eqDS},
     options:{plugins:{legend:{display:hasK200,position:'top'},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+(c.raw?c.raw.toFixed(1)+'pt':'—')}}}},scales:{y:{ticks:{callback:function(v){return v.toFixed(0)+'pt'}}}},interaction:{intersect:false,mode:'index'}}
   });
 
@@ -346,9 +466,9 @@ function render(expiryKey){
   document.getElementById('tblRecent').innerHTML=html;
 
   // 풋노트
-  var noteHtml = '※ 데이터: KRX 정보데이터시스템 (data.krx.co.kr) — 코스피200 선물 투자자별 거래실적<br>';
+  var noteHtml = '※ 데이터: KRX 정보데이터시스템 — 코스피200 선물 투자자별 거래실적<br>';
   noteHtml += '※ 환산지수 = 누적순매수금액(원) ÷ (누적순매수계약 × 25만원)<br>';
-  noteHtml += '※ 평가손익 = (KOSPI200 종가 − 환산지수) × 누적계약 × 25만원 — KOSPI200 현물지수 기준 (선물가 아님, 베이시스 차이 존재)<br>';
+  noteHtml += '※ 평가손익 기준: KOSPI200 현물지수 (선물가 아님, 베이시스 차이 존재)<br>';
   if(isExpiry){
     noteHtml += '※ '+expiryLabel+' 기간 누적 — 만기 시작일부터 리셋';
   } else {

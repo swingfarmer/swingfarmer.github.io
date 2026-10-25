@@ -118,38 +118,56 @@ def fetch_krx_data(krxs, start_date, end_date, prt_type="QTY"):
 
 
 def fetch_kospi200_close(krxs, start_date, end_date):
-    """KRX KOSPI200 지수 종가 조회 → {YYYYMMDD: close_price} dict."""
-    resp = krxs.session.post(
-        "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd",
-        headers=_krx_headers(krxs),
-        data={
-            "bld": "dbms/MDC/STAT/standard/MDCSTAT00301",
-            "locale": "ko_KR",
-            "indIdx": "1028",
-            "indIdx2": "028",
-            "strtDd": start_date,
-            "endDd": end_date,
-            "csvxls_isNo": "false"
-        }
-    )
+    """KOSPI200 지수 종가 조회 → {YYYYMMDD: close_price} dict.
+    pykrx stock.get_index_ohlcv_by_date 사용 (KRX 로그인 불필요).
+    실패 시 KRX 직접 호출 fallback.
+    """
+    result = {}
 
-    if resp.status_code != 200:
-        print(f"  ❌ KOSPI200 HTTP {resp.status_code}")
-        return {}
-
+    # 방법1: pykrx 내장 함수 (안정적)
     try:
-        data = resp.json()
-        result = {}
-        for row in data.get("output", []):
-            dt = row.get("TRD_DD", "").replace("/", "")
-            close_str = row.get("CLSPRC_IDX", "").replace(",", "")
-            if dt and close_str:
-                result[dt] = float(close_str)
-        print(f"  📈 KOSPI200 종가: {len(result)}일치")
-        return result
+        from pykrx import stock as pykrx_stock
+        df = pykrx_stock.get_index_ohlcv_by_date(start_date, end_date, "1028")
+        if df is not None and len(df) > 0:
+            for idx_date, row in df.iterrows():
+                dt = idx_date.strftime("%Y%m%d")
+                close = float(row["종가"])
+                if close > 0:
+                    result[dt] = close
+            print(f"  📈 KOSPI200 종가 (pykrx): {len(result)}일치")
+            return result
     except Exception as e:
-        print(f"  ❌ KOSPI200 파싱 실패: {e}")
-        return {}
+        print(f"  ⚠ pykrx index 조회 실패: {e}, fallback 시도...")
+
+    # 방법2: KRX 직접 호출 fallback
+    try:
+        resp = krxs.session.post(
+            "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd",
+            headers=_krx_headers(krxs),
+            data={
+                "bld": "dbms/MDC/STAT/standard/MDCSTAT00301",
+                "locale": "ko_KR",
+                "idxIndMidclssCd": "02",
+                "idxIndCd": "028",
+                "strtDd": start_date,
+                "endDd": end_date,
+                "csvxls_isNo": "false"
+            }
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            for row in data.get("output", []):
+                dt = row.get("TRD_DD", "").replace("/", "")
+                close_str = row.get("CLSPRC_IDX", "").replace(",", "")
+                if dt and close_str:
+                    result[dt] = float(close_str)
+            print(f"  📈 KOSPI200 종가 (KRX raw): {len(result)}일치")
+        else:
+            print(f"  ❌ KOSPI200 fallback HTTP {resp.status_code}")
+    except Exception as e:
+        print(f"  ❌ KOSPI200 fallback 실패: {e}")
+
+    return result
 
 
 def parse_number(s):
