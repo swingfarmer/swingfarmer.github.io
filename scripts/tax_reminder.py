@@ -85,6 +85,8 @@ def send_telegram(text):
 
 
 def main():
+    BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
     if not BOT_TOKEN or not CHAT_ID:
         print('⚠️ TELEGRAM_BOT_TOKEN 또는 TELEGRAM_CHAT_ID 미설정')
         return
