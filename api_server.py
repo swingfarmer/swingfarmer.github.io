@@ -1272,14 +1272,58 @@ def sector_prices():
     return jsonify({'sectors': sector_list, 'count': len(data), 'data': data})
 
 
+def _futures_expiry_dates(start_year=2024, end_year=2028):
+    """KOSPI200 선물 만기일 목록 (3/6/9/12월 둘째 목요일)."""
+    from datetime import date, timedelta
+    expiries = []
+    for year in range(start_year, end_year + 1):
+        for month in [3, 6, 9, 12]:
+            first_day = date(year, month, 1)
+            days_to_thu = (3 - first_day.weekday()) % 7
+            second_thu = first_day + timedelta(days=days_to_thu + 7)
+            expiries.append(second_thu)
+    return sorted(expiries)
+
+def _get_expiry_key(dt_str, expiry_dates):
+    """날짜 문자열(YYYY-MM-DD) → 해당 만기 키(YYYY-MM) 반환."""
+    from datetime import date
+    d = date.fromisoformat(dt_str)
+    for exp in expiry_dates:
+        if d <= exp:
+            return f"{exp.year}-{exp.month:02d}"
+    return f"{expiry_dates[-1].year}-{expiry_dates[-1].month:02d}"
+
+def _build_expiry_periods(expiry_dates, data_start, data_end):
+    """사용 가능한 만기 기간 목록 반환."""
+    from datetime import date, timedelta
+    periods = []
+    for i, exp in enumerate(expiry_dates):
+        prev_exp = expiry_dates[i - 1] if i > 0 else date(2020, 1, 1)
+        period_start = prev_exp + timedelta(days=1)
+        period_end = exp
+        if period_end < data_start or period_start > data_end:
+            continue
+        ym = f"{exp.year}-{exp.month:02d}"
+        label = f"{exp.year % 100}.{exp.month:02d}월물"
+        periods.append({
+            'key': ym, 'label': label,
+            'start': str(max(period_start, data_start)),
+            'end': str(min(period_end, data_end)),
+            'expiry_date': str(exp)
+        })
+    return periods
+
 @app.route('/api/futures-investor')
 def futures_investor():
     """
-    선물 투자자별 매매동향.
-    ?days=365  (기본: 365)
-    반환: [{dt, institution_qty, foreign_qty, ... , foreign_cum_qty, equiv_idx}]
+    선물 투자자별 매매동향 (만기별 누적 리셋).
+    ?days=999 (기본 999: 전체), ?expiry=current|all|YYYY-MM
+    반환: {expiries[], current_expiry, data[]}
+    data 각 행: dt, ..., expiry_key, exp_cum_qty, exp_cum_amt, exp_equiv_idx,
+                total_cum_qty, total_cum_amt, total_equiv_idx
     """
-    days = int(request.args.get('days', 365))
+    from datetime import date
+    days = int(request.args.get('days', 999))
 
     conn = get_conn(); cur = conn.cursor()
     cur.execute("""SELECT TO_CHAR(trade_date,'YYYY-MM-DD') AS dt,
@@ -1291,20 +1335,60 @@ def futures_investor():
     data = rows_to_list(cur, cur.fetchall())
     cur.close(); conn.close()
 
-    # 누적 순매수 & 환산지수 계산
-    cum_qty = 0
-    cum_amt = 0
+    if not data:
+        return jsonify({'count': 0, 'expiries': [], 'current_expiry': None, 'data': []})
+
+    # 만기일 목록 생성
+    expiry_dates = _futures_expiry_dates()
+    data_start = date.fromisoformat(data[0]['dt'])
+    data_end = date.fromisoformat(data[-1]['dt'])
+
+    # 만기별 기간 목록
+    periods = _build_expiry_periods(expiry_dates, data_start, data_end)
+
+    # 현재 만기 키
+    today = date.today()
+    current_expiry = _get_expiry_key(str(today), expiry_dates)
+
+    # 누적 계산: 만기별 + 전체
+    total_cum_qty = 0
+    total_cum_amt = 0
+    exp_cums = {}  # {expiry_key: {'qty': 0, 'amt': 0}}
+
     for row in data:
-        cum_qty += (row.get('foreign_qty') or 0)
-        cum_amt += (row.get('foreign_amt') or 0)
-        row['foreign_cum_qty'] = cum_qty
-        row['foreign_cum_amt'] = cum_amt
-        if cum_qty != 0:
-            row['equiv_idx'] = round(cum_amt / (cum_qty * 250000), 2)
+        fq = row.get('foreign_qty') or 0
+        fa = row.get('foreign_amt') or 0
+        ek = _get_expiry_key(row['dt'], expiry_dates)
+        row['expiry_key'] = ek
+
+        # 만기별 누적
+        if ek not in exp_cums:
+            exp_cums[ek] = {'qty': 0, 'amt': 0}
+        exp_cums[ek]['qty'] += fq
+        exp_cums[ek]['amt'] += fa
+        row['exp_cum_qty'] = exp_cums[ek]['qty']
+        row['exp_cum_amt'] = exp_cums[ek]['amt']
+        if exp_cums[ek]['qty'] != 0:
+            row['exp_equiv_idx'] = round(exp_cums[ek]['amt'] / (exp_cums[ek]['qty'] * 250000), 2)
+        else:
+            row['exp_equiv_idx'] = 0
+
+        # 전체 누적 (하위호환)
+        total_cum_qty += fq
+        total_cum_amt += fa
+        row['foreign_cum_qty'] = total_cum_qty
+        row['foreign_cum_amt'] = total_cum_amt
+        if total_cum_qty != 0:
+            row['equiv_idx'] = round(total_cum_amt / (total_cum_qty * 250000), 2)
         else:
             row['equiv_idx'] = 0
 
-    return jsonify({'count': len(data), 'data': data})
+    return jsonify({
+        'count': len(data),
+        'expiries': periods,
+        'current_expiry': current_expiry,
+        'data': data
+    })
 
 
 if __name__ == '__main__':
