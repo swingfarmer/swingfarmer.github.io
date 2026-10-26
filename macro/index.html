@@ -58,6 +58,18 @@
 }
 .info-box strong { color:var(--sf-text); }
 
+.start-bar {
+  display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;
+}
+.start-label { font-size:12px; font-weight:600; color:var(--sf-text-dim); white-space:nowrap; }
+.start-bar select {
+  padding:5px 10px; border:1px solid var(--sf-border); border-radius:6px;
+  font-size:12px; font-family:var(--sf-font); background:var(--sf-surface);
+  color:var(--sf-text); cursor:pointer;
+}
+body.sf-dark .start-bar select { background:#1e242e; border-color:#2c333f; color:#ccc; }
+body.sf-dark #startCustom { background:#1e242e; border-color:#2c333f; color:#ccc; }
+
 .loading { text-align:center; padding:60px 20px; color:var(--sf-text-dim); font-size:14px; }
 .loading::before { content:'⏳ '; }
 .error-msg { text-align:center; padding:40px 20px; color:#ef4444; font-size:13px; }
@@ -105,7 +117,12 @@ body.sf-dark .info-box { background:#1a2030; border-color:#2c333f; }
 <div class="tab-panel" id="panel-triple">
   <div class="chart-wrap">
     <h3>3저 호황 vs 현재 코스피 비교</h3>
-    <div class="chart-sub">주봉 기준 — 2024.11 시작 (상관계수 0.96 최적 매칭)</div>
+    <div class="chart-sub">주봉 기준 — 시작 시점 선택 가능</div>
+    <div class="start-bar" id="startBar">
+      <span class="start-label">비교 시작:</span>
+      <select id="startSelect"></select>
+      <input type="date" id="startCustom" style="display:none; margin-left:4px; font-size:12px; padding:4px 8px; border:1px solid var(--sf-border); border-radius:6px; font-family:var(--sf-font);">
+    </div>
     <div class="zoom-bar" data-chart="triple">
       <button data-range="26">6개월</button>
       <button data-range="52">1년</button>
@@ -295,20 +312,88 @@ function renderSemi(range) {
 // ══════════════════════
 // 탭2: 3저 호황
 // ══════════════════════
+var tripleStart = null; // 현재 선택된 시작일
+var tripleCurrentSlice = []; // 시작일 기준 슬라이스
+
 function loadTriple() {
   fetchJSON('triple_low_compare.json', 'loadTriple', function(data){
     rawData.triple = data;
-    renderTriple('all');
+    initTripleSelector();
   });
+}
+
+function initTripleSelector() {
+  var d = rawData.triple;
+  var sel = document.getElementById('startSelect');
+  var custom = document.getElementById('startCustom');
+  sel.innerHTML = '';
+
+  // 프리셋 옵션
+  var presets = d.presets || [];
+  presets.forEach(function(p){
+    var opt = document.createElement('option');
+    opt.value = p.date;
+    opt.textContent = p.label;
+    sel.appendChild(opt);
+  });
+  // 직접 입력 옵션
+  var optCustom = document.createElement('option');
+  optCustom.value = '__custom__';
+  optCustom.textContent = '📅 직접 입력';
+  sel.appendChild(optCustom);
+
+  // 기본값: 저장된 값 또는 첫 번째 프리셋
+  var saved = null;
+  try { saved = localStorage.getItem('sf_macro_triple_start'); } catch(e){}
+  if (saved && presets.some(function(p){ return p.date === saved; })) {
+    sel.value = saved;
+  } else if (saved) {
+    sel.value = '__custom__';
+    custom.value = saved;
+    custom.style.display = '';
+  }
+
+  sel.addEventListener('change', function(){
+    if (sel.value === '__custom__') {
+      custom.style.display = '';
+      custom.focus();
+    } else {
+      custom.style.display = 'none';
+      tripleStart = sel.value;
+      try { localStorage.setItem('sf_macro_triple_start', tripleStart); } catch(e){}
+      applyTripleStart();
+    }
+  });
+
+  custom.addEventListener('change', function(){
+    if (custom.value) {
+      tripleStart = custom.value;
+      try { localStorage.setItem('sf_macro_triple_start', tripleStart); } catch(e){}
+      applyTripleStart();
+    }
+  });
+
+  // 초기 렌더
+  tripleStart = (sel.value === '__custom__' && saved) ? saved : (sel.value !== '__custom__' ? sel.value : presets[0].date);
+  applyTripleStart();
+}
+
+function applyTripleStart() {
+  var d = rawData.triple;
+  var allCurrent = d.current || [];
+  // 시작일 이후 데이터만 슬라이스
+  tripleCurrentSlice = allCurrent.filter(function(r){ return r.date >= tripleStart; });
+  var activeBtn = document.querySelector('.zoom-bar[data-chart="triple"] button.active');
+  renderTriple(activeBtn ? activeBtn.dataset.range : 'all');
 }
 
 function renderTriple(range) {
   var d = rawData.triple;
   if (!d) return;
-  var past = d.past || [], current = d.current || [];
+  var past = d.past || [];
+  var current = tripleCurrentSlice;
   if (!current.length) return;
 
-  // 둘 다 주봉 — 현재 코스피 기준으로 과거 환산
   var currBase = current[0].close;
   var pastBase = (past.length) ? past[0].close : 1;
   var scale = currBase / pastBase;
@@ -316,11 +401,9 @@ function renderTriple(range) {
   var maxLen = Math.max(past.length, current.length);
   if (range !== 'all') maxLen = Math.min(maxLen, parseInt(range));
 
-  // x축: 현재 날짜 표시 (과거 날짜는 툴팁에서)
   var labels = [], pastPts = [], currPts = [];
   for (var i = 0; i < maxLen; i++) {
-    // 현재 날짜 우선, 없으면 주차 번호
-    var lbl = (i < current.length) ? current[i].date : (i < past.length ? past[i].date : '');
+    var lbl = (i < current.length) ? current[i].date : '';
     labels.push(lbl);
     pastPts.push(i < past.length ? +(past[i].close * scale).toFixed(0) : null);
     currPts.push(i < current.length ? +current[i].close.toFixed(0) : null);
@@ -342,7 +425,7 @@ function renderTriple(range) {
       labels: labels,
       datasets: [
         { label: d.past_label || '3저 호황', data: pastPts, borderColor: '#e89a3c', backgroundColor: 'rgba(232,154,60,.08)' },
-        { label: d.current_label || '현재 코스피', data: currPts, borderColor: '#333', backgroundColor: 'rgba(51,51,51,.05)' }
+        { label: '현재 코스피 (' + tripleStart.substring(0,7) + '~)', data: currPts, borderColor: '#333', backgroundColor: 'rgba(51,51,51,.05)' }
       ]
     },
     options: {
@@ -361,14 +444,13 @@ function renderTriple(range) {
               var i = items[0].dataIndex;
               var curr = (i < current.length) ? current[i].date : '-';
               var pt = (i < past.length) ? past[i].date : '-';
-              return '현재: ' + curr + '  |  과거: ' + pt;
+              return '현재: ' + curr + '  ↔  3저: ' + pt;
             },
             label: function(ctx2) {
-              var raw = ctx2.datasetIndex === 1 ? ctx2.parsed.y : null;
               if (ctx2.datasetIndex === 0 && ctx2.dataIndex < past.length) {
-                return ctx2.dataset.label + ': ' + ctx2.parsed.y.toLocaleString() + ' (원본 ' + past[ctx2.dataIndex].close.toFixed(0) + ')';
+                return '3저 환산: ' + ctx2.parsed.y.toLocaleString() + ' (원본 ' + past[ctx2.dataIndex].close.toFixed(0) + ')';
               }
-              return ctx2.dataset.label + ': ' + ctx2.parsed.y.toLocaleString();
+              return '현재: ' + ctx2.parsed.y.toLocaleString();
             }
           }
         }
