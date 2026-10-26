@@ -140,8 +140,9 @@ body.sf-dark .info-box { background:#1a2030; border-color:#2c333f; }
   <div class="info-box">
     <strong>주황색 선:</strong> 3저 호황 (현재 코스피 시작값 기준 환산)<br>
     <strong>검은색 선:</strong> 현재 코스피<br>
-    주봉 기준. 과거↔현재 시작점 조합 6개 + 직접 입력. 상관분석으로 최적 조합 자동 탐색.<br>
-    ①~④ 상관계수 0.96~0.97 구간, ⑤ 만스피 기준, ⑥ KB증권 기준.<br>
+    주봉 기준. 과거↔현재 시작점 조합 6개 + 직접 입력.<br>
+    상관분석 조합은 데이터 누적에 따라 최적값이 변할 수 있음.<br>
+    <strong>현재 보정일: 2026.10.26</strong> — 재보정 시 기존 조합은 유지하고 신규 그룹 추가.<br>
     자료: KRX(pykrx 1980~), Yahoo Finance(2023~) 주봉 종가.
   </div>
 </div>
@@ -320,13 +321,20 @@ function renderSemi(range) {
 // ══════════════════════
 var tPastStart = null, tCurrStart = null;
 
-var COMBOS = [
-  { past:'1983-07-01', curr:'2023-05-12', label:'① 83.07↔23.05 (상관 0.97, 181주)' },
-  { past:'1984-01-01', curr:'2023-11-10', label:'② 84.01↔23.11 (상관 0.97, 155주)' },
-  { past:'1984-07-01', curr:'2024-05-10', label:'③ 84.07↔24.05 (상관 0.97, 129주)' },
-  { past:'1985-01-01', curr:'2024-11-08', label:'④ 85.01↔24.11 (상관 0.96, 103주)' },
-  { past:'1983-06-01', curr:'2025-01-06', label:'⑤ 83.06↔25.01 (만스피 기준)' },
-  { past:'1985-01-01', curr:'2024-01-02', label:'⑥ 85.01↔24.01 (KB 기준)' }
+// 상관분석 기준: 2026-10-26. 재보정 시 새 그룹 추가, 기존 유지.
+var COMBO_GROUPS = [
+  { label: '상관분석 (2026.10.26 기준)', combos: [
+    { past:'1983-07-01', curr:'2023-05-12', label:'83.07↔23.05 (상관 0.97, 181주)' },
+    { past:'1984-01-01', curr:'2023-11-10', label:'84.01↔23.11 (상관 0.97, 155주)' },
+    { past:'1984-07-01', curr:'2024-05-10', label:'84.07↔24.05 (상관 0.97, 129주)' },
+    { past:'1985-01-01', curr:'2024-11-08', label:'85.01↔24.11 (상관 0.96, 103주)' }
+  ]},
+  { label: '참고 기준', combos: [
+    { past:'1983-06-01', curr:'2023-01-02', label:'83.06↔23.01 (만스피 기준)' },
+    { past:'1985-01-01', curr:'2024-01-02', label:'85.01↔24.01 (KB 기준)' }
+  ]}
+  // ── 재보정 시 새 그룹 추가 예시 ──
+  // { label: '상관분석 (2027.04.01 기준)', combos: [ ... ] }
 ];
 
 function loadTriple() {
@@ -336,6 +344,10 @@ function loadTriple() {
   });
 }
 
+// 전체 콤보를 flat 배열로 (optgroup용 인덱스 매핑)
+var COMBOS_FLAT = [];
+COMBO_GROUPS.forEach(function(g){ g.combos.forEach(function(c){ COMBOS_FLAT.push(c); }); });
+
 function initTripleCombo() {
   var sel = document.getElementById('comboSelect');
   var customBar = document.getElementById('customBar');
@@ -343,10 +355,17 @@ function initTripleCombo() {
   var customCurr = document.getElementById('customCurr');
 
   sel.innerHTML = '';
-  COMBOS.forEach(function(c, i){
-    var opt = document.createElement('option');
-    opt.value = String(i); opt.textContent = c.label;
-    sel.appendChild(opt);
+  var idx = 0;
+  COMBO_GROUPS.forEach(function(g){
+    var og = document.createElement('optgroup');
+    og.label = g.label;
+    g.combos.forEach(function(c){
+      var opt = document.createElement('option');
+      opt.value = String(idx); opt.textContent = c.label;
+      og.appendChild(opt);
+      idx++;
+    });
+    sel.appendChild(og);
   });
   var optC = document.createElement('option');
   optC.value = '__custom__'; optC.textContent = '📅 직접 입력';
@@ -360,7 +379,7 @@ function initTripleCombo() {
       customBar.style.display = '';
       customPast.value = localStorage.getItem('sf_triple_cp') || '';
       customCurr.value = localStorage.getItem('sf_triple_cc') || '';
-    } else if (sv !== null) {
+    } else if (sv !== null && parseInt(sv) < COMBOS_FLAT.length) {
       sel.value = sv;
     }
   } catch(e){}
@@ -377,7 +396,7 @@ function initTripleCombo() {
       } catch(e){}
     } else {
       customBar.style.display = 'none';
-      var c = COMBOS[parseInt(sel.value)];
+      var c = COMBOS_FLAT[parseInt(sel.value)];
       tPastStart = c.past;
       tCurrStart = c.curr;
       try { localStorage.setItem('sf_triple_combo', sel.value); } catch(e){}
