@@ -11,7 +11,7 @@
   python3 scripts/fetch_macro_compare.py              # 오늘 데이터 추가
   python3 scripts/fetch_macro_compare.py --backfill    # 전체 백필 (최초 1회)
 
-환경변수: 없음 (yfinance)
+환경변수: ECOS_API_KEY (3저 호황 과거 코스피용)
 크론: 매일 18:50 (auto_push 전)
 """
 
@@ -20,6 +20,8 @@ import os
 import sys
 import time
 from datetime import datetime, timezone, timedelta
+import urllib.request
+import ssl
 
 import yfinance as yf
 
@@ -30,6 +32,25 @@ DATA_DIR = os.path.join(ROOT_DIR, "data", "macro")
 DELAY = 1.0
 
 os.makedirs(DATA_DIR, exist_ok=True)
+
+# ── 환경변수 로드 ──
+def load_env():
+    f = os.path.expanduser('~/.env_secrets')
+    if os.path.exists(f):
+        for line in open(f):
+            line = line.strip()
+            if not line or line.startswith('#'): continue
+            if line.startswith('export '): line = line[7:]
+            if '=' in line:
+                k, v = line.split('=', 1)
+                os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+load_env()
+
+ECOS_API_KEY = os.environ.get('ECOS_API_KEY', '')
+ECOS_BASE = "https://ecos.bok.or.kr/api/StatisticSearch"
+SSL_CTX = ssl.create_default_context()
+SSL_CTX.check_hostname = False
+SSL_CTX.verify_mode = ssl.CERT_NONE
 
 # ── 파일 경로 ──
 SEMI_FILE = os.path.join(DATA_DIR, "semiconductor.json")
@@ -68,6 +89,46 @@ def fetch_ticker(ticker, start, end=None, period=None):
         return result
     except Exception as e:
         print(f"  ✗ {ticker}: {e}")
+        return []
+
+
+def fetch_ecos_kospi(start_date, end_date):
+    """ECOS API로 코스피 일별 종가 가져오기 (1980년대 가능).
+    통계표: 802Y001 (증권/주가지수), 항목: 0001000 (종합주가지수)
+    """
+    if not ECOS_API_KEY:
+        print("  ⚠ ECOS_API_KEY 없음. ~/.env_secrets 확인.")
+        return []
+
+    # ECOS 날짜 형식: YYYYMMDD
+    sd = start_date.replace('-', '')
+    ed = end_date.replace('-', '')
+    url = f"{ECOS_BASE}/{ECOS_API_KEY}/json/kr/1/10000/802Y001/D/{sd}/{ed}/0001000"
+
+    try:
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=30, context=SSL_CTX) as resp:
+            raw = resp.read().decode('utf-8')
+        data = json.loads(raw)
+
+        if 'StatisticSearch' not in data:
+            err = data.get('RESULT', {}).get('MESSAGE', 'Unknown error')
+            print(f"  ✗ ECOS 코스피: {err}")
+            return []
+
+        rows = data['StatisticSearch']['row']
+        result = []
+        for r in rows:
+            dt = r['TIME']  # YYYYMMDD
+            val = r.get('DATA_VALUE', '')
+            if val and val != '-':
+                date_str = f"{dt[:4]}-{dt[4:6]}-{dt[6:8]}"
+                result.append({"date": date_str, "close": round(float(val), 2)})
+
+        print(f"  ✓ ECOS 코스피: {len(result)}건 ({result[0]['date']}~{result[-1]['date']})" if result else "  ⚠ ECOS 코스피: 0건")
+        return result
+    except Exception as e:
+        print(f"  ✗ ECOS 코스피: {e}")
         return []
 
 
@@ -140,13 +201,18 @@ def fetch_triple_low_compare(backfill=False):
     print("\n[2/3] 3저 호황 vs 현재 코스피")
 
     if backfill:
-        # 과거: 1983~1989 코스피
-        print("  과거 3저 호황 기간 (1983~1989)...")
-        past = fetch_ticker("^KS11", start="1983-01-01", end="1990-01-01")
+        # 과거: 1983~1989 코스피 (ECOS API — yfinance는 1997년 이후만 지원)
+        print("  과거 3저 호황 기간 (1983~1989) — ECOS API...")
+        past = fetch_ecos_kospi("1983-01-01", "1989-12-31")
 
-        # 현재: 2023~현재 코스피
-        print("  현재 코스피 (2023~)...")
+        # 현재: 2023~현재 코스피 (yfinance)
+        print("  현재 코스피 (2023~) — yfinance...")
         current = fetch_ticker("^KS11", start="2023-01-01")
+
+        # yfinance 실패 시 ECOS fallback
+        if not current:
+            print("  yfinance 실패, ECOS fallback...")
+            current = fetch_ecos_kospi("2023-01-01", datetime.now(KST).strftime("%Y-%m-%d"))
 
         data = {
             "past": past,
@@ -166,6 +232,9 @@ def fetch_triple_low_compare(backfill=False):
 
         start = (datetime.now(KST) - timedelta(days=10)).strftime("%Y-%m-%d")
         current_new = fetch_ticker("^KS11", start=start)
+        # yfinance 실패 시 ECOS fallback
+        if not current_new:
+            current_new = fetch_ecos_kospi(start, datetime.now(KST).strftime("%Y-%m-%d"))
         if current_new:
             existing["current"] = merge_daily(existing.get("current", []), current_new)
             save_json(TRIPLE_CMP_FILE, existing)
