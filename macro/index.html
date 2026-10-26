@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="robots" content="noindex, nofollow">
+<title>매크로 비교 차트 — 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=4">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-adapter-date-fns/3.0.0/chartjs-adapter-date-fns.bundle.min.js"></script>
+<style>
+:root { --sf-max-w: 960px; }
+
+/* 탭 */
+.tab-bar { display:flex; gap:4px; margin-bottom:20px; border-bottom:2px solid var(--sf-border); padding-bottom:0; }
+.tab-bar button {
+  padding:10px 18px; border:none; background:none; font-size:14px; font-weight:600;
+  color:var(--sf-text-dim); cursor:pointer; font-family:var(--sf-font);
+  border-bottom:3px solid transparent; margin-bottom:-2px; transition:all .15s;
+  white-space:nowrap;
+}
+.tab-bar button:hover { color:var(--sf-brand); }
+.tab-bar button.active { color:var(--sf-brand); border-bottom-color:var(--sf-brand); }
+@media(max-width:500px){ .tab-bar button { padding:8px 12px; font-size:13px; } }
+
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+
+/* 차트 영역 */
+.chart-wrap {
+  background:var(--sf-surface); border-radius:12px; padding:20px;
+  box-shadow:var(--sf-shadow); margin-bottom:20px; position:relative;
+}
+.chart-wrap h3 { margin:0 0 4px; font-size:16px; color:var(--sf-text); }
+.chart-wrap .chart-sub { font-size:12px; color:var(--sf-text-dim); margin-bottom:16px; }
+.chart-wrap canvas { width:100%!important; height:360px!important; }
+@media(max-width:600px){ .chart-wrap canvas { height:280px!important; } }
+
+/* 줌 버튼 */
+.zoom-bar { display:flex; gap:4px; margin-bottom:12px; }
+.zoom-bar button {
+  padding:5px 12px; border:1px solid var(--sf-border); border-radius:6px;
+  background:var(--sf-surface); font-size:11px; font-weight:600; cursor:pointer;
+  font-family:var(--sf-font); color:var(--sf-text-dim); transition:all .12s;
+}
+.zoom-bar button:hover { border-color:var(--sf-brand); color:var(--sf-brand); }
+.zoom-bar button.active { background:var(--sf-brand); color:#fff; border-color:var(--sf-brand); }
+
+/* 라디오 토글 (3저 지표) */
+.radio-bar { display:flex; gap:12px; margin-bottom:12px; }
+.radio-bar label {
+  display:flex; align-items:center; gap:4px; font-size:13px; font-weight:600;
+  color:var(--sf-text-dim); cursor:pointer;
+}
+.radio-bar input[type="radio"] { accent-color:var(--sf-brand); }
+
+/* 설명 박스 */
+.info-box {
+  background:color-mix(in srgb, var(--sf-brand) 6%, var(--sf-surface));
+  border:1px solid color-mix(in srgb, var(--sf-brand) 20%, var(--sf-border));
+  border-radius:8px; padding:14px 16px; margin-top:16px; font-size:12px;
+  line-height:1.7; color:var(--sf-text-sub);
+}
+.info-box strong { color:var(--sf-text); }
+
+/* 로딩 */
+.loading { text-align:center; padding:60px 20px; color:var(--sf-text-dim); font-size:14px; }
+.loading::before { content:'⏳ '; }
+
+/* 에러 */
+.error-msg { text-align:center; padding:40px; color:#ef4444; font-size:14px; }
+
+/* 다크 */
+body.sf-dark .chart-wrap { background:#1e242e; }
+body.sf-dark .zoom-bar button { background:#1e242e; border-color:#2c333f; color:#8899aa; }
+body.sf-dark .zoom-bar button.active { background:var(--sf-brand); color:#fff; }
+body.sf-dark .info-box { background:#1a2030; border-color:#2c333f; }
+</style>
+</head>
+<body class="sf-narrow">
+
+<a href="/" class="back-link">← 홈</a>
+<h1>📊 매크로 비교 차트</h1>
+<p class="desc">반도체 랠리 · 3저 호황 · 3저 지표 — 매일 업데이트</p>
+
+<div class="tab-bar" id="tabBar">
+  <button class="active" data-tab="semi">📈 반도체 랠리</button>
+  <button data-tab="triple">📉 3저 호황</button>
+  <button data-tab="indicator">🌡️ 3저 지표</button>
+</div>
+
+<!-- ── 탭1: 반도체 랠리 ── -->
+<div class="tab-panel active" id="panel-semi">
+  <div class="chart-wrap">
+    <h3>나스닥100 vs 필라델피아 반도체지수</h3>
+    <div class="chart-sub">1996년 4월 = 100 기준 환산</div>
+    <div class="zoom-bar" id="zoomSemi">
+      <button data-range="365">1년</button>
+      <button data-range="1095">3년</button>
+      <button data-range="1825">5년</button>
+      <button class="active" data-range="all">전체</button>
+    </div>
+    <div id="loadSemi" class="loading">데이터 로딩 중…</div>
+    <canvas id="chartSemi" style="display:none"></canvas>
+  </div>
+  <div class="info-box">
+    <strong>주황색 선:</strong> 나스닥100 (^NDX)<br>
+    <strong>검은색 선:</strong> 필라델피아 반도체지수 (^SOX)<br>
+    기준점: 1996년 4월 첫 거래일을 100으로 환산하여 비교합니다.
+  </div>
+</div>
+
+<!-- ── 탭2: 3저 호황 ── -->
+<div class="tab-panel" id="panel-triple">
+  <div class="chart-wrap">
+    <h3>3저 호황 vs 현재 코스피 비교</h3>
+    <div class="chart-sub">경과 거래일 기준 매칭 — 현재 코스피 첫 거래일 기준 환산</div>
+    <div class="zoom-bar" id="zoomTriple">
+      <button data-range="63">3개월</button>
+      <button data-range="126">6개월</button>
+      <button data-range="252">1년</button>
+      <button class="active" data-range="all">전체</button>
+    </div>
+    <div id="loadTriple" class="loading">데이터 로딩 중…</div>
+    <canvas id="chartTriple" style="display:none"></canvas>
+  </div>
+  <div class="info-box">
+    <strong>주황색 선:</strong> 3저 호황 (1983~1989, 현재 코스피 첫 거래일 기준 환산)<br>
+    <strong>검은색 선:</strong> 현재 코스피<br>
+    과거 데이터는 1983년 6월 1일 시작, 현재 데이터는 2023년 1월 1일 이후 첫 거래일 시작으로 경과일 기준 매칭합니다.
+  </div>
+</div>
+
+<!-- ── 탭3: 3저 지표 ── -->
+<div class="tab-panel" id="panel-indicator">
+  <div class="chart-wrap">
+    <h3>3저 지표</h3>
+    <div class="chart-sub">환율 · 금리 · 유가 추이</div>
+    <div class="radio-bar" id="indRadio">
+      <label><input type="radio" name="ind" value="krw" checked> 환율</label>
+      <label><input type="radio" name="ind" value="tnx"> 금리</label>
+      <label><input type="radio" name="ind" value="clf"> 유가</label>
+    </div>
+    <div class="zoom-bar" id="zoomInd">
+      <button data-range="126">6개월</button>
+      <button data-range="252">1년</button>
+      <button data-range="756">3년</button>
+      <button class="active" data-range="all">전체</button>
+    </div>
+    <div id="loadInd" class="loading">데이터 로딩 중…</div>
+    <canvas id="chartInd" style="display:none"></canvas>
+  </div>
+  <div class="info-box">
+    <strong>환율:</strong> Yahoo Finance KRW=X (원/달러)<br>
+    <strong>금리:</strong> Yahoo Finance ^TNX (미국 10년물 국채 수익률, %)<br>
+    <strong>유가:</strong> Yahoo Finance CL=F (WTI 원유, $/bbl)
+  </div>
+</div>
+
+<script src="/common.js?v=5"></script>
+<script>
+(function(){
+'use strict';
+
+var API_BASE = '/data/macro/';
+var charts = {};
+var rawData = {};
+
+// ── 탭 전환 ──
+document.querySelectorAll('.tab-bar button').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.tab-bar button').forEach(function(b){ b.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+
+    // 최초 로드 시 데이터 fetch
+    var tab = btn.dataset.tab;
+    if (tab === 'semi' && !rawData.semi) loadSemi();
+    if (tab === 'triple' && !rawData.triple) loadTriple();
+    if (tab === 'indicator' && !rawData.indicator) loadIndicator();
+  });
+});
+
+// ── 공통: fetch + 에러 처리 ──
+function fetchJSON(file, cb) {
+  fetch(API_BASE + file + '?t=' + Date.now())
+    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+    .then(cb)
+    .catch(function(e){ console.error(file, e); });
+}
+
+// ── 공통: 줌 ──
+function setupZoom(barId, chartKey, renderFn) {
+  document.querySelectorAll('#' + barId + ' button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('#' + barId + ' button').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      renderFn(btn.dataset.range);
+    });
+  });
+}
+
+// ── 공통: 차트 생성 ──
+function makeChart(canvasId, datasets, opts) {
+  var ctx = document.getElementById(canvasId).getContext('2d');
+  if (charts[canvasId]) charts[canvasId].destroy();
+  document.getElementById(canvasId).style.display = '';
+
+  var isDark = document.body.classList.contains('sf-dark');
+  var gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)';
+  var textColor = isDark ? '#8899aa' : '#888';
+
+  charts[canvasId] = new Chart(ctx, {
+    type: 'line',
+    data: { datasets: datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: datasets.length > 1, labels: { color: textColor, font: { size: 12 } } },
+        tooltip: {
+          backgroundColor: isDark ? '#1e293b' : '#fff',
+          titleColor: isDark ? '#ddd' : '#333',
+          bodyColor: isDark ? '#aaa' : '#666',
+          borderColor: isDark ? '#334155' : '#ddd',
+          borderWidth: 1,
+          padding: 10,
+          callbacks: opts.tooltipCallbacks || {}
+        }
+      },
+      scales: {
+        x: Object.assign({
+          type: opts.xType || 'time',
+          time: { unit: 'month', displayFormats: { month: 'yyyy-MM' } },
+          grid: { display: false },
+          ticks: { color: textColor, font: { size: 11 }, maxTicksLimit: 10 }
+        }, opts.xScale || {}),
+        y: Object.assign({
+          grid: { color: gridColor },
+          ticks: { color: textColor, font: { size: 11 } },
+          position: 'right'
+        }, opts.yScale || {})
+      },
+      elements: { point: { radius: 0 }, line: { borderWidth: 1.8 } }
+    }
+  });
+}
+
+// ══════════════════════════════════
+// 탭1: 반도체 랠리
+// ══════════════════════════════════
+function loadSemi() {
+  fetchJSON('semiconductor.json', function(data){
+    rawData.semi = data;
+    document.getElementById('loadSemi').style.display = 'none';
+    renderSemi('all');
+    setupZoom('zoomSemi', 'semi', renderSemi);
+  });
+}
+
+function renderSemi(range) {
+  var data = rawData.semi;
+  if (!data || !data.length) return;
+
+  // 1996-04 첫 거래일 기준 = 100
+  var baseNdx = null, baseSox = null;
+  for (var i = 0; i < data.length; i++) {
+    if (data[i].date >= '1996-04-01') {
+      if (!baseNdx && data[i].ndx) baseNdx = data[i].ndx;
+      if (!baseSox && data[i].sox) baseSox = data[i].sox;
+      if (baseNdx && baseSox) break;
+    }
+  }
+  if (!baseNdx) baseNdx = data[0].ndx || 1;
+  if (!baseSox) baseSox = data[0].sox || 1;
+
+  var filtered = data;
+  if (range !== 'all') {
+    var days = parseInt(range);
+    filtered = data.slice(-days);
+  }
+
+  var ndxPts = [], soxPts = [];
+  filtered.forEach(function(r){
+    if (r.ndx) ndxPts.push({ x: r.date, y: +(r.ndx / baseNdx * 100).toFixed(1) });
+    if (r.sox) soxPts.push({ x: r.date, y: +(r.sox / baseSox * 100).toFixed(1) });
+  });
+
+  makeChart('chartSemi', [
+    { label: '나스닥100', data: ndxPts, borderColor: '#e89a3c', backgroundColor: 'rgba(232,154,60,.08)' },
+    { label: '필라델피아 반도체', data: soxPts, borderColor: '#333', backgroundColor: 'rgba(51,51,51,.05)' }
+  ], {
+    tooltipCallbacks: {
+      label: function(ctx) { return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1); }
+    }
+  });
+}
+
+// ══════════════════════════════════
+// 탭2: 3저 호황
+// ══════════════════════════════════
+function loadTriple() {
+  fetchJSON('triple_low_compare.json', function(data){
+    rawData.triple = data;
+    document.getElementById('loadTriple').style.display = 'none';
+    renderTriple('all');
+    setupZoom('zoomTriple', 'triple', renderTriple);
+  });
+}
+
+function renderTriple(range) {
+  var data = rawData.triple;
+  if (!data) return;
+
+  var past = data.past || [];
+  var current = data.current || [];
+  if (!past.length || !current.length) return;
+
+  // 현재 코스피 첫 거래일 기준으로 과거 데이터 환산
+  var currBase = current[0].close;
+  var pastBase = past[0].close;
+  var scale = currBase / pastBase;
+
+  var maxLen = Math.max(past.length, current.length);
+  if (range !== 'all') {
+    var days = parseInt(range);
+    maxLen = Math.min(maxLen, days);
+  }
+
+  var pastPts = [], currPts = [];
+  for (var i = 0; i < maxLen; i++) {
+    if (i < past.length) {
+      pastPts.push({ x: i, y: +(past[i].close * scale).toFixed(0) });
+    }
+    if (i < current.length) {
+      currPts.push({ x: i, y: +current[i].close.toFixed(0) });
+    }
+  }
+
+  makeChart('chartTriple', [
+    { label: data.past_label || '3저 호황', data: pastPts, borderColor: '#e89a3c', backgroundColor: 'rgba(232,154,60,.08)' },
+    { label: data.current_label || '현재 코스피', data: currPts, borderColor: '#333', backgroundColor: 'rgba(51,51,51,.05)' }
+  ], {
+    xType: 'linear',
+    xScale: {
+      type: 'linear',
+      title: { display: true, text: '경과 거래일', color: '#888', font: { size: 11 } },
+      ticks: { maxTicksLimit: 12 }
+    },
+    yScale: {
+      ticks: { callback: function(v) { return v.toLocaleString(); } }
+    },
+    tooltipCallbacks: {
+      title: function(items) { return '거래일 ' + items[0].parsed.x; },
+      label: function(ctx) {
+        var i = ctx.parsed.x;
+        var d = rawData.triple;
+        var dateStr = '';
+        if (ctx.datasetIndex === 0 && d.past[i]) dateStr = ' (' + d.past[i].date + ')';
+        if (ctx.datasetIndex === 1 && d.current[i]) dateStr = ' (' + d.current[i].date + ')';
+        return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString() + dateStr;
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════
+// 탭3: 3저 지표
+// ══════════════════════════════════
+var indType = 'krw';
+
+function loadIndicator() {
+  fetchJSON('triple_low_indicator.json', function(data){
+    rawData.indicator = data;
+    document.getElementById('loadInd').style.display = 'none';
+    renderIndicator('all');
+    setupZoom('zoomInd', 'indicator', renderIndicator);
+  });
+}
+
+document.querySelectorAll('#indRadio input').forEach(function(r){
+  r.addEventListener('change', function(){
+    indType = r.value;
+    var activeZoom = document.querySelector('#zoomInd button.active');
+    renderIndicator(activeZoom ? activeZoom.dataset.range : 'all');
+  });
+});
+
+var IND_META = {
+  krw: { label: '원/달러 환율', unit: '원', color: '#2563eb' },
+  tnx: { label: '미국 10년물 금리', unit: '%', color: '#e89a3c' },
+  clf: { label: 'WTI 유가', unit: '$/bbl', color: '#333' }
+};
+
+function renderIndicator(range) {
+  var data = rawData.indicator;
+  if (!data || !data.length) return;
+
+  var filtered = data;
+  if (range !== 'all') {
+    var days = parseInt(range);
+    filtered = data.slice(-days);
+  }
+
+  var meta = IND_META[indType];
+  var pts = [];
+  filtered.forEach(function(r){
+    if (r[indType] !== undefined && r[indType] !== null) {
+      pts.push({ x: r.date, y: r[indType] });
+    }
+  });
+
+  makeChart('chartInd', [
+    { label: meta.label, data: pts, borderColor: meta.color, backgroundColor: 'rgba(0,0,0,.03)', fill: true }
+  ], {
+    tooltipCallbacks: {
+      label: function(ctx) {
+        var v = indType === 'krw' ? ctx.parsed.y.toFixed(2) : ctx.parsed.y.toFixed(2);
+        return meta.label + ': ' + v + ' ' + meta.unit;
+      }
+    },
+    yScale: {
+      ticks: {
+        callback: function(v) {
+          if (indType === 'krw') return v.toFixed(0);
+          return v.toFixed(2);
+        }
+      }
+    }
+  });
+}
+
+// ── 초기 로드 (탭1) ──
+loadSemi();
+
+})();
+</script>
+</body>
+</html>
