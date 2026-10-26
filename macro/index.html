@@ -329,34 +329,48 @@ function initTripleSelectors() {
   var pastSel = document.getElementById('pastSelect');
   var currSel = document.getElementById('currSelect');
   var currCustom = document.getElementById('currCustom');
+  var pastPresets = d.past_presets || [];
 
   // 과거 시작 드롭다운
   pastSel.innerHTML = '';
-  (d.past_presets || []).forEach(function(p){
+  pastPresets.forEach(function(p){
     var opt = document.createElement('option');
     opt.value = p.date; opt.textContent = p.label;
     pastSel.appendChild(opt);
   });
 
-  // 현재 시작 드롭다운
-  currSel.innerHTML = '';
-  (d.current_presets || []).forEach(function(p){
-    var opt = document.createElement('option');
-    opt.value = p.date; opt.textContent = p.label;
-    currSel.appendChild(opt);
-  });
-  var optC = document.createElement('option');
-  optC.value = '__custom__'; optC.textContent = '📅 직접 입력';
-  currSel.appendChild(optC);
+  // 현재 드롭다운 — 과거 선택에 따라 변경
+  function rebuildCurrOptions(pastDate) {
+    var preset = pastPresets.find(function(p){ return p.date === pastDate; });
+    var cpList = (preset && preset.current_presets) ? preset.current_presets : [];
+    var prevVal = currSel.value;
+    currSel.innerHTML = '';
+    cpList.forEach(function(p){
+      var opt = document.createElement('option');
+      opt.value = p.date; opt.textContent = p.label;
+      currSel.appendChild(opt);
+    });
+    var optC = document.createElement('option');
+    optC.value = '__custom__'; optC.textContent = '📅 직접 입력';
+    currSel.appendChild(optC);
+    // 이전 선택 유지 시도
+    var match = cpList.some(function(p){ return p.date === prevVal; });
+    if (match) currSel.value = prevVal;
+  }
 
   // 저장값 복원
   try {
     var sp = localStorage.getItem('sf_triple_past');
     var sc = localStorage.getItem('sf_triple_curr');
     if (sp) pastSel.value = sp;
+    rebuildCurrOptions(pastSel.value);
     if (sc && sc !== '__custom__') currSel.value = sc;
-    else if (sc === '__custom__') { currSel.value = '__custom__'; currCustom.value = localStorage.getItem('sf_triple_curr_val') || ''; currCustom.style.display = ''; }
-  } catch(e){}
+    else if (sc === '__custom__') {
+      currSel.value = '__custom__';
+      currCustom.value = localStorage.getItem('sf_triple_curr_val') || '';
+      currCustom.style.display = '';
+    }
+  } catch(e){ rebuildCurrOptions(pastSel.value); }
 
   function onUpdate() {
     tPastStart = pastSel.value;
@@ -378,11 +392,16 @@ function initTripleSelectors() {
     }
   }
 
-  pastSel.addEventListener('change', onUpdate);
-  currSel.addEventListener('change', function(){ if (currSel.value === '__custom__') { currCustom.style.display=''; currCustom.focus(); } else onUpdate(); });
+  pastSel.addEventListener('change', function(){
+    rebuildCurrOptions(pastSel.value);
+    onUpdate();
+  });
+  currSel.addEventListener('change', function(){
+    if (currSel.value === '__custom__') { currCustom.style.display=''; currCustom.focus(); }
+    else onUpdate();
+  });
   currCustom.addEventListener('change', onUpdate);
 
-  // 초기 렌더
   onUpdate();
 }
 
