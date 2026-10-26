@@ -63,6 +63,20 @@
 .wt-stars { color:#f59e0b; letter-spacing:1px; }
 .wt-memo { font-size:12px; color:var(--sf-text-sub); margin-top:3px; font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .wt-status-badge { font-size:11px; font-weight:700; padding:3px 10px; border-radius:6px; background:color-mix(in srgb, var(--st) 15%, transparent); color:var(--st); white-space:nowrap; }
+/* 빠른 화수 수정 */
+.wt-ep-quick { display:inline-flex; align-items:center; gap:2px; background:#f0f5fa; border-radius:6px; padding:1px 2px; }
+.wt-ep-quick button { width:22px; height:22px; border:none; border-radius:4px; background:transparent; cursor:pointer; font-size:13px; font-weight:700; color:var(--sf-brand); display:flex; align-items:center; justify-content:center; transition:all .1s; padding:0; font-family:var(--sf-font); }
+.wt-ep-quick button:hover { background:var(--sf-brand); color:#fff; }
+.wt-ep-quick .ep-num { font-size:12px; font-weight:700; color:var(--sf-brand); min-width:20px; text-align:center; cursor:pointer; padding:2px 3px; border-radius:4px; font-variant-numeric:tabular-nums; }
+.wt-ep-quick .ep-num:hover { background:#dbeafe; }
+.wt-ep-input { width:48px; padding:2px 4px; border:1.5px solid var(--sf-brand); border-radius:4px; font-size:12px; font-weight:700; text-align:center; font-family:var(--sf-font); font-variant-numeric:tabular-nums; outline:none; }
+body.sf-dark .wt-ep-quick { background:#2a313d; }
+body.sf-dark .wt-ep-quick button { color:#6ba3e0; }
+body.sf-dark .wt-ep-quick button:hover { background:#6ba3e0; color:#fff; }
+body.sf-dark .wt-ep-quick .ep-num { color:#6ba3e0; }
+body.sf-dark .wt-ep-quick .ep-num:hover { background:#1e3a5f; }
+body.sf-dark .wt-ep-input { background:#2a313d; color:#d8dde5; border-color:#6ba3e0; }
+
 .wt-actions { display:flex; gap:4px; flex-shrink:0; }
 .wt-actions button { background:none; border:1px solid var(--sf-border); border-radius:6px; width:30px; height:30px; cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center; transition:all .15s; }
 .wt-actions button:hover { border-color:var(--sf-brand); background:#f0f5fa; }
@@ -186,7 +200,7 @@ function render() {
   el.innerHTML=list.map(function(it){
     var stClass='st-'+(it.status||'reading'), platClass=it.platform||'';
     var stars=it.rating?'★'.repeat(it.rating)+'☆'.repeat(5-it.rating):'';
-    return '<div class="wt-card '+stClass+'"><div class="wt-info"><div class="wt-top"><span class="wt-title">'+esc(it.title)+'</span>'+(it.platform?'<span class="wt-platform '+platClass+'">'+esc(PLAT_LABEL[it.platform]||it.platform)+'</span>':'')+'</div><div class="wt-meta"><span class="wt-status-badge">'+(STATUS[it.status]||it.status)+'</span>'+(it.episode?'<span>'+it.episode+'화</span>':'')+(stars?'<span class="wt-stars">'+stars+'</span>':'')+'</div>'+(it.memo?'<div class="wt-memo">"'+esc(it.memo)+'"</div>':'')+'</div><div class="wt-actions"><button title="수정" onclick="editItem(\''+it.id+'\')">✏️</button><button title="삭제" class="del" onclick="delItem(\''+it.id+'\')">🗑️</button></div></div>';
+    return '<div class="wt-card '+stClass+'"><div class="wt-info"><div class="wt-top"><span class="wt-title">'+esc(it.title)+'</span>'+(it.platform?'<span class="wt-platform '+platClass+'">'+esc(PLAT_LABEL[it.platform]||it.platform)+'</span>':'')+'</div><div class="wt-meta"><span class="wt-status-badge">'+(STATUS[it.status]||it.status)+'</span>'+'<span class="wt-ep-quick"><button onclick="epDelta(\''+it.id+'\',-1)" title="-1">−</button><span class="ep-num" onclick="epEdit(\''+it.id+'\')" title="직접 입력">'+(it.episode||0)+'화</span><button onclick="epDelta(\''+it.id+'\',1)" title="+1">+</button></span>'+(stars?'<span class="wt-stars">'+stars+'</span>':'')+'</div>'+(it.memo?'<div class="wt-memo">"'+esc(it.memo)+'"</div>':'')+'</div><div class="wt-actions"><button title="수정" onclick="editItem(\''+it.id+'\')">✏️</button><button title="삭제" class="del" onclick="delItem(\''+it.id+'\')">🗑️</button></div></div>';
   }).join('');
 }
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -250,6 +264,35 @@ window.delItem=function(id){
   if(!it) return;
   if(!confirm('"'+it.title+'" 삭제할까요?')) return;
   items=items.filter(function(x){return x.id!==id;});
+  saveLocal(); render();
+};
+
+// ── 빠른 화수 수정 ──
+window.epDelta=function(id,delta){
+  var it=items.find(function(x){return x.id===id;});
+  if(!it) return;
+  it.episode=Math.max(0,(it.episode||0)+delta);
+  it.updatedAt=Date.now();
+  saveLocal(); render();
+};
+
+window.epEdit=function(id){
+  var it=items.find(function(x){return x.id===id;});
+  if(!it) return;
+  // 해당 ep-num을 input으로 교체
+  var cards=document.querySelectorAll('.wt-card');
+  cards.forEach(function(card){
+    var btns=card.querySelectorAll('.wt-ep-quick .ep-num');
+    btns.forEach(function(btn){
+      if(btn.onclick && btn.onclick.toString().indexOf(id)>=0) return;
+    });
+  });
+  var val=prompt('화수 입력',it.episode||0);
+  if(val===null) return;
+  var n=parseInt(val);
+  if(isNaN(n)||n<0) return;
+  it.episode=n;
+  it.updatedAt=Date.now();
   saveLocal(); render();
 };
 
