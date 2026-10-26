@@ -68,21 +68,6 @@
 .wt-actions button:hover { border-color:var(--sf-brand); background:#f0f5fa; }
 .wt-actions button.del:hover { border-color:var(--sf-red); background:#fef2f2; }
 
-.backup-bar { margin-top:24px; padding-top:16px; border-top:1px solid var(--sf-border); display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-.backup-bar button { padding:8px 14px; border:1px solid var(--sf-border); border-radius:8px; background:var(--sf-surface); cursor:pointer; font-size:12px; font-weight:600; font-family:var(--sf-font); transition:all .15s; color:#666; }
-.backup-bar button:hover { border-color:var(--sf-brand); color:var(--sf-brand); }
-.backup-bar .import-label { cursor:pointer; padding:8px 14px; border:1px solid var(--sf-border); border-radius:8px; font-size:12px; font-weight:600; color:#666; transition:all .15s; display:inline-block; }
-.backup-bar .import-label:hover { border-color:var(--sf-brand); color:var(--sf-brand); }
-.sync-info { font-size:11px; color:var(--sf-text-dim); margin-left:auto; }
-
-.fab { position:fixed; bottom:24px; right:24px; width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#2563eb,#1e40af); color:#fff; border:none; font-size:22px; cursor:pointer; box-shadow:0 4px 16px rgba(37,99,235,.4); z-index:99990; display:flex; align-items:center; justify-content:center; transition:all .2s; }
-.fab:hover { transform:scale(1.1); box-shadow:0 6px 24px rgba(37,99,235,.5); }
-.fab.saving { background:linear-gradient(135deg,#f59e0b,#d97706); animation:pulse .8s infinite; }
-.fab.saved { background:linear-gradient(135deg,#10b981,#059669); }
-@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
-.fab-tooltip { position:fixed; bottom:88px; right:20px; background:#1e293b; color:#fff; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:600; z-index:99990; display:none; white-space:nowrap; box-shadow:0 4px 12px rgba(0,0,0,.2); }
-.fab-tooltip::after { content:''; position:absolute; top:100%; right:24px; border:6px solid transparent; border-top-color:#1e293b; }
-
 .empty-state { text-align:center; padding:48px 20px; color:var(--sf-text-dim); }
 .empty-state .empty-icon { font-size:40px; margin-bottom:10px; }
 .empty-state p { font-size:13px; line-height:1.6; }
@@ -98,8 +83,6 @@ body.sf-dark .add-form { background:#1e242e; border-color:#2c333f; }
 body.sf-dark .add-form input,body.sf-dark .add-form select,body.sf-dark .add-form textarea { background:#2a313d; color:#d8dde5; border-color:#3a4250; }
 body.sf-dark .s-box { background:#1e242e; }
 body.sf-dark .toolbar .f-search,body.sf-dark .toolbar select { background:#1e242e; color:#d8dde5; border-color:#2c333f; }
-body.sf-dark .fab-tooltip { background:#374151; }
-body.sf-dark .fab-tooltip::after { border-top-color:#374151; }
 </style>
 </head>
 <body class="sf-narrow">
@@ -138,25 +121,12 @@ body.sf-dark .fab-tooltip::after { border-top-color:#374151; }
 
 <div class="wt-list" id="wtList"></div>
 
-<div class="backup-bar">
-  <button onclick="exportJSON()">💾 JSON 내보내기</button>
-  <label class="import-label">📥 JSON 가져오기<input type="file" accept=".json" onchange="importJSON(event)" style="display:none"></label>
-  <span class="sync-info" id="syncInfo"></span>
-</div>
-
-<button class="fab" id="fabSync" title="클라우드 저장">☁️</button>
-<div class="fab-tooltip" id="fabTooltip"></div>
-
-<script src="/common.js"></script>
 <script>
-(function(){
-'use strict';
+// ── sf-slots.js 연동 ──
+var CALC_KEY = 'webtoon';
 
-var API = 'https://swingfarmer.duckdns.org';
-var SETTING_KEY = 'webtoon_data';
 var STORAGE_KEY = 'sf_webtoon_data';
 var FILTER_KEY = 'sf_webtoon_filter';
-var SYNC_KEY = 'sf_webtoon_last_sync';
 var STATUS = { reading:'📖 보는중', done:'✅ 다봄', wishlist:'💜 볼거', dropped:'🚫 하차' };
 var PLAT_LABEL = { naver:'네이버', kakao:'카카오', kakaopage:'카카오페이지', ridi:'리디', lezhin:'레진', etc:'기타' };
 
@@ -165,89 +135,22 @@ var editId = null;
 var starVal = 0;
 var activeFilter = 'all';
 
-// ── 로컬 ──
+// sf-slots.js 인터페이스
+window.slGetState = function(){ return { items: items }; };
+window.slSetState = function(data){
+  if(data && Array.isArray(data.items)){
+    items = data.items;
+    saveLocal();
+    render();
+  }
+};
+
 function saveLocal() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch(e){} }
 function loadLocal() { try { var r=localStorage.getItem(STORAGE_KEY); items=r?JSON.parse(r):[]; } catch(e){ items=[]; } }
 function saveFilter() { try { localStorage.setItem(FILTER_KEY, activeFilter); } catch(e){} }
 function loadFilter() { try { activeFilter=localStorage.getItem(FILTER_KEY)||'all'; } catch(e){ activeFilter='all'; } }
 function genId() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 
-// ── 클라우드 (API 서버 경유) ──
-function pushToCloud() {
-  var fab = document.getElementById('fabSync');
-  fab.classList.add('saving'); fab.textContent='⏳';
-  showTooltip('서버 저장 중…');
-
-  sfApiFetch(API+'/api/settings/'+SETTING_KEY, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ value: JSON.stringify(items) })
-  }).then(function(res){
-    fab.classList.remove('saving');
-    if(res.ok){
-      fab.classList.add('saved'); fab.textContent='✅';
-      showTooltip('✅ 서버 저장 완료 ('+items.length+'개)');
-      try{localStorage.setItem(SYNC_KEY,new Date().toISOString());}catch(e){}
-      updateSyncInfo();
-      setTimeout(function(){ fab.classList.remove('saved'); fab.textContent='☁️'; },2000);
-    } else {
-      fab.textContent='☁️';
-      showTooltip('❌ 저장 실패: '+(res.data.error||'알 수 없는 오류'));
-    }
-  }).catch(function(e){
-    fab.classList.remove('saving'); fab.textContent='☁️';
-    showTooltip('❌ 저장 실패: '+e.message);
-  });
-}
-
-function pullFromCloud(silent) {
-  sfApiFetch(API+'/api/settings/'+SETTING_KEY).then(function(res){
-    if(!res.ok) return;
-    var val = res.data.value;
-    if(!val) return;
-    try {
-      var cloudItems = JSON.parse(val);
-      if(!Array.isArray(cloudItems) || cloudItems.length===0) return;
-      var merged = mergeData(items, cloudItems);
-      if(merged.changed){
-        items = merged.result;
-        saveLocal(); render();
-        if(!silent) showTooltip('☁️ 서버에서 불러옴 ('+items.length+'개)');
-      }
-    } catch(e){}
-  }).catch(function(){});
-}
-
-function mergeData(local, cloud) {
-  var map={}, changed=false;
-  local.forEach(function(it){ map[it.id]=it; });
-  cloud.forEach(function(it){
-    if(!it.id) return;
-    if(!map[it.id]){ map[it.id]=it; changed=true; }
-    else if((it.updatedAt||0)>(map[it.id].updatedAt||0)){ map[it.id]=it; changed=true; }
-  });
-  var result=Object.values(map);
-  if(result.length!==local.length) changed=true;
-  return {result:result, changed:changed};
-}
-
-function showTooltip(msg) {
-  var tt=document.getElementById('fabTooltip');
-  tt.textContent=msg; tt.style.display='block';
-  clearTimeout(tt._timer);
-  tt._timer=setTimeout(function(){ tt.style.display='none'; },3000);
-}
-
-function updateSyncInfo() {
-  var el=document.getElementById('syncInfo');
-  try{
-    var last=localStorage.getItem(SYNC_KEY);
-    if(last){ var d=new Date(last); el.textContent='☁️ 마지막 동기화: '+d.toLocaleDateString('ko-KR')+' '+d.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}); }
-    else { el.textContent='☁️ 아직 동기화 안 됨'; }
-  }catch(e){}
-}
-
-// ── 렌더링 ──
 function render() {
   var cnt={all:items.length, reading:0, done:0, wishlist:0, dropped:0};
   items.forEach(function(it){ cnt[it.status]=(cnt[it.status]||0)+1; });
@@ -288,10 +191,8 @@ function render() {
 }
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
-// ── 필터 ──
 window.setFilter=function(f){ activeFilter=(activeFilter===f)?'all':f; saveFilter(); render(); };
 
-// ── 별점 ──
 function updateStars(){
   document.querySelectorAll('#starInput span[data-v]').forEach(function(s){
     var v=parseInt(s.dataset.v); if(v>0) s.classList.toggle('on',v<=starVal);
@@ -301,7 +202,6 @@ document.querySelectorAll('#starInput span').forEach(function(s){
   s.addEventListener('click',function(){ starVal=parseInt(s.dataset.v)||0; updateStars(); });
 });
 
-// ── 폼 ──
 function resetForm(){
   editId=null;
   document.getElementById('formTitle').textContent='✏️ 작품 추가';
@@ -356,47 +256,11 @@ window.delItem=function(id){
 document.getElementById('searchInput').addEventListener('input',render);
 document.getElementById('sortSelect').addEventListener('change',render);
 
-// ── FAB ──
-document.getElementById('fabSync').addEventListener('click',pushToCloud);
-
-// ── JSON ──
-window.exportJSON=function(){
-  var blob=new Blob([JSON.stringify(items,null,2)],{type:'application/json'});
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='webtoon_backup_'+new Date().toISOString().slice(0,10)+'.json';
-  a.click(); URL.revokeObjectURL(a.href);
-};
-window.importJSON=function(e){
-  var file=e.target.files[0]; if(!file) return;
-  var reader=new FileReader();
-  reader.onload=function(ev){
-    try{
-      var data=JSON.parse(ev.target.result);
-      if(!Array.isArray(data)){alert('올바른 형식이 아닙니다.');return;}
-      var added=0,updated=0;
-      data.forEach(function(d){
-        if(!d.title) return;
-        var ex=items.find(function(x){return x.id===d.id;});
-        if(ex){if((d.updatedAt||0)>(ex.updatedAt||0)){Object.assign(ex,d);updated++;}}
-        else{if(!d.id)d.id=genId();items.push(d);added++;}
-      });
-      saveLocal();render();
-      alert('완료: '+added+'개 추가, '+updated+'개 업데이트');
-    }catch(err){alert('파일 읽기 실패: '+err.message);}
-  };
-  reader.readAsText(file); e.target.value='';
-};
-
-// ── 초기화 ──
 loadLocal();
 loadFilter();
 render();
-updateSyncInfo();
-// 페이지 로드 시 서버에서 자동 병합
-pullFromCloud(true);
-
-})();
 </script>
+<script src="/sf-slots.js?v=2"></script>
+<script src="/common.js?v=5"></script>
 </body>
 </html>
