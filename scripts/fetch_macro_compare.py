@@ -92,43 +92,67 @@ def fetch_ticker(ticker, start, end=None, period=None):
         return []
 
 
+def _ecos_call(stat_code, item_code, freq, sd, ed, max_rows=10000):
+    """ECOS API 범용 호출. freq='D'→YYYYMMDD, 'M'→YYYYMM"""
+    url = f"{ECOS_BASE}/{ECOS_API_KEY}/json/kr/1/{max_rows}/{stat_code}/{freq}/{sd}/{ed}/{item_code}"
+    req = urllib.request.Request(url)
+    with urllib.request.urlopen(req, timeout=30, context=SSL_CTX) as resp:
+        raw = resp.read().decode('utf-8')
+    data = json.loads(raw)
+    if 'StatisticSearch' not in data:
+        msg = data.get('RESULT', {}).get('MESSAGE', '?')
+        return None, msg
+    return data['StatisticSearch']['row'], None
+
+
 def fetch_ecos_kospi(start_date, end_date):
-    """ECOS API로 코스피 일별 종가 가져오기 (1980년대 가능).
-    통계표: 802Y001 (증권/주가지수), 항목: 0001000 (종합주가지수)
+    """ECOS API로 코스피 종가 가져오기.
+    일별(D) 시도 → 실패 시 월별(M) fallback.
+    통계표: 802Y001, 항목: 0001000 (종합주가지수)
     """
     if not ECOS_API_KEY:
         print("  ⚠ ECOS_API_KEY 없음. ~/.env_secrets 확인.")
         return []
 
-    # ECOS 날짜 형식: YYYYMMDD
-    sd = start_date.replace('-', '')
-    ed = end_date.replace('-', '')
-    url = f"{ECOS_BASE}/{ECOS_API_KEY}/json/kr/1/10000/802Y001/D/{sd}/{ed}/0001000"
+    sd_d = start_date.replace('-', '')  # YYYYMMDD
+    ed_d = end_date.replace('-', '')
+    sd_m = sd_d[:6]                      # YYYYMM
+    ed_m = ed_d[:6]
 
+    # 1차: 일별(D)
     try:
-        req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=30, context=SSL_CTX) as resp:
-            raw = resp.read().decode('utf-8')
-        data = json.loads(raw)
+        rows, err = _ecos_call('802Y001', '0001000', 'D', sd_d, ed_d)
+        if rows:
+            result = []
+            for r in rows:
+                dt = r['TIME']  # YYYYMMDD
+                val = r.get('DATA_VALUE', '')
+                if val and val != '-':
+                    result.append({"date": f"{dt[:4]}-{dt[4:6]}-{dt[6:8]}", "close": round(float(val), 2)})
+            if result:
+                print(f"  ✓ ECOS 코스피(일별): {len(result)}건 ({result[0]['date']}~{result[-1]['date']})")
+                return result
+        print(f"  ⚠ ECOS 일별 실패: {err or '0건'}, 월별 시도...")
+    except Exception as e:
+        print(f"  ⚠ ECOS 일별 에러: {e}, 월별 시도...")
 
-        if 'StatisticSearch' not in data:
-            err = data.get('RESULT', {}).get('MESSAGE', 'Unknown error')
-            print(f"  ✗ ECOS 코스피: {err}")
+    # 2차: 월별(M)
+    try:
+        rows, err = _ecos_call('802Y001', '0001000', 'M', sd_m, ed_m)
+        if not rows:
+            print(f"  ✗ ECOS 월별도 실패: {err}")
             return []
 
-        rows = data['StatisticSearch']['row']
         result = []
         for r in rows:
-            dt = r['TIME']  # YYYYMMDD
+            dt = r['TIME']  # YYYYMM
             val = r.get('DATA_VALUE', '')
             if val and val != '-':
-                date_str = f"{dt[:4]}-{dt[4:6]}-{dt[6:8]}"
-                result.append({"date": date_str, "close": round(float(val), 2)})
-
-        print(f"  ✓ ECOS 코스피: {len(result)}건 ({result[0]['date']}~{result[-1]['date']})" if result else "  ⚠ ECOS 코스피: 0건")
+                result.append({"date": f"{dt[:4]}-{dt[4:6]}-01", "close": round(float(val), 2)})
+        print(f"  ✓ ECOS 코스피(월별): {len(result)}건 ({result[0]['date']}~{result[-1]['date']})" if result else "  ⚠ ECOS 월별: 0건")
         return result
     except Exception as e:
-        print(f"  ✗ ECOS 코스피: {e}")
+        print(f"  ✗ ECOS 월별 에러: {e}")
         return []
 
 
