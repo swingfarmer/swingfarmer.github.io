@@ -221,48 +221,32 @@ def fetch_semiconductor(backfill=False):
 # ──────────────────────────────────────
 # 2) 3저 호황 비교
 # ──────────────────────────────────────
-KOSPI_STATIC = os.path.join(DATA_DIR, "kospi_1983_1989.json")
-
 def fetch_triple_low_compare(backfill=False):
+    """3저 호황 vs 현재 코스피 (주봉).
+    past(1985~1989)는 정적 데이터 (triple_low_compare.json에 이미 포함).
+    일별 업데이트: current에 최근 주봉 추가.
+    """
     print("\n[2/3] 3저 호황 vs 현재 코스피")
 
+    existing = load_json(TRIPLE_CMP_FILE)
+    if not existing or not existing.get("past"):
+        print("  ⚠ triple_low_compare.json에 과거 데이터 없음.")
+        print("    KRX 주봉 txt → 백필 스크립트로 생성 필요.")
+        return
+
     if backfill:
-        # 과거: 1983~1989 코스피 — 정적 파일 (ECOS/yfinance 미지원 구간)
-        print("  과거 3저 호황 기간 (1983~1989) — 정적 파일...")
-        past = load_json(KOSPI_STATIC) or []
-        if past:
-            print(f"  ✓ 정적 파일: {len(past)}건 ({past[0]['date']}~{past[-1]['date']})")
-        else:
-            print("  ✗ data/macro/kospi_1983_1989.json 파일 없음!")
-
-        # 현재: 2023~현재 코스피 (yfinance)
-        print("  현재 코스피 (2023~) — yfinance...")
-        current = fetch_ticker("^KS11", start="2023-01-01")
-
-        data = {
-            "past": past,
-            "current": current,
-            "past_label": "3저 호황 (1983~1989)",
-            "current_label": "현재 코스피 (2023~)",
-            "past_start": "1983-06-01",
-            "current_start": "2023-01-01"
-        }
-        save_json(TRIPLE_CMP_FILE, data)
+        print(f"  ✓ past: {len(existing['past'])}건 (정적 — 건드리지 않음)")
+        print(f"  ✓ current: {len(existing['current'])}건")
+        print("  3저 호황 과거 데이터는 정적 파일. 백필 불필요.")
     else:
-        # 일별 업데이트: current만 추가
-        existing = load_json(TRIPLE_CMP_FILE)
-        if not existing:
-            print("  ⚠ 기존 데이터 없음. --backfill 먼저 실행하세요.")
-            return
-
+        # 일별 크론: 최근 yfinance 일별 → current에 추가
         start = (datetime.now(KST) - timedelta(days=10)).strftime("%Y-%m-%d")
         current_new = fetch_ticker("^KS11", start=start)
-        # yfinance 실패 시 ECOS fallback
-        if not current_new:
-            current_new = fetch_ecos_kospi(start, datetime.now(KST).strftime("%Y-%m-%d"))
         if current_new:
             existing["current"] = merge_daily(existing.get("current", []), current_new)
             save_json(TRIPLE_CMP_FILE, existing)
+        else:
+            print("  ⚠ yfinance 실패, current 업데이트 스킵")
 
 
 # ──────────────────────────────────────

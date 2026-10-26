@@ -105,20 +105,21 @@ body.sf-dark .info-box { background:#1a2030; border-color:#2c333f; }
 <div class="tab-panel" id="panel-triple">
   <div class="chart-wrap">
     <h3>3저 호황 vs 현재 코스피 비교</h3>
-    <div class="chart-sub">경과 거래일 기준 매칭 — 현재 코스피 첫 거래일 기준 환산</div>
+    <div class="chart-sub">주봉 기준 — 2024.11 시작 (상관계수 0.96 최적 매칭)</div>
     <div class="zoom-bar" data-chart="triple">
-      <button data-range="6">6개월</button>
-      <button data-range="12">1년</button>
-      <button data-range="24">2년</button>
+      <button data-range="26">6개월</button>
+      <button data-range="52">1년</button>
+      <button data-range="104">2년</button>
       <button class="active" data-range="all">전체</button>
     </div>
     <div id="loadTriple" class="loading">데이터 로딩 중…</div>
     <canvas id="chartTriple" style="display:none"></canvas>
   </div>
   <div class="info-box">
-    <strong>주황색 선:</strong> 3저 호황 (현재 코스피 첫 거래일 기준 환산)<br>
-    <strong>검은색 선:</strong> 현재 코스피<br>
-    과거 데이터는 경과 거래일 기준으로 매칭합니다.
+    <strong>주황색 선:</strong> 3저 호황 (1985~1989, 현재 코스피 시작값 기준 환산)<br>
+    <strong>검은색 선:</strong> 현재 코스피 (2024.11~)<br>
+    주봉 기준. 상관분석으로 최적 매칭 시작점 탐색 → <strong>2024년 11월</strong>이 3저 호황 초기 패턴과 가장 유사 (상관계수 0.96).<br>
+    툴팁에 현재/과거 양쪽 날짜 표시. 자료: KRX 주봉 종가.
   </div>
 </div>
 
@@ -301,47 +302,91 @@ function loadTriple() {
   });
 }
 
-function toMonthly(arr) {
-  // 일별 → 월별 리샘플링 (각 월 마지막 데이터 사용)
-  var byMonth = {};
-  arr.forEach(function(r){
-    var ym = r.date.substring(0, 7); // "YYYY-MM"
-    byMonth[ym] = r; // 덮어쓰기 → 마지막 값 유지
-  });
-  return Object.keys(byMonth).sort().map(function(ym){ return byMonth[ym]; });
-}
-
 function renderTriple(range) {
   var d = rawData.triple;
   if (!d) return;
   var past = d.past || [], current = d.current || [];
   if (!current.length) return;
 
-  // 현재 코스피를 월별로 리샘플링 (과거 = 이미 월별)
-  var currMonthly = toMonthly(current);
-
-  var currBase = currMonthly[0].close;
+  // 둘 다 주봉 — 현재 코스피 기준으로 과거 환산
+  var currBase = current[0].close;
   var pastBase = (past.length) ? past[0].close : 1;
   var scale = currBase / pastBase;
 
-  var maxLen = Math.max(past.length, currMonthly.length);
+  var maxLen = Math.max(past.length, current.length);
   if (range !== 'all') maxLen = Math.min(maxLen, parseInt(range));
 
-  // x축: 현재 날짜 / 과거 날짜 둘 다 표시
+  // x축: 현재 날짜 표시 (과거 날짜는 툴팁에서)
   var labels = [], pastPts = [], currPts = [];
   for (var i = 0; i < maxLen; i++) {
-    var currDate = (i < currMonthly.length) ? currMonthly[i].date.substring(0, 7) : '';
-    var pastDate = (i < past.length) ? past[i].date.substring(0, 7) : '';
-    labels.push(currDate || pastDate);
+    // 현재 날짜 우선, 없으면 주차 번호
+    var lbl = (i < current.length) ? current[i].date : (i < past.length ? past[i].date : '');
+    labels.push(lbl);
     pastPts.push(i < past.length ? +(past[i].close * scale).toFixed(0) : null);
-    currPts.push(i < currMonthly.length ? +currMonthly[i].close.toFixed(0) : null);
+    currPts.push(i < current.length ? +current[i].close.toFixed(0) : null);
   }
 
-  makeChart('chartTriple', labels, [
-    { label: d.past_label || '3저 호황', data: pastPts, borderColor: '#e89a3c', backgroundColor: 'rgba(232,154,60,.08)' },
-    { label: d.current_label || '현재 코스피', data: currPts, borderColor: '#333', backgroundColor: 'rgba(51,51,51,.05)' }
-  ], {
-    ticks: { callback: function(v) { return v.toLocaleString(); } }
+  var canvasId = 'chartTriple';
+  var ctx = document.getElementById(canvasId);
+  ctx.style.display = '';
+  if (charts[canvasId]) charts[canvasId].destroy();
+
+  var isDark = document.body.classList.contains('sf-dark');
+  var gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)';
+  var textColor = isDark ? '#8899aa' : '#888';
+  var step = Math.max(1, Math.floor(labels.length / 12));
+
+  charts[canvasId] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: d.past_label || '3저 호황', data: pastPts, borderColor: '#e89a3c', backgroundColor: 'rgba(232,154,60,.08)' },
+        { label: d.current_label || '현재 코스피', data: currPts, borderColor: '#333', backgroundColor: 'rgba(51,51,51,.05)' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: true, labels: { color: textColor, font: { size: 12 } } },
+        tooltip: {
+          backgroundColor: isDark ? '#1e293b' : '#fff',
+          titleColor: isDark ? '#ddd' : '#333',
+          bodyColor: isDark ? '#aaa' : '#666',
+          borderColor: isDark ? '#334155' : '#ddd',
+          borderWidth: 1, padding: 10,
+          callbacks: {
+            title: function(items) {
+              var i = items[0].dataIndex;
+              var curr = (i < current.length) ? current[i].date : '-';
+              var pt = (i < past.length) ? past[i].date : '-';
+              return '현재: ' + curr + '  |  과거: ' + pt;
+            },
+            label: function(ctx2) {
+              var raw = ctx2.datasetIndex === 1 ? ctx2.parsed.y : null;
+              if (ctx2.datasetIndex === 0 && ctx2.dataIndex < past.length) {
+                return ctx2.dataset.label + ': ' + ctx2.parsed.y.toLocaleString() + ' (원본 ' + past[ctx2.dataIndex].close.toFixed(0) + ')';
+              }
+              return ctx2.dataset.label + ': ' + ctx2.parsed.y.toLocaleString();
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: textColor, font: { size: 10 }, maxRotation: 0,
+            callback: function(val, i) { return i % step === 0 ? labels[i] : ''; }
+          }
+        },
+        y: {
+          position: 'right', grid: { color: gridColor },
+          ticks: { color: textColor, font: { size: 11 }, callback: function(v) { return v.toLocaleString(); } }
+        }
+      },
+      elements: { point: { radius: 0 }, line: { borderWidth: 1.8 } }
+    }
   });
 }
 
