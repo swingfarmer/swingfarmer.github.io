@@ -221,22 +221,23 @@ def fetch_semiconductor(backfill=False):
 # ──────────────────────────────────────
 # 2) 3저 호황 비교
 # ──────────────────────────────────────
+KOSPI_STATIC = os.path.join(DATA_DIR, "kospi_1983_1989.json")
+
 def fetch_triple_low_compare(backfill=False):
     print("\n[2/3] 3저 호황 vs 현재 코스피")
 
     if backfill:
-        # 과거: 1983~1989 코스피 (ECOS API — yfinance는 1997년 이후만 지원)
-        print("  과거 3저 호황 기간 (1983~1989) — ECOS API...")
-        past = fetch_ecos_kospi("1983-01-01", "1989-12-31")
+        # 과거: 1983~1989 코스피 — 정적 파일 (ECOS/yfinance 미지원 구간)
+        print("  과거 3저 호황 기간 (1983~1989) — 정적 파일...")
+        past = load_json(KOSPI_STATIC) or []
+        if past:
+            print(f"  ✓ 정적 파일: {len(past)}건 ({past[0]['date']}~{past[-1]['date']})")
+        else:
+            print("  ✗ data/macro/kospi_1983_1989.json 파일 없음!")
 
         # 현재: 2023~현재 코스피 (yfinance)
         print("  현재 코스피 (2023~) — yfinance...")
         current = fetch_ticker("^KS11", start="2023-01-01")
-
-        # yfinance 실패 시 ECOS fallback
-        if not current:
-            print("  yfinance 실패, ECOS fallback...")
-            current = fetch_ecos_kospi("2023-01-01", datetime.now(KST).strftime("%Y-%m-%d"))
 
         data = {
             "past": past,
