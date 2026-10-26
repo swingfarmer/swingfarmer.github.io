@@ -119,11 +119,14 @@ body.sf-dark .info-box { background:#1a2030; border-color:#2c333f; }
     <h3>3저 호황 vs 현재 코스피 비교</h3>
     <div class="chart-sub">주봉 기준 — 시작 시점 선택 가능</div>
     <div class="start-bar">
-      <span class="start-label">3저 시작:</span>
-      <select id="pastSelect"></select>
-      <span class="start-label" style="margin-left:8px;">현재 시작:</span>
-      <select id="currSelect"></select>
-      <input type="date" id="currCustom" style="display:none; margin-left:4px; font-size:12px; padding:4px 8px; border:1px solid var(--sf-border); border-radius:6px; font-family:var(--sf-font);">
+      <span class="start-label">비교 조합:</span>
+      <select id="comboSelect"></select>
+    </div>
+    <div class="start-bar" id="customBar" style="display:none;">
+      <span class="start-label">3저:</span>
+      <input type="date" id="customPast" style="font-size:12px; padding:4px 8px; border:1px solid var(--sf-border); border-radius:6px; font-family:var(--sf-font);">
+      <span class="start-label" style="margin-left:6px;">현재:</span>
+      <input type="date" id="customCurr" style="font-size:12px; padding:4px 8px; border:1px solid var(--sf-border); border-radius:6px; font-family:var(--sf-font);">
     </div>
     <div class="zoom-bar" data-chart="triple">
       <button data-range="26">6개월</button>
@@ -137,9 +140,9 @@ body.sf-dark .info-box { background:#1a2030; border-color:#2c333f; }
   <div class="info-box">
     <strong>주황색 선:</strong> 3저 호황 (현재 코스피 시작값 기준 환산)<br>
     <strong>검은색 선:</strong> 현재 코스피<br>
-    주봉 기준. 3저 시작 × 현재 시작 조합 변경 가능. 직접 입력으로 원하는 날짜 비교.<br>
-    <strong>프리셋:</strong> 2024.11(상관0.96) · 2025.01(만스피) · 2024.01(KB①) · 2023.07(KB②)<br>
-    자료: KRX(pykrx), Yahoo Finance 주봉 종가.
+    주봉 기준. 과거↔현재 시작점 조합 6개 + 직접 입력. 상관분석으로 최적 조합 자동 탐색.<br>
+    ①~④ 상관계수 0.96~0.97 구간, ⑤ 만스피 기준, ⑥ KB증권 기준.<br>
+    자료: KRX(pykrx 1980~), Yahoo Finance(2023~) 주봉 종가.
   </div>
 </div>
 
@@ -317,90 +320,80 @@ function renderSemi(range) {
 // ══════════════════════
 var tPastStart = null, tCurrStart = null;
 
+var COMBOS = [
+  { past:'1983-07-01', curr:'2023-05-12', label:'① 83.07↔23.05 (상관 0.97, 181주)' },
+  { past:'1984-01-01', curr:'2023-11-10', label:'② 84.01↔23.11 (상관 0.97, 155주)' },
+  { past:'1984-07-01', curr:'2024-05-10', label:'③ 84.07↔24.05 (상관 0.97, 129주)' },
+  { past:'1985-01-01', curr:'2024-11-08', label:'④ 85.01↔24.11 (상관 0.96, 103주)' },
+  { past:'1983-06-01', curr:'2025-01-06', label:'⑤ 83.06↔25.01 (만스피 기준)' },
+  { past:'1985-01-01', curr:'2024-01-02', label:'⑥ 85.01↔24.01 (KB 기준)' }
+];
+
 function loadTriple() {
   fetchJSON('triple_low_compare.json', 'loadTriple', function(data){
     rawData.triple = data;
-    initTripleSelectors();
+    initTripleCombo();
   });
 }
 
-function initTripleSelectors() {
-  var d = rawData.triple;
-  var pastSel = document.getElementById('pastSelect');
-  var currSel = document.getElementById('currSelect');
-  var currCustom = document.getElementById('currCustom');
-  var pastPresets = d.past_presets || [];
+function initTripleCombo() {
+  var sel = document.getElementById('comboSelect');
+  var customBar = document.getElementById('customBar');
+  var customPast = document.getElementById('customPast');
+  var customCurr = document.getElementById('customCurr');
 
-  // 과거 시작 드롭다운
-  pastSel.innerHTML = '';
-  pastPresets.forEach(function(p){
+  sel.innerHTML = '';
+  COMBOS.forEach(function(c, i){
     var opt = document.createElement('option');
-    opt.value = p.date; opt.textContent = p.label;
-    pastSel.appendChild(opt);
+    opt.value = String(i); opt.textContent = c.label;
+    sel.appendChild(opt);
   });
-
-  // 현재 드롭다운 — 과거 선택에 따라 변경
-  function rebuildCurrOptions(pastDate) {
-    var preset = pastPresets.find(function(p){ return p.date === pastDate; });
-    var cpList = (preset && preset.current_presets) ? preset.current_presets : [];
-    var prevVal = currSel.value;
-    currSel.innerHTML = '';
-    cpList.forEach(function(p){
-      var opt = document.createElement('option');
-      opt.value = p.date; opt.textContent = p.label;
-      currSel.appendChild(opt);
-    });
-    var optC = document.createElement('option');
-    optC.value = '__custom__'; optC.textContent = '📅 직접 입력';
-    currSel.appendChild(optC);
-    // 이전 선택 유지 시도
-    var match = cpList.some(function(p){ return p.date === prevVal; });
-    if (match) currSel.value = prevVal;
-  }
+  var optC = document.createElement('option');
+  optC.value = '__custom__'; optC.textContent = '📅 직접 입력';
+  sel.appendChild(optC);
 
   // 저장값 복원
   try {
-    var sp = localStorage.getItem('sf_triple_past');
-    var sc = localStorage.getItem('sf_triple_curr');
-    if (sp) pastSel.value = sp;
-    rebuildCurrOptions(pastSel.value);
-    if (sc && sc !== '__custom__') currSel.value = sc;
-    else if (sc === '__custom__') {
-      currSel.value = '__custom__';
-      currCustom.value = localStorage.getItem('sf_triple_curr_val') || '';
-      currCustom.style.display = '';
+    var sv = localStorage.getItem('sf_triple_combo');
+    if (sv === '__custom__') {
+      sel.value = '__custom__';
+      customBar.style.display = '';
+      customPast.value = localStorage.getItem('sf_triple_cp') || '';
+      customCurr.value = localStorage.getItem('sf_triple_cc') || '';
+    } else if (sv !== null) {
+      sel.value = sv;
     }
-  } catch(e){ rebuildCurrOptions(pastSel.value); }
+  } catch(e){}
 
   function onUpdate() {
-    tPastStart = pastSel.value;
-    if (currSel.value === '__custom__') {
-      currCustom.style.display = '';
-      tCurrStart = currCustom.value || null;
+    if (sel.value === '__custom__') {
+      customBar.style.display = '';
+      tPastStart = customPast.value || null;
+      tCurrStart = customCurr.value || null;
+      try {
+        localStorage.setItem('sf_triple_combo', '__custom__');
+        localStorage.setItem('sf_triple_cp', customPast.value);
+        localStorage.setItem('sf_triple_cc', customCurr.value);
+      } catch(e){}
     } else {
-      currCustom.style.display = 'none';
-      tCurrStart = currSel.value;
+      customBar.style.display = 'none';
+      var c = COMBOS[parseInt(sel.value)];
+      tPastStart = c.past;
+      tCurrStart = c.curr;
+      try { localStorage.setItem('sf_triple_combo', sel.value); } catch(e){}
     }
-    try {
-      localStorage.setItem('sf_triple_past', tPastStart);
-      localStorage.setItem('sf_triple_curr', currSel.value);
-      if (currSel.value === '__custom__') localStorage.setItem('sf_triple_curr_val', currCustom.value);
-    } catch(e){}
     if (tPastStart && tCurrStart) {
       var activeBtn = document.querySelector('.zoom-bar[data-chart="triple"] button.active');
       renderTriple(activeBtn ? activeBtn.dataset.range : 'all');
     }
   }
 
-  pastSel.addEventListener('change', function(){
-    rebuildCurrOptions(pastSel.value);
-    onUpdate();
-  });
-  currSel.addEventListener('change', function(){
-    if (currSel.value === '__custom__') { currCustom.style.display=''; currCustom.focus(); }
+  sel.addEventListener('change', function(){
+    if (sel.value === '__custom__') { customBar.style.display=''; customPast.focus(); }
     else onUpdate();
   });
-  currCustom.addEventListener('change', onUpdate);
+  customPast.addEventListener('change', onUpdate);
+  customCurr.addEventListener('change', onUpdate);
 
   onUpdate();
 }
@@ -444,8 +437,8 @@ function renderTriple(range) {
     data: {
       labels: labels,
       datasets: [
-        { label: '3저 호황 (' + tPastStart.substring(0,7) + '~)', data: pastPts, borderColor: '#e89a3c', backgroundColor: 'rgba(232,154,60,.08)' },
-        { label: '현재 코스피 (' + tCurrStart.substring(0,7) + '~)', data: currPts, borderColor: '#333', backgroundColor: 'rgba(51,51,51,.05)' }
+        { label: '3저 (' + tPastStart.substring(2,7) + '~)', data: pastPts, borderColor: '#e89a3c', backgroundColor: 'rgba(232,154,60,.08)' },
+        { label: '현재 (' + tCurrStart.substring(2,7) + '~)', data: currPts, borderColor: '#333', backgroundColor: 'rgba(51,51,51,.05)' }
       ]
     },
     options: {

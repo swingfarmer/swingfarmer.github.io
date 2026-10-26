@@ -72,26 +72,7 @@ def main():
     data = {
         "past": weekly_past,
         "current": weekly_curr,
-        "past_presets": [
-            {
-                "date": "1983-06-01", "label": "1983.06 (만스피 기준)",
-                "current_presets": [
-                    {"date": "2023-04-14", "label": "2023.04 (상관 0.97)"},
-                    {"date": "2025-01-06", "label": "2025.01 (만스피 기준)"},
-                    {"date": "2024-01-02", "label": "2024.01 (KB 기준①)"},
-                    {"date": "2023-07-03", "label": "2023.07 (KB 기준②)"}
-                ]
-            },
-            {
-                "date": "1985-01-07", "label": "1985.01 (KRX 주봉 기준)",
-                "current_presets": [
-                    {"date": "2024-11-08", "label": "2024.11 (상관 0.96)"},
-                    {"date": "2025-01-06", "label": "2025.01 (만스피 기준)"},
-                    {"date": "2024-01-02", "label": "2024.01 (KB 기준①)"},
-                    {"date": "2023-07-03", "label": "2023.07 (KB 기준②)"}
-                ]
-            }
-        ],
+
         "data_freq": "weekly"
     }
 
