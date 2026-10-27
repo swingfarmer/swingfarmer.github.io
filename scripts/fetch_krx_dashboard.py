@@ -61,35 +61,45 @@ def fetch_investor_top(date):
     print("\n[1/4] 외국인/기관 순매수 Top 20")
     try:
         from pykrx import stock
+        import pandas as pd
 
-        # 코스피 전종목 투자자별
-        df_kospi = stock.get_market_net_purchases_of_equities(date, date, "KOSPI", "순매수")
-        df_kosdaq = stock.get_market_net_purchases_of_equities(date, date, "KOSDAQ", "순매수")
+        # 코스피/코스닥 전종목 투자자별 순매수
+        df_kospi = stock.get_market_net_purchases_of_equities_by_ticker(date, date, "KOSPI")
+        df_kosdaq = stock.get_market_net_purchases_of_equities_by_ticker(date, date, "KOSDAQ")
 
         if df_kospi.empty and df_kosdaq.empty:
             print("  ⚠ 데이터 없음 (휴장일?)")
             return
 
+        # 컬럼 확인 (버전에 따라 다를 수 있음)
+        combined = pd.concat([df_kospi, df_kosdaq])
+        print(f"  컬럼: {list(combined.columns)}")
+
+        # 외국인/기관 컬럼명 탐색
+        foreign_col = None
+        inst_col = None
+        for c in combined.columns:
+            if '외국인' in str(c): foreign_col = c
+            if '기관' in str(c) and '합계' in str(c): inst_col = c
+        if not foreign_col:
+            foreign_col = combined.columns[0] if len(combined.columns) > 0 else None
+        if not inst_col:
+            inst_col = combined.columns[1] if len(combined.columns) > 1 else None
+
+        print(f"  외국인 컬럼: {foreign_col}, 기관 컬럼: {inst_col}")
+
         result = {"date": f"{date[:4]}-{date[4:6]}-{date[6:]}", "foreign": [], "institution": []}
 
-        for label, col_name, df_list in [
-            ("foreign", "외국인합계", [df_kospi, df_kosdaq]),
-            ("institution", "기관합계", [df_kospi, df_kosdaq])
-        ]:
-            import pandas as pd
-            combined = pd.concat(df_list)
-            if col_name not in combined.columns:
-                # 컬럼명 확인
-                print(f"  ⚠ '{col_name}' 컬럼 없음. 컬럼: {list(combined.columns)}")
+        for label, col in [("foreign", foreign_col), ("institution", inst_col)]:
+            if col is None:
                 continue
-
-            top = combined.nlargest(20, col_name)
+            top = combined.nlargest(20, col)
             for ticker, row in top.iterrows():
                 name = stock.get_market_ticker_name(ticker)
                 result[label].append({
                     "ticker": ticker,
                     "name": name,
-                    "net_buy": int(row[col_name]),
+                    "net_buy": int(row[col]),
                 })
 
         save_json("investor_top.json", result)
@@ -191,8 +201,8 @@ def fetch_sector_change(date):
 # 4) 시가총액 상위 30
 # ══════════════════════════════════════
 def fetch_marketcap_top(date):
-    """시가총액 상위 30"""
-    print("\n[4/4] 시가총액 상위 30")
+    """시가총액 상위 200"""
+    print("\n[4/4] 시가총액 상위 200")
     try:
         from pykrx import stock
 
@@ -201,7 +211,7 @@ def fetch_marketcap_top(date):
             print("  ⚠ 데이터 없음")
             return
 
-        top = df.nlargest(30, "시가총액")
+        top = df.nlargest(200, "시가총액")
         items = []
         for ticker, row in top.iterrows():
             name = stock.get_market_ticker_name(ticker)
