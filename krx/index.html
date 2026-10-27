@@ -120,6 +120,7 @@ body.sf-dark .sub-tab button.active { background:var(--sf-brand); color:#fff; }
   <button data-tab="volume">💰 거래대금</button>
   <button data-tab="sector">🏭 업종 등락</button>
   <button data-tab="mcap">📊 시총 순위</button>
+  <button data-tab="history">📅 일자별/추이</button>
 </div>
 
 <!-- 탭1: 외국인/기관 -->
@@ -182,6 +183,46 @@ body.sf-dark .sub-tab button.active { background:var(--sf-brand); color:#fff; }
   </div>
 </div>
 
+<!-- 탭5: 일자별/추이 -->
+<div class="tab-panel" id="panel-history">
+  <div class="card-wrap">
+    <h3 style="margin:0 0 12px;font-size:15px;">📅 일자별 조회</h3>
+    <div class="start-bar" style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+      <span style="font-size:12px;font-weight:600;color:var(--sf-text-dim);">날짜:</span>
+      <select id="histDateSelect" style="padding:5px 10px;border:1px solid var(--sf-border);border-radius:6px;font-size:12px;font-family:var(--sf-font);background:var(--sf-surface);color:var(--sf-text);"></select>
+      <span style="font-size:12px;font-weight:600;color:var(--sf-text-dim);margin-left:8px;">탭:</span>
+      <select id="histTabSelect" style="padding:5px 10px;border:1px solid var(--sf-border);border-radius:6px;font-size:12px;font-family:var(--sf-font);background:var(--sf-surface);color:var(--sf-text);">
+        <option value="investor_top">외국인/기관</option>
+        <option value="volume_top">거래대금</option>
+        <option value="sector_change">업종 등락</option>
+        <option value="marketcap_top">시총 순위</option>
+      </select>
+    </div>
+    <div id="histContent" style="font-size:13px;color:var(--sf-text-dim);text-align:center;padding:20px;">날짜를 선택하세요</div>
+  </div>
+
+  <div class="card-wrap" style="margin-top:16px;">
+    <h3 style="margin:0 0 12px;font-size:15px;">📈 순위 추이 (Top 10)</h3>
+    <div class="sub-tab" id="chartTabSub">
+      <button class="active" data-chart="investor_f">외국인</button>
+      <button data-chart="investor_i">기관</button>
+      <button data-chart="volume">거래대금</button>
+      <button data-chart="sector">업종</button>
+      <button data-chart="mcap">시총</button>
+    </div>
+    <div id="loadChart" class="loading" style="display:none">데이터 로딩 중…</div>
+    <canvas id="rankChart" height="360" style="display:none"></canvas>
+    <div id="chartEmpty" style="font-size:13px;color:var(--sf-text-dim);text-align:center;padding:40px;">데이터가 2일 이상 쌓이면 그래프가 표시됩니다</div>
+  </div>
+
+  <div class="info-box">
+    <strong>일자별 조회:</strong> 과거 날짜의 전체 데이터를 그대로 열람 (hist/YYYY-MM-DD.json)<br>
+    <strong>순위 추이:</strong> 최대 90일간 순위 변동 그래프 (rank_history.json)<br>
+    <strong>보관:</strong> 일별 아카이브 + 순위 히스토리 자동 저장, 90일 롤링
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="/common.js?v=5"></script>
 <script>
 (function(){
@@ -202,6 +243,7 @@ function switchTab(name) {
   if (name === 'volume' && !rawData.volume) loadVolume();
   if (name === 'sector' && !rawData.sector) loadSector();
   if (name === 'mcap' && !rawData.mcap) loadMcap();
+  if (name === 'history' && !rankHist) loadHistory();
 }
 document.querySelectorAll('.tab-bar button').forEach(function(btn){
   btn.addEventListener('click', function(){ switchTab(btn.dataset.tab); });
@@ -372,6 +414,145 @@ function renderMcap() {
   html += '</tbody></table>';
   html += outSection(d.out);
   document.getElementById('mcapContent').innerHTML = html;
+}
+
+// ═══ 5) 일자별/추이 ═══
+var rankHist = null;
+var rankChart = null;
+var chartTab = 'investor_f';
+
+function loadHistory() {
+  // 날짜 목록 로드
+  fetch(BASE + 'available_dates.json?t=' + Date.now())
+    .then(function(r){ return r.ok ? r.json() : []; })
+    .then(function(dates){
+      var sel = document.getElementById('histDateSelect');
+      sel.innerHTML = '';
+      dates.reverse().forEach(function(d){
+        var opt = document.createElement('option');
+        opt.value = d; opt.textContent = d;
+        sel.appendChild(opt);
+      });
+      if (dates.length) loadHistDate(dates[0]);
+    })
+    .catch(function(){ document.getElementById('histContent').textContent = '날짜 목록 로드 실패'; });
+
+  // 순위 히스토리 로드
+  fetch(BASE + 'rank_history.json?t=' + Date.now())
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      rankHist = d;
+      renderRankChart();
+    })
+    .catch(function(){});
+}
+
+document.getElementById('histDateSelect').addEventListener('change', function(){
+  loadHistDate(this.value);
+});
+document.getElementById('histTabSelect').addEventListener('change', function(){
+  var dateVal = document.getElementById('histDateSelect').value;
+  if (dateVal) loadHistDate(dateVal);
+});
+
+function loadHistDate(dateStr) {
+  var tab = document.getElementById('histTabSelect').value;
+  var el = document.getElementById('histContent');
+  el.innerHTML = '<div class="loading">로딩 중…</div>';
+  fetch(BASE + 'hist/' + dateStr + '.json?t=' + Date.now())
+    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(function(data){
+      var tabData = data[tab];
+      if (!tabData) { el.innerHTML = '해당 탭 데이터 없음'; return; }
+      el.innerHTML = '<pre style="text-align:left;font-size:11px;max-height:400px;overflow:auto;white-space:pre-wrap;">' + JSON.stringify(tabData, null, 2).substring(0, 5000) + '</pre>';
+    })
+    .catch(function(e){ el.innerHTML = '❌ ' + e.message; });
+}
+
+// 순위 추이 차트
+document.querySelectorAll('#chartTabSub button').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('#chartTabSub button').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    chartTab = btn.dataset.chart;
+    renderRankChart();
+  });
+});
+
+var CHART_COLORS = ['#e89a3c','#2563eb','#dc2626','#16a34a','#8b5cf6','#ec4899','#0891b2','#d97706','#64748b','#059669'];
+
+function renderRankChart() {
+  if (!rankHist || !rankHist.dates || rankHist.dates.length < 2) {
+    document.getElementById('chartEmpty').style.display = '';
+    document.getElementById('rankChart').style.display = 'none';
+    return;
+  }
+  document.getElementById('chartEmpty').style.display = 'none';
+
+  var tabData = rankHist.tabs[chartTab];
+  if (!tabData) return;
+
+  // 최근 순위가 있는 종목 중 Top 10
+  var entries = [];
+  for (var tk in tabData) {
+    var ranks = tabData[tk].r;
+    var lastRank = null;
+    for (var i = ranks.length - 1; i >= 0; i--) {
+      if (ranks[i] !== null) { lastRank = ranks[i]; break; }
+    }
+    if (lastRank !== null) entries.push({ tk: tk, name: tabData[tk].name, lastRank: lastRank, ranks: ranks });
+  }
+  entries.sort(function(a,b){ return a.lastRank - b.lastRank; });
+  entries = entries.slice(0, 10);
+
+  var labels = rankHist.dates;
+  var datasets = entries.map(function(e, i){
+    return {
+      label: e.name,
+      data: e.ranks,
+      borderColor: CHART_COLORS[i % CHART_COLORS.length],
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      pointRadius: labels.length > 30 ? 0 : 3,
+      spanGaps: true
+    };
+  });
+
+  var ctx = document.getElementById('rankChart');
+  ctx.style.display = '';
+  if (rankChart) rankChart.destroy();
+
+  var isDark = document.body.classList.contains('sf-dark');
+  var gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)';
+  var textColor = isDark ? '#8899aa' : '#888';
+  var step = Math.max(1, Math.floor(labels.length / 10));
+
+  rankChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: labels, datasets: datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { color: textColor, font: { size: 11 }, boxWidth: 12, padding: 8 } },
+        tooltip: {
+          backgroundColor: isDark ? '#1e293b' : '#fff',
+          titleColor: isDark ? '#ddd' : '#333',
+          bodyColor: isDark ? '#aaa' : '#666',
+          borderColor: isDark ? '#334155' : '#ddd',
+          borderWidth: 1, padding: 10,
+          callbacks: {
+            label: function(c) { return c.dataset.label + ': ' + (c.parsed.y !== null ? c.parsed.y + '위' : '-'); }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 }, maxRotation: 0, callback: function(v,i){ return i%step===0 ? labels[i] : ''; } } },
+        y: { reverse: true, min: 1, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 11 }, stepSize: 1, callback: function(v){ return v + '위'; } }, title: { display: true, text: '순위', color: textColor, font: { size: 11 } } }
+      },
+      elements: { line: { tension: 0.2 } }
+    }
+  });
 }
 
 // ── 초기 로드 ──

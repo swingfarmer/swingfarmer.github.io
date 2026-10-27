@@ -311,6 +311,105 @@ def fetch_marketcap_top(date):
 
 
 # ══════════════════════════════════════
+# 히스토리 저장 (순위 추적용 경량 포맷)
+# ══════════════════════════════════════
+HIST_DIR = os.path.join(DATA_DIR, "hist")
+MAX_HIST_DAYS = 90  # 최대 보관일
+
+
+def save_daily_archive(dstr):
+    """당일 전체 데이터를 hist/YYYY-MM-DD.json으로 아카이브."""
+    os.makedirs(HIST_DIR, exist_ok=True)
+    archive = {}
+    for fname in ["investor_top.json", "volume_top.json", "sector_change.json", "marketcap_top.json"]:
+        d = load_json(fname)
+        if d:
+            archive[fname.replace(".json", "")] = d
+    if archive:
+        apath = os.path.join(HIST_DIR, f"{dstr}.json")
+        with open(apath, 'w', encoding='utf-8') as f:
+            json.dump(archive, f, ensure_ascii=False, separators=(',', ':'))
+        print(f"\n  📁 일별 아카이브: hist/{dstr}.json ({os.path.getsize(apath)//1024}KB)")
+
+
+def update_rank_history(dstr):
+    """순위 추적 경량 히스토리 업데이트 (그래프용)."""
+    hist_file = os.path.join(DATA_DIR, "rank_history.json")
+    hist = load_json("rank_history.json") or {"dates": [], "tabs": {}}
+
+    # 중복 방지
+    if dstr in hist["dates"]:
+        idx = hist["dates"].index(dstr)
+        hist["dates"].pop(idx)
+        for tab in hist["tabs"]:
+            for tk in hist["tabs"][tab]:
+                ranks = hist["tabs"][tab][tk].get("r", [])
+                if idx < len(ranks):
+                    ranks.pop(idx)
+
+    hist["dates"].append(dstr)
+
+    # 탭별 순위 기록
+    tab_files = {
+        "investor_f": ("investor_top.json", "foreign", "net_buy"),
+        "investor_i": ("investor_top.json", "institution", "net_buy"),
+        "volume": ("volume_top.json", "items", "trading_value"),
+        "sector": ("sector_change.json", "sectors", "change_pct"),
+        "mcap": ("marketcap_top.json", "items", "market_cap_tr"),
+    }
+
+    for tab_key, (fname, list_key, val_key) in tab_files.items():
+        d = load_json(fname)
+        if not d:
+            continue
+        items = d.get(list_key, [])
+        if tab_key not in hist["tabs"]:
+            hist["tabs"][tab_key] = {}
+
+        for rank, it in enumerate(items, 1):
+            tk = it.get("ticker", it.get("name", ""))
+            if not tk:
+                continue
+            if tk not in hist["tabs"][tab_key]:
+                hist["tabs"][tab_key][tk] = {"name": it.get("name", ""), "r": []}
+            entry = hist["tabs"][tab_key][tk]
+            # 이전 날짜에 없었으면 null 채우기
+            while len(entry["r"]) < len(hist["dates"]) - 1:
+                entry["r"].append(None)
+            entry["r"].append(rank)
+
+        # 오늘 리스트에 없는 종목은 null
+        for tk in hist["tabs"][tab_key]:
+            while len(hist["tabs"][tab_key][tk]["r"]) < len(hist["dates"]):
+                hist["tabs"][tab_key][tk]["r"].append(None)
+
+    # 90일 초과 분 제거
+    while len(hist["dates"]) > MAX_HIST_DAYS:
+        hist["dates"].pop(0)
+        for tab in hist["tabs"]:
+            to_del = []
+            for tk in hist["tabs"][tab]:
+                hist["tabs"][tab][tk]["r"].pop(0)
+                # 전부 null이면 삭제
+                if all(v is None for v in hist["tabs"][tab][tk]["r"]):
+                    to_del.append(tk)
+            for tk in to_del:
+                del hist["tabs"][tab][tk]
+
+    # 날짜 목록 별도 저장 (프론트 일자 검색용)
+    dates_file = os.path.join(DATA_DIR, "available_dates.json")
+    avail = []
+    for fn in sorted(os.listdir(HIST_DIR)):
+        if fn.endswith(".json") and fn != "available_dates.json":
+            avail.append(fn.replace(".json", ""))
+    with open(dates_file, 'w') as f:
+        json.dump(avail, f, separators=(',', ':'))
+
+    save_json("rank_history.json", hist)
+    print(f"  📈 순위 히스토리: {len(hist['dates'])}일, {sum(len(v) for v in hist['tabs'].values())}종목")
+
+
+# ══════════════════════════════════════
 def main():
     import argparse
     parser = argparse.ArgumentParser()
@@ -331,6 +430,10 @@ def main():
     fetch_sector_change(date)
     time.sleep(1)
     fetch_marketcap_top(date)
+
+    # 히스토리 저장
+    save_daily_archive(dstr)
+    update_rank_history(dstr)
 
     print("\n" + "=" * 50)
     print("완료!")
