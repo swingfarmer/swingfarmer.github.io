@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="robots" content="noindex, nofollow">
+<title>KRX 투자자 지표 — 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=4">
+<style>
+:root { --sf-max-w: 960px; }
+
+.tab-bar { display:flex; gap:4px; margin-bottom:20px; border-bottom:2px solid var(--sf-border); padding-bottom:0; overflow-x:auto; }
+.tab-bar button {
+  padding:10px 14px; border:none; background:none; font-size:13px; font-weight:600;
+  color:var(--sf-text-dim); cursor:pointer; font-family:var(--sf-font);
+  border-bottom:3px solid transparent; margin-bottom:-2px; transition:all .15s;
+  white-space:nowrap;
+}
+.tab-bar button:hover { color:var(--sf-brand); }
+.tab-bar button.active { color:var(--sf-brand); border-bottom-color:var(--sf-brand); }
+@media(max-width:500px){ .tab-bar button { padding:8px 10px; font-size:12px; } }
+
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+
+.card-wrap {
+  background:var(--sf-surface); border-radius:12px; padding:20px;
+  box-shadow:var(--sf-shadow); margin-bottom:16px;
+}
+
+.data-date { font-size:12px; color:var(--sf-text-dim); margin-bottom:16px; }
+
+/* 테이블 */
+.krx-table { width:100%; border-collapse:collapse; font-size:13px; }
+.krx-table th {
+  text-align:left; padding:8px 10px; font-weight:600; font-size:11px;
+  color:var(--sf-text-dim); border-bottom:2px solid var(--sf-border);
+  position:sticky; top:0; background:var(--sf-surface);
+}
+.krx-table td { padding:8px 10px; border-bottom:1px solid var(--sf-border); }
+.krx-table tr:hover { background:color-mix(in srgb, var(--sf-brand) 4%, var(--sf-surface)); }
+.krx-table .rank { color:var(--sf-text-dim); font-size:11px; width:30px; text-align:center; }
+.krx-table .name { font-weight:600; }
+.krx-table .ticker { font-size:11px; color:var(--sf-text-dim); }
+.krx-table .num { text-align:right; font-variant-numeric:tabular-nums; }
+.krx-table .up { color:#dc2626; }
+.krx-table .dn { color:#2563eb; }
+.krx-table .flat { color:var(--sf-text-dim); }
+
+/* 바 차트 (업종용) */
+.sector-bar { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--sf-border); font-size:13px; }
+.sector-bar .s-name { min-width:80px; font-weight:600; }
+.sector-bar .s-bar-wrap { flex:1; height:20px; position:relative; }
+.sector-bar .s-bar {
+  height:100%; border-radius:3px; position:absolute; top:0;
+  transition:width .3s;
+}
+.sector-bar .s-bar.pos { background:#e89a3c; left:50%; }
+.sector-bar .s-bar.neg { background:#64748b; right:50%; }
+.sector-bar .s-val { min-width:55px; text-align:right; font-weight:600; font-variant-numeric:tabular-nums; }
+.sector-bar .s-val.up { color:#dc2626; }
+.sector-bar .s-val.dn { color:#2563eb; }
+
+/* 서브탭 (외국인/기관) */
+.sub-tab { display:flex; gap:8px; margin-bottom:14px; }
+.sub-tab button {
+  padding:5px 14px; border:1px solid var(--sf-border); border-radius:6px;
+  background:var(--sf-surface); font-size:12px; font-weight:600; cursor:pointer;
+  font-family:var(--sf-font); color:var(--sf-text-dim); transition:all .12s;
+}
+.sub-tab button:hover { border-color:var(--sf-brand); color:var(--sf-brand); }
+.sub-tab button.active { background:var(--sf-brand); color:#fff; border-color:var(--sf-brand); }
+
+.kospi-summary {
+  display:flex; align-items:baseline; gap:12px; margin-bottom:16px;
+  font-size:14px; font-weight:600;
+}
+.kospi-summary .val { font-size:22px; }
+
+.loading { text-align:center; padding:60px 20px; color:var(--sf-text-dim); font-size:14px; }
+.loading::before { content:'⏳ '; }
+.error-msg { text-align:center; padding:40px 20px; color:#ef4444; font-size:13px; }
+
+body.sf-dark .card-wrap { background:#1e242e; }
+body.sf-dark .krx-table th { background:#1e242e; }
+body.sf-dark .sub-tab button { background:#1e242e; border-color:#2c333f; color:#8899aa; }
+body.sf-dark .sub-tab button.active { background:var(--sf-brand); color:#fff; }
+
+@media(max-width:600px) {
+  .krx-table { font-size:12px; }
+  .krx-table th, .krx-table td { padding:6px 6px; }
+}
+</style>
+</head>
+<body class="sf-narrow">
+
+<a href="/" class="back-link">← 홈</a>
+<h1>📋 KRX 투자자 지표</h1>
+<p class="desc">외국인/기관 수급 · 거래대금 · 업종 등락 · 시총 순위 — 평일 자동 업데이트</p>
+
+<div class="tab-bar" id="tabBar">
+  <button class="active" data-tab="investor">👤 외국인/기관</button>
+  <button data-tab="volume">💰 거래대금</button>
+  <button data-tab="sector">🏭 업종 등락</button>
+  <button data-tab="mcap">📊 시총 순위</button>
+</div>
+
+<!-- 탭1: 외국인/기관 -->
+<div class="tab-panel active" id="panel-investor">
+  <div class="card-wrap">
+    <div class="sub-tab" id="investorSub">
+      <button class="active" data-type="foreign">외국인 순매수</button>
+      <button data-type="institution">기관 순매수</button>
+    </div>
+    <div id="loadInvestor" class="loading">데이터 로딩 중…</div>
+    <div id="investorContent" style="display:none"></div>
+  </div>
+</div>
+
+<!-- 탭2: 거래대금 -->
+<div class="tab-panel" id="panel-volume">
+  <div class="card-wrap">
+    <div id="loadVolume" class="loading">데이터 로딩 중…</div>
+    <div id="volumeContent" style="display:none"></div>
+  </div>
+</div>
+
+<!-- 탭3: 업종 등락 -->
+<div class="tab-panel" id="panel-sector">
+  <div class="card-wrap">
+    <div id="loadSector" class="loading">데이터 로딩 중…</div>
+    <div id="sectorContent" style="display:none"></div>
+  </div>
+</div>
+
+<!-- 탭4: 시총 순위 -->
+<div class="tab-panel" id="panel-mcap">
+  <div class="card-wrap">
+    <div id="loadMcap" class="loading">데이터 로딩 중…</div>
+    <div id="mcapContent" style="display:none"></div>
+  </div>
+</div>
+
+<script src="/common.js?v=5"></script>
+<script>
+(function(){
+'use strict';
+
+var BASE = '/data/krx/';
+var rawData = {};
+
+// 탭 전환 + localStorage
+function switchTab(name) {
+  document.querySelectorAll('.tab-bar button').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+  var btn = document.querySelector('.tab-bar button[data-tab="'+name+'"]');
+  if (btn) btn.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+  try { localStorage.setItem('sf_krx_tab', name); } catch(e){}
+  if (name === 'investor' && !rawData.investor) loadInvestor();
+  if (name === 'volume' && !rawData.volume) loadVolume();
+  if (name === 'sector' && !rawData.sector) loadSector();
+  if (name === 'mcap' && !rawData.mcap) loadMcap();
+}
+document.querySelectorAll('.tab-bar button').forEach(function(btn){
+  btn.addEventListener('click', function(){ switchTab(btn.dataset.tab); });
+});
+
+function fetchJSON(file, loadId, cb) {
+  fetch(BASE + file + '?t=' + Date.now())
+    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(d){
+      document.getElementById(loadId).style.display = 'none';
+      cb(d);
+    })
+    .catch(function(e){
+      var el = document.getElementById(loadId);
+      el.className = 'error-msg';
+      el.textContent = '❌ ' + e.message + ' — 데이터 수집 전일 수 있음';
+    });
+}
+
+function fmtNum(n) { return n ? n.toLocaleString('ko-KR') : '0'; }
+function fmtBil(n) { return n >= 100000000 ? (n / 100000000).toFixed(0) + '억' : fmtNum(n); }
+function chgClass(v) { return v > 0 ? 'up' : v < 0 ? 'dn' : 'flat'; }
+function chgSign(v) { return v > 0 ? '+' + v.toFixed(2) + '%' : v.toFixed(2) + '%'; }
+
+// ═══ 1) 외국인/기관 ═══
+var investorType = 'foreign';
+
+function loadInvestor() {
+  fetchJSON('investor_top.json', 'loadInvestor', function(d){
+    rawData.investor = d;
+    document.getElementById('investorContent').style.display = '';
+    renderInvestor();
+  });
+}
+
+document.querySelectorAll('#investorSub button').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('#investorSub button').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    investorType = btn.dataset.type;
+    renderInvestor();
+  });
+});
+
+function renderInvestor() {
+  var d = rawData.investor;
+  if (!d) return;
+  var items = d[investorType] || [];
+  var label = investorType === 'foreign' ? '외국인' : '기관';
+  var html = '<div class="data-date">기준일: ' + d.date + ' · ' + label + ' 순매수 상위 20</div>';
+  html += '<table class="krx-table"><thead><tr><th class="rank">#</th><th>종목</th><th class="num">순매수(백만)</th></tr></thead><tbody>';
+  items.forEach(function(it, i){
+    var val = Math.round(it.net_buy / 1000000);
+    var cls = val > 0 ? 'up' : val < 0 ? 'dn' : 'flat';
+    html += '<tr><td class="rank">' + (i+1) + '</td>';
+    html += '<td><span class="name">' + it.name + '</span> <span class="ticker">' + it.ticker + '</span></td>';
+    html += '<td class="num ' + cls + '">' + fmtNum(val) + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('investorContent').innerHTML = html;
+}
+
+// ═══ 2) 거래대금 ═══
+function loadVolume() {
+  fetchJSON('volume_top.json', 'loadVolume', function(d){
+    rawData.volume = d;
+    document.getElementById('volumeContent').style.display = '';
+    renderVolume();
+  });
+}
+
+function renderVolume() {
+  var d = rawData.volume;
+  if (!d) return;
+  var items = d.items || [];
+  var html = '<div class="data-date">기준일: ' + d.date + ' · 거래대금 상위 20</div>';
+  html += '<table class="krx-table"><thead><tr><th class="rank">#</th><th>종목</th><th class="num">종가</th><th class="num">등락</th><th class="num">거래대금</th></tr></thead><tbody>';
+  items.forEach(function(it, i){
+    var cls = chgClass(it.change_pct);
+    html += '<tr><td class="rank">' + (i+1) + '</td>';
+    html += '<td><span class="name">' + it.name + '</span> <span class="ticker">' + it.ticker + '</span></td>';
+    html += '<td class="num">' + fmtNum(it.close) + '</td>';
+    html += '<td class="num ' + cls + '">' + chgSign(it.change_pct) + '</td>';
+    html += '<td class="num">' + fmtBil(it.trading_value) + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('volumeContent').innerHTML = html;
+}
+
+// ═══ 3) 업종 등락 ═══
+function loadSector() {
+  fetchJSON('sector_change.json', 'loadSector', function(d){
+    rawData.sector = d;
+    document.getElementById('sectorContent').style.display = '';
+    renderSector();
+  });
+}
+
+function renderSector() {
+  var d = rawData.sector;
+  if (!d) return;
+  var sectors = d.sectors || [];
+  var kospi = d.kospi;
+
+  var html = '<div class="data-date">기준일: ' + d.date + ' · KOSPI 업종지수</div>';
+
+  if (kospi) {
+    var kCls = chgClass(kospi.change_pct);
+    html += '<div class="kospi-summary"><span>코스피</span><span class="val ' + kCls + '">' + kospi.close.toFixed(2) + '</span><span class="' + kCls + '">' + chgSign(kospi.change_pct) + '</span></div>';
+  }
+
+  // 최대 절대값 (바 스케일용)
+  var maxAbs = 0;
+  sectors.forEach(function(s){ var a = Math.abs(s.change_pct); if (a > maxAbs) maxAbs = a; });
+  if (maxAbs === 0) maxAbs = 1;
+
+  sectors.forEach(function(s){
+    var cls = chgClass(s.change_pct);
+    var pct = Math.abs(s.change_pct) / maxAbs * 50;
+    var barDir = s.change_pct >= 0 ? 'pos' : 'neg';
+    html += '<div class="sector-bar">';
+    html += '<div class="s-name">' + s.name + '</div>';
+    html += '<div class="s-bar-wrap"><div class="s-bar ' + barDir + '" style="width:' + pct + '%"></div></div>';
+    html += '<div class="s-val ' + cls + '">' + chgSign(s.change_pct) + '</div>';
+    html += '</div>';
+  });
+
+  document.getElementById('sectorContent').innerHTML = html;
+}
+
+// ═══ 4) 시총 순위 ═══
+function loadMcap() {
+  fetchJSON('marketcap_top.json', 'loadMcap', function(d){
+    rawData.mcap = d;
+    document.getElementById('mcapContent').style.display = '';
+    renderMcap();
+  });
+}
+
+function renderMcap() {
+  var d = rawData.mcap;
+  if (!d) return;
+  var items = d.items || [];
+  var html = '<div class="data-date">기준일: ' + d.date + ' · 시가총액 상위 30</div>';
+  html += '<table class="krx-table"><thead><tr><th class="rank">#</th><th>종목</th><th class="num">종가</th><th class="num">등락</th><th class="num">시총(조)</th></tr></thead><tbody>';
+  items.forEach(function(it, i){
+    var cls = chgClass(it.change_pct);
+    html += '<tr><td class="rank">' + (i+1) + '</td>';
+    html += '<td><span class="name">' + it.name + '</span> <span class="ticker">' + it.ticker + '</span></td>';
+    html += '<td class="num">' + fmtNum(it.close) + '</td>';
+    html += '<td class="num ' + cls + '">' + chgSign(it.change_pct) + '</td>';
+    html += '<td class="num">' + it.market_cap_tr.toFixed(1) + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('mcapContent').innerHTML = html;
+}
+
+// ── 초기 로드 ──
+var saved = 'investor';
+try { saved = localStorage.getItem('sf_krx_tab') || 'investor'; } catch(e){}
+switchTab(saved);
+
+})();
+</script>
+</body>
+</html>
