@@ -57,8 +57,8 @@ def get_date(args_date=None):
 # 1) 외국인/기관 순매수 Top 20
 # ══════════════════════════════════════
 def fetch_investor_top(date):
-    """외국인/기관 순매수 Top 20 (코스피+코스닥)"""
-    print("\n[1/4] 외국인/기관 순매수 Top 20")
+    """외국인/기관 순매수 Top 50 (코스피+코스닥)"""
+    print("\n[1/4] 외국인/기관 순매수 Top 50")
     try:
         from pykrx import stock
         import pandas as pd
@@ -101,7 +101,7 @@ def fetch_investor_top(date):
                 continue
 
             # 종목명 컬럼 제외하고 numeric만
-            top = combined.nlargest(20, net_col)
+            top = combined.nlargest(50, net_col)
             for ticker, row in top.iterrows():
                 name_val = row.get("종목명", "") or stock.get_market_ticker_name(ticker)
                 result[label].append({
@@ -122,8 +122,8 @@ def fetch_investor_top(date):
 # 2) 거래대금 상위 20
 # ══════════════════════════════════════
 def fetch_volume_top(date):
-    """거래대금 상위 20 (코스피+코스닥)"""
-    print("\n[2/4] 거래대금 상위 20")
+    """거래대금 상위 50 (코스피+코스닥)"""
+    print("\n[2/4] 거래대금 상위 50")
     try:
         from pykrx import stock
         import pandas as pd
@@ -138,7 +138,7 @@ def fetch_volume_top(date):
         combined = pd.concat([df_kospi, df_kosdaq])
         # 거래대금 컬럼
         vol_col = "거래대금" if "거래대금" in combined.columns else combined.columns[-1]
-        top = combined.nlargest(20, vol_col)
+        top = combined.nlargest(50, vol_col)
 
         items = []
         for ticker, row in top.iterrows():
