@@ -292,6 +292,50 @@ def fetch_triple_low_indicator(backfill=False):
 
 
 # ──────────────────────────────────────
+# 4) 미국 섹터 ETF 등락률
+# ──────────────────────────────────────
+SECTOR_FILE = os.path.join(DATA_DIR, "sector_etf.json")
+SECTOR_TICKERS = ['XLE','XLK','XLRE','XLU','XLB','XLV','XLI','XLF','XLY','XLP','XLC']
+
+def fetch_sector_etf():
+    """SPDR 11개 섹터 ETF 전일대비 등락률"""
+    print("\n[4/4] 미국 섹터 ETF 등락률")
+    etfs = []
+    for t in SECTOR_TICKERS:
+        try:
+            df = yf.download(t, period='5d', progress=False)
+            time.sleep(0.5)
+            if len(df) < 2:
+                print(f"  ⚠ {t}: 데이터 부족")
+                continue
+            # MultiIndex 처리
+            if hasattr(df.columns, 'levels'):
+                close_col = ('Close', t) if ('Close', t) in df.columns else 'Close'
+            else:
+                close_col = 'Close'
+            try:
+                prev = float(df.iloc[-2][close_col])
+                curr = float(df.iloc[-1][close_col])
+            except (KeyError, TypeError):
+                prev = float(df.iloc[-2].iloc[3])
+                curr = float(df.iloc[-1].iloc[3])
+            change = round((curr / prev - 1) * 100, 2)
+            etfs.append({"ticker": t, "close": round(curr, 2), "change": change})
+        except Exception as e:
+            print(f"  ✗ {t}: {e}")
+
+    if etfs:
+        last_date = df.index[-1].strftime("%Y-%m-%d")
+        data = {"date": last_date, "etfs": etfs}
+        save_json(SECTOR_FILE, data)
+        up = sum(1 for e in etfs if e['change'] > 0)
+        dn = len(etfs) - up
+        print(f"  ✓ {len(etfs)}개 ETF, 상승 {up} / 하락 {dn} ({last_date})")
+    else:
+        print("  ⚠ 데이터 없음")
+
+
+# ──────────────────────────────────────
 if __name__ == "__main__":
     backfill = "--backfill" in sys.argv
     print(f"{'='*40}")
@@ -301,6 +345,7 @@ if __name__ == "__main__":
     fetch_semiconductor(backfill)
     fetch_triple_low_compare(backfill)
     fetch_triple_low_indicator(backfill)
+    fetch_sector_etf()
 
     print(f"\n{'='*40}")
     print("완료!")

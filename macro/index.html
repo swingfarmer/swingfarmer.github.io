@@ -84,12 +84,13 @@ body.sf-dark .info-box { background:#1a2030; border-color:#2c333f; }
 
 <a href="/" class="back-link">← 홈</a>
 <h1>📊 매크로 비교 차트</h1>
-<p class="desc">반도체 랠리 · 3저 호황 · 3저 지표 — 매일 업데이트</p>
+<p class="desc">반도체 랠리 · 3저 호황 · 3저 지표 · 섹터 ETF — 매일 업데이트</p>
 
 <div class="tab-bar" id="tabBar">
   <button class="active" data-tab="semi">📈 반도체 랠리</button>
   <button data-tab="triple">📉 3저 호황</button>
   <button data-tab="indicator">🌡️ 3저 지표</button>
+  <button data-tab="sector">🏭 섹터 ETF</button>
 </div>
 
 <!-- 탭1: 반도체 랠리 -->
@@ -173,6 +174,22 @@ body.sf-dark .info-box { background:#1a2030; border-color:#2c333f; }
   </div>
 </div>
 
+<!-- 탭4: 섹터 ETF -->
+<div class="tab-panel" id="panel-sector">
+  <div class="chart-wrap">
+    <h3>미국 섹터 ETF 등락률</h3>
+    <div class="chart-sub">SPDR 11개 섹터 ETF 전일 대비 등락률 (%)</div>
+    <div id="sectorDate" style="font-size:11px; color:var(--sf-text-dim); margin-bottom:12px;"></div>
+    <div id="loadSector" class="loading">데이터 로딩 중…</div>
+    <canvas id="chartSector" style="display:none"></canvas>
+  </div>
+  <div class="info-box">
+    <strong>SPDR 섹터 ETF 11종:</strong><br>
+    XLE(에너지) · XLK(테크) · XLRE(부동산) · XLU(유틸리티) · XLB(소재) · XLV(헬스케어) · XLI(산업재) · XLF(금융) · XLY(경기소비재) · XLP(필수소비재) · XLC(커뮤니케이션)<br>
+    전일 대비 등락률 기준. 매일 업데이트.
+  </div>
+</div>
+
 <script src="/common.js?v=5"></script>
 <script>
 (function(){
@@ -193,6 +210,7 @@ function switchTab(tabName) {
   if (tabName === 'semi' && !rawData.semi) loadSemi();
   if (tabName === 'triple' && !rawData.triple) loadTriple();
   if (tabName === 'indicator' && !rawData.indicator) loadIndicator();
+  if (tabName === 'sector' && !rawData.sector) loadSector();
 }
 document.querySelectorAll('.tab-bar button').forEach(function(btn){
   btn.addEventListener('click', function(){ switchTab(btn.dataset.tab); });
@@ -548,6 +566,91 @@ function renderIndicator(range) {
     { label: meta.label, data: pts, borderColor: meta.color, backgroundColor: 'rgba(0,0,0,.03)', fill: true }
   ], {
     ticks: { callback: function(v) { return indType === 'krw' ? v.toFixed(0) : v.toFixed(2); } }
+  });
+}
+
+// ══════════════════════
+// 탭4: 섹터 ETF
+// ══════════════════════
+var SECTOR_NAMES = {
+  XLE:'에너지', XLK:'테크', XLRE:'부동산', XLU:'유틸리티',
+  XLB:'소재', XLV:'헬스케어', XLI:'산업재', XLF:'금융',
+  XLY:'경기소비재', XLP:'필수소비재', XLC:'커뮤니케이션'
+};
+
+function loadSector() {
+  fetchJSON('sector_etf.json', 'loadSector', function(data){
+    rawData.sector = data;
+    renderSector();
+  });
+}
+
+function renderSector() {
+  var data = rawData.sector;
+  if (!data || !data.etfs) return;
+
+  // 날짜 표시
+  var dateEl = document.getElementById('sectorDate');
+  dateEl.textContent = '기준일: ' + (data.date || '-');
+
+  // 등락률 순 정렬
+  var sorted = data.etfs.slice().sort(function(a, b){ return b.change - a.change; });
+
+  var labels = sorted.map(function(e){ return (SECTOR_NAMES[e.ticker] || e.ticker); });
+  var values = sorted.map(function(e){ return e.change; });
+  var colors = values.map(function(v){ return v >= 0 ? '#e89a3c' : '#555'; });
+
+  var canvasId = 'chartSector';
+  var ctx = document.getElementById(canvasId);
+  ctx.style.display = '';
+  if (charts[canvasId]) charts[canvasId].destroy();
+
+  var isDark = document.body.classList.contains('sf-dark');
+  var textColor = isDark ? '#8899aa' : '#888';
+  var gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)';
+
+  charts[canvasId] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderRadius: 4,
+        barPercentage: 0.7
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      indexAxis: 'x',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: function(items) {
+              var e = sorted[items[0].dataIndex];
+              return e.ticker + ' (' + (SECTOR_NAMES[e.ticker]||'') + ')';
+            },
+            label: function(ctx2) {
+              return '등락률: ' + ctx2.parsed.y.toFixed(2) + '%';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: textColor, font: { size: 11 } }
+        },
+        y: {
+          grid: { color: gridColor },
+          ticks: {
+            color: textColor, font: { size: 11 },
+            callback: function(v) { return v.toFixed(1) + '%'; }
+          }
+        }
+      }
+    }
   });
 }
 
