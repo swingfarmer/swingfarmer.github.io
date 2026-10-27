@@ -464,9 +464,79 @@ function loadHistDate(dateStr) {
     .then(function(data){
       var tabData = data[tab];
       if (!tabData) { el.innerHTML = '해당 탭 데이터 없음'; return; }
-      el.innerHTML = '<pre style="text-align:left;font-size:11px;max-height:400px;overflow:auto;white-space:pre-wrap;">' + JSON.stringify(tabData, null, 2).substring(0, 5000) + '</pre>';
+      el.innerHTML = renderHistTable(tab, tabData, dateStr);
     })
     .catch(function(e){ el.innerHTML = '❌ ' + e.message; });
+}
+
+function renderHistTable(tab, d, dateStr) {
+  var html = '';
+  if (tab === 'investor_top') {
+    // 외국인 + 기관 2개 테이블
+    ['foreign','institution'].forEach(function(label){
+      var items = d[label] || [];
+      var title = label === 'foreign' ? '외국인 순매수' : '기관 순매수';
+      html += '<h4 style="margin:16px 0 8px;font-size:14px;">' + title + ' (' + dateStr + ')</h4>';
+      html += '<div style="max-height:350px;overflow-y:auto;">';
+      html += '<table class="krx-table"><thead><tr><th class="rank">#</th><th>종목</th><th class="num">순매수(백만)</th></tr></thead><tbody>';
+      items.forEach(function(it, i){
+        var val = Math.round(it.net_buy / 1000000);
+        var cls = val > 0 ? 'up' : val < 0 ? 'dn' : 'flat';
+        html += '<tr><td class="rank">' + (i+1) + '</td>';
+        html += '<td><span class="name">' + it.name + '</span> <span class="ticker">' + it.ticker + '</span></td>';
+        html += '<td class="num ' + cls + '">' + fmtNum(val) + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    });
+  } else if (tab === 'volume_top') {
+    var items = d.items || [];
+    html += '<h4 style="margin:0 0 8px;font-size:14px;">거래대금 상위 (' + dateStr + ')</h4>';
+    html += '<div style="max-height:500px;overflow-y:auto;">';
+    html += '<table class="krx-table"><thead><tr><th class="rank">#</th><th>종목</th><th class="num">종가</th><th class="num">등락</th><th class="num">거래대금</th></tr></thead><tbody>';
+    items.forEach(function(it, i){
+      var cls = chgClass(it.change_pct);
+      html += '<tr><td class="rank">' + (i+1) + '</td>';
+      html += '<td><span class="name">' + it.name + '</span> <span class="ticker">' + it.ticker + '</span></td>';
+      html += '<td class="num">' + fmtNum(it.close) + '</td>';
+      html += '<td class="num ' + cls + '">' + chgSign(it.change_pct) + '</td>';
+      html += '<td class="num">' + fmtBil(it.trading_value) + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  } else if (tab === 'sector_change') {
+    var sectors = d.sectors || [];
+    var kospi = d.kospi;
+    html += '<h4 style="margin:0 0 8px;font-size:14px;">업종별 등락률 (' + dateStr + ')</h4>';
+    if (kospi) {
+      var kCls = chgClass(kospi.change_pct);
+      html += '<div class="kospi-summary"><span>코스피</span><span class="val ' + kCls + '">' + kospi.close.toFixed(2) + '</span><span class="' + kCls + '">' + chgSign(kospi.change_pct) + '</span></div>';
+    }
+    var maxAbs = 0;
+    sectors.forEach(function(s){ var a = Math.abs(s.change_pct); if(a>maxAbs) maxAbs=a; });
+    if (!maxAbs) maxAbs = 1;
+    sectors.forEach(function(s){
+      var cls = chgClass(s.change_pct);
+      var pct = Math.abs(s.change_pct) / maxAbs * 50;
+      var barDir = s.change_pct >= 0 ? 'pos' : 'neg';
+      html += '<div class="sector-bar"><div class="s-name">' + s.name + '</div>';
+      html += '<div class="s-bar-wrap"><div class="s-bar ' + barDir + '" style="width:' + pct + '%"></div></div>';
+      html += '<div class="s-val ' + cls + '">' + chgSign(s.change_pct) + '</div></div>';
+    });
+  } else if (tab === 'marketcap_top') {
+    var items = d.items || [];
+    html += '<h4 style="margin:0 0 8px;font-size:14px;">시가총액 상위 (' + dateStr + ')</h4>';
+    html += '<div style="max-height:500px;overflow-y:auto;">';
+    html += '<table class="krx-table"><thead><tr><th class="rank">#</th><th>종목</th><th class="num">종가</th><th class="num">등락</th><th class="num">시총(조)</th></tr></thead><tbody>';
+    items.forEach(function(it, i){
+      var cls = chgClass(it.change_pct);
+      html += '<tr><td class="rank">' + (i+1) + '</td>';
+      html += '<td><span class="name">' + it.name + '</span> <span class="ticker">' + it.ticker + '</span></td>';
+      html += '<td class="num">' + fmtNum(it.close) + '</td>';
+      html += '<td class="num ' + cls + '">' + chgSign(it.change_pct) + '</td>';
+      html += '<td class="num">' + it.market_cap_tr.toFixed(1) + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+  return html || '데이터 없음';
 }
 
 // 순위 추이 차트
