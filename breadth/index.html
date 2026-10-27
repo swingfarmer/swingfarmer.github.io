@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="robots" content="noindex,nofollow">
+<title>52주 신고가/신저가 — 스윙파머</title>
+<link rel="stylesheet" href="/common-dark.css?v=4">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root { --sf-max-w: 1100px; }
+
+/* ── 요약 카드 ── */
+.summary-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
+.sum-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px; text-align:center; }
+.sum-card .label { font-size:10px; color:var(--text-dim); font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+.sum-card .big { font-size:28px; font-weight:800; line-height:1.1; font-variant-numeric:tabular-nums; }
+.sum-card .sub { font-size:11px; color:var(--text-dim); margin-top:2px; }
+.sum-card .pct { font-size:15px; font-weight:700; }
+.high-clr { color:#00d26a; }
+.low-clr { color:#ff4757; }
+.neutral-clr { color:var(--text-dim); }
+
+/* ── 탭 ── */
+.tab-bar { display:flex; gap:4px; margin-bottom:14px; border-bottom:2px solid var(--border); padding-bottom:0; }
+.tab-bar button {
+  background:transparent; border:none; border-bottom:2px solid transparent;
+  color:var(--text-dim); font-size:13px; font-weight:600; padding:8px 14px;
+  cursor:pointer; margin-bottom:-2px; white-space:nowrap;
+}
+.tab-bar button:hover { color:var(--accent); }
+.tab-bar button.active { color:var(--accent); border-bottom-color:var(--accent); }
+@media(max-width:500px){ .tab-bar button { padding:8px 8px; font-size:11px; } }
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+
+/* ── 마켓 필터 ── */
+.mkt-filter { display:flex; gap:4px; margin-bottom:10px; }
+.mkt-btn { padding:4px 10px; border:1px solid var(--border); border-radius:6px; background:transparent; color:var(--text-dim); font-size:11px; cursor:pointer; font-weight:600; }
+.mkt-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+/* ── 차트 ── */
+.chart-wrap { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px; margin-bottom:14px; }
+.chart-wrap h3 { font-size:12px; color:var(--text-dim); margin-bottom:8px; font-weight:500; }
+.chart-wrap canvas { width:100%!important; height:280px!important; }
+
+/* ── 게이지 바 ── */
+.gauge-bar { display:flex; height:28px; border-radius:6px; overflow:hidden; margin:10px 0; }
+.gauge-bar .seg { display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#fff; min-width:24px; transition:width .3s; }
+
+/* ── 테이블 ── */
+.hl-table { width:100%; border-collapse:collapse; font-size:11px; font-variant-numeric:tabular-nums; }
+.hl-table th { text-align:right; padding:6px 8px; color:var(--text-dim); font-weight:500; border-bottom:1px solid var(--border); font-size:9px; }
+.hl-table th:first-child, .hl-table th:nth-child(2) { text-align:left; }
+.hl-table td { padding:5px 8px; border-bottom:1px solid rgba(255,255,255,.04); text-align:right; }
+.hl-table td:first-child { text-align:center; color:var(--text-dim); font-size:10px; }
+.hl-table td:nth-child(2) { text-align:left; font-weight:600; }
+.hl-table tr:hover { background:rgba(255,255,255,.03); }
+.mkt-badge { display:inline-block; padding:1px 5px; border-radius:3px; font-size:8px; font-weight:700; }
+.mkt-badge.KOSPI { background:rgba(52,152,219,.2); color:#3498db; }
+.mkt-badge.KOSDAQ { background:rgba(155,89,182,.2); color:#9b59b6; }
+
+/* ── info-box ── */
+.info-box { background:#1a2030; border:1px solid #2c333f; border-radius:8px; padding:12px 14px; font-size:11px; color:var(--text-dim); line-height:1.6; margin-bottom:14px; }
+.info-box strong { color:var(--text); }
+
+/* ── 반응형 ── */
+@media(max-width:600px){
+  .summary-grid { grid-template-columns:1fr; }
+  .sum-card .big { font-size:22px; }
+  .chart-wrap canvas { height:220px!important; }
+}
+</style>
+</head>
+<body>
+<div class="sf-header"><a href="/" class="sf-back">←</a><span class="sf-title">52주 신고가/신저가</span></div>
+<div class="sf-wrap">
+
+<!-- 요약 카드 -->
+<div id="summaryCards" class="summary-grid"></div>
+
+<!-- 게이지 바 -->
+<div id="gaugeBar" class="gauge-bar"></div>
+
+<!-- 탭 -->
+<div class="tab-bar" id="tabBar">
+  <button class="active" data-tab="chart">📈 추이</button>
+  <button data-tab="highs">🔺 신고가</button>
+  <button data-tab="lows">🔻 신저가</button>
+  <button data-tab="info">ℹ️ 안내</button>
+</div>
+
+<!-- 추이 탭 -->
+<div class="tab-panel active" id="panel-chart">
+  <div class="mkt-filter" id="chartMktFilter">
+    <button class="mkt-btn active" data-m="all">전체</button>
+    <button class="mkt-btn" data-m="kospi">KOSPI</button>
+    <button class="mkt-btn" data-m="kosdaq">KOSDAQ</button>
+  </div>
+  <div class="chart-wrap">
+    <h3 id="chartTitle">신고가/신저가 비율 vs 코스피</h3>
+    <canvas id="mainChart"></canvas>
+  </div>
+  <div class="chart-wrap">
+    <h3>신고가 − 신저가 (Net New Highs)</h3>
+    <canvas id="netChart"></canvas>
+  </div>
+</div>
+
+<!-- 신고가 탭 -->
+<div class="tab-panel" id="panel-highs">
+  <div class="mkt-filter" id="highMktFilter">
+    <button class="mkt-btn active" data-m="all">전체</button>
+    <button class="mkt-btn" data-m="KOSPI">KOSPI</button>
+    <button class="mkt-btn" data-m="KOSDAQ">KOSDAQ</button>
+  </div>
+  <table class="hl-table" id="highTable">
+    <thead><tr><th>#</th><th>종목</th><th>시장</th><th>종가</th><th>52주 고가</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- 신저가 탭 -->
+<div class="tab-panel" id="panel-lows">
+  <div class="mkt-filter" id="lowMktFilter">
+    <button class="mkt-btn active" data-m="all">전체</button>
+    <button class="mkt-btn" data-m="KOSPI">KOSPI</button>
+    <button class="mkt-btn" data-m="KOSDAQ">KOSDAQ</button>
+  </div>
+  <table class="hl-table" id="lowTable">
+    <thead><tr><th>#</th><th>종목</th><th>시장</th><th>종가</th><th>52주 저가</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- 안내 탭 -->
+<div class="tab-panel" id="panel-info">
+  <div class="info-box">
+    <strong>52주 신고가/신저가 비율 (Breadth Indicator)</strong><br><br>
+    <strong>• 정의:</strong> 당일 고가가 과거 260거래일(≈52주) 최고가 이상이면 "신고가", 당일 저가가 최저가 이하이면 "신저가".<br>
+    <strong>• 대상:</strong> KRX 전종목 (KOSPI + KOSDAQ). 거래정지/관리종목(거래량 0) 제외.<br>
+    <strong>• 활용:</strong><br>
+    &nbsp;&nbsp;— 신고가 비율 ↑ = 시장 상승 참여 종목 확산 (건강한 랠리)<br>
+    &nbsp;&nbsp;— 지수 상승인데 신고가 비율 ↓ = 소수 대형주 주도 (다이버전스 경고)<br>
+    &nbsp;&nbsp;— 신저가 비율 급등 = 시장 전반 약세 (패닉 or 바닥 근접)<br>
+    &nbsp;&nbsp;— Net New Highs (신고가−신저가) > 0 = 상승 우위<br><br>
+    <strong>• 데이터:</strong> pykrx (KRX 공식 데이터) 기반, 평일 20:55 자동 수집.<br>
+    <strong>• 윈도우:</strong> 최소 60거래일 이상 누적 후 유의미. 260일 미만 시 실제 보유 기간 내 비교.<br>
+    <strong>• 참고:</strong> NYSE, NASDAQ의 New High/Low 지표와 동일 개념.
+  </div>
+</div>
+
+</div><!-- sf-wrap -->
+
+<script src="/common.js?v=5"></script>
+<script>
+(function(){
+var BASE = '/data/krx/';
+var todayData = null;
+var historyData = [];
+var mainChart = null;
+var netChart = null;
+var chartMarket = 'all';
+var highFilter = 'all';
+var lowFilter = 'all';
+
+// ── 데이터 로드 ──
+Promise.all([
+  fetch(BASE + 'new_high_low.json?t=' + Date.now()).then(function(r){ return r.ok ? r.json() : null; }),
+  fetch(BASE + 'new_high_low_history.json?t=' + Date.now()).then(function(r){ return r.ok ? r.json() : []; })
+]).then(function(arr){
+  todayData = arr[0];
+  historyData = arr[1] || [];
+  if (todayData) renderAll();
+  else document.getElementById('summaryCards').innerHTML = '<div class="sum-card" style="grid-column:1/-1;padding:40px;color:var(--text-dim);">데이터 수집 대기 중… 윈도우 구축 후 표시됩니다.</div>';
+}).catch(function(e){ console.error(e); });
+
+function fmtNum(n) { return n == null ? '-' : n.toLocaleString(); }
+function fmtPct(n) { return n == null ? '-' : n.toFixed(2) + '%'; }
+
+// ── 요약 카드 ──
+function renderSummary() {
+  var d = todayData;
+  var html = '';
+  // KOSPI
+  html += '<div class="sum-card"><div class="label">KOSPI (' + fmtNum(d.kospi.total) + '종목)</div>';
+  html += '<div class="big high-clr">▲ ' + d.kospi.new_high + '</div>';
+  html += '<div class="pct high-clr">' + fmtPct(d.kospi.high_pct) + '</div>';
+  html += '<div class="sub">신저가 <span class="low-clr">' + d.kospi.new_low + '</span> (' + fmtPct(d.kospi.low_pct) + ')</div></div>';
+  // KOSDAQ
+  html += '<div class="sum-card"><div class="label">KOSDAQ (' + fmtNum(d.kosdaq.total) + '종목)</div>';
+  html += '<div class="big high-clr">▲ ' + d.kosdaq.new_high + '</div>';
+  html += '<div class="pct high-clr">' + fmtPct(d.kosdaq.high_pct) + '</div>';
+  html += '<div class="sub">신저가 <span class="low-clr">' + d.kosdaq.new_low + '</span> (' + fmtPct(d.kosdaq.low_pct) + ')</div></div>';
+  // ALL
+  html += '<div class="sum-card"><div class="label">전체 (' + fmtNum(d.all.total) + '종목)</div>';
+  html += '<div class="big high-clr">▲ ' + d.all.new_high + '</div>';
+  html += '<div class="pct high-clr">' + fmtPct(d.all.high_pct) + '</div>';
+  html += '<div class="sub">신저가 <span class="low-clr">' + d.all.new_low + '</span> (' + fmtPct(d.all.low_pct) + ')</div></div>';
+  document.getElementById('summaryCards').innerHTML = html;
+}
+
+// ── 게이지 바 ──
+function renderGauge() {
+  var d = todayData.all;
+  var neutral = d.total - d.new_high - d.new_low;
+  if (d.total === 0) return;
+  var hp = (d.new_high / d.total * 100).toFixed(1);
+  var lp = (d.new_low / d.total * 100).toFixed(1);
+  var np = (100 - parseFloat(hp) - parseFloat(lp)).toFixed(1);
+  var el = document.getElementById('gaugeBar');
+  el.innerHTML =
+    '<div class="seg" style="width:' + hp + '%;background:#00d26a;">' + (parseFloat(hp) >= 3 ? hp + '%' : '') + '</div>' +
+    '<div class="seg" style="width:' + np + '%;background:#334155;">' + '</div>' +
+    '<div class="seg" style="width:' + lp + '%;background:#ff4757;">' + (parseFloat(lp) >= 3 ? lp + '%' : '') + '</div>';
+}
+
+// ── 차트 ──
+function renderCharts() {
+  if (historyData.length < 2) {
+    document.getElementById('panel-chart').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim);">데이터가 2일 이상 쌓이면 차트가 표시됩니다.</div>';
+    return;
+  }
+  renderMainChart();
+  renderNetChart();
+}
+
+function getChartData(key) {
+  var m = chartMarket;
+  return historyData.map(function(h){
+    if (m === 'all') return h['all_' + key] != null ? h['all_' + key] : null;
+    return h[m + '_' + key] != null ? h[m + '_' + key] : null;
+  });
+}
+
+function renderMainChart() {
+  var labels = historyData.map(function(h){ return h.date.slice(5); });
+  var highPct = getChartData('high_pct');
+  var lowPct = getChartData('low_pct');
+  var kospiIdx = historyData.map(function(h){ return h.kospi_index || null; });
+
+  var ctx = document.getElementById('mainChart');
+  if (mainChart) mainChart.destroy();
+
+  var datasets = [
+    { label: '신고가(%)', data: highPct, borderColor: '#00d26a', backgroundColor: 'rgba(0,210,106,.1)', fill: true, borderWidth: 2, pointRadius: labels.length > 40 ? 0 : 2, yAxisID: 'y', tension: 0.3 },
+    { label: '신저가(%)', data: lowPct, borderColor: '#ff4757', backgroundColor: 'rgba(255,71,87,.1)', fill: true, borderWidth: 2, pointRadius: labels.length > 40 ? 0 : 2, yAxisID: 'y', tension: 0.3 }
+  ];
+  if (chartMarket !== 'kosdaq') {
+    datasets.push({ label: 'KOSPI', data: kospiIdx, borderColor: '#f0b93a', borderWidth: 1.5, borderDash: [4,3], pointRadius: 0, yAxisID: 'y1', tension: 0.3 });
+  }
+
+  mainChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: labels, datasets: datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { color: '#8899aa', font: { size: 11 }, boxWidth: 12, padding: 8 } },
+        tooltip: {
+          backgroundColor: '#1e293b', titleColor: '#ddd', bodyColor: '#aaa', borderColor: '#334155', borderWidth: 1, padding: 10,
+          callbacks: { label: function(c) { var v = c.parsed.y; return c.dataset.label + ': ' + (v != null ? (c.datasetIndex < 2 ? v.toFixed(2) + '%' : fmtNum(Math.round(v))) : '-'); } }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#667', font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } },
+        y: { position: 'left', grid: { color: 'rgba(255,255,255,.06)' }, ticks: { color: '#667', font: { size: 10 }, callback: function(v){ return v + '%'; } }, title: { display: true, text: '비율(%)', color: '#667', font: { size: 10 } } },
+        y1: { position: 'right', grid: { display: false }, ticks: { color: '#f0b93a55', font: { size: 10 } }, display: chartMarket !== 'kosdaq' }
+      }
+    }
+  });
+  document.getElementById('chartTitle').textContent = '신고가/신저가 비율' + (chartMarket !== 'kosdaq' ? ' vs 코스피' : '');
+}
+
+function renderNetChart() {
+  var labels = historyData.map(function(h){ return h.date.slice(5); });
+  var m = chartMarket;
+  var netData = historyData.map(function(h){
+    var hi, lo;
+    if (m === 'all') { hi = h.all_high || 0; lo = h.all_low || 0; }
+    else { hi = h[m + '_high'] || 0; lo = h[m + '_low'] || 0; }
+    return hi - lo;
+  });
+
+  var ctx = document.getElementById('netChart');
+  if (netChart) netChart.destroy();
+
+  var colors = netData.map(function(v){ return v >= 0 ? 'rgba(0,210,106,.7)' : 'rgba(255,71,87,.7)'; });
+  var borders = netData.map(function(v){ return v >= 0 ? '#00d26a' : '#ff4757'; });
+
+  netChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: labels, datasets: [{ label: 'Net New Highs', data: netData, backgroundColor: colors, borderColor: borders, borderWidth: 1 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: '#1e293b', titleColor: '#ddd', bodyColor: '#aaa', borderColor: '#334155', borderWidth: 1, padding: 10 }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#667', font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } },
+        y: { grid: { color: 'rgba(255,255,255,.06)' }, ticks: { color: '#667', font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+// ── 테이블 ──
+function renderTable(list, tbodyId, filter) {
+  var filtered = filter === 'all' ? list : list.filter(function(s){ return s.market === filter; });
+  var tbody = document.querySelector('#' + tbodyId + ' tbody');
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:20px;">해당 종목 없음</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(function(s, i){
+    var is52h = s.high_52w != null;
+    return '<tr>' +
+      '<td>' + (i+1) + '</td>' +
+      '<td>' + s.name + '</td>' +
+      '<td><span class="mkt-badge ' + s.market + '">' + s.market + '</span></td>' +
+      '<td>' + fmtNum(s.close) + '</td>' +
+      '<td>' + fmtNum(is52h ? s.high_52w : s.low_52w) + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+// ── 전체 렌더 ──
+function renderAll() {
+  renderSummary();
+  renderGauge();
+  renderCharts();
+  renderTable(todayData.new_highs || [], 'highTable', highFilter);
+  renderTable(todayData.new_lows || [], 'lowTable', lowFilter);
+}
+
+// ── 탭 전환 ──
+document.querySelectorAll('#tabBar button').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('#tabBar button').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    try { localStorage.setItem('sf_breadth_tab', btn.dataset.tab); } catch(e){}
+  });
+});
+
+// ── 차트 마켓 필터 ──
+document.querySelectorAll('#chartMktFilter .mkt-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('#chartMktFilter .mkt-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    chartMarket = btn.dataset.m;
+    if (historyData.length >= 2) { renderMainChart(); renderNetChart(); }
+  });
+});
+
+// ── 테이블 마켓 필터 ──
+document.querySelectorAll('#highMktFilter .mkt-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('#highMktFilter .mkt-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    highFilter = btn.dataset.m;
+    renderTable(todayData.new_highs || [], 'highTable', highFilter);
+  });
+});
+document.querySelectorAll('#lowMktFilter .mkt-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('#lowMktFilter .mkt-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    lowFilter = btn.dataset.m;
+    renderTable(todayData.new_lows || [], 'lowTable', lowFilter);
+  });
+});
+
+// ── 탭 복원 ──
+try {
+  var saved = localStorage.getItem('sf_breadth_tab');
+  if (saved) {
+    var btn = document.querySelector('#tabBar button[data-tab="' + saved + '"]');
+    if (btn) btn.click();
+  }
+} catch(e){}
+
+})();
+</script>
+</body>
+</html>
