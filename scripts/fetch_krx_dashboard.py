@@ -63,43 +63,51 @@ def fetch_investor_top(date):
         from pykrx import stock
         import pandas as pd
 
-        # 코스피/코스닥 전종목 투자자별 순매수
-        df_kospi = stock.get_market_net_purchases_of_equities_by_ticker(date, date, "KOSPI")
-        df_kosdaq = stock.get_market_net_purchases_of_equities_by_ticker(date, date, "KOSDAQ")
-
-        if df_kospi.empty and df_kosdaq.empty:
-            print("  ⚠ 데이터 없음 (휴장일?)")
-            return
-
-        # 컬럼 확인 (버전에 따라 다를 수 있음)
-        combined = pd.concat([df_kospi, df_kosdaq])
-        print(f"  컬럼: {list(combined.columns)}")
-
-        # 외국인/기관 컬럼명 탐색
-        foreign_col = None
-        inst_col = None
-        for c in combined.columns:
-            if '외국인' in str(c): foreign_col = c
-            if '기관' in str(c) and '합계' in str(c): inst_col = c
-        if not foreign_col:
-            foreign_col = combined.columns[0] if len(combined.columns) > 0 else None
-        if not inst_col:
-            inst_col = combined.columns[1] if len(combined.columns) > 1 else None
-
-        print(f"  외국인 컬럼: {foreign_col}, 기관 컬럼: {inst_col}")
-
         result = {"date": f"{date[:4]}-{date[4:6]}-{date[6:]}", "foreign": [], "institution": []}
 
-        for label, col in [("foreign", foreign_col), ("institution", inst_col)]:
-            if col is None:
+        # 투자자별로 따로 조회: "외국인", "기관합계"
+        for label, investor in [("foreign", "외국인"), ("institution", "기관합계")]:
+            frames = []
+            for market in ["KOSPI", "KOSDAQ"]:
+                try:
+                    df = stock.get_market_net_purchases_of_equities(date, date, market, investor)
+                    if not df.empty:
+                        frames.append(df)
+                except Exception as e2:
+                    print(f"  ⚠ {market}/{investor}: {e2}")
+                time.sleep(0.3)
+
+            if not frames:
+                print(f"  ⚠ {investor} 데이터 없음")
                 continue
-            top = combined.nlargest(20, col)
+
+            combined = pd.concat(frames)
+            print(f"  {investor} 컬럼: {list(combined.columns)}")
+
+            # 순매수거래대금 컬럼 찾기
+            net_col = None
+            for c in combined.columns:
+                if '순매수' in str(c) and '대금' in str(c):
+                    net_col = c
+                    break
+            if not net_col:
+                # fallback: 순매수 포함 컬럼
+                for c in combined.columns:
+                    if '순매수' in str(c):
+                        net_col = c
+                        break
+            if not net_col:
+                print(f"  ⚠ 순매수 컬럼 못 찾음: {list(combined.columns)}")
+                continue
+
+            # 종목명 컬럼 제외하고 numeric만
+            top = combined.nlargest(20, net_col)
             for ticker, row in top.iterrows():
-                name = stock.get_market_ticker_name(ticker)
+                name_val = row.get("종목명", "") or stock.get_market_ticker_name(ticker)
                 result[label].append({
                     "ticker": ticker,
-                    "name": name,
-                    "net_buy": int(row[col]),
+                    "name": str(name_val),
+                    "net_buy": int(row[net_col]),
                 })
 
         save_json("investor_top.json", result)
