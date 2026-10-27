@@ -31,12 +31,54 @@ os.makedirs(DATA_DIR, exist_ok=True)
 TODAY = datetime.now().strftime("%Y%m%d")
 
 
+def load_json(filename):
+    path = os.path.join(DATA_DIR, filename)
+    if os.path.exists(path):
+        with open(path, encoding='utf-8') as f:
+            return json.load(f)
+    return None
+
+
 def save_json(filename, data):
     path = os.path.join(DATA_DIR, filename)
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, separators=(',', ':'))
     size = os.path.getsize(path)
     print(f"  💾 {filename} 저장 ({size // 1024}KB)")
+
+
+def add_rank_changes(new_items, prev_items, key="ticker"):
+    """전일 대비 순위 변동 계산. 각 item에 rank_change, is_new 추가."""
+    if not prev_items:
+        for it in new_items:
+            it["rank_change"] = 0
+            it["is_new"] = True
+        return
+
+    prev_rank = {}
+    prev_set = set()
+    for i, it in enumerate(prev_items):
+        prev_rank[it[key]] = i + 1
+        prev_set.add(it[key])
+
+    new_set = set()
+    for i, it in enumerate(new_items):
+        new_rank = i + 1
+        k = it[key]
+        new_set.add(k)
+        if k in prev_rank:
+            it["rank_change"] = prev_rank[k] - new_rank  # 양수=순위 상승
+            it["is_new"] = False
+        else:
+            it["rank_change"] = 0
+            it["is_new"] = True
+
+    # OUT 종목 (전일 Top N에 있었으나 오늘 없는 것)
+    out_list = []
+    for it in prev_items:
+        if it[key] not in new_set:
+            out_list.append({"ticker": it[key], "name": it.get("name", ""), "prev_rank": prev_rank[it[key]]})
+    return out_list
 
 
 def get_date(args_date=None):
@@ -109,6 +151,14 @@ def fetch_investor_top(date):
                     "net_buy": int(row[net_col]),
                 })
 
+        # 전일 대비 순위 변동
+        prev = load_json("investor_top.json")
+        for label in ["foreign", "institution"]:
+            prev_items = prev.get(label, []) if prev else []
+            out = add_rank_changes(result[label], prev_items, key="ticker")
+            if out:
+                result[label + "_out"] = out[:10]  # 이탈 상위 10
+
         save_json("investor_top.json", result)
         print(f"  ✓ 외국인 {len(result['foreign'])}건, 기관 {len(result['institution'])}건")
 
@@ -153,7 +203,13 @@ def fetch_volume_top(date):
                 "trading_value": vol
             })
 
+        prev = load_json("volume_top.json")
+        prev_items = prev.get("items", []) if prev else []
+        out = add_rank_changes(items, prev_items, key="ticker")
+
         result = {"date": f"{date[:4]}-{date[4:6]}-{date[6:]}", "items": items}
+        if out:
+            result["out"] = out[:10]
         save_json("volume_top.json", result)
         print(f"  ✓ {len(items)}건")
 
@@ -195,6 +251,11 @@ def fetch_sector_change(date):
         kospi_main = [i for i in items if i["name"] == "코스피"]
         others = sorted([i for i in items if i["name"] != "코스피"], key=lambda x: x["change_pct"], reverse=True)
 
+        # 업종 전일대비 순위 변동 (등락률 순위)
+        prev = load_json("sector_change.json")
+        prev_sectors = prev.get("sectors", []) if prev else []
+        add_rank_changes(others, prev_sectors, key="ticker")
+
         result = {"date": f"{date[:4]}-{date[4:6]}-{date[6:]}", "kospi": kospi_main[0] if kospi_main else None, "sectors": others}
         save_json("sector_change.json", result)
         print(f"  ✓ {len(others)}개 업종 + 코스피 종합")
@@ -234,7 +295,13 @@ def fetch_marketcap_top(date):
                 "market_cap_tr": round(mcap / 1_000_000_000_000, 1)  # 조 단위
             })
 
+        prev = load_json("marketcap_top.json")
+        prev_items = prev.get("items", []) if prev else []
+        out = add_rank_changes(items, prev_items, key="ticker")
+
         result = {"date": f"{date[:4]}-{date[4:6]}-{date[6:]}", "items": items}
+        if out:
+            result["out"] = out[:10]
         save_json("marketcap_top.json", result)
         print(f"  ✓ {len(items)}건")
 
