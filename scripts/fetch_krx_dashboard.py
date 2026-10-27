@@ -82,7 +82,6 @@ def fetch_investor_top(date):
                 continue
 
             combined = pd.concat(frames)
-            print(f"  {investor} 컬럼: {list(combined.columns)}")
 
             # 순매수거래대금 컬럼 찾기
             net_col = None
