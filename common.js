@@ -11,7 +11,7 @@
 /* ── 인증 게이트 (눈가림) ── */
 /* ── Firebase 초기화 (공용) ── */
 var _sfFirebaseReady = (function(){
-  var ADMIN_UID = '1JrHgD2bpTRjrS2jw7MbpHciBph1';
+  var ADMIN_UIDS = ['1JrHgD2bpTRjrS2jw7MbpHciBph1','Ydd8v6LCN2TPjkqKD4DejLSWwaL2'];
   var FB_CFG = {apiKey:'AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY',authDomain:'swingfarmer-board01.firebaseapp.com',projectId:'swingfarmer-board01'};
   var _auth = null;
   var _resolve;
@@ -28,7 +28,7 @@ var _sfFirebaseReady = (function(){
       _auth = getAuth(app);
       window._sfAuth = _auth;
       _resolve(_auth);
-      return { auth: _auth, mods: mods, ADMIN_UID: ADMIN_UID, FB_CFG: FB_CFG };
+      return { auth: _auth, mods: mods, ADMIN_UIDS: ADMIN_UIDS, FB_CFG: FB_CFG };
     }
   };
 })();
@@ -60,7 +60,7 @@ window.sfApiFetch = function(url, opts) {
 };
 
 (function(){
-  var ADMIN_UID = '1JrHgD2bpTRjrS2jw7MbpHciBph1';
+  var ADMIN_UIDS = ['1JrHgD2bpTRjrS2jw7MbpHciBph1','Ydd8v6LCN2TPjkqKD4DejLSWwaL2'];
 
   // 이미 인증된 세션 체크
   var cached = false;
@@ -103,7 +103,7 @@ window.sfApiFetch = function(url, opts) {
     }
 
     onAuthStateChanged(auth, function(user){
-      if(user && user.uid === ADMIN_UID){ unlock(); }
+      if(user && ADMIN_UIDS.indexOf(user.uid) !== -1){ unlock(); }
       else if(user && !cached){ showErr('관리자 계정이 아닙니다. (' + (user.email||'') + ')'); }
     });
 

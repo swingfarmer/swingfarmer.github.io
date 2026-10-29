@@ -24,7 +24,7 @@ if(typeof window.CALC_KEY==='undefined'){
 }
 const KEY = window.CALC_KEY;
 const LS_KEY = 'sf_'+KEY+'_v2';
-const ADMIN_UID = '1JrHgD2bpTRjrS2jw7MbpHciBph1';
+const ADMIN_UIDS = ['1JrHgD2bpTRjrS2jw7MbpHciBph1','Ydd8v6LCN2TPjkqKD4DejLSWwaL2'];
 const $ = id => document.getElementById(id);
 
 // ── localStorage 자동저장 ──
@@ -65,7 +65,7 @@ async function getDb(){
   return _db;
 }
 
-function docRef(db){ return db._fsMod.doc(db, 'calc_data', ADMIN_UID); }
+function docRef(db){ return db._fsMod.doc(db, 'calc_data', ADMIN_UIDS[0]); }
 
 async function loadSlots(){
   try{
@@ -331,7 +331,7 @@ window._sfSlots = {
   getSlots: function(){ return loadSlots(); },
 
   open: async function(){
-    if(!window._sfAuth || !window._sfAuth.currentUser || window._sfAuth.currentUser.uid !== ADMIN_UID){
+    if(!window._sfAuth || !window._sfAuth.currentUser || ADMIN_UIDS.indexOf(window._sfAuth.currentUser.uid) === -1){
       alert('관리자 로그인이 필요합니다.');
       return;
     }
