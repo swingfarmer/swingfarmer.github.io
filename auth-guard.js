@@ -1,6 +1,5 @@
 /**
- * auth-guard.js v7 — 전 페이지 로그인 필수 가드
- * 3중 차단 + 비관리자 UID 확실 표시 (레이스컨디션 수정)
+ * auth-guard.js v8 — display:none 차단 + UID 에러텍스트 직접 삽입
  */
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
@@ -23,7 +22,7 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: "select_account" });
 
-let _rejected = null;  // 비관리자 차단 정보 보존용
+let _rejected = null;
 
 /* ── DOM 커버 ── */
 function ensureCover() {
@@ -46,9 +45,15 @@ function createWall(rejectedEmail, rejectedUid) {
     document.body.prepend(wall);
   }
 
-  const uidBlock = rejectedUid
-    ? `<div class="sf-aw-uid">UID: ${rejectedUid}</div>`
-    : '';
+  /* UID를 에러 텍스트 안에 직접 넣음 — 별도 div 아님 */
+  let errMsg = '';
+  if (rejectedEmail) {
+    errMsg = `관리자 계정이 아닙니다. (${rejectedEmail})<br><br>`
+           + `<span style="background:#f1f5f9;padding:6px 10px;border-radius:6px;`
+           + `font-size:13px;color:#333;display:inline-block;user-select:all;`
+           + `word-break:break-all;font-family:monospace">`
+           + `UID: ${rejectedUid}</span>`;
+  }
 
   wall.innerHTML = `
     <div class="sf-aw-box">
@@ -59,19 +64,12 @@ function createWall(rejectedEmail, rejectedUid) {
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="">
         Google 로그인
       </button>
-      <div class="sf-aw-err" id="sfAwErr">${
-        rejectedEmail
-          ? `관리자 계정이 아닙니다. (${rejectedEmail})`
-          : ''
-      }</div>
-      ${uidBlock}
+      <div class="sf-aw-err" id="sfAwErr">${errMsg}</div>
     </div>`;
   if (rejectedEmail) document.getElementById("sfAwErr").style.display = "block";
   document.getElementById("sfAwBtn").addEventListener("click", async () => {
     const errEl = document.getElementById("sfAwErr");
-    const uidEl = wall.querySelector(".sf-aw-uid");
-    if (errEl) { errEl.style.display = "none"; errEl.textContent = ""; }
-    if (uidEl) uidEl.remove();
+    if (errEl) { errEl.style.display = "none"; errEl.innerHTML = ""; }
     _rejected = null;
     try {
       await signInWithPopup(auth, provider);
@@ -104,7 +102,6 @@ function removeLogoutBtn() {
 /* ── Auth 상태 감시 ── */
 onAuthStateChanged(auth, (user) => {
   if (user && ADMIN_UIDS.includes(user.uid)) {
-    /* ✅ 허용 */
     _rejected = null;
     const wall = document.getElementById("sf-auth-wall");
     if (wall) wall.remove();
@@ -112,20 +109,15 @@ onAuthStateChanged(auth, (user) => {
     document.body.classList.add("sf-authed");
     createLogoutBtn(user);
   } else {
-    /* ❌ 미인증 또는 비허용 */
     document.body.classList.remove("sf-authed");
     removeLogoutBtn();
     if (user && !ADMIN_UIDS.includes(user.uid)) {
-      /* 비관리자 → 정보 저장 후 signOut */
       _rejected = { email: user.email, uid: user.uid };
       signOut(auth);
       return;
     }
-    /* user===null: 초기 상태 or signOut 완료 */
     if (_rejected) {
-      const { email, uid } = _rejected;
-      createWall(email, uid);
-      /* _rejected 유지 — 재로그인 버튼 누를 때 초기화 */
+      createWall(_rejected.email, _rejected.uid);
     } else {
       createWall();
     }
