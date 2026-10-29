@@ -1,8 +1,8 @@
 /**
- * auth-guard.js v2 — 전 페이지 로그인 필수 가드
+ * auth-guard.js v3 — 전 페이지 로그인 필수 가드
  *
  * CSS가 body 자식 전부 display:none → 로그인 월만 보임
- * 인증 성공 시 body.sf-authed 클래스 추가 → 콘텐츠 복원
+ * 인증 성공 시 body.sf-authed 클래스 추가 → 콘텐츠 복원 + 로그아웃 버튼
  */
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
@@ -53,6 +53,22 @@ function createWall() {
   });
 }
 
+/* ── 로그아웃 버튼 ── */
+function createLogoutBtn(user) {
+  if (document.getElementById("sf-logout-btn")) return;
+  const btn = document.createElement("button");
+  btn.id = "sf-logout-btn";
+  btn.title = user.email || "로그아웃";
+  btn.textContent = "🔓";
+  btn.addEventListener("click", () => signOut(auth));
+  document.body.appendChild(btn);
+}
+
+function removeLogoutBtn() {
+  const btn = document.getElementById("sf-logout-btn");
+  if (btn) btn.remove();
+}
+
 /* ── Auth 상태 감시 ── */
 onAuthStateChanged(auth, (user) => {
   if (user && ADMIN_UIDS.includes(user.uid)) {
@@ -60,9 +76,11 @@ onAuthStateChanged(auth, (user) => {
     const wall = document.getElementById("sf-auth-wall");
     if (wall) wall.remove();
     document.body.classList.add("sf-authed");
+    createLogoutBtn(user);
   } else {
     /* ❌ 미인증 또는 비허용 계정 */
     document.body.classList.remove("sf-authed");
+    removeLogoutBtn();
     if (user && !ADMIN_UIDS.includes(user.uid)) {
       signOut(auth);
     }
