@@ -1,15 +1,16 @@
 /**
- * auth-guard.js — 전 페이지 로그인 필수 가드
- * <link rel="stylesheet" href="/auth-guard.css?v=1">  ← <head>에
- * <script type="module" src="/auth-guard.js?v=1"></script>
+ * auth-guard.js v2 — 전 페이지 로그인 필수 가드
  *
- * 동작: CSS가 body를 숨김 → 이 스크립트가 Firebase Auth 확인
- *       → ADMIN_UID 일치 시 body 표시 / 아니면 로그인 월 표시
+ * CSS가 body 자식 전부 display:none → 로그인 월만 보임
+ * 인증 성공 시 body.sf-authed 클래스 추가 → 콘텐츠 복원
  */
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 
-const ADMIN_UID = "1JrHgD2bpTRjrS2jw7MbpHciBph1";
+const ADMIN_UIDS = [
+  "1JrHgD2bpTRjrS2jw7MbpHciBph1"
+  // 추가 계정 UID를 여기에 추가
+];
 const firebaseConfig = {
   apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
   authDomain: "swingfarmer-board01.firebaseapp.com",
@@ -24,7 +25,7 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: "select_account" });
 
-/* ── 로그인 월 UI 생성 ── */
+/* ── 로그인 월 UI ── */
 function createWall() {
   if (document.getElementById("sf-auth-wall")) return;
   const wall = document.createElement("div");
@@ -54,18 +55,17 @@ function createWall() {
 
 /* ── Auth 상태 감시 ── */
 onAuthStateChanged(auth, (user) => {
-  if (user && user.uid === ADMIN_UID) {
-    /* ✅ 관리자 인증 완료 — 콘텐츠 표시 */
+  if (user && ADMIN_UIDS.includes(user.uid)) {
+    /* ✅ 허용된 계정 — 콘텐츠 표시 */
     const wall = document.getElementById("sf-auth-wall");
     if (wall) wall.remove();
-    /* CSS !important 를 이기려면 setProperty 필수 */
-    document.body.style.setProperty("visibility", "visible", "important");
+    document.body.classList.add("sf-authed");
   } else {
-    /* ❌ 미인증 또는 다른 계정 — 로그인 월 표시 */
-    if (user && user.uid !== ADMIN_UID) {
-      signOut(auth);  // 다른 계정이면 로그아웃
+    /* ❌ 미인증 또는 비허용 계정 */
+    document.body.classList.remove("sf-authed");
+    if (user && !ADMIN_UIDS.includes(user.uid)) {
+      signOut(auth);
     }
     createWall();
-    // wall 자체는 CSS에서 visibility:visible 처리
   }
 });
