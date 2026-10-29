@@ -70,12 +70,14 @@ function removeLogoutBtn() {
 /* ── Auth 상태 감시 ── */
 onAuthStateChanged(auth, (user) => {
   if (user && ADMIN_UIDS.includes(user.uid)) {
-    /* ✅ 허용된 계정 — 월 제거, 로그아웃 버튼 표시 */
+    /* ✅ 허용된 계정 — 월 제거, CSS 커버 해제, 로그아웃 버튼 */
     const wall = document.getElementById("sf-auth-wall");
     if (wall) wall.remove();
+    document.body.classList.add("sf-authed");
     createLogoutBtn(user);
   } else {
     /* ❌ 미인증 또는 비허용 계정 */
+    document.body.classList.remove("sf-authed");
     removeLogoutBtn();
     if (user && !ADMIN_UIDS.includes(user.uid)) {
       signOut(auth);
