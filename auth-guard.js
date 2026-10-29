@@ -1,15 +1,13 @@
 /**
- * auth-guard.js v3 — 전 페이지 로그인 필수 가드
- *
- * CSS가 body 자식 전부 display:none → 로그인 월만 보임
- * 인증 성공 시 body.sf-authed 클래스 추가 → 콘텐츠 복원 + 로그아웃 버튼
+ * auth-guard.js v4 — 전 페이지 로그인 필수 가드
+ * 오버레이 방식: 로그인 월이 전체 화면을 덮음 → 인증 시 제거
  */
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 
 const ADMIN_UIDS = [
-  "1JrHgD2bpTRjrS2jw7MbpHciBph1"
-  // 추가 계정 UID를 여기에 추가
+  "1JrHgD2bpTRjrS2jw7MbpHciBph1",
+  "Ydd8v6LCN2TPjkqKD4DejLSWwaL2"
 ];
 const firebaseConfig = {
   apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
@@ -72,14 +70,12 @@ function removeLogoutBtn() {
 /* ── Auth 상태 감시 ── */
 onAuthStateChanged(auth, (user) => {
   if (user && ADMIN_UIDS.includes(user.uid)) {
-    /* ✅ 허용된 계정 — 콘텐츠 표시 */
+    /* ✅ 허용된 계정 — 월 제거, 로그아웃 버튼 표시 */
     const wall = document.getElementById("sf-auth-wall");
     if (wall) wall.remove();
-    document.body.classList.add("sf-authed");
     createLogoutBtn(user);
   } else {
     /* ❌ 미인증 또는 비허용 계정 */
-    document.body.classList.remove("sf-authed");
     removeLogoutBtn();
     if (user && !ADMIN_UIDS.includes(user.uid)) {
       signOut(auth);
