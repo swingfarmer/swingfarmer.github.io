@@ -1,22 +1,30 @@
-/* auth-guard.css v6 — DOM 커버 방식 (::before 대체) */
+/* auth-guard.css v7 — 3중 차단: ::before + DOM커버 + visibility */
 
-/* 1) JS 로드 전 콘텐츠 깜빡임 방지 — CSS는 렌더 차단이라 즉시 적용 */
-body:not(.sf-authed) > *:not(#sf-auth-wall):not(#sf-auth-cover):not(script):not(link):not(style) {
-  visibility: hidden !important;
-}
-
-/* 2) DOM 커버 — 실제 엘리먼트로 완전 불투명 차단 */
-#sf-auth-cover {
+/* 1) CSS 즉시 커버 — body::before (렌더차단, JS 없이 즉시) */
+body::before {
+  content: '';
   position: fixed; inset: 0; z-index: 99998;
-  background: #f8fafc;
+  background: #fff;
+}
+body.sf-authed::before {
+  display: none;
 }
 
-/* 3) 인증 완료 시 커버 제거 (JS에서도 제거하지만 이중 안전) */
+/* 2) DOM 커버 (JS에서 생성) — 이중 안전 */
+#sf-auth-cover {
+  position: fixed; inset: 0; z-index: 99997;
+  background: #fff;
+}
 body.sf-authed #sf-auth-cover {
   display: none;
 }
 
-/* 로그인 월 — 전체 화면 불투명 덮개 */
+/* 3) 미인증 시 콘텐츠 숨김 */
+body:not(.sf-authed) {
+  overflow: hidden !important;
+}
+
+/* 로그인 월 — 최상위 */
 #sf-auth-wall {
   display: flex;
   position: fixed; inset: 0; z-index: 99999;
@@ -41,7 +49,8 @@ body.sf-authed #sf-auth-cover {
 }
 #sf-auth-wall .sf-aw-btn:hover { background: #f1f3f4; }
 #sf-auth-wall .sf-aw-btn img { width: 18px; height: 18px; }
-#sf-auth-wall .sf-aw-err { font-size: 12px; color: #dc2626; margin-top: 12px; display: none; }
+#sf-auth-wall .sf-aw-err { font-size: 12px; color: #dc2626; margin-top: 12px; display: none; line-height: 1.6; }
+#sf-auth-wall .sf-aw-uid { font-size: 12px; color: #666; margin-top: 6px; word-break: break-all; user-select: all; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; }
 
 /* 로그아웃 버튼 — 좌하단 고정 */
 #sf-logout-btn {
