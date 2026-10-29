@@ -1,7 +1,6 @@
 /**
- * auth-guard.js v6 — 전 페이지 로그인 필수 가드
- * 3중 차단: CSS ::before + DOM 커버 + visibility
- * 비관리자 차단 시 실제 UID 크게 표시
+ * auth-guard.js v7 — 전 페이지 로그인 필수 가드
+ * 3중 차단 + 비관리자 UID 확실 표시 (레이스컨디션 수정)
  */
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
@@ -23,6 +22,8 @@ const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: "select_account" });
+
+let _rejected = null;  // 비관리자 차단 정보 보존용
 
 /* ── DOM 커버 ── */
 function ensureCover() {
@@ -52,8 +53,8 @@ function createWall(rejectedEmail, rejectedUid) {
   wall.innerHTML = `
     <div class="sf-aw-box">
       <div class="sf-aw-icon">🔒</div>
-      <div class="sf-aw-title">비공개 페이지</div>
-      <div class="sf-aw-desc">이 사이트는 관리자 전용입니다.<br>Google 계정으로 인증해주세요.</div>
+      <div class="sf-aw-title">스윙파머 금융도구</div>
+      <div class="sf-aw-desc">개인 전용 공간입니다.<br>관리자 로그인이 필요합니다.</div>
       <button class="sf-aw-btn" id="sfAwBtn">
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="">
         Google 로그인
@@ -71,6 +72,7 @@ function createWall(rejectedEmail, rejectedUid) {
     const uidEl = wall.querySelector(".sf-aw-uid");
     if (errEl) { errEl.style.display = "none"; errEl.textContent = ""; }
     if (uidEl) uidEl.remove();
+    _rejected = null;
     try {
       await signInWithPopup(auth, provider);
     } catch (e) {
@@ -90,7 +92,7 @@ function createLogoutBtn(user) {
   btn.id = "sf-logout-btn";
   btn.title = user.email || "로그아웃";
   btn.textContent = "🔓";
-  btn.addEventListener("click", () => signOut(auth));
+  btn.addEventListener("click", () => { _rejected = null; signOut(auth); });
   document.body.appendChild(btn);
 }
 
@@ -103,6 +105,7 @@ function removeLogoutBtn() {
 onAuthStateChanged(auth, (user) => {
   if (user && ADMIN_UIDS.includes(user.uid)) {
     /* ✅ 허용 */
+    _rejected = null;
     const wall = document.getElementById("sf-auth-wall");
     if (wall) wall.remove();
     removeCover();
@@ -113,11 +116,18 @@ onAuthStateChanged(auth, (user) => {
     document.body.classList.remove("sf-authed");
     removeLogoutBtn();
     if (user && !ADMIN_UIDS.includes(user.uid)) {
-      const email = user.email;
-      const uid = user.uid;
-      signOut(auth).then(() => createWall(email, uid));
+      /* 비관리자 → 정보 저장 후 signOut */
+      _rejected = { email: user.email, uid: user.uid };
+      signOut(auth);
       return;
     }
-    createWall();
+    /* user===null: 초기 상태 or signOut 완료 */
+    if (_rejected) {
+      const { email, uid } = _rejected;
+      createWall(email, uid);
+      /* _rejected 유지 — 재로그인 버튼 누를 때 초기화 */
+    } else {
+      createWall();
+    }
   }
 });
