@@ -1,12 +1,18 @@
-/* auth-guard.css v5 — 오버레이 방식 + CSS 즉시 커버 */
+/* auth-guard.css v6 — DOM 커버 방식 (::before 대체) */
 
-/* 0) JS 로드 전 콘텐츠 깜빡임 방지 — CSS는 렌더 차단이라 즉시 적용 */
-body::before {
-  content: '';
+/* 1) JS 로드 전 콘텐츠 깜빡임 방지 — CSS는 렌더 차단이라 즉시 적용 */
+body:not(.sf-authed) > *:not(#sf-auth-wall):not(#sf-auth-cover):not(script):not(link):not(style) {
+  visibility: hidden !important;
+}
+
+/* 2) DOM 커버 — 실제 엘리먼트로 완전 불투명 차단 */
+#sf-auth-cover {
   position: fixed; inset: 0; z-index: 99998;
   background: #f8fafc;
 }
-body.sf-authed::before {
+
+/* 3) 인증 완료 시 커버 제거 (JS에서도 제거하지만 이중 안전) */
+body.sf-authed #sf-auth-cover {
   display: none;
 }
 

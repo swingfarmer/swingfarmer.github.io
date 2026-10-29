@@ -1,6 +1,6 @@
 /**
- * auth-guard.js v4 — 전 페이지 로그인 필수 가드
- * 오버레이 방식: 로그인 월이 전체 화면을 덮음 → 인증 시 제거
+ * auth-guard.js v5 — 전 페이지 로그인 필수 가드
+ * DOM 커버 방식: ::before 대신 실제 div로 콘텐츠 완전 차단
  */
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
@@ -23,11 +23,26 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: "select_account" });
 
+/* ── DOM 커버 (CSS ::before 대체) ── */
+function ensureCover() {
+  if (document.getElementById("sf-auth-cover")) return;
+  const cover = document.createElement("div");
+  cover.id = "sf-auth-cover";
+  document.body.prepend(cover);
+}
+function removeCover() {
+  const c = document.getElementById("sf-auth-cover");
+  if (c) c.remove();
+}
+
 /* ── 로그인 월 UI ── */
-function createWall() {
-  if (document.getElementById("sf-auth-wall")) return;
-  const wall = document.createElement("div");
-  wall.id = "sf-auth-wall";
+function createWall(rejectedEmail, rejectedUid) {
+  let wall = document.getElementById("sf-auth-wall");
+  if (!wall) {
+    wall = document.createElement("div");
+    wall.id = "sf-auth-wall";
+    document.body.prepend(wall);
+  }
   wall.innerHTML = `
     <div class="sf-aw-box">
       <div class="sf-aw-icon">🔒</div>
@@ -37,9 +52,13 @@ function createWall() {
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="">
         Google 로그인
       </button>
-      <div class="sf-aw-err" id="sfAwErr"></div>
+      <div class="sf-aw-err" id="sfAwErr">${
+        rejectedEmail
+          ? `관리자 계정이 아닙니다. (${rejectedEmail})<br><span style="font-size:10px;color:#999;user-select:all">UID: ${rejectedUid}</span>`
+          : ''
+      }</div>
     </div>`;
-  document.body.prepend(wall);
+  if (rejectedEmail) document.getElementById("sfAwErr").style.display = "block";
   document.getElementById("sfAwBtn").addEventListener("click", async () => {
     try {
       await signInWithPopup(auth, provider);
@@ -49,6 +68,7 @@ function createWall() {
       errEl.style.display = "block";
     }
   });
+  ensureCover();
 }
 
 /* ── 로그아웃 버튼 ── */
@@ -70,9 +90,10 @@ function removeLogoutBtn() {
 /* ── Auth 상태 감시 ── */
 onAuthStateChanged(auth, (user) => {
   if (user && ADMIN_UIDS.includes(user.uid)) {
-    /* ✅ 허용된 계정 — 월 제거, CSS 커버 해제, 로그아웃 버튼 */
+    /* ✅ 허용된 계정 — 월 제거, 커버 제거, 로그아웃 버튼 */
     const wall = document.getElementById("sf-auth-wall");
     if (wall) wall.remove();
+    removeCover();
     document.body.classList.add("sf-authed");
     createLogoutBtn(user);
   } else {
@@ -80,7 +101,10 @@ onAuthStateChanged(auth, (user) => {
     document.body.classList.remove("sf-authed");
     removeLogoutBtn();
     if (user && !ADMIN_UIDS.includes(user.uid)) {
-      signOut(auth);
+      const email = user.email;
+      const uid = user.uid;
+      signOut(auth).then(() => createWall(email, uid));
+      return;
     }
     createWall();
   }
