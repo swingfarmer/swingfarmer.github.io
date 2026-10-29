@@ -58,7 +58,8 @@ onAuthStateChanged(auth, (user) => {
     /* ✅ 관리자 인증 완료 — 콘텐츠 표시 */
     const wall = document.getElementById("sf-auth-wall");
     if (wall) wall.remove();
-    document.body.style.visibility = "visible";
+    /* CSS !important 를 이기려면 setProperty 필수 */
+    document.body.style.setProperty("visibility", "visible", "important");
   } else {
     /* ❌ 미인증 또는 다른 계정 — 로그인 월 표시 */
     if (user && user.uid !== ADMIN_UID) {
