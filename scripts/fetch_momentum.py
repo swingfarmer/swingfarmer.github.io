@@ -403,6 +403,8 @@ def main():
             with open(fpath, 'w', encoding='utf-8') as f:
                 json.dump(output, f, ensure_ascii=False, indent=2)
             _print_summary(output)
+            _save_archive(output, 'weekly')
+            _update_history(output, 'weekly')
 
         # 월간 모멘텀 (22거래일)
         if do_monthly:
@@ -413,9 +415,74 @@ def main():
             with open(fpath, 'w', encoding='utf-8') as f:
                 json.dump(output, f, ensure_ascii=False, indent=2)
             _print_summary(output)
+            _save_archive(output, 'monthly')
+            _update_history(output, 'monthly')
 
     print(f'\n{"="*50}')
     print(f'✅ 모멘텀 분석 완료 → {OUT_DIR}/')
+
+
+def _save_archive(output, period):
+    """A) 일자별 아카이브 — hist/weekly/2026-10-31.json"""
+    hist_dir = os.path.join(OUT_DIR, 'hist', period)
+    os.makedirs(hist_dir, exist_ok=True)
+    today = output['updated']
+    fpath = os.path.join(hist_dir, f'{today}.json')
+    with open(fpath, 'w', encoding='utf-8') as f:
+        json.dump(output, f, ensure_ascii=False, indent=2)
+
+    # 90일 롤링
+    files = sorted(f for f in os.listdir(hist_dir) if f.endswith('.json'))
+    if len(files) > 90:
+        for old in files[:-90]:
+            os.remove(os.path.join(hist_dir, old))
+            print(f'   🗑 아카이브 삭제: {old}')
+
+    print(f'   📁 아카이브: hist/{period}/{today}.json ({os.path.getsize(fpath)//1024}KB)')
+
+
+def _update_history(output, period):
+    """B) 요약 히스토리 누적 — momentum_history.json"""
+    hist_path = os.path.join(OUT_DIR, 'momentum_history.json')
+    try:
+        with open(hist_path) as f:
+            hist = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        hist = {}
+
+    if period not in hist:
+        hist[period] = []
+
+    today = output['updated']
+    stats = output.get('stats', {})
+    sectors = output.get('sectors', [])
+    top5_sectors = [{'name': s['sector'], 'pct': s['return_pct']} for s in sectors[:5]]
+    top3_gainers = [{'name': s['name'], 'pct': s['return_pct']} for s in output.get('top_gainers', [])[:3]]
+    top3_losers = [{'name': s['name'], 'pct': s['return_pct']} for s in output.get('top_losers', [])[:3]]
+
+    entry = {
+        'date': today,
+        'avg_return': stats.get('avg_return', 0),
+        'positive': stats.get('positive', 0),
+        'negative': stats.get('negative', 0),
+        'total': output.get('total_stocks', 0),
+        'top_sectors': top5_sectors,
+        'top_gainers': top3_gainers,
+        'top_losers': top3_losers,
+    }
+
+    # 같은 날짜 덮어쓰기
+    hist[period] = [h for h in hist[period] if h['date'] != today]
+    hist[period].append(entry)
+    hist[period].sort(key=lambda x: x['date'])
+
+    # 90일 롤링
+    if len(hist[period]) > 90:
+        hist[period] = hist[period][-90:]
+
+    with open(hist_path, 'w', encoding='utf-8') as f:
+        json.dump(hist, f, ensure_ascii=False, indent=2)
+    print(f'   📅 히스토리: {period} {len(hist[period])}건')
 
 
 def _print_summary(out):
