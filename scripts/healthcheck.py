@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+"""
+헬스체크 — 데이터 파일 freshness 감시 + 텔레그램 DM 알림 + status.json 생성
+==========================================================================
+매일 21:30 크론 (모든 수집 크론 이후).
+- 각 데이터 파일의 최종 수정 시각을 확인
+- 영업일 기준 허용 범위 초과 시 ⚠ 경고
+- data/status.json 생성 → /status/ 페이지에서 표시
+- 문제 있으면 텔레그램 DM(봇 주인만)으로 알림
+"""
+import os, json, time, sys
+from datetime import datetime, timedelta
+
+# ── 경로 설정 ──
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(SCRIPT_DIR)
+DATA_DIR = os.path.join(ROOT_DIR, "data")
+sys.path.insert(0, SCRIPT_DIR)
+
+from telegram_helper import send_dm
+
+# ── 모니터링 대상 정의 ──
+# (파일 경로, 설명, 주기, 허용 stale 일수)
+# 주기: "weekday"=평일만, "daily"=매일, "weekly"=주1회, "monthly"=월1회
+TARGETS = [
+    # 환율/금리
+    ("data/rates.json",                    "환율/금리",         "daily",   2),
+    ("data/rates_history.json",            "환율/금리 히스토리", "daily",   2),
+    # 미국 ETF
+    ("data/us_etf.json",                   "미국 ETF",          "weekday", 3),
+    # 종가
+    ("data/kr/prices.json",                "종가 수집",         "weekday", 3),
+    # 스크리너
+    ("data/kr/screener/index.json",        "스크리너",          "weekday", 3),
+    # 모멘텀
+    ("data/kr/momentum/intraday.json",     "모멘텀(인트라)",    "weekday", 3),
+    # 버핏지수
+    ("data/buffett.json",                  "버핏지수",          "weekday", 3),
+    # 풋콜레이쇼
+    ("data/dashboard/putcall.json",        "풋콜레이쇼",        "weekday", 3),
+    # 외국인수급
+    ("data/dashboard/foreign_flow.json",   "외국인수급 합산",   "weekday", 3),
+    # KRX 대시보드
+    ("data/krx/investor_top.json",         "KRX 외국인/기관",   "weekday", 3),
+    ("data/krx/volume_top.json",           "KRX 거래대금",      "weekday", 3),
+    ("data/krx/sector_change.json",        "KRX 업종등락",      "weekday", 3),
+    ("data/krx/marketcap_top.json",        "KRX 시총순위",      "weekday", 3),
+    ("data/krx/new_high_low.json",         "52주 신고가/신저가", "weekday", 3),
+    # 선물
+    ("data/futures_investor.json",         "선물 투자자별",     "weekday", 3),
+    # 일별종가+지수
+    ("data/kr/prices.json",                "일별종가",          "weekday", 3),
+    # 시장지표
+    ("data/realestate_index.json",         "부동산지표",        "daily",   3),
+    # 주간
+    ("data/kr/weekly_ma/latest.json",      "5주선 스크리너",    "weekly",  9),
+    ("data/kr/ma_signal/latest.json",      "이평선 시그널",     "weekly",  9),
+    ("data/kr/momentum/weekly.json",       "모멘텀(주간)",      "weekly",  9),
+    # 뉴스
+    ("data/news/index.json",               "뉴스",             "daily",   2),
+    # 매크로
+    ("data/macro/sector_etf.json",         "매크로 비교",       "weekday", 3),
+]
+
+# 중복 제거
+seen = set()
+unique_targets = []
+for t in TARGETS:
+    if t[0] not in seen:
+        seen.add(t[0])
+        unique_targets.append(t)
+TARGETS = unique_targets
+
+
+def check_freshness():
+    """각 파일의 freshness 체크. status 리스트 반환."""
+    now = datetime.now()
+    results = []
+
+    for rel_path, desc, cycle, max_stale_days in TARGETS:
+        abs_path = os.path.join(ROOT_DIR, rel_path)
+        entry = {
+            "file": rel_path,
+            "desc": desc,
+            "cycle": cycle,
+            "max_stale_days": max_stale_days,
+        }
+
+        if not os.path.exists(abs_path):
+            entry["status"] = "missing"
+            entry["message"] = "파일 없음"
+            entry["last_modified"] = None
+            entry["stale_days"] = None
+        else:
+            mtime = os.path.getmtime(abs_path)
+            last_mod = datetime.fromtimestamp(mtime)
+            delta = now - last_mod
+            stale_days = delta.days
+
+            entry["last_modified"] = last_mod.strftime("%Y-%m-%d %H:%M")
+            entry["stale_days"] = stale_days
+            entry["size_kb"] = round(os.path.getsize(abs_path) / 1024, 1)
+
+            # date 필드 읽기 시도
+            try:
+                with open(abs_path) as f:
+                    d = json.load(f)
+                if isinstance(d, dict) and "date" in d:
+                    entry["data_date"] = d["date"]
+            except Exception:
+                pass
+
+            if stale_days >= max_stale_days:
+                entry["status"] = "stale"
+                entry["message"] = f"{stale_days}일 경과 (허용 {max_stale_days}일)"
+            else:
+                entry["status"] = "ok"
+                entry["message"] = "정상"
+
+        results.append(entry)
+
+    return results
+
+
+def build_status_json(results):
+    """status.json 생성."""
+    now = datetime.now()
+    status = {
+        "checked_at": now.strftime("%Y-%m-%d %H:%M:%S"),
+        "total": len(results),
+        "ok": sum(1 for r in results if r["status"] == "ok"),
+        "stale": sum(1 for r in results if r["status"] == "stale"),
+        "missing": sum(1 for r in results if r["status"] == "missing"),
+        "items": results,
+    }
+
+    out_path = os.path.join(DATA_DIR, "status.json")
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(status, f, ensure_ascii=False, indent=2)
+    print(f"💾 status.json 저장 ({len(results)}건)")
+    return status
+
+
+def send_alert(status):
+    """문제 있으면 텔레그램 DM 알림."""
+    problems = [r for r in status["items"] if r["status"] != "ok"]
+    if not problems:
+        print("✅ 전체 정상 — 알림 없음")
+        return
+
+    lines = [f"⚠️ <b>데이터 헬스체크 경고</b> ({status['checked_at'][:10]})"]
+    lines.append(f"문제: {len(problems)}건 / 전체 {status['total']}건\n")
+
+    for p in problems:
+        icon = "❌" if p["status"] == "missing" else "⏰"
+        lines.append(f"{icon} <b>{p['desc']}</b>")
+        lines.append(f"   {p['file']}")
+        lines.append(f"   {p['message']}")
+        if p.get("last_modified"):
+            lines.append(f"   최종: {p['last_modified']}")
+        lines.append("")
+
+    msg = "\n".join(lines)
+    if send_dm(msg):
+        print(f"📱 텔레그램 DM 발송 (문제 {len(problems)}건)")
+    else:
+        print("⚠ 텔레그램 발송 실패")
+
+
+def main():
+    print(f"\n{'='*50}")
+    print(f"헬스체크 ({datetime.now().strftime('%Y-%m-%d %H:%M')})")
+    print(f"{'='*50}\n")
+
+    results = check_freshness()
+    status = build_status_json(results)
+
+    ok = status["ok"]
+    stale = status["stale"]
+    missing = status["missing"]
+    total = status["total"]
+
+    print(f"\n✅ 정상: {ok}  ⏰ 지연: {stale}  ❌ 없음: {missing}  (총 {total})\n")
+
+    for r in results:
+        icon = {"ok": "✅", "stale": "⏰", "missing": "❌"}[r["status"]]
+        mod = r.get("last_modified", "-")
+        print(f"  {icon} {r['desc']:20s} {mod:>16s}  {r['message']}")
+
+    send_alert(status)
+    print(f"\n{'='*50}")
+    print("완료!")
+
+
+if __name__ == "__main__":
+    main()

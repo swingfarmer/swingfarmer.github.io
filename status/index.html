@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="robots" content="noindex, nofollow">
+<title>시스템 상태 — 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=4">
+<style>
+:root { --sf-max-w: 800px; }
+
+.summary-bar {
+  display:flex; gap:16px; flex-wrap:wrap; margin-bottom:24px;
+  padding:16px 20px; border-radius:12px;
+  background:var(--sf-surface); box-shadow:var(--sf-shadow);
+}
+.summary-item { text-align:center; min-width:80px; }
+.summary-item .num { font-size:28px; font-weight:700; font-variant-numeric:tabular-nums; }
+.summary-item .label { font-size:11px; color:var(--sf-text-dim); margin-top:2px; }
+.summary-item.ok .num { color:#16a34a; }
+.summary-item.stale .num { color:#f59e0b; }
+.summary-item.missing .num { color:#ef4444; }
+.summary-item.total .num { color:var(--sf-text); }
+
+.checked-at { font-size:12px; color:var(--sf-text-dim); margin-bottom:16px; }
+
+.status-table { width:100%; border-collapse:collapse; font-size:13px; }
+.status-table th {
+  text-align:left; padding:8px 10px; font-weight:600; font-size:11px;
+  color:var(--sf-text-dim); border-bottom:2px solid var(--sf-border);
+  position:sticky; top:0; background:var(--sf-bg);
+}
+.status-table td { padding:8px 10px; border-bottom:1px solid var(--sf-border); }
+.status-table tr:hover { background:color-mix(in srgb, var(--sf-brand) 4%, var(--sf-surface)); }
+.status-table .file { font-family:monospace; font-size:11px; color:var(--sf-text-dim); }
+.status-table .num { text-align:right; font-variant-numeric:tabular-nums; }
+
+.badge {
+  display:inline-block; padding:2px 8px; border-radius:4px;
+  font-size:11px; font-weight:600;
+}
+.badge.ok { background:#dcfce7; color:#166534; }
+.badge.stale { background:#fef3c7; color:#92400e; }
+.badge.missing { background:#fee2e2; color:#991b1b; }
+body.sf-dark .badge.ok { background:#14532d; color:#86efac; }
+body.sf-dark .badge.stale { background:#78350f; color:#fde68a; }
+body.sf-dark .badge.missing { background:#7f1d1d; color:#fca5a5; }
+
+.cycle-tag {
+  font-size:10px; padding:1px 6px; border-radius:3px;
+  background:color-mix(in srgb, var(--sf-border) 50%, var(--sf-surface));
+  color:var(--sf-text-dim);
+}
+
+.loading { text-align:center; padding:60px 20px; color:var(--sf-text-dim); font-size:14px; }
+.loading::before { content:'⏳ '; }
+.error-msg { text-align:center; padding:40px; color:#ef4444; }
+
+body.sf-dark .summary-bar { background:#1e242e; }
+
+@media(max-width:600px) {
+  .status-table { font-size:12px; }
+  .status-table th, .status-table td { padding:6px 6px; }
+  .hide-mobile { display:none; }
+}
+</style>
+
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=5"></script>
+</head>
+<body>
+
+<a href="/" class="back-link">← 홈</a>
+<h1>🔧 시스템 상태</h1>
+<p class="desc">데이터 수집 파이프라인 상태 모니터링 — 매일 21:30 자동 체크</p>
+
+<div id="loadStatus" class="loading">상태 로딩 중…</div>
+<div id="statusContent" style="display:none">
+  <div id="checkedAt" class="checked-at"></div>
+  <div id="summaryBar" class="summary-bar"></div>
+  <table class="status-table">
+    <thead>
+      <tr>
+        <th>상태</th>
+        <th>항목</th>
+        <th class="hide-mobile">파일</th>
+        <th>주기</th>
+        <th class="num">최종 수정</th>
+        <th class="num hide-mobile">경과</th>
+      </tr>
+    </thead>
+    <tbody id="statusBody"></tbody>
+  </table>
+</div>
+
+<script src="/common.js?v=5"></script>
+<script>
+(function(){
+'use strict';
+
+var CYCLE_LABELS = {
+  weekday: '평일',
+  daily: '매일',
+  weekly: '주간',
+  monthly: '월간'
+};
+
+fetch('/data/status.json?t=' + Date.now())
+  .then(function(r){ if(!r.ok) throw new Error('status.json 없음 — 헬스체크가 아직 안 돌았을 수 있음'); return r.json(); })
+  .then(function(d){
+    document.getElementById('loadStatus').style.display = 'none';
+    document.getElementById('statusContent').style.display = '';
+    render(d);
+  })
+  .catch(function(e){
+    var el = document.getElementById('loadStatus');
+    el.className = 'error-msg';
+    el.textContent = '❌ ' + e.message;
+  });
+
+function render(d) {
+  // 체크 시각
+  document.getElementById('checkedAt').textContent = '마지막 체크: ' + d.checked_at;
+
+  // 요약 바
+  var bar = document.getElementById('summaryBar');
+  bar.innerHTML =
+    '<div class="summary-item total"><div class="num">' + d.total + '</div><div class="label">전체</div></div>' +
+    '<div class="summary-item ok"><div class="num">' + d.ok + '</div><div class="label">정상</div></div>' +
+    '<div class="summary-item stale"><div class="num">' + d.stale + '</div><div class="label">지연</div></div>' +
+    '<div class="summary-item missing"><div class="num">' + d.missing + '</div><div class="label">없음</div></div>';
+
+  // 테이블 — 문제 있는 것 먼저
+  var items = d.items.slice().sort(function(a,b){
+    var order = {missing:0, stale:1, ok:2};
+    return (order[a.status]||9) - (order[b.status]||9);
+  });
+
+  var body = document.getElementById('statusBody');
+  var html = '';
+  items.forEach(function(it){
+    var badgeCls = it.status;
+    var badgeText = it.status === 'ok' ? '정상' : it.status === 'stale' ? '지연' : '없음';
+    var mod = it.last_modified || '-';
+    var stale = it.stale_days !== null && it.stale_days !== undefined ? it.stale_days + '일' : '-';
+    var cycle = CYCLE_LABELS[it.cycle] || it.cycle;
+
+    html += '<tr>';
+    html += '<td><span class="badge ' + badgeCls + '">' + badgeText + '</span></td>';
+    html += '<td><strong>' + it.desc + '</strong></td>';
+    html += '<td class="file hide-mobile">' + it.file + '</td>';
+    html += '<td><span class="cycle-tag">' + cycle + '</span></td>';
+    html += '<td class="num">' + mod + '</td>';
+    html += '<td class="num hide-mobile">' + stale + '</td>';
+    html += '</tr>';
+  });
+  body.innerHTML = html;
+}
+
+})();
+</script>
+</body>
+</html>
