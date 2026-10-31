@@ -75,27 +75,92 @@ body.sf-dark .summary-bar { background:#1e242e; }
 <h1>🔧 시스템 상태</h1>
 <p class="desc">데이터 수집 파이프라인 상태 모니터링 — 매일 21:30 자동 체크</p>
 
-<div id="loadStatus" class="loading">상태 로딩 중…</div>
-<div id="statusContent" style="display:none">
-  <div id="checkedAt" class="checked-at"></div>
-  <div id="summaryBar" class="summary-bar"></div>
-  <table class="status-table">
-    <thead>
-      <tr>
-        <th>상태</th>
-        <th>항목</th>
-        <th class="hide-mobile">파일</th>
-        <th>주기</th>
-        <th class="num">최종 수정</th>
-        <th class="num hide-mobile">경과</th>
-      </tr>
-    </thead>
-    <tbody id="statusBody"></tbody>
-  </table>
+<div style="display:flex;gap:8px;margin-bottom:20px;">
+  <button id="btnCurrent" onclick="showTab('current')" style="padding:8px 16px;border:1px solid var(--sf-border);border-radius:6px;background:var(--sf-brand);color:#fff;font-weight:600;font-size:13px;cursor:pointer;font-family:var(--sf-font);">현재 상태</button>
+  <button id="btnHistory" onclick="showTab('history')" style="padding:8px 16px;border:1px solid var(--sf-border);border-radius:6px;background:var(--sf-surface);color:var(--sf-text-dim);font-weight:600;font-size:13px;cursor:pointer;font-family:var(--sf-font);">일자별 히스토리</button>
+</div>
+
+<div id="tabCurrent">
+  <div id="loadStatus" class="loading">상태 로딩 중…</div>
+  <div id="statusContent" style="display:none">
+    <div id="checkedAt" class="checked-at"></div>
+    <div id="summaryBar" class="summary-bar"></div>
+    <table class="status-table">
+      <thead>
+        <tr>
+          <th>상태</th>
+          <th>항목</th>
+          <th class="hide-mobile">파일</th>
+          <th>주기</th>
+          <th class="num">최종 수정</th>
+          <th class="num hide-mobile">경과</th>
+        </tr>
+      </thead>
+      <tbody id="statusBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="tabHistory" style="display:none">
+  <div id="loadHistory" class="loading">히스토리 로딩 중…</div>
+  <div id="historyContent" style="display:none">
+    <table class="status-table">
+      <thead>
+        <tr>
+          <th>날짜</th>
+          <th class="num">정상</th>
+          <th class="num">지연</th>
+          <th class="num">없음</th>
+          <th>문제 항목</th>
+        </tr>
+      </thead>
+      <tbody id="historyBody"></tbody>
+    </table>
+  </div>
 </div>
 
 <script src="/common.js?v=5"></script>
 <script>
+function showTab(name) {
+  document.getElementById('tabCurrent').style.display = name === 'current' ? '' : 'none';
+  document.getElementById('tabHistory').style.display = name === 'history' ? '' : 'none';
+  document.getElementById('btnCurrent').style.background = name === 'current' ? 'var(--sf-brand)' : 'var(--sf-surface)';
+  document.getElementById('btnCurrent').style.color = name === 'current' ? '#fff' : 'var(--sf-text-dim)';
+  document.getElementById('btnHistory').style.background = name === 'history' ? 'var(--sf-brand)' : 'var(--sf-surface)';
+  document.getElementById('btnHistory').style.color = name === 'history' ? '#fff' : 'var(--sf-text-dim)';
+  if (name === 'history' && !window._histLoaded) loadHistory();
+}
+
+function loadHistory() {
+  fetch('/data/status_history.json?t=' + Date.now())
+    .then(function(r){ if(!r.ok) throw new Error('히스토리 없음'); return r.json(); })
+    .then(function(d){
+      document.getElementById('loadHistory').style.display = 'none';
+      document.getElementById('historyContent').style.display = '';
+      window._histLoaded = true;
+      var dates = (d.dates || []).slice().reverse();
+      var html = '';
+      dates.forEach(function(dt){
+        var day = d.daily[dt] || {};
+        var ok = day.ok || 0, stale = day.stale || 0, missing = day.missing || 0;
+        var probs = (day.problems || []).map(function(p){ return p.desc; }).join(', ');
+        var rowCls = (stale + missing) > 0 ? ' style="background:color-mix(in srgb, #f59e0b 6%, var(--sf-surface))"' : '';
+        html += '<tr' + rowCls + '>';
+        html += '<td><strong>' + dt + '</strong></td>';
+        html += '<td class="num" style="color:#16a34a">' + ok + '</td>';
+        html += '<td class="num" style="color:#f59e0b">' + stale + '</td>';
+        html += '<td class="num" style="color:#ef4444">' + missing + '</td>';
+        html += '<td style="font-size:12px;color:var(--sf-text-dim)">' + (probs || '—') + '</td>';
+        html += '</tr>';
+      });
+      document.getElementById('historyBody').innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:20px">아직 히스토리 없음</td></tr>';
+    })
+    .catch(function(e){
+      document.getElementById('loadHistory').className = 'error-msg';
+      document.getElementById('loadHistory').textContent = '❌ ' + e.message;
+    });
+}
+
 (function(){
 'use strict';
 

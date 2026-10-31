@@ -48,10 +48,8 @@ TARGETS = [
     ("data/krx/new_high_low.json",         "52주 신고가/신저가", "weekday", 3),
     # 선물
     ("data/futures_investor.json",         "선물 투자자별",     "weekday", 3),
-    # 일별종가+지수
-    ("data/kr/prices.json",                "일별종가",          "weekday", 3),
     # 시장지표
-    ("data/realestate_index.json",         "부동산지표",        "daily",   3),
+    ("data/realestate_index.json",         "부동산지표",        "monthly", 35),
     # 주간
     ("data/kr/weekly_ma/latest.json",      "5주선 스크리너",    "weekly",  9),
     ("data/kr/ma_signal/latest.json",      "이평선 시그널",     "weekly",  9),
@@ -123,8 +121,10 @@ def check_freshness():
 
 
 def build_status_json(results):
-    """status.json 생성."""
+    """status.json 생성 + 일자별 히스토리 저장."""
     now = datetime.now()
+    today = now.strftime("%Y-%m-%d")
+
     status = {
         "checked_at": now.strftime("%Y-%m-%d %H:%M:%S"),
         "total": len(results),
@@ -134,10 +134,45 @@ def build_status_json(results):
         "items": results,
     }
 
+    # status.json (최신)
     out_path = os.path.join(DATA_DIR, "status.json")
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(status, f, ensure_ascii=False, indent=2)
     print(f"💾 status.json 저장 ({len(results)}건)")
+
+    # 일자별 히스토리 — data/status_history.json
+    # 구조: { "dates": ["2026-10-31", ...], "daily": { "2026-10-31": { ok, stale, missing, problems: [...] }, ... } }
+    hist_path = os.path.join(DATA_DIR, "status_history.json")
+    try:
+        with open(hist_path) as f:
+            hist = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        hist = {"dates": [], "daily": {}}
+
+    # 오늘자 기록
+    problems = [{"desc": r["desc"], "file": r["file"], "message": r["message"]}
+                for r in results if r["status"] != "ok"]
+    hist["daily"][today] = {
+        "ok": status["ok"],
+        "stale": status["stale"],
+        "missing": status["missing"],
+        "problems": problems,
+    }
+    if today not in hist["dates"]:
+        hist["dates"].append(today)
+    hist["dates"].sort()
+
+    # 90일 롤링
+    if len(hist["dates"]) > 90:
+        old = hist["dates"][:-90]
+        for d in old:
+            hist["daily"].pop(d, None)
+        hist["dates"] = hist["dates"][-90:]
+
+    with open(hist_path, "w", encoding="utf-8") as f:
+        json.dump(hist, f, ensure_ascii=False, indent=2)
+    print(f"📅 status_history.json 저장 ({len(hist['dates'])}일)")
+
     return status
 
 
