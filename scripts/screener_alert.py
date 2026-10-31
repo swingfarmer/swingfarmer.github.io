@@ -10,7 +10,7 @@ import os, sys, json, glob
 import urllib.request
 from datetime import date
 
-from telegram_helper import send_all as _send_all
+from telegram_helper import send_dm as _send_dm
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR   = os.path.dirname(SCRIPT_DIR)
@@ -18,7 +18,7 @@ SCR_DIR    = os.path.join(ROOT_DIR, 'data', 'kr', 'screener')
 
 
 def send_telegram(text):
-    return _send_all(text)
+    return _send_dm(text)
 
 
 def main():

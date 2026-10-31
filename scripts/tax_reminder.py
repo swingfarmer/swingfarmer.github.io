@@ -8,7 +8,7 @@ import json
 import urllib.request
 from datetime import date, timedelta
 
-from telegram_helper import send_all as _send_all
+from telegram_helper import send_dm as _send_dm
 
 # ── 세금 일정 (tax-calendar와 동일) ──
 EVENTS = {
@@ -81,7 +81,7 @@ EVENTS = {
 
 
 def send_telegram(text):
-    return _send_all(text)
+    return _send_dm(text)
 
 
 def main():

@@ -31,7 +31,7 @@ KIS_APP_KEY    = os.environ.get('KIS_APP_KEY', '')
 KIS_APP_SECRET = os.environ.get('KIS_APP_SECRET', '')
 KIS_BASE       = os.environ.get('KIS_BASE_URL',
                                 'https://openapi.koreainvestment.com:9443')
-from telegram_helper import send_all as _send_all
+from telegram_helper import send_dm as _send_dm
 
 SCRIPT_DIR  = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR    = os.path.dirname(SCRIPT_DIR)
@@ -188,7 +188,7 @@ def calc_5wma(weekly_bars):
 
 # ── 텔레그램 ──
 def send_telegram(text):
-    return _send_all(text)
+    return _send_dm(text)
 
 
 # ── 메인 ──
