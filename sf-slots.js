@@ -1,5 +1,5 @@
 /* =============================================
-   스윙파머 슬롯 매니저 (sf-slots.js) v1
+   스윙파머 슬롯 매니저 (sf-slots.js) v2
    
    사용법:
    1. 페이지에서 CALC_KEY 정의
@@ -121,6 +121,16 @@ function injectModal(){
     <input type="file" id="sfsImportInput" accept=".json" style="display:none">
   </div>
 
+  <div class="sfs-sort-bar" id="sfsSortBar">
+    <span class="sfs-sort-label">정렬</span>
+    <div class="sfs-sort-seg">
+      <button class="sfs-sort-btn active" data-sort="recent" onclick="window._sfSlots.sortBy('recent')">최근저장</button>
+      <button class="sfs-sort-btn" data-sort="oldest" onclick="window._sfSlots.sortBy('oldest')">오래된순</button>
+      <button class="sfs-sort-btn" data-sort="name" onclick="window._sfSlots.sortBy('name')">ㄱㄴㄷ순</button>
+      <button class="sfs-sort-btn" data-sort="manual" onclick="window._sfSlots.sortBy('manual')">수동</button>
+    </div>
+  </div>
+
   <div id="sfsSlotList" class="sfs-slot-list"></div>
 
   <div class="sfs-footer">
@@ -166,6 +176,13 @@ function injectStyles(){
 .sfs-tool-btn{display:flex;align-items:center;gap:4px;background:none;border:1px solid #e0e0e0;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:#666;cursor:pointer;font-family:inherit;transition:all .15s}
 .sfs-tool-btn:hover{border-color:#007AFF;color:#007AFF}
 .sfs-tool-btn svg{flex-shrink:0}
+
+.sfs-sort-bar{display:flex;align-items:center;gap:8px;padding:8px 20px 10px}
+.sfs-sort-label{font-size:11px;font-weight:600;color:#999;flex-shrink:0}
+.sfs-sort-seg{display:flex;background:#f0f0f0;border-radius:8px;padding:2px;gap:1px;flex:1}
+.sfs-sort-btn{flex:1;border:none;background:transparent;font-size:11px;font-weight:600;color:#888;padding:5px 6px;border-radius:6px;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.sfs-sort-btn.active{background:#007AFF;color:#fff;box-shadow:0 1px 3px rgba(0,122,255,.3)}
+.sfs-sort-btn:hover:not(.active){background:#e0e0e0;color:#333}
 
 .sfs-slot-list{flex:1;overflow-y:auto;padding:8px 12px;min-height:120px}
 .sfs-slot-list::after{content:'';display:block;height:350px}
@@ -238,10 +255,35 @@ body.sf-dark .sfs-act.delete:hover{background:#3a1e1e}
 body.sf-dark .sfs-footer{border-color:#2a2d3a}
 body.sf-dark .sfs-footer span{color:#71717a}
 body.sf-dark .sfs-empty{color:#71717a}
+body.sf-dark .sfs-sort-bar .sfs-sort-label{color:#71717a}
+body.sf-dark .sfs-sort-seg{background:#222532}
+body.sf-dark .sfs-sort-btn{color:#71717a}
+body.sf-dark .sfs-sort-btn.active{background:#3b82f6;color:#fff}
+body.sf-dark .sfs-sort-btn:hover:not(.active){background:#2a2d3a;color:#e4e4e7}
 body.sf-dark #sfSlotTrigger{background:#3b82f6;box-shadow:0 4px 16px rgba(59,130,246,.3)}
 
 `;
   document.head.appendChild(s);
+}
+
+// ── 정렬 ──
+var _sortMode = 'recent'; // recent | oldest | name | manual
+try{ _sortMode = localStorage.getItem('sf_sort_mode') || 'recent'; }catch(e){}
+
+function applySortUI(){
+  var btns = document.querySelectorAll('.sfs-sort-btn');
+  btns.forEach(function(b){ b.classList.toggle('active', b.dataset.sort === _sortMode); });
+}
+
+function sortSlots(){
+  if(_sortMode === 'recent'){
+    _slots.sort(function(a,b){ return (b.savedAt||'').localeCompare(a.savedAt||''); });
+  } else if(_sortMode === 'oldest'){
+    _slots.sort(function(a,b){ return (a.savedAt||'').localeCompare(b.savedAt||''); });
+  } else if(_sortMode === 'name'){
+    _slots.sort(function(a,b){ return (a.name||'').localeCompare(b.name||'', 'ko'); });
+  }
+  // manual = 현재 순서 유지
 }
 
 // ── 렌더링 ──
@@ -259,16 +301,21 @@ function render(){
   }
 
   const len = _slots.length;
+  const isManual = _sortMode === 'manual';
   box.innerHTML = _slots.map(function(s, i){
     const t = s.savedAt ? fmtDate(s.savedAt) : '';
     const focused = (i === _focusIdx) ? ' sfs-focus' : '';
+    var orderHtml = '';
+    if(isManual){
+      orderHtml = '<div class="sfs-order">'
+        + '<button onclick="window._sfSlots.moveTop('+i+')" title="맨 위로"'+(i===0?' disabled':'')+'>⏫</button>'
+        + '<button onclick="window._sfSlots.moveUp('+i+')" title="위로"'+(i===0?' disabled':'')+'>▲</button>'
+        + '<button onclick="window._sfSlots.moveDown('+i+')" title="아래로"'+(i>=len-1?' disabled':'')+'>▼</button>'
+        + '<button onclick="window._sfSlots.moveBottom('+i+')" title="맨 아래로"'+(i>=len-1?' disabled':'')+'>⏬</button>'
+        + '</div>';
+    }
     return '<div class="sfs-slot'+focused+'" data-idx="'+i+'">'
-      + '<div class="sfs-order">'
-      + '<button onclick="window._sfSlots.moveTop('+i+')" title="맨 위로"'+(i===0?' disabled':'')+'>⏫</button>'
-      + '<button onclick="window._sfSlots.moveUp('+i+')" title="위로"'+(i===0?' disabled':'')+'>▲</button>'
-      + '<button onclick="window._sfSlots.moveDown('+i+')" title="아래로"'+(i>=len-1?' disabled':'')+'>▼</button>'
-      + '<button onclick="window._sfSlots.moveBottom('+i+')" title="맨 아래로"'+(i>=len-1?' disabled':'')+'>⏬</button>'
-      + '</div>'
+      + orderHtml
       + '<div class="sfs-slot-info"><div class="sfs-slot-name">'+ esc(s.name||'(이름없음)') +'</div><div class="sfs-slot-time">'+t+'</div></div>'
       + '<div class="sfs-slot-actions">'
       + '<button class="sfs-act rename" onclick="window._sfSlots.rename('+i+')" title="이름 수정">✏️</button>'
@@ -313,9 +360,10 @@ async function doSave(){
   try{
     const entry = { name: name, data: window.slGetState(), savedAt: new Date().toISOString() };
     if(existing >= 0) _slots[existing] = entry;
-    else _slots.push(entry);
+    else _slots.unshift(entry);
+    sortSlots();
     await saveSlots(_slots);
-    _focusIdx = -1;
+    _focusIdx = 0;
     render();
     nameInput.value = '';
   }catch(e){
@@ -341,7 +389,21 @@ window._sfSlots = {
     $('sfsSlotList').innerHTML = '<div class="sfs-empty">불러오는 중…</div>';
     _slots = await loadSlots();
     _focusIdx = -1;
+    sortSlots();
+    applySortUI();
     render();
+  },
+
+  sortBy: async function(mode){
+    _sortMode = mode;
+    try{ localStorage.setItem('sf_sort_mode', mode); }catch(e){}
+    applySortUI();
+    sortSlots();
+    _focusIdx = -1;
+    render();
+    if(mode !== 'manual'){
+      try{ await saveSlots(_slots); }catch(e){}
+    }
   },
 
   close: function(){
