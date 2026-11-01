@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>리서치 노트 | 스윙파머</title>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JD3EPQXMND"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-JD3EPQXMND');
+</script>
+
+<link rel="stylesheet" href="/common.css?v=4">
+<style>
+:root { --sf-max-w: 860px; }
+.page-desc{color:#666;font-size:14px;margin-bottom:24px}
+
+/* 카테고리 탭 */
+.cat-tabs{display:flex;gap:0;flex-wrap:wrap;margin-bottom:20px}
+.ctab{padding:8px 16px;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:13px;font-weight:600;color:#666;font-family:inherit;margin-right:-1px;transition:all .15s}
+.ctab:first-child{border-radius:6px 0 0 6px}
+.ctab:last-child{border-radius:0 6px 6px 0}
+.ctab.active{background:#1F4E78;color:white;border-color:#1F4E78;z-index:1;position:relative}
+.ctab:hover:not(.active){background:#f0f5fa;color:#1F4E78}
+.ctab .cnt{font-size:11px;font-weight:400;margin-left:4px;opacity:.7}
+
+/* 리서치 카드 리스트 */
+.research-list{display:flex;flex-direction:column;gap:12px}
+.research-card{display:block;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:20px 24px;text-decoration:none;color:inherit;transition:all .2s;border-left:4px solid #1F4E78}
+.research-card:hover{box-shadow:0 4px 12px rgba(31,78,120,.12);transform:translateY(-1px)}
+.rc-header{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.rc-cat{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px}
+.rc-cat.macro{background:#e0e7ff;color:#3730a3}
+.rc-cat.stock{background:#dcfce7;color:#166534}
+.rc-cat.strategy{background:#fef3c7;color:#92400e}
+.rc-cat.tax{background:#fce7f3;color:#9d174d}
+.rc-date{font-size:12px;color:#aaa}
+.rc-title{font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:4px}
+.rc-desc{font-size:13px;color:#888;line-height:1.5}
+.rc-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.rc-tag{font-size:11px;color:#1F4E78;background:#e8f0fe;padding:2px 8px;border-radius:4px}
+
+.empty-msg{text-align:center;padding:60px 20px;color:#aaa;font-size:14px}
+</style>
+
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=5"></script>
+</head>
+<body class="sf-narrow">
+
+<h1 style="color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:8px">📄 리서치 노트</h1>
+<p class="page-desc">정제된 분석 문서 모음. 매크로·종목·전략·세금/법인.</p>
+
+<!-- 카테고리 탭 -->
+<div class="cat-tabs" id="catTabs">
+  <button class="ctab active" data-cat="all">전체<span class="cnt" id="cntAll"></span></button>
+  <button class="ctab" data-cat="macro">매크로<span class="cnt" id="cntMacro"></span></button>
+  <button class="ctab" data-cat="stock">종목<span class="cnt" id="cntStock"></span></button>
+  <button class="ctab" data-cat="strategy">전략<span class="cnt" id="cntStrategy"></span></button>
+  <button class="ctab" data-cat="tax">세금·법인<span class="cnt" id="cntTax"></span></button>
+</div>
+
+<!-- 리서치 리스트 -->
+<div class="research-list" id="researchList"></div>
+
+<script>
+/* ── 리서치 문서 목록 (새 글 추가 시 여기에 추가) ── */
+const ARTICLES = [
+  {
+    title: '약세장 회복 분석 — S&P 500 & KOSPI',
+    desc: '1980년 이후 20%+ 하락 약세장의 하락폭·회복기간·원인 팩트 정리. 회복 속도를 결정하는 구조적 요인과 현 매크로 시사점.',
+    cat: 'macro',
+    date: '2026-11-01',
+    href: './bear-market-recovery.html',
+    tags: ['약세장','회복기간','정책대응','코리아디스카운트']
+  }
+];
+
+const CAT_LABEL = {macro:'매크로',stock:'종목',strategy:'전략',tax:'세금·법인'};
+const listEl = document.getElementById('researchList');
+
+function render(cat) {
+  const filtered = cat === 'all' ? ARTICLES : ARTICLES.filter(a => a.cat === cat);
+
+  // 탭 active
+  document.querySelectorAll('.ctab').forEach(b => {
+    b.classList.toggle('active', b.dataset.cat === cat);
+  });
+
+  if (!filtered.length) {
+    listEl.innerHTML = '<div class="empty-msg">등록된 문서가 없습니다.</div>';
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(a => `
+    <a href="${a.href}" class="research-card" data-cat="${a.cat}">
+      <div class="rc-header">
+        <span class="rc-cat ${a.cat}">${CAT_LABEL[a.cat]||a.cat}</span>
+        <span class="rc-date">${a.date}</span>
+      </div>
+      <div class="rc-title">${a.title}</div>
+      <div class="rc-desc">${a.desc}</div>
+      ${a.tags ? '<div class="rc-tags">' + a.tags.map(t=>'<span class="rc-tag">#'+t+'</span>').join('') + '</div>' : ''}
+    </a>
+  `).join('');
+}
+
+// 카운트 표시
+document.getElementById('cntAll').textContent = '(' + ARTICLES.length + ')';
+['macro','stock','strategy','tax'].forEach(c => {
+  const cnt = ARTICLES.filter(a=>a.cat===c).length;
+  const el = document.getElementById('cnt' + c.charAt(0).toUpperCase() + c.slice(1));
+  if(el) el.textContent = cnt ? '('+cnt+')' : '';
+});
+
+// 탭 클릭
+document.getElementById('catTabs').addEventListener('click', e => {
+  const btn = e.target.closest('.ctab');
+  if(btn) render(btn.dataset.cat);
+});
+
+render('all');
+</script>
+
+<footer>© 스윙파머</footer>
+<script src="/common.js?v=5"></script>
+</body>
+</html>
