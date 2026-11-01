@@ -52,26 +52,29 @@ def get_conn():
         dsn='db1007_medium', config_dir=WALLET_DIR, wallet_location=WALLET_DIR,
         wallet_password=os.environ.get('ORACLE_WALLET_PASSWORD', ''))
 
-def fetch_api(data_type, search_date):
-    """수출입은행 API 호출. result=1 성공, 그 외 실패/비영업일."""
+def fetch_api(data_type, search_date, max_retries=3):
+    """수출입은행 API 호출. result=1 성공, 그 외 실패/비영업일. 최대 3회 재시도."""
     key = API_KEYS.get(data_type, API_KEYS['AP01'])
     url = f"{BASE_URL}?authkey={key}&searchdate={search_date}&data={data_type}"
-    try:
-        req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=15, context=SSL_CTX) as resp:
-            raw = resp.read().decode('utf-8')
-        data = json.loads(raw)
-        if not data:
-            return None  # 비영업일 또는 데이터 없음
-        # result 필드 체크 (첫 번째 항목에 있음)
-        if isinstance(data, list) and len(data) > 0:
-            r = data[0].get('result', 1)
-            if r != 1:
-                return None
-        return data
-    except Exception as e:
-        print(f"  ⚠ API 호출 실패 ({data_type}, {search_date}): {e}")
-        return None
+    for attempt in range(1, max_retries + 1):
+        try:
+            req = urllib.request.Request(url)
+            with urllib.request.urlopen(req, timeout=15, context=SSL_CTX) as resp:
+                raw = resp.read().decode('utf-8')
+            data = json.loads(raw)
+            if not data:
+                return None  # 비영업일 또는 데이터 없음
+            # result 필드 체크 (첫 번째 항목에 있음)
+            if isinstance(data, list) and len(data) > 0:
+                r = data[0].get('result', 1)
+                if r != 1:
+                    return None
+            return data
+        except Exception as e:
+            print(f"  ⚠ API 호출 실패 ({data_type}, {search_date}), 시도 {attempt}/{max_retries}: {e}")
+            if attempt < max_retries:
+                time.sleep(5 * attempt)  # 5초, 10초 대기 후 재시도
+    return None
 
 def parse_num(val):
     """문자열 → float. 쉼표 제거."""
