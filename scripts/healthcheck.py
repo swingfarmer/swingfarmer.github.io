@@ -70,6 +70,64 @@ for t in TARGETS:
 TARGETS = unique_targets
 
 
+def check_db_freshness():
+    """Oracle DB 테이블 freshness 체크. status 리스트 반환."""
+    DB_TARGETS = [
+        # (쿼리, 설명, 허용 stale 일수)
+        ("SELECT MAX(rate_date) FROM exchange_rates", "수출입은행 환율 (DB)", 3),
+    ]
+    results = []
+    try:
+        import oracledb
+        WALLET_DIR = os.path.expanduser('~/wallet')
+        conn = oracledb.connect(
+            user='ADMIN', password=os.environ.get('ORACLE_DB_PASSWORD', ''),
+            dsn='db1007_medium', config_dir=WALLET_DIR, wallet_location=WALLET_DIR,
+            wallet_password=os.environ.get('ORACLE_WALLET_PASSWORD', ''))
+        cur = conn.cursor()
+        now = datetime.now()
+        for query, desc, max_stale in DB_TARGETS:
+            entry = {"file": "Oracle DB", "desc": desc, "cycle": "weekday", "max_stale_days": max_stale}
+            try:
+                cur.execute(query)
+                row = cur.fetchone()
+                if row and row[0]:
+                    last_date = row[0]  # DATE 타입
+                    if hasattr(last_date, 'strftime'):
+                        delta = (now - datetime(last_date.year, last_date.month, last_date.day)).days
+                        entry["last_modified"] = last_date.strftime("%Y-%m-%d")
+                    else:
+                        delta = 999
+                        entry["last_modified"] = str(last_date)
+                    entry["stale_days"] = delta
+                    if delta >= max_stale:
+                        entry["status"] = "stale"
+                        entry["message"] = f"{delta}일 경과 (허용 {max_stale}일)"
+                    else:
+                        entry["status"] = "ok"
+                        entry["message"] = "정상"
+                else:
+                    entry["status"] = "missing"
+                    entry["message"] = "데이터 없음"
+                    entry["last_modified"] = None
+                    entry["stale_days"] = None
+            except Exception as e:
+                entry["status"] = "stale"
+                entry["message"] = f"쿼리 실패: {e}"
+                entry["last_modified"] = None
+                entry["stale_days"] = None
+            results.append(entry)
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"  ⚠ Oracle DB 연결 실패: {e}")
+        for _, desc, max_stale in DB_TARGETS:
+            results.append({"file": "Oracle DB", "desc": desc, "cycle": "weekday",
+                            "max_stale_days": max_stale, "status": "stale",
+                            "message": f"DB 연결 실패: {e}", "last_modified": None, "stale_days": None})
+    return results
+
+
 def check_freshness():
     """각 파일의 freshness 체크. status 리스트 반환."""
     now = datetime.now()
@@ -208,6 +266,7 @@ def main():
     print(f"{'='*50}\n")
 
     results = check_freshness()
+    results += check_db_freshness()
     status = build_status_json(results)
 
     ok = status["ok"]

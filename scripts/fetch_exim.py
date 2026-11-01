@@ -258,6 +258,15 @@ def main():
         total_records += cnt
         total_api_calls += calls
 
+        # 평일인데 0건이면 텔레그램 DM 알림
+        if cnt == 0 and now.weekday() < 5:
+            try:
+                from telegram_helper import send_dm
+                send_dm(f"⚠️ <b>수출입은행 환율 수집 실패</b>\n날짜: {date_str}\n3회 재시도 후에도 데이터 없음.\n수동 실행: <code>python3 scripts/fetch_exim.py --date {date_str}</code>")
+                print("📱 텔레그램 실패 알림 발송")
+            except Exception as e:
+                print(f"  ⚠ 텔레그램 발송 실패: {e}")
+
     conn.close()
     print(f"\n✅ 완료: {total_records}건 저장, API {total_api_calls}회 호출")
 
