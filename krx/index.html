@@ -214,7 +214,9 @@ body.sf-dark .sub-tab button.active { background:var(--sf-brand); color:#fff; }
       <button data-chart="mcap">시총</button>
     </div>
     <div id="loadChart" class="loading" style="display:none">데이터 로딩 중…</div>
-    <canvas id="rankChart" height="360" style="display:none"></canvas>
+    <div id="chartWrap" style="position:relative;height:400px;display:none;">
+      <canvas id="rankChart"></canvas>
+    </div>
     <div id="chartEmpty" style="font-size:13px;color:var(--sf-text-dim);text-align:center;padding:40px;">데이터가 2일 이상 쌓이면 그래프가 표시됩니다</div>
   </div>
 
@@ -557,7 +559,7 @@ var CHART_COLORS = ['#e89a3c','#2563eb','#dc2626','#16a34a','#8b5cf6','#ec4899',
 function renderRankChart() {
   if (!rankHist || !rankHist.dates || rankHist.dates.length < 2) {
     document.getElementById('chartEmpty').style.display = '';
-    document.getElementById('rankChart').style.display = 'none';
+    document.getElementById('chartWrap').style.display = 'none';
     return;
   }
   document.getElementById('chartEmpty').style.display = 'none';
@@ -596,7 +598,7 @@ function renderRankChart() {
   });
 
   var ctx = document.getElementById('rankChart');
-  ctx.style.display = '';
+  document.getElementById('chartWrap').style.display = '';
   if (rankChart) rankChart.destroy();
 
   var isDark = document.body.classList.contains('sf-dark');
