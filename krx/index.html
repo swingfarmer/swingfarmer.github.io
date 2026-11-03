@@ -214,7 +214,7 @@ body.sf-dark .sub-tab button.active { background:var(--sf-brand); color:#fff; }
       <button data-chart="mcap">시총</button>
     </div>
     <div id="loadChart" class="loading" style="display:none">데이터 로딩 중…</div>
-    <div id="chartWrap" style="position:relative;height:400px;display:none;">
+    <div id="chartWrap" style="position:relative;height:500px;display:none;">
       <canvas id="rankChart"></canvas>
     </div>
     <div id="chartEmpty" style="font-size:13px;color:var(--sf-text-dim);text-align:center;padding:40px;">데이터가 2일 이상 쌓이면 그래프가 표시됩니다</div>
@@ -581,9 +581,9 @@ function renderRankChart() {
   entries = entries.slice(0, 10);
 
   var labels = rankHist.dates;
-  var RANK_CAP = 15;  // 이 순위 밖은 표시 안 함
+  var RANK_CAP = 50;  // 이 순위 밖은 표시 안 함
   var datasets = entries.map(function(e, i){
-    // 15위 밖 데이터는 null 처리 → 선 끊김
+    // 50위 밖 데이터는 null 처리 → 선 끊김
     var capped = e.ranks.map(function(r){ return (r !== null && r <= RANK_CAP) ? r : null; });
     return {
       label: e.name,
@@ -627,7 +627,7 @@ function renderRankChart() {
       },
       scales: {
         x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 }, maxRotation: 0, callback: function(v,i){ return i%step===0 ? labels[i] : ''; } } },
-        y: { reverse: true, min: 1, max: RANK_CAP, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 11 }, stepSize: RANK_CAP <= 15 ? 1 : 5, callback: function(v){ return v + '위'; } }, title: { display: true, text: '순위', color: textColor, font: { size: 11 } } }
+        y: { reverse: true, min: 0.5, max: RANK_CAP, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 11 }, stepSize: 5, callback: function(v){ return v === 0.5 ? '' : v + '위'; } }, title: { display: true, text: '순위', color: textColor, font: { size: 11 } } }
       },
       elements: { line: { tension: 0.2 } }
     }
