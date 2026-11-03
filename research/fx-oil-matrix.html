@@ -96,6 +96,12 @@ td.blue{color:#2563eb;font-weight:700}
 .scen-tabs button{padding:8px 16px;border-radius:6px;border:1px solid #d1d5db;background:white;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit}
 .scen-tabs button.active{background:#1F4E78;color:white;border-color:#1F4E78}
 
+@media(max-width:600px){
+  .scen-tabs{flex-wrap:wrap;gap:4px}
+  .scen-tabs button{font-size:11px;padding:6px 10px}
+  .mkt-card .mkt-chg{font-size:10px}
+}
+
 /* 체크리스트 */
 .checklist{counter-reset:chk}
 .checklist li{list-style:none;position:relative;padding-left:32px;margin-bottom:10px}
@@ -247,59 +253,136 @@ footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
   <div id="dpContent"></div>
 </div>
 
-<h2>시나리오별 업종 포지션</h2>
+<h2>시나리오별 수혜 포지션</h2>
+<p>원화 방향 × 유가 방향 4가지 조합 + 유가 극단 시나리오. 탭을 눌러 해당 환경의 수혜·피해 업종을 확인.</p>
 
 <div class="scen-tabs" id="scenTabs">
-  <button class="active" onclick="switchScen('a')">시나리오② 원화강세+유가↑</button>
-  <button onclick="switchScen('b')">시나리오②-B 원화약세(1,400+)+유가↑</button>
-  <button onclick="switchScen('c')">유가 $120+ 극단</button>
+  <button class="active" onclick="switchScen('a')">원화강세+유가↑</button>
+  <button onclick="switchScen('b')">원화강세+유가↓</button>
+  <button onclick="switchScen('c')">원화약세+유가↑</button>
+  <button onclick="switchScen('d')">원화약세+유가↓</button>
+  <button onclick="switchScen('e')" style="border-color:#dc2626;color:#dc2626">유가 극단</button>
 </div>
 
+<!-- A: 원화강세 + 유가상승 (현재 환경) -->
 <div id="scenA" class="scen-content">
 <div class="box info">
-  <strong>현재 환경 (2026.11):</strong> 유가 $96 (고유가) + 원화 1,341원 (연초 대비 강세 방향) — 미·이란 협상 재개 기대로 유가 급락 중이나 여전히 $90+ 구간.
+  <strong>현재 환경 (2026.11):</strong> 원/달러 1,341원 (연초 1,470→강세 방향), WTI $96 (고유가 유지). 미·이란 협상 기대에 급락했지만 여전히 $90+.
 </div>
 <div class="tbl-wrap">
 <table>
-  <tr><th>업종</th><th>유가 상승 영향</th><th>원화 강세 영향</th><th>종합</th></tr>
-  <tr><td>반도체·자동차 ②</td><td>중립</td><td class="red">피해 (환산이익↓)</td><td>소폭 부정적, 실적 체력으로 상쇄 가능</td></tr>
-  <tr><td>타이어 ①</td><td class="red">피해 (원가↑)</td><td class="red">피해 (환산이익↓)</td><td class="red">이중 악재 — OPM 하방 압력</td></tr>
-  <tr><td>항공 ⑦</td><td class="red">피해 (연료비↑)</td><td class="grn">수혜 (달러지출↓)</td><td>충돌 — 유가 $100+ 시 순피해</td></tr>
-  <tr><td>정유 ⑨</td><td class="grn">수혜 (재고이익+정제마진)</td><td class="red">피해 (환산↓)</td><td class="grn">정제마진이 핵심 — 현재 순수혜</td></tr>
-  <tr><td>조선 ③</td><td class="grn">수혜 (에너지운반선↑)</td><td class="red">피해 (환산↓)</td><td class="grn">수주 모멘텀 > 환율 — 순수혜</td></tr>
-  <tr><td>유틸리티 ⑦</td><td class="red">피해 (연료비↑)</td><td class="grn">수혜 (달러지출↓)</td><td>유가 상승 폭이 크면 순피해</td></tr>
-  <tr><td>석유화학 ⑦</td><td class="red">피해 (나프타↑)</td><td class="grn">수혜 (달러결제↓)</td><td>스프레드가 핵심 — NCC 적자 지속</td></tr>
-  <tr><td>철강 ⑧</td><td>중립</td><td class="grn">수혜 (수입부담↓)</td><td>소폭 긍정, 중국 수급이 핵심</td></tr>
+  <tr><th>업종</th><th>영업이익 방향</th><th>핵심 이유</th></tr>
+  <tr><td class="grn">🟢 정유</td><td class="grn">순수혜</td><td>재고평가이익 + 정제마진 확대. 원화 강세로 원유 도입원가 경감</td></tr>
+  <tr><td class="grn">🟢 조선</td><td class="grn">순수혜</td><td>에너지운반선·해양플랜트 수주 모멘텀 > 환율 피해</td></tr>
+  <tr><td class="grn">🟢 방산</td><td class="grn">소폭 수혜</td><td>유가 영향 미미. 수출수주 환산이익은 줄지만 실적 체력 견조</td></tr>
+  <tr><td>⚪ 반도체·자동차</td><td>소폭 부정적</td><td>유가 중립이나 원화 강세로 환산이익 감소. 실적 체력으로 상쇄 가능</td></tr>
+  <tr><td>⚪ 철강</td><td>소폭 긍정</td><td>수입원가(달러) 부담 경감. 단, 중국 수급이 더 핵심</td></tr>
+  <tr><td class="red">🔴 타이어</td><td class="red">이중 악재</td><td>유가↑ 원가부담 + 원화강세 환산이익↓</td></tr>
+  <tr><td class="red">🔴 항공</td><td class="red">충돌→순피해</td><td>유가↑ 연료비 상승 > 원화강세 달러지출 경감. $100+에서 순피해</td></tr>
+  <tr><td class="red">🔴 유틸리티</td><td class="red">순피해</td><td>유가↑ 연료비 상승 압도. 원화 강세가 일부 완화하나 부족</td></tr>
+  <tr><td class="red">🔴 석유화학</td><td class="red">적자 지속</td><td>나프타 원가↑ + 중국 공급과잉. 에틸렌 스프레드 $78로 BEP($250) 대폭 하회</td></tr>
 </table>
 </div>
 </div>
 
+<!-- B: 원화강세 + 유가하락 -->
 <div id="scenB" class="scen-content" style="display:none">
-<div class="box danger">
-  <strong>파괴 시나리오:</strong> Fed 4.25%+ 추가 인상, 한은 못 따라감 → 원/달러 1,400+ 돌파. 유가 상승과 원화 약세 동시 발생.
+<div class="box success">
+  <strong>한국 경제 최적 환경:</strong> 원유 수입부담 경감(원화강세+유가하락) + 무역수지 개선. 다만 수요붕괴형 유가 하락이면 수출도 타격.
 </div>
 <div class="tbl-wrap">
 <table>
-  <tr><th>업종</th><th>시나리오② (원화강세)</th><th>시나리오②-B (원화약세 1,400+)</th><th>차이 핵심</th></tr>
-  <tr><td>반도체·자동차</td><td>소폭 부정적</td><td class="grn">순수혜 (환산이익+유가중립)</td><td class="blue">방향 역전 — 수출주 전면 수혜</td></tr>
-  <tr><td>타이어</td><td class="red">이중 악재</td><td>중립 (유가원가↑ vs 환산이익↑)</td><td>상쇄</td></tr>
-  <tr><td>항공</td><td>충돌</td><td class="red">이중 악재 (유가↑+달러지출↑)</td><td class="red">최악 포지션</td></tr>
-  <tr><td>정유</td><td class="grn">순수혜</td><td class="grn">초수혜 (재고이익+환산추가마진)</td><td>방향 동일, 강도 차이</td></tr>
-  <tr><td>조선</td><td class="grn">순수혜</td><td class="grn">초수혜 (수주↑+환산이익↑)</td><td>방향 동일, 강도 차이</td></tr>
-  <tr><td>유틸리티</td><td>순피해</td><td class="red">극심 피해 (연료비↑+환율↑ 이중타격)</td><td class="red">한전 적자 구조 고착</td></tr>
-  <tr><td>석유화학</td><td>피해</td><td class="red">극심 피해 (나프타↑+환율↑)</td><td class="red">스프레드 회복 전까지 적자 지속</td></tr>
+  <tr><th>업종</th><th>영업이익 방향</th><th>핵심 이유</th></tr>
+  <tr><td class="grn">🟢 항공</td><td class="grn">최대 수혜</td><td>유가↓ 연료비 절감 + 원화강세 달러지출 경감 + 해외여행 수요 증가</td></tr>
+  <tr><td class="grn">🟢 유틸리티</td><td class="grn">최대 수혜</td><td>연료비 급감 + 달러 환산 부담 축소 → 한전 흑자 전환 구간</td></tr>
+  <tr><td class="grn">🟢 석유화학</td><td class="grn">원가 개선</td><td>나프타 가격 하락으로 원가 절감. 단, 수요 붕괴형이면 스프레드 악화 가능</td></tr>
+  <tr><td class="grn">🟢 타이어</td><td class="grn">원가 수혜</td><td>합성고무·카본블랙 원가↓. 원화강세 환산이익↓은 부담이나 원가절감이 더 큼</td></tr>
+  <tr><td class="grn">🟢 음식료(내수)</td><td class="grn">수혜</td><td>원화강세로 수입곡물(소맥·대두) 원가 절감</td></tr>
+  <tr><td class="grn">🟢 물류·택배</td><td class="grn">수혜</td><td>경유 가격 하락 → 운송 원가 직접 절감</td></tr>
+  <tr><td class="red">🔴 반도체·자동차</td><td class="red">피해</td><td>원화 강세로 환산이익 직격. 수요 붕괴형이면 물량도 감소</td></tr>
+  <tr><td class="red">🔴 조선</td><td class="red">수주 둔화</td><td>유가↓ → 에너지운반선 발주 유인 감소 + 원화강세 환산↓</td></tr>
+  <tr><td class="red">🔴 정유</td><td class="red">재고손실</td><td>유가 하락 시 래깅에 의한 재고평가손실 → 영업이익 급감·적자 전환</td></tr>
 </table>
 </div>
-<p>핵심 차이: 원화 방향에 따라 항공·유틸리티·석화가 '충돌'에서 '이중 악재'로 전환되고, 반도체·자동차·조선은 '소폭 부정적'에서 '순수혜'로 뒤집힌다.</p>
 </div>
 
+<!-- C: 원화약세 + 유가상승 -->
 <div id="scenC" class="scen-content" style="display:none">
 <div class="box danger">
-  <strong>극단 시나리오:</strong> 이란전쟁이 호르무즈 해협 봉쇄로 확대 → 유가 $120+ 돌파. 2026년 4월 정제마진 $82/bbl 기록한 바 있음.
+  <strong>파괴 시나리오:</strong> Fed 추가 인상 + 이란전쟁 격화 → 원/달러 1,400+, 유가 $100+. 수출주에는 호재, 에너지수입주에는 이중 악재.
 </div>
-<p><strong>수혜 극대화:</strong> 정유(정제마진 폭발), 조선(긴급 발주), 방산.</p>
-<p><strong>피해 극대화:</strong> 항공(연료비 감당 불가), 유틸리티(한전 적자 전환), 석유화학(나프타 원가 급등 + 스프레드 추가 악화).</p>
-<p><strong>중립→피해 전환:</strong> 반도체·자동차는 유가 자체 영향은 미미하나, CPI 상승 → Fed 추가 인상 → 글로벌 수요 둔화 체인이 가동되면 수출 물량이 감소하기 시작.</p>
+<div class="tbl-wrap">
+<table>
+  <tr><th>업종</th><th>영업이익 방향</th><th>핵심 이유</th></tr>
+  <tr><td class="grn">🟢 반도체·자동차</td><td class="grn">순수혜</td><td>원화약세 환산이익↑ + 유가 중립. 수출주 전면 수혜</td></tr>
+  <tr><td class="grn">🟢 조선</td><td class="grn">초수혜</td><td>수주↑(에너지운반선) + 환산이익↑ 양방향</td></tr>
+  <tr><td class="grn">🟢 정유</td><td class="grn">초수혜</td><td>재고평가이익 + 정제마진 확대 + 원화약세 추가 마진</td></tr>
+  <tr><td class="grn">🟢 방산·K-뷰티</td><td class="grn">수혜</td><td>달러 매출 환산↑, 유가 영향 미미</td></tr>
+  <tr><td>⚪ 타이어</td><td>상쇄</td><td>유가↑ 원가부담 vs 원화약세 환산이익↑ → 중립</td></tr>
+  <tr><td class="red">🔴 항공</td><td class="red">최악 포지션</td><td>유가↑ 연료비 + 원화약세 달러지출↑ 이중타격</td></tr>
+  <tr><td class="red">🔴 유틸리티</td><td class="red">극심 피해</td><td>연료비↑ + 환율↑ 이중타격 → 한전 적자 구조 고착</td></tr>
+  <tr><td class="red">🔴 석유화학</td><td class="red">극심 피해</td><td>나프타↑ + 환율↑ 이중 원가 부담. 스프레드 회복 전까지 적자</td></tr>
+  <tr><td class="red">🔴 음식료(내수)</td><td class="red">피해</td><td>수입곡물 원가↑(달러강세) + 판가 인상 시차</td></tr>
+</table>
+</div>
+</div>
+
+<!-- D: 원화약세 + 유가하락 -->
+<div id="scenD" class="scen-content" style="display:none">
+<div class="box warn">
+  <strong>수출 기업 골디락스:</strong> 원화약세로 환산이익↑ + 유가하락으로 원가↓. 단, 수요붕괴형 유가하락이면 수출물량 감소 주의.
+</div>
+<div class="tbl-wrap">
+<table>
+  <tr><th>업종</th><th>영업이익 방향</th><th>핵심 이유</th></tr>
+  <tr><td class="grn">🟢 타이어</td><td class="grn">최대 수혜</td><td>매출 70%+ 해외(환산↑) + 합성고무·카본블랙 원가↓ → 마진 극대화</td></tr>
+  <tr><td class="grn">🟢 반도체·자동차</td><td class="grn">순수혜</td><td>원화약세 환산이익↑ + 유가 중립(원가 내 비중 미미)</td></tr>
+  <tr><td class="grn">🟢 바이오CDMO</td><td class="grn">순수혜</td><td>달러 수취 + 유가 관련 원가 없음</td></tr>
+  <tr><td class="grn">🟢 컨테이너해운</td><td class="grn">최대 수혜</td><td>SCFI 달러 수취(환산↑) + 벙커유 가격 하락(원가↓)</td></tr>
+  <tr><td class="grn">🟢 물류·택배</td><td class="grn">원가 수혜</td><td>경유 가격 하락 → 운송 원가 절감</td></tr>
+  <tr><td>⚪ 항공</td><td>충돌→순수혜</td><td>유가↓ 연료비 절감 > 원화약세 달러지출↑. 유가 하락 폭이 충분하면 수혜</td></tr>
+  <tr><td class="red">🔴 정유</td><td class="red">재고손실</td><td>유가 하락 래깅 → 재고평가손실. 원화약세 외화부채 환산손실까지 겹침</td></tr>
+  <tr><td class="red">🔴 조선</td><td class="red">수주 둔화 우려</td><td>환산이익↑이나, 유가↓로 에너지 운반선 발주 유인 감소 → 중장기 수주 둔화</td></tr>
+</table>
+</div>
+</div>
+
+<!-- E: 유가 극단 시나리오 -->
+<div id="scenE" class="scen-content" style="display:none">
+<div class="box danger">
+  <strong>유가 극단 시나리오</strong> — 환율 방향과 무관하게 유가 자체가 극단적으로 움직일 때.
+</div>
+
+<h3>🔺 유가 $120+ 급등 (호르무즈 봉쇄·전면전)</h3>
+<p>2026년 4월 정제마진 $82/bbl 기록. 호르무즈 해협 완전 봉쇄 시 $120~$150 가능.</p>
+<div class="tbl-wrap">
+<table>
+  <tr><th>업종</th><th>영향</th><th>구체적 경로</th></tr>
+  <tr><td class="grn">🟢 정유</td><td class="grn">초수혜</td><td>정제마진 폭발 ($40~80/bbl 가능). 재고평가이익 극대화</td></tr>
+  <tr><td class="grn">🟢 조선</td><td class="grn">초수혜</td><td>LNG선·유조선 긴급 발주. 해양플랜트 프리미엄</td></tr>
+  <tr><td class="grn">🟢 방산</td><td class="grn">수혜</td><td>지정학 리스크 고조 → 국방비 증액 → 수출 수주 확대</td></tr>
+  <tr><td class="red">🔴 항공</td><td class="red">극심 피해</td><td>연료비 감당 불가. 항공유 $120+ 시 유류할증료 한계</td></tr>
+  <tr><td class="red">🔴 유틸리티</td><td class="red">극심 피해</td><td>발전 연료비 급등 → 한전 수조원 적자. 가스공사 원가 폭등</td></tr>
+  <tr><td class="red">🔴 석유화학</td><td class="red">극심 피해</td><td>나프타 원가 급등 + 호르무즈 봉쇄 시 원료 수급 자체 차질</td></tr>
+  <tr><td class="red">🔴 반도체·자동차</td><td class="red">간접 피해</td><td>유가 자체는 중립이나, CPI↑→Fed 추가 인상→글로벌 수요 둔화 체인</td></tr>
+</table>
+</div>
+
+<h3>🔻 유가 $50 이하 급락 (수요붕괴·OPEC 와해)</h3>
+<p>글로벌 경기 침체, OPEC+ 감산 와해, 이란 핵합의 복귀 시나리오.</p>
+<div class="tbl-wrap">
+<table>
+  <tr><th>업종</th><th>영향</th><th>구체적 경로</th></tr>
+  <tr><td class="grn">🟢 항공</td><td class="grn">최대 수혜</td><td>연료비 급감. $50 이하면 영업이익률 20%+ 가능</td></tr>
+  <tr><td class="grn">🟢 유틸리티</td><td class="grn">최대 수혜</td><td>발전 연료비 급감 → 한전 대규모 흑자 전환</td></tr>
+  <tr><td class="grn">🟢 물류·택배</td><td class="grn">수혜</td><td>경유 가격 급락 → 운송 원가 대폭 절감</td></tr>
+  <tr><td class="grn">🟢 타이어</td><td class="grn">원가 수혜</td><td>합성고무·카본블랙 원가 급락</td></tr>
+  <tr><td class="red">🔴 정유</td><td class="red">극심 피해</td><td>재고평가손실 수조원. 정제마진도 수요 붕괴 시 $4 이하로 추락</td></tr>
+  <tr><td class="red">🔴 조선</td><td class="red">수주 급감</td><td>에너지 기업 CAPEX 동결 → LNG선·해양플랜트 발주 중단</td></tr>
+  <tr><td>⚪ 석유화학</td><td>조건부 수혜</td><td>나프타 원가↓는 긍정적이나, 공급과잉형이면 제품가격도 동반 하락 → 스프레드 미개선</td></tr>
+  <tr><td>⚪ 반도체·자동차</td><td>수요 의존</td><td>수요붕괴형이면 수출 물량 감소로 상쇄. 공급과잉형이면 순수혜</td></tr>
+</table>
+</div>
 </div>
 
 <h2>놓치기 쉬운 필수 추가 변수</h2>
@@ -439,9 +522,12 @@ function closeDetail() {
 function switchScen(s) {
   document.querySelectorAll('.scen-content').forEach(function(el){ el.style.display='none'; });
   document.querySelectorAll('#scenTabs button').forEach(function(b){ b.classList.remove('active'); });
-  if (s==='a') { document.getElementById('scenA').style.display=''; document.querySelectorAll('#scenTabs button')[0].classList.add('active'); }
-  if (s==='b') { document.getElementById('scenB').style.display=''; document.querySelectorAll('#scenTabs button')[1].classList.add('active'); }
-  if (s==='c') { document.getElementById('scenC').style.display=''; document.querySelectorAll('#scenTabs button')[2].classList.add('active'); }
+  var map = {a:0, b:1, c:2, d:3, e:4};
+  var id = 'scen' + s.toUpperCase();
+  var el = document.getElementById(id);
+  if (el) el.style.display = '';
+  var btn = document.querySelectorAll('#scenTabs button')[map[s]];
+  if (btn) btn.classList.add('active');
 }
 
 function toggleGlossary() {

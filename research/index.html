@@ -45,6 +45,9 @@
 .rc-tag{font-size:11px;color:#1F4E78;background:#e8f0fe;padding:2px 8px;border-radius:4px}
 
 .empty-msg{text-align:center;padding:60px 20px;color:#aaa;font-size:14px}
+.sbtn{font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid #d1d5db;background:white;cursor:pointer;font-family:inherit;color:#555}
+.sbtn:hover{background:#f3f4f6}
+.sbtn.active{background:#1F4E78;color:white;border-color:#1F4E78}
 </style>
 
 <link rel="stylesheet" href="/auth-guard.css?v=4">
@@ -62,6 +65,15 @@
   <button class="ctab" data-cat="stock">종목<span class="cnt" id="cntStock"></span></button>
   <button class="ctab" data-cat="strategy">전략<span class="cnt" id="cntStrategy"></span></button>
   <button class="ctab" data-cat="tax">세금·법인<span class="cnt" id="cntTax"></span></button>
+</div>
+
+<!-- 정렬 -->
+<div class="sort-bar" id="sortBar" style="display:flex;gap:6px;margin-bottom:14px;align-items:center">
+  <span style="font-size:12px;color:#888;margin-right:4px">정렬:</span>
+  <button class="sbtn active" data-sort="date-desc">최신순</button>
+  <button class="sbtn" data-sort="date-asc">오래된순</button>
+  <button class="sbtn" data-sort="title-asc">ㄱㄴㄷ순</button>
+  <button class="sbtn" data-sort="reg">등록순</button>
 </div>
 
 <!-- 리서치 리스트 -->
@@ -115,47 +127,85 @@ const ARTICLES = [
 const CAT_LABEL = {macro:'매크로',stock:'종목',strategy:'전략',tax:'세금·법인'};
 const listEl = document.getElementById('researchList');
 
-function render(cat) {
-  const filtered = cat === 'all' ? ARTICLES : ARTICLES.filter(a => a.cat === cat);
+// 원본 순서(등록순) 보존
+ARTICLES.forEach(function(a,i){ a._regIdx = i; });
+
+var curCat = 'all';
+var curSort = 'date-desc';
+
+// localStorage에서 복원
+try {
+  var saved = localStorage.getItem('sf_research_filter');
+  if (saved) {
+    var p = JSON.parse(saved);
+    if (p.cat) curCat = p.cat;
+    if (p.sort) curSort = p.sort;
+  }
+} catch(e){}
+
+function saveFilter() {
+  try { localStorage.setItem('sf_research_filter', JSON.stringify({cat:curCat, sort:curSort})); } catch(e){}
+}
+
+function sortArticles(arr, mode) {
+  var sorted = arr.slice();
+  if (mode === 'date-desc') sorted.sort(function(a,b){ return b.date.localeCompare(a.date); });
+  else if (mode === 'date-asc') sorted.sort(function(a,b){ return a.date.localeCompare(b.date); });
+  else if (mode === 'title-asc') sorted.sort(function(a,b){ return a.title.localeCompare(b.title, 'ko'); });
+  else if (mode === 'reg') sorted.sort(function(a,b){ return a._regIdx - b._regIdx; });
+  return sorted;
+}
+
+function render() {
+  var filtered = curCat === 'all' ? ARTICLES : ARTICLES.filter(function(a){ return a.cat === curCat; });
+  filtered = sortArticles(filtered, curSort);
 
   // 탭 active
-  document.querySelectorAll('.ctab').forEach(b => {
-    b.classList.toggle('active', b.dataset.cat === cat);
-  });
+  document.querySelectorAll('.ctab').forEach(function(b){ b.classList.toggle('active', b.dataset.cat === curCat); });
+  // 정렬 버튼 active
+  document.querySelectorAll('.sbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.sort === curSort); });
 
   if (!filtered.length) {
     listEl.innerHTML = '<div class="empty-msg">등록된 문서가 없습니다.</div>';
     return;
   }
 
-  listEl.innerHTML = filtered.map(a => `
-    <a href="${a.href}" class="research-card" data-cat="${a.cat}">
-      <div class="rc-header">
-        <span class="rc-cat ${a.cat}">${CAT_LABEL[a.cat]||a.cat}</span>
-        <span class="rc-date">${a.date}</span>
-      </div>
-      <div class="rc-title">${a.title}</div>
-      <div class="rc-desc">${a.desc}</div>
-      ${a.tags ? '<div class="rc-tags">' + a.tags.map(t=>'<span class="rc-tag">#'+t+'</span>').join('') + '</div>' : ''}
-    </a>
-  `).join('');
+  listEl.innerHTML = filtered.map(function(a){ return '\
+    <a href="'+a.href+'" class="research-card" data-cat="'+a.cat+'">\
+      <div class="rc-header">\
+        <span class="rc-cat '+a.cat+'">'+(CAT_LABEL[a.cat]||a.cat)+'</span>\
+        <span class="rc-date">'+a.date+'</span>\
+      </div>\
+      <div class="rc-title">'+a.title+'</div>\
+      <div class="rc-desc">'+a.desc+'</div>\
+      '+(a.tags ? '<div class="rc-tags">'+a.tags.map(function(t){return '<span class="rc-tag">#'+t+'</span>';}).join('')+'</div>' : '')+'\
+    </a>';
+  }).join('');
+
+  saveFilter();
 }
 
 // 카운트 표시
 document.getElementById('cntAll').textContent = '(' + ARTICLES.length + ')';
-['macro','stock','strategy','tax'].forEach(c => {
-  const cnt = ARTICLES.filter(a=>a.cat===c).length;
-  const el = document.getElementById('cnt' + c.charAt(0).toUpperCase() + c.slice(1));
+['macro','stock','strategy','tax'].forEach(function(c){
+  var cnt = ARTICLES.filter(function(a){return a.cat===c;}).length;
+  var el = document.getElementById('cnt' + c.charAt(0).toUpperCase() + c.slice(1));
   if(el) el.textContent = cnt ? '('+cnt+')' : '';
 });
 
 // 탭 클릭
-document.getElementById('catTabs').addEventListener('click', e => {
-  const btn = e.target.closest('.ctab');
-  if(btn) render(btn.dataset.cat);
+document.getElementById('catTabs').addEventListener('click', function(e){
+  var btn = e.target.closest('.ctab');
+  if(btn){ curCat = btn.dataset.cat; render(); }
 });
 
-render('all');
+// 정렬 클릭
+document.getElementById('sortBar').addEventListener('click', function(e){
+  var btn = e.target.closest('.sbtn');
+  if(btn){ curSort = btn.dataset.sort; render(); }
+});
+
+render();
 </script>
 
 <footer>© 스윙파머</footer>
