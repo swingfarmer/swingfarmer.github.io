@@ -633,7 +633,7 @@ function loadDate(d){
   document.getElementById('dateSelect').value=d;
   document.getElementById('tbody').innerHTML='<tr><td colspan="10" class="loading">로딩 중…</td></tr>';
 
-  fetch('/data/kr/screener/'+d+'.json')
+  fetch('/data/kr/screener/'+d+'.json?t='+Date.now())
     .then(function(r){return r.json();})
     .then(function(data){
       dayData=data;
@@ -757,8 +757,8 @@ function renderTable(){
 
 // ── 초기화 ──
 Promise.all([
-  fetch('/data/kr/prices.json').then(function(r){return r.json();}).catch(function(){return null;}),
-  fetch('/data/kr/screener/index.json').then(function(r){return r.json();})
+  fetch('/data/kr/prices.json?t='+Date.now()).then(function(r){return r.json();}).catch(function(){return null;}),
+  fetch('/data/kr/screener/index.json?t='+Date.now()).then(function(r){return r.json();})
 ])
   .then(function(results){
     pricesData=results[0];
