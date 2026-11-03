@@ -579,15 +579,19 @@ function renderRankChart() {
   entries = entries.slice(0, 10);
 
   var labels = rankHist.dates;
+  var RANK_CAP = 15;  // 이 순위 밖은 표시 안 함
   var datasets = entries.map(function(e, i){
+    // 15위 밖 데이터는 null 처리 → 선 끊김
+    var capped = e.ranks.map(function(r){ return (r !== null && r <= RANK_CAP) ? r : null; });
     return {
       label: e.name,
-      data: e.ranks,
+      data: capped,
       borderColor: CHART_COLORS[i % CHART_COLORS.length],
       backgroundColor: 'transparent',
       borderWidth: 2,
-      pointRadius: labels.length > 30 ? 0 : 3,
-      spanGaps: true
+      pointRadius: labels.length > 30 ? 0 : 4,
+      pointHoverRadius: 6,
+      spanGaps: false  // 15위 밖 구간은 선 끊기
     };
   });
 
@@ -615,13 +619,13 @@ function renderRankChart() {
           borderColor: isDark ? '#334155' : '#ddd',
           borderWidth: 1, padding: 10,
           callbacks: {
-            label: function(c) { return c.dataset.label + ': ' + (c.parsed.y !== null ? c.parsed.y + '위' : '-'); }
+            label: function(c) { return c.dataset.label + ': ' + (c.parsed.y !== null ? c.parsed.y + '위' : '순위 밖'); }
           }
         }
       },
       scales: {
         x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 }, maxRotation: 0, callback: function(v,i){ return i%step===0 ? labels[i] : ''; } } },
-        y: { reverse: true, min: 1, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 11 }, stepSize: 1, callback: function(v){ return v + '위'; } }, title: { display: true, text: '순위', color: textColor, font: { size: 11 } } }
+        y: { reverse: true, min: 1, max: RANK_CAP, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 11 }, stepSize: RANK_CAP <= 15 ? 1 : 5, callback: function(v){ return v + '위'; } }, title: { display: true, text: '순위', color: textColor, font: { size: 11 } } }
       },
       elements: { line: { tension: 0.2 } }
     }
