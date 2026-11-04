@@ -58,8 +58,11 @@ def fetch_api(data_type, search_date, max_retries=3):
     url = f"{BASE_URL}?authkey={key}&searchdate={search_date}&data={data_type}"
     for attempt in range(1, max_retries + 1):
         try:
-            req = urllib.request.Request(url)
-            with urllib.request.urlopen(req, timeout=15, context=SSL_CTX) as resp:
+            req = urllib.request.Request(url, headers={
+                'User-Agent': 'Mozilla/5.0 (compatible; SwingFarmer/1.0)',
+                'Accept': 'application/json',
+            })
+            with urllib.request.urlopen(req, timeout=30, context=SSL_CTX) as resp:
                 raw = resp.read().decode('utf-8')
             data = json.loads(raw)
             if not data:
@@ -73,7 +76,7 @@ def fetch_api(data_type, search_date, max_retries=3):
         except Exception as e:
             print(f"  ⚠ API 호출 실패 ({data_type}, {search_date}), 시도 {attempt}/{max_retries}: {e}")
             if attempt < max_retries:
-                time.sleep(5 * attempt)  # 5초, 10초 대기 후 재시도
+                time.sleep(15 * attempt)  # 15초, 30초 대기 후 재시도
     return None
 
 def parse_num(val):
