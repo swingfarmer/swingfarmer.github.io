@@ -119,6 +119,19 @@ def build_message(data, news_items=None):
             warn = ' ⚠️' if ind.get('change_pct') and abs(ind['change_pct']) >= 2 else ''
             lines.append(f"  {ind['name']}: {fmt_num(ind['price'], 2)} {fmt_change(ind['change_pct'])}{warn}")
 
+    # ── EWY 야간 방향성 (아침 브리핑만) ──
+    if hour < 12 and 'EWY' in indicators:
+        ewy = indicators['EWY']
+        ewy_pct = ewy.get('change_pct', 0)
+        if ewy_pct is not None:
+            if ewy_pct > 0.5:
+                signal = '🟢 갭업 예상'
+            elif ewy_pct < -0.5:
+                signal = '🔴 갭다운 예상'
+            else:
+                signal = '⚪ 보합권'
+            lines.append(f'<b>🌙 야간 방향</b>: EWY {fmt_change(ewy_pct)} → {signal}')
+
     # ── 미국 지수 ──
     us_tickers = ['^GSPC', '^IXIC', '^DJI']
     us_items = [indicators[t] for t in us_tickers if t in indicators]

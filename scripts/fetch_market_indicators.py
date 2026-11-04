@@ -46,6 +46,9 @@ INDICATORS = {
     "^KS11":  {"name": "코스피",       "cat": "kr_index", "unit": "pt"},
     "^KQ11":  {"name": "코스닥",       "cat": "kr_index", "unit": "pt"},
 
+    # 한국 프록시 (야간 방향성)
+    "EWY":    {"name": "EWY(한국ETF)", "cat": "kr_proxy", "unit": "$"},
+
     # 한국 개별종목 (포트폴리오 종목 수익률 비교용)
     "005930.KS": {"name": "삼성전자",     "cat": "kr_stock", "unit": "₩"},
     "000660.KS": {"name": "SK하이닉스",   "cat": "kr_stock", "unit": "₩"},
