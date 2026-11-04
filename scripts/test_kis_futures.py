@@ -1,44 +1,44 @@
-"""코스피200 선물 야간 데이터 소스 탐색 v3"""
+"""야간선물 데이터 소스 탐색 v4 — longnshort.kr + 네이버 야간"""
 import json, urllib.request, re
 
-UA = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+UA = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
 
-def try_url(label, url, headers=None):
+def try_url(label, url, headers=None, show=800):
     h = {**UA, **(headers or {})}
     try:
         req = urllib.request.Request(url, headers=h)
         r = urllib.request.urlopen(req, timeout=10)
         data = r.read().decode('utf-8', errors='replace')
         print(f"  {label}: OK ({len(data)} bytes)")
-        print(f"  {data[:600]}\n")
+        print(f"  {data[:show]}\n")
         return data
     except Exception as e:
         print(f"  {label}: {e}\n")
         return None
 
-print("=== 1. 네이버 선물 시세 페이지 스크래핑 ===")
-html = try_url('futures_sise', 'https://finance.naver.com/sise/futures_sise.naver')
+# ── 1. longnshort.kr ──
+print("=== 1. longnshort.kr 메인 ===")
+html = try_url('main', 'https://longnshort.kr/', show=1500)
 if html:
-    # 야간선물 가격 패턴 추출 시도
-    m = re.findall(r'(?:야간|야선|night|KOSPI\s*200)[^<]{0,200}', html, re.I)
-    if m:
-        for match in m[:3]:
-            print(f"  패턴: {match[:150]}")
+    nums = re.findall(r'(?:야간|night|선물|futures|kospi\s*200)[^<]{0,300}', html, re.I | re.S)
+    if nums:
+        print("  패턴 발견:")
+        for n in nums[:5]:
+            print(f"    {n.strip()[:200]}")
+    print()
 
-print("=== 2. 네이버 fchart API ===")
-try_url('fchart', 'https://fchart.stock.naver.com/siseJson.nhn?symbol=KPI200&requestType=1&startTime=20261103&endTime=20261104&timeframe=day')
+print("=== 2. longnshort.kr API 탐색 ===")
+try_url('api1', 'https://longnshort.kr/api/night-futures')
+try_url('api2', 'https://longnshort.kr/api/market')
+try_url('api3', 'https://longnshort.kr/api/futures')
+try_url('api4', 'https://longnshort.kr/api/kospi200')
 
-print("=== 3. 네이버 API v2 ===")
-try_url('naver_v2_fut', 'https://api.stock.naver.com/future/domestic/market/KOSPI200/index')
-try_url('naver_v2_night', 'https://api.stock.naver.com/future/domestic/nightSession')
-try_url('naver_world', 'https://api.stock.naver.com/index/worldIndexList')
+# ── 3. 네이버 야간선물 전용 ──
+print("=== 3. 네이버 야간선물 ===")
+try_url('night1', 'https://m.stock.naver.com/api/index/KOSPI200NIGHTFUT/basic')
+try_url('night2', 'https://polling.finance.naver.com/api/realtime/domestic/index/NIGHTFUT')
+try_url('night3', 'https://finance.naver.com/sise/sise_index_day.naver?code=KPI200N')
 
-print("=== 4. Daum 금융 API ===")
-try_url('daum_fut', 'https://finance.daum.net/api/futures/KOSPI200',
-        {'referer': 'https://finance.daum.net'})
-try_url('daum_night', 'https://finance.daum.net/api/futures/nights',
-        {'referer': 'https://finance.daum.net'})
-
-print("=== 5. Investing.com ===")
-try_url('investing', 'https://api.investing.com/api/financialdata/8839/historical/chart/?interval=P1D&pointscount=2',
-        {'domain-id': 'www'})
+# ── 4. 한국거래소 야간선물 ──  
+print("=== 4. KRX 야간 ===")
+try_url('krx_night', 'http://global.krx.co.kr/contents/GLB/05/0509/0509010000/GLB0509010000.jsp')
