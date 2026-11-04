@@ -119,15 +119,9 @@ def build_message(data, news_items=None):
             warn = ' ⚠️' if ind.get('change_pct') and abs(ind['change_pct']) >= 2 else ''
             lines.append(f"  {ind['name']}: {fmt_num(ind['price'], 2)} {fmt_change(ind['change_pct'])}{warn}")
 
-    # ── 코스피200 선물 (야간선물) ──
-    if 'KS=F' in indicators:
-        fut = indicators['KS=F']
-        # 코스피 대비 괴리 계산
-        kospi = indicators.get('^KS11')
-        gap_str = ''
-        if kospi and kospi.get('price') and kospi['price'] > 0:
-            # 코스피200선물 vs 코스피지수는 스케일이 다르지만 방향성 표시
-            pass
+    # ── 코스피200 선물 (야간선물 포함) ──
+    if 'KOSPI200F' in indicators:
+        fut = indicators['KOSPI200F']
         warn = ' ⚠️' if fut.get('change_pct') and abs(fut['change_pct']) >= 1 else ''
         lines.append(f"<b>🌙 코스피200 선물</b>: {fmt_num(fut['price'], 2)} {fmt_change(fut['change_pct'])}{warn}")
 

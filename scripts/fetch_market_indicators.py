@@ -19,6 +19,8 @@ from datetime import datetime, timezone, timedelta
 
 import yfinance as yf
 
+import urllib.request
+
 KST = timezone(timedelta(hours=9))
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(SCRIPT_DIR)
@@ -45,8 +47,7 @@ INDICATORS = {
     # 한국 지수
     "^KS11":  {"name": "코스피",       "cat": "kr_index", "unit": "pt"},
     "^KQ11":  {"name": "코스닥",       "cat": "kr_index", "unit": "pt"},
-    # 코스피200 선물 (야간선물 포함)
-    "KS=F":   {"name": "코스피200 선물", "cat": "kr_futures", "unit": "pt"},
+
     # 한국 개별종목 (포트폴리오 종목 수익률 비교용)
     "005930.KS": {"name": "삼성전자",     "cat": "kr_stock", "unit": "₩"},
     "000660.KS": {"name": "SK하이닉스",   "cat": "kr_stock", "unit": "₩"},
@@ -125,6 +126,77 @@ def load_rates():
         return None
 
 
+def get_kis_token():
+    """한투 API 접근토큰 발급."""
+    app_key = os.environ.get('KIS_APP_KEY', '')
+    app_secret = os.environ.get('KIS_APP_SECRET', '')
+    if not app_key or not app_secret:
+        print("  ⚠ KIS_APP_KEY/KIS_APP_SECRET 없음 — 선물 미수집")
+        return None
+    url = "https://openapi.koreainvestment.com:9443/oauth2/tokenP"
+    body = json.dumps({
+        "grant_type": "client_credentials",
+        "appkey": app_key,
+        "appsecret": app_secret
+    }).encode()
+    req = urllib.request.Request(url, data=body,
+        headers={"Content-Type": "application/json"})
+    try:
+        res = urllib.request.urlopen(req, timeout=10)
+        data = json.loads(res.read())
+        return data.get("access_token")
+    except Exception as e:
+        print(f"  ❌ KIS 토큰 발급 실패: {e}")
+        return None
+
+
+def fetch_kospi200_futures():
+    """한투 API로 코스피200 선물 현재가 조회 (야간 포함)."""
+    token = get_kis_token()
+    if not token:
+        return None
+    app_key = os.environ.get('KIS_APP_KEY', '')
+    app_secret = os.environ.get('KIS_APP_SECRET', '')
+    url = ("https://openapi.koreainvestment.com:9443"
+           "/uapi/domestic-futureoption/v1/quotations/inquire-price"
+           "?FID_COND_MRKT_DIV_CODE=F&FID_INPUT_ISCD=101S6000")
+    headers = {
+        "Content-Type": "application/json; charset=utf-8",
+        "authorization": f"Bearer {token}",
+        "appkey": app_key,
+        "appsecret": app_secret,
+        "tr_id": "FHMIF10000000",
+        "custtype": "P",
+    }
+    req = urllib.request.Request(url, headers=headers)
+    try:
+        res = urllib.request.urlopen(req, timeout=10)
+        data = json.loads(res.read())
+        out = data.get("output", {})
+        price = float(out.get("futs_prpr", 0))        # 현재가
+        prev  = float(out.get("futs_prdy_clpr", 0))   # 전일종가
+        if price == 0:
+            print("  ❌ 코스피200 선물: 가격 없음 (장 외 시간)")
+            return None
+        change = round(price - prev, 2)
+        change_pct = round(change / prev * 100, 2) if prev else 0
+        result = {
+            "ticker": "KOSPI200F",
+            "name": "코스피200 선물",
+            "cat": "kr_futures",
+            "unit": "pt",
+            "price": price,
+            "prev_close": prev,
+            "change": change,
+            "change_pct": change_pct,
+        }
+        print(f"  ✅ KOSPI200F (코스피200 선물): {price} ({change_pct:+.2f}%)")
+        return result
+    except Exception as e:
+        print(f"  ❌ 코스피200 선물 조회 실패: {e}")
+        return None
+
+
 def append_history(entry):
     """히스토리 파일에 오늘 데이터 추가 (같은 날짜면 덮어쓰기, 무제한 보관)."""
     history = []
@@ -163,10 +235,16 @@ def main():
             fail += 1
         time.sleep(DELAY)
 
-    # 2. 환율·금시세 (rates.json에서 읽기)
+    # 2. 코스피200 선물 (한투 API — 야간 포함)
+    fut = fetch_kospi200_futures()
+    if fut:
+        indicators.append(fut)
+        ok += 1
+
+    # 3. 환율·금시세 (rates.json에서 읽기)
     rates = load_rates()
 
-    # 3. 최신 파일 저장
+    # 4. 최신 파일 저장
     result = {
         "updated": now.strftime("%Y-%m-%d %H:%M KST"),
         "indicators": indicators,
@@ -178,7 +256,7 @@ def main():
     with open(OUTPUT, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=1)
 
-    # 4. 히스토리 누적 (플랫 구조 — 차트용)
+    # 5. 히스토리 누적 (플랫 구조 — 차트용)
     hist_entry = {"date": now.strftime("%Y-%m-%d")}
     for ind in indicators:
         # 키: 티커에서 특수문자 제거 (^GSPC → GSPC, CL=F → CLF, 005930.KS → 005930)
