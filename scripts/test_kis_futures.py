@@ -1,44 +1,56 @@
-"""야간선물 데이터 소스 탐색 v4 — longnshort.kr + 네이버 야간"""
-import json, urllib.request, re
+"""KIS API 야간선물 — 마켓코드/종목코드 조합 테스트 v5"""
+import os, json, urllib.request, urllib.error
 
-UA = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+key = os.environ['KIS_APP_KEY']
+sec = os.environ['KIS_APP_SECRET']
 
-def try_url(label, url, headers=None, show=800):
-    h = {**UA, **(headers or {})}
+body = json.dumps({'grant_type':'client_credentials','appkey':key,'appsecret':sec}).encode()
+r = urllib.request.urlopen(urllib.request.Request(
+    'https://openapi.koreainvestment.com:9443/oauth2/tokenP',
+    data=body, headers={'Content-Type':'application/json'}), timeout=10)
+tok = json.loads(r.read())['access_token']
+print('token OK\n')
+
+base = 'https://openapi.koreainvestment.com:9443/uapi/domestic-futureoption/v1/quotations'
+codes = ['101S6000', '101SC000', '101SC626', '101SC260']
+mkts = ['F', 'N', 'NF', 'JF']
+tr_ids = ['FHMIF10000000', 'FHMIF10010000']
+
+for tr in tr_ids:
+    for mkt in mkts:
+        for code in codes:
+            url = f'{base}/inquire-price?FID_COND_MRKT_DIV_CODE={mkt}&FID_INPUT_ISCD={code}'
+            h = {'Content-Type':'application/json; charset=utf-8',
+                 'authorization':'Bearer '+tok,'appkey':key,'appsecret':sec,
+                 'tr_id':tr,'custtype':'P'}
+            try:
+                r2 = urllib.request.urlopen(urllib.request.Request(url, headers=h), timeout=8)
+                d = json.loads(r2.read())
+                o1 = d.get('output1', {})
+                rt = d.get('rt_cd', '')
+                msg = d.get('msg1', '')[:60]
+                if o1:
+                    print(f'  HIT! tr={tr} mkt={mkt} code={code}')
+                    print(f'        {json.dumps(o1, ensure_ascii=False)[:400]}')
+                elif rt != '0':
+                    pass  # 에러는 무시
+            except:
+                pass
+
+print('\n=== 종목 리스트 조회 시도 ===')
+# 종목 마스터 조회 (어떤 선물 종목이 있는지)
+list_urls = [
+    f'{base}/inquire-asking-price?FID_COND_MRKT_DIV_CODE=F&FID_INPUT_ISCD=101S6000',
+]
+for url in list_urls:
+    h = {'Content-Type':'application/json; charset=utf-8',
+         'authorization':'Bearer '+tok,'appkey':key,'appsecret':sec,
+         'tr_id':'FHMIF10010000','custtype':'P'}
     try:
-        req = urllib.request.Request(url, headers=h)
-        r = urllib.request.urlopen(req, timeout=10)
-        data = r.read().decode('utf-8', errors='replace')
-        print(f"  {label}: OK ({len(data)} bytes)")
-        print(f"  {data[:show]}\n")
-        return data
+        r3 = urllib.request.urlopen(urllib.request.Request(url, headers=h), timeout=8)
+        d3 = json.loads(r3.read())
+        print(f'  호가: {json.dumps(d3, ensure_ascii=False)[:600]}')
+    except urllib.error.HTTPError as e:
+        print(f'  호가: HTTP {e.code} — {e.read().decode()[:200]}')
     except Exception as e:
-        print(f"  {label}: {e}\n")
-        return None
-
-# ── 1. longnshort.kr ──
-print("=== 1. longnshort.kr 메인 ===")
-html = try_url('main', 'https://longnshort.kr/', show=1500)
-if html:
-    nums = re.findall(r'(?:야간|night|선물|futures|kospi\s*200)[^<]{0,300}', html, re.I | re.S)
-    if nums:
-        print("  패턴 발견:")
-        for n in nums[:5]:
-            print(f"    {n.strip()[:200]}")
-    print()
-
-print("=== 2. longnshort.kr API 탐색 ===")
-try_url('api1', 'https://longnshort.kr/api/night-futures')
-try_url('api2', 'https://longnshort.kr/api/market')
-try_url('api3', 'https://longnshort.kr/api/futures')
-try_url('api4', 'https://longnshort.kr/api/kospi200')
-
-# ── 3. 네이버 야간선물 전용 ──
-print("=== 3. 네이버 야간선물 ===")
-try_url('night1', 'https://m.stock.naver.com/api/index/KOSPI200NIGHTFUT/basic')
-try_url('night2', 'https://polling.finance.naver.com/api/realtime/domestic/index/NIGHTFUT')
-try_url('night3', 'https://finance.naver.com/sise/sise_index_day.naver?code=KPI200N')
-
-# ── 4. 한국거래소 야간선물 ──  
-print("=== 4. KRX 야간 ===")
-try_url('krx_night', 'http://global.krx.co.kr/contents/GLB/05/0509/0509010000/GLB0509010000.jsp')
+        print(f'  호가: {e}')
