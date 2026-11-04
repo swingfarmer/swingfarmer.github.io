@@ -119,8 +119,8 @@ def build_message(data, news_items=None):
             warn = ' ⚠️' if ind.get('change_pct') and abs(ind['change_pct']) >= 2 else ''
             lines.append(f"  {ind['name']}: {fmt_num(ind['price'], 2)} {fmt_change(ind['change_pct'])}{warn}")
 
-    # ── EWY 야간 방향성 (아침 브리핑만) ──
-    if hour < 12 and 'EWY' in indicators:
+    # ── EWY 야간 방향성 ──
+    if 'EWY' in indicators:
         ewy = indicators['EWY']
         ewy_pct = ewy.get('change_pct', 0)
         if ewy_pct is not None:
