@@ -1,14 +1,15 @@
 """
-부동산 실거래가 트래커 — 수집 스크립트 v3 (메모리 최적화)
-=======================================================
-연도별로 수집 → 즉시 파일 저장 → 메모리 해제. OOM 방지.
+부동산 실거래가 트래커 — 수집 스크립트 v4 (Oracle DB 동기화)
+==========================================================
+연도별로 수집 → JSON 저장 + Oracle DB 적재 → 메모리 해제.
 
 사용법:
   python3 -u scripts/fetch_realestate.py              → 전체 (Tier1 20년 + Tier2 3년)
   python3 -u scripts/fetch_realestate.py --months 2    → 최근 2개월 갱신
   python3 -u scripts/fetch_realestate.py --year 2024   → 특정 연도만
+  python3 -u scripts/fetch_realestate.py --no-db       → JSON만 저장 (Oracle 적재 생략)
 
-환경변수: DATA_GO_KR_KEY
+환경변수: DATA_GO_KR_KEY, ORACLE_DB_PASSWORD, ORACLE_WALLET_PASSWORD
 """
 
 import os, sys, json, time, argparse
@@ -56,7 +57,73 @@ def parse_args():
     p.add_argument('--year', type=int, help='특정 연도만')
     p.add_argument('--tier1-only', action='store_true')
     p.add_argument('--type', choices=['all','trade','rent'], default='all')
+    p.add_argument('--no-db', action='store_true', help='Oracle DB 적재 생략')
     return p.parse_args()
+
+
+# ══ Oracle DB 동기화 ══
+WALLET_DIR = os.path.expanduser('~/wallet')
+
+def get_oracle_conn():
+    import oracledb
+    return oracledb.connect(
+        user='ADMIN', password=os.environ.get('ORACLE_DB_PASSWORD', ''),
+        dsn='db1007_medium', config_dir=WALLET_DIR,
+        wallet_location=WALLET_DIR,
+        wallet_password=os.environ.get('ORACLE_WALLET_PASSWORD', ''))
+
+
+def sync_to_oracle(yr, items):
+    """연도 데이터를 Oracle DB에 동기화 (해당 연도 APT DELETE → INSERT)"""
+    if not items:
+        return 0
+    try:
+        conn = get_oracle_conn()
+    except Exception as e:
+        print(f'  ⚠️ Oracle 접속 실패: {e}')
+        return 0
+
+    cur = conn.cursor()
+    try:
+        cur.execute("DELETE FROM real_estate WHERE prop_type='APT' AND deal_year=:y",
+                     {'y': str(yr)})
+        deleted = cur.rowcount
+
+        BATCH = 500
+        inserted = 0
+        for i in range(0, len(items), BATCH):
+            batch = items[i:i+BATCH]
+            rows = []
+            for it in batch:
+                dt = it['T']
+                rows.append({
+                    'pt': 'APT', 'dt': dt, 'rg': it.get('r',''),
+                    'dg': it.get('d',''), 'nm': it.get('n',''),
+                    'am': it.get('a', 0), 'fn': it.get('f',''),
+                    'pr': it.get('p') if dt == 'S' else None,
+                    'dp': it.get('dp') if dt != 'S' else None,
+                    'mr': it.get('mp') if dt == 'W' else None,
+                    'dy': str(it.get('y','')), 'dm': str(it.get('m','')),
+                    'dd': str(it.get('dy','')), 'by': str(it.get('by',''))
+                })
+            cur.executemany("""INSERT INTO real_estate
+                (prop_type, deal_type, region, dong, name, area_m2, floor_no,
+                 price, deposit, monthly_rent, deal_year, deal_month, deal_day, build_year)
+                VALUES (:pt,:dt,:rg,:dg,:nm,:am,:fn,:pr,:dp,:mr,:dy,:dm,:dd,:by)""", rows)
+            inserted += len(batch)
+            if inserted % 5000 == 0:
+                conn.commit()
+
+        conn.commit()
+        print(f'  🗄️ Oracle: {deleted:,}건 삭제 → {inserted:,}건 적재')
+        return inserted
+    except Exception as e:
+        conn.rollback()
+        print(f'  ⚠️ Oracle 적재 실패: {e}')
+        return 0
+    finally:
+        cur.close()
+        conn.close()
 
 
 def get_year_months(year):
@@ -248,11 +315,13 @@ def main():
                     items.extend(parsed)
                     print(f' {len(parsed)}건', flush=True)
 
-        # ── 이 연도 즉시 저장 + 메모리 해제 ──
+        # ── 이 연도 즉시 저장 + Oracle 동기화 + 메모리 해제 ──
         if items:
             stats = save_year(yr, items)
             index_years[yr] = stats
             print(f'  💾 {yr}.json 저장: {stats["total"]:,}건 ({stats["size_mb"]}MB)')
+            if not args.no_db:
+                sync_to_oracle(yr, items)
         else:
             print(f'  ⚠️ {yr}년 데이터 없음')
 
