@@ -479,9 +479,42 @@ window.sfApiFetch = function(url, opts) {
     });
   }
 
+  // ---------- 6. 탭/필터 상태 저장·복원 (전역) ----------
+  var SF_TP = 'sf-tp-';
+  var TP_ATTRS = ['data-tab','data-f','data-filter','data-section','data-period','data-mode','data-sort'];
+  var tpPath = location.pathname.replace(/\/$/,'') || '/';
+
+  function tpSave(attr, val) {
+    try { localStorage.setItem(SF_TP + tpPath + ':' + attr, val); } catch(e){}
+  }
+  function tpRestore() {
+    TP_ATTRS.forEach(function(attr) {
+      try {
+        var saved = localStorage.getItem(SF_TP + tpPath + ':' + attr);
+        if (!saved) return;
+        var btn = document.querySelector('[' + attr + '="' + CSS.escape(saved) + '"]');
+        if (btn && !btn.classList.contains('active')) btn.click();
+      } catch(e){}
+    });
+  }
+
+  // 이벤트 위임: 탭 클릭 시 저장
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('button, [role="tab"], .tab-btn, .chart-tab, .ftab, .period-btn, .filter-btn, .mode-btn, .sort-btn, .weight-btn, .tab, .seg-btn');
+    if (!btn) return;
+    TP_ATTRS.forEach(function(attr) {
+      var val = btn.getAttribute(attr);
+      if (val) tpSave(attr, val);
+    });
+  });
+
+  // 복원은 페이지 스크립트 실행 후 (동적 탭 포함)
+  function tpDelayedRestore() { setTimeout(tpRestore, 200); }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', function(){ init(); tpDelayedRestore(); });
   } else {
     init();
+    tpDelayedRestore();
   }
 })();
