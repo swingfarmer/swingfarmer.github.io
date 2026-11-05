@@ -265,7 +265,7 @@ def re_search():
         SELECT DISTINCT region, name, dong, area_m2 AS area, floor_no AS floor, deal_type, price, deposit, monthly_rent,
                deal_year, deal_month, deal_day, build_year
         FROM real_estate WHERE {w}
-        ORDER BY deal_year DESC, deal_month DESC, deal_day DESC
+        ORDER BY TO_NUMBER(deal_year) DESC, TO_NUMBER(deal_month) DESC, TO_NUMBER(deal_day) DESC
     ) a WHERE ROWNUM <= :maxrow) WHERE rn > :minrow""",
         {**params, 'maxrow': offset + limit, 'minrow': offset})
     data = rows_to_list(cur, cur.fetchall())
