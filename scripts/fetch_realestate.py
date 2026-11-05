@@ -95,21 +95,21 @@ def sync_to_oracle(yr, items):
             batch = items[i:i+BATCH]
             rows = []
             for it in batch:
-                dt = it['T']
+                t = it['T']
                 rows.append({
-                    'pt': 'APT', 'dt': dt, 'rg': it.get('r',''),
-                    'dg': it.get('d',''), 'nm': it.get('n',''),
-                    'am': it.get('a', 0), 'fn': it.get('f',''),
-                    'pr': it.get('p') if dt == 'S' else None,
-                    'dp': it.get('dp') if dt != 'S' else None,
-                    'mr': it.get('mp') if dt == 'W' else None,
-                    'dy': str(it.get('y','')), 'dm': str(it.get('m','')),
-                    'dd': str(it.get('dy','')), 'by': str(it.get('by',''))
+                    'v_pt': 'APT', 'v_dt': t, 'v_rg': it.get('r',''),
+                    'v_dg': it.get('d',''), 'v_nm': it.get('n',''),
+                    'v_am': it.get('a', 0), 'v_fn': it.get('f',''),
+                    'v_pr': it.get('p') if t == 'S' else None,
+                    'v_dp': it.get('dp') if t != 'S' else None,
+                    'v_mr': it.get('mp') if t == 'W' else None,
+                    'v_yr': str(it.get('y','')), 'v_mo': str(it.get('m','')),
+                    'v_dd': str(it.get('dy','')), 'v_by': str(it.get('by',''))
                 })
             cur.executemany("""INSERT INTO real_estate
                 (prop_type, deal_type, region, dong, name, area_m2, floor_no,
                  price, deposit, monthly_rent, deal_year, deal_month, deal_day, build_year)
-                VALUES (:pt,:dt,:rg,:dg,:nm,:am,:fn,:pr,:dp,:mr,:dy,:dm,:dd,:by)""", rows)
+                VALUES (:v_pt,:v_dt,:v_rg,:v_dg,:v_nm,:v_am,:v_fn,:v_pr,:v_dp,:v_mr,:v_yr,:v_mo,:v_dd,:v_by)""", rows)
             inserted += len(batch)
             if inserted % 5000 == 0:
                 conn.commit()
