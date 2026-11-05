@@ -508,8 +508,31 @@ window.sfApiFetch = function(url, opts) {
     });
   });
 
+  // select 드롭다운 상태 저장·복원 (id가 있는 select만)
+  var SF_SEL = 'sf-sel-';
+  function selSave(el) {
+    if (!el.id) return;
+    try { localStorage.setItem(SF_SEL + tpPath + ':' + el.id, el.value); } catch(e){}
+  }
+  function selRestore() {
+    document.querySelectorAll('select[id]').forEach(function(sel) {
+      // 모달/숨김 영역 안의 select 제외
+      if (sel.closest('.modal, .modal-overlay, [style*="display:none"], [style*="display: none"]')) return;
+      try {
+        var saved = localStorage.getItem(SF_SEL + tpPath + ':' + sel.id);
+        if (saved && sel.querySelector('option[value="' + CSS.escape(saved) + '"]')) {
+          sel.value = saved;
+          sel.dispatchEvent(new Event('change', {bubbles:true}));
+        }
+      } catch(e){}
+    });
+  }
+  document.addEventListener('change', function(e) {
+    if (e.target.tagName === 'SELECT' && e.target.id) selSave(e.target);
+  });
+
   // 복원은 페이지 스크립트 실행 후 (동적 탭 포함)
-  function tpDelayedRestore() { setTimeout(tpRestore, 200); }
+  function tpDelayedRestore() { setTimeout(function(){ tpRestore(); selRestore(); }, 200); }
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function(){ init(); tpDelayedRestore(); });
