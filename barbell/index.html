@@ -6,712 +6,369 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta name="robots" content="noindex, nofollow">
 <title>4축 바벨 포트폴리오 | 스윙파머</title>
-<link rel="stylesheet" href="/common.css?v=5">
+<link rel="stylesheet" href="/common-dark.css?v=4">
 <style>
-:root { --sf-max-w: 900px; }
-*{box-sizing:border-box;margin:0;padding:0}
-#btnAdminLogin{display:none;font-size:12px;background:#e5e7eb;border:none;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:inherit}
-.loaded-slot{display:none;background:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:13px;color:#1e40af;font-weight:600}
+:root { --sf-max-w: 1100px; }
 
-/* 메인 탭 */
-.tabs{display:flex;gap:4px;background:#e5e7eb;padding:4px;border-radius:10px;margin-bottom:20px;flex-wrap:wrap}
-.tab{flex:1;padding:10px 4px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:700;color:#666;border-radius:8px;transition:all .15s;font-family:inherit;min-width:90px}
-.tab:hover{background:rgba(255,255,255,.5)}
-.tab.active{background:white;color:#1F4E78;box-shadow:0 1px 3px rgba(0,0,0,.1)}
-.tab-content{display:none}.tab-content.active{display:block}
+/* KPI 그리드 */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:22px}
+.kpi-card{background:var(--sf-card);border:1px solid var(--sf-border);border-radius:10px;padding:16px}
+.kpi-label{font-size:11px;color:var(--sf-text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+.kpi-value{font-size:22px;font-weight:800;margin:5px 0;color:#fff}
+.kpi-sub{font-size:12px;color:var(--sf-text-dim)}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.badge-safe{background:rgba(34,197,94,.15);color:var(--sf-green)}
+.badge-warn{background:rgba(245,158,11,.15);color:var(--sf-warn)}
+.badge-danger{background:rgba(239,68,68,.15);color:var(--sf-red)}
 
-/* 서브 탭 */
-.sub-tabs{display:flex;gap:4px;margin-bottom:18px;flex-wrap:wrap}
-.sub-tab{padding:8px 16px;border:2px solid #e5e7eb;background:white;cursor:pointer;font-size:12.5px;font-weight:700;color:#666;border-radius:8px;transition:all .15s;font-family:inherit}
-.sub-tab:hover{border-color:#1F4E78;color:#1F4E78}
-.sub-tab.active{background:#1F4E78;color:white;border-color:#1F4E78}
-.sub-content{display:none}.sub-content.active{display:block}
+/* 섹션 카드 */
+.sec-card{background:var(--sf-card);border:1px solid var(--sf-border);border-radius:10px;padding:18px;margin-bottom:18px}
+.sec-card h2{font-size:16px;margin:0 0 14px;border-left:4px solid var(--sf-accent);padding-left:10px;color:#fff}
 
-/* 입력 */
-.input-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
-@media(max-width:600px){.input-grid{grid-template-columns:1fr}}
-.input-row{display:flex;flex-direction:column;gap:4px}
-.input-row label{font-size:13px;font-weight:700;color:#333}
-.input-row label .hint{font-weight:400;color:#999;font-size:11px}
-.input-row input,.input-row select{padding:10px;font-size:14px;border:1px solid #ccc;border-radius:6px;background:#FFF2CC;font-weight:600;color:#0000FF;font-family:inherit;text-align:right}
-.input-row input:focus,.input-row select:focus{outline:2px solid #1F4E78;background:#FFFACD}
-.input-row input[readonly]{background:#f0f0f0;color:#666}
+/* 컨트롤 그리드 */
+.ctrl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.ctrl-box{background:rgba(15,17,23,.6);border:1px solid var(--sf-border);border-radius:8px;padding:12px}
+.ctrl-box label{display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--sf-text)}
+.ctrl-box .hint{font-size:11px;color:var(--sf-text-dim);margin-top:4px}
+input[type="number"],input[type="text"],select{background:var(--sf-bg);border:1px solid #475569;color:#fff;padding:8px 10px;border-radius:6px;font-size:13px;width:100%;font-family:inherit}
+input:focus,select:focus{outline:2px solid var(--sf-accent);border-color:var(--sf-accent)}
+.num-input{width:100px;text-align:right}
+.pct-input{width:70px;text-align:right}
 
-/* 요약 카드 */
-.summary-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
-.scard{padding:14px;border-radius:10px;color:white}
-.scard.blue{background:linear-gradient(135deg,#1F4E78,#2563eb)}
-.scard.green{background:linear-gradient(135deg,#059669,#10b981)}
-.scard.amber{background:linear-gradient(135deg,#d97706,#f59e0b)}
-.scard.red{background:linear-gradient(135deg,#dc2626,#ef4444)}
-.scard.purple{background:linear-gradient(135deg,#7c3aed,#a855f7)}
-.scard .lbl{font-size:11px;opacity:.9;margin-bottom:2px}
-.scard .val{font-size:17px;font-weight:800;letter-spacing:-.5px}
-.scard .sub{font-size:10px;opacity:.85;margin-top:3px}
-
-/* 테이블 */
-.tbl{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:18px}
-.tbl th{background:#f0f5fa;color:#1F4E78;padding:10px 8px;text-align:center;font-size:12px;border-bottom:2px solid #ddd;white-space:nowrap}
-.tbl td{padding:9px 8px;text-align:right;border-bottom:1px solid #eee}
-.tbl td:first-child{text-align:left;color:#444;font-weight:600}
-.tbl tr:hover td{background:#f8fafc}
-.tbl .total-row td{background:#1F4E78;color:white;font-weight:700}
-.tbl .buy{color:#dc2626;font-weight:700}
-.tbl .sell{color:#0369a1;font-weight:700}
-.tbl .safe{color:#059669;font-weight:700}
-.tbl .warn{color:#d97706;font-weight:700}
-.tbl .danger{color:#dc2626;font-weight:700}
-
-/* 리밸런서 자산행 */
-.asset-rows{margin-bottom:18px}
-.asset-row{display:grid;grid-template-columns:120px 80px 1fr 80px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0}
-.asset-row.header{font-size:11px;font-weight:700;color:#888;border-bottom:2px solid #e5e7eb;padding-bottom:6px}
-.asset-row input{padding:8px;font-size:13px;border:1px solid #ccc;border-radius:4px;background:#FFF2CC;font-weight:700;color:#0000FF;text-align:right;font-family:inherit}
-.asset-row input:focus{outline:2px solid #1F4E78}
-.asset-row .name{font-size:13px;font-weight:700;color:#1F4E78}
-.asset-row .adj{font-size:14px;font-weight:800;text-align:right}
-@media(max-width:600px){.asset-row{grid-template-columns:90px 60px 1fr 70px}}
-
-/* 결손금 트래커 */
-.loss-row{display:grid;grid-template-columns:90px 1fr 1fr 1fr 80px 40px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0}
-.loss-row.header{font-size:11px;font-weight:700;color:#888;border-bottom:2px solid #e5e7eb}
-.loss-row input{padding:7px;font-size:13px;border:1px solid #ccc;border-radius:4px;background:#FFF2CC;font-weight:600;color:#0000FF;text-align:right;font-family:inherit}
-.loss-row input:focus{outline:2px solid #1F4E78}
-.loss-row .computed{font-size:13px;font-weight:700;color:#444;text-align:right;padding-right:4px}
-.btn-del{background:#fee2e2;color:#dc2626;border:none;border-radius:6px;width:28px;height:28px;font-size:13px;cursor:pointer;font-weight:700}
-.btn-add{background:#f0f5fa;color:#1F4E78;border:1px dashed #1F4E78;border-radius:6px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px}
-.btn-add:hover{background:#dbeafe}
-@media(max-width:600px){.loss-row{grid-template-columns:70px 1fr 1fr 1fr 60px 32px;gap:4px}.loss-row input{padding:5px;font-size:12px}}
-
-/* 레퍼런스 */
-.ref-section{margin-bottom:28px}
-.ref-section h3{font-size:15px;color:#1F4E78;font-weight:800;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e5e7eb}
-.ref-tbl{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:14px}
-.ref-tbl th{background:#1F4E78;color:white;padding:8px 6px;text-align:center;font-size:11px;white-space:nowrap}
-.ref-tbl td{padding:7px 6px;text-align:center;border-bottom:1px solid #eee;font-size:12px}
-.ref-tbl td:first-child{text-align:left;font-weight:600}
-.ref-tbl tr:nth-child(even) td{background:#f8fafc}
-.ref-tbl .winner{color:#1F4E78;font-weight:800}
-.ref-note{background:#f0f5fa;border-left:4px solid #1F4E78;padding:12px 14px;border-radius:0 8px 8px 0;font-size:13px;line-height:1.7;margin-bottom:14px;color:#333}
-.ref-note strong{color:#1F4E78}
-.glossary-grid{display:grid;grid-template-columns:110px 1fr;gap:0;font-size:12.5px}
-.glossary-grid .term{padding:8px;font-weight:700;color:#1F4E78;border-bottom:1px solid #eee;background:#f8fafc}
-.glossary-grid .def{padding:8px;border-bottom:1px solid #eee;color:#444;line-height:1.5}
-@media(max-width:600px){.glossary-grid{grid-template-columns:90px 1fr}}
+/* 자산 테이블 */
+.asset-scroll{overflow-x:auto;margin-top:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:9px 8px;border-bottom:1px solid var(--sf-border);text-align:left}
+th{color:var(--sf-text-dim);font-weight:600;font-size:11px;background:rgba(15,17,23,.5);white-space:nowrap}
+td input,td select{background:var(--sf-bg);border:1px solid #334155;color:#fff;padding:5px 8px;border-radius:4px;font-size:12px;font-family:inherit}
+td input:focus,td select:focus{outline:1px solid var(--sf-accent);border-color:var(--sf-accent)}
+td .bucket-input{width:100px}
+td .name-input{width:100%;min-width:150px}
+td select{min-width:130px}
 
 /* 버튼 */
-.calc-btn{background:#1F4E78;color:white;border:none;border-radius:8px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
-.calc-btn:hover{background:#2d6ba3}
+.btn{background:var(--sf-accent);color:#0f172a;border:none;padding:8px 14px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+.btn:hover{opacity:.9}
+.btn-del{background:rgba(239,68,68,.15);color:var(--sf-red);padding:4px 10px;font-size:12px;border:none;border-radius:4px;cursor:pointer;font-weight:700;font-family:inherit}
+.btn-del:hover{background:rgba(239,68,68,.3)}
 
-/* 섹션 제목 */
-.sec-title{font-size:16px;font-weight:800;color:#1F4E78;margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.sec-title .icon{font-size:20px}
+/* 게이지 */
+.gauge-row{margin-bottom:14px}
+.gauge-label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;color:var(--sf-text)}
+.gauge-track{width:100%;height:16px;background:var(--sf-bg);border-radius:999px;overflow:hidden;border:1px solid var(--sf-border)}
+.gauge-fill{height:100%;border-radius:999px;transition:width .25s}
+.gauge-fill.safe{background:linear-gradient(90deg,var(--sf-green),#38bdf8)}
+.gauge-fill.warn{background:linear-gradient(90deg,var(--sf-warn),var(--sf-orange))}
+.gauge-fill.danger{background:var(--sf-red)}
+
+/* 법인 요약 */
+.corp-summary{font-size:14px;line-height:1.9;color:var(--sf-text)}
+.corp-summary b{color:#fff}
+
+/* 참고 안내 */
+.note-box{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.7;color:var(--sf-text-dim);margin-top:14px}
+.note-box strong{color:var(--sf-accent)}
+
+@media(max-width:700px){
+  .kpi-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .kpi-value{font-size:18px}
+  .ctrl-grid{grid-template-columns:1fr}
+  td .name-input{min-width:120px}
+  td .bucket-input{width:80px}
+}
+@media(max-width:500px){
+  .kpi-grid{grid-template-columns:1fr}
+}
 </style>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=5"></script>
 </head>
-<body class="sf-narrow">
-<a href="/" class="back-link">← 메인으로</a>
-<h1>🛡️ 4축 바벨 포트폴리오</h1>
-<p class="desc">리밸런서 · 채권 시뮬레이터 · 결손금 트래커. 절세 마스터 플랜 v2.0.</p>
+<body>
+<div class="wrap">
+<a href="/" class="back-link">← 메인</a>
+<h1>🛡️ 4축 바벨 포트폴리오 & 절세 리밸런서</h1>
+<p class="subtitle">모든 금액·수익률·환율·급여 숫자를 직접 클릭해 수정할 수 있습니다. (2026년 귀속 법인세율 11% 반영)</p>
 
-<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-  <button id="btnAdminLogin" style="display:none">🔑 관리자 로그인</button>
+<!-- KPI 상단 카드 -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-label">총 운용 자산 (개인 : 법인)</div>
+    <div class="kpi-value" id="kpiTotal">0원</div>
+    <div class="kpi-sub" id="kpiRatio">-</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">개인 금종세 게이지 (2,000만 한도)</div>
+    <div class="kpi-value" id="kpiTaxAmt">0만 원</div>
+    <div class="kpi-sub"><span id="kpiTaxBadge" class="badge badge-safe">안전</span> <span id="kpiTaxPct">0% 소진</span></div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">연간 세후 순수익 + 현금흐름 합계</div>
+    <div class="kpi-value" id="kpiNet" style="color:var(--sf-green)">+0만 원/년</div>
+    <div class="kpi-sub" id="kpiYield">세후 실효수익률 연 0.00%</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">환율 1,500원 스트레스 테스트 시 금종세</div>
+    <div class="kpi-value" id="kpiStress">0만 원</div>
+    <div class="kpi-sub" id="kpiStressSub">-</div>
+  </div>
 </div>
-<div id="loadedSlot" class="loaded-slot">📂 현재: <span id="loadedSlotLabel"></span>
-  <button onclick="clearLoadedSlot()" style="background:none;border:none;color:#93c5fd;cursor:pointer;font-size:14px;margin-left:6px" title="표시 해제">✕</button>
+
+<!-- 1. 매크로 & 법인 설정 -->
+<div class="sec-card">
+  <h2>1. 매크로 환율 & 법인 급여·세율 직접 입력</h2>
+  <div class="ctrl-grid">
+    <div class="ctrl-box">
+      <label><span>기준 원/달러 환율 (원)</span></label>
+      <input type="number" id="fxBase" value="1350" step="10" oninput="recalc()">
+      <div class="hint">저쿠폰 미국채 매수 기준 환율</div>
+    </div>
+    <div class="ctrl-box">
+      <label><span>이자 수령 시 가정 환율 (원)</span></label>
+      <input type="number" id="fxCurrent" value="1380" step="10" oninput="recalc()">
+      <div class="hint">환율 상승 시 원화 환산 이자소득 증가 반영</div>
+    </div>
+    <div class="ctrl-box">
+      <label><span>법인 대표 월 급여 설정 (만 원)</span></label>
+      <input type="number" id="corpSalary" value="250" step="10" oninput="recalc()">
+      <div class="hint">법인 수익에서 손금(비용) 처리할 월급</div>
+    </div>
+    <div class="ctrl-box">
+      <label><span>법인 연간 고정 판관비 (만 원)</span></label>
+      <input type="number" id="corpExp" value="1200" step="50" oninput="recalc()">
+      <div class="hint">차량유지비, 임차료, AI 구독료 등 비용 상계액</div>
+    </div>
+  </div>
 </div>
 
-  <!-- 메인 탭 -->
-  <div class="tabs" data-tab="main">
-    <button class="tab active" data-value="calc">🧮 계산기</button>
-    <button class="tab" data-value="ref">📋 레퍼런스</button>
+<!-- 2. 자산 테이블 -->
+<div class="sec-card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <h2 style="margin:0">2. 4축 버킷별 자산·수익률·과세비중 직접 수정</h2>
+    <button class="btn" onclick="addRow()">+ 자산 행 추가</button>
   </div>
-
-  <!-- ═══ 탭1: 계산기 ═══ -->
-  <div class="tab-content active" data-tab-panel="calc">
-
-    <div class="sub-tabs" data-tab="sub">
-      <button class="sub-tab active" data-value="rebal">⚖️ 리밸런서</button>
-      <button class="sub-tab" data-value="bond">💵 채권 시뮬레이터</button>
-      <button class="sub-tab" data-value="loss">📊 결손금 트래커</button>
-    </div>
-
-    <!-- ─── 리밸런서 ─── -->
-    <div class="sub-content active" data-tab-panel="rebal">
-      <div class="sec-title"><span class="icon">⚖️</span> 4축 바벨 리밸런서</div>
-
-      <div class="input-grid">
-        <div class="input-row">
-          <label>총 투자 자산 <span class="hint">(만원)</span></label>
-          <input type="text" id="rbTotal" value="100,000" oninput="fmtNum(this);calcRebal()">
-        </div>
-        <div class="input-row">
-          <label>추가 투자금 <span class="hint">(만원, 0이면 비중조정만)</span></label>
-          <input type="text" id="rbExtra" value="0" oninput="fmtNum(this);calcRebal()">
-        </div>
-      </div>
-
-      <div class="asset-rows">
-        <div class="asset-row header">
-          <div>버킷</div>
-          <div style="text-align:right">목표 %</div>
-          <div style="text-align:right">현재 금액 (만원)</div>
-          <div>조정</div>
-        </div>
-        <div class="asset-row" data-bucket="attack">
-          <div class="name">①공격(개인주식)</div>
-          <input type="text" id="rbT0" value="40" oninput="calcRebal()">
-          <input type="text" id="rbC0" value="45,000" oninput="fmtNum(this);calcRebal()">
-          <div class="adj" id="rbA0">-</div>
-        </div>
-        <div class="asset-row" data-bucket="income">
-          <div class="name">①인컴(법인)</div>
-          <input type="text" id="rbT1" value="20" oninput="calcRebal()">
-          <input type="text" id="rbC1" value="15,000" oninput="fmtNum(this);calcRebal()">
-          <div class="adj" id="rbA1">-</div>
-        </div>
-        <div class="asset-row" data-bucket="defense">
-          <div class="name">②수비(부동산)</div>
-          <input type="text" id="rbT2" value="0" oninput="calcRebal()">
-          <input type="text" id="rbC2" value="0" oninput="fmtNum(this);calcRebal()">
-          <div class="adj" id="rbA2">-</div>
-        </div>
-        <div class="asset-row" data-bucket="shelter">
-          <div class="name">③방공호(저쿠폰채)</div>
-          <input type="text" id="rbT3" value="30" oninput="calcRebal()">
-          <input type="text" id="rbC3" value="30,000" oninput="fmtNum(this);calcRebal()">
-          <div class="adj" id="rbA3">-</div>
-        </div>
-        <div class="asset-row" data-bucket="pension">
-          <div class="name">④최후보루(연금)</div>
-          <input type="text" id="rbT4" value="10" oninput="calcRebal()">
-          <input type="text" id="rbC4" value="10,000" oninput="fmtNum(this);calcRebal()">
-          <div class="adj" id="rbA4">-</div>
-        </div>
-      </div>
-
-      <div class="summary-cards" id="rbSummary"></div>
-
-      <table class="tbl" id="rbTable">
-        <thead><tr><th style="text-align:left">버킷</th><th>목표 %</th><th>목표 금액</th><th>현재 금액</th><th>현재 %</th><th>조정 금액</th></tr></thead>
-        <tbody id="rbBody"></tbody>
-      </table>
-    </div>
-
-    <!-- ─── 채권 시뮬레이터 ─── -->
-    <div class="sub-content" data-tab-panel="bond">
-      <div class="sec-title"><span class="icon">💵</span> 저쿠폰 미국채 시뮬레이터</div>
-
-      <div class="input-grid">
-        <div class="input-row">
-          <label>투자금 <span class="hint">(만원)</span></label>
-          <input type="text" id="bdInvest" value="10,000" oninput="fmtNum(this);calcBond()">
-        </div>
-        <div class="input-row">
-          <label>진입 환율 <span class="hint">(원/달러)</span></label>
-          <input type="text" id="bdFx" value="1,350" oninput="fmtNum(this);calcBond()">
-        </div>
-        <div class="input-row">
-          <label>매수 단가 <span class="hint">(달러, 액면 $100 기준)</span></label>
-          <input type="text" id="bdPrice" value="85.71" oninput="calcBond()">
-        </div>
-        <div class="input-row">
-          <label>쿠폰 <span class="hint">(연, %)</span></label>
-          <input type="text" id="bdCoupon" value="0.625" oninput="calcBond()">
-        </div>
-        <div class="input-row">
-          <label>잔존 만기 <span class="hint">(년)</span></label>
-          <input type="text" id="bdYears" value="3.5" oninput="calcBond()">
-        </div>
-        <div class="input-row">
-          <label>이자 원천세율 <span class="hint">(%)</span></label>
-          <input type="text" id="bdTaxRate" value="15.4" oninput="calcBond()">
-        </div>
-      </div>
-
-      <div class="summary-cards" id="bdSummary"></div>
-
-      <div class="sec-title" style="font-size:14px;margin-top:20px">📈 환율별 수익률 시뮬레이션</div>
-      <table class="tbl">
-        <thead><tr><th style="text-align:left">만기 시 환율</th><th>원화 회수</th><th>손익</th><th>수익률</th><th>연환산</th></tr></thead>
-        <tbody id="bdFxBody"></tbody>
-      </table>
-
-      <div class="sec-title" style="font-size:14px;margin-top:20px">🛡️ 금종세 방어력 시뮬레이션</div>
-      <table class="tbl">
-        <thead><tr><th style="text-align:left">투자 규모</th><th>연간 과세이자</th><th>금종세 한도 대비</th><th>판정</th></tr></thead>
-        <tbody id="bdTaxBody"></tbody>
-      </table>
-    </div>
-
-    <!-- ─── 결손금 트래커 ─── -->
-    <div class="sub-content" data-tab-panel="loss">
-      <div class="sec-title"><span class="icon">📊</span> 법인 결손금 15년 이월공제 트래커</div>
-
-      <div class="input-grid" style="margin-bottom:12px">
-        <div class="input-row">
-          <label>연간 판관비 <span class="hint">(만원, 급여+경비)</span></label>
-          <input type="text" id="lsExpense" value="4,200" oninput="fmtNum(this);calcLoss()">
-        </div>
-        <div class="input-row">
-          <label>법인세율 <span class="hint">(%, 과표 2억 이하 11%)</span></label>
-          <input type="text" id="lsTaxRate" value="11" oninput="calcLoss()">
-        </div>
-      </div>
-
-      <div class="loss-row header">
-        <div>연도</div>
-        <div style="text-align:right">총수익 (만원)</div>
-        <div style="text-align:right">과세표준</div>
-        <div style="text-align:right">결손금 잔액</div>
-        <div style="text-align:right">법인세</div>
-        <div></div>
-      </div>
-      <div id="lossRows"></div>
-      <button class="btn-add" onclick="addLossRow()">+ 연도 추가</button>
-
-      <div class="summary-cards" id="lsSummary" style="margin-top:18px"></div>
-
-      <div class="sec-title" style="font-size:14px;margin-top:20px">📋 연도별 결손금 FIFO 상세</div>
-      <table class="tbl">
-        <thead><tr><th style="text-align:left">연도</th><th>총수익</th><th>판관비 차감</th><th>과표(전)</th><th>결손금 상계</th><th>과표(후)</th><th>결손금 잔액</th><th>법인세</th><th>누적세금</th></tr></thead>
-        <tbody id="lsDetailBody"></tbody>
-      </table>
-    </div>
-
+  <div class="asset-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>버킷 구분</th>
+          <th>자산 / 전략명</th>
+          <th>투자 주체</th>
+          <th>투자 금액 (만 원)</th>
+          <th>총 기대수익률 (%)</th>
+          <th>과세 이자/배당률 (%)</th>
+          <th>세후 순수익 (만 원)</th>
+          <th>금종세 산입 (만 원)</th>
+          <th>삭제</th>
+        </tr>
+      </thead>
+      <tbody id="assetBody"></tbody>
+    </table>
   </div>
-
-  <!-- ═══ 탭2: 레퍼런스 ═══ -->
-  <div class="tab-content" data-tab-panel="ref">
-
-    <div class="ref-section">
-      <h3>🏗️ 4축 바벨 구조</h3>
-      <table class="ref-tbl">
-        <tr><th>버킷</th><th>자산</th><th>투자 주체</th><th>핵심 성격</th><th>현재</th></tr>
-        <tr><td>①공격</td><td>국내 개별주식</td><td>개인(일반)</td><td>매매차익 100% 비과세</td><td>주력</td></tr>
-        <tr><td>①인컴</td><td>해외주식·커버드콜·고쿠폰채</td><td>법인</td><td>11% 저율 + 월 현금흐름</td><td>예정</td></tr>
-        <tr><td>②수비</td><td>사무실 부동산</td><td>법인</td><td>월세 현금흐름</td><td>보류</td></tr>
-        <tr><td>③방공호</td><td>저쿠폰 미국채 (T 0.625)</td><td>개인(일반)</td><td>비과세 차익 + 달러 헤지</td><td>1순위</td></tr>
-        <tr><td>④최후보루</td><td>ISA → 연금저축/IRP</td><td>개인(절세)</td><td>과세이연/비과세</td><td>추후</td></tr>
-      </table>
-      <div class="ref-note">
-        <strong>핵심 원칙:</strong> 비과세는 개인 / 과세·현금흐름은 법인. 매매차익 비과세(국내주식, 저쿠폰채 할인차익·환차익)은 개인 일반계좌. 과세 소득(해외주식 22%, 고배당 15.4%)은 법인(11%) 또는 절세계좌로 격리.
-      </div>
-    </div>
-
-    <div class="ref-section">
-      <h3>⚖️ 개인 vs 법인 과세 비교 (2026 세법)</h3>
-      <table class="ref-tbl">
-        <tr><th>자산군</th><th>수익 유형</th><th>개인(일반)</th><th>법인</th><th>최적</th></tr>
-        <tr><td>국내 개별주식</td><td>매매차익</td><td>비과세</td><td>11.0%</td><td class="winner">개인 압승</td></tr>
-        <tr><td>국내 개별주식</td><td>배당소득</td><td>15.4%(금종세)</td><td>법인세(익금불산입)</td><td>법인(준조세 방어)</td></tr>
-        <tr><td>저쿠폰 미국채</td><td>매매·환차익</td><td class="winner">전액 비과세</td><td>11.0%</td><td class="winner">개인 압승</td></tr>
-        <tr><td>저쿠폰 미국채</td><td>표면이자(0.625%)</td><td>15.4%(미미)</td><td>11.0%</td><td>개인 우세</td></tr>
-        <tr><td>고쿠폰 미국채/ETF</td><td>이자·분배금(4~5%)</td><td>15.4%(금종세 직격)</td><td>11.0%(비용상계)</td><td class="winner">법인 압승</td></tr>
-        <tr><td>해외주식(직투)</td><td>매매차익</td><td>22.0%</td><td>11.0%(결손금 이월)</td><td class="winner">법인 우세</td></tr>
-        <tr><td>해외 커버드콜/배당</td><td>분배금(8~10%)</td><td>15.4%(금종세 직격)</td><td>11.0%(경비화)</td><td>법인 or 절세계좌</td></tr>
-        <tr><td>준조세 방어</td><td>금종세/건보료</td><td>2,000만 초과 직격탄</td><td>금종세 없음</td><td class="winner">법인 압승</td></tr>
-        <tr><td>손실 처리</td><td>결손금 공제</td><td>이월 불가</td><td class="winner">최대 15년 이월</td><td class="winner">법인 압승</td></tr>
-      </table>
-    </div>
-
-    <div class="ref-section">
-      <h3>🛡️ 금종세 방어 — 저쿠폰채 vs 예금</h3>
-      <div class="ref-note">
-        <strong>T 0.625:</strong> 1억 투자 시 과세이자 약 73만원 (금종세 한도 3.6%). 20억 넣어도 한도 미달.<br>
-        <strong>예금 4%:</strong> 5억에서 이미 한도(2,000만) 도달. 금종세 직격탄.<br>
-        <strong>25% 버퍼룰:</strong> 개인 이자·배당을 평시 환율 기준 1,400~1,500만 이하로 캡 → 환율 1,500원에도 2,000만 내 방어.
-      </div>
-    </div>
-
-    <div class="ref-section">
-      <h3>🏦 절세계좌 과세 구조</h3>
-      <table class="ref-tbl">
-        <tr><th>계좌</th><th>비과세 한도</th><th>초과분</th><th>금종세</th><th>인출 제약</th></tr>
-        <tr><td>ISA (일반형)</td><td>연 200만</td><td>9.9% 분리</td><td class="winner">제외</td><td>3년 의무</td></tr>
-        <tr><td>ISA (서민형)</td><td>연 400만</td><td>9.9% 분리</td><td class="winner">제외</td><td>3년 의무</td></tr>
-        <tr><td>연금저축펀드</td><td>전액 과세이연</td><td>3.3~5.5%</td><td class="winner">제외</td><td>55세 이후</td></tr>
-        <tr><td>IRP</td><td>전액 과세이연</td><td>3.3~5.5%</td><td class="winner">제외</td><td>55세 이후</td></tr>
-      </table>
-      <div class="ref-note">
-        <strong>절세계좌 우선순위:</strong> ①국내상장 미국지수ETF(S&P500, 나스닥100) → ②국내상장 해외 고배당·커버드콜 ETF → ③맥쿼리인프라/리츠(ISA)
-      </div>
-    </div>
-
-    <div class="ref-section">
-      <h3>🌡️ 환율 스트레스 테스트</h3>
-      <table class="ref-tbl">
-        <tr><th>시나리오</th><th>달러 이자/배당</th><th>환율</th><th>원화 환산</th><th>금종세</th></tr>
-        <tr><td>평시</td><td>$11,000</td><td>1,350원</td><td>1,485만</td><td class="safe">✅ 안전</td></tr>
-        <tr><td>환율 상승</td><td>$11,000</td><td>1,500원</td><td>1,650만</td><td class="safe">✅ 안전</td></tr>
-        <tr><td>위험 설정</td><td>$15,000</td><td>1,350원</td><td>2,025만</td><td style="color:#d97706;font-weight:700">⚠️ 초과</td></tr>
-        <tr><td>위험+환율</td><td>$15,000</td><td>1,500원</td><td>2,250만</td><td class="danger">🔴 초과</td></tr>
-      </table>
-    </div>
-
-    <div class="ref-section">
-      <h3>🇧🇷 브라질 국채 비교</h3>
-      <table class="ref-tbl">
-        <tr><th>항목</th><th>미국채 (T 0.625)</th><th>브라질 국채</th></tr>
-        <tr><td>이자 → 한국 세금</td><td>15.4% 과세</td><td class="winner">0% (완전 비과세)</td></tr>
-        <tr><td>이자 → 금종세</td><td>포함 (미미)</td><td class="winner">불포함</td></tr>
-        <tr><td>매매·환차익</td><td>비과세</td><td>비과세</td></tr>
-        <tr><td>위기 시 가격</td><td class="winner">상승 (안전자산)</td><td class="danger">폭락 (위험자산)</td></tr>
-        <tr><td>부도 리스크</td><td>없음</td><td>있음 (모라토리엄 전력)</td></tr>
-        <tr><td>수익률</td><td>약 5%</td><td>약 14%</td></tr>
-      </table>
-      <div class="ref-note">
-        <strong>결론:</strong> 세금만 보면 브라질 압도적 유리. 하지만 위기 시 방공호 기능 없음 + 룰라 확장재정 리스크. → 방공호 자리는 미국채 확정.
-      </div>
-    </div>
-
-    <div class="ref-section">
-      <h3>📖 용어 사전</h3>
-      <div class="glossary-grid">
-        <div class="term">4축 바벨</div><div class="def">공격(주식)·수비(부동산)·방공호(채권)·최후보루(연금) 4축 분산 포트폴리오</div>
-        <div class="term">방공호</div><div class="def">위기 시 자산 보호 역할. 주식 폭락 때 채권가↑ + 환율↑ 역상관 방어</div>
-        <div class="term">금종세</div><div class="def">금융소득종합과세. 이자+배당 합산 연 2,000만 초과 시 종합소득세율(최고 49.5%)</div>
-        <div class="term">시장할인채</div><div class="def">쿠폰이 있는 채권이 시장금리 상승으로 할인 거래. 할인분 = 매매차익 = 개인 비과세</div>
-        <div class="term">할인발행채</div><div class="def">처음부터 할인가로 발행(STRIPS, T-Bills). 할인분이 이자소득(OID)으로 과세 가능</div>
-        <div class="term">OID</div><div class="def">Original Issue Discount. 할인발행채 할인분의 이자소득 인식 세법 개념</div>
-        <div class="term">YTM</div><div class="def">Yield to Maturity. 만기보유 시 이자+차익 합산 연환산 총수익률</div>
-        <div class="term">듀레이션</div><div class="def">금리 변동 대비 채권 가격 민감도. 3.5 = 금리 1%p↓ → 가격 약 3.5%↑</div>
-        <div class="term">래더링</div><div class="def">만기가 다른 채권을 계단식 분산 매수. 만기 도래 시 현금 확보 or 재매수</div>
-        <div class="term">25% 버퍼룰</div><div class="def">환율 급등(1,500원) 시에도 금종세 한도 내 방어하기 위해 이자·배당을 한도의 75% 이하로 관리</div>
-        <div class="term">FIFO</div><div class="def">First In First Out. 결손금 상계 시 가장 오래된 것부터 먼저 사용</div>
-        <div class="term">결손금 이월</div><div class="def">법인 당기 손실을 최대 15년 이월하여 이후 이익과 상계, 법인세 절감</div>
-        <div class="term">익금불산입</div><div class="def">법인이 받은 배당 중 일정 비율을 과세소득에서 제외. 이중과세 방지</div>
-        <div class="term">과표</div><div class="def">과세표준. 수익에서 비용(손금)을 차감한 순이익. 세금 계산의 기준</div>
-        <div class="term">손금</div><div class="def">법인세법상 비용 인정 항목. 급여·임차료·감가상각 등</div>
-        <div class="term">분리과세</div><div class="def">종합소득 합산 없이 별도 세율 적용. ISA 9.9%, 연금 3.3~5.5%</div>
-      </div>
-    </div>
-
+  <div class="note-box">
+    💡 <strong>저쿠폰 미국채</strong>(T 0.625 05/15/30) 계산식: 매수단가 $85.71 기준, 투자금 대비 실제 보유 액면가는 약 1.1667배($100/$85.71)입니다. 따라서 표면이자 0.625%는 투자금 대비 약 0.73%의 이자율로 과세됩니다. 환율 변동분(환차익)과 할인 매매차익(시장할인채)은 개인 비과세이므로 금종세 산입에 포함되지 않습니다.
   </div>
+</div>
 
-<div style="text-align:center;padding:30px 0 10px;font-size:11px;color:#aaa">
+<!-- 3. 금종세 게이지 -->
+<div class="sec-card">
+  <h2>3. 개인 금종세(2,000만 원) 안전 마진 & 환율 스트레스 진단</h2>
+  <div class="gauge-row">
+    <div class="gauge-label">
+      <span>현재 설정 환율 기준 개인 과세 금융소득</span>
+      <strong id="gaugeNowText">0만 / 2,000만</strong>
+    </div>
+    <div class="gauge-track"><div class="gauge-fill safe" id="gaugeNowBar" style="width:0%"></div></div>
+  </div>
+  <div class="gauge-row">
+    <div class="gauge-label">
+      <span>환율 1,500원 급등 시 개인 과세 금융소득 (스트레스 테스트)</span>
+      <strong id="gaugeStressText">0만 / 2,000만</strong>
+    </div>
+    <div class="gauge-track"><div class="gauge-fill warn" id="gaugeStressBar" style="width:0%"></div></div>
+  </div>
+</div>
+
+<!-- 4. 법인 세금 시뮬레이션 -->
+<div class="sec-card">
+  <h2>4. 법인 계좌 손익 & 세금 시뮬레이션 (2026년 귀속 11% 세율)</h2>
+  <div class="corp-summary" id="corpBox">-</div>
+</div>
+
+<div style="text-align:center;padding:20px 0;font-size:11px;color:var(--sf-text-dim)">
   4축 바벨 포트폴리오 & 절세 마스터 플랜 v2.0 · 2026.11 · 법인세 11%(2026 귀속)
 </div>
+</div>
 
-<script src="/auth-guard.js"></script>
 <script>
-/* ═══ 유틸 ═══ */
-function p(v){ return parseFloat(String(v).replace(/,/g,''))||0; }
-function fmt(n){ return Math.round(n).toLocaleString('ko-KR'); }
-function fmtNum(el){
-  const raw = el.value.replace(/[^0-9.-]/g,'');
-  if(raw===''||raw==='-') return;
-  const n = parseFloat(raw);
-  if(!isNaN(n)) el.value = fmt(n);
-}
-function pct(n,d){ return d?((n/d)*100).toFixed(1)+'%':'0%'; }
-
-/* ═══ 탭 ═══ */
-document.querySelectorAll('.tabs, .sub-tabs').forEach(function(bar){
-  bar.querySelectorAll('.tab, .sub-tab').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      bar.querySelectorAll('.tab, .sub-tab').forEach(function(b){ b.classList.remove('active'); });
-      btn.classList.add('active');
-      var val = btn.getAttribute('data-value');
-      var parent = bar.parentElement;
-      var panelClass = btn.classList.contains('tab') ? 'tab-content' : 'sub-content';
-      var panelAttr = btn.classList.contains('tab') ? 'data-tab-panel' : 'data-tab-panel';
-      // Find sibling panels
-      var panels;
-      if(btn.classList.contains('tab')){
-        panels = parent.querySelectorAll(':scope > .tab-content');
-      } else {
-        panels = btn.closest('.tab-content').querySelectorAll('.sub-content');
-      }
-      panels.forEach(function(p){
-        p.classList.toggle('active', p.getAttribute('data-tab-panel')===val);
-      });
-    });
-  });
-});
-
-/* ═══ 리밸런서 ═══ */
-var BUCKETS = [
-  {name:'①공격(개인주식)',key:'attack'},
-  {name:'①인컴(법인)',key:'income'},
-  {name:'②수비(부동산)',key:'defense'},
-  {name:'③방공호(저쿠폰채)',key:'shelter'},
-  {name:'④최후보루(연금)',key:'pension'}
+/* ═══ 자산 데이터 ═══ */
+var assets = [
+  {bucket:"③방공호", name:"저쿠폰 미국채 (T 0.625)", owner:"personal_us_bond", amount:30000, totalYield:4.9, taxableYield:0.73},
+  {bucket:"①공격", name:"국내 개별주식 (매매차익)", owner:"personal_kr_stock", amount:15000, totalYield:8, taxableYield:1},
+  {bucket:"④최후보루", name:"중개형 ISA (국내상장 미국ETF)", owner:"personal_isa", amount:6000, totalYield:7.5, taxableYield:0},
+  {bucket:"④최후보루", name:"연금저축 + IRP (지수 추종)", owner:"personal_pension", amount:4000, totalYield:8, taxableYield:0},
+  {bucket:"①공격/인컴", name:"법인 미국 고쿠폰채/단기채", owner:"corp", amount:10000, totalYield:4.8, taxableYield:4.8},
+  {bucket:"①공격/인컴", name:"법인 해외주식·커버드콜", owner:"corp", amount:10000, totalYield:9.5, taxableYield:9.5}
 ];
 
-function calcRebal(){
-  var total = p(document.getElementById('rbTotal').value);
-  var extra = p(document.getElementById('rbExtra').value);
-  var newTotal = total + extra;
-  var sumTarget = 0, sumCurrent = 0;
-  var rows = [];
+var OWNERS = [
+  {val:"personal_us_bond", label:"개인(달러채권)"},
+  {val:"personal_kr_stock", label:"개인(일반계좌)"},
+  {val:"personal_isa", label:"개인(ISA절세)"},
+  {val:"personal_pension", label:"개인(연금/IRP)"},
+  {val:"corp", label:"법인(트리플통상)"}
+];
 
-  for(var i=0;i<5;i++){
-    var t = p(document.getElementById('rbT'+i).value);
-    var c = p(document.getElementById('rbC'+i).value);
-    sumTarget += t;
-    sumCurrent += c;
-    rows.push({name:BUCKETS[i].name, target:t, current:c});
-  }
-
-  var body = document.getElementById('rbBody');
+function renderTable(){
+  var body = document.getElementById('assetBody');
   body.innerHTML = '';
-  var html = '';
-
-  for(var i=0;i<rows.length;i++){
-    var r = rows[i];
-    var targetAmt = newTotal * r.target / 100;
-    var adj = targetAmt - r.current;
-    var cls = adj > 0 ? 'buy' : adj < 0 ? 'sell' : '';
-    var adjText = adj > 0 ? '+'+fmt(adj) : adj < 0 ? fmt(adj) : '-';
-    document.getElementById('rbA'+i).textContent = adjText;
-    document.getElementById('rbA'+i).className = 'adj ' + cls;
-
-    html += '<tr><td>'+r.name+'</td><td>'+r.target+'%</td><td>'+fmt(targetAmt)+'</td><td>'+fmt(r.current)+'</td><td>'+pct(r.current,sumCurrent)+'</td><td class="'+cls+'">'+adjText+'</td></tr>';
-  }
-  html += '<tr class="total-row"><td>합계</td><td>'+sumTarget+'%</td><td>'+fmt(newTotal)+'</td><td>'+fmt(sumCurrent)+'</td><td>100%</td><td>'+(sumTarget!==100?'⚠️ 비중합 '+sumTarget+'%':'-')+'</td></tr>';
-  body.innerHTML = html;
-
-  var drift = 0;
-  for(var i=0;i<rows.length;i++){
-    drift += Math.abs((rows[i].current/sumCurrent*100||0) - rows[i].target);
-  }
-
-  document.getElementById('rbSummary').innerHTML =
-    '<div class="scard blue"><div class="lbl">총 자산(조정 후)</div><div class="val">'+fmt(newTotal)+'만</div></div>'+
-    '<div class="scard '+(sumTarget===100?'green':'red')+'"><div class="lbl">목표 비중 합</div><div class="val">'+sumTarget+'%</div>'+(sumTarget!==100?'<div class="sub">⚠️ 100%가 아닙니다</div>':'')+'</div>'+
-    '<div class="scard '+(drift<5?'green':drift<15?'amber':'red')+'"><div class="lbl">비중 편차(총)</div><div class="val">'+drift.toFixed(1)+'%p</div><div class="sub">'+(drift<5?'양호':drift<15?'리밸런싱 검토':'리밸런싱 필요')+'</div></div>'+
-    '<div class="scard purple"><div class="lbl">추가 투자금</div><div class="val">'+fmt(extra)+'만</div></div>';
-}
-
-/* ═══ 채권 시뮬레이터 ═══ */
-function calcBond(){
-  var invest = p(document.getElementById('bdInvest').value) * 10000; // 원
-  var fx = p(document.getElementById('bdFx').value);
-  var price = p(document.getElementById('bdPrice').value);
-  var coupon = p(document.getElementById('bdCoupon').value) / 100;
-  var years = p(document.getElementById('bdYears').value);
-  var taxRate = p(document.getElementById('bdTaxRate').value) / 100;
-
-  if(!invest||!fx||!price||!years) return;
-
-  var usd = invest / fx;
-  var faceUsd = usd / price * 100;
-  var capGainUsd = faceUsd - usd; // 비과세
-  var couponUsdPerYear = faceUsd * coupon;
-  var couponUsdTotal = couponUsdPerYear * years;
-  var couponAfterTax = couponUsdTotal * (1 - taxRate);
-  var totalUsd = faceUsd + couponAfterTax;
-  var usdReturn = (totalUsd / usd - 1) * 100;
-  var annReturn = usdReturn / years;
-
-  var taxableInterestKrwPerYear = couponUsdPerYear * fx; // 연간 과세이자 원화
-
-  document.getElementById('bdSummary').innerHTML =
-    '<div class="scard blue"><div class="lbl">매수 달러</div><div class="val">$'+fmt(usd)+'</div></div>'+
-    '<div class="scard green"><div class="lbl">액면가(만기회수)</div><div class="val">$'+fmt(faceUsd)+'</div></div>'+
-    '<div class="scard amber"><div class="lbl">자본차익(비과세)</div><div class="val">$'+fmt(capGainUsd)+'</div></div>'+
-    '<div class="scard purple"><div class="lbl">달러 수익률</div><div class="val">'+usdReturn.toFixed(1)+'%</div><div class="sub">연 '+annReturn.toFixed(1)+'% ('+years+'년)</div></div>';
-
-  // 환율별 수익률
-  var fxScenarios = [1100,1200,1250,1300,1350,1400,1450,1500,1600];
-  var fxBody = document.getElementById('bdFxBody');
-  fxBody.innerHTML = '';
-  for(var i=0;i<fxScenarios.length;i++){
-    var eFx = fxScenarios[i];
-    var krwBack = totalUsd * eFx;
-    var pnl = krwBack - invest;
-    var ret = (krwBack / invest - 1) * 100;
-    var ann = ret / years;
-    var cls = pnl >= 0 ? 'safe' : 'danger';
-    var highlight = (eFx === fx) ? ' style="background:#fffde7;font-weight:700"' : '';
-    fxBody.innerHTML += '<tr'+highlight+'><td>'+fmt(eFx)+'원'+(eFx===fx?' (유지)':'')+'</td><td>'+fmt(krwBack/10000)+'만</td><td class="'+cls+'">'+(pnl>=0?'+':'')+fmt(pnl/10000)+'만</td><td class="'+cls+'">'+ret.toFixed(1)+'%</td><td>연 '+ann.toFixed(1)+'%</td></tr>';
-  }
-
-  // 금종세 방어력
-  var taxAmounts = [10000,30000,50000,100000,200000]; // 만원
-  var taxBody = document.getElementById('bdTaxBody');
-  taxBody.innerHTML = '';
-  for(var i=0;i<taxAmounts.length;i++){
-    var inv = taxAmounts[i] * 10000;
-    var u = inv / fx;
-    var f = u / price * 100;
-    var interestKrw = f * coupon * fx;
-    var ratio = interestKrw / 20000000 * 100;
-    var verdict = ratio < 50 ? '✅ 매우 안전' : ratio < 80 ? '✅ 안전' : ratio < 100 ? '⚠️ 주의' : '🔴 초과';
-    var cls = ratio < 80 ? 'safe' : ratio < 100 ? 'warn' : 'danger';
-    taxBody.innerHTML += '<tr><td>'+fmt(taxAmounts[i]/10000)+'억</td><td>약 '+fmt(Math.round(interestKrw/10000))+'만원</td><td>'+ratio.toFixed(1)+'%</td><td class="'+cls+'">'+verdict+'</td></tr>';
-  }
-}
-
-/* ═══ 결손금 트래커 ═══ */
-var lossData = [
-  {year:2027, revenue:0},
-  {year:2028, revenue:3000},
-  {year:2029, revenue:5000},
-  {year:2030, revenue:4000}
-];
-
-function renderLossRows(){
-  var container = document.getElementById('lossRows');
-  container.innerHTML = '';
-  for(var i=0;i<lossData.length;i++){
-    var d = lossData[i];
-    var div = document.createElement('div');
-    div.className = 'loss-row';
-    div.innerHTML =
-      '<input type="text" value="'+d.year+'" data-idx="'+i+'" data-field="year" oninput="updateLoss(this)">'+
-      '<input type="text" value="'+fmt(d.revenue)+'" data-idx="'+i+'" data-field="revenue" oninput="fmtNum(this);updateLoss(this)">'+
-      '<div class="computed" id="lsBase'+i+'">-</div>'+
-      '<div class="computed" id="lsCarry'+i+'">-</div>'+
-      '<div class="computed" id="lsTax'+i+'">-</div>'+
-      '<button class="btn-del" onclick="delLossRow('+i+')">×</button>';
-    container.appendChild(div);
-  }
-  calcLoss();
-}
-
-function updateLoss(el){
-  var idx = parseInt(el.getAttribute('data-idx'));
-  var field = el.getAttribute('data-field');
-  if(field==='year') lossData[idx].year = parseInt(el.value)||0;
-  else lossData[idx].revenue = p(el.value);
-  calcLoss();
-}
-
-function addLossRow(){
-  var lastYear = lossData.length ? lossData[lossData.length-1].year + 1 : 2027;
-  lossData.push({year:lastYear, revenue:0});
-  renderLossRows();
-}
-
-function delLossRow(idx){
-  if(lossData.length <= 1) return;
-  lossData.splice(idx, 1);
-  renderLossRows();
-}
-
-function calcLoss(){
-  var expense = p(document.getElementById('lsExpense').value);
-  var taxRate = p(document.getElementById('lsTaxRate').value) / 100;
-
-  // FIFO 결손금 풀: [{year, amount}]
-  var lossPool = [];
-  var totalTax = 0;
-  var detailBody = document.getElementById('lsDetailBody');
-  detailBody.innerHTML = '';
-
-  for(var i=0;i<lossData.length;i++){
-    var d = lossData[i];
-    var baseIncome = d.revenue - expense; // 과세표준(전)
-
-    // 15년 시효 만료 제거
-    lossPool = lossPool.filter(function(l){ return d.year - l.year <= 15; });
-
-    var carryUsed = 0;
-    if(baseIncome > 0){
-      // FIFO 상계
-      var remaining = baseIncome;
-      for(var j=0;j<lossPool.length && remaining>0;j++){
-        var use = Math.min(lossPool[j].amount, remaining);
-        lossPool[j].amount -= use;
-        remaining -= use;
-        carryUsed += use;
-      }
-      lossPool = lossPool.filter(function(l){ return l.amount > 0; });
-      var taxableIncome = Math.max(remaining, 0);
-      var tax = taxableIncome * taxRate;
-      totalTax += tax;
-
-      document.getElementById('lsBase'+i).textContent = fmt(baseIncome);
-      document.getElementById('lsCarry'+i).textContent = lossPool.reduce(function(s,l){return s+l.amount;},0) > 0 ? fmt(lossPool.reduce(function(s,l){return s+l.amount;},0)) : '0';
-      document.getElementById('lsTax'+i).textContent = fmt(Math.round(tax));
-
-      detailBody.innerHTML += '<tr><td>'+d.year+'</td><td>'+fmt(d.revenue)+'</td><td>-'+fmt(expense)+'</td><td>'+fmt(baseIncome)+'</td><td class="sell">-'+fmt(carryUsed)+'</td><td>'+fmt(taxableIncome)+'</td><td>'+fmt(lossPool.reduce(function(s,l){return s+l.amount;},0))+'</td><td>'+fmt(Math.round(tax))+'</td><td>'+fmt(Math.round(totalTax))+'</td></tr>';
-    } else {
-      // 결손금 발생
-      var loss = Math.abs(baseIncome);
-      lossPool.push({year:d.year, amount:loss});
-      var totalCarry = lossPool.reduce(function(s,l){return s+l.amount;},0);
-
-      document.getElementById('lsBase'+i).textContent = fmt(baseIncome);
-      document.getElementById('lsCarry'+i).textContent = fmt(totalCarry);
-      document.getElementById('lsTax'+i).textContent = '0';
-
-      detailBody.innerHTML += '<tr><td>'+d.year+'</td><td>'+fmt(d.revenue)+'</td><td>-'+fmt(expense)+'</td><td class="danger">'+fmt(baseIncome)+'</td><td>-</td><td>0</td><td class="buy">'+fmt(totalCarry)+'</td><td>0</td><td>'+fmt(Math.round(totalTax))+'</td></tr>';
+  for(var i=0;i<assets.length;i++){
+    var a = assets[i];
+    var tr = document.createElement('tr');
+    var opts = '';
+    for(var j=0;j<OWNERS.length;j++){
+      opts += '<option value="'+OWNERS[j].val+'"'+(a.owner===OWNERS[j].val?' selected':'')+'>'+OWNERS[j].label+'</option>';
     }
+    tr.innerHTML =
+      '<td><input class="bucket-input" type="text" value="'+a.bucket+'" oninput="upd('+i+',\'bucket\',this.value)"></td>'+
+      '<td><input class="name-input" type="text" value="'+a.name+'" oninput="upd('+i+',\'name\',this.value)"></td>'+
+      '<td><select onchange="upd('+i+',\'owner\',this.value)">'+opts+'</select></td>'+
+      '<td><input class="num-input" type="number" value="'+a.amount+'" step="500" oninput="upd('+i+',\'amount\',+this.value||0)"></td>'+
+      '<td><input class="pct-input" type="number" value="'+a.totalYield+'" step="0.1" oninput="upd('+i+',\'totalYield\',+this.value||0)"></td>'+
+      '<td><input class="pct-input" type="number" value="'+a.taxableYield+'" step="0.1" oninput="upd('+i+',\'taxableYield\',+this.value||0)"></td>'+
+      '<td id="net_'+i+'" style="font-weight:700;color:var(--sf-green);white-space:nowrap">-</td>'+
+      '<td id="tax_'+i+'" style="color:var(--sf-warn);white-space:nowrap">-</td>'+
+      '<td><button class="btn-del" onclick="delRow('+i+')">삭제</button></td>';
+    body.appendChild(tr);
+  }
+  recalc();
+}
+
+function upd(i,k,v){ assets[i][k]=v; recalc(); }
+function addRow(){
+  assets.push({bucket:"추가자산", name:"신규 투자 자산", owner:"personal_kr_stock", amount:5000, totalYield:5, taxableYield:2});
+  renderTable();
+}
+function delRow(i){ if(assets.length<=1) return; assets.splice(i,1); renderTable(); }
+
+/* ═══ 전체 계산 ═══ */
+function recalc(){
+  var fxBase = +document.getElementById('fxBase').value || 1350;
+  var fxCur = +document.getElementById('fxCurrent').value || 1380;
+  var fxR = fxCur / fxBase;
+  var fxStressR = 1500 / fxBase;
+  var salaryY = (+document.getElementById('corpSalary').value||0) * 12;
+  var expY = +document.getElementById('corpExp').value || 0;
+
+  var pTotal=0, cTotal=0, pTaxSum=0, pStressSum=0, pNetProfit=0, cGross=0;
+
+  for(var i=0;i<assets.length;i++){
+    var a=assets[i], amt=a.amount||0;
+    var gross = amt * (a.totalYield/100);
+    var taxable=0, stress=0, net=0;
+
+    if(a.owner==='personal_us_bond'){
+      pTotal += amt;
+      taxable = amt*(a.taxableYield/100)*fxR;
+      stress = amt*(a.taxableYield/100)*fxStressR;
+      net = (gross*fxR) - (taxable*0.154);
+      pTaxSum += taxable;
+      pStressSum += stress;
+      pNetProfit += net;
+    } else if(a.owner==='personal_kr_stock'){
+      pTotal += amt;
+      taxable = amt*(a.taxableYield/100);
+      stress = taxable;
+      net = gross - (taxable*0.154);
+      pTaxSum += taxable;
+      pStressSum += stress;
+      pNetProfit += net;
+    } else if(a.owner==='personal_isa'||a.owner==='personal_pension'){
+      pTotal += amt;
+      net = gross;
+      pNetProfit += net;
+    } else if(a.owner==='corp'){
+      cTotal += amt;
+      cGross += gross;
+      net = gross;
+    }
+
+    var nEl=document.getElementById('net_'+i);
+    var tEl=document.getElementById('tax_'+i);
+    if(nEl) nEl.textContent = net.toFixed(1)+'만';
+    if(tEl) tEl.textContent = a.owner==='corp' ? '법인합산' : taxable.toFixed(1)+'만';
   }
 
-  var totalRevenue = lossData.reduce(function(s,d){return s+d.revenue;},0);
-  var totalCarryRemain = lossPool.reduce(function(s,l){return s+l.amount;},0);
-  var noLossTax = lossData.reduce(function(s,d){ var b=d.revenue-expense; return s+(b>0?b*taxRate:0); },0);
-  var saved = noLossTax - totalTax;
+  // 법인세 (과표 2억 이하 11%, 초과 22%)
+  var corpBase = Math.max(0, cGross - salaryY - expY);
+  var corpTax = corpBase<=20000 ? corpBase*0.11 : 20000*0.11 + (corpBase-20000)*0.22;
 
-  document.getElementById('lsSummary').innerHTML =
-    '<div class="scard blue"><div class="lbl">총 수익 합계</div><div class="val">'+fmt(totalRevenue)+'만</div></div>'+
-    '<div class="scard '+(totalCarryRemain>0?'amber':'green')+'"><div class="lbl">결손금 잔액</div><div class="val">'+fmt(totalCarryRemain)+'만</div>'+(totalCarryRemain>0?'<div class="sub">시효: '+lossPool.map(function(l){return l.year+'년 '+fmt(l.amount);}).join(', ')+'</div>':'')+'</div>'+
-    '<div class="scard purple"><div class="lbl">누적 법인세</div><div class="val">'+fmt(Math.round(totalTax))+'만</div></div>'+
-    '<div class="scard green"><div class="lbl">결손금 이월 절세액</div><div class="val">'+fmt(Math.round(saved))+'만</div><div class="sub">이월 없으면 '+fmt(Math.round(noLossTax))+'만</div></div>';
+  var grand = pTotal + cTotal;
+  var pR = grand>0 ? (pTotal/grand*100).toFixed(1) : 0;
+  var cR = grand>0 ? (cTotal/grand*100).toFixed(1) : 0;
+
+  // KPI 업데이트
+  document.getElementById('kpiTotal').textContent = (grand/10000).toFixed(2)+'억 원 ('+grand.toLocaleString()+'만)';
+  document.getElementById('kpiRatio').textContent = '개인 '+pR+'% ('+pTotal.toLocaleString()+'만) : 법인 '+cR+'% ('+cTotal.toLocaleString()+'만)';
+
+  document.getElementById('kpiTaxAmt').textContent = pTaxSum.toFixed(0)+'만 원';
+  document.getElementById('kpiTaxPct').textContent = (pTaxSum/2000*100).toFixed(1)+'% 소진 (잔여: '+(2000-pTaxSum).toFixed(0)+'만)';
+
+  var badge = document.getElementById('kpiTaxBadge');
+  if(pTaxSum<=1600){ badge.className='badge badge-safe'; badge.textContent='여유 (1,600만 이하)'; }
+  else if(pTaxSum<=2000){ badge.className='badge badge-warn'; badge.textContent='주의 (환율 버퍼 점검)'; }
+  else { badge.className='badge badge-danger'; badge.textContent='초과 (금종세 대상)'; }
+
+  var totalNet = pNetProfit + (cGross - corpTax);
+  var netYield = grand>0 ? totalNet/grand*100 : 0;
+  document.getElementById('kpiNet').textContent = '+'+totalNet.toFixed(0)+'만 원/년';
+  document.getElementById('kpiYield').textContent = '세후 실효수익률 연 '+netYield.toFixed(2)+'%';
+
+  document.getElementById('kpiStress').textContent = pStressSum.toFixed(0)+'만 원';
+  document.getElementById('kpiStressSub').textContent = pStressSum>2000 ? '⚠️ 1,500원 시 한도 초과 위험!' : '✅ 1,500원 급등 시에도 2,000만 이내 방어';
+
+  // 게이지
+  var nowPct = Math.min(100, pTaxSum/2000*100);
+  document.getElementById('gaugeNowText').textContent = pTaxSum.toFixed(0)+'만 / 2,000만';
+  var nowBar = document.getElementById('gaugeNowBar');
+  nowBar.style.width = nowPct+'%';
+  nowBar.className = 'gauge-fill '+(nowPct<80?'safe':nowPct<100?'warn':'danger');
+
+  var stPct = Math.min(100, pStressSum/2000*100);
+  document.getElementById('gaugeStressText').textContent = pStressSum.toFixed(0)+'만 / 2,000만';
+  var stBar = document.getElementById('gaugeStressBar');
+  stBar.style.width = stPct+'%';
+  stBar.className = 'gauge-fill '+(stPct<80?'safe':stPct<100?'warn':'danger');
+
+  // 법인 요약
+  document.getElementById('corpBox').innerHTML =
+    '• <b>법인 운용 총수익(세전):</b> 연 <b>'+cGross.toFixed(0)+'만 원</b><br>'+
+    '• <b>차감 손금(비용):</b> 대표 연봉 <b>'+salaryY.toLocaleString()+'만</b> + 고정 판관비 <b>'+expY.toLocaleString()+'만</b> = 총 <b>'+(salaryY+expY).toLocaleString()+'만</b> 비용 처리<br>'+
+    '• <b>법인세 과세표준:</b> <b>'+corpBase.toFixed(0)+'만</b> → 2026년 귀속 법인세(지방세 포함 11%): <b>'+corpTax.toFixed(1)+'만 원</b><br>'+
+    '• <b>법인 최종 세후 잔여이익(급여+유보):</b> <span style="color:var(--sf-green);font-weight:700">연 '+(cGross-corpTax).toFixed(1)+'만 원</span>';
 }
 
 /* ═══ sf-slots 연동 ═══ */
 window.CALC_KEY = 'barbell';
-
 window.slGetState = function(){
   return {
-    rb: {
-      total: document.getElementById('rbTotal').value,
-      extra: document.getElementById('rbExtra').value,
-      targets: [0,1,2,3,4].map(function(i){ return document.getElementById('rbT'+i).value; }),
-      currents: [0,1,2,3,4].map(function(i){ return document.getElementById('rbC'+i).value; })
-    },
-    bd: {
-      invest: document.getElementById('bdInvest').value,
-      fx: document.getElementById('bdFx').value,
-      price: document.getElementById('bdPrice').value,
-      coupon: document.getElementById('bdCoupon').value,
-      years: document.getElementById('bdYears').value,
-      taxRate: document.getElementById('bdTaxRate').value
-    },
-    ls: {
-      expense: document.getElementById('lsExpense').value,
-      taxRate: document.getElementById('lsTaxRate').value,
-      data: lossData
-    }
+    assets: assets,
+    fxBase: document.getElementById('fxBase').value,
+    fxCurrent: document.getElementById('fxCurrent').value,
+    corpSalary: document.getElementById('corpSalary').value,
+    corpExp: document.getElementById('corpExp').value
   };
 };
-
 window.slSetState = function(s){
   if(!s) return;
-  if(s.rb){
-    document.getElementById('rbTotal').value = s.rb.total||'100,000';
-    document.getElementById('rbExtra').value = s.rb.extra||'0';
-    (s.rb.targets||[]).forEach(function(v,i){ if(document.getElementById('rbT'+i)) document.getElementById('rbT'+i).value = v; });
-    (s.rb.currents||[]).forEach(function(v,i){ if(document.getElementById('rbC'+i)) document.getElementById('rbC'+i).value = v; });
-  }
-  if(s.bd){
-    document.getElementById('bdInvest').value = s.bd.invest||'10,000';
-    document.getElementById('bdFx').value = s.bd.fx||'1,350';
-    document.getElementById('bdPrice').value = s.bd.price||'85.71';
-    document.getElementById('bdCoupon').value = s.bd.coupon||'0.625';
-    document.getElementById('bdYears').value = s.bd.years||'3.5';
-    document.getElementById('bdTaxRate').value = s.bd.taxRate||'15.4';
-  }
-  if(s.ls){
-    document.getElementById('lsExpense').value = s.ls.expense||'4,200';
-    document.getElementById('lsTaxRate').value = s.ls.taxRate||'11';
-    if(s.ls.data && s.ls.data.length) lossData = s.ls.data;
-  }
-  renderLossRows();
-  calcRebal();
-  calcBond();
+  if(s.assets && s.assets.length) assets = s.assets;
+  if(s.fxBase) document.getElementById('fxBase').value = s.fxBase;
+  if(s.fxCurrent) document.getElementById('fxCurrent').value = s.fxCurrent;
+  if(s.corpSalary) document.getElementById('corpSalary').value = s.corpSalary;
+  if(s.corpExp) document.getElementById('corpExp').value = s.corpExp;
+  renderTable();
 };
 
-/* ═══ 초기화 ═══ */
-document.addEventListener('DOMContentLoaded', function(){
-  renderLossRows();
-  calcRebal();
-  calcBond();
-});
+renderTable();
 </script>
 <script src="/sf-slots.js?v=2"></script>
 </body>
