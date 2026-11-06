@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>스윙파머 4축 바벨 포트폴리오 & 절세 리밸런서 (2026 최신판)</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --card-border: #334155;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --emerald: #34d399;
+    --amber: #fbbf24;
+    --rose: #fb7185;
+    --indigo: #818cf8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Malgun Gothic", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 0 0 6px 0; color: #fff; }
+  .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 20px;
+  }
+  .kpi-card { margin-bottom: 0; }
+  .kpi-label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+  .kpi-value { font-size: 24px; font-weight: 800; margin: 6px 0; color: #fff; }
+  .kpi-sub { font-size: 12px; color: var(--muted); }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .badge-safe { background: rgba(52, 211, 153, 0.15); color: var(--emerald); }
+  .badge-warn { background: rgba(251, 191, 36, 0.15); color: var(--amber); }
+  .badge-danger { background: rgba(251, 113, 133, 0.15); color: var(--rose); }
+
+  h2 { font-size: 17px; margin: 0 0 14px 0; border-left: 4px solid var(--accent); padding-left: 10px; }
+  .controls-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .control-box {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .control-box label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  input[type="number"], input[type="text"], select {
+    background: #0f172a;
+    border: 1px solid #475569;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    width: 100%;
+  }
+  input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th, td {
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--card-border);
+    text-align: left;
+  }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; background: rgba(15, 23, 42, 0.5); }
+  .num-input { width: 100px; text-align: right; }
+  .pct-input { width: 70px; text-align: right; }
+  .btn {
+    background: var(--accent);
+    color: #0f172a;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .btn-del {
+    background: rgba(251, 113, 133, 0.2);
+    color: var(--rose);
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  .gauge-track {
+    width: 100%;
+    height: 14px;
+    background: #0f172a;
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 8px 0;
+    border: 1px solid var(--card-border);
+  }
+  .gauge-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--emerald), var(--accent));
+    transition: width 0.2s;
+  }
+  .bar-row { margin-bottom: 12px; }
+  .bar-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>💼 스윙파머 4축 바벨 포트폴리오 & 절세 리밸런서 (독립 실행형)</h1>
+  <div class="subtitle">모든 금액·수익률·환율·급여 숫자를 직접 클릭해 수정할 수 있습니다. (2026년 귀속 법인세율 11% 반영)</div>
+
+  <div class="kpi-grid">
+    <div class="card kpi-card">
+      <div class="kpi-label">총 운용 자산 (개인 : 법인)</div>
+      <div class="kpi-value" id="kpiTotalAsset">0원</div>
+      <div class="kpi-sub" id="kpiRatio">개인 0% : 법인 0%</div>
+    </div>
+    <div class="card kpi-card">
+      <div class="kpi-label">개인 금종세 게이지 (2,000만 한도)</div>
+      <div class="kpi-value" id="kpiTaxableIncome">0만 원</div>
+      <div class="kpi-sub"><span id="kpiTaxBadge" class="badge badge-safe">안전</span> <span id="kpiTaxPct">0% 소진</span></div>
+    </div>
+    <div class="card kpi-card">
+      <div class="kpi-label">연간 세후 순수익 + 현금흐름 합계</div>
+      <div class="kpi-value" id="kpiNetReturn" style="color:var(--emerald)">0만 원</div>
+      <div class="kpi-sub" id="kpiNetYield">세후 실효수익률 0.00%</div>
+    </div>
+    <div class="card kpi-card">
+      <div class="kpi-label">환율 1,500원 스트레스 테스트 시 금종세</div>
+      <div class="kpi-value" id="kpiStressTax">0만 원</div>
+      <div class="kpi-sub" id="kpiStressSub">고환율 시 과세 이자·배당 추정액</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>1. 매크로 환율 & 법인 급여·세율 직접 입력</h2>
+    <div class="controls-grid">
+      <div class="control-box">
+        <label><span>기준 원/달러 환율 (원)</span></label>
+        <input type="number" id="fxBase" value="1350" step="10" oninput="recalc()">
+        <div style="font-size:11px; color:var(--muted); margin-top:4px;">저쿠폰 미국채 매수 기준 환율</div>
+      </div>
+      <div class="control-box">
+        <label><span>이자 수령 시 가정 환율 (원)</span></label>
+        <input type="number" id="fxCurrent" value="1380" step="10" oninput="recalc()">
+        <div style="font-size:11px; color:var(--muted); margin-top:4px;">환율 상승 시 원화 환산 이자소득 증가 반영</div>
+      </div>
+      <div class="control-box">
+        <label><span>법인 대표 월 급여 설정 (만 원)</span></label>
+        <input type="number" id="corpSalaryMonthly" value="250" step="10" oninput="recalc()">
+        <div style="font-size:11px; color:var(--muted); margin-top:4px;">법인 수익에서 손금(비용) 처리할 월급</div>
+      </div>
+      <div class="control-box">
+        <label><span>법인 연간 고정 판관비 (만 원)</span></label>
+        <input type="number" id="corpExpenseYearly" value="1200" step="50" oninput="recalc()">
+        <div style="font-size:11px; color:var(--muted); margin-top:4px;">차량유지비, 임차료, AI 구독료 등 비용 상계액</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h2 style="margin:0;">2. 4축 버킷별 자산·수익률·과세비중 직접 수정</h2>
+      <button class="btn" onclick="addRow()">+ 자산 행 추가</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table id="assetTable">
+        <thead>
+          <tr>
+            <th>버킷 구분</th>
+            <th>자산 / 전략명</th>
+            <th>투자 주체</th>
+            <th>투자 금액 (만 원)</th>
+            <th>총 기대수익률 (%)</th>
+            <th>과세 이자/배당률 (%)</th>
+            <th>세후 순수익 (만 원)</th>
+            <th>금종세 산입 (만 원)</th>
+            <th>삭제</th>
+          </tr>
+        </thead>
+        <tbody id="assetBody"></tbody>
+      </table>
+    </div>
+    <div style="font-size:12px; color:var(--muted); margin-top:10px;">
+      💡 <b>저쿠폰 미국채(T 0.625 05/15/30) 계산식:</b> 매수단가 $85.71 기준, 투자원금 대비 실제 보유 액면가는 약 1.1667배($100/$85.71)입니다. 따라서 표면금리 0.625%는 원금 대비 약 <b>0.73%</b>의 과세 이자율로 자동 적용되며, 환율 변동분(현재환율/매수환율)이 금종세 산입액에 즉시 반영됩니다.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3. 개인 금종세(2,000만 원) 안전 마진 & 환율 스트레스 진단</h2>
+    <div class="bar-row">
+      <div class="bar-label">
+        <span>현재 설정 환율 기준 개인 과세 금융소득</span>
+        <strong id="gaugeNowText">0만 원 / 2,000만 원</strong>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="gaugeNowBar" style="width:0%"></div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">
+        <span>환율 1,500원 급등 시 개인 과세 금융소득 (스트레스 테스트)</span>
+        <strong id="gaugeStressText">0만 원 / 2,000만 원</strong>
+      </div>
+      <div class="gauge-track"><div class="gauge-fill" id="gaugeStressBar" style="width:0%; background:var(--amber);"></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>4. 법인 계좌 손익 & 세금 시뮬레이션 (2026년 귀속 11% 세율)</h2>
+    <div id="corpSummaryBox" style="font-size:14px; line-height:1.8;"></div>
+  </div>
+</div>
+
+<script>
+let assets = [
+  { bucket: "③방공호", name: "저쿠폰 미국채 (T 0.625 05/15/30)", owner: "personal_us_bond", amount: 30000, totalYield: 4.90, taxableYield: 0.73 },
+  { bucket: "①공격", name: "국내 개별주식 (매매차익 비과세)", owner: "personal_kr_stock", amount: 15000, totalYield: 8.00, taxableYield: 1.00 },
+  { bucket: "④최후보루", name: "중개형 ISA (국내상장 미국ETF/리츠)", owner: "personal_isa", amount: 6000, totalYield: 7.50, taxableYield: 0.00 },
+  { bucket: "④최후보루", name: "연금저축 + IRP (지수 추종 ETF)", owner: "personal_pension", amount: 4000, totalYield: 8.00, taxableYield: 0.00 },
+  { bucket: "①공격/인컴", name: "법인 미국 고쿠폰채/단기채 (SGOV/TLT 등)", owner: "corp", amount: 10000, totalYield: 4.80, taxableYield: 4.80 },
+  { bucket: "①공격/인컴", name: "법인 해외주식·커버드콜 (QQQ/JEPQ 등)", owner: "corp", amount: 10000, totalYield: 9.50, taxableYield: 9.50 }
+];
+
+function renderTable() {
+  const tbody = document.getElementById('assetBody');
+  tbody.innerHTML = '';
+  assets.forEach((item, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" value="${item.bucket}" oninput="updateItem(${idx}, 'bucket', this.value)" style="width:90px"></td>
+      <td><input type="text" value="${item.name}" oninput="updateItem(${idx}, 'name', this.value)"></td>
+      <td>
+        <select onchange="updateItem(${idx}, 'owner', this.value)">
+          <option value="personal_us_bond" ${item.owner==='personal_us_bond'?'selected':''}>개인(달러채권)</option>
+          <option value="personal_kr_stock" ${item.owner==='personal_kr_stock'?'selected':''}>개인(일반계좌)</option>
+          <option value="personal_isa" ${item.owner==='personal_isa'?'selected':''}>개인(ISA절세)</option>
+          <option value="personal_pension" ${item.owner==='personal_pension'?'selected':''}>개인(연금/IRP)</option>
+          <option value="corp" ${item.owner==='corp'?'selected':''}>법인(트리플통상)</option>
+        </select>
+      </td>
+      <td><input type="number" class="num-input" value="${item.amount}" step="500" oninput="updateItem(${idx}, 'amount', parseFloat(this.value)||0)"></td>
+      <td><input type="number" class="pct-input" value="${item.totalYield}" step="0.1" oninput="updateItem(${idx}, 'totalYield', parseFloat(this.value)||0)"></td>
+      <td><input type="number" class="pct-input" value="${item.taxableYield}" step="0.1" oninput="updateItem(${idx}, 'taxableYield', parseFloat(this.value)||0)"></td>
+      <td id="net_${idx}" style="font-weight:700; color:var(--emerald)">0</td>
+      <td id="taxable_${idx}" style="color:var(--amber)">0</td>
+      <td><button class="btn btn-del" onclick="removeRow(${idx})">삭제</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  recalc();
+}
+
+function updateItem(idx, key, val) {
+  assets[idx][key] = val;
+  recalc();
+}
+
+function addRow() {
+  assets.push({ bucket: "추가자산", name: "신규 투자 자산", owner: "personal_kr_stock", amount: 5000, totalYield: 5.0, taxableYield: 2.0 });
+  renderTable();
+}
+
+function removeRow(idx) {
+  assets.splice(idx, 1);
+  renderTable();
+}
+
+function recalc() {
+  const fxBase = parseFloat(document.getElementById('fxBase').value) || 1350;
+  const fxCurrent = parseFloat(document.getElementById('fxCurrent').value) || 1380;
+  const fxRatio = fxCurrent / fxBase;
+  const fxStressRatio = 1500 / fxBase;
+
+  const corpSalaryYear = (parseFloat(document.getElementById('corpSalaryMonthly').value) || 0) * 12;
+  const corpExpYear = parseFloat(document.getElementById('corpExpenseYearly').value) || 0;
+
+  let personalTotal = 0;
+  let corpTotal = 0;
+  let personalTaxableSum = 0;
+  let personalStressTaxableSum = 0;
+  let personalNetProfit = 0;
+  let corpGrossProfit = 0;
+
+  assets.forEach((item, idx) => {
+    const amt = item.amount || 0;
+    const gross = amt * (item.totalYield / 100);
+    let taxable = 0;
+    let stressTaxable = 0;
+    let net = 0;
+
+    if (item.owner === 'personal_us_bond') {
+      personalTotal += amt;
+      taxable = amt * (item.taxableYield / 100) * fxRatio;
+      stressTaxable = amt * (item.taxableYield / 100) * fxStressRatio;
+      const tax = taxable * 0.154;
+      net = (gross * fxRatio) - tax;
+      personalTaxableSum += taxable;
+      personalStressTaxableSum += stressTaxable;
+      personalNetProfit += net;
+    } else if (item.owner === 'personal_kr_stock') {
+      personalTotal += amt;
+      taxable = amt * (item.taxableYield / 100);
+      stressTaxable = taxable;
+      const tax = taxable * 0.154;
+      net = gross - tax;
+      personalTaxableSum += taxable;
+      personalStressTaxableSum += stressTaxable;
+      personalNetProfit += net;
+    } else if (item.owner === 'personal_isa' || item.owner === 'personal_pension') {
+      personalTotal += amt;
+      taxable = 0;
+      stressTaxable = 0;
+      net = gross;
+      personalNetProfit += net;
+    } else if (item.owner === 'corp') {
+      corpTotal += amt;
+      corpGrossProfit += gross;
+      net = gross; // 법인 세전이익으로 표시 후 하단에서 통합 정산
+    }
+
+    const netEl = document.getElementById('net_' + idx);
+    const taxEl = document.getElementById('taxable_' + idx);
+    if (netEl) netEl.textContent = net.toFixed(1) + '만';
+    if (taxEl) taxEl.textContent = item.owner === 'corp' ? '법인합산' : (taxable.toFixed(1) + '만');
+  });
+
+  // 법인 세금 계산 (2026년 귀속: 과표 2억 이하 11%, 초과분 22%)
+  const corpTaxBase = Math.max(0, corpGrossProfit - corpSalaryYear - corpExpYear);
+  let corpTax = 0;
+  if (corpTaxBase <= 20000) {
+    corpTax = corpTaxBase * 0.11;
+  } else {
+    corpTax = (20000 * 0.11) + ((corpTaxBase - 20000) * 0.22);
+  }
+  const corpNetRetained = corpGrossProfit - corpExpYear - corpTax; // 급여+법인유보 합산 실질이득
+
+  const grandTotal = personalTotal + corpTotal;
+  const pRatio = grandTotal > 0 ? ((personalTotal / grandTotal) * 100).toFixed(1) : 0;
+  const cRatio = grandTotal > 0 ? ((corpTotal / grandTotal) * 100).toFixed(1) : 0;
+
+  document.getElementById('kpiTotalAsset').textContent = (grandTotal / 10000).toFixed(2) + '억 원 (' + grandTotal.toLocaleString() + '만)';
+  document.getElementById('kpiRatio').textContent = `개인 ${pRatio}% (${personalTotal.toLocaleString()}만) : 법인 ${cRatio}% (${corpTotal.toLocaleString()}만)`;
+
+  document.getElementById('kpiTaxableIncome').textContent = personalTaxableSum.toFixed(0) + '만 원';
+  const taxPct = Math.min(100, (personalTaxableSum / 2000) * 100);
+  document.getElementById('kpiTaxPct').textContent = `${((personalTaxableSum / 2000) * 100).toFixed(1)}% 소진 (잔여 여유: ${(2000 - personalTaxableSum).toFixed(0)}만 원)`;
+
+  const badge = document.getElementById('kpiTaxBadge');
+  if (personalTaxableSum <= 1600) {
+    badge.className = 'badge badge-safe';
+    badge.textContent = '여유 (1,600만 이하)';
+  } else if (personalTaxableSum <= 2000) {
+    badge.className = 'badge badge-warn';
+    badge.textContent = '주의 (환율 버퍼 점검)';
+  } else {
+    badge.className = 'badge badge-danger';
+    badge.textContent = '초과 (금종세 대상)';
+  }
+
+  const totalNet = personalNetProfit + (corpGrossProfit - corpTax);
+  const netYield = grandTotal > 0 ? (totalNet / grandTotal) * 100 : 0;
+  document.getElementById('kpiNetReturn').textContent = '+' + totalNet.toFixed(0) + '만 원/년';
+  document.getElementById('kpiNetYield').textContent = `세후 실효수익률 연 ${netYield.toFixed(2)}%`;
+
+  document.getElementById('kpiStressTax').textContent = personalStressTaxableSum.toFixed(0) + '만 원';
+  document.getElementById('kpiStressSub').textContent = personalStressTaxableSum > 2000 ? '⚠️ 1,500원 시 한도 초과 위험!' : '✅ 1,500원 급등 시에도 2,000만 이내 방어';
+
+  document.getElementById('gaugeNowText').textContent = `${personalTaxableSum.toFixed(0)}만 원 / 2,000만 원`;
+  document.getElementById('gaugeNowBar').style.width = Math.min(100, (personalTaxableSum / 2000) * 100) + '%';
+
+  document.getElementById('gaugeStressText').textContent = `${personalStressTaxableSum.toFixed(0)}만 원 / 2,000만 원`;
+  document.getElementById('gaugeStressBar').style.width = Math.min(100, (personalStressTaxableSum / 2000) * 100) + '%';
+
+  document.getElementById('corpSummaryBox').innerHTML = `
+    • <b>법인 운용 총수익(세전):</b> 연 <b>${corpGrossProfit.toFixed(0)}만 원</b><br>
+    • <b>차감 손금(비용):</b> 대표 연봉 <b>${corpSalaryYear.toLocaleString()}만 원</b> + 고정 판관비 <b>${corpExpYear.toLocaleString()}만 원</b> = 총 <b>${(corpSalaryYear + corpExpYear).toLocaleString()}만 원</b> 비용 처리<br>
+    • <b>법인세 과세표준:</b> <b>${corpTaxBase.toFixed(0)}만 원</b> → <b>2026년 귀속 법인세(지방세 포함 11%): ${corpTax.toFixed(1)}만 원</b><br>
+    • <b>법인 계좌 최종 세후 잔여이익(급여+유보 합산):</b> <span style="color:var(--emerald); font-weight:700;">연 ${(corpGrossProfit - corpTax).toFixed(1)}만 원</span>
+  `;
+}
+
+renderTable();
+</script>
+</body>
+</html>
