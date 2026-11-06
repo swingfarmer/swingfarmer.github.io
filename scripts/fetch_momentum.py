@@ -357,6 +357,7 @@ def main():
         with open(fpath, 'w', encoding='utf-8') as f:
             json.dump(output, f, ensure_ascii=False, indent=2)
         _print_summary(output)
+        _update_history(output, 'intraday')
 
     # ── 주간/월간은 일봉 데이터 필요 ──
     if do_weekly or do_monthly:
@@ -453,7 +454,7 @@ def _update_history(output, period):
     if period not in hist:
         hist[period] = []
 
-    today = output['updated']
+    today = output['updated'][:10]  # YYYY-MM-DD만 (장중은 'YYYY-MM-DD HH:MM' 형식)
     stats = output.get('stats', {})
     sectors = output.get('sectors', [])
     top5_sectors = [{'name': s['sector'], 'pct': s['return_pct']} for s in sectors[:5]]

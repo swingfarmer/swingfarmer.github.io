@@ -145,7 +145,7 @@ function loadPeriod(period){
 
 function loadHistory(){
   document.getElementById('content').innerHTML='<div class="loading">히스토리 로딩 중…</div>';
-  document.getElementById('updated').textContent='모멘텀 추이 (주간/월간)';
+  document.getElementById('updated').textContent='모멘텀 추이 (일간/주간)';
   fetch('/data/kr/momentum/momentum_history.json?t='+Date.now())
     .then(function(r){if(!r.ok) throw new Error('히스토리 없음'); return r.json();})
     .then(function(data){ renderHistory(data); })
@@ -156,18 +156,36 @@ function loadHistory(){
 
 function renderHistory(data){
   var html = '';
+  var isDark = document.body.classList.contains('dark') || window.matchMedia('(prefers-color-scheme:dark)').matches;
+  var gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)';
+  var textColor = isDark ? '#8899aa' : '#888';
 
-  // 차트
-  html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;">';
-  html += '<div style="font-weight:700;font-size:14px;margin-bottom:12px;">📈 평균 수익률 추이</div>';
-  html += '<div style="position:relative;height:280px;"><canvas id="histChart"></canvas></div>';
-  html += '</div>';
+  var intraday = data.intraday || [];
+  var weekly = data.weekly || [];
 
-  // 주간 테이블
-  ['weekly','monthly'].forEach(function(p){
+  // ── 일간 차트 (장중 모멘텀) ──
+  if(intraday.length >= 1){
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;">';
+    html += '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">⏰ 장중 모멘텀 추이 (매일 10시경)</div>';
+    html += '<div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">전일 종가 대비 등락률 · 코스피200 평균</div>';
+    html += '<div style="position:relative;height:250px;"><canvas id="dailyChart"></canvas></div>';
+    html += '</div>';
+  }
+
+  // ── 주간 차트 ──
+  if(weekly.length >= 1){
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;">';
+    html += '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">📊 주간 모멘텀 추이 (매주 금요일)</div>';
+    html += '<div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">5거래일 수익률 · 코스피200 평균</div>';
+    html += '<div style="position:relative;height:250px;"><canvas id="weeklyChart"></canvas></div>';
+    html += '</div>';
+  }
+
+  // ── 히스토리 테이블 (일간 + 주간) ──
+  [['intraday','일간 (장중)'],['weekly','주간']].forEach(function(pair){
+    var p = pair[0], label = pair[1];
     var items = (data[p] || []).slice().reverse();
     if(!items.length) return;
-    var label = p === 'weekly' ? '주간' : '월간';
     html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;">';
     html += '<div style="font-weight:700;font-size:14px;margin-bottom:12px;">📋 '+label+' 히스토리</div>';
     html += '<div style="overflow:auto;max-height:400px;">';
@@ -175,7 +193,7 @@ function renderHistory(data){
     items.forEach(function(d){
       var avgCls = d.avg_return >= 0 ? 'up' : 'down';
       var gainers = (d.top_gainers||[]).map(function(g){ return g.name+'('+(g.pct>=0?'+':'')+g.pct.toFixed(1)+'%)'; }).join(', ');
-      var losers = (d.top_losers||[]).map(function(g){ return g.name+(g.pct>=0?'+':'')+g.pct.toFixed(1)+'%'; }).join(', ');
+      var losers = (d.top_losers||[]).map(function(g){ return g.name+'('+(g.pct>=0?'+':'')+g.pct.toFixed(1)+'%)'; }).join(', ');
       html += '<tr>';
       html += '<td style="text-align:left;font-weight:600">'+d.date+'</td>';
       html += '<td class="'+avgCls+'">'+(d.avg_return>=0?'+':'')+d.avg_return.toFixed(1)+'%</td>';
@@ -190,57 +208,54 @@ function renderHistory(data){
 
   document.getElementById('content').innerHTML = html;
 
-  // 차트 그리기
-  var weekly = data.weekly || [];
-  var monthly = data.monthly || [];
-  var allDates = {};
-  weekly.forEach(function(d){ allDates[d.date] = true; });
-  monthly.forEach(function(d){ allDates[d.date] = true; });
-  var labels = Object.keys(allDates).sort();
-
-  var wMap = {}; weekly.forEach(function(d){ wMap[d.date] = d.avg_return; });
-  var mMap = {}; monthly.forEach(function(d){ mMap[d.date] = d.avg_return; });
-  var wData = labels.map(function(d){ return wMap[d] !== undefined ? wMap[d] : null; });
-  var mData = labels.map(function(d){ return mMap[d] !== undefined ? mMap[d] : null; });
-
-  var isDark = document.body.classList.contains('dark') || window.matchMedia('(prefers-color-scheme:dark)').matches;
-  var gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)';
-  var textColor = isDark ? '#8899aa' : '#888';
+  // ── 차트 그리기 ──
+  function makeChart(canvasId, items, color, label){
+    var ctx = document.getElementById(canvasId);
+    if(!ctx || items.length < 1) return null;
+    var labels = items.map(function(d){ return d.date.slice(5); }); // MM-DD
+    var vals = items.map(function(d){ return d.avg_return; });
+    return new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: label,
+          data: vals,
+          borderColor: color,
+          backgroundColor: color + '18',
+          fill: true,
+          borderWidth: 2,
+          pointRadius: 4,
+          pointBackgroundColor: color,
+          tension: 0.2
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: isDark ? '#1e293b' : '#fff',
+            titleColor: isDark ? '#ddd' : '#333',
+            bodyColor: isDark ? '#aaa' : '#666',
+            borderColor: isDark ? '#334155' : '#ddd',
+            borderWidth: 1,
+            callbacks: { label: function(c){ return (c.parsed.y>=0?'+':'')+c.parsed.y.toFixed(1)+'%'; } }
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 }, maxRotation: 0 } },
+          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 }, callback: function(v){ return (v>=0?'+':'')+v+'%'; } } }
+        }
+      }
+    });
+  }
 
   if(histChart) histChart.destroy();
-  var ctx = document.getElementById('histChart');
-  if(!ctx || labels.length < 1) return;
+  if(window._weeklyChart) window._weeklyChart.destroy();
 
-  histChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [
-        { label: '주간', data: wData, borderColor: '#e89a3c', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 4, spanGaps: true },
-        { label: '월간', data: mData, borderColor: '#2563eb', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 4, spanGaps: true }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { position: 'bottom', labels: { color: textColor, font: { size: 12 }, boxWidth: 12 } },
-        tooltip: {
-          backgroundColor: isDark ? '#1e293b' : '#fff',
-          titleColor: isDark ? '#ddd' : '#333',
-          bodyColor: isDark ? '#aaa' : '#666',
-          borderColor: isDark ? '#334155' : '#ddd',
-          borderWidth: 1,
-          callbacks: { label: function(c){ return c.dataset.label+': '+(c.parsed.y !== null ? (c.parsed.y>=0?'+':'')+c.parsed.y.toFixed(1)+'%' : '-'); } }
-        }
-      },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 }, maxRotation: 0 } },
-        y: { grid: { color: gridColor }, ticks: { color: textColor, callback: function(v){ return (v>=0?'+':'')+v+'%'; } },
-          title: { display: true, text: '평균 수익률', color: textColor, font: { size: 11 } } }
-      }
-    }
-  });
+  histChart = makeChart('dailyChart', intraday, '#10b981', '일간');
+  window._weeklyChart = makeChart('weeklyChart', weekly, '#e89a3c', '주간');
 }
 
 function render(data){
