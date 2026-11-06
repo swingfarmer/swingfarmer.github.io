@@ -52,8 +52,8 @@ def get_conn():
         dsn='db1007_medium', config_dir=WALLET_DIR, wallet_location=WALLET_DIR,
         wallet_password=os.environ.get('ORACLE_WALLET_PASSWORD', ''))
 
-def fetch_api(data_type, search_date, max_retries=3):
-    """수출입은행 API 호출. result=1 성공, 그 외 실패/비영업일. 최대 3회 재시도.
+def fetch_api(data_type, search_date, max_retries=5):
+    """수출입은행 API 호출. result=1 성공, 그 외 실패/비영업일. 최대 5회 재시도 (60초 간격).
     Returns: (data, fail_reason)  data=None이면 fail_reason에 원인 문자열."""
     key = API_KEYS.get(data_type, API_KEYS['AP01'])
     url = f"{BASE_URL}?authkey={key}&searchdate={search_date}&data={data_type}"
@@ -89,8 +89,8 @@ def fetch_api(data_type, search_date, max_retries=3):
             last_err = f'{type(e).__name__}: {e}'
             print(f"  ⚠ API 호출 실패 ({data_type}, {search_date}), 시도 {attempt}/{max_retries}: {last_err}")
         if attempt < max_retries:
-            time.sleep(15 * attempt)  # 15초, 30초 대기 후 재시도
-    return None, f'3회 재시도 실패 — 마지막 에러: {last_err}'
+            time.sleep(60)  # 60초 대기 후 재시도 (API 불안정 구간 탈출용)
+    return None, f'{max_retries}회 재시도 실패 — 마지막 에러: {last_err}'
 
 def parse_num(val):
     """문자열 → float. 쉼표 제거."""
