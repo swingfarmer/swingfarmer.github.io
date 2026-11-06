@@ -185,6 +185,18 @@ function renderHistory(data){
   }
   html += '</div>';
 
+  // ── 월간 차트 ──
+  var monthly = data.monthly || [];
+  html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;">';
+  html += '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">📆 월간 모멘텀 추이</div>';
+  html += '<div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">22거래일 수익률 · 코스피200 평균</div>';
+  if(monthly.length >= 2){
+    html += '<div style="position:relative;height:250px;"><canvas id="monthlyChart"></canvas></div>';
+  } else {
+    html += '<div style="text-align:center;padding:40px 0;color:var(--text-dim);font-size:13px;">📊 데이터가 2일 이상 쌓이면 차트가 표시됩니다 ('+monthly.length+'건 수집됨)</div>';
+  }
+  html += '</div>';
+
   // ── 히스토리 테이블 (일간 + 주간 + 월간) ──
   [['intraday','일간 (장중)'],['weekly','주간'],['monthly','월간 (22거래일)']].forEach(function(pair){
     var p = pair[0], label = pair[1];
@@ -257,9 +269,11 @@ function renderHistory(data){
 
   if(histChart) histChart.destroy();
   if(window._weeklyChart) window._weeklyChart.destroy();
+  if(window._monthlyChart) window._monthlyChart.destroy();
 
   histChart = makeChart('dailyChart', intraday, '#10b981', '일간');
   window._weeklyChart = makeChart('weeklyChart', weekly, '#e89a3c', '주간');
+  window._monthlyChart = makeChart('monthlyChart', monthly, '#2563eb', '월간');
 }
 
 function render(data){
