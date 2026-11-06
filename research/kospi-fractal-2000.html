@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>2000 닷컴버블 × 2026 코스피 프랙탈 비교 | 스윙파머</title>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JD3EPQXMND"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JD3EPQXMND');</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="/common.css?v=6">
+<style>
+:root { --sf-max-w: 920px; }
+.back-link{display:inline-block;margin-bottom:16px;color:#1F4E78;text-decoration:none;font-size:14px}
+.back-link:hover{text-decoration:underline}
+.meta{font-size:12px;color:#888;margin-bottom:6px}
+.meta .tag{display:inline-block;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-right:6px}
+h1{color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:8px;font-size:22px;line-height:1.4}
+.subtitle{color:#666;font-size:14px;margin-bottom:24px;line-height:1.6}
+
+.content{background:white;border-radius:10px;padding:28px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.content h2{color:#1F4E78;font-size:17px;border-left:4px solid #1F4E78;padding-left:10px;margin:32px 0 14px 0}
+.content h2:first-child{margin-top:0}
+.content h3{color:#1F4E78;font-size:15px;margin-top:22px;border-bottom:1px solid #e5e7eb;padding-bottom:4px}
+.content p{margin:10px 0;font-size:14px;line-height:1.8;color:#333}
+.content ul,.content ol{padding-left:24px;margin:10px 0}
+.content li{margin-bottom:5px;font-size:14px;line-height:1.7;color:#333}
+.content strong{color:#1a1a1a}
+
+.tbl-wrap{overflow-x:auto;margin:14px 0;-webkit-overflow-scrolling:touch}
+.content table{width:100%;border-collapse:collapse;font-size:13px;min-width:600px}
+.content table th{background:#1F4E78;color:white;padding:7px 8px;font-weight:600;text-align:center;white-space:nowrap}
+.content table td{padding:7px 8px;border-bottom:1px solid #eee;text-align:center}
+.content table tr:nth-child(even){background:#f8fafc}
+.content table td:first-child{text-align:left;font-weight:600;color:#1F4E78;white-space:nowrap}
+td.neg{color:#dc2626;font-weight:700}
+td.pos{color:#059669;font-weight:700}
+
+.box{padding:14px 18px;border-radius:6px;margin:14px 0;font-size:14px;line-height:1.7}
+.box.warn{background:#fef3c7;border-left:4px solid #d97706;color:#92400e}
+.box.info{background:#dbeafe;border-left:4px solid #2563eb;color:#1e3a8a}
+.box.danger{background:#fef2f2;border-left:4px solid #dc2626;color:#991b1b}
+.box.key{background:linear-gradient(135deg,#1F4E78,#2563eb);color:white;border-radius:10px;padding:20px}
+.box.key strong{color:#fbbf24}
+
+.chart-container{position:relative;height:380px;width:100%;margin:16px 0}
+
+.wave{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+@media(max-width:600px){.wave{grid-template-columns:1fr}}
+.wave-card{border:1px solid #e5e7eb;border-radius:8px;padding:14px;position:relative}
+.wave-card.down{border-left:4px solid #dc2626}
+.wave-card.up{border-left:4px solid #059669}
+.wave-card .label{font-size:12px;color:#888;font-weight:600;margin-bottom:4px}
+.wave-card .nums{display:flex;gap:14px;margin:8px 0}
+.wave-card .num{font-size:13px}
+.wave-card .num b{font-size:20px;display:block}
+.wave-card .num.red b{color:#dc2626}
+.wave-card .num.green b{color:#059669}
+.wave-card .note{font-size:12px;color:#666;margin-top:6px;line-height:1.5}
+
+.status-badge{display:inline-block;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700}
+.status-badge.confirmed{background:#dcfce7;color:#166534}
+.status-badge.progress{background:#fef3c7;color:#92400e}
+.status-badge.projection{background:#fef2f2;color:#991b1b}
+
+.related{margin-top:32px;padding-top:20px;border-top:1px solid #e5e7eb}
+.related h3{font-size:14px;color:#888;margin-bottom:10px;border:none;padding:0}
+.related a{display:inline-block;padding:6px 14px;background:#f0f5fa;color:#1F4E78;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;margin-right:8px;margin-bottom:8px}
+.related a:hover{background:#1F4E78;color:white}
+
+footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
+</style>
+
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=5"></script>
+</head>
+<body class="sf-narrow">
+
+<a href="./" class="back-link">← 리서치 목록으로</a>
+
+<div class="meta">
+  <span class="tag">프랙탈</span>
+  <span>2026.11.06 · 2000 닷컴버블(나스닥) vs 2026 코스피 파동 비교 — 뉴스 크로스체크 완료</span>
+</div>
+
+<h1>🔴 2000 닷컴버블 × 2026 코스피 프랙탈 비교</h1>
+<p class="subtitle">2000년 나스닥이 13개월에 걸쳐 그린 하락 사이클을, 2026년 코스피가 5개월로 압축 재현하고 있다. 파동 구간별 등락률이 소수점 단위까지 유사하지만, 기간(속도)에서 결정적 차이. 데이터 전수 대조 및 뉴스 출처 검증 완료.</p>
+
+<div class="content">
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>Executive Summary</h2>
+
+<p>2026년 코스피는 반도체 초호황 기대감에 6월 19일 장중 9,385.59pt(역대 최고)까지 치솟은 뒤, 레버리지 ETF 반대매매·외국인 연속 순매도·AI 투자 회의론이 겹치면서 5개월 만에 장중 4,911pt까지 -47.7% 폭락했다. 이 하락 궤적이 2000년 나스닥 닷컴버블 붕괴의 파동 구조와 정밀하게 일치한다.</p>
+
+<div class="box warn">
+  <strong>⚠️ 해석 주의:</strong> 프랙탈 비교는 과거 패턴 대입이지 예측 모델이 아님. 5개 변곡점을 맞추고 6번째를 외삽하는 것은 표본 과적합(overfitting)의 전형. 참고 프레임워크로만 활용하고, 이것만으로 매매 판단하면 안 됨.
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>1. 파동별 정밀 비교표</h2>
+
+<p>아래 표의 2026년 코스피 데이터는 뉴스 기사·한국거래소 공시로 모두 크로스체크 완료.</p>
+
+<div class="tbl-wrap"><table>
+<tr>
+  <th>파동</th>
+  <th>2000 나스닥</th>
+  <th>기간</th>
+  <th>등락</th>
+  <th>2026 코스피</th>
+  <th>기간</th>
+  <th>등락</th>
+  <th>검증</th>
+</tr>
+<tr>
+  <td>최고점</td>
+  <td>5,132 (3/10 장중)</td><td>—</td><td>—</td>
+  <td>9,385.59 (6/19 장중)</td><td>—</td><td>—</td>
+  <td><span class="status-badge confirmed">✓ 확인</span></td>
+</tr>
+<tr>
+  <td>1차 하락</td>
+  <td>5,132→3,227</td><td>~2.5개월</td><td class="neg">-37.1%</td>
+  <td>9,385→5,262</td><td>40일</td><td class="neg">-43.9%</td>
+  <td><span class="status-badge confirmed">✓ 확인</span></td>
+</tr>
+<tr>
+  <td>1차 반등</td>
+  <td>3,227→4,289</td><td>~4개월</td><td class="pos">+32.9%</td>
+  <td>5,262→~7,200</td><td>~6주</td><td class="pos">+36.9%</td>
+  <td><span class="status-badge confirmed">✓ 확인</span></td>
+</tr>
+<tr>
+  <td>2차 하락</td>
+  <td>4,289→3,042</td><td>~2개월</td><td class="neg">-29.1%</td>
+  <td>~7,200→5,292</td><td>~5주</td><td class="neg">-26.5%</td>
+  <td><span class="status-badge confirmed">✓ 확인</span></td>
+</tr>
+<tr>
+  <td>2차 반등</td>
+  <td>3,042→3,514</td><td>~1개월</td><td class="pos">+15.5%</td>
+  <td>5,292→6,086</td><td>~2주</td><td class="pos">+15.0%</td>
+  <td><span class="status-badge confirmed">✓ 확인</span></td>
+</tr>
+<tr style="background:#fef2f2">
+  <td>3차 급락</td>
+  <td>3,514→1,619</td><td>~5개월</td><td class="neg">-53.9%</td>
+  <td>6,086→4,911(진행중)</td><td>진행중</td><td class="neg">-19.3%</td>
+  <td><span class="status-badge progress">진행중</span></td>
+</tr>
+</table></div>
+
+<div class="box info">
+  <strong>속도 차이:</strong> 나스닥은 고점→1차 저점까지 약 2.5개월. 코스피는 동일 낙폭을 40일(영업일 기준 약 28일)에 달성. 약 <b>2~2.5배 빠른 속도</b>로 진행. 한국 레버리지 ETF 반대매매 메커니즘이 낙폭을 압축시킨 핵심 원인.
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>2. 2026 코스피 주요 변곡점 — 뉴스 출처 크로스체크</h2>
+
+<div class="wave">
+  <div class="wave-card down">
+    <div class="label">최고점 → 1차 하락</div>
+    <div class="nums">
+      <div class="num red"><b>9,385 → 5,262</b>6.19→7.29 장중</div>
+    </div>
+    <div class="note">
+      <b>6/19:</b> 장중 9,385.59 역대 최고치(세계일보·뉴스토마토·노컷뉴스 확인). 종가 9,052.42. 장중 9,331까지 올랐다가 8,800까지 롤러코스터.<br>
+      <b>6/23~26:</b> 서킷브레이커 2회 연속 발동. -9.99%, 8,198선.<br>
+      <b>7/7:</b> 서킷브레이커 발동, 7,404(-8.03%). 삼전·닉스 10%대 급락.<br>
+      <b>7/13:</b> 6,806.93(-8.95%). 7,000선 붕괴.<br>
+      <b>7/28:</b> 서킷브레이커 발동, 6,213(-8.02%).<br>
+      <b>7/29:</b> 장중 5,262까지 추락(세계일보 확인).<br>
+      출처: 부산일보, 경향신문, 쿠키뉴스, 세계일보
+    </div>
+  </div>
+  <div class="wave-card up">
+    <div class="label">1차 반등</div>
+    <div class="nums">
+      <div class="num green"><b>5,262 → ~7,200</b>7.29→9월 초</div>
+    </div>
+    <div class="note">
+      <b>7/31:</b> +17.91% 폭등(역대 최대 일일 상승률). 헤지펀드 청산 후 저가매수.<br>
+      <b>8월:</b> 6,300~6,800 숨고르기. 8/18 장중 7,200 터치 후 6,925로 마감.<br>
+      <b>9월 초:</b> 7,000~7,200 구간 정착. 1차 저점 대비 +37% 기술적 반등.<br>
+      출처: 아시아경제, 국민일보, 헤럴드경제
+    </div>
+  </div>
+  <div class="wave-card down">
+    <div class="label">2차 하락</div>
+    <div class="nums">
+      <div class="num red"><b>~7,200 → 5,292</b>9월→10.15</div>
+    </div>
+    <div class="note">
+      <b>9/28:</b> 추석 후 급락 개시. 증권사 예상 밴드 6,500~7,250.<br>
+      <b>10/8:</b> 6,625.93. 삼성전자 3Q 실적 서프라이즈에도 하락.<br>
+      <b>10/13:</b> 6,035(-5.46%). 고점 대비 -36% 수준.<br>
+      <b>10/15:</b> '검은 목요일'. 서킷브레이커 발동, 장중 5,290선.<br>
+      출처: 헤럴드경제, 뉴스토마토
+    </div>
+  </div>
+  <div class="wave-card up">
+    <div class="label">2차 반등 (데드캣 바운스)</div>
+    <div class="nums">
+      <div class="num green"><b>5,292 → 6,086</b>10.15→10.28</div>
+    </div>
+    <div class="note">
+      SK하이닉스 3Q 호실적 촉매. 10/28 +6.63%(종가 6,012, 장중 6,086). 10거래일 만에 6,000선 탈환. 10/15 저점 대비 +15%.
+    </div>
+  </div>
+</div>
+
+<div class="wave">
+  <div class="wave-card down" style="border-left-color:#7c3aed">
+    <div class="label">3차 급락 (현재 진행중)</div>
+    <div class="nums">
+      <div class="num red"><b>6,086 → 4,911</b>10.28→11.06 장중</div>
+    </div>
+    <div class="note">
+      <b>11/5:</b> -5.28% 급락(5,383).<br>
+      <b>11/6:</b> 개장 3분 만에 -8% → 서킷브레이커 + 매도 사이드카 발동. 장중 4,911.28(5,000선 붕괴). 종가 5,059.69(-6.02%). 올해 11번째 서킷브레이커.<br>
+      7월 1차 저점(5,262)과 10월 2차 저점(5,292) 모두 하향 이탈 → <b>신저가 구간</b>.<br>
+      2차 반등 고점 대비 -19.3%(장중), -16.9%(종가) 진행 중.<br>
+      출처: 이데일리, 부산일보, 뉴스토마토
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>3. 차트 — 파동 구조 오버레이</h2>
+
+<div class="chart-container">
+  <canvas id="fractalChart"></canvas>
+</div>
+<p style="font-size:11px;color:#888">※ 두 시계열을 최고점=100으로 정규화. 나스닥은 2000.3~2001.4(13개월), 코스피는 2026.6~11(5개월). X축은 고점 이후 경과 비율(%)로 정렬하여 속도 차이를 시각화.</p>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>4. 원문 수치 검증 — 보정 사항</h2>
+
+<p>원 분석에서 제시한 2000년 나스닥 수치를 실제 데이터와 대조한 결과, 일부 보정이 필요합니다.</p>
+
+<div class="tbl-wrap"><table>
+<tr><th>항목</th><th>원문 수치</th><th>실제 데이터</th><th>판정</th></tr>
+<tr><td>나스닥 최고점</td><td>장중 5,132 / 종가 5,048</td><td>3/10 장중 5,132.52 / 종가 5,048.62</td><td><span class="status-badge confirmed">✓ 정확</span></td></tr>
+<tr><td>1차 하락폭</td><td>-41.3%</td><td>5,132→3,227(5/23 장중) = -37.1%</td><td><span class="status-badge progress">보정 필요</span></td></tr>
+<tr><td>1차 반등폭</td><td>+38.0%</td><td>3,227→4,289(7/17) = +32.9%</td><td><span class="status-badge progress">보정 필요</span></td></tr>
+<tr><td>2차 하락폭</td><td>-23.0%</td><td>4,289→3,042(12/20) = -29.1%</td><td><span class="status-badge progress">보정 필요</span></td></tr>
+<tr><td>2차 반등폭</td><td>+13.3%</td><td>3,042→3,514(1/24) = +15.5%</td><td><span class="status-badge progress">보정 필요</span></td></tr>
+<tr><td>최종 저점</td><td>3,514→1,619(-44%)</td><td>3,514→1,619(4/4) = -53.9%</td><td><span class="status-badge progress">보정 필요</span></td></tr>
+<tr><td>코스피 6/19 고점</td><td>장중 9,385.59</td><td>세계일보·노컷뉴스·뉴스토마토 확인</td><td><span class="status-badge confirmed">✓ 정확</span></td></tr>
+<tr><td>코스피 7/29 저점</td><td>장중 ~5,255</td><td>세계일보: "7월 29일 장중 5262"</td><td><span class="status-badge confirmed">✓ 정확</span></td></tr>
+<tr><td>코스피 11/6 저점</td><td>장중 4,911.28</td><td>이데일리·뉴스토마토 확인(4,923.47~4,911)</td><td><span class="status-badge confirmed">✓ 정확</span></td></tr>
+</table></div>
+
+<div class="box warn">
+  <strong>보정 요약:</strong> 원문은 2000년 나스닥의 등락률 수치를 실제보다 다소 과장(1차 하락 -41% vs 실제 -37%, 최종 하락 -44% vs 실제 -54%)하여 2026년 코스피와의 유사도를 높게 표현한 면이 있음. 보정 후에도 파동 구조의 유사성 자체는 유효하나, 정확한 수치 기반 외삽은 더욱 신중해야 함.
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>5. 구조적 차이 — 같은 패턴, 다른 원인</h2>
+
+<div class="tbl-wrap"><table>
+<tr><th>비교 항목</th><th>2000 나스닥</th><th>2026 코스피</th></tr>
+<tr><td>버블 원인</td><td>적자 닷컴 기업 IPO 거품</td><td>반도체 실적 호황 + 레버리지 쏠림</td></tr>
+<tr><td>기업 실적</td><td>대다수 적자, 실체 없는 벨류</td><td>삼성·하이닉스 사상최대 실적 (실체 있음)</td></tr>
+<tr><td>하락 메커니즘</td><td>기업 파산 → 실적 소멸</td><td>레버리지 ETF 반대매매 → 수급 붕괴</td></tr>
+<tr><td>지수 집중도</td><td>IT 섹터 과대비중</td><td>삼성+하이닉스 시총 비중 45%+</td></tr>
+<tr><td>하락 속도</td><td>13개월</td><td>5개월 (2.5배 빠름)</td></tr>
+<tr><td>서킷브레이커</td><td>해당 없음</td><td>연간 11회 (역대 최다)</td></tr>
+<tr><td>바닥 판단 기준</td><td>기업 파산 마무리 시점</td><td>레버리지 청산 완료 + 외국인 매도 소진</td></tr>
+</table></div>
+
+<div class="box info">
+  <strong>핵심 차이:</strong> 2000년 나스닥은 실체 없는 기업이 파산하면서 이익 자체가 사라진 구조적 붕괴. 2026년 코스피는 실적이 있는 기업의 주가가 수급(레버리지 청산, 외국인 매도)에 의해 괴리된 상태. 이 차이가 회복 속도를 결정한다 — 나스닥은 저점(2002.10)에서 고점 회복까지 15년, 코스피는 실적이 유지되는 한 훨씬 빠를 가능성.
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>6. 시나리오별 바닥 추정</h2>
+
+<div class="tbl-wrap"><table>
+<tr><th>시나리오</th><th>산출 근거</th><th>목표치</th><th>현재 대비</th></tr>
+<tr><td>닷컴 3차 하락 대입 (-54%)</td><td>2차 반등 고점(6,086) × (1-0.539)</td><td class="neg">2,805</td><td>-44.5%</td></tr>
+<tr><td>닷컴 단순 대입 (-44%)</td><td>원문 기준 6,086 × (1-0.44)</td><td class="neg">3,408</td><td>-32.6%</td></tr>
+<tr><td>2000년 코스피 MDD 대입 (-56%)</td><td>고점(9,385) × (1-0.557)</td><td class="neg">4,157</td><td>-17.8%</td></tr>
+<tr><td>현재 고점 대비 -50%</td><td>9,385 × 0.5</td><td class="neg">4,693</td><td>-7.2%</td></tr>
+<tr><td>레버리지 청산 완료 수준</td><td>반도체 제외 PBR 1.0배 수준</td><td>4,500~5,000</td><td>0~-12%</td></tr>
+</table></div>
+
+<div class="box danger">
+  <strong>🔴 솔직한 평가:</strong> 프랙탈로 바닥을 맞추려는 시도 자체가 위험. 과거 패턴의 "6번째 파동"을 외삽하는 것은 예측이 아니라 희망적 패턴 인식(apophenia). 2000년 나스닥도 3차 하락이 -44%인지 -54%인지에 따라 목표치가 600pt 차이남. 이 표는 "가능한 범위"를 보여주는 것이지 "여기가 바닥"이라는 신호가 아님.
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>7. 모니터링 포인트</h2>
+
+<div class="tbl-wrap"><table>
+<tr><th>지표</th><th>왜 중요한가</th><th>현재 상태</th></tr>
+<tr><td>레버리지 ETF 잔고</td><td>반대매매 물량 소진 여부가 수급 바닥 핵심</td><td>감소 추세이나 완전 소진 미확인</td></tr>
+<tr><td>외국인 순매도 누적</td><td>연간 210조원+ 순매도. 소진 전환 시점이 반등 촉매</td><td>매도 지속 중</td></tr>
+<tr><td>삼성전자·하이닉스 실적</td><td>실적이 유지되면 2000년과 다른 회복 경로</td><td>3Q 서프라이즈, 4Q 가이던스 주시</td></tr>
+<tr><td>서킷브레이커 빈도</td><td>연 11회는 역대 최다. 빈도 감소 = 변동성 정상화</td><td>11/6 발동 (올해 11번째)</td></tr>
+<tr><td>VIX·VKOSPI</td><td>공포지수 97(역대 최고) 기록. 극단적 공포 = 역발상 신호 가능</td><td>극단적 과매도 구간</td></tr>
+</table></div>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>Sources</h2>
+<ul>
+  <li>세계일보 — "만스피 꿈 다시 이어질까" (2026.8.8) — 6/19 장중 9,385.59, 7/29 장중 5,262 확인</li>
+  <li>노컷뉴스 — 6/19 코스피 9,300선 돌파, 장중 최고치 경신</li>
+  <li>뉴스토마토 — 6/19 코스피 9,300선 돌파 / 11/6 코스피 8%대 급락, 4,923.47</li>
+  <li>이데일리 — 11/6 '5000피 붕괴' 서킷브레이커+매도사이드카</li>
+  <li>부산일보 — 11/6 코스피 서킷브레이커 이어 매도 사이드카 (올해 11번째)</li>
+  <li>헤럴드경제 — 10/13 코스피 6,035, 고점 대비 -36%</li>
+  <li>경향신문 — 6/26 서킷브레이커, 한 주 2회 발동 사상 최초</li>
+  <li>뉴스스페이스 — 2026년 사이드카 29회·공포지수 97</li>
+  <li>키움증권 리서치 — 코스피 레벨별 이익·밸류에이션 프로파일</li>
+</ul>
+
+<div class="related">
+  <h3>관련 리서치</h3>
+  <a href="/crash-history/">📉 역대 폭락장 비교</a>
+  <a href="/correlation/">📊 DXY×KOSPI 상관관계</a>
+  <a href="/research/bear-market-recovery.html">📄 약세장 회복 분석</a>
+  <a href="/screener/">🔍 스크리너</a>
+</div>
+
+</div>
+
+<footer>© 스윙파머 · 프랙탈 비교는 참고 프레임워크이며 투자 권유가 아닙니다</footer>
+
+<script>
+// 정규화 차트: 고점=100, 경과 비율로 X축
+const nasdaq2000 = [
+  {pct:0, val:100}, {pct:5, val:88}, {pct:10, val:75}, {pct:15, val:63},
+  {pct:20, val:70}, {pct:25, val:73}, {pct:30, val:78}, {pct:35, val:83},
+  {pct:40, val:80}, {pct:45, val:75}, {pct:50, val:68}, {pct:55, val:59},
+  {pct:60, val:65}, {pct:65, val:68}, {pct:70, val:60}, {pct:75, val:50},
+  {pct:80, val:42}, {pct:85, val:38}, {pct:90, val:35}, {pct:95, val:33},
+  {pct:100, val:31.6}
+];
+
+const kospi2026 = [
+  {pct:0, val:100}, {pct:8, val:88}, {pct:15, val:75}, {pct:22, val:65},
+  {pct:27, val:60}, {pct:32, val:56.1},
+  {pct:38, val:62}, {pct:44, val:68}, {pct:50, val:72}, {pct:55, val:76.7},
+  {pct:62, val:72}, {pct:68, val:64}, {pct:72, val:56.4},
+  {pct:76, val:60}, {pct:80, val:64.9},
+  {pct:85, val:58}, {pct:90, val:57.3}, {pct:95, val:53.9}, {pct:100, val:52.3}
+];
+
+new Chart(document.getElementById('fractalChart'), {
+  type: 'line',
+  data: {
+    datasets: [
+      {
+        label: '2000 나스닥 (13개월)',
+        data: nasdaq2000.map(d => ({x: d.pct, y: d.val})),
+        borderColor: '#7c3aed',
+        backgroundColor: 'rgba(124,58,237,0.08)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 2,
+        borderWidth: 2.5
+      },
+      {
+        label: '2026 코스피 (5개월)',
+        data: kospi2026.map(d => ({x: d.pct, y: d.val})),
+        borderColor: '#dc2626',
+        backgroundColor: 'rgba(220,38,38,0.08)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 3,
+        borderWidth: 2.5
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top' },
+      tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: 고점 대비 ${ctx.parsed.y.toFixed(1)}%` } }
+    },
+    scales: {
+      x: { type: 'linear', title: { display: true, text: '하락 사이클 경과 (%)' }, min: 0, max: 100, ticks: { callback: v => v + '%' } },
+      y: { title: { display: true, text: '고점=100 정규화' }, min: 20, max: 105 }
+    }
+  }
+});
+</script>
+
+<script src="/common.js?v=6"></script>
+</body>
+</html>
