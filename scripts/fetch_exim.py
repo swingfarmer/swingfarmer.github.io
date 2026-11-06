@@ -53,9 +53,11 @@ def get_conn():
         wallet_password=os.environ.get('ORACLE_WALLET_PASSWORD', ''))
 
 def fetch_api(data_type, search_date, max_retries=3):
-    """수출입은행 API 호출. result=1 성공, 그 외 실패/비영업일. 최대 3회 재시도."""
+    """수출입은행 API 호출. result=1 성공, 그 외 실패/비영업일. 최대 3회 재시도.
+    Returns: (data, fail_reason)  data=None이면 fail_reason에 원인 문자열."""
     key = API_KEYS.get(data_type, API_KEYS['AP01'])
     url = f"{BASE_URL}?authkey={key}&searchdate={search_date}&data={data_type}"
+    last_err = ''
     for attempt in range(1, max_retries + 1):
         try:
             req = urllib.request.Request(url, headers={
@@ -63,21 +65,32 @@ def fetch_api(data_type, search_date, max_retries=3):
                 'Accept': 'application/json',
             })
             with urllib.request.urlopen(req, timeout=30, context=SSL_CTX) as resp:
+                status = resp.getcode()
                 raw = resp.read().decode('utf-8')
             data = json.loads(raw)
             if not data:
-                return None  # 비영업일 또는 데이터 없음
+                return None, f'빈 응답 (HTTP {status}, body 길이 {len(raw)})'
             # result 필드 체크 (첫 번째 항목에 있음)
             if isinstance(data, list) and len(data) > 0:
                 r = data[0].get('result', 1)
                 if r != 1:
-                    return None
-            return data
+                    return None, f'result={r} (데이터 미준비 또는 키 오류)'
+            return data, None
+        except urllib.error.HTTPError as e:
+            last_err = f'HTTP {e.code} {e.reason}'
+            print(f"  ⚠ API 호출 실패 ({data_type}, {search_date}), 시도 {attempt}/{max_retries}: {last_err}")
+        except urllib.error.URLError as e:
+            last_err = f'URLError: {e.reason}'
+            print(f"  ⚠ API 호출 실패 ({data_type}, {search_date}), 시도 {attempt}/{max_retries}: {last_err}")
+        except json.JSONDecodeError as e:
+            last_err = f'JSON 파싱 실패 (응답이 HTML? 302 redirect?)'
+            print(f"  ⚠ API 호출 실패 ({data_type}, {search_date}), 시도 {attempt}/{max_retries}: {last_err}")
         except Exception as e:
-            print(f"  ⚠ API 호출 실패 ({data_type}, {search_date}), 시도 {attempt}/{max_retries}: {e}")
-            if attempt < max_retries:
-                time.sleep(15 * attempt)  # 15초, 30초 대기 후 재시도
-    return None
+            last_err = f'{type(e).__name__}: {e}'
+            print(f"  ⚠ API 호출 실패 ({data_type}, {search_date}), 시도 {attempt}/{max_retries}: {last_err}")
+        if attempt < max_retries:
+            time.sleep(15 * attempt)  # 15초, 30초 대기 후 재시도
+    return None, f'3회 재시도 실패 — 마지막 에러: {last_err}'
 
 def parse_num(val):
     """문자열 → float. 쉼표 제거."""
@@ -157,21 +170,22 @@ def save_interest_rates(conn, rate_date_str, data_type, items):
     return inserted
 
 def collect_date(conn, date_str, verbose=True):
-    """특정 날짜 AP01 환율 수집. (AP02/AP03은 수출입은행 미지원 → 한국은행 ECOS API로 대체 예정)"""
+    """특정 날짜 AP01 환율 수집. (AP02/AP03은 수출입은행 미지원 → 한국은행 ECOS API로 대체 예정)
+    Returns: (total_records, api_calls, fail_reason)"""
     total = 0
     api_calls = 0
 
     # AP01 환율
-    data = fetch_api('AP01', date_str)
+    data, fail_reason = fetch_api('AP01', date_str)
     api_calls += 1
     if data:
         cnt = save_exchange_rates(conn, date_str, data)
         total += cnt
         if verbose: print(f"  AP01 환율: {cnt}건")
     else:
-        if verbose: print(f"  AP01 환율: 데이터 없음 (비영업일?)")
+        if verbose: print(f"  AP01 환율: 데이터 없음 ({fail_reason})")
 
-    return total, api_calls
+    return total, api_calls, fail_reason
 
 def main():
     parser = argparse.ArgumentParser(description='수출입은행 API 수집')
@@ -197,7 +211,7 @@ def main():
     if args.date:
         # 특정 날짜
         print(f"\n📅 {args.date}")
-        cnt, calls = collect_date(conn, args.date)
+        cnt, calls, _ = collect_date(conn, args.date)
         total_records += cnt
         total_api_calls += calls
 
@@ -238,7 +252,7 @@ def main():
                 break
 
             print(f"📅 {date_str} ({i+1}/{days})", end=" → ")
-            cnt, calls = collect_date(conn, date_str, verbose=False)
+            cnt, calls, _ = collect_date(conn, date_str, verbose=False)
             total_records += cnt
             total_api_calls += calls
 
@@ -257,15 +271,20 @@ def main():
         # 오늘 수집
         date_str = now.strftime('%Y%m%d')
         print(f"\n📅 오늘: {date_str}")
-        cnt, calls = collect_date(conn, date_str)
+        cnt, calls, fail_reason = collect_date(conn, date_str)
         total_records += cnt
         total_api_calls += calls
 
-        # 평일인데 0건이면 텔레그램 DM 알림
+        # 평일인데 0건이면 텔레그램 DM 알림 (원인 포함)
         if cnt == 0 and now.weekday() < 5:
+            reason_line = f"원인: {fail_reason}" if fail_reason else "원인: 불명"
             try:
                 from telegram_helper import send_dm
-                send_dm(f"⚠️ <b>수출입은행 환율 수집 실패</b>\n날짜: {date_str}\n3회 재시도 후에도 데이터 없음.\n수동 실행: <code>python3 scripts/fetch_exim.py --date {date_str}</code>")
+                send_dm(
+                    f"⚠️ <b>수출입은행 환율 수집 실패</b>\n"
+                    f"날짜: {date_str}\n"
+                    f"{reason_line}\n"
+                    f"수동 실행: <code>python3 scripts/fetch_exim.py --date {date_str}</code>")
                 print("📱 텔레그램 실패 알림 발송")
             except Exception as e:
                 print(f"  ⚠ 텔레그램 발송 실패: {e}")
