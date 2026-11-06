@@ -8,13 +8,10 @@
 <title>4축 바벨 포트폴리오 | 스윙파머</title>
 <link rel="stylesheet" href="/common.css?v=5">
 <style>
-:root { --sf-max-w: 1100px; }
-.final { background: linear-gradient(135deg, #1F4E78, #2563eb); }
+:root { --sf-max-w: 900px; }
 *{box-sizing:border-box;margin:0;padding:0}
-.cloud-bar{display:none;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
-.cloud-bar .tag-cloud{background:#0ea5e9;color:white;font-size:12px;font-weight:600;padding:3px 10px;border-radius:6px;cursor:pointer;border:none;font-family:inherit}
 #btnAdminLogin{display:none;font-size:12px;background:#e5e7eb;border:none;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:inherit}
-.loaded-name{font-size:13px;color:#1F4E78;font-weight:700}
+.loaded-slot{display:none;background:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:13px;color:#1e40af;font-weight:600}
 
 /* 메인 탭 */
 .tabs{display:flex;gap:4px;background:#e5e7eb;padding:4px;border-radius:10px;margin-bottom:20px;flex-wrap:wrap}
@@ -111,30 +108,17 @@
 .sec-title .icon{font-size:20px}
 </style>
 </head>
-<body>
-<div class="sf-nav">
-  <a href="/" class="sf-home-link">
-    <img src="/icon-192.png" alt="" width="26" height="26" style="border-radius:6px">
-    <span>스윙파머</span>
-  </a>
-  <div class="sf-right">
-    <button id="btnAdminLogin">관리자</button>
-    <button id="themeToggle" class="sf-theme-btn" aria-label="테마 전환" title="다크/라이트 전환">🌙</button>
-  </div>
+<body class="sf-narrow">
+<a href="/" class="back-link">← 메인으로</a>
+<h1>🛡️ 4축 바벨 포트폴리오</h1>
+<p class="desc">리밸런서 · 채권 시뮬레이터 · 결손금 트래커. 절세 마스터 플랜 v2.0.</p>
+
+<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+  <button id="btnAdminLogin" style="display:none">🔑 관리자 로그인</button>
 </div>
-
-<div class="sf-container">
-  <div class="sf-header final">
-    <h1>4축 바벨 포트폴리오</h1>
-    <p>리밸런서 · 채권 시뮬레이터 · 결손금 트래커</p>
-    <span class="loaded-name" id="loadedSlot"></span>
-  </div>
-
-  <div class="cloud-bar" id="cloudBar">
-    <button class="tag-cloud" onclick="location.href='/corp-tax/'">법인세 시뮬레이터</button>
-    <button class="tag-cloud" onclick="location.href='/rebalancing/'">포트폴리오 리밸런싱</button>
-    <button class="tag-cloud" onclick="location.href='/research/'">리서치 허브</button>
-  </div>
+<div id="loadedSlot" class="loaded-slot">📂 현재: <span id="loadedSlotLabel"></span>
+  <button onclick="clearLoadedSlot()" style="background:none;border:none;color:#93c5fd;cursor:pointer;font-size:14px;margin-left:6px" title="표시 해제">✕</button>
+</div>
 
   <!-- 메인 탭 -->
   <div class="tabs" data-tab="main">
@@ -404,9 +388,8 @@
 
   </div>
 
-  <div style="text-align:center;padding:30px 0 10px;font-size:11px;color:#aaa">
-    4축 바벨 포트폴리오 & 절세 마스터 플랜 v2.0 · 2026.11 · 법인세 11%(2026 귀속)
-  </div>
+<div style="text-align:center;padding:30px 0 10px;font-size:11px;color:#aaa">
+  4축 바벨 포트폴리오 & 절세 마스터 플랜 v2.0 · 2026.11 · 법인세 11%(2026 귀속)
 </div>
 
 <script src="/auth-guard.js"></script>
@@ -429,7 +412,7 @@ document.querySelectorAll('.tabs, .sub-tabs').forEach(function(bar){
       bar.querySelectorAll('.tab, .sub-tab').forEach(function(b){ b.classList.remove('active'); });
       btn.classList.add('active');
       var val = btn.getAttribute('data-value');
-      var parent = bar.closest('.sf-container') || bar.parentElement;
+      var parent = bar.parentElement;
       var panelClass = btn.classList.contains('tab') ? 'tab-content' : 'sub-content';
       var panelAttr = btn.classList.contains('tab') ? 'data-tab-panel' : 'data-tab-panel';
       // Find sibling panels
