@@ -234,6 +234,20 @@ window.sfApiFetch = function(url, opts) {
   /* 글자크기 - body zoom (헤더는 고정 크기 유지) */
   #sf-content-zoom { }
 
+  /* ── 브레드크럼 ── */
+  #sf-breadcrumb {
+    max-width: var(--sf-max-w, 960px); margin: 0 auto; padding: 6px 20px 0;
+    font-size: 12px; color: #888; line-height: 1.5;
+  }
+  #sf-breadcrumb a { color: #1F4E78; text-decoration: none; }
+  #sf-breadcrumb a:hover { text-decoration: underline; }
+  #sf-breadcrumb .sf-bc-sep { margin: 0 5px; opacity: 0.5; }
+  #sf-breadcrumb .sf-bc-cur { color: #333; font-weight: 600; }
+  body.sf-dark #sf-breadcrumb { color: #71717a; }
+  body.sf-dark #sf-breadcrumb a { color: #60a5fa; }
+  body.sf-dark #sf-breadcrumb .sf-bc-cur { color: #e4e4e7; }
+  @media (max-width: 600px) { #sf-breadcrumb { padding: 4px 12px 0; font-size: 11px; } }
+
   /* ============ 다크모드 ============ */
   body.sf-dark {
     background: #14181f !important;
@@ -440,9 +454,62 @@ window.sfApiFetch = function(url, opts) {
   window.sfRefreshWon = initWonReadout;
   window.wonToKorean = wonToKorean;
 
+  // ---------- 4-C. 브레드크럼 (자동 섹션 표시) ----------
+  var SF_SECTIONS = {
+    'news':'📰 정보·시장', 'correlation':'📰 정보·시장', 'indicators':'📰 정보·시장',
+    'dashboard':'📰 정보·시장', 'market':'📰 정보·시장', 'crash-history':'📰 정보·시장',
+    'macro':'📰 정보·시장', 'quotes':'📰 정보·시장', 'events':'📰 정보·시장',
+    'books':'📰 정보·시장', 'data':'📰 정보·시장', 'rates':'📰 정보·시장',
+    'breadth':'📰 정보·시장', 'krx':'📰 정보·시장', 'research':'📰 정보·시장',
+    'free':'💰 자산·연금·파이어', 'pension':'💰 자산·연금·파이어', 'gold-calc':'💰 자산·연금·파이어',
+    'assets':'💰 자산·연금·파이어', 'wealth-reports':'💰 자산·연금·파이어',
+    'barbell':'💰 자산·연금·파이어', 'budget':'💰 자산·연금·파이어',
+    'fire':'💰 자산·연금·파이어', 'cashflow':'💰 자산·연금·파이어',
+    'stock-tools':'📈 주식·투자', 'price-compare':'📈 주식·투자', 'leverage-backtester':'📈 주식·투자',
+    'risk':'📈 주식·투자', 'target-simple':'📈 주식·투자', 'target-price':'📈 주식·투자',
+    'avg':'📈 주식·투자', 'us-dividend':'📈 주식·투자', 'dividend-calendar':'📈 주식·투자',
+    'dividend-manager':'📈 주식·투자', 'screener':'📈 주식·투자', 'margin-ratio':'📈 주식·투자',
+    'sector':'📈 주식·투자', 'momentum':'📈 주식·투자', 'similar':'📈 주식·투자',
+    'strategy':'📈 주식·투자', 'valuation':'📈 주식·투자', 'return-calc':'📈 주식·투자',
+    'portfolio':'📈 주식·투자', 'rebalancing':'📈 주식·투자', 'futures':'📈 주식·투자',
+    'hdsteel':'📈 주식·투자', 'hd-enc':'📈 주식·투자', 'kal':'📈 주식·투자',
+    'property':'🏠 부동산', 'realestate':'🏠 부동산', 'realestate-tracker':'🏠 부동산',
+    'redevelopment':'🏠 부동산', 'landtax':'🏠 부동산', 'gambuk':'🏠 부동산',
+    'tax':'💸 세금', 'corp-tax':'💸 세금', 'annual-check':'💸 세금', 'tax-calendar':'💸 세금',
+    'salary':'💼 근로·회사', 'severance':'💼 근로·회사', 'severance-exec':'💼 근로·회사',
+    'paygrowth':'💼 근로·회사', 'workout':'💼 근로·회사',
+    'finance-tools':'🧮 금융·생활', 'loan-switch':'🧮 금융·생활', 'insurance4':'🧮 금융·생활',
+    'car-compare':'🧮 금융·생활', 'telecom':'🧮 금융·생활', 'health':'🧮 금융·생활',
+    'card-manager':'🔒 개인 관리', 'company':'🔒 개인 관리', 'commerce':'🔒 개인 관리',
+    'schedule':'🔒 개인 관리', 'status':'🔒 개인 관리', 'community':'🔒 개인 관리',
+    'notes':'🔒 개인 관리', 'board':'🔒 개인 관리'
+  };
+  function buildBreadcrumb() {
+    var path = location.pathname.replace(/\/$/,'') || '/';
+    if (path === '/' || path === '/1808') return; // 메인·전체메뉴는 생략
+    var parts = path.split('/').filter(Boolean);
+    var sec = SF_SECTIONS[parts[0]];
+    if (!sec) return;
+    var title = document.title.replace(/\s*[\|·\-–]\s*스윙파머.*$/i,'').trim();
+    var bc = document.createElement('div');
+    bc.id = 'sf-breadcrumb';
+    var html = '<a href="/">🏠 메인</a><span class="sf-bc-sep">›</span>';
+    html += '<span>' + sec + '</span>';
+    if (title && title.length < 40) {
+      html += '<span class="sf-bc-sep">›</span><span class="sf-bc-cur">' + title + '</span>';
+    }
+    bc.innerHTML = html;
+    // 헤더 바로 다음에 삽입
+    var header = document.getElementById('sf-header');
+    if (header && header.nextSibling) {
+      header.parentNode.insertBefore(bc, header.nextSibling);
+    }
+  }
+
   // ---------- 5. 초기화 + 이벤트 ----------
   function init() {
     buildHeader();
+    buildBreadcrumb();
     buildNotice();
 
     // 저장된 설정 불러오기
