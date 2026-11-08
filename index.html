@@ -85,6 +85,8 @@ header{text-align:center;margin-bottom:30px}
 .fav-chip .chip-move:hover{color:#1F4E78}
 .fav-grid.edit-mode .chip-move{display:inline}
 .fav-grid.edit-mode .fav-chip{border-color:#f59e0b;background:#fffbeb}
+.fav-grid.locked .chip-pin,.fav-grid.locked .chip-del{display:none}
+.fav-grid.locked .fav-chip{cursor:pointer}
 @media(max-width:700px){.fav-chip{font-size:12px;padding:6px 10px}}
 @media(max-width:600px){
   .fav-header{padding:10px 12px;gap:8px}
@@ -168,7 +170,8 @@ body.sf-dark footer{color:#71717a}
   </div>
   <div class="fav-body" id="favBody">
     <div class="fav-toolbar" id="favToolbar">
-      <button id="btnEditFav" onclick="toggleEditMode()">✏️ 순서편집</button>
+      <button id="btnLockFav" onclick="toggleFavLock()">🔒 잠금</button>
+      <button id="btnEditFav" onclick="toggleEditMode()" style="display:none">✏️ 순서편집</button>
       <button id="btnRevert" onclick="revertFavs()" style="display:none;color:#dc2626">↩️ 되돌리기</button>
     </div>
     <div id="favGrid" class="fav-grid"></div>
@@ -482,6 +485,7 @@ body.sf-dark footer{color:#71717a}
       pin.title = f.pinned ? '고정 해제' : '상단 고정';
       pin.addEventListener('click', function(e){
         e.preventDefault(); e.stopPropagation();
+        if(favLocked) return;
         favs[idx].pinned = !favs[idx].pinned;
         saveFavs();
         renderFavGrid();
@@ -495,6 +499,7 @@ body.sf-dark footer{color:#71717a}
       del.title = '즐겨찾기 해제';
       del.addEventListener('click', function(e){
         e.preventDefault(); e.stopPropagation();
+        if(favLocked) return;
         removeFav(f.href);
         renderFavGrid();
         syncStarButtons();
@@ -517,6 +522,7 @@ body.sf-dark footer{color:#71717a}
 
       // 드래그 정렬
       a.addEventListener('dragstart', function(e){
+        if(favLocked){ e.preventDefault(); return; }
         a.classList.add('dragging');
         e.dataTransfer.setData('text/plain', idx);
         e.dataTransfer.effectAllowed = 'move';
@@ -537,11 +543,13 @@ body.sf-dark footer{color:#71717a}
 
       favGrid.appendChild(a);
     });
+    if(typeof applyLockUI === 'function') applyLockUI();
   }
 
   // 터치 드래그 (모바일)
   var touchIdx = -1;
   favGrid.addEventListener('touchstart', function(e){
+    if(favLocked) return;
     var chip = e.target.closest('.fav-chip');
     if(!chip) return;
     touchIdx = parseInt(chip.getAttribute('data-idx'));
@@ -562,6 +570,28 @@ body.sf-dark footer{color:#71717a}
     }
     touchIdx = -1;
   });
+
+  // ── 잠금모드 ──
+  var LOCK_KEY = 'sf_fav_locked';
+  var favLocked = localStorage.getItem(LOCK_KEY) !== 'false'; // 기본 = 잠금
+  function applyLockUI(){
+    var btn = document.getElementById('btnLockFav');
+    btn.textContent = favLocked ? '🔒 잠금' : '🔓 해제됨';
+    btn.style.color = favLocked ? '' : '#dc2626';
+    document.getElementById('btnEditFav').style.display = favLocked ? 'none' : '';
+    if(favLocked && editMode){ window.toggleEditMode(); }
+    favGrid.classList.toggle('locked', favLocked);
+    // 잠금 시 드래그 비활성
+    favGrid.querySelectorAll('.fav-chip').forEach(function(c){
+      c.draggable = !favLocked;
+      c.style.cursor = favLocked ? 'pointer' : 'grab';
+    });
+  }
+  window.toggleFavLock = function(){
+    favLocked = !favLocked;
+    localStorage.setItem(LOCK_KEY, favLocked ? 'true' : 'false');
+    applyLockUI();
+  };
 
   // ── 편집모드 ──
   var editMode = false;
