@@ -135,10 +135,70 @@ def calc_ma_ratio(prices, ma_len):
     current = prices[-1]
     return round(current / ma * 100, 2)
 
+# ── 3분류 로직 ─────────────────────────────────────────
+
+def classify_3groups(stock_results, idx_ratio_map, ma_label):
+    """
+    3분류: 지수보다 강한 / 중간 / 지수보다 약한
+    stock_results: [(name, ratio, market)] — market='KS' or 'KQ'
+    idx_ratio_map: {'KS': 코스피비율, 'KQ': 코스닥비율}
+    
+    코스피 110%일 때: 110%+강 / 100~110%중간 / 100%-약
+    코스피 90%일 때:  100%+강 / 90~100%중간 / 90%-약
+    → 기준선: max(100, 지수)와 min(100, 지수)
+    """
+    strong = []   # 지수보다 강한
+    middle = []   # 중간 (이평선과 지수 사이)
+    weak = []     # 지수보다 약한
+    na_list = []
+
+    for name, ratio, market in stock_results:
+        if ratio is None:
+            na_list.append(name)
+            continue
+        
+        idx_r = idx_ratio_map.get(market)
+        if idx_r is None:
+            idx_r = 100.0  # fallback
+
+        hi = max(100.0, idx_r)
+        lo = min(100.0, idx_r)
+
+        if ratio >= hi:
+            strong.append((name, ratio))
+        elif ratio >= lo:
+            middle.append((name, ratio))
+        else:
+            weak.append((name, ratio))
+
+    strong.sort(key=lambda x: -x[1])
+    middle.sort(key=lambda x: -x[1])
+    weak.sort(key=lambda x: x[1])
+
+    return strong, middle, weak, na_list
+
+def _make_group_labels(idx_ratio_map, ma_label):
+    """지수 상태에 따라 그룹 라벨 생성"""
+    # 대표값으로 코스피 기준 라벨 (코스닥도 같은 구조)
+    ks = idx_ratio_map.get('KS', 100.0)
+    
+    if ks >= 100:
+        return (
+            f'🔺 지수보다 강한 ({ma_label}↑ 지수↑)',
+            f'➖ {ma_label}↑ 지수↓',
+            f'🔻 {ma_label} 이하',
+        )
+    else:
+        return (
+            f'🔺 {ma_label} 이상',
+            f'➖ {ma_label}↓ 지수↑',
+            f'🔻 지수보다 약한 ({ma_label}↓ 지수↓)',
+        )
+
 # ── 메시지 포맷 ────────────────────────────────────────
 
-def format_weekly_message(index_results, stock_results, date_str):
-    """주봉 10주선 체크 메시지"""
+def format_weekly_message(index_results, stock_results, date_str, idx_ratio_map):
+    """주봉 10주선 체크 메시지 (3분류)"""
     header = f'📊 <b>주봉 10주선 체크</b> ({date_str} 금)\n'
 
     # 지수
@@ -147,34 +207,30 @@ def format_weekly_message(index_results, stock_results, date_str):
         arrow = '🔺' if ratio >= 100 else '🔻'
         idx_lines += f'  {arrow} {name} <b>{ratio:.2f}%</b>\n'
 
-    # 종목 분류
-    above = [(name, ratio) for name, ratio in stock_results if ratio is not None and ratio >= 100]
-    below = [(name, ratio) for name, ratio in stock_results if ratio is not None and ratio < 100]
-    na_list = [name for name, ratio in stock_results if ratio is None]
-
-    above.sort(key=lambda x: -x[1])
-    below.sort(key=lambda x: x[1])
-
-    above_header = f'\n▶ <b>10주선 이상</b> ({len(above)}종목)\n'
-    below_header = f'\n▶ <b>10주선 이하</b> ({len(below)}종목)\n'
-
-    above_lines = _format_stock_lines(above)
-    below_lines = _format_stock_lines(below)
+    # 3분류
+    strong, middle, weak, na_list = classify_3groups(stock_results, idx_ratio_map, '10주선')
+    lbl_s, lbl_m, lbl_w = _make_group_labels(idx_ratio_map, '10주선')
 
     msgs = []
-    # 지수 + 이상 종목
-    msg1 = header + idx_lines + above_header + above_lines
+    msg1 = header + idx_lines
+    msg1 += f'\n▶ <b>{lbl_s}</b> ({len(strong)}종목)\n'
+    msg1 += _format_stock_lines(strong)
     if na_list:
         msg1 += f'\n⚠ 데이터 부족: {", ".join(na_list[:10])}'
     msgs.append(msg1)
-    # 이하 종목
-    msg2 = below_header + below_lines
+
+    msg2 = f'▶ <b>{lbl_m}</b> ({len(middle)}종목)\n'
+    msg2 += _format_stock_lines(middle)
     msgs.append(msg2)
+
+    msg3 = f'▶ <b>{lbl_w}</b> ({len(weak)}종목)\n'
+    msg3 += _format_stock_lines(weak)
+    msgs.append(msg3)
 
     return _split_messages(msgs)
 
-def format_monthly_message(index_results, stock_results, date_str, is_final=False):
-    """월봉 20월선 체크 메시지"""
+def format_monthly_message(index_results, stock_results, date_str, idx_ratio_map, is_final=False):
+    """월봉 20월선 체크 메시지 (3분류)"""
     if is_final:
         header = f'🔒 <b>월봉 20월선 확정</b> ({date_str})\n'
     else:
@@ -186,27 +242,25 @@ def format_monthly_message(index_results, stock_results, date_str, is_final=Fals
         arrow = '🔺' if ratio >= 100 else '🔻'
         idx_lines += f'  {arrow} {name} <b>{ratio:.2f}%</b>\n'
 
-    # 종목 분류
-    above = [(name, ratio) for name, ratio in stock_results if ratio is not None and ratio >= 100]
-    below = [(name, ratio) for name, ratio in stock_results if ratio is not None and ratio < 100]
-    na_list = [name for name, ratio in stock_results if ratio is None]
-
-    above.sort(key=lambda x: -x[1])
-    below.sort(key=lambda x: x[1])
-
-    above_header = f'\n▶ <b>20월선 이상</b> ({len(above)}종목)\n'
-    below_header = f'\n▶ <b>20월선 이하</b> ({len(below)}종목)\n'
-
-    above_lines = _format_stock_lines(above)
-    below_lines = _format_stock_lines(below)
+    # 3분류
+    strong, middle, weak, na_list = classify_3groups(stock_results, idx_ratio_map, '20월선')
+    lbl_s, lbl_m, lbl_w = _make_group_labels(idx_ratio_map, '20월선')
 
     msgs = []
-    msg1 = header + idx_lines + above_header + above_lines
+    msg1 = header + idx_lines
+    msg1 += f'\n▶ <b>{lbl_s}</b> ({len(strong)}종목)\n'
+    msg1 += _format_stock_lines(strong)
     if na_list:
         msg1 += f'\n⚠ 데이터 부족: {", ".join(na_list[:10])}'
     msgs.append(msg1)
-    msg2 = below_header + below_lines
+
+    msg2 = f'▶ <b>{lbl_m}</b> ({len(middle)}종목)\n'
+    msg2 += _format_stock_lines(middle)
     msgs.append(msg2)
+
+    msg3 = f'▶ <b>{lbl_w}</b> ({len(weak)}종목)\n'
+    msg3 += _format_stock_lines(weak)
+    msgs.append(msg3)
 
     return _split_messages(msgs)
 
@@ -242,7 +296,6 @@ def run_weekly():
 
     stocks = get_top100_tickers()
     yf_syms = [s['yf_sym'] for s in stocks]
-    sym_to_name = {s['yf_sym']: s['name'] for s in stocks}
 
     # 지수
     idx_syms = ['^KS11', '^KQ11']
@@ -251,33 +304,36 @@ def run_weekly():
     print(f'  종목 {len(yf_syms)}개 + 지수 2개 다운로드 중...')
     data = fetch_weekly_data(all_syms)
 
-    # 지수 결과
+    # 지수 결과 + idx_ratio_map
     index_results = []
-    for sym, name in [('^KS11', '코스피'), ('^KQ11', '코스닥')]:
+    idx_ratio_map = {}  # {'KS': 코스피비율, 'KQ': 코스닥비율}
+    for sym, name, key in [('^KS11', '코스피', 'KS'), ('^KQ11', '코스닥', 'KQ')]:
         if sym in data:
             ratio = calc_ma_ratio(data[sym], 10)
             if ratio:
                 index_results.append((name, ratio))
+                idx_ratio_map[key] = ratio
                 print(f'  {name}: {ratio:.2f}%')
 
-    # 종목 결과
+    # 종목 결과 — (name, ratio, market)
     stock_results = []
     ok_count = 0
     for s in stocks:
         sym = s['yf_sym']
         name = s['name']
+        market = 'KQ' if sym.endswith('.KQ') else 'KS'
         if sym in data:
             ratio = calc_ma_ratio(data[sym], 10)
-            stock_results.append((name, ratio))
+            stock_results.append((name, ratio, market))
             if ratio:
                 ok_count += 1
         else:
-            stock_results.append((name, None))
+            stock_results.append((name, None, market))
 
     print(f'  계산 완료: {ok_count}/{len(stocks)}개 성공')
 
     # 발송
-    msgs = format_weekly_message(index_results, stock_results, today)
+    msgs = format_weekly_message(index_results, stock_results, today, idx_ratio_map)
     for i, msg in enumerate(msgs):
         send_dm(msg)
         print(f'  [봇1] 주봉 메시지 {i+1}/{len(msgs)} 발송')
@@ -292,7 +348,6 @@ def run_monthly(is_final=False):
 
     stocks = get_top100_tickers()
     yf_syms = [s['yf_sym'] for s in stocks]
-    sym_to_name = {s['yf_sym']: s['name'] for s in stocks}
 
     idx_syms = ['^KS11', '^KQ11']
     all_syms = idx_syms + yf_syms
@@ -300,33 +355,36 @@ def run_monthly(is_final=False):
     print(f'  종목 {len(yf_syms)}개 + 지수 2개 다운로드 중...')
     data = fetch_monthly_data(all_syms)
 
-    # 지수 결과
+    # 지수 결과 + idx_ratio_map
     index_results = []
-    for sym, name in [('^KS11', '코스피'), ('^KQ11', '코스닥')]:
+    idx_ratio_map = {}
+    for sym, name, key in [('^KS11', '코스피', 'KS'), ('^KQ11', '코스닥', 'KQ')]:
         if sym in data:
             ratio = calc_ma_ratio(data[sym], 20)
             if ratio:
                 index_results.append((name, ratio))
+                idx_ratio_map[key] = ratio
                 print(f'  {name}: {ratio:.2f}%')
 
-    # 종목 결과
+    # 종목 결과 — (name, ratio, market)
     stock_results = []
     ok_count = 0
     for s in stocks:
         sym = s['yf_sym']
         name = s['name']
+        market = 'KQ' if sym.endswith('.KQ') else 'KS'
         if sym in data:
             ratio = calc_ma_ratio(data[sym], 20)
-            stock_results.append((name, ratio))
+            stock_results.append((name, ratio, market))
             if ratio:
                 ok_count += 1
         else:
-            stock_results.append((name, None))
+            stock_results.append((name, None, market))
 
     print(f'  계산 완료: {ok_count}/{len(stocks)}개 성공')
 
     # 발송
-    msgs = format_monthly_message(index_results, stock_results, today, is_final)
+    msgs = format_monthly_message(index_results, stock_results, today, idx_ratio_map, is_final)
     for i, msg in enumerate(msgs):
         send_dm(msg)
         print(f'  [봇1] 월봉 메시지 {i+1}/{len(msgs)} 발송')
