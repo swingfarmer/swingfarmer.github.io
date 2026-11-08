@@ -4,8 +4,6 @@
 fetch_market_indicators.py 결과 → 텔레그램 발송.
 아침(07:30) + 저녁(18:50) 2회 cron.
 
-DM만 발송 (채널 X).
-
 환경변수: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 """
 
@@ -19,7 +17,7 @@ KST = timezone(timedelta(hours=9))
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR   = os.path.dirname(SCRIPT_DIR)
 INDICATORS_FILE = os.path.join(ROOT_DIR, 'data', 'market_indicators.json')
-NEWS_FILE = os.path.join(ROOT_DIR, 'data', 'news.json')
+NEWS_FILE = os.path.expanduser('~/news_data/news.json')
 RATES_FILE = os.path.join(ROOT_DIR, 'data', 'rates.json')
 RATES_HIST_FILE = os.path.join(ROOT_DIR, 'data', 'rates_history.json')
 FX_STATE_FILE = os.path.join(SCRIPT_DIR, 'fx_alert_state.json')

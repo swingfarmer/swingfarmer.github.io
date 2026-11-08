@@ -1392,5 +1392,39 @@ def futures_investor():
     })
 
 
+# ── 뉴스 API (VM 로컬 ~/news_data/) ──
+NEWS_DATA_DIR = os.path.expanduser('~/news_data')
+
+@app.route('/api/news')
+def api_news():
+    """최신 뉴스 (news.json)."""
+    path = os.path.join(NEWS_DATA_DIR, 'news.json')
+    if not os.path.exists(path):
+        return jsonify({'error': 'news.json 없음'}), 404
+    with open(path, 'r', encoding='utf-8') as f:
+        return jsonify(json.load(f))
+
+@app.route('/api/news/archive')
+def api_news_archive_index():
+    """뉴스 아카이브 인덱스."""
+    path = os.path.join(NEWS_DATA_DIR, 'archive', 'index.json')
+    if not os.path.exists(path):
+        return jsonify({'dates': [], 'latest': None})
+    with open(path, 'r', encoding='utf-8') as f:
+        return jsonify(json.load(f))
+
+@app.route('/api/news/archive/<date>')
+def api_news_archive_date(date):
+    """특정 날짜 뉴스 아카이브."""
+    import re as _re
+    if not _re.match(r'^\d{4}-\d{2}-\d{2}$', date):
+        return jsonify({'error': '날짜 형식 오류 (YYYY-MM-DD)'}), 400
+    path = os.path.join(NEWS_DATA_DIR, 'archive', f'{date}.json')
+    if not os.path.exists(path):
+        return jsonify({'error': f'{date} 아카이브 없음'}), 404
+    with open(path, 'r', encoding='utf-8') as f:
+        return jsonify(json.load(f))
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)

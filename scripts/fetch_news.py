@@ -1,7 +1,7 @@
 """
-뉴스 수집 → data/news.json + data/news/아카이브
+뉴스 수집 → ~/news_data/news.json + ~/news_data/archive/아카이브
 네이버 클라우드 API HUB 뉴스 검색 기반
-GitHub Actions 1시간마다 자동 실행
+VM cron 1시간마다 실행 (GitHub Actions → VM 이관)
 
 환경변수:
   NAVER_CLIENT_ID      — 네이버 클라우드 API HUB Client ID
@@ -17,8 +17,9 @@ import urllib.parse
 from datetime import datetime, timezone, timedelta
 
 KST = timezone(timedelta(hours=9))
-OUTPUT = "data/news.json"
-ARCHIVE_DIR = os.path.join("data", "news")
+NEWS_DATA_DIR = os.path.expanduser("~/news_data")
+OUTPUT = os.path.join(NEWS_DATA_DIR, "news.json")
+ARCHIVE_DIR = os.path.join(NEWS_DATA_DIR, "archive")
 TIMEOUT = 10
 DISPLAY = 100        # 카테고리당 100개씩
 ARCHIVE_KEEP = 90    # 90일 보관
@@ -216,8 +217,8 @@ def main():
             status += f" — 실패: {', '.join(errors)}"
         print(status)
 
-    # ── 최신 news.json 저장 ──
-    os.makedirs("data", exist_ok=True)
+    # ── 최신 news.json 저장 (VM 로컬) ──
+    os.makedirs(NEWS_DATA_DIR, exist_ok=True)
     with open(OUTPUT, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=1)
 

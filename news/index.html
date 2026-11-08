@@ -118,14 +118,15 @@ footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
   본 페이지는 각 언론사가 공개적으로 제공하는 <b>RSS 피드</b>를 활용하여 헤드라인과 출처를 표시하는 비상업적 큐레이션 서비스입니다.<br>
   • 모든 기사의 <b>저작권은 해당 언론사에 있으며</b>, 본 페이지에는 기사 본문이 포함되어 있지 않습니다.<br>
   • 기사 제목 클릭 시 해당 언론사의 원본 페이지로 이동합니다.<br>
-  • RSS는 GitHub Actions로 2시간마다 서버에서 수집하여 정적 JSON으로 제공합니다.
+  • 뉴스는 VM에서 1시간마다 수집하여 API로 제공합니다.
 </div>
 
 <footer>© 스윙파머 · RSS 출처: 연합뉴스 · 한국경제 · 매일경제 · 파이낸셜뉴스 · SBS · 이데일리 · 전자신문</footer>
 
 <script>
-var NEWS_URL = '/data/news.json';
-var ARCHIVE_INDEX_URL = '/data/news/index.json';
+var API = 'https://swingfarmer.duckdns.org/api';
+var NEWS_URL = API + '/news';
+var ARCHIVE_INDEX_URL = API + '/news/archive';
 var newsData = null;
 var currentTab = 'breaking';
 var archiveDates = [];
@@ -223,7 +224,7 @@ function loadArchive(val) {
 
 async function loadArchiveDate(d) {
   try {
-    var r = await fetch('/data/news/' + d + '.json?t=' + Date.now());
+    var r = await fetch(API + '/news/archive/' + d + '?t=' + Date.now());
     if (!r.ok) throw new Error('HTTP ' + r.status);
     newsData = await r.json();
     document.getElementById('lastUpdate').textContent = d + ' 아카이브';
@@ -267,7 +268,7 @@ async function loadNews() {
     document.getElementById('lastUpdate').textContent = '로드 실패';
     document.getElementById('list-breaking').innerHTML =
       '<div class="error">⚠ news.json을 불러올 수 없습니다.<br>' +
-      '<div style="font-size:12px;color:#888;margin-top:8px">GitHub Actions에서 <b>뉴스 RSS 자동 수집</b> 워크플로를 수동 실행(workflow_dispatch)하면 data/news.json이 생성됩니다.</div></div>';
+      '<div style="font-size:12px;color:#888;margin-top:8px">VM에서 뉴스 수집 크론이 실행되면 자동으로 갱신됩니다.</div></div>';
   }
 }
 

@@ -4,13 +4,13 @@
 봇2 (TELEGRAM_BOT2_TOKEN) 로 DM 발송.
 
 오라클 VM crontab:
-  매시간 :05분 — 증권/해외증시 (봇2 DM)
+  매시간 :05분 — 증권/해외증시 (봇2 DM, 24시간)
   12:00 KST   — 부동산/하남감북 (봇2 DM)
 
 사용법:
   python3 news_alert.py                     # 전체 카테고리
   python3 news_alert.py --cats 증권 해외증시  # 지정 카테고리만
-  python3 news_alert.py --cats 부동산 "하남 감북"
+  python3 news_alert.py --cats 부동산 "하남 감북" --hours 24
 
 환경변수:
   NAVER_CLIENT_ID      — 네이버 클라우드 NAVER API HUB Client ID
@@ -139,7 +139,7 @@ def filter_recent(items, hours=2):
             if pub >= cutoff:
                 recent.append(it)
         except Exception:
-            pass  # 파싱 실패한 기사는 버림
+            pass
     return recent
 
 
@@ -210,7 +210,7 @@ def main():
         print("❌ NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 환경변수 없음")
         return
 
-    # 기존 아카이브 로드 (하루 여러 회 실행 시 머지)
+    # 기존 아카이브 로드
     ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
     archive_path = ARCHIVE_DIR / f"{today}.json"
     if archive_path.exists():
