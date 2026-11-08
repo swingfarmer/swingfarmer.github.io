@@ -1,8 +1,11 @@
 """
 뉴스 텔레그램 알림 + 일별 JSON 아카이브 (NAVER API HUB 버전)
+=============================================================
+봇2 (TELEGRAM_BOT2_TOKEN) 로 DM 발송.
+
 오라클 VM crontab:
-  07:30 KST — 증권/해외증시 (채널+DM)
-  12:00 KST — 부동산/하남감북 (DM만)
+  매시간 :05분 — 증권/해외증시 (봇2 DM)
+  12:00 KST   — 부동산/하남감북 (봇2 DM)
 
 사용법:
   python3 news_alert.py                     # 전체 카테고리
@@ -12,7 +15,7 @@
 환경변수:
   NAVER_CLIENT_ID      — 네이버 클라우드 NAVER API HUB Client ID
   NAVER_CLIENT_SECRET  — 네이버 클라우드 NAVER API HUB Client Secret
-  TELEGRAM_BOT_TOKEN   — 텔레그램 봇 토큰
+  TELEGRAM_BOT2_TOKEN  — 텔레그램 봇2 토큰
   TELEGRAM_CHAT_ID     — 텔레그램 채팅 ID
 """
 import requests
@@ -32,10 +35,8 @@ NAVER_CLIENT_ID = os.environ.get("NAVER_CLIENT_ID", "")
 NAVER_CLIENT_SECRET = os.environ.get("NAVER_CLIENT_SECRET", "")
 NAVER_API_URL = "https://naverapihub.apigw.ntruss.com/search/v1/news"
 
-# 텔레그램
-from telegram_helper import send_dm as _send_dm
-
-# 채널 발송 없음 — 모든 뉴스 DM만 발송
+# 텔레그램 — 봇2
+from telegram_helper import send_dm_bot2 as _send_dm
 
 # 경로
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -127,7 +128,7 @@ def extract_source(url):
     return ""
 
 
-def filter_recent(items, hours=24):
+def filter_recent(items, hours=2):
     """pubDate 기준 N시간 이내 기사만 남김."""
     from email.utils import parsedate_to_datetime
     cutoff = datetime.now(KST) - timedelta(hours=hours)
@@ -185,17 +186,31 @@ def parse_cats():
     return valid
 
 
+def parse_hours():
+    """--hours N 으로 필터 시간 지정. 기본 2시간."""
+    args = sys.argv[1:]
+    if '--hours' in args:
+        idx = args.index('--hours')
+        if idx + 1 < len(args):
+            try:
+                return int(args[idx + 1])
+            except ValueError:
+                pass
+    return 2
+
+
 def main():
     now = datetime.now(KST)
     today = now.strftime("%Y-%m-%d")
     run_cats = parse_cats()
-    print(f"뉴스 알림 시작: {now.strftime('%Y-%m-%d %H:%M')} — {run_cats}")
+    filter_hours = parse_hours()
+    print(f"뉴스 알림 시작: {now.strftime('%Y-%m-%d %H:%M')} — {run_cats} (최근 {filter_hours}시간)")
 
     if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET:
         print("❌ NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 환경변수 없음")
         return
 
-    # 기존 아카이브 로드 (하루 2회 실행 시 머지)
+    # 기존 아카이브 로드 (하루 여러 회 실행 시 머지)
     ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
     archive_path = ARCHIVE_DIR / f"{today}.json"
     if archive_path.exists():
@@ -218,17 +233,16 @@ def main():
                 all_items.extend(items)
             time.sleep(0.3)
 
-        all_items = filter_recent(all_items, hours=24)
+        all_items = filter_recent(all_items, hours=filter_hours)
         top = dedupe_top(all_items, TOP_N)
         archive["categories"][cat] = {"items": top, "count": len(top)}
 
         if top:
             msg = format_telegram(cat, top)
             ok = send_telegram(msg, category=cat)
-            dest = "DM만"
-            print(f"  {cat}: {len(top)}개 → 텔레그램 {dest} {'✅' if ok else '❌'}")
+            print(f"  {cat}: {len(top)}개 → 봇2 DM {'✅' if ok else '❌'}")
         else:
-            print(f"  {cat}: 0개 (24시간 이내 뉴스 없음)")
+            print(f"  {cat}: 0개 ({filter_hours}시간 이내 뉴스 없음)")
             if cat == "하남 감북":
                 now_str = datetime.now(KST).strftime('%m/%d %H:%M')
                 send_telegram(f"📰 <b>{cat} 뉴스</b>  ({now_str})\n\n오늘 관련 뉴스 없음", category=cat)

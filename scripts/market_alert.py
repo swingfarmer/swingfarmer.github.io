@@ -4,6 +4,8 @@
 fetch_market_indicators.py 결과 → 텔레그램 발송.
 아침(07:30) + 저녁(18:50) 2회 cron.
 
+DM만 발송 (채널 X).
+
 환경변수: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 """
 
@@ -11,7 +13,7 @@ import os, sys, json
 import urllib.request
 from datetime import datetime, timezone, timedelta
 
-from telegram_helper import send_all as send_telegram_all
+from telegram_helper import send_dm as send_telegram_dm
 
 KST = timezone(timedelta(hours=9))
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -25,7 +27,7 @@ NEWS_CATS = ['economy', 'stock', 'breaking']  # 경제, 증시, 속보
 
 
 def send_telegram(text):
-    return send_telegram_all(text)
+    return send_telegram_dm(text)
 
 
 def fmt_num(val, decimals=2):
