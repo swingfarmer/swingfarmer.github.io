@@ -130,6 +130,7 @@ body.sf-dark .alert-critical{background:rgba(69,10,10,.9)!important;color:#fca5a
     <div class="dots" id="dots"></div>
   </div>
   <div id="emptyMsg" class="empty-msg" style="display:none">카드가 없습니다. + 버튼으로 카드를 추가하세요.</div>
+  <div id="saveNote" style="font-size:12px;color:#888;text-align:center;margin-top:14px;line-height:1.6">이 기기에 자동 저장됨 · 다른 기기와 맞추려면 우측 하단 저장 버튼</div>
 </div>
 <button class="fab" onclick="openModal()" title="카드 추가">+</button>
 
@@ -186,21 +187,75 @@ body.sf-dark .alert-critical{background:rgba(69,10,10,.9)!important;color:#fca5a
 </div>
 
 <script type="module">
-import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+/* 저장 구조 (078 단일화)
+   - 로컬 자동저장: localStorage sf_cardmanager_v2 (sf-slots와 같은 키, 형식 {cards:[...]})
+   - 클라우드: sf-slots.js 만 사용 (calc_data.cardmanager.slots) → 우측 하단 저장 버튼
+   - 구 저장소(Firestore users/{uid}/cards)는 읽기 전용으로 최초 1회만 가져옴. 쓰지도 지우지도 않음. */
+const LS_KEY='sf_cardmanager_v2';
+const MIG_FLAG='sf_cardmanager_legacy_done';
+let cards=[], currentSort='order';
 
-/* common.js _sfFirebaseReady에서 config 가져옴 — API 키 인라인 제거 */
-const app = getApps().length ? getApps()[0] : initializeApp(_sfFirebaseReady.FB_CFG);
-const db = getFirestore(app);
-const auth = getAuth(app);
-let cards=[], currentSort='order', uid=null;
+function persist(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({cards})); }catch(e){} }
+function readLocal(){
+  try{
+    const d=JSON.parse(localStorage.getItem(LS_KEY)||'null');
+    if(d && Array.isArray(d.cards)) return d.cards;
+  }catch(e){}
+  return null;
+}
+function setNote(msg){ const el=document.getElementById('saveNote'); if(el) el.textContent=msg; }
 
-onAuthStateChanged(auth, u => { if(!u) return; uid=u.uid; loadCards(); });
+// Firestore Timestamp → ISO 문자열 (로컬/슬롯에 그대로 넣을 수 있게)
+function plain(v){
+  if(v && typeof v.toDate==='function'){ try{ return v.toDate().toISOString(); }catch(e){ return ''; } }
+  return v;
+}
 
-async function loadCards(){
-  const snap=await getDocs(collection(db,'users',uid,'cards'));
-  cards=[]; snap.forEach(d=>cards.push({id:d.id,...d.data()})); renderAll();
+async function migrateLegacy(){
+  try{ if(localStorage.getItem(MIG_FLAG)) return; }catch(e){ return; }
+  if(cards.length){ try{ localStorage.setItem(MIG_FLAG,'local'); }catch(e){} return; }
+  // 로그인 완료 대기 (최대 15초)
+  let user=null;
+  for(let i=0;i<30;i++){
+    user=window._sfAuth && window._sfAuth.currentUser;
+    if(user) break;
+    await new Promise(r=>setTimeout(r,500));
+  }
+  if(!user) return; // 다음 방문 때 다시 시도
+  try{
+    // 이미 클라우드 슬롯이 있으면(다른 기기에서 이전 완료) 옛 데이터를 다시 끌어오지 않음
+    if(window._sfSlots && window._sfSlots.getSlots){
+      const slots=await window._sfSlots.getSlots();
+      if(slots && slots.length){
+        localStorage.setItem(MIG_FLAG,'slots');
+        setNote('클라우드 저장분 '+slots.length+'개 있음 → 우측 하단 저장 버튼에서 불러오기');
+        return;
+      }
+    }
+    const [appMod, fsMod]=await Promise.all([
+      import('https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js')
+    ]);
+    const apps=appMod.getApps();
+    if(!apps.length) return;
+    const db=fsMod.getFirestore(apps[0]);
+    const snap=await fsMod.getDocs(fsMod.collection(db,'users',user.uid,'cards'));
+    const legacy=[];
+    snap.forEach(d=>{
+      const o={id:d.id}, src=d.data();
+      for(const k in src) o[k]=plain(src[k]);
+      legacy.push(o);
+    });
+    if(cards.length) { localStorage.setItem(MIG_FLAG,'local'); return; } // 기다리는 사이 직접 입력한 경우
+    if(legacy.length){
+      cards=legacy; persist(); renderAll();
+      setNote('기존 카드 '+legacy.length+'장 가져옴 → 우측 하단 저장 버튼으로 클라우드에 저장하세요');
+    }
+    localStorage.setItem(MIG_FLAG, legacy.length ? 'imported' : 'empty');
+  }catch(e){
+    console.error('[card-manager] 기존 카드 가져오기 실패:', e);
+    setNote('기존 카드 가져오기 실패 (새로고침하면 다시 시도)');
+  }
 }
 
 function dday(dateStr){
@@ -361,7 +416,7 @@ window._editCard=function(id){
 
 window.closeModal=function(){document.getElementById('modal').classList.remove('show');};
 
-window.saveCard=async function(){
+window.saveCard=function(){
   const editId=document.getElementById('editId').value;
   const data={
     issuer:document.getElementById('fIssuer').value,
@@ -378,24 +433,27 @@ window.saveCard=async function(){
     memo:document.getElementById('fMemo').value.trim(),
     benefitDone:document.getElementById('fBenefitDone').checked,
     cancelled:document.getElementById('fCancelled').checked,
-    updatedAt:Timestamp.now()
+    updatedAt:new Date().toISOString()
   };
   if(!data.cardName){alert('카드명을 입력하세요.');return;}
   if(editId){
-    await setDoc(doc(db,'users',uid,'cards',editId),data,{merge:true});
+    const i=cards.findIndex(x=>x.id===editId);
+    if(i<0){alert('수정할 카드를 찾지 못했습니다.');return;}
+    cards[i]={...cards[i],...data};
   } else {
-    data.order=cards.length;
-    data.createdAt=Timestamp.now();
-    await setDoc(doc(db,'users',uid,'cards','card_'+Date.now()),data);
+    data.id='card_'+Date.now();
+    data.order=cards.reduce((m,c)=>Math.max(m,(c.order||0)+1),0);
+    data.createdAt=data.updatedAt;
+    cards.push(data);
   }
-  closeModal(); await loadCards();
+  persist(); closeModal(); renderAll();
 };
 
-window.deleteCard=async function(){
+window.deleteCard=function(){
   const editId=document.getElementById('editId').value;
   if(!editId||!confirm('이 카드를 삭제할까요?')) return;
-  await deleteDoc(doc(db,'users',uid,'cards',editId));
-  closeModal(); await loadCards();
+  cards=cards.filter(x=>x.id!==editId);
+  persist(); closeModal(); renderAll();
 };
 
 window.setSort=function(s){
@@ -406,7 +464,29 @@ window.setSort=function(s){
 
 document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+// ── sf-slots 연동 (실제 slGetState/slSetState는 아래 일반 script에 정의) ──
+window._cmGet=function(){ return {cards:JSON.parse(JSON.stringify(cards))}; };
+window._cmSet=function(d){
+  if(!d || !Array.isArray(d.cards)) return;
+  cards=JSON.parse(JSON.stringify(d.cards));
+  persist(); renderAll();
+};
+
+// ── 시작 ──
+cards=readLocal()||[];
+renderAll();
+migrateLegacy();
 </script>
+<script>
+window.CALC_KEY='cardmanager';
+window.slGetState=function(){
+  if(!window._cmGet) throw new Error('페이지 로딩 중입니다. 잠시 후 다시 시도하세요.');
+  return window._cmGet();
+};
+window.slSetState=function(d){ if(window._cmSet) window._cmSet(d); };
+</script>
+<script src="/sf-slots.js?v=3"></script>
 <script src="/common.js?v=7"></script>
 </body>
 </html>

@@ -172,15 +172,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
 </header>
 
 <div class="wrap">
-  <p class="desc">공익사업 토지수용·협의매수 시 <b>현금보상 / 3년만기채권 / 5년만기채권</b> 감면율별 세금과 실수령액을 비교합니다. 조특법 제77조, 2025.3.14 개정(2025.1.1 양도분부터 적용) 최신 감면율 기준. 관리자 로그인 시 계산 이력 클라우드 저장.</p>
-
-  <div id="cloudArea" class="cloud-area">
-    <span class="cloud-lbl">☁️ 관리자</span>
-    <span id="cloudWho"></span>
-    <span id="saveStatus"></span>
-  </div>
-  <button id="btnAdminLogin" class="btn" type="button" style="display:none;background:#fff;color:#444;border:1px solid #ddd;margin-bottom:12px">🔑 관리자 로그인</button>
-  <div id="uidInfo" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:13px;color:#92400e;margin-bottom:12px;line-height:1.7"></div>
+  <p class="desc">공익사업 토지수용·협의매수 시 <b>현금보상 / 3년만기채권 / 5년만기채권</b> 감면율별 세금과 실수령액을 비교합니다. 조특법 제77조, 2025.3.14 개정(2025.1.1 양도분부터 적용) 최신 감면율 기준. 입력값은 브라우저에 자동 저장되고, 우측 하단 저장 버튼으로 시나리오를 이름 붙여 저장합니다.</p>
 
   <div class="note">
     ⚠️ <b>적용 요건 확인 필수.</b> 이 감면은 사업인정고시일(또는 양도일)로부터 소급 2년 이전 취득한 토지에만 적용되며, <b>사업인정고시 절차 없이 양도</b>하면 감면 대상이 아닙니다. 2026.12.31 양도분까지 한시 적용. 감면세액의 <b>20%는 농어촌특별세</b>로 별도 부담합니다. 감면한도는 연 2억원·5년 합산 3억원이며(다른 감면과 합산), 이 계산기는 단건 기준으로만 계산하므로 5년 내 다른 감면 이력이 있다면 실제 한도 초과 여부를 별도 확인해야 합니다.
@@ -350,117 +342,14 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
 
 
 <script type="module">
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
-const firebaseConfig = {
-  apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
-  authDomain: "swingfarmer-board01.firebaseapp.com",
-  projectId: "swingfarmer-board01",
-  storageBucket: "swingfarmer-board01.firebasestorage.app",
-  messagingSenderId: "312575044644",
-  appId: "1:312575044644:web:81d754eb1d90f25454fcb1"
-};
-const ADMIN_UIDS = ["1JrHgD2bpTRjrS2jw7MbpHciBph1","Ydd8v6LCN2TPjkqKD4DejLSWwaL2"];
-const CALC_KEY = "landtax";
-const STORE_KEY = "sf_landtax_v1";
-
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-function docRef() { return doc(db, 'calc_data', ADMIN_UIDS[0]); }
-const provider = new GoogleAuthProvider();
-provider.setCustomParameters({ prompt: 'select_account' });
+/* 저장 구조 (078 단일화)
+   - 클라우드: sf-slots.js 만 사용 (calc_data.landtax.slots). 이 페이지는 Firestore에 직접 쓰지 않음.
+   - 로컬 자동저장: sf-slots와 같은 키(sf_landtax_v2)에 입력값 그대로 저장.
+   - 구버전 로컬(sf_landtax_v1)은 최초 1회 읽어서 v2로 옮김. */
+const LS_KEY = "sf_landtax_v2";
+const OLD_LS_KEY = "sf_landtax_v1";
 const $ = id => document.getElementById(id);
-
-let currentUser = null;
-let cloudReady = false;
-let pushTimer = null;
-let slots_ = [];
-
-getRedirectResult(auth).catch(()=>{});
-if (location.hash === '#admin' || location.hash === '#관리자') {
-  $('btnAdminLogin').style.display = 'inline-block';
-}
-
-$('btnAdminLogin').addEventListener('click', async () => {
-  try { await signInWithPopup(auth, provider); }
-  catch (e) {
-    const code = e && e.code;
-    if (code === 'auth/popup-blocked' || code === 'auth/cancelled-popup-request' || code === 'auth/popup-closed-by-user' || code === 'auth/operation-not-supported-in-this-environment') {
-      try { await signInWithRedirect(auth, provider); } catch (e2) { alert('로그인 실패: ' + e2.message); }
-    } else { alert('로그인 실패: ' + (e.message || code)); }
-  }
-});
-window._ltSignout = () => signOut(auth);
-
-async function cloudPull() {
-  try {
-    const snap = await getDoc(docRef());
-    if (snap.exists() && snap.data()[CALC_KEY]) {
-      const cloud = snap.data()[CALC_KEY];
-      if (Array.isArray(cloud.slots)) slots_ = cloud.slots;
-      else if (Array.isArray(cloud.history)) slots_ = []; // 이전 history 무시 (구조 다름)
-      if (cloud.inputs) applyInputs(cloud.inputs);
-      saveLocal();
-    }
-  } catch (e) { /* cloud pull fail */ }
-}
-async function cloudPush() {
-  if (!cloudReady) return;
-  setSaveStatus('saving');
-  try {
-    await setDoc(docRef(), { [CALC_KEY]: { inputs: collectInputs(), slots: slots_, updatedAt: new Date().toISOString() } }, { merge: true });
-    setSaveStatus('saved');
-  } catch (e) {
-    /* cloud push fail */
-    setSaveStatus('error');
-  }
-}
-function schedulePush() {
-  if (!cloudReady) return;
-  setSaveStatus('dirty');
-  clearTimeout(pushTimer);
-  pushTimer = setTimeout(cloudPush, 800);
-}
-function setSaveStatus(status) {
-  const el = $('saveStatus');
-  if (!el) return;
-  el.className = '';
-  if (status === 'dirty') { el.textContent = '· 저장 대기'; el.className = 'dirty'; }
-  else if (status === 'saving') { el.textContent = '· 저장 중...'; }
-  else if (status === 'saved') { el.textContent = '· ☁️ 동기화됨'; }
-  else if (status === 'error') { el.textContent = '· ⚠️ 저장 실패'; el.className = 'error'; }
-  else { el.textContent = ''; }
-}
-
-onAuthStateChanged(auth, async user => {
-  currentUser = user;
-  const isAdmin = user && ADMIN_UIDS.indexOf(user.uid) !== -1;
-  if (isAdmin) {
-    $('cloudArea').classList.add('on');
-    $('btnAdminLogin').style.display = 'none';
-    $('cloudWho').textContent = '☁️ ' + (user.displayName || user.email || '관리자');
-    if ($('uidInfo')) $('uidInfo').style.display = 'none';
-    await cloudPull();
-    cloudReady = true;
-    setSaveStatus('saved');
-    cloudPush();
-  } else if (user && !isAdmin) {
-    $('cloudArea').classList.remove('on');
-    $('btnAdminLogin').style.display = 'none';
-    const box = $('uidInfo');
-    if (box) {
-      box.style.display = 'block';
-      box.innerHTML = '로그인됨: <b>' + (user.email || '') + '</b><br>UID: <code style="font-size:11px;word-break:break-all">' + user.uid + '</code><br><button onclick="window._ltSignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer;margin-top:4px">로그아웃</button>';
-    }
-    cloudReady = false;
-  } else {
-    cloudReady = false;
-    $('cloudArea').classList.remove('on');
-    if ($('uidInfo')) $('uidInfo').style.display = 'none';
-  }
-});
+let pageReady = false;
 
 // ============= Input snapshot save/restore =============
 const INPUT_IDS = [
@@ -486,8 +375,10 @@ function applyInputs(o) {
   if (!o) return;
   for (const id of INPUT_IDS) if (o[id] !== undefined) $(id).value = o[id];
   if (o._mode) applyMode(o._mode);
-  if (o._unitProceeds) applyUnit('Proceeds', o._unitProceeds);
-  if (o._unitAcquisition) applyUnit('Acquisition', o._unitAcquisition);
+  // 저장된 단가는 이미 저장 당시 단위 기준 값 → 환산 없이 단위 상태만 맞춤
+  // (그냥 applyUnit을 부르면 m²↔평 환산이 한 번 더 걸려 단가가 3.3배씩 틀어짐)
+  if (o._unitProceeds) { unitState.Proceeds = o._unitProceeds; applyUnit('Proceeds', o._unitProceeds); }
+  if (o._unitAcquisition) { unitState.Acquisition = o._unitAcquisition; applyUnit('Acquisition', o._unitAcquisition); }
   if (o._chkFarmer !== undefined) $('chkFarmer').checked = !!o._chkFarmer;
   updateHints();
   updateAllPyeongHints();
@@ -496,7 +387,6 @@ function applyInputs(o) {
 
 function onChange() {
   saveLocal();
-  schedulePush();
 }
 
 // ============= 입력값 초기화 =============
@@ -516,19 +406,28 @@ const DEFAULTS = {
   _unitAcquisition: 'm2'
 };
 
+function isValidState(o) {
+  return !!o && typeof o === 'object' && o.inProceeds !== undefined;
+}
+// 슬롯 데이터 형태 정규화: 현재 형식(입력값 그대로) / 구형식({inputs:{...}}) 둘 다 허용
+function normalizeState(o) {
+  if (isValidState(o)) return o;
+  if (o && isValidState(o.inputs)) return o.inputs;
+  return null;
+}
 function saveLocal() {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify({ inputs: collectInputs(), slots: slots_ })); } catch (e) {}
+  try { localStorage.setItem(LS_KEY, JSON.stringify(collectInputs())); } catch (e) {}
 }
 function loadLocal() {
-  try {
-    const raw = localStorage.getItem(STORE_KEY);
-    if (raw) {
-      const d = JSON.parse(raw);
-      if (Array.isArray(d.slots)) slots_ = d.slots;
-      // Old key was `history` (single-record log). Drop it silently on migration - structure incompatible with named slots
-      if (d.inputs) applyInputs(d.inputs);
-    }
-  } catch (e) {}
+  let st = null;
+  try { st = normalizeState(JSON.parse(localStorage.getItem(LS_KEY) || 'null')); } catch (e) {}
+  if (!st) {
+    // 구버전 로컬 저장분 이전 (v1은 지우지 않고 남겨둠)
+    try { st = normalizeState(JSON.parse(localStorage.getItem(OLD_LS_KEY) || 'null')); } catch (e) {}
+  }
+  if (st) applyInputs(st);
+  // v2에 항상 유효한 값이 들어있게 함 (sf-slots 자동복원이 빈 값을 읽지 않도록)
+  saveLocal();
 }
 
 // ============= Utils =============
@@ -927,11 +826,29 @@ updateHints();
 updateAllPyeongHints();
 updateDateCalc();
 
-// ── sf-slots 연동 ──
-window.slGetState = function(){ return window.collectInputs ? window.collectInputs() : {}; };
-window.slSetState = function(d){ applyInputs(d); calculate(); };
+// ── sf-slots 연동 (실제 slGetState/slSetState는 아래 일반 script에 정의) ──
+window._ltCollect = collectInputs;
+window._ltApply = function(d){
+  const st = normalizeState(d);
+  if (!st) {
+    // 페이지 최초 로딩 중 자동복원은 조용히 무시, 사용자가 직접 불러온 경우만 안내
+    if (pageReady) alert('이 저장분에는 입력값이 들어있지 않습니다.\n(예전 저장 오류로 빈 값이 저장된 항목입니다. 삭제하고 다시 저장하세요.)');
+    return;
+  }
+  applyInputs(st);
+  saveLocal();
+  if (pageReady) calculate();
+};
+window.addEventListener('load', () => { pageReady = true; });
 </script>
-<script>window.CALC_KEY='landtax';</script>
+<script>
+window.CALC_KEY='landtax';
+window.slGetState = function(){
+  if (!window._ltCollect) throw new Error('페이지 로딩 중입니다. 잠시 후 다시 시도하세요.');
+  return window._ltCollect();
+};
+window.slSetState = function(d){ if (window._ltApply) window._ltApply(d); };
+</script>
 <script src="/sf-slots.js?v=3"></script>
 <script src="/common.js?v=7"></script>
 </body>
