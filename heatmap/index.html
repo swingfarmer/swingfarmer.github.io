@@ -150,6 +150,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
   let baseDate = '';      // 종가 데이터(marketcap_top.json) 기준일
   let baseLabel = '';
   let liveTimer = null;
+  let rendered = false;
 
   // ── 데이터 로드 ──
   async function loadData() {
@@ -186,8 +187,9 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
       baseLabel = `${mcData.date} 종가 기준 · 시총 상위 ${allItems.length}종목 · 평일 20:50 자동 갱신`;
       document.getElementById('updateDate').textContent = baseLabel;
 
-      render();
-      loadLive();
+      // 실시간 값을 최대 2.5초 기다렸다가 한 번에 그림 (회색 화면이 먼저 뜨는 것 방지)
+      await Promise.race([loadLive(), new Promise(r => setTimeout(r, 2500))]);
+      if (!rendered) render();
     } catch (e) {
       document.getElementById('heatmap').innerHTML =
         '<div class="loading" style="color:var(--red)">데이터 로드 실패</div>';
@@ -346,6 +348,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
 
   // ── 렌더 ──
   function render() {
+    rendered = true;
     const container = document.getElementById('heatmap');
     const isMobile = window.innerWidth <= 600;
     const mapH = isMobile ? MAP_HEIGHT_M : MAP_HEIGHT;
