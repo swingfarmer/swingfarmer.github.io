@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>오늘 증시 한눈에 | 스윙파머</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/common-dark.css?v=4">
+<style>
+:root { --sf-max-w: 960px; }
+a { color: var(--accent); text-decoration: none; }
+
+.page-header { padding: 24px 0 16px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.page-header h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+.page-header .sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+/* Section */
+.section { margin-bottom: 24px; }
+.sec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.sec-title { font-size: 15px; font-weight: 700; }
+.sec-link { font-size: 11px; color: var(--text-dim); font-weight: 600; }
+.sec-link:hover { color: var(--accent); }
+
+/* Index + FX cards */
+.idx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.idx-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+.idx-label { font-size: 10px; color: var(--text-dim); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.idx-val { font-size: 17px; font-weight: 800; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.idx-chg { font-size: 11px; font-weight: 600; margin-top: 1px; }
+
+/* Alert badge */
+.alert-badge { display: inline-block; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
+.alert-badge.warn { background: rgba(245,158,11,.2); color: var(--warn); }
+.alert-badge.danger { background: rgba(239,68,68,.2); color: var(--red); }
+
+/* Supply card */
+.supply-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.supply-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+.supply-label { font-size: 11px; color: var(--text-dim); font-weight: 600; }
+.supply-val { font-size: 18px; font-weight: 800; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.supply-sub { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+
+/* Rank table */
+.rank-tbl { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.rank-tbl th { text-align: left; padding: 6px 8px; color: var(--text-dim); font-weight: 500; font-size: 10px; border-bottom: 1px solid var(--border); }
+.rank-tbl th:nth-child(n+3) { text-align: right; }
+.rank-tbl td { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,.04); }
+.rank-tbl td:nth-child(n+3) { text-align: right; }
+.rank-tbl tr:hover { background: rgba(255,255,255,.03); }
+
+/* Breadth bar */
+.breadth-wrap { display: flex; gap: 12px; flex-wrap: wrap; }
+.breadth-box { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; flex: 1; min-width: 200px; }
+.breadth-market { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+.breadth-bar { display: flex; height: 18px; border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+.breadth-bar .hi { background: var(--red); }
+.breadth-bar .lo { background: var(--accent); }
+.breadth-bar .rest { background: var(--border); }
+.breadth-nums { display: flex; justify-content: space-between; font-size: 11px; }
+.breadth-nums .hi-n { color: var(--red); font-weight: 600; }
+.breadth-nums .lo-n { color: var(--accent); font-weight: 600; }
+
+/* Sector bar chart */
+.sector-bars { display: flex; flex-direction: column; gap: 4px; }
+.sector-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.sector-name { width: 100px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-dim); flex-shrink: 0; }
+.sector-bar-wrap { flex: 1; height: 16px; position: relative; }
+.sector-bar { height: 100%; border-radius: 3px; position: absolute; top: 0; }
+.sector-pct { width: 50px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+
+/* Screener summary */
+.sig-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+.sig-item { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; }
+.sig-name { font-size: 11px; color: var(--text-dim); }
+.sig-cnt { font-size: 15px; font-weight: 800; }
+
+/* Movers mini */
+.movers-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.movers-col h4 { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+.movers-list { display: flex; flex-direction: column; gap: 3px; }
+.mover-item { display: flex; justify-content: space-between; font-size: 12px; padding: 4px 8px; background: var(--card); border-radius: 4px; }
+.mover-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.up { color: var(--red); }
+.dn { color: var(--accent); }
+.flat { color: var(--text-dim); }
+
+.loading { text-align: center; padding: 60px 0; color: var(--text-dim); font-size: 13px; }
+
+@media (max-width: 600px) {
+  .page-header h1 { font-size: 18px; }
+  .idx-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .idx-val { font-size: 14px; }
+  .movers-grid { grid-template-columns: 1fr; }
+  .supply-row { grid-template-columns: 1fr; }
+  .sector-name { width: 72px; font-size: 11px; }
+  .sig-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="page-header">
+  <h1>📋 오늘 증시 한눈에</h1>
+  <div class="sub" id="dateLabel">데이터 로딩 중…</div>
+</div>
+
+<!-- 1. 지수 + 환율 -->
+<div class="section" id="secIndex">
+  <div class="sec-head">
+    <span class="sec-title">지수 · 환율 · 금리</span>
+    <a href="/market/" class="sec-link">실시간 대시보드 →</a>
+  </div>
+  <div class="idx-grid" id="idxGrid"></div>
+</div>
+
+<!-- 2. 수급 요약 -->
+<div class="section" id="secSupply">
+  <div class="sec-head">
+    <span class="sec-title">수급 요약</span>
+    <a href="/dashboard/" class="sec-link">수급 상세 →</a>
+  </div>
+  <div class="supply-row" id="supplyRow"></div>
+</div>
+
+<!-- 3. 외국인/기관 순매수 TOP -->
+<div class="section" id="secInvestor">
+  <div class="sec-head">
+    <span class="sec-title">외국인 · 기관 순매수 TOP 5</span>
+    <a href="/krx/" class="sec-link">투자자 지표 →</a>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" id="investorGrid"></div>
+</div>
+
+<!-- 4. 신고가/신저가 -->
+<div class="section" id="secBreadth">
+  <div class="sec-head">
+    <span class="sec-title">52주 신고가 · 신저가</span>
+    <a href="/breadth/" class="sec-link">추이 차트 →</a>
+  </div>
+  <div class="breadth-wrap" id="breadthWrap"></div>
+</div>
+
+<!-- 5. 업종 등락 TOP/BOTTOM -->
+<div class="section" id="secSector">
+  <div class="sec-head">
+    <span class="sec-title">업종 등락 상위 · 하위</span>
+    <a href="/sector/" class="sec-link">업종 대시보드 →</a>
+  </div>
+  <div class="sector-bars" id="sectorBars"></div>
+</div>
+
+<!-- 6. 스크리너 시그널 요약 -->
+<div class="section" id="secScreener">
+  <div class="sec-head">
+    <span class="sec-title">스크리너 시그널 요약</span>
+    <a href="/screener/" class="sec-link">스크리너 →</a>
+  </div>
+  <div class="sig-grid" id="sigGrid"></div>
+</div>
+
+<!-- 7. 시총 상위 상승/하락 -->
+<div class="section" id="secMovers">
+  <div class="sec-head">
+    <span class="sec-title">시총 상위 등락</span>
+    <a href="/heatmap/" class="sec-link">히트맵 →</a>
+  </div>
+  <div class="movers-grid" id="moversGrid"></div>
+</div>
+
+<!-- 8. 거래대금 TOP -->
+<div class="section" id="secVolume">
+  <div class="sec-head">
+    <span class="sec-title">거래대금 TOP 10</span>
+    <a href="/krx/" class="sec-link">전체 →</a>
+  </div>
+  <div id="volumeTable"></div>
+</div>
+
+</div>
+
+<script src="/common.js?v=6"></script>
+<script>
+const BASE = '/data';
+const fmt = (n, d=0) => n == null ? '-' : Number(n).toLocaleString('ko-KR', {minimumFractionDigits:d, maximumFractionDigits:d});
+const fmtPct = (n) => n == null ? '-' : (n > 0 ? '+' : '') + n.toFixed(2) + '%';
+const pctClass = (n) => n > 0 ? 'up' : n < 0 ? 'dn' : 'flat';
+const fmtBil = (n) => {
+  const a = Math.abs(n);
+  if (a >= 1e12) return (n/1e12).toFixed(1) + '조';
+  if (a >= 1e8) return (n/1e8).toFixed(0) + '억';
+  return fmt(n);
+};
+
+async function load() {
+  try {
+    const [mkt, flow, investor, breadth, sector, volume, scrIdx, mcap] = await Promise.all([
+      fetch(BASE+'/market_indicators.json').then(r=>r.json()),
+      fetch(BASE+'/dashboard/foreign_flow.json').then(r=>r.json()),
+      fetch(BASE+'/krx/investor_top.json').then(r=>r.json()),
+      fetch(BASE+'/krx/new_high_low.json').then(r=>r.json()),
+      fetch(BASE+'/krx/sector_change.json').then(r=>r.json()),
+      fetch(BASE+'/krx/volume_top.json').then(r=>r.json()),
+      fetch(BASE+'/kr/screener/index.json').then(r=>r.json()),
+      fetch(BASE+'/krx/marketcap_top.json').then(r=>r.json()),
+    ]);
+
+    // Date label
+    const dates = [mcap.date, breadth.date, flow.latest?.date].filter(Boolean);
+    document.getElementById('dateLabel').textContent = (dates[0] || mkt.updated || '') + ' 기준 · 장 마감 후 자동 갱신';
+
+    // 1. Index + FX
+    renderIndex(mkt);
+
+    // 2. Supply
+    renderSupply(flow);
+
+    // 3. Investor top
+    renderInvestor(investor);
+
+    // 4. Breadth
+    renderBreadth(breadth);
+
+    // 5. Sector
+    renderSector(sector);
+
+    // 6. Screener
+    const scrDate = scrIdx.latest;
+    if (scrDate) {
+      const scr = await fetch(BASE+'/kr/screener/'+scrDate+'.json').then(r=>r.json());
+      renderScreener(scr);
+    }
+
+    // 7. Movers
+    renderMovers(mcap);
+
+    // 8. Volume
+    renderVolume(volume);
+
+  } catch(e) {
+    console.error(e);
+    document.getElementById('dateLabel').textContent = '데이터 로딩 실패';
+  }
+}
+
+function renderIndex(mkt) {
+  const picks = [
+    { cat: 'kr_index', name: '코스피' },
+    { cat: 'kr_index', name: '코스닥' },
+    { cat: 'us_index', name: 'S&P 500' },
+    { cat: 'us_index', name: '나스닥 종합' },
+    { cat: 'volatility', name: 'VIX 공포지수' },
+  ];
+  const fxItems = [];
+  if (mkt.rates) {
+    const r = mkt.rates;
+    fxItems.push({ label: 'USD/KRW', val: fmt(r.USD_KRW, 2) });
+    fxItems.push({ label: 'JPY100/KRW', val: fmt(r.JPY100_KRW, 2) });
+    fxItems.push({ label: '금(원/g)', val: fmt(r.GOLD_KRW_G, 0) });
+  }
+  const grid = document.getElementById('idxGrid');
+  let html = '';
+  for (const p of picks) {
+    const item = mkt.indicators.find(i => i.cat === p.cat && i.name === p.name);
+    if (!item) continue;
+    const cls = pctClass(item.change_pct);
+    const isVix = p.name.includes('VIX');
+    let alertHtml = '';
+    if (isVix && item.price >= 30) alertHtml = '<span class="alert-badge danger">⚠ 공포</span>';
+    else if (isVix && item.price >= 25) alertHtml = '<span class="alert-badge warn">주의</span>';
+    html += `<div class="idx-card">
+      <div class="idx-label">${item.name}${alertHtml}</div>
+      <div class="idx-val">${fmt(item.price, item.price < 100 ? 2 : item.price < 10000 ? 0 : 0)}</div>
+      <div class="idx-chg ${cls}">${fmtPct(item.change_pct)}</div>
+    </div>`;
+  }
+  // rates
+  const rateItem = mkt.indicators.find(i => i.name === '미국 10년물');
+  if (rateItem) {
+    let alertHtml = '';
+    if (rateItem.price >= 5) alertHtml = '<span class="alert-badge danger">⚠ 고금리</span>';
+    else if (rateItem.price >= 4.5) alertHtml = '<span class="alert-badge warn">주의</span>';
+    html += `<div class="idx-card">
+      <div class="idx-label">미 10년물${alertHtml}</div>
+      <div class="idx-val">${rateItem.price.toFixed(3)}%</div>
+      <div class="idx-chg ${pctClass(rateItem.change_pct)}">${fmtPct(rateItem.change_pct)}</div>
+    </div>`;
+  }
+  for (const fx of fxItems) {
+    html += `<div class="idx-card">
+      <div class="idx-label">${fx.label}</div>
+      <div class="idx-val">${fx.val}</div>
+    </div>`;
+  }
+  // WTI
+  const wti = mkt.indicators.find(i => i.name === 'WTI 원유');
+  if (wti) {
+    html += `<div class="idx-card">
+      <div class="idx-label">WTI 원유</div>
+      <div class="idx-val">$${fmt(wti.price, 2)}</div>
+      <div class="idx-chg ${pctClass(wti.change_pct)}">${fmtPct(wti.change_pct)}</div>
+    </div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function renderSupply(flow) {
+  const d = flow.latest;
+  if (!d) return;
+  const row = document.getElementById('supplyRow');
+  const items = [
+    { label: '외국인 현물', val: d.frgn_net_spot, sub: `연속 ${d.consec_buy > 0 ? d.consec_buy+'일 순매수' : d.consec_sell+'일 순매도'}` },
+    { label: '기관 현물', val: d.inst_net_spot },
+    { label: '프로그램', val: d.program_net },
+  ];
+  let html = '';
+  for (const it of items) {
+    const cls = pctClass(it.val);
+    // Alert: σ band
+    let alertHtml = '';
+    if (it.label === '외국인 현물') {
+      if (d.signal === 'buy') alertHtml = '<span class="alert-badge warn">+2σ 돌파</span>';
+      else if (d.signal === 'sell') alertHtml = '<span class="alert-badge danger">-2σ 이탈</span>';
+      if (d.consec_sell >= 5) alertHtml += '<span class="alert-badge danger">'+d.consec_sell+'연매도</span>';
+      else if (d.consec_buy >= 5) alertHtml += '<span class="alert-badge warn">'+d.consec_buy+'연매수</span>';
+    }
+    html += `<div class="supply-card">
+      <div class="supply-label">${it.label} ${alertHtml}</div>
+      <div class="supply-val ${cls}">${fmtBil(it.val)}</div>
+      ${it.sub ? '<div class="supply-sub">'+it.sub+'</div>' : ''}
+    </div>`;
+  }
+  row.innerHTML = html;
+}
+
+function renderInvestor(inv) {
+  const grid = document.getElementById('investorGrid');
+  function tbl(title, data) {
+    const top5 = data.slice(0, 5);
+    let h = `<div><div style="font-size:12px;font-weight:700;margin-bottom:6px">${title}</div>
+      <table class="rank-tbl"><thead><tr><th>#</th><th>종목</th><th>순매수</th></tr></thead><tbody>`;
+    top5.forEach((d, i) => {
+      const cls = d.net_buy > 0 ? 'up' : 'dn';
+      h += `<tr><td>${i+1}</td><td>${d.name}</td><td class="${cls}">${fmtBil(d.net_buy)}</td></tr>`;
+    });
+    h += '</tbody></table></div>';
+    return h;
+  }
+  grid.innerHTML = tbl('🏦 외국인', inv.foreign) + tbl('🏛 기관', inv.institution);
+}
+
+function renderBreadth(br) {
+  const wrap = document.getElementById('breadthWrap');
+  function box(label, data) {
+    const total = data.total;
+    const hiPct = data.high_pct;
+    const loPct = data.low_pct;
+    const restPct = 100 - hiPct - loPct;
+    let alertHtml = '';
+    if (loPct >= 10) alertHtml = '<span class="alert-badge danger">⚠ 신저가 과다</span>';
+    else if (hiPct >= 5) alertHtml = '<span class="alert-badge warn">신고가 급증</span>';
+    return `<div class="breadth-box">
+      <div class="breadth-market">${label} ${alertHtml}</div>
+      <div class="breadth-bar">
+        <div class="hi" style="width:${hiPct}%"></div>
+        <div class="rest" style="width:${restPct}%"></div>
+        <div class="lo" style="width:${loPct}%"></div>
+      </div>
+      <div class="breadth-nums">
+        <span class="hi-n">신고가 ${data.new_high}개 (${hiPct}%)</span>
+        <span class="lo-n">신저가 ${data.new_low}개 (${loPct}%)</span>
+      </div>
+    </div>`;
+  }
+  wrap.innerHTML = box('코스피', br.kospi) + box('코스닥', br.kosdaq);
+}
+
+function renderSector(sec) {
+  const bars = document.getElementById('sectorBars');
+  const real = sec.sectors.filter(s => !s.name.includes('형주') && !s.name.startsWith('코스피'));
+  if (!real.length) { bars.innerHTML = '<div class="loading">업종 데이터 없음</div>'; return; }
+  const sorted = real.sort((a,b) => b.change_pct - a.change_pct);
+  const top5 = sorted.slice(0, 5);
+  const bot5 = sorted.slice(-5).reverse();
+  const show = [...top5, ...bot5];
+  const maxAbs = Math.max(...show.map(s => Math.abs(s.change_pct)), 0.5);
+
+  let html = '';
+  for (const s of show) {
+    const pct = s.change_pct;
+    const w = Math.abs(pct) / maxAbs * 100;
+    const cls = pctClass(pct);
+    const bg = pct >= 0 ? 'var(--red)' : 'var(--accent)';
+    const left = pct >= 0 ? '50%' : `calc(50% - ${w/2}%)`;
+    html += `<div class="sector-row">
+      <div class="sector-name">${s.name}</div>
+      <div class="sector-bar-wrap">
+        <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--border)"></div>
+        ${pct !== 0 ? `<div class="sector-bar" style="background:${bg};width:${w/2}%;${pct>=0?'left:50%':'right:50%'}"></div>` : ''}
+      </div>
+      <div class="sector-pct ${cls}">${fmtPct(pct)}</div>
+    </div>`;
+  }
+  bars.innerHTML = html;
+}
+
+function renderScreener(scr) {
+  const grid = document.getElementById('sigGrid');
+  const sum = scr.summary;
+  const picks = [
+    { key: 'rsi_oversold', label: 'RSI 과매도' },
+    { key: 'rsi_overbought', label: 'RSI 과매수' },
+    { key: 'golden_cross', label: '골든크로스' },
+    { key: 'dead_cross', label: '데드크로스' },
+    { key: 'new_high_52w', label: '52주 신고가' },
+    { key: 'new_low_52w', label: '52주 신저가' },
+    { key: 'volume_spike', label: '거래량 급증' },
+    { key: 'aligned_bull', label: '정배열' },
+    { key: 'bb_upper_close', label: 'BB상단 근접' },
+    { key: 'rally_3d_10pct', label: '3일 10%↑' },
+  ];
+  let html = '';
+  for (const p of picks) {
+    const cnt = sum[p.key] || 0;
+    let alertCls = '';
+    if (p.key === 'rsi_oversold' && cnt >= 100) alertCls = 'danger';
+    else if (p.key === 'new_low_52w' && cnt >= 50) alertCls = 'danger';
+    else if (p.key === 'volume_spike' && cnt >= 20) alertCls = 'warn';
+    html += `<div class="sig-item${alertCls ? ' style="border-color:var(--'+alertCls+')"' : ''}">
+      <span class="sig-name">${p.label}</span>
+      <span class="sig-cnt${alertCls ? ' '+alertCls : ''}">${cnt}</span>
+    </div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function renderMovers(mcap) {
+  const grid = document.getElementById('moversGrid');
+  const items = mcap.items.filter(i => i.change_pct !== 0);
+  const gainers = [...items].sort((a,b) => b.change_pct - a.change_pct).slice(0, 7);
+  const losers = [...items].sort((a,b) => a.change_pct - b.change_pct).slice(0, 7);
+
+  function col(title, list, isUp) {
+    const cls = isUp ? 'up' : 'dn';
+    let h = `<div class="movers-col"><h4 style="color:var(--${isUp?'red':'accent'})">${title}</h4><div class="movers-list">`;
+    for (const it of list) {
+      h += `<div class="mover-item"><span class="mover-name">${it.name}</span><span class="${cls}">${fmtPct(it.change_pct)}</span></div>`;
+    }
+    h += '</div></div>';
+    return h;
+  }
+
+  if (!items.length) {
+    grid.innerHTML = '<div class="loading" style="grid-column:1/-1">등락 데이터 없음 (휴장일)</div>';
+    return;
+  }
+  grid.innerHTML = col('🔺 상승', gainers, true) + col('🔻 하락', losers, false);
+}
+
+function renderVolume(vol) {
+  const div = document.getElementById('volumeTable');
+  const top10 = vol.items.slice(0, 10);
+  let h = '<table class="rank-tbl"><thead><tr><th>#</th><th>종목</th><th>종가</th><th>등락</th><th>거래대금</th></tr></thead><tbody>';
+  top10.forEach((d, i) => {
+    const cls = pctClass(d.change_pct);
+    h += `<tr>
+      <td>${i+1}</td>
+      <td>${d.name}</td>
+      <td style="text-align:right">${fmt(d.close)}</td>
+      <td class="${cls}" style="text-align:right">${fmtPct(d.change_pct)}</td>
+      <td style="text-align:right">${fmtBil(d.trading_value)}</td>
+    </tr>`;
+  });
+  h += '</tbody></table>';
+  div.innerHTML = h;
+}
+
+load();
+</script>
+</body>
+</html>
