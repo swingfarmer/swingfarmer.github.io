@@ -7,7 +7,7 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>재건축 초과이익부담금(재초환) 계산기 | 스윙파머</title>
 <meta name="description" content="재건축초과이익환수제(재초환) 부담금 시뮬레이터. 종료/개시 주택가액·정상상승분·개발비용으로 초과이익을 구하고, 누진 부과율과 장기보유 감면을 적용한 최종 납부액을 계산.">
-<link rel="stylesheet" href="/common.css?v=5">
+<link rel="stylesheet" href="/common.css?v=7">
 <style>
 :root { --sf-max-w: 780px; }
 body.sf-dark{
@@ -172,7 +172,6 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   <div class="note">⚠️ <b>추정 시뮬레이션</b>입니다. 실제 부담금은 감정평가액·조합원 수·개발비용 확정치·현실화율 적용 방식에 따라 달라지며, 재초환 폐지·완화 논의가 진행 중이라 제도 자체가 바뀔 수 있어요. 종료시점 주택가액은 준공 시점에야 확정돼 가장 불확실합니다. 법적 효력 없는 참고용이며, 정확한 산정은 조합·구청 고지 기준을 따르세요.</div>
   <footer>© 스윙파머</footer>
 </div>
-<div id="cloudFab" style="position:fixed;right:16px;bottom:16px;z-index:900;display:flex;flex-direction:column;gap:8px;align-items:flex-end"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 // ── sf-slots 연동 ──
@@ -181,7 +180,7 @@ window.slGetState = function(){ return window.jcGetState ? window.jcGetState() :
 window.slSetState = function(d){ if(window.jcSetState) window.jcSetState(d); };
 </script>
 <script src="/sf-slots.js?v=3"></script>
-<script src="/common.js?v=6"></script>
+<script src="/common.js?v=7"></script>
 <script>
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
@@ -299,25 +298,6 @@ document.getElementById('shareBtn').addEventListener('click', function(){
 
 
 
-<script type="module">
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-const firebaseConfig = { apiKey:"AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY", authDomain:"swingfarmer-board01.firebaseapp.com", projectId:"swingfarmer-board01", storageBucket:"swingfarmer-board01.firebasestorage.app", messagingSenderId:"312575044644", appId:"1:312575044644:web:81d754eb1d90f25454fcb1" };
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig), auth=getAuth(app);
-const provider=new GoogleAuthProvider(); provider.setCustomParameters({prompt:'select_account'});
-const gid=id=>document.getElementById(id); let currentUser=null;
-getRedirectResult(auth).catch(()=>{});
-const fab=gid('cloudFab');
-const loginBtn='<button id="btnAdminLogin" style="background:#fff;color:#444;border:1px solid #ccc;border-radius:20px;padding:10px 16px;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)">🔑 관리자 로그인</button>';
-if(location.hash==='#admin'){ fab.innerHTML=loginBtn; }
-async function login(){ try{ await signInWithPopup(auth,provider); }catch(e){ const code=e&&e.code; if(code==='auth/popup-blocked'||code==='auth/cancelled-popup-request'||code==='auth/popup-closed-by-user'||code==='auth/operation-not-supported-in-this-environment'){ try{ await signInWithRedirect(auth,provider); }catch(e2){ alert('로그인 실패: '+e2.message); } } else { alert('로그인 실패: '+(e.message||code)); } } }
-onAuthStateChanged(auth, user=>{ currentUser=user; const isAdmin=user&&ADMIN_UIDS.indexOf(user.uid)!==-1;
-  if(isAdmin){ fab.innerHTML=''; }
-  else if(user&&!isAdmin){ fab.innerHTML='<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px 12px;font-size:11px;color:#92400e">비관리자<br><button id="btnLogout" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11px;cursor:pointer;margin-top:4px">로그아웃</button></div>'; }
-  else { fab.innerHTML=''; if(location.hash==='#admin')fab.innerHTML=loginBtn; }
-});
-
-</script>
 
 </body>
 </html>

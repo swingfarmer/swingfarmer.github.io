@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<title>업종지수 대시보드</title>
-<link rel="stylesheet" href="/common-dark.css?v=4">
+<title>업종지수 대시보드 | 스윙파머</title>
+<link rel="stylesheet" href="/common-dark.css?v=5">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root { --sf-max-w: 1400px; }
@@ -48,13 +48,13 @@ h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:cen
 .sc-code{color:var(--text-dim);font-size:10px;margin-left:6px}
 .sc-price{font-size:13px;color:var(--text-dim)}
 .align-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;margin-left:6px}
-.align-badge.bull{color:#22c55e;background:rgba(34,197,94,.15)}
-.align-badge.bear{color:#ef4444;background:rgba(239,68,68,.15)}
+.align-badge.bull{color:var(--sf-up);background:rgba(239,68,68,.15)}
+.align-badge.bear{color:var(--sf-down);background:rgba(59,130,246,.15)}
 .align-badge.partial{color:#eab308;background:rgba(234,179,8,.12)}
 .sig-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px}
 .sig-tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600}
-.sig-tag.bullish{color:#22c55e;background:rgba(34,197,94,.12)}
-.sig-tag.bearish{color:#ef4444;background:rgba(239,68,68,.12)}
+.sig-tag.bullish{color:var(--sf-up);background:rgba(239,68,68,.12)}
+.sig-tag.bearish{color:var(--sf-down);background:rgba(59,130,246,.12)}
 .rsi-wrap{margin-top:6px}
 .rsi-label{font-size:10px;color:var(--text-dim)}
 .rsi-bar{height:5px;background:var(--border);border-radius:3px;position:relative;overflow:visible}
@@ -238,8 +238,8 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
 <h3 style="font-size:15px;font-weight:700;color:var(--text);margin:0 0 12px 0">📖 사용 가이드</h3>
 
 <b style="color:var(--text)">배열 상태</b><br>
-· <span style="color:#22c55e">정배열</span> — 종가 ≥ MA5 ≥ MA10 ≥ MA20 ≥ MA50. 모든 이평선이 순서대로 정렬된 강한 상승 추세.<br>
-· <span style="color:#ef4444">역배열</span> — 종가 ≤ MA5 ≤ MA10 ≤ MA20 ≤ MA50. 모든 이평선이 반대로 정렬된 하락 추세.<br>
+· <span style="color:var(--sf-up)">정배열</span> — 종가 ≥ MA5 ≥ MA10 ≥ MA20 ≥ MA50. 모든 이평선이 순서대로 정렬된 강한 상승 추세.<br>
+· <span style="color:var(--sf-down)">역배열</span> — 종가 ≤ MA5 ≤ MA10 ≤ MA20 ≤ MA50. 모든 이평선이 반대로 정렬된 하락 추세.<br>
 · <span style="color:#eab308">준정배열</span> — 종가가 MA5·10·20 위에 있지만 이평선끼리 순서가 완벽하지 않음. 상승 전환 초기.<br>
 · <span style="color:#eab308">준역배열</span> — 종가가 MA5·10·20 아래에 있지만 이평선끼리 역배열 순서가 안 맞음. 하락 전환 초기.<br>
 · 혼조 — 위 네 가지에 해당하지 않는 상태. 방향성 불분명.<br><br>
@@ -265,7 +265,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
 <div class="note">데이터: 한국투자증권 API · 평일 20:15 자동 수집 · KOSPI 업종지수 기준</div>
 </div>
 
-<script src="/common.js?v=6"></script>
+<script src="/common.js?v=7"></script>
 <script>
 const ORACLE_API = 'https://swingfarmer.duckdns.org/api';
 const SIZE_CODES = ['0002','0003','0004'];
@@ -481,13 +481,13 @@ function renderSummary(){
   var best=ind.length?ind.reduce(function(a,b){return a.pct1d>b.pct1d?a:b;}):null;
   var worst=ind.length?ind.reduce(function(a,b){return a.pct1d<b.pct1d?a:b;}):null;
   document.getElementById('summary').innerHTML=
-    '<div class="summary-card"><div class="num" style="color:'+(kospi&&kospi.pct1d>=0?'#22c55e':'#ef4444')+'">'+(kospi?kospi.latest.toFixed(2):'-')+'</div><div class="label">KOSPI '+(kospi?pctStr(kospi.pct1d):'')+'</div></div>'+
-    '<div class="summary-card"><div class="num" style="color:#22c55e">'+up+'</div><div class="label">상승</div></div>'+
-    '<div class="summary-card"><div class="num" style="color:#ef4444">'+down+'</div><div class="label">하락</div></div>'+
-    '<div class="summary-card"><div class="num" style="color:#22c55e">'+perfect+'</div><div class="label">🟢 정배열</div></div>'+
-    '<div class="summary-card"><div class="num" style="color:#ef4444">'+reverse+'</div><div class="label">🔴 역배열</div></div>'+
-    '<div class="summary-card"><div class="num" style="font-size:13px;color:#22c55e">'+(best?best.name:'-')+'</div><div class="label">최강 '+(best?pctStr(best.pct1d):'')+'</div></div>'+
-    '<div class="summary-card"><div class="num" style="font-size:13px;color:#ef4444">'+(worst?worst.name:'-')+'</div><div class="label">최약 '+(worst?pctStr(worst.pct1d):'')+'</div></div>';
+    '<div class="summary-card"><div class="num" style="color:'+(kospi&&kospi.pct1d>=0?'var(--sf-up)':'var(--sf-down)')+'">'+(kospi?kospi.latest.toFixed(2):'-')+'</div><div class="label">KOSPI '+(kospi?pctStr(kospi.pct1d):'')+'</div></div>'+
+    '<div class="summary-card"><div class="num" style="color:var(--sf-up)">'+up+'</div><div class="label">상승</div></div>'+
+    '<div class="summary-card"><div class="num" style="color:var(--sf-down)">'+down+'</div><div class="label">하락</div></div>'+
+    '<div class="summary-card"><div class="num" style="color:var(--sf-up)">'+perfect+'</div><div class="label">🔴 정배열</div></div>'+
+    '<div class="summary-card"><div class="num" style="color:var(--sf-down)">'+reverse+'</div><div class="label">🔵 역배열</div></div>'+
+    '<div class="summary-card"><div class="num" style="font-size:13px;color:var(--sf-up)">'+(best?best.name:'-')+'</div><div class="label">최강 '+(best?pctStr(best.pct1d):'')+'</div></div>'+
+    '<div class="summary-card"><div class="num" style="font-size:13px;color:var(--sf-down)">'+(worst?worst.name:'-')+'</div><div class="label">최약 '+(worst?pctStr(worst.pct1d):'')+'</div></div>';
   // 시그널 카운트
   var cfg=getSigConfig();
   var sigBull=ind.filter(function(s){return (s.extSignals||[]).filter(function(x){return x.type==='bull'&&cfg.enabled[x.key];}).length>=cfg.threshold;}).length;
@@ -558,9 +558,9 @@ function renderCards(){
     if(s.code!=='0001'){
       var rs1=s.relStr1d, rs5=s.relStr5d, rs20=s.relStr20d;
       rsLine='<div style="font-size:10px;color:var(--text-dim);margin-top:4px">KOSPI 대비: '+
-        '<span style="color:'+(rs1>=0?'#22c55e':'#ef4444')+';font-weight:700">1D '+(rs1>=0?'+':'')+rs1.toFixed(2)+'%p</span>'+
-        (rs5!==null?' <span style="color:'+(rs5>=0?'#22c55e':'#ef4444')+';font-weight:700">5D '+(rs5>=0?'+':'')+rs5.toFixed(2)+'%p</span>':'')+
-        (rs20!==null?' <span style="color:'+(rs20>=0?'#22c55e':'#ef4444')+';font-weight:700">20D '+(rs20>=0?'+':'')+rs20.toFixed(2)+'%p</span>':'')+
+        '<span style="color:'+(rs1>=0?'var(--sf-up)':'var(--sf-down)')+';font-weight:700">1D '+(rs1>=0?'+':'')+rs1.toFixed(2)+'%p</span>'+
+        (rs5!==null?' <span style="color:'+(rs5>=0?'var(--sf-up)':'var(--sf-down)')+';font-weight:700">5D '+(rs5>=0?'+':'')+rs5.toFixed(2)+'%p</span>':'')+
+        (rs20!==null?' <span style="color:'+(rs20>=0?'var(--sf-up)':'var(--sf-down)')+';font-weight:700">20D '+(rs20>=0?'+':'')+rs20.toFixed(2)+'%p</span>':'')+
         '</div>';
     }
 
@@ -608,10 +608,10 @@ function formatAmt(bn){
   return (bn*100).toFixed(0)+'백만원';
 }
 function pctStr(v){return v==null?'-':(v>=0?'+':'')+v.toFixed(2)+'%';}
-function pctBadge(l,v){return '<span style="font-size:11px;color:'+(v>=0?'#22c55e':'#ef4444')+';font-weight:700">'+l+' '+pctStr(v)+'</span>';}
+function pctBadge(l,v){return '<span style="font-size:11px;color:'+(v>=0?'var(--sf-up)':'var(--sf-down)')+';font-weight:700">'+l+' '+pctStr(v)+'</span>';}
 function maItem(p,maVal,price,gap){
   if(maVal===null) return '';
-  var c=price>=maVal?'#22c55e':'#ef4444';
+  var c=price>=maVal?'var(--sf-up)':'var(--sf-down)';
   var g=gap!==null?' ('+(gap>=0?'+':'')+gap.toFixed(1)+'%)':'';
   return '<div class="ma-item"><span class="dot" style="background:'+c+'"></span><span>MA'+p+g+'</span></div>';
 }
@@ -657,14 +657,14 @@ function showChart(code){
     }
   });
 
-  var al={perfect:'🟢 정배열',reverse:'🔴 역배열',partial_bull:'준정배열',partial_bear:'준역배열',none:'-'};
+  var al={perfect:'🔴 정배열',reverse:'🔵 역배열',partial_bull:'준정배열',partial_bear:'준역배열',none:'-'};
   document.getElementById('chartInfo').innerHTML=
     '<div class="ci-item"><span class="ci-label">배열:</span><span class="ci-val">'+(al[s.alignment]||'-')+'</span></div>'+
     '<div class="ci-item"><span class="ci-label">RSI(14):</span><span class="ci-val" style="color:'+(s.rsi>=70?'#ef4444':s.rsi<=30?'#22c55e':'var(--text)')+'">'+(s.rsi!=null?s.rsi.toFixed(1):'-')+'</span></div>'+
-    '<div class="ci-item"><span class="ci-label">MA5 이격:</span><span class="ci-val" style="color:'+((s.gap5||0)>=0?'#22c55e':'#ef4444')+'">'+(s.gap5!=null?s.gap5.toFixed(2):'-')+'%</span></div>'+
-    '<div class="ci-item"><span class="ci-label">MA20 이격:</span><span class="ci-val" style="color:'+((s.gap20||0)>=0?'#22c55e':'#ef4444')+'">'+(s.gap20!=null?s.gap20.toFixed(2):'-')+'%</span></div>'+
-    '<div class="ci-item"><span class="ci-label">1D:</span><span class="ci-val" style="color:'+(s.pct1d>=0?'#22c55e':'#ef4444')+'">'+pctStr(s.pct1d)+'</span></div>'+
-    '<div class="ci-item"><span class="ci-label">20D:</span><span class="ci-val" style="color:'+((s.pct20d||0)>=0?'#22c55e':'#ef4444')+'">'+pctStr(s.pct20d)+'</span></div>';
+    '<div class="ci-item"><span class="ci-label">MA5 이격:</span><span class="ci-val" style="color:'+((s.gap5||0)>=0?'var(--sf-up)':'var(--sf-down)')+'">'+(s.gap5!=null?s.gap5.toFixed(2):'-')+'%</span></div>'+
+    '<div class="ci-item"><span class="ci-label">MA20 이격:</span><span class="ci-val" style="color:'+((s.gap20||0)>=0?'var(--sf-up)':'var(--sf-down)')+'">'+(s.gap20!=null?s.gap20.toFixed(2):'-')+'%</span></div>'+
+    '<div class="ci-item"><span class="ci-label">1D:</span><span class="ci-val" style="color:'+(s.pct1d>=0?'var(--sf-up)':'var(--sf-down)')+'">'+pctStr(s.pct1d)+'</span></div>'+
+    '<div class="ci-item"><span class="ci-label">20D:</span><span class="ci-val" style="color:'+((s.pct20d||0)>=0?'var(--sf-up)':'var(--sf-down)')+'">'+pctStr(s.pct20d)+'</span></div>';
 
   section.scrollIntoView({behavior:'smooth',block:'nearest'});
 }

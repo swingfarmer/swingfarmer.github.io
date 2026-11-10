@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>오늘 증시 한눈에 | 스윙파머</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="stylesheet" href="/common-dark.css?v=4">
+<link rel="stylesheet" href="/common-dark.css?v=5">
 <style>
 :root { --sf-max-w: 960px; }
 a { color: var(--accent); text-decoration: none; }
@@ -81,8 +81,8 @@ a { color: var(--accent); text-decoration: none; }
 .mover-item { display: flex; justify-content: space-between; font-size: 12px; padding: 4px 8px; background: var(--card); border-radius: 4px; }
 .mover-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.up { color: var(--red); }
-.dn { color: var(--accent); }
+.up { color: var(--sf-up); }
+.dn { color: var(--sf-down); }
 .flat { color: var(--text-dim); }
 
 .loading { text-align: center; padding: 60px 0; color: var(--text-dim); font-size: 13px; }
@@ -96,7 +96,32 @@ a { color: var(--accent); text-decoration: none; }
   .sector-name { width: 72px; font-size: 11px; }
   .sig-grid { grid-template-columns: repeat(2, 1fr); }
 }
+/* 듀얼 테마: 라이트 모드 오버라이드 */
+body:not(.sf-dark){
+  --sf-bg:#f5f7fa;--sf-card:#fff;--sf-card-hover:#f0f5fa;--sf-border:#e5e7eb;
+  --sf-text:#1a1a1a;--sf-text-dim:#71717a;--sf-accent:#1F4E78;
+  --sf-green:#059669;--sf-red:#dc2626;--sf-gold:#d97706;--sf-warn:#d97706;--sf-orange:#ea580c;
+  --bg:#f5f7fa;--card:#fff;--card-hover:#f0f5fa;--surface:#fff;
+  --border:#e5e7eb;--text:#1a1a1a;--text-dim:#71717a;
+  --accent:#1F4E78;--green:#059669;--red:#dc2626;--gold:#d97706;--warn:#d97706;--orange:#ea580c;
+  color:#1a1a1a;background:#f5f7fa}
+body:not(.sf-dark) .card,body:not(.sf-dark) .kpi-card,body:not(.sf-dark) .sec-card,
+body:not(.sf-dark) .control-box,body:not(.sf-dark) .ctrl-box{
+  background:#fff;border-color:#e5e7eb;color:#1a1a1a}
+body:not(.sf-dark) input,body:not(.sf-dark) select,body:not(.sf-dark) textarea{
+  background:#fff;border-color:#ddd;color:#1a1a1a}
+body:not(.sf-dark) table th{background:#f0f5fa;color:#555}
+body:not(.sf-dark) table td{border-color:#f0f0f0;color:#333}
+body:not(.sf-dark) h1,body:not(.sf-dark) h2,body:not(.sf-dark) h3{color:#1F4E78}
+body:not(.sf-dark) .back-link{color:#1F4E78}
+body:not(.sf-dark) .subtitle{color:#666}
+body:not(.sf-dark) .btn{background:#1F4E78}
+body:not(.sf-dark) .badge-safe{background:rgba(5,150,105,.12);color:#059669}
+body:not(.sf-dark) .badge-warn{background:rgba(217,119,6,.12);color:#d97706}
+body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
 </style>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=5"></script>
 </head>
 <body>
 <div class="container">
@@ -180,7 +205,7 @@ a { color: var(--accent); text-decoration: none; }
 
 </div>
 
-<script src="/common.js?v=6"></script>
+<script src="/common.js?v=7"></script>
 <script>
 const BASE = '/data';
 const fmt = (n, d=0) => n == null ? '-' : Number(n).toLocaleString('ko-KR', {minimumFractionDigits:d, maximumFractionDigits:d});
@@ -391,7 +416,7 @@ function renderSector(sec) {
     const pct = s.change_pct;
     const w = Math.abs(pct) / maxAbs * 100;
     const cls = pctClass(pct);
-    const bg = pct >= 0 ? 'var(--red)' : 'var(--accent)';
+    const bg = pct >= 0 ? 'var(--sf-up)' : 'var(--sf-down)';
     const left = pct >= 0 ? '50%' : `calc(50% - ${w/2}%)`;
     html += `<div class="sector-row">
       <div class="sector-name">${s.name}</div>

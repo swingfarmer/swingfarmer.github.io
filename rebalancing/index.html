@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>포트폴리오 리밸런싱 | 스윙파머</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<link rel="stylesheet" href="/common.css?v=5">
+<link rel="stylesheet" href="/common.css?v=7">
 <style>
 :root { --sf-max-w: 1100px; }
 body.sf-dark{
@@ -37,9 +37,7 @@ body.sf-dark .alert-danger{background:rgba(239,68,68,.1)!important;border-color:
 body.sf-dark .alert-critical{background:rgba(69,10,10,.9)!important;color:#fca5a5!important}
 .final { background: linear-gradient(135deg, #1F4E78, #2563eb); }
 *{box-sizing:border-box;margin:0;padding:0}
-.cloud-bar{display:none;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .cloud-bar .tag-cloud{background:#0ea5e9;color:white;font-size:12px;font-weight:600;padding:3px 10px;border-radius:6px;cursor:pointer;border:none;font-family:inherit}
-#btnAdminLogin{display:none;font-size:12px;background:#e5e7eb;border:none;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:inherit}
 .summary-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:18px}
 .scard{padding:16px;border-radius:10px;color:white}
 .scard.blue{background:linear-gradient(135deg,#1F4E78,#2563eb)}
@@ -146,11 +144,6 @@ body.sf-dark .alert-critical{background:rgba(69,10,10,.9)!important;color:#fca5a
 <p class="desc">자산군별·종목별 목표 비중과 현재 평가액을 입력하면 매수/매도 금액을 자동 계산합니다.</p>
 
 <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-  <button id="btnAdminLogin" style="display:none">🔑 관리자 로그인</button>
-  <div id="cloudArea" class="cloud-bar">
-    <span id="cloudWho" style="font-size:12px;color:#888"></span>
-    
-  </div>
 </div>
 <div id="loadedSlot" class="loaded-slot">📂 현재: <span id="loadedSlotLabel"></span>
   <button onclick="clearLoadedSlot()" style="background:none;border:none;color:#93c5fd;cursor:pointer;font-size:14px;margin-left:6px" title="표시 해제">✕</button>
@@ -738,27 +731,6 @@ function histRenderCharts(snapshots, allGroups){
 </div>
 
 <!-- Firebase 클라우드 저장 -->
-<script type="module">
-import{initializeApp}from"https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import{getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-const firebaseConfig={apiKey:"AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",authDomain:"swingfarmer-board01.firebaseapp.com",projectId:"swingfarmer-board01",storageBucket:"swingfarmer-board01.firebasestorage.app",messagingSenderId:"312575044644",appId:"1:312575044644:web:81d754eb1d90f25454fcb1"};
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig),auth=getAuth(app);
-const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});
-let currentUser=null;
-onAuthStateChanged(auth,user=>{
-  currentUser=user;
-  if(user&&ADMIN_UIDS.indexOf(user.uid)!==-1){
-    gid('cloudArea').style.display='flex';
-    gid('btnAdminLogin').style.display='none';
-    gid('cloudWho').textContent='☁️ '+(user.displayName||user.email||'관리자');
-  }else{
-    gid('cloudArea').style.display='none';
-    gid('btnAdminLogin').style.display='inline-block';
-  }
-});
-gid('btnAdminLogin').addEventListener('click',()=>signInWithPopup(auth,provider).catch(e=>{if(e.code!=='auth/popup-closed-by-user')alert('로그인 실패');}));
-
-</script>
 
 <script>
 window.CALC_KEY = 'rebalancing';
@@ -766,6 +738,6 @@ window.slGetState = function(){ return window.rbGetState ? window.rbGetState() :
 window.slSetState = function(d){ if(window.rbSetState) window.rbSetState(d); };
 </script>
 <script src="/sf-slots.js?v=3"></script>
-<script src="/common.js?v=6"></script>
+<script src="/common.js?v=7"></script>
 </body>
 </html>

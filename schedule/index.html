@@ -6,7 +6,7 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>일정표 | 스윙파머</title>
 <meta name="description" content="투자·개인 일정을 한 곳에. 달력 모드와 리스트 모드, 카테고리 색상 구분, 완료 체크. 실적발표·배당락·약속 등 주요 일정 관리.">
-<link rel="stylesheet" href="/common.css?v=5">
+<link rel="stylesheet" href="/common.css?v=7">
 <style>
 :root { --sf-max-w: 820px; }
 body.sf-dark{
@@ -120,13 +120,6 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
 <div class="wrap">
   <p class="desc">투자·개인 주요 일정을 한 곳에. <b>달력</b>으로 한눈에 보고, <b>리스트</b>로 다가오는 일정을 확인하세요. 카테고리 색상으로 구분하고 완료를 체크할 수 있어요.</p>
 
-  <div id="cloudArea" style="display:none;align-items:center;gap:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin-bottom:14px;flex-wrap:wrap">
-    <span style="font-size:12px;font-weight:700;color:#0369a1">☁️ 관리자</span>
-    
-    <span id="cloudWho" style="font-size:11px;color:#0369a1"></span>
-  </div>
-  <button id="btnAdminLogin" class="btn" type="button" style="display:none;background:#fff;color:#444;border:1px solid #ddd;margin-bottom:14px">🔑 관리자 로그인</button>
-  <div id="uidInfo" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:13px;color:#92400e;margin-bottom:14px;line-height:1.7"></div>
 
   <div class="mode-toggle">
     <button class="mode-btn active" id="modeCalBtn" onclick="setMode('cal')">📅 달력</button>
@@ -240,7 +233,6 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   </div>
 </div>
 
-<!-- 클라우드 슬롯 모달 -->
 
 
 <script>
@@ -249,54 +241,7 @@ window.slGetState = function(){ return window.scGetState ? window.scGetState() :
 window.slSetState = function(d){ if(window.scSetState) window.scSetState(d); };
 </script>
 <script src="/sf-slots.js?v=3"></script>
-<script src="/common.js?v=6"></script>
-<script type="module">
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-const firebaseConfig = {
-  apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
-  authDomain: "swingfarmer-board01.firebaseapp.com",
-  projectId: "swingfarmer-board01",
-  storageBucket: "swingfarmer-board01.firebasestorage.app",
-  messagingSenderId: "312575044644",
-  appId: "1:312575044644:web:81d754eb1d90f25454fcb1"
-};
-const ADMIN_UIDS = ["1JrHgD2bpTRjrS2jw7MbpHciBph1","Ydd8v6LCN2TPjkqKD4DejLSWwaL2"];
-const CALC_KEY = "schedule";
-
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
-provider.setCustomParameters({ prompt: 'select_account' });
-const gid = id => document.getElementById(id);
-let currentUser = null;
-
-getRedirectResult(auth).catch(()=>{});
-if(location.hash === '#admin' || location.hash === '#관리자'){ gid('btnAdminLogin').style.display='inline-block'; }
-gid('btnAdminLogin').addEventListener('click', async ()=>{
-  try{ await signInWithPopup(auth, provider); }
-  catch(e){ const code=e&&e.code;
-    if(code==='auth/popup-blocked'||code==='auth/cancelled-popup-request'||code==='auth/popup-closed-by-user'||code==='auth/operation-not-supported-in-this-environment'){
-      try{ await signInWithRedirect(auth, provider); }catch(e2){ alert('로그인 실패: '+e2.message); }
-    } else { alert('로그인 실패: '+(e.message||code)); }
-  }
-});
-onAuthStateChanged(auth, user=>{
-  currentUser=user; const isAdmin=user&&ADMIN_UIDS.indexOf(user.uid)!==-1;
-  if(isAdmin){ gid('cloudArea').style.display='inline-flex'; gid('btnAdminLogin').style.display='none'; gid('cloudWho').textContent='☁️ '+(user.displayName||user.email||'관리자'); if(gid('uidInfo'))gid('uidInfo').style.display='none'; }
-  else if(user&&!isAdmin){ gid('cloudArea').style.display='none'; gid('btnAdminLogin').style.display='none'; const box=gid('uidInfo'); if(box){ box.style.display='block'; box.innerHTML='로그인됨: <b>'+(user.email||'')+'</b><br>이 계정 UID:<br><code style="font-size:11px;word-break:break-all">'+user.uid+'</code><br><button onclick="window._scSignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer;margin-top:4px">로그아웃</button>'; } }
-  else { gid('cloudArea').style.display='none'; if(gid('uidInfo'))gid('uidInfo').style.display='none'; }
-});
-window._scSignout=()=>signOut(auth);
-
-  const dateRe=/^\d{4}-\d{2}/; const dated=[],other=[];
-  dated.sort((a,b)=>(a.s.name<b.s.name?1:-1)); other.sort((a,b)=>(new Date(b.s.savedAt||0))-(new Date(a.s.savedAt||0)));
-  gid('cntMonth').textContent=dated.length; gid('cntOther').textContent=other.length;
-  const list=_slotTab==='month'?dated:other;
-  if(list.length===0){ box.innerHTML='<div style="color:#aaa;font-size:13px;text-align:center;padding:20px">'+(_slotTab==='month'?'날짜(2026-06) 이름으로 저장한 게 여기 표시됩니다.':'기타 이름 백업이 여기 표시됩니다.')+'</div>'; gid('slotSelectBar').style.display='none'; return; }
-}
-
-</script>
+<script src="/common.js?v=7"></script>
 <script>
 const $ = id => document.getElementById(id);
 const STORE_KEY = 'sf_schedule_v2';
