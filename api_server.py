@@ -1258,5 +1258,37 @@ def api_news_archive_date(date):
         return jsonify(json.load(f))
 
 
+# ── 장중 준실시간 시세 (VM 로컬 ~/sf_live/prices_live.json) ──
+# scripts/fetch_live_prices.py 가 평일 장중 1분마다 갱신. 여기서는 파일만 읽어서 내려줌 (KIS 호출 없음).
+LIVE_PRICE_FILE = os.path.join(os.path.expanduser(os.environ.get('SF_LIVE_DIR', '~/sf_live')), 'prices_live.json')
+_live_cache = {'mtime': 0, 'data': None}
+
+@app.route('/api/prices/live')
+@limiter.limit("120/minute")
+def api_prices_live():
+    """준실시간 시세. age_sec = 마지막 수집 후 경과 초."""
+    try:
+        mtime = os.path.getmtime(LIVE_PRICE_FILE)
+    except OSError:
+        return jsonify({'error': '실시간 시세 파일 없음 (수집기 미실행)'}), 404
+    if _live_cache['data'] is None or mtime != _live_cache['mtime']:
+        try:
+            with open(LIVE_PRICE_FILE, 'r', encoding='utf-8') as f:
+                _live_cache['data'] = json.load(f)
+            _live_cache['mtime'] = mtime
+        except Exception:
+            if _live_cache['data'] is None:
+                return jsonify({'error': '실시간 시세 파일 읽기 실패'}), 503
+    data = dict(_live_cache['data'])
+    data['age_sec'] = int(time.time() - _live_cache['mtime'])
+    # 수집이 5분 넘게 멈췄으면 장중 표시를 내림 (멈춘 값을 실시간처럼 보이지 않게)
+    if data['age_sec'] > 300:
+        data['market_open'] = False
+        data['stale'] = True
+    resp = jsonify(data)
+    resp.headers['Cache-Control'] = 'no-store'
+    return resp
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)

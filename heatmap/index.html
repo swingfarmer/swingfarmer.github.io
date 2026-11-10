@@ -145,6 +145,12 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
   let marketMap = {};
   let currentFilter = 'all';
 
+  // ── 준실시간 시세 (VM API, 평일 장중 1분 간격 수집) ──
+  const LIVE_URL = 'https://swingfarmer.duckdns.org/api/prices/live';
+  let baseDate = '';      // 종가 데이터(marketcap_top.json) 기준일
+  let baseLabel = '';
+  let liveTimer = null;
+
   // ── 데이터 로드 ──
   async function loadData() {
     try {
@@ -168,18 +174,72 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
         change_pct: it.change_pct || 0,
         market_cap: it.market_cap,
         market_cap_tr: it.market_cap_tr,
-        market: marketMap[it.ticker] || ''
+        market: marketMap[it.ticker] || '',
+        // 종가 기준 원본 (실시간 값을 덮어쓸 때 기준으로 씀)
+        base_close: it.close,
+        base_pct: it.change_pct || 0,
+        base_cap: it.market_cap,
+        base_cap_tr: it.market_cap_tr
       }));
 
-      document.getElementById('updateDate').textContent =
-        `${mcData.date} 종가 기준 · 시총 상위 ${allItems.length}종목 · 평일 20:50 자동 갱신`;
+      baseDate = mcData.date || '';
+      baseLabel = `${mcData.date} 종가 기준 · 시총 상위 ${allItems.length}종목 · 평일 20:50 자동 갱신`;
+      document.getElementById('updateDate').textContent = baseLabel;
 
       render();
+      loadLive();
     } catch (e) {
       document.getElementById('heatmap').innerHTML =
         '<div class="loading" style="color:var(--red)">데이터 로드 실패</div>';
     }
   }
+
+  // ── 준실시간 시세 덮어쓰기 ──
+  // 실패하거나 종가 데이터보다 오래된 값이면 아무것도 안 바꿈 (종가 화면 그대로)
+  async function loadLive() {
+    let next = 5 * 60 * 1000;   // 장 마감 중에는 5분마다만 확인
+    try {
+      const res = await fetch(LIVE_URL, { cache: 'no-store' });
+      if (!res.ok) throw new Error('live ' + res.status);
+      const live = await res.json();
+      const stocks = live.stocks || {};
+      if (live.date && live.date >= baseDate && Object.keys(stocks).length) {
+        let hit = 0;
+        allItems.forEach(it => {
+          const q = stocks[it.ticker];
+          if (!q || !q.p) return;
+          hit++;
+          it.close = q.p;
+          it.change_pct = typeof q.r === 'number' ? q.r : 0;
+          if (it.base_close > 0) {
+            const k = q.p / it.base_close;
+            it.market_cap = it.base_cap * k;
+            it.market_cap_tr = Math.round(it.base_cap_tr * k * 10) / 10;
+          }
+          if (!it.market && q.m) it.market = q.m;
+        });
+        if (hit) {
+          const md = live.date.slice(5).replace('-', '/');
+          const label = live.market_open
+            ? `🔴 장중 준실시간 · ${md} ${live.time} 기준 · 1분 간격 갱신 · 시총 상위 ${allItems.length}종목`
+            : `${md} ${live.time} 기준 · 시총 상위 ${allItems.length}종목 · 장중에는 1분 간격 갱신`;
+          document.getElementById('updateDate').textContent = label;
+          render();
+        }
+        if (live.market_open) next = 60 * 1000;
+      }
+    } catch (e) {
+      /* API 접속 불가 → 종가 화면 유지 */
+    }
+    clearTimeout(liveTimer);
+    liveTimer = setTimeout(() => {
+      if (document.hidden) return;   // 탭이 안 보이면 중단 (다시 보이면 아래에서 재개)
+      loadLive();
+    }, next);
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && baseDate) { clearTimeout(liveTimer); loadLive(); }
+  });
 
   // ── 색상 계산 ──
   function getColor(pct) {

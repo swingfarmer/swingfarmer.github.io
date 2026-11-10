@@ -280,12 +280,29 @@ def fetch_marketcap_top(date):
             return
 
         top = df.nlargest(200, "시가총액")
+
+        # get_market_cap 결과에는 등락률 컬럼이 없음 → 전종목 시세에서 따로 가져옴
+        # (이게 없으면 change_pct가 전부 0으로 저장돼 히트맵이 회색으로만 나옴)
+        chg_map = {}
+        try:
+            ohlcv = stock.get_market_ohlcv_by_ticker(date, market="ALL")
+            if "등락률" in ohlcv.columns:
+                chg_map = ohlcv["등락률"].to_dict()
+        except Exception as e:
+            print(f"  ⚠ 등락률 조회 실패 (0으로 저장): {e}")
+
         items = []
         for ticker, row in top.iterrows():
             name = stock.get_market_ticker_name(ticker)
             mcap = int(row["시가총액"])
             close = int(row["종가"]) if "종가" in row else 0
-            chg_pct = float(row["등락률"]) if "등락률" in row else 0.0
+            if "등락률" in row:
+                chg_pct = float(row["등락률"])
+            else:
+                try:
+                    chg_pct = float(chg_map.get(ticker, 0.0))
+                except Exception:
+                    chg_pct = 0.0
             items.append({
                 "ticker": ticker,
                 "name": name,
