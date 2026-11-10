@@ -14,7 +14,7 @@ window.CALC_KEY = 'hd-enc';
 window.slGetState = function(){ return window.eGetState ? window.eGetState() : {}; };
 window.slSetState = function(d){ if(window.eSetState) window.eSetState(d); };
 </script>
-<link rel="stylesheet" href="/common.css?v=5">
+<link rel="stylesheet" href="/common.css?v=7">
 <style>
 :root { --sf-max-w: 900px; }
 body.sf-dark{
@@ -81,9 +81,6 @@ h1{color:#1F4E78;font-size:22px;margin-bottom:4px;border-bottom:none;padding-bot
   .tab{padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:#666;font-family:inherit;background:none;border:none}
   .tab.active{color:#1F4E78;border-bottom-color:#1F4E78}.tab:hover{color:#1F4E78}
   .tab-content{display:none}.tab-content.active{display:block}
-  .cloud-bar{display:none;align-items:center;gap:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin-bottom:14px;flex-wrap:wrap}
-  .admin-btn{display:none;padding:8px 14px;border:1px solid #ddd;background:#fff;color:#444;border-radius:6px;font-size:13px;cursor:pointer;margin-bottom:14px;font-family:inherit}
-  .uid-info{display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:13px;color:#92400e;margin-bottom:14px;line-height:1.7}
   .btn{padding:9px 14px;border:1px solid #d0d5dd;background:#fff;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600}
   .btn.pri{background:#0ea5e9;color:#fff;border-color:#0ea5e9}
   .btn.gray{background:#9ca3af;color:#fff;border-color:#9ca3af}
@@ -102,11 +99,6 @@ h1{color:#1F4E78;font-size:22px;margin-bottom:4px;border-bottom:none;padding-bot
 </head>
 <body>
 <div class="wrap">
-  <div id="cloudArea" class="cloud-bar">
-    <span id="cloudWho" style="font-size:12px;color:#0369a1"></span>
-  </div>
-  <button id="btnAdminLogin" class="admin-btn" type="button">🔑 관리자 로그인</button>
-  <div id="uidInfo" class="uid-info"></div>
 
   <h1>⚡ 현대건설 원전·SMR·DC 시뮬레이터</h1>
   <p class="subtitle">파이프라인 ~54기 기반 연도별 연결 매출·영업이익 추정 (2026~2035)</p>
@@ -375,7 +367,7 @@ h1{color:#1F4E78;font-size:22px;margin-bottom:4px;border-bottom:none;padding-bot
 
 
 <script src="/sf-slots.js?v=3"></script>
-<script src="/common.js?v=6"></script>
+<script src="/common.js?v=7"></script>
 <script>
 'use strict';
 const $=id=>document.getElementById(id);
@@ -445,16 +437,5 @@ $('btnReset').addEventListener('click',()=>{if(!confirm('모든 입력을 초기
 loadLocal();render();
 </script>
 
-<script type="module">
-import{initializeApp}from"https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";import{getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";const firebaseConfig={apiKey:"AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",authDomain:"swingfarmer-board01.firebaseapp.com",projectId:"swingfarmer-board01",storageBucket:"swingfarmer-board01.firebasestorage.app",messagingSenderId:"312575044644",appId:"1:312575044644:web:81d754eb1d90f25454fcb1"};
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig),auth=getAuth(app);
-const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});
-const gid=id=>document.getElementById(id);let currentUser=null;
-getRedirectResult(auth).catch(()=>{});
-if(location.hash==='#admin'||location.hash==='#관리자')gid('btnAdminLogin').style.display='inline-block';
-gid('btnAdminLogin').addEventListener('click',async()=>{try{await signInWithPopup(auth,provider);}catch(e){const c=e&&e.code;if(c==='auth/popup-blocked'||c==='auth/cancelled-popup-request'||c==='auth/popup-closed-by-user'||c==='auth/operation-not-supported-in-this-environment'){try{await signInWithRedirect(auth,provider);}catch(e2){alert('로그인 실패: '+e2.message);}}else alert('로그인 실패: '+(e.message||c));}});
-onAuthStateChanged(auth,user=>{currentUser=user;const isAdmin=user&&ADMIN_UIDS.indexOf(user.uid)!==-1;if(isAdmin){gid('cloudArea').style.display='inline-flex';gid('btnAdminLogin').style.display='none';gid('cloudWho').textContent='☁️ '+(user.displayName||user.email||'관리자');gid('uidInfo').style.display='none';}else if(user){gid('cloudArea').style.display='none';gid('btnAdminLogin').style.display='none';gid('uidInfo').style.display='block';gid('uidInfo').innerHTML='로그인됨: <b>'+(user.email||'')+'</b><br>UID: <code style="font-size:11px;word-break:break-all">'+user.uid+'</code><br><button onclick="window._eSignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer;margin-top:4px">로그아웃</button>';}else{gid('cloudArea').style.display='none';gid('uidInfo').style.display='none';}});
-window._eSignout=()=>signOut(auth);
-</script>
 </body>
 </html>

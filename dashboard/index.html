@@ -6,7 +6,7 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta name="robots" content="noindex,nofollow">
 <title>시장 대시보드 | 스윙파머</title>
-<link rel="stylesheet" href="/common-dark.css?v=4">
+<link rel="stylesheet" href="/common-dark.css?v=5">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root { --sf-max-w: 1100px; }
@@ -15,8 +15,8 @@
 .gauge-label { font-size:10px;color:var(--text-dim);margin-bottom:4px; }
 .gauge-value { font-size:32px;font-weight:800;line-height:1; }
 .gauge-tag { margin-top:6px;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600; }
-.gauge-tag.bullish { background:rgba(0,210,106,.15);color:var(--green,#00d26a); }
-.gauge-tag.bearish { background:rgba(255,71,87,.15);color:var(--red,#ff4757); }
+.gauge-tag.bullish { background:rgba(239,68,68,.15);color:var(--sf-up); }
+.gauge-tag.bearish { background:rgba(59,130,246,.15);color:var(--sf-down); }
 .gauge-tag.neutral { background:rgba(139,148,158,.15);color:var(--text-dim); }
 .gauge-tag.caution { background:rgba(240,185,58,.15);color:#f0b93a; }
 .diag-cards { display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px; }
@@ -24,7 +24,7 @@
 .d-card .lbl { font-size:9px;color:var(--text-dim);font-weight:600; }
 .d-card .val { font-size:17px;font-weight:800;margin:1px 0 0;font-variant-numeric:tabular-nums; }
 .d-card .chg { font-size:10px;font-weight:600; }
-.chg.up { color:var(--green,#00d26a); } .chg.down { color:var(--red,#ff4757); } .chg.flat { color:var(--text-dim); }
+.chg.up { color:var(--sf-up); } .chg.down { color:var(--sf-down); } .chg.flat { color:var(--text-dim); }
 .sub-row { display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:4px;margin-bottom:10px; }
 .s-card { background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 8px; }
 .s-card .lbl { font-size:8px;color:var(--text-dim); } .s-card .val { font-size:13px;font-weight:700;font-variant-numeric:tabular-nums; }
@@ -217,7 +217,7 @@ function renderDiag(d){
   document.getElementById('subRow').innerHTML=SUB_CARDS.map(c=>{const v=d[c.key];if(!v)return'';return`<div class="s-card"><div class="lbl">${c.label}</div><div class="val">${fmt(v.price,c.dec)}</div></div>`;}).join('');
   computeGauge(d);
 }
-function computeGauge(d){let s=0,f=0;const vix=d.vix?.price;if(vix!=null){if(vix<13)s+=25;else if(vix<16)s+=15;else if(vix<20)s+=5;else if(vix<25)s-=10;else if(vix<30)s-=25;else s-=35;f++;}const kc=d.kospi?.change_pct;if(kc!=null){s+=Math.max(-20,Math.min(20,kc*10));f++;}const sc=d.sp500?.change_pct;if(sc!=null){s+=Math.max(-15,Math.min(15,sc*8));f++;}const uc=d.usd?.change_pct;if(uc!=null){s+=Math.max(-10,Math.min(10,-uc*5));f++;}if(!f)s=0;else s=Math.round(s/f*2);s=Math.max(-100,Math.min(100,s));const el=document.getElementById('gaugeScore'),tag=document.getElementById('gaugeTag');el.textContent=s;el.style.color=s>15?'var(--green,#00d26a)':s<-15?'var(--red,#ff4757)':s>5?'var(--accent,#4da6ff)':s<-5?'#f0b93a':'var(--text-dim)';let l,c;if(s>=30){l='낙관';c='bullish';}else if(s>=10){l='중립↑';c='bullish';}else if(s>-10){l='중립';c='neutral';}else if(s>-30){l='경계';c='caution';}else{l='공포';c='bearish';}tag.textContent=l;tag.className='gauge-tag '+c;}
+function computeGauge(d){let s=0,f=0;const vix=d.vix?.price;if(vix!=null){if(vix<13)s+=25;else if(vix<16)s+=15;else if(vix<20)s+=5;else if(vix<25)s-=10;else if(vix<30)s-=25;else s-=35;f++;}const kc=d.kospi?.change_pct;if(kc!=null){s+=Math.max(-20,Math.min(20,kc*10));f++;}const sc=d.sp500?.change_pct;if(sc!=null){s+=Math.max(-15,Math.min(15,sc*8));f++;}const uc=d.usd?.change_pct;if(uc!=null){s+=Math.max(-10,Math.min(10,-uc*5));f++;}if(!f)s=0;else s=Math.round(s/f*2);s=Math.max(-100,Math.min(100,s));const el=document.getElementById('gaugeScore'),tag=document.getElementById('gaugeTag');el.textContent=s;el.style.color=s>15?'var(--sf-up)':s<-15?'var(--sf-down)':s>5?'var(--accent,#4da6ff)':s<-5?'#f0b93a':'var(--text-dim)';let l,c;if(s>=30){l='낙관';c='bullish';}else if(s>=10){l='중립↑';c='bullish';}else if(s>-10){l='중립';c='neutral';}else if(s>-30){l='경계';c='caution';}else{l='공포';c='bearish';}tag.textContent=l;tag.className='gauge-tag '+c;}
 
 function renderCharts(days){currentDays=days;const data=days>=999?historyData:historyData.slice(-days);if(!data.length)return;const grid=document.getElementById('chartGrid');grid.innerHTML='';Object.values(charts).forEach(c=>c.destroy());charts={};CHART_ITEMS.forEach(item=>{const prices=data.map(d=>d[item.key]?.price).filter(v=>v!=null);const labels=data.map(d=>d._date?.slice(5)||'').slice(-prices.length);if(!prices.length)return;const box=document.createElement('div');box.className='chart-box';box.innerHTML=`<h3>${item.label}</h3><canvas id="ch_${item.key}"></canvas>`;grid.appendChild(box);charts[item.key]=new Chart(box.querySelector('canvas').getContext('2d'),{type:'line',data:{labels,datasets:[{data:prices,borderColor:item.color,backgroundColor:item.color+'15',fill:true,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{ticks:{maxTicksLimit:6}},y:{ticks:{maxTicksLimit:5}}}}});});}
 
@@ -239,9 +239,9 @@ function renderVasily(data,el){
   const consecCls = lat.consec_sell>=10?'chg down':lat.consec_buy>=10?'chg up':'';
 
   let h=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;margin-bottom:8px;">
-    <div class="d-card"><div class="lbl">외국인 순매수</div><div class="val" style="color:var(--${sF>=0?'green':'red'})">${fmtMan(sF)}</div><div class="chg ${chgClass(sF)}">주 (${lat.date})</div></div>
-    <div class="d-card"><div class="lbl">기관 순매수</div><div class="val" style="color:var(--${sI>=0?'green':'red'})">${fmtMan(sI)}</div><div class="chg ${chgClass(sI)}">주</div></div>
-    <div class="d-card"><div class="lbl">프로그램</div><div class="val" style="color:var(--${sP>=0?'green':'red'})">${fmtMan(sP)}</div><div class="chg ${chgClass(sP)}">주</div></div>
+    <div class="d-card"><div class="lbl">외국인 순매수</div><div class="val" style="color:var(--${sF>=0?'sf-up':'sf-down'})">${fmtMan(sF)}</div><div class="chg ${chgClass(sF)}">주 (${lat.date})</div></div>
+    <div class="d-card"><div class="lbl">기관 순매수</div><div class="val" style="color:var(--${sI>=0?'sf-up':'sf-down'})">${fmtMan(sI)}</div><div class="chg ${chgClass(sI)}">주</div></div>
+    <div class="d-card"><div class="lbl">프로그램</div><div class="val" style="color:var(--${sP>=0?'sf-up':'sf-down'})">${fmtMan(sP)}</div><div class="chg ${chgClass(sP)}">주</div></div>
     <div class="d-card"><div class="lbl">바실리 시그널</div><div class="val"><span class="sig-badge ${sigCls}">${sigText}</span></div></div>
     <div class="d-card"><div class="lbl">연속 매매</div><div class="val" style="font-size:13px"><span class="${consecCls}">${consec}</span></div></div>
     <div class="d-card"><div class="lbl">MA20 / ±2σ</div><div class="val" style="font-size:12px">${hasBand?fmtMan(lat.ma20):'데이터 부족'}</div>${hasBand?`<div class="chg flat" style="font-size:9px">[${fmtMan(lat.lower_2s)} ~ ${fmtMan(lat.upper_2s)}]</div>`:''}</div>
@@ -279,7 +279,7 @@ function renderVasily(data,el){
   new Chart(document.getElementById('ch_vasily_main'),{
     type:'bar',
     data:{labels:lb,datasets:[
-      {type:'bar',label:'외국인 순매수',data:fD,backgroundColor:fD.map(v=>v>=0?'rgba(0,210,106,.5)':'rgba(255,71,87,.5)'),order:4},
+      {type:'bar',label:'외국인 순매수',data:fD,backgroundColor:fD.map(v=>v>=0?'rgba(239,68,68,.55)':'rgba(59,130,246,.55)'),order:4},
       {type:'line',label:'5MA',data:ma5D,borderColor:'#f0b93a',borderWidth:1,borderDash:[3,2],tension:.3,order:3,pointRadius:0},
       {type:'line',label:'20MA',data:ma20D,borderColor:'#4da6ff',borderWidth:1.5,tension:.3,order:2,pointRadius:0},
       {type:'line',label:'+2σ',data:upperD,borderColor:'rgba(255,71,87,.3)',borderWidth:1,borderDash:[4,4],tension:.3,order:1,pointRadius:0,fill:false},
@@ -295,8 +295,8 @@ function renderVasily(data,el){
   // 기관/프로그램 차트
   const iD=rows.map(r=>(r.inst_net_spot||0)/10000);
   const pD=rows.map(r=>(r.program_net||0)/10000);
-  new Chart(document.getElementById('ch_v_i'),{type:'bar',data:{labels:lb,datasets:[{data:iD,backgroundColor:iD.map(v=>v>=0?'rgba(77,166,255,.5)':'rgba(248,113,113,.5)')}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{title:{display:true,text:'만주',font:{size:8}}}}}});
-  new Chart(document.getElementById('ch_v_p'),{type:'bar',data:{labels:lb,datasets:[{data:pD,backgroundColor:pD.map(v=>v>=0?'rgba(168,139,250,.5)':'rgba(251,146,60,.5)')}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{title:{display:true,text:'만주',font:{size:8}}}}}});
+  new Chart(document.getElementById('ch_v_i'),{type:'bar',data:{labels:lb,datasets:[{data:iD,backgroundColor:iD.map(v=>v>=0?'rgba(239,68,68,.55)':'rgba(59,130,246,.55)')}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{title:{display:true,text:'만주',font:{size:8}}}}}});
+  new Chart(document.getElementById('ch_v_p'),{type:'bar',data:{labels:lb,datasets:[{data:pD,backgroundColor:pD.map(v=>v>=0?'rgba(239,68,68,.55)':'rgba(59,130,246,.55)')}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{title:{display:true,text:'만주',font:{size:8}}}}}});
 }
 
 /* ── ④ BOD ── */
@@ -314,6 +314,6 @@ document.getElementById('guideToggle').addEventListener('click',()=>{const b=doc
 async function init(){try{const[iR,hR]=await Promise.all([fetch(`${DATA_BASE}/market_indicators.json`),fetch(`${DATA_BASE}/market_history.json`)]);if(hR.ok){historyData=parseHistory(await hR.json());}if(iR.ok){renderDiag(parseIndicators(await iR.json()));}renderCharts(currentDays);}catch(e){console.error(e);document.getElementById('diagCards').innerHTML='<div style="text-align:center;padding:20px;color:var(--text-dim)">데이터 로딩 실패</div>';}}
 init();
 </script>
-<script src="/common.js?v=6"></script>
+<script src="/common.js?v=7"></script>
 </body>
 </html>

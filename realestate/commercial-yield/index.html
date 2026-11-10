@@ -7,7 +7,7 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>상가·오피스텔 적정 매수가 계산기 | 스윙파머</title>
 <meta name="description" content="보증금·월세로 목표 수익률 기준 적정 매수가를 역산. 부가세 환급/면세, 대출 레버리지, 개인 vs 법인 세후 수익률까지 비교해 이익·본전·손해를 판정.">
-<link rel="stylesheet" href="/common.css?v=5">
+<link rel="stylesheet" href="/common.css?v=7">
 <style>
 :root { --sf-max-w: 760px; }
 body.sf-dark{
@@ -95,13 +95,6 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
 <div class="wrap">
   <p class="desc">보증금·월세가 정해진 매물에서 <b>목표 수익률 기준 적정 매수가를 역산</b>하고, 실제 매수가를 넣으면 <b>이익·본전·손해</b>를 판정합니다. 부가세(환급/면세), 대출 레버리지, 개인 vs 법인 세후 수익률까지 비교해요.</p>
 
-  <div id="cloudArea" style="display:none;align-items:center;gap:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin-bottom:14px;flex-wrap:wrap">
-    <span style="font-size:12px;font-weight:700;color:#0369a1">☁️ 관리자</span>
-    
-    <span id="cloudWho" style="font-size:11px;color:#0369a1"></span>
-  </div>
-  <button id="btnAdminLogin" type="button" style="display:none;background:#fff;color:#444;border:1px solid #ddd;border-radius:6px;padding:9px 14px;font-size:12.5px;font-weight:600;cursor:pointer;margin-bottom:14px">🔑 관리자 로그인</button>
-  <div id="uidInfo" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:13px;color:#92400e;margin-bottom:14px;line-height:1.7"></div>
 
   <!-- 임대 조건 -->
   <div class="panel">
@@ -276,7 +269,7 @@ window.slGetState = function(){ return window.cyGetState ? window.cyGetState() :
 window.slSetState = function(d){ if(window.cySetState) window.cySetState(d); };
 </script>
 <script src="/sf-slots.js?v=3"></script>
-<script src="/common.js?v=6"></script>
+<script src="/common.js?v=7"></script>
 <script>
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
@@ -440,27 +433,7 @@ cyLoadLocal();
 calculate();
 </script>
 
-<!-- 클라우드 슬롯 모달 -->
 
 
-<script type="module">
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-const firebaseConfig = { apiKey:"AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY", authDomain:"swingfarmer-board01.firebaseapp.com", projectId:"swingfarmer-board01", storageBucket:"swingfarmer-board01.firebasestorage.app", messagingSenderId:"312575044644", appId:"1:312575044644:web:81d754eb1d90f25454fcb1" };
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig), auth=getAuth(app);
-const provider=new GoogleAuthProvider(); provider.setCustomParameters({prompt:'select_account'});
-const gid=id=>document.getElementById(id); let currentUser=null;
-getRedirectResult(auth).catch(()=>{});
-if(location.hash==='#admin'||location.hash==='#관리자'){ gid('btnAdminLogin').style.display='inline-block'; }
-gid('btnAdminLogin').addEventListener('click', async()=>{ try{ await signInWithPopup(auth,provider); }catch(e){ const code=e&&e.code; if(code==='auth/popup-blocked'||code==='auth/cancelled-popup-request'||code==='auth/popup-closed-by-user'||code==='auth/operation-not-supported-in-this-environment'){ try{ await signInWithRedirect(auth,provider); }catch(e2){ alert('로그인 실패: '+e2.message); } } else { alert('로그인 실패: '+(e.message||code)); } } });
-onAuthStateChanged(auth, user=>{ currentUser=user; const isAdmin=user&&ADMIN_UIDS.indexOf(user.uid)!==-1;
-  /* common.js 게이트 해제 */
-  if(isAdmin){ try{sessionStorage.setItem('sf_authed','1');}catch(e){} var g=document.getElementById('sf-auth-gate'); if(g)g.style.display='none'; }
-  if(isAdmin){ gid('cloudArea').style.display='inline-flex'; gid('btnAdminLogin').style.display='none'; gid('cloudWho').textContent='☁️ '+(user.displayName||user.email||'관리자'); gid('uidInfo').style.display='none'; }
-  else if(user&&!isAdmin){ gid('cloudArea').style.display='none'; gid('btnAdminLogin').style.display='none'; gid('uidInfo').style.display='block'; gid('uidInfo').innerHTML='로그인됨: <b>'+(user.email||'')+'</b><br>이 계정 UID:<br><code style="font-size:11px;word-break:break-all">'+user.uid+'</code><br><button onclick="window._cySignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer;margin-top:4px">로그아웃</button>'; }
-  else { gid('cloudArea').style.display='none'; gid('uidInfo').style.display='none'; } });
-window._cySignout=()=>signOut(auth);
-
-</script>
 </body>
 </html>

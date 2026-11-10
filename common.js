@@ -1,7 +1,7 @@
 /* ============================================
-   스윙파머 공통 스크립트 (common.js)
+   스윙파머 공통 스크립트 (common.js) v7
    - 인증 게이트 (Firebase Auth, 관리자 전용)
-   - 상단 고정 헤더 (메인 링크 + 다크모드 + 글자크기 + 공지문의 + 문의)
+   - 상단 고정 헤더 (메인 링크 + 글자크기 + 다크모드)
    - 다크모드 (localStorage 저장)
    - 글자크기 4단계 (작게/기본/크게/더크게)
    사용법: 각 페이지 <head> 또는 <body> 끝에
@@ -135,8 +135,6 @@ window.sfApiFetch = function(url, opts) {
 (function () {
   'use strict';
 
-  var KAKAO_URL = 'https://open.kakao.com/o/svyzG3wi';
-  var BOARD_URL = '/board/';
   var MAIN_URL = '/';
 
   // ---------- 1. 공통 스타일 주입 ----------
@@ -146,38 +144,6 @@ window.sfApiFetch = function(url, opts) {
   }
   /* 헤더 높이만큼 본문 밀기 */
   body { padding-top: 56px !important; }
-  body.sf-has-notice { padding-top: 90px !important; }
-
-  /* === 공지 띠 (헤더 바로 아래) === */
-  #sf-notice {
-    position: fixed; top: 56px; left: 0; right: 0; z-index: 99998;
-    background: #fef3c7; color: #92400e;
-    border-bottom: 1px solid #fde68a;
-    padding: 7px 16px;
-    font-size: 12.5px; font-weight: 500;
-    text-align: center;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-  }
-  #sf-notice .sf-notice-text { line-height: 1.5; }
-  #sf-notice .sf-notice-text b { color: #b45309; }
-  #sf-notice .sf-notice-close {
-    display: inline-flex; align-items: center; justify-content: center;
-    background: rgba(0,0,0,0.12); border: none; color: #92400e;
-    width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
-    font-size: 11px; line-height: 1; padding: 0; vertical-align: middle;
-    margin-left: 8px; transition: background 0.15s;
-  }
-  #sf-notice .sf-notice-close:hover { background: rgba(0,0,0,0.22); }
-  body.sf-dark #sf-notice {
-    background: #1a2c42; color: #fcd34d;
-    border-bottom-color: #1e3a5f;
-  }
-  body.sf-dark #sf-notice .sf-notice-text b { color: #fbbf24; }
-  body.sf-dark #sf-notice .sf-notice-close { background: rgba(255,255,255,0.15); color: #fcd34d; }
-  body.sf-dark #sf-notice .sf-notice-close:hover { background: rgba(255,255,255,0.25); }
-  @media (max-width: 600px) {
-    #sf-notice { font-size: 11.5px; padding: 6px 12px; }
-  }
 
   /* === 공통 헤더 === */
   #sf-header {
@@ -311,6 +277,12 @@ window.sfApiFetch = function(url, opts) {
   body.sf-dark .sf-won-kor { color: #6ba3e0; }
   `;
 
+  // 검색엔진 색인 차단 (전 페이지 공통)
+  if (!document.querySelector('meta[name="robots"]')) {
+    var nx = document.createElement('meta'); nx.name = 'robots'; nx.content = 'noindex,nofollow';
+    document.head.appendChild(nx);
+  }
+
   var styleEl = document.createElement('style');
   styleEl.id = 'sf-common-style';
   styleEl.textContent = css;
@@ -333,31 +305,8 @@ window.sfApiFetch = function(url, opts) {
           '<button class="sf-a-xl" data-size="1.4" title="더 크게">A</button>' +
         '</div>' +
         '<button class="sf-btn" id="sf-dark-toggle" title="다크모드">🌙</button>' +
-        '<a class="sf-btn wide label-hide" href="' + BOARD_URL + '" title="공지 & 문의 게시판">📢<span class="txt">공지·문의</span></a>' +
-        '<a class="sf-btn wide label-hide" href="' + KAKAO_URL + '" target="_blank" title="카톡 문의">💬<span class="txt">카톡</span></a>' +
       '</div>';
     document.body.insertBefore(header, document.body.firstChild);
-  }
-
-  // ---------- 2-B. 공지 띠 생성 ----------
-  function buildNotice() {
-    // 세션 동안 이미 닫았는지 확인
-    try {
-      if (sessionStorage.getItem('sf-notice-closed') === '1') return;
-    } catch (e) {}
-
-    var notice = document.createElement('div');
-    notice.id = 'sf-notice';
-    notice.innerHTML =
-      '<div class="sf-notice-text">ℹ️ <b>모든 계산기는 입력 기록이 서버에 저장되지 않습니다.</b> PC에 PDF·JSON으로 직접 저장하세요. 민감 정보 안심하고 입력하세요. <button class="sf-notice-close" id="sf-notice-close" title="이 세션 동안 숨기기">✕</button></div>';
-    document.body.insertBefore(notice, document.body.firstChild.nextSibling);
-    document.body.classList.add('sf-has-notice');
-
-    document.getElementById('sf-notice-close').addEventListener('click', function () {
-      notice.remove();
-      document.body.classList.remove('sf-has-notice');
-      try { sessionStorage.setItem('sf-notice-closed', '1'); } catch (e) {}
-    });
   }
 
   // ---------- 3. 다크모드 ----------
@@ -461,6 +410,7 @@ window.sfApiFetch = function(url, opts) {
     'macro':'📰 정보·시장', 'quotes':'📰 정보·시장', 'events':'📰 정보·시장',
     'books':'📰 정보·시장', 'data':'📰 정보·시장', 'rates':'📰 정보·시장',
     'breadth':'📰 정보·시장', 'krx':'📰 정보·시장', 'research':'📰 정보·시장',
+    'heatmap':'📰 정보·시장', 'today':'📰 정보·시장',
     'free':'💰 자산·연금·파이어', 'pension':'💰 자산·연금·파이어', 'gold-calc':'💰 자산·연금·파이어',
     'assets':'💰 자산·연금·파이어', 'wealth-reports':'💰 자산·연금·파이어',
     'barbell':'💰 자산·연금·파이어', 'budget':'💰 자산·연금·파이어',
@@ -471,18 +421,18 @@ window.sfApiFetch = function(url, opts) {
     'dividend-manager':'📈 주식·투자', 'screener':'📈 주식·투자', 'margin-ratio':'📈 주식·투자',
     'sector':'📈 주식·투자', 'momentum':'📈 주식·투자', 'similar':'📈 주식·투자',
     'strategy':'📈 주식·투자', 'valuation':'📈 주식·투자', 'return-calc':'📈 주식·투자',
-    'portfolio':'📈 주식·투자', 'rebalancing':'📈 주식·투자', 'futures':'📈 주식·투자',
-    'hdsteel':'📈 주식·투자', 'hd-enc':'📈 주식·투자', 'kal':'📈 주식·투자',
+    'portfolio':'🔒 개인 관리', 'rebalancing':'📈 주식·투자', 'futures':'📈 주식·투자',
+    'hdsteel':'📈 주식·투자', 'hd-enc':'📈 주식·투자', 'kr-finance':'📈 주식·투자',
     'property':'🏠 부동산', 'realestate':'🏠 부동산', 'realestate-tracker':'🏠 부동산',
-    'redevelopment':'🏠 부동산', 'landtax':'🏠 부동산', 'gambuk':'🏠 부동산',
-    'tax':'💸 세금', 'corp-tax':'💸 세금', 'annual-check':'💸 세금', 'tax-calendar':'💸 세금',
+    'redevelopment':'🏠 부동산', 'landtax':'💸 세금', 'gambuk':'💸 세금',
+    'tax':'💸 세금', 'corp-tax':'💸 세금', 'annual-check':'🧮 금융·생활', 'tax-calendar':'💸 세금',
     'salary':'💼 근로·회사', 'severance':'💼 근로·회사', 'severance-exec':'💼 근로·회사',
-    'paygrowth':'💼 근로·회사', 'workout':'💼 근로·회사',
-    'finance-tools':'🧮 금융·생활', 'loan-switch':'🧮 금융·생활', 'insurance4':'🧮 금융·생활',
+    'paygrowth':'💼 근로·회사', 'workout':'🧮 금융·생활',
+    'finance-tools':'🧮 금융·생활', 'loan-switch':'🧮 금융·생활', 'insurance4':'💼 근로·회사',
     'car-compare':'🧮 금융·생활', 'telecom':'🧮 금융·생활', 'health':'🧮 금융·생활',
-    'card-manager':'🔒 개인 관리', 'company':'🔒 개인 관리', 'commerce':'🔒 개인 관리',
-    'schedule':'🔒 개인 관리', 'status':'🔒 개인 관리', 'community':'🔒 개인 관리',
-    'notes':'🔒 개인 관리', 'board':'🔒 개인 관리'
+    'card-manager':'🧮 금융·생활', 'company':'💼 근로·회사', 'commerce':'🏠 부동산',
+    'schedule':'🧮 금융·생활', 'status':'🔒 개인 관리', 'community':'🔒 개인 관리',
+    'notes':'🔒 개인 관리', 'webtoon':'🔒 개인 관리'
   };
   function buildBreadcrumb() {
     var path = location.pathname.replace(/\/$/,'') || '/';
@@ -490,7 +440,7 @@ window.sfApiFetch = function(url, opts) {
     var parts = path.split('/').filter(Boolean);
     var sec = SF_SECTIONS[parts[0]];
     if (!sec) return;
-    var title = document.title.replace(/\s*[\|·\-–]\s*스윙파머.*$/i,'').trim();
+    var title = document.title.replace(/\s*[\|·\-–—]\s*스윙파머.*$/i,'').trim();
     var bc = document.createElement('div');
     bc.id = 'sf-breadcrumb';
     var html = '<a href="/">🏠 메인</a><span class="sf-bc-sep">›</span>';
@@ -510,7 +460,6 @@ window.sfApiFetch = function(url, opts) {
   function init() {
     buildHeader();
     buildBreadcrumb();
-    buildNotice();
 
     // 저장된 설정 불러오기
     var savedSize = '1';

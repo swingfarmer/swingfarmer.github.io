@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<title>법인세 시뮬레이터</title>
-<link rel="stylesheet" href="/common.css?v=5">
+<title>법인세 시뮬레이터 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=7">
 <style>
 :root { --sf-max-w: 1100px; }
 body.sf-dark{
@@ -35,10 +35,8 @@ body.sf-dark .alert-danger{background:rgba(239,68,68,.1)!important;border-color:
 body.sf-dark .alert-critical{background:rgba(69,10,10,.9)!important;color:#fca5a5!important}
 .final { background: linear-gradient(135deg, #1F4E78, #2563eb); }
 *{box-sizing:border-box;margin:0;padding:0}
-.cloud-bar{display:none;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .cloud-bar .tag-cloud{background:#0ea5e9;color:white;font-size:12px;font-weight:600;padding:3px 10px;border-radius:6px;cursor:pointer;border:none;font-family:inherit}
 .loaded-name{font-size:13px;color:#1F4E78;font-weight:700}
-#btnAdminLogin{display:none;font-size:12px;background:#e5e7eb;border:none;padding:5px 10px;border-radius:6px;cursor:pointer;font-family:inherit}
 .tabs{display:flex;gap:4px;background:#e5e7eb;padding:4px;border-radius:10px;margin-bottom:20px;flex-wrap:wrap}
 .tab{flex:1;padding:10px 4px;border:none;background:transparent;cursor:pointer;font-size:12.5px;font-weight:700;color:#666;border-radius:8px;transition:all .15s;font-family:inherit;min-width:70px}
 .tab:hover{background:rgba(255,255,255,.5)}
@@ -90,17 +88,6 @@ input[type="date"]{font-size:13px}
 <h1>🏢 법인세 시뮬레이터</h1>
 <p class="desc">법인세 산출·접대비 한도·감가상각·세액공제·중간예납 종합 계산. 2024~2026 세법 기준.</p>
 <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-  <button id="btnAdminLogin" style="display:none">🔑 관리자 로그인</button>
-  <div id="cloudArea" class="cloud-bar">
-    <span id="cloudWho" style="font-size:12px;color:#888"></span>
-    
-  </div>
-  <span id="loadedSlotName" class="loaded-name"></span>
-  <div id="loadedSlot" style="display:none;background:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:13px;color:#1e40af;font-weight:600">
-    📂 현재: <span id="loadedSlotLabel"></span>
-    <button onclick="clearLoadedSlot()" style="background:none;border:none;color:#93c5fd;cursor:pointer;font-size:14px;margin-left:6px" title="표시 해제">✕</button>
-  </div>
-  <div id="uidInfo" style="display:none;font-size:11px;color:#888;margin-top:4px"></div>
 </div>
 
 <div class="summary-cards" id="topSummary"></div>
@@ -484,42 +471,6 @@ window.slSetState = function(d){ if(window.gcSetState) window.gcSetState(d); };
 </script>
 
 <script src="/sf-slots.js?v=3"></script>
-<script src="/common.js?v=6"></script>
-<script type="module">
-import{initializeApp}from"https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import{getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-const firebaseConfig={apiKey:"AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",authDomain:"swingfarmer-board01.firebaseapp.com",projectId:"swingfarmer-board01",storageBucket:"swingfarmer-board01.firebasestorage.app",messagingSenderId:"312575044644",appId:"1:312575044644:web:81d754eb1d90f25454fcb1"};
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig),auth=getAuth(app);
-const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});
-const gid=id=>document.getElementById(id);let currentUser=null;
-getRedirectResult(auth).catch(()=>{});
-if(location.hash==='#admin'||location.hash==='#관리자')gid('btnAdminLogin').style.display='inline-block';
-gid('btnAdminLogin').addEventListener('click',async()=>{try{await signInWithPopup(auth,provider);}catch(e){const c=e&&e.code;if(c==='auth/popup-blocked'||c==='auth/cancelled-popup-request'||c==='auth/popup-closed-by-user'){try{await signInWithRedirect(auth,provider);}catch(e2){alert('로그인 실패');}}else alert('로그인 실패');}});
-onAuthStateChanged(auth,user=>{currentUser=user;const isAdmin=user&&ADMIN_UIDS.indexOf(user.uid)!==-1;
-  if(isAdmin){gid('cloudArea').style.display='inline-flex';gid('btnAdminLogin').style.display='none';gid('cloudWho').textContent='☁️ '+(user.displayName||user.email||'관리자');if(gid('uidInfo'))gid('uidInfo').style.display='none';}
-  else{gid('cloudArea').style.display='none';if(user&&!isAdmin){gid('btnAdminLogin').style.display='none';}}
-});
-
-// 로드된 슬롯 표시
-window._showLoadedSlot=function(name){const el=gid('loadedSlot'),nm=gid('loadedSlotLabel');if(el&&nm){nm.textContent=name;el.style.display='block';try{localStorage.setItem('sf_ct_loaded_slot',name);}catch(e){}}};
-window.clearLoadedSlot=function(){const el=gid('loadedSlot');if(el)el.style.display='none';try{localStorage.removeItem('sf_ct_loaded_slot');}catch(e){}};
-try{const prev=localStorage.getItem('sf_ct_loaded_slot');if(prev)window._showLoadedSlot(prev);}catch(e){}
-
-function escH(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-
-  if(!_slots.length){box.innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 계산이 없어요.</div>';gid('slotSelectBar').style.display='none';return;}
-      const t=s.savedAt?new Date(s.savedAt).toLocaleString('ko-KR'):'';
-    return'<div style="display:flex;align-items:center;gap:6px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px">'
-      +'<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(s.name)+'</div><div style="font-size:11px;color:#999">'+t+'</div></div>'
-      +'<button onclick="window._slotDel('+i+')" style="background:#fee2e2;color:#dc2626;border:none;padding:6px 9px;border-radius:6px;font-size:12px;cursor:pointer" title="삭제">🗑️</button>'
-      +'</div>';
-  }).join('');
-}
-
-// 체크박스 일괄삭제
-
-// 개별 버튼
-
-</script>
+<script src="/common.js?v=7"></script>
 </body>
 </html>

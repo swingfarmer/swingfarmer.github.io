@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <meta name="robots" content="noindex,nofollow">
-<title>52주 신고가/신저가 — 스윙파머</title>
-<link rel="stylesheet" href="/common-dark.css?v=4">
+<title>52주 신고가/신저가 | 스윙파머</title>
+<link rel="stylesheet" href="/common-dark.css?v=5">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root { --sf-max-w: 1100px; }
@@ -18,8 +18,8 @@
 .sum-card .big { font-size:28px; font-weight:800; line-height:1.1; font-variant-numeric:tabular-nums; }
 .sum-card .sub { font-size:11px; color:var(--text-dim); margin-top:2px; }
 .sum-card .pct { font-size:15px; font-weight:700; }
-.high-clr { color:#00d26a; }
-.low-clr { color:#ff4757; }
+.high-clr { color:var(--sf-up); }
+.low-clr { color:var(--sf-down); }
 .neutral-clr { color:var(--text-dim); }
 
 /* ── 탭 ── */
@@ -181,7 +181,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
 
 </div><!-- sf-wrap -->
 
-<script src="/common.js?v=6"></script>
+<script src="/common.js?v=7"></script>
 <script>
 (function(){
 var BASE = '/data/krx/';
@@ -239,9 +239,9 @@ function renderGauge() {
   var np = (100 - parseFloat(hp) - parseFloat(lp)).toFixed(1);
   var el = document.getElementById('gaugeBar');
   el.innerHTML =
-    '<div class="seg" style="width:' + hp + '%;background:#00d26a;">' + (parseFloat(hp) >= 3 ? hp + '%' : '') + '</div>' +
+    '<div class="seg" style="width:' + hp + '%;background:var(--sf-up);">' + (parseFloat(hp) >= 3 ? hp + '%' : '') + '</div>' +
     '<div class="seg" style="width:' + np + '%;background:#334155;">' + '</div>' +
-    '<div class="seg" style="width:' + lp + '%;background:#ff4757;">' + (parseFloat(lp) >= 3 ? lp + '%' : '') + '</div>';
+    '<div class="seg" style="width:' + lp + '%;background:var(--sf-down);">' + (parseFloat(lp) >= 3 ? lp + '%' : '') + '</div>';
 }
 
 // ── 차트 ──
@@ -272,8 +272,8 @@ function renderMainChart() {
   if (mainChart) mainChart.destroy();
 
   var datasets = [
-    { label: '신고가(%)', data: highPct, borderColor: '#00d26a', backgroundColor: 'rgba(0,210,106,.1)', fill: true, borderWidth: 2, pointRadius: labels.length > 40 ? 0 : 2, yAxisID: 'y', tension: 0.3 },
-    { label: '신저가(%)', data: lowPct, borderColor: '#ff4757', backgroundColor: 'rgba(255,71,87,.1)', fill: true, borderWidth: 2, pointRadius: labels.length > 40 ? 0 : 2, yAxisID: 'y', tension: 0.3 }
+    { label: '신고가(%)', data: highPct, borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,.1)', fill: true, borderWidth: 2, pointRadius: labels.length > 40 ? 0 : 2, yAxisID: 'y', tension: 0.3 },
+    { label: '신저가(%)', data: lowPct, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,.1)', fill: true, borderWidth: 2, pointRadius: labels.length > 40 ? 0 : 2, yAxisID: 'y', tension: 0.3 }
   ];
   if (chartMarket !== 'kosdaq') {
     datasets.push({ label: 'KOSPI', data: kospiIdx, borderColor: '#f0b93a', borderWidth: 1.5, borderDash: [4,3], pointRadius: 0, yAxisID: 'y1', tension: 0.3 });
@@ -315,8 +315,8 @@ function renderNetChart() {
   var ctx = document.getElementById('netChart');
   if (netChart) netChart.destroy();
 
-  var colors = netData.map(function(v){ return v >= 0 ? 'rgba(0,210,106,.7)' : 'rgba(255,71,87,.7)'; });
-  var borders = netData.map(function(v){ return v >= 0 ? '#00d26a' : '#ff4757'; });
+  var colors = netData.map(function(v){ return v >= 0 ? 'rgba(239,68,68,.7)' : 'rgba(59,130,246,.7)'; });
+  var borders = netData.map(function(v){ return v >= 0 ? '#ef4444' : '#3b82f6'; });
 
   netChart = new Chart(ctx, {
     type: 'bar',

@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<title>파이어족 계산기</title>
-<link rel="stylesheet" href="/common.css?v=5">
+<title>파이어족 계산기 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=7">
 <style>
 :root { --sf-max-w: 1100px; }
 body.sf-dark{
@@ -210,12 +210,6 @@ body.sf-dark .alert-critical{background:rgba(69,10,10,.9)!important;color:#fca5a
   </div>
 </div>
 
-<div id="cloudArea" style="display:none;align-items:center;gap:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin-bottom:14px;flex-wrap:wrap">
-  <span style="font-size:12px;font-weight:700;color:#0369a1">☁️ 관리자</span>
-  
-  <span id="cloudWho" style="font-size:11px;color:#0369a1"></span>
-</div>
-<button id="btnAdminLogin" type="button" style="display:none;background:#fff;color:#444;border:1px solid #ddd;padding:8px 16px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer;margin-bottom:14px">🔑 관리자 로그인</button>
 
 <div id="capture-area">
 <div class="hero">
@@ -944,63 +938,23 @@ calculate();
 })();
 </script>
 
-<script type="module">
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-const firebaseConfig = { apiKey:"AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY", authDomain:"swingfarmer-board01.firebaseapp.com", projectId:"swingfarmer-board01", storageBucket:"swingfarmer-board01.firebasestorage.app", messagingSenderId:"312575044644", appId:"1:312575044644:web:81d754eb1d90f25454fcb1" };
-const ADMIN_UIDS = ["1JrHgD2bpTRjrS2jw7MbpHciBph1","Ydd8v6LCN2TPjkqKD4DejLSWwaL2"];
-const CALC_KEY = "fire";
-
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
-provider.setCustomParameters({ prompt: 'select_account' });
-const $ = id => document.getElementById(id);
-let currentUser = null;
-
-if(location.hash === '#admin' || location.hash === '#관리자'){ $('btnAdminLogin').style.display = 'inline-block'; }
-$('btnAdminLogin').addEventListener('click', async ()=>{ try{ await signInWithPopup(auth, provider); }catch(e){ alert('로그인 실패: '+e.message); } });
-onAuthStateChanged(auth, user=>{
-  currentUser = user;
-  const isAdmin = user && ADMIN_UIDS.indexOf(user.uid) !== -1;
-  if(isAdmin){ $('cloudArea').style.display = 'inline-flex'; $('btnAdminLogin').style.display = 'none'; $('cloudWho').textContent = '☁️ ' + (user.displayName||user.email||'관리자'); }
-  else { $('cloudArea').style.display = 'none'; if(user && !isAdmin){ signOut(auth); } }
-});
-
-const INPUT_IDS = ['startYear','currentAge','retireAge','deathAge','monthlySpending','legacy','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','privatePensionTotal','privatePensionStartAge','privatePensionYears','privatePensionReturn','returnRate','inflationRate','incomeGrowth','spendingGrowth'];
-function collectInputs(){ const data={}; INPUT_IDS.forEach(id=>{ const el=$(id); if(el) data[id]=el.value; }); return data; }
-function applyInputs(data){
-  INPUT_IDS.forEach(id=>{ const el=$(id); if(el && data[id]!==undefined){ el.value=data[id]; } });
-  const first=$('currentAge'); if(first){ first.dispatchEvent(new Event('input',{bubbles:true})); }
-}
-
-  if(!slots || slots.length===0){ box.innerHTML='<div style="color:#999;font-size:13px;text-align:center;padding:20px">저장된 시나리오가 없어요.</div>'; return; }
-  box.innerHTML=slots.map((s,i)=>{
-    const t=s.savedAt?new Date(s.savedAt).toLocaleString('ko-KR'):'';
-    return '<div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px">'+
-      '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;color:#1F4E78;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(s.name||'(이름없음)')+'</div>'+
-      '<div style="font-size:11px;color:#999">'+t+'</div></div>'+
-  }).join('');
-}
-
-  if(!name){ alert('시나리오 이름을 입력하세요.'); return; }
-  if(idx>=0 && !confirm('"'+name+'" 시나리오가 이미 있어요. 덮어쓸까요?')) return;
-  try{
-    const entry={ name, data: collectInputs(), savedAt: new Date().toISOString() };
-    alert('✅ "'+name+'" 저장 완료.');
-  }catch(e){ alert('저장 실패: '+e.message); }
-});
-  if(!confirm('"'+s.name+'" 시나리오를 삭제할까요?')) return;
-};
-  if(!confirm('"'+s.name+'" 덮어쓸까요? 현재 값으로 저장됩니다.')) return;
-};
-
-// ── sf-slots 연동 ──
-window.slGetState = function(){ return window.collectInputs ? window.collectInputs() : {}; };
-window.slSetState = function(d){ if(window.applyInputs) window.applyInputs(d); };
+<script>
+/* sf-slots 연동 — 입력값 수집/복원 */
+(function(){
+  var INPUT_IDS = ['startYear','currentAge','retireAge','deathAge','monthlySpending','legacy','currentAssets','annualIncome','annualSpending','pensionStartAge','monthlyPension','privatePensionTotal','privatePensionStartAge','privatePensionYears','privatePensionReturn','returnRate','inflationRate','incomeGrowth','spendingGrowth'];
+  var $id = function(id){ return document.getElementById(id); };
+  window.collectInputs = function(){ var d={}; INPUT_IDS.forEach(function(id){ var el=$id(id); if(el) d[id]=el.value; }); return d; };
+  window.applyInputs = function(data){
+    if(!data) return;
+    INPUT_IDS.forEach(function(id){ var el=$id(id); if(el && data[id]!==undefined){ el.value=data[id]; } });
+    var first=$id('currentAge'); if(first){ first.dispatchEvent(new Event('input',{bubbles:true})); }
+  };
+  window.slGetState = function(){ return window.collectInputs(); };
+  window.slSetState = function(d){ window.applyInputs(d); };
+})();
 </script>
 <script>window.CALC_KEY='fire';</script>
 <script src="/sf-slots.js?v=3"></script>
-<script src="/common.js?v=6"></script>
+<script src="/common.js?v=7"></script>
 </body>
 </html>

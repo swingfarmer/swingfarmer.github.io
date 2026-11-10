@@ -7,7 +7,7 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>자동차 구입 vs 리스 vs 장기렌트 비교 | 스윙파머</title>
 <meta name="description" content="자동차 현금구입·할부·리스·장기렌트 중 어느 게 유리한지 총비용으로 비교. 감가·이자·잔존가치·기회비용을 따져 실질 부담을 계산.">
-<link rel="stylesheet" href="/common.css?v=5">
+<link rel="stylesheet" href="/common.css?v=7">
 <style>
 :root { --sf-max-w: 760px; }
 body.sf-dark{
@@ -81,13 +81,6 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
 <div class="wrap">
   <p class="desc">자동차를 <b>현금구입·할부·장기렌트</b> 중 어떻게 타는 게 유리한지 <b>총 보유비용</b>으로 비교합니다. 감가상각·이자·잔존가치·기회비용을 따져 실질 부담을 계산해요.</p>
 
-  <div id="cloudArea" style="display:none;align-items:center;gap:8px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin:0 0 14px;flex-wrap:wrap">
-    <span style="font-size:12px;font-weight:700;color:#0369a1">☁️ 관리자</span>
-    
-    <span id="cloudWho" style="font-size:11px;color:#0369a1"></span>
-  </div>
-  <button id="btnAdminLogin" type="button" style="display:none;background:#fff;color:#444;border:1px solid #ddd;border-radius:6px;padding:9px 14px;font-size:12.5px;font-weight:600;cursor:pointer;margin-bottom:14px">🔑 관리자 로그인</button>
-  <div id="uidInfo" style="display:none;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;font-size:13px;color:#92400e;margin-bottom:14px;line-height:1.7"></div>
 
 
   <!-- 차량 -->
@@ -190,7 +183,7 @@ window.slGetState = function(){ return window.ccGetState ? window.ccGetState() :
 window.slSetState = function(d){ if(window.ccSetState) window.ccSetState(d); };
 </script>
 <script src="/sf-slots.js?v=3"></script>
-<script src="/common.js?v=6"></script>
+<script src="/common.js?v=7"></script>
 <script>
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
@@ -294,26 +287,8 @@ ccLoadLocal();
 calculate();
 </script>
 
-<!-- 클라우드 슬롯 모달 -->
 
 
-<script type="module">
-import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
-const firebaseConfig = { apiKey:"AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY", authDomain:"swingfarmer-board01.firebaseapp.com", projectId:"swingfarmer-board01", storageBucket:"swingfarmer-board01.firebasestorage.app", messagingSenderId:"312575044644", appId:"1:312575044644:web:81d754eb1d90f25454fcb1" };
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig), auth=getAuth(app);
-const provider=new GoogleAuthProvider(); provider.setCustomParameters({prompt:'select_account'});
-const gid=id=>document.getElementById(id); let currentUser=null;
-getRedirectResult(auth).catch(()=>{});
-if(location.hash==='#admin'||location.hash==='#\uad00\ub9ac\uc790'){ gid('btnAdminLogin').style.display='inline-block'; }
-gid('btnAdminLogin').addEventListener('click', async()=>{ try{ await signInWithPopup(auth,provider); }catch(e){ const code=e&&e.code; if(code==='auth/popup-blocked'||code==='auth/cancelled-popup-request'||code==='auth/popup-closed-by-user'||code==='auth/operation-not-supported-in-this-environment'){ try{ await signInWithRedirect(auth,provider); }catch(e2){ alert('\ub85c\uadf8\uc778 \uc2e4\ud328: '+e2.message); } } else { alert('\ub85c\uadf8\uc778 \uc2e4\ud328: '+(e.message||code)); } } });
-onAuthStateChanged(auth, user=>{ currentUser=user; const isAdmin=user&&ADMIN_UIDS.indexOf(user.uid)!==-1;
-  if(isAdmin){ gid('cloudArea').style.display='inline-flex'; gid('btnAdminLogin').style.display='none'; gid('cloudWho').textContent='\u2601\ufe0f '+(user.displayName||user.email||'\uad00\ub9ac\uc790'); gid('uidInfo').style.display='none'; }
-  else if(user&&!isAdmin){ gid('cloudArea').style.display='none'; gid('btnAdminLogin').style.display='none'; gid('uidInfo').style.display='block'; gid('uidInfo').innerHTML='\ub85c\uadf8\uc778\ub428: <b>'+(user.email||'')+'</b><br>\uc774 \uacc4\uc815 UID:<br><code style="font-size:11px;word-break:break-all">'+user.uid+'</code><br><button onclick="window._ccSignout()" style="background:#dc2626;color:white;border:none;border-radius:4px;padding:3px 9px;font-size:11.5px;cursor:pointer;margin-top:4px">\ub85c\uadf8\uc544\uc6c3</button>'; }
-  else { gid('cloudArea').style.display='none'; gid('uidInfo').style.display='none'; } });
-window._ccSignout=()=>signOut(auth);
-
-</script>
 
 </body>
 </html>
