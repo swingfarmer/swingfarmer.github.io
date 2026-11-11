@@ -320,6 +320,193 @@ window.sfApiFetch = function(url, opts) {
       var t2 = document.getElementById('sf-dark-toggle');
       if (t2) t2.textContent = '🌙';
     }
+    syncChartTheme();
+  }
+
+  // ---------- 3-1. 차트(Chart.js) 테마 연동 (078) ----------
+  // 페이지 코드를 안 고치고 공통에서 처리: 다크/라이트에 맞춰 축 글씨·격자선 색을 바꾸고,
+  // 배경에 묻히는 선 색(다크에서 아주 어두운 색, 라이트에서 아주 밝은 회색)만 보정.
+  // 빨강·파랑 등 의미가 있는 색은 건드리지 않음. 원래 색은 기억해 뒀다가 테마를 되돌리면 복원.
+  var CH_STORE = (typeof WeakMap !== 'undefined') ? new WeakMap() : null;
+  var chartPluginDone = false;
+  var chDefOrig = null;
+  // 페이지가 원래 다크로 만들어졌는지 (common-dark.css 사용). 원래 테마일 때는 페이지가 정한 색을 그대로 두고,
+  // 반대 테마로 바뀌었을 때만 보정함.
+  function chNativeDark() { return !!document.querySelector('link[href*="common-dark.css"]'); }
+
+  function chParse(s) {
+    if (typeof s !== 'string') return null;
+    s = s.trim().toLowerCase();
+    var m;
+    if (s === 'white') s = '#ffffff'; else if (s === 'black') s = '#000000';
+    if ((m = s.match(/^#([0-9a-f]{3,8})$/))) {
+      var h = m[1];
+      if (h.length === 3 || h.length === 4) h = h.replace(/./g, '$&$&');
+      if (h.length !== 6 && h.length !== 8) return null;
+      return { r: parseInt(h.substr(0, 2), 16), g: parseInt(h.substr(2, 2), 16), b: parseInt(h.substr(4, 2), 16),
+               a: h.length === 8 ? parseInt(h.substr(6, 2), 16) / 255 : 1 };
+    }
+    if ((m = s.match(/^rgba?\(([^)]+)\)$/))) {
+      var p = m[1].split(/[\s,\/]+/).filter(Boolean).map(parseFloat);
+      if (p.length < 3 || p.some(isNaN)) return null;
+      return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 };
+    }
+    return null;
+  }
+  function chLum(c) {
+    function f(v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+    return 0.2126 * f(c.r) + 0.7152 * f(c.g) + 0.0722 * f(c.b);
+  }
+  function chSat(c) {
+    var mx = Math.max(c.r, c.g, c.b) / 255, mn = Math.min(c.r, c.g, c.b) / 255;
+    if (mx === mn) return 0;
+    var l = (mx + mn) / 2;
+    return (mx - mn) / (l > 0.5 ? (2 - mx - mn) : (mx + mn));
+  }
+  function chOut(r, g, b, a) {
+    r = Math.round(r); g = Math.round(g); b = Math.round(b);
+    return a < 1 ? 'rgba(' + r + ',' + g + ',' + b + ',' + (Math.round(a * 100) / 100) + ')' : 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+  // kind: 'text'(축·범례 글씨) / 'grid'(격자·축선) / 'data'(데이터 선·막대) / 'backdrop'(레이더 눈금 배경)
+  function chThemed(val, kind, dark) {
+    var c = chParse(val);
+    if (!c) return val;
+    var neutral = chSat(c) < 0.2, L = chLum(c);
+    if (kind === 'backdrop') return dark ? 'rgba(0,0,0,0)' : val;
+    if (kind === 'text') {
+      if (neutral) return dark ? '#aab3c0' : '#555555';
+      if (dark && L < 0.14) return chOut(c.r + (255 - c.r) * 0.55, c.g + (255 - c.g) * 0.55, c.b + (255 - c.b) * 0.55, c.a);
+      return val;
+    }
+    if (kind === 'grid') {
+      if (c.a === 0 || !neutral) return val;
+      return dark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.08)';
+    }
+    // data
+    if (dark && L < 0.14) {
+      if (neutral) return chOut(200, 206, 216, c.a);
+      return chOut(c.r + (255 - c.r) * 0.55, c.g + (255 - c.g) * 0.55, c.b + (255 - c.b) * 0.55, c.a);
+    }
+    if (!dark && neutral && L > 0.75 && c.a >= 0.5) return chOut(85, 85, 85, c.a);
+    return val;
+  }
+  function chSlot(store, obj, key, kind, dark, id, keepOrig) {
+    if (!obj) return;
+    var cur = obj[key];
+    if (typeof cur !== 'string' && !Array.isArray(cur)) return;
+    var rec = store[id];
+    var same = rec && (Array.isArray(cur) ? (Array.isArray(rec.applied) && cur.join('|') === rec.applied.join('|')) : cur === rec.applied);
+    if (!same) rec = store[id] = { orig: Array.isArray(cur) ? cur.slice() : cur, applied: null };   // 페이지가 값을 새로 넣은 경우
+    var next = keepOrig ? (Array.isArray(rec.orig) ? rec.orig.slice() : rec.orig)
+      : Array.isArray(rec.orig)
+        ? rec.orig.map(function (v) { return typeof v === 'string' ? chThemed(v, kind, dark) : v; })
+        : chThemed(rec.orig, kind, dark);
+    rec.applied = next;
+    obj[key] = next;
+  }
+  function chApply(chart) {
+    if (!CH_STORE || !chart || !chart.config) return;
+    var dark = document.body.classList.contains('sf-dark');
+    var nat = (dark === chNativeDark());
+    var store = CH_STORE.get(chart);
+    if (!store) { store = {}; CH_STORE.set(chart, store); }
+    var opt = chart.config.options || {};
+    var scales = opt.scales || {};
+    Object.keys(scales).forEach(function (id) {
+      var s = scales[id];
+      if (!s || typeof s !== 'object') return;
+      chSlot(store, s.ticks, 'color', 'text', dark, 's.' + id + '.ticks', nat);
+      chSlot(store, s.ticks, 'backdropColor', 'backdrop', dark, 's.' + id + '.backdrop', nat);
+      chSlot(store, s.title, 'color', 'text', dark, 's.' + id + '.title', nat);
+      chSlot(store, s.pointLabels, 'color', 'text', dark, 's.' + id + '.pl', nat);
+      chSlot(store, s.grid, 'color', 'grid', dark, 's.' + id + '.grid', nat);
+      chSlot(store, s.border, 'color', 'grid', dark, 's.' + id + '.border', nat);
+      chSlot(store, s.angleLines, 'color', 'grid', dark, 's.' + id + '.angle', nat);
+    });
+    var pl = opt.plugins || {};
+    if (pl.legend) chSlot(store, pl.legend.labels, 'color', 'text', dark, 'legend', nat);
+    chSlot(store, pl.title, 'color', 'text', dark, 'title', nat);
+    chSlot(store, pl.subtitle, 'color', 'text', dark, 'subtitle', nat);
+    var dsl = (chart.config.data && chart.config.data.datasets) || [];
+    dsl.forEach(function (ds, i) {
+      if (!ds) return;
+      ['borderColor', 'backgroundColor', 'pointBackgroundColor', 'pointBorderColor'].forEach(function (k) {
+        // 원형 차트의 흰 구분선 등은 그대로 둠 (다크에서만 어두운 색 보정)
+        chSlot(store, ds, k, 'data', dark, 'd.' + i + '.' + k, nat);
+      });
+    });
+  }
+  function chDefaults() {
+    var C = window.Chart;
+    if (!C || !C.defaults) return;
+    var dark = document.body.classList.contains('sf-dark');
+    if (!chDefOrig) chDefOrig = { color: C.defaults.color, borderColor: C.defaults.borderColor };
+    if (dark === chNativeDark()) {          // 원래 테마 → 페이지/라이브러리 기본값 그대로
+      C.defaults.color = chDefOrig.color;
+      C.defaults.borderColor = chDefOrig.borderColor;
+      return;
+    }
+    C.defaults.color = dark ? '#aab3c0' : '#555555';
+    C.defaults.borderColor = dark ? 'rgba(255,255,255,0.09)' : 'rgba(0,0,0,0.08)';
+  }
+  function chEach(fn) {
+    var C = window.Chart;
+    if (!C || !C.instances) return;
+    Object.keys(C.instances).forEach(function (k) { try { fn(C.instances[k]); } catch (e) {} });
+  }
+  function setupChartTheme() {
+    var C = window.Chart;
+    if (!C || !C.register || chartPluginDone) return !!chartPluginDone;
+    chartPluginDone = true;
+    chDefaults();
+    try {
+      // 차트가 만들어지거나 갱신될 때마다 현재 테마 색을 입힘
+      C.register({ id: 'sfTheme', beforeUpdate: function (chart) { try { chApply(chart); } catch (e) {} } });
+    } catch (e) {}
+    chEach(function (ch) { ch.update('none'); });   // 이미 그려진 차트
+    return true;
+  }
+  window.sfSyncChartTheme = function () { syncChartTheme(); };   // 페이지에서 직접 부를 일이 있을 때용
+  function syncChartTheme() {
+    if (!window.Chart) return;
+    if (!chartPluginDone) { setupChartTheme(); return; }
+    chDefaults();
+    chEach(function (ch) { ch.update('none'); });
+  }
+
+  // ---------- 3-2. 넘치는 표 가로 스크롤 (078) ----------
+  // 표가 화면보다 넓은데 가로 스크롤 영역이 없으면 표만 감싸서 스크롤되게 함 (주로 모바일).
+  // 실제로 넘칠 때만 동작하고, 이미 스크롤되는 상자 안에 있으면 건드리지 않음.
+  function fixTableOverflow() {
+    var tables = document.querySelectorAll('table');
+    for (var i = 0; i < tables.length; i++) {
+      var tb = tables[i], par = tb.parentElement;
+      if (!par || par.classList.contains('sf-table-scroll') || tb.closest('#sf-header, .sf-no-scroll-wrap')) continue;
+      if (tb.offsetParent === null) continue;                 // 숨겨진 탭 안의 표는 보일 때 다시 검사
+      if (tb.scrollWidth <= par.clientWidth + 1) continue;    // 안 넘침
+      var el = par, scrolls = false;
+      for (var d = 0; el && d < 4 && el !== document.body; d++, el = el.parentElement) {
+        var ox = getComputedStyle(el).overflowX;
+        if (ox === 'auto' || ox === 'scroll') { scrolls = true; break; }
+      }
+      if (scrolls) continue;
+      var wrap = document.createElement('div');
+      wrap.className = 'sf-table-scroll';
+      wrap.style.cssText = 'overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%';   // 다크 전용 페이지는 common.css를 안 써서 직접 지정
+      par.insertBefore(wrap, tb);
+      wrap.appendChild(tb);
+    }
+  }
+  function setupTableOverflow() {
+    var timer = null;
+    function run() { clearTimeout(timer); timer = setTimeout(fixTableOverflow, 250); }
+    run();
+    window.addEventListener('resize', run);
+    window.addEventListener('load', run);
+    document.addEventListener('click', run);                  // 탭 전환 등으로 표가 새로 보일 때
+    if (typeof MutationObserver !== 'undefined') {
+      new MutationObserver(run).observe(document.body, { childList: true, subtree: true });
+    }
   }
 
   // ---------- 4. 글자크기 (px 측정 방식 - 검증됨) ----------
@@ -475,6 +662,16 @@ window.sfApiFetch = function(url, opts) {
 
     // 금액 한글표기 (data-won 마커가 있는 페이지만 작동)
     initWonReadout();
+
+    // 차트 테마 연동: Chart.js가 늦게 로드되는 페이지도 있어 잠깐 동안 기다림
+    if (!setupChartTheme()) {
+      var chTries = 0;
+      var chTimer = setInterval(function () {
+        if (setupChartTheme() || ++chTries > 40) clearInterval(chTimer);
+      }, 250);
+    }
+    // 넘치는 표 가로 스크롤
+    setupTableOverflow();
 
     // 다크모드 토글
     var darkBtn = document.getElementById('sf-dark-toggle');
