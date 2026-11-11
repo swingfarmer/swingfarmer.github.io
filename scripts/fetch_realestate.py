@@ -9,12 +9,20 @@
   python3 -u scripts/fetch_realestate.py --year 2024   → 특정 연도만
   python3 -u scripts/fetch_realestate.py --no-db       → JSON만 저장 (Oracle 적재 생략)
 
+DB 반영 방식 (082 수정)
+  구(region)·연도 단위로 "그 구의 모든 달 호출이 성공했을 때만" 기존 행을 지우고 다시 넣음.
+  하나라도 실패한 구는 기존 DB 데이터를 그대로 둠 (예전: 연도 전체 삭제 → 실패한 구·월 데이터 유실).
+  지우는 범위도 이번에 받은 거래유형만 (--type trade 면 매매만, 전월세는 유지).
+  API 에러(한도 초과 등)는 HTTP 200으로 와도 실패로 처리 (scripts/re_api.py).
+
 환경변수: DATA_GO_KR_KEY, ORACLE_DB_PASSWORD, ORACLE_WALLET_PASSWORD
 """
 
 import os, sys, json, time, argparse
 import xml.etree.ElementTree as ET
 import urllib.request, urllib.parse
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from re_api import api_call as _api_call
 from datetime import date, timedelta
 from collections import defaultdict
 
@@ -73,9 +81,10 @@ def get_oracle_conn():
         wallet_password=os.environ.get('ORACLE_WALLET_PASSWORD', ''))
 
 
-def sync_to_oracle(yr, items):
-    """연도 데이터를 Oracle DB에 동기화 (해당 연도 APT DELETE → INSERT)"""
-    if not items:
+def sync_to_oracle(yr, items, ok_regions, deal_types):
+    """구·연도 단위 동기화: ok_regions(모든 달 성공한 구)만, deal_types(S/J/W)만 지우고 다시 넣음"""
+    if not ok_regions:
+        print('  ⚠️ 성공한 구 없음 — DB 그대로 둠')
         return 0
     try:
         conn = get_oracle_conn()
@@ -85,9 +94,14 @@ def sync_to_oracle(yr, items):
 
     cur = conn.cursor()
     try:
-        cur.execute("DELETE FROM real_estate WHERE prop_type='APT' AND deal_year=:y",
-                     {'y': str(yr)})
-        deleted = cur.rowcount
+        dt_ph = ','.join(f':dt{i}' for i in range(len(deal_types)))
+        deleted = 0
+        for rg in sorted(ok_regions):
+            p = {'y': str(yr), 'rg': rg}
+            p.update({f'dt{i}': d for i, d in enumerate(deal_types)})
+            cur.execute(f"DELETE FROM real_estate WHERE prop_type='APT' AND deal_year=:y AND region=:rg AND deal_type IN ({dt_ph})", p)
+            deleted += cur.rowcount
+        items = [it for it in items if it.get('r') in ok_regions and it['T'] in deal_types]
 
         BATCH = 500
         inserted = 0
@@ -111,15 +125,13 @@ def sync_to_oracle(yr, items):
                  price, deposit, monthly_rent, deal_year, deal_month, deal_day, build_year)
                 VALUES (:v_pt,:v_dt,:v_rg,:v_dg,:v_nm,:v_am,:v_fn,:v_pr,:v_dp,:v_mr,:v_yr,:v_mo,:v_dd,:v_by)""", rows)
             inserted += len(batch)
-            if inserted % 5000 == 0:
-                conn.commit()
 
-        conn.commit()
-        print(f'  🗄️ Oracle: {deleted:,}건 삭제 → {inserted:,}건 적재')
+        conn.commit()   # 지우기+넣기 한 번에 확정 (중간 실패 시 rollback)
+        print(f'  🗄️ Oracle: {len(ok_regions)}개 구 {deleted:,}건 삭제 → {inserted:,}건 적재')
         return inserted
     except Exception as e:
         conn.rollback()
-        print(f'  ⚠️ Oracle 적재 실패: {e}')
+        print(f'  ⚠️ Oracle 적재 실패(되돌림): {e}')
         return 0
     finally:
         cur.close()
@@ -132,22 +144,8 @@ def get_year_months(year):
 
 
 def api_call(endpoint, lawd_cd, deal_ymd):
-    params = {'serviceKey': API_KEY, 'LAWD_CD': lawd_cd, 'DEAL_YMD': deal_ymd, 'pageNo':'1', 'numOfRows':'9999'}
-    url = endpoint + '?' + urllib.parse.urlencode(params)
-    for attempt in range(3):
-        try:
-            with urllib.request.urlopen(urllib.request.Request(url), timeout=20) as resp:
-                data = resp.read().decode('utf-8')
-            time.sleep(CALL_DELAY)
-            return data
-        except Exception as e:
-            if attempt < 2:
-                print(f' ⏳재시도({attempt+2}/3)...', end='', flush=True)
-                time.sleep(2)
-            else:
-                print(f' ❌실패', end='', flush=True)
-                time.sleep(CALL_DELAY)
-                return None
+    """페이지별 XML 리스트 / 실패 시 None (scripts/re_api.py)"""
+    return _api_call(endpoint, API_KEY, lawd_cd, deal_ymd)
 
 
 def parse_trade(xml_str, rname):
@@ -292,6 +290,7 @@ def main():
 
         items = []
         yr_done = 0
+        failed = set()   # 한 달이라도 실패한 구 이름
 
         for code, name in regs.items():
             for ym in months:
@@ -302,27 +301,31 @@ def main():
                     gpct = global_done / total_calls * 100
                     print(f'  [{global_done}/{total_calls} {gpct:.0f}%] {name} {ym} {dtype}...', end='', flush=True)
 
-                    xml = api_call(ENDPOINTS[dtype], code, ym)
-                    if not xml:
+                    pages = api_call(ENDPOINTS[dtype], code, ym)
+                    if pages is None:
+                        failed.add(name)
                         print()
                         continue
 
-                    if dtype == 'trade':
-                        parsed = parse_trade(xml, name)
-                    else:
-                        parsed = parse_rent(xml, name)
+                    parsed = []
+                    for xml in pages:
+                        parsed.extend(parse_trade(xml, name) if dtype == 'trade' else parse_rent(xml, name))
 
                     items.extend(parsed)
                     print(f' {len(parsed)}건', flush=True)
 
         # ── 이 연도 즉시 저장 + Oracle 동기화 + 메모리 해제 ──
-        if items:
+        if items and not failed:
             stats = save_year(yr, items)
             index_years[yr] = stats
             print(f'  💾 {yr}.json 저장: {stats["total"]:,}건 ({stats["size_mb"]}MB)')
-            if not args.no_db:
-                sync_to_oracle(yr, items)
-        else:
+        if failed:
+            print(f'  ⚠️ 실패한 구 {len(failed)}개 — DB 기존 데이터 유지: {", ".join(sorted(failed))}')
+        if not args.no_db:
+            dts = (['S'] if 'trade' in types else []) + (['J', 'W'] if 'rent' in types else [])
+            ok = set(regs.values()) - failed
+            sync_to_oracle(yr, items, ok, dts)
+        if not items:
             print(f'  ⚠️ {yr}년 데이터 없음')
 
         del items  # 메모리 해제
