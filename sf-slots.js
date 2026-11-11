@@ -24,7 +24,8 @@ if(typeof window.CALC_KEY==='undefined'){
 }
 const KEY = window.CALC_KEY;
 const LS_KEY = 'sf_'+KEY+'_v2';
-const ADMIN_UIDS = ['1JrHgD2bpTRjrS2jw7MbpHciBph1','Ydd8v6LCN2TPjkqKD4DejLSWwaL2'];
+// 관리자 UID는 common.js 의 window.SF_ADMIN_UIDS 한 곳에서 관리 (이 파일이 common.js보다 먼저 로드되는 페이지가 있어서 쓸 때마다 읽음)
+function adminUids(){ return window.SF_ADMIN_UIDS || []; }
 const $ = id => document.getElementById(id);
 
 // ── localStorage 자동저장 ──
@@ -65,7 +66,11 @@ async function getDb(){
   return _db;
 }
 
-function docRef(db){ return db._fsMod.doc(db, 'calc_data', ADMIN_UIDS[0]); }
+function docRef(db){
+  const uid = adminUids()[0];
+  if(!uid) throw new Error('관리자 UID 없음 (common.js 로드 확인)');
+  return db._fsMod.doc(db, 'calc_data', uid);
+}
 
 async function loadSlots(){
   try{
@@ -379,7 +384,7 @@ window._sfSlots = {
   getSlots: function(){ return loadSlots(); },
 
   open: async function(){
-    if(!window._sfAuth || !window._sfAuth.currentUser || ADMIN_UIDS.indexOf(window._sfAuth.currentUser.uid) === -1){
+    if(!window._sfAuth || !window._sfAuth.currentUser || adminUids().indexOf(window._sfAuth.currentUser.uid) === -1){
       alert('관리자 로그인이 필요합니다.');
       return;
     }

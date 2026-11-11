@@ -55,7 +55,35 @@ DSN = 'db1007_medium'
 
 # ── Firebase 토큰 검증 ──
 FIREBASE_PROJECT_ID = 'swingfarmer-board01'
-ADMIN_UID = '1JrHgD2bpTRjrS2jw7MbpHciBph1'
+# 관리자 UID: 레포 common.js 의 window.SF_ADMIN_UIDS 한 줄을 읽음 (사이트 전체 단일 출처)
+# api_server.py 는 ~/api_server.py 로 복사돼 돌기 때문에 레포 경로를 직접 지정함.
+# 파일이 바뀌면(git pull) 다음 요청 때 다시 읽음 → UID만 바꿀 때는 재시작 불필요.
+# 못 읽으면 빈 목록 = 쓰기 요청 전부 403 (잠금 쪽으로 실패).
+ADMIN_UIDS_SOURCE = os.path.expanduser('~/swingfarmer.github.io/common.js')
+_admin_cache = {'mtime': None, 'uids': ()}
+
+def get_admin_uids():
+    import re
+    try:
+        mtime = os.path.getmtime(ADMIN_UIDS_SOURCE)
+        if mtime != _admin_cache['mtime']:
+            with open(ADMIN_UIDS_SOURCE, encoding='utf-8') as fp:
+                src = fp.read()
+            m = re.search(r"window\.SF_ADMIN_UIDS\s*=\s*Object\.freeze\(\s*\[([^\]]*)\]", src)
+            uids = tuple(re.findall(r"['\"]([A-Za-z0-9]{20,})['\"]", m.group(1))) if m else ()
+            if not uids:
+                print(f'⚠ 관리자 UID를 못 읽음: {ADMIN_UIDS_SOURCE}', flush=True)
+            else:
+                print(f'관리자 UID {len(uids)}개 로드 ({ADMIN_UIDS_SOURCE})', flush=True)
+            _admin_cache['mtime'] = mtime
+            _admin_cache['uids'] = uids
+    except Exception as e:
+        print(f'⚠ 관리자 UID 읽기 실패: {e}', flush=True)
+        if _admin_cache['mtime'] is None:
+            _admin_cache['uids'] = ()
+    return _admin_cache['uids']
+
+get_admin_uids()  # 시작할 때 한 번 읽어서 로그에 개수 남김
 GOOGLE_CERTS_URL = 'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com'
 _certs_cache = {'certs': None, 'expires': 0}
 
@@ -99,7 +127,7 @@ def require_auth(f):
         uid = verify_firebase_token(token)
         if not uid:
             return jsonify({'error': '유효하지 않은 토큰입니다.'}), 401
-        if uid != ADMIN_UID:
+        if uid not in get_admin_uids():
             return jsonify({'error': '관리자 권한이 필요합니다.'}), 403
         return f(*args, **kwargs)
     return decorated

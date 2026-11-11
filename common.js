@@ -8,10 +8,16 @@
    <script src="/common.js"></script> 한 줄 추가
    ============================================ */
 
+/* ── 관리자 UID (사이트 전체에서 여기 한 곳만 고침) ──
+   auth-guard.js · sf-slots.js · 이 파일 · VM api_server.py 가 모두 이 줄을 읽음.
+   UID를 바꾸거나 추가하면: 이 줄 수정 → 전 페이지 common.js ?v= 올림 → VM git pull (api_server는 다음 요청부터 자동 반영).
+   첫 번째 UID = 저장 슬롯(Firestore calc_data/{UID}) 위치. 순서 바꾸면 기존 저장 슬롯이 안 보임. */
+window.SF_ADMIN_UIDS = Object.freeze(['1JrHgD2bpTRjrS2jw7MbpHciBph1','Ydd8v6LCN2TPjkqKD4DejLSWwaL2']);
+
 /* ── 인증 게이트 (눈가림) ── */
 /* ── Firebase 초기화 (공용) ── */
 var _sfFirebaseReady = (function(){
-  var ADMIN_UIDS = ['1JrHgD2bpTRjrS2jw7MbpHciBph1','Ydd8v6LCN2TPjkqKD4DejLSWwaL2'];
+  var ADMIN_UIDS = window.SF_ADMIN_UIDS;
   var FB_CFG = {apiKey:'AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY',authDomain:'swingfarmer-board01.firebaseapp.com',projectId:'swingfarmer-board01'};
   var _auth = null;
   var _resolve;
@@ -60,7 +66,7 @@ window.sfApiFetch = function(url, opts) {
 };
 
 (function(){
-  var ADMIN_UIDS = ['1JrHgD2bpTRjrS2jw7MbpHciBph1','Ydd8v6LCN2TPjkqKD4DejLSWwaL2'];
+  var ADMIN_UIDS = window.SF_ADMIN_UIDS;
 
   // 이미 인증된 세션 체크
   var cached = false;

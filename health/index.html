@@ -10,7 +10,7 @@
 <link rel="manifest" href="/health/manifest.json">
 <link rel="apple-touch-icon" href="/health/icon-192.png">
 <title>건강관리 체크리스트 | 스윙파머</title>
-<link rel="stylesheet" href="/common.css?v=11">
+<link rel="stylesheet" href="/common.css?v=12">
 <style id="sf-auto-dark">
 /* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
 body.sf-dark .install-bar{background-color:#373115!important;border-bottom-color:#736326!important;color:#f2a373!important}
@@ -123,7 +123,7 @@ body.sf-dark .promise-item.kept .pcheck{border-color:#16a34a!important}
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 
 <link rel="stylesheet" href="/auth-guard.css?v=4">
-<script type="module" src="/auth-guard.js?v=5"></script>
+<script type="module" src="/auth-guard.js?v=6"></script>
 </head>
 <body>
 <div class="install-bar" id="installBar">
@@ -682,8 +682,13 @@ function renderWeight(){
   ).join('');
   drawChart(arr);
 }
+let _lastWeightArr=[];
 function drawChart(arr){
+  _lastWeightArr=arr;
   const cv=$('weightChart'); const ctx=cv.getContext('2d');
+  // 다크모드 색 (직접 그리는 canvas라 Chart.js 자동 연동이 안 됨)
+  const dk=document.body.classList.contains('sf-dark');
+  const C=dk?{grid:'#2c333f',txt:'#9ca3af',line:'#60a5fa'}:{grid:'#eef0f3',txt:'#999',line:'#1F4E78'};
   const dpr=window.devicePixelRatio||1;
   // clientWidth가 0이면(숨겨진 탭 등) 부모 너비로 폴백, 그래도 0이면 잠시 후 재시도
   let W=cv.clientWidth;
@@ -704,22 +709,25 @@ function drawChart(arr){
   const x=i=>arr.length===1?pad.l+plotW/2:pad.l+plotW*i/(arr.length-1);
   const y=kg=>pad.t+plotH*(1-(kg-min)/(max-min));
   // grid + y labels
-  ctx.strokeStyle='#eef0f3'; ctx.fillStyle='#999'; ctx.font='10px sans-serif'; ctx.textAlign='right'; ctx.lineWidth=1;
+  ctx.strokeStyle=C.grid; ctx.fillStyle=C.txt; ctx.font='10px sans-serif'; ctx.textAlign='right'; ctx.lineWidth=1;
   for(let i=0;i<=3;i++){ const kg=min+(max-min)*i/3, yy=y(kg);
     ctx.beginPath(); ctx.moveTo(pad.l,yy); ctx.lineTo(W-pad.r,yy); ctx.stroke();
     ctx.fillText(kg.toFixed(1), pad.l-5, yy+3);
   }
   // line
-  ctx.strokeStyle='#1F4E78'; ctx.lineWidth=2; ctx.beginPath();
+  ctx.strokeStyle=C.line; ctx.lineWidth=2; ctx.beginPath();
   arr.forEach((w,i)=>{ const xx=x(i),yy=y(w.kg); i===0?ctx.moveTo(xx,yy):ctx.lineTo(xx,yy); });
   ctx.stroke();
   // points
-  arr.forEach((w,i)=>{ const xx=x(i),yy=y(w.kg); ctx.fillStyle='#1F4E78'; ctx.beginPath(); ctx.arc(xx,yy,3.5,0,Math.PI*2); ctx.fill(); });
+  arr.forEach((w,i)=>{ const xx=x(i),yy=y(w.kg); ctx.fillStyle=C.line; ctx.beginPath(); ctx.arc(xx,yy,3.5,0,Math.PI*2); ctx.fill(); });
   // x labels (first, last)
-  ctx.fillStyle='#999'; ctx.textAlign='center'; ctx.font='10px sans-serif';
+  ctx.fillStyle=C.txt; ctx.textAlign='center'; ctx.font='10px sans-serif';
   ctx.fillText(arr[0].date.slice(5), x(0), H-8);
   if(arr.length>1) ctx.fillText(arr[arr.length-1].date.slice(5), x(arr.length-1), H-8);
 }
+
+// 다크/라이트 전환 시 몸무게 그래프 다시 그림
+new MutationObserver(()=>{ if(_lastWeightArr.length && $('weightChart').offsetParent) drawChart(_lastWeightArr); }).observe(document.body,{attributes:true,attributeFilter:['class']});
 
 // ===== 탭 =====
 function showTab(t){
@@ -766,7 +774,7 @@ window.slSetState = function(d){
   if(window.renderAll) window.renderAll();
 };
 </script>
-<script src="/sf-slots.js?v=3"></script>
-<script src="/common.js?v=9"></script>
+<script src="/sf-slots.js?v=4"></script>
+<script src="/common.js?v=10"></script>
 </body>
 </html>

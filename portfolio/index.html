@@ -9,7 +9,7 @@
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JD3EPQXMND');</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<link rel="stylesheet" href="/common.css?v=11">
+<link rel="stylesheet" href="/common.css?v=12">
 <style id="sf-auto-dark">
 /* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
 body.sf-dark .pf-tabs{border-bottom-color:#384761!important}
@@ -163,7 +163,7 @@ footer{text-align:center;margin-top:30px;color:#999;font-size:11px}
 </style>
 
 <link rel="stylesheet" href="/auth-guard.css?v=4">
-<script type="module" src="/auth-guard.js?v=5"></script>
+<script type="module" src="/auth-guard.js?v=6"></script>
 </head>
 <body class="sf-narrow">
 <h1>📊 포트폴리오 대시보드</h1>
@@ -178,7 +178,7 @@ footer{text-align:center;margin-top:30px;color:#999;font-size:11px}
 <!-- ═══ 탭: 대시보드 ═══ -->
 <div class="pf-panel active" id="panel-dash">
   <div class="dash-hero" id="dashHero">
-    <div class="hero-label">투자 자산</div>
+    <div class="hero-label">순자산</div>
     <div class="hero-value" id="dh_asset">—</div>
     <div class="hero-sub" id="dh_gain"></div>
     <div class="hero-date" id="dh_date"></div>
@@ -201,7 +201,8 @@ footer{text-align:center;margin-top:30px;color:#999;font-size:11px}
     <h3>⚡ 빠른 입력</h3>
     <div class="quick-form" id="quickForm">
       <div><label>날짜</label><input type="date" class="qf-date" id="qfDate"></div>
-      <div><label>총 투자자산</label><input type="text" class="qf-amt" id="qfAsset" placeholder="130,000,000" inputmode="numeric"></div>
+      <div><label>순자산 (신용 차감)</label><input type="text" class="qf-amt" id="qfAsset" placeholder="130,000,000" inputmode="numeric"></div>
+      <div><label>신용 (부채·선택)</label><input type="text" class="qf-amt" id="qfLoan" placeholder="0" inputmode="numeric" style="width:120px"></div>
       <div><label>입금</label><input type="text" class="qf-amt" id="qfDepIn" placeholder="0" inputmode="numeric" style="width:110px"></div>
       <div><label>출금</label><input type="text" class="qf-amt" id="qfDepOut" placeholder="0" inputmode="numeric" style="width:110px"></div>
       <button class="btn-blue" onclick="quickAdd()">추가</button>
@@ -218,7 +219,7 @@ footer{text-align:center;margin-top:30px;color:#999;font-size:11px}
   <div class="ret-panel" id="cyclePanel" style="display:none"><h3>🔄 8개월 사이클 (4월→12월→8월→4월)</h3><div class="table-scroll"><table class="cycle-table"><thead><tr><th>구간</th><th>시작자산</th><th>종료자산</th><th>입출금합</th><th>수익금</th><th>수익률</th></tr></thead><tbody id="cycleBody"></tbody></table></div></div>
   <div class="period-btns" id="periodBtns"><button class="period-btn" data-days="30">1개월</button><button class="period-btn" data-days="90">3개월</button><button class="period-btn" data-days="180">6개월</button><button class="period-btn active" data-days="365">1년</button><button class="period-btn" data-days="0">전체</button></div>
   <h3 style="font-size:13px;color:#1F4E78;margin-bottom:8px">📈 자산 추이 (금액)</h3>
-  <div class="bm-legend"><label style="color:#1F4E78;font-weight:700">━ 내 자산</label><label style="color:#888">┄ 누적원금</label></div>
+  <div class="bm-legend"><label style="color:#1F4E78;font-weight:700">━ 내 자산(순자산)</label><label style="color:#888">┄ 누적원금</label><label class="loan-toggle"><input type="checkbox" id="chkShowLoan"> 신용 포함 총자산 선 표시</label></div>
   <div class="asset-chart-wrap"><canvas id="assetChart"></canvas></div>
   <h3 style="font-size:13px;color:#1F4E78;margin:16px 0 8px">📊 수익률 비교 (%, 벤치마크)</h3>
   <div class="bm-legend">
@@ -255,10 +256,11 @@ footer{text-align:center;margin-top:30px;color:#999;font-size:11px}
     <div class="hint" id="inStartCapHint"></div>
     <span style="font-size:10px;color:#60a5fa">첫 입력일 기준 투자 원금. 이후 입출금과 별도로 누적원금에 합산됨.</span>
   </div>
-  <p style="font-size:12px;color:#888;margin-bottom:12px">날짜별 총 투자자산 + 추가 입금/출금 입력. 누적원금·수익은 자동. 행 클릭→수정. 엔터=추가.</p>
+  <p style="font-size:12px;color:#888;margin-bottom:12px">날짜별 순자산(평가+예수금−신용) + 추가 입금/출금 입력. 신용은 부채로 따로 적어두는 칸이고 수익률 계산에는 안 들어감(빌린 돈이 수익으로 잡히지 않게). 누적원금·수익은 자동. 행 클릭→수정. 엔터=추가.</p>
   <div class="input-form" id="inputForm">
     <div><label>날짜</label><input type="date" id="inDate" max="9999-12-31"></div>
-    <div><label>총 투자자산 (원)</label><input type="text" id="inAsset" placeholder="130,421,300" inputmode="numeric"><div class="hint" id="inAssetHint"></div></div>
+    <div><label>순자산 (원, 신용 차감)</label><input type="text" id="inAsset" placeholder="130,421,300" inputmode="numeric"><div class="hint" id="inAssetHint"></div></div>
+    <div><label>신용 (원, 부채·선택)</label><input type="text" id="inLoan" placeholder="0" inputmode="numeric"><div class="hint" id="inLoanHint"></div></div>
     <div><label>입금 (원)</label><input type="text" id="inDepIn" placeholder="0" inputmode="numeric"><div class="hint" id="inDepInHint"></div></div>
     <div><label>출금 (원)</label><input type="text" id="inDepOut" placeholder="0" inputmode="numeric"><div class="hint" id="inDepOutHint"></div></div>
     <div style="display:flex;gap:4px"><button class="btn-blue" id="addBtn" onclick="addEntry()">추가</button><button class="btn-red" id="cancelBtn" onclick="cancelEdit()" style="display:none">취소</button></div>
@@ -268,7 +270,7 @@ footer{text-align:center;margin-top:30px;color:#999;font-size:11px}
     <div style="display:flex;gap:4px"><button class="btn-gray" onclick="exportCSV()">📥 CSV</button><label class="btn-gray" style="cursor:pointer">📤 가져오기<input type="file" accept=".csv" style="display:none" onchange="importCSV(event)"></label></div>
   </div>
   <div style="max-height:400px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px">
-    <div class="table-scroll"><table class="history-table"><thead><tr><th>날짜</th><th>투자자산</th><th style="color:#2563eb">입금</th><th style="color:#dc2626">출금</th><th>누적원금</th><th>수익금</th><th>수익률<br><span style="font-size:9px;font-weight:400;color:#999">(÷시작금액)</span></th><th></th></tr></thead><tbody id="historyBody"></tbody></table></div>
+    <div class="table-scroll"><table class="history-table"><thead><tr><th>날짜</th><th>순자산</th><th>신용</th><th style="color:#2563eb">입금</th><th style="color:#dc2626">출금</th><th>누적원금</th><th>수익금</th><th>수익률<br><span style="font-size:9px;font-weight:400;color:#999">(÷시작금액)</span></th><th></th></tr></thead><tbody id="historyBody"></tbody></table></div>
   </div>
 </div>
 
@@ -364,6 +366,10 @@ function loadTrendPrefs(){try{
   var stk=localStorage.getItem('pf_stk_chk');if(stk){var arr2=JSON.parse(stk);document.querySelectorAll('.stk-chk').forEach(function(c){c.checked=arr2.indexOf(c.value)>=0;});}
 }catch(x){}}
 loadTrendPrefs();
+// 신용 포함 총자산 선 표시 (보기만 바뀜. 수익률은 항상 순자산 기준)
+function showLoan(){var c=document.getElementById('chkShowLoan');return !!(c&&c.checked);}
+(function(){var c=document.getElementById('chkShowLoan');try{c.checked=localStorage.getItem('pf_show_loan')==='1';}catch(e){}
+  c.addEventListener('change',function(){try{localStorage.setItem('pf_show_loan',c.checked?'1':'0');}catch(e){}renderTrend();});})();
 // 탭
 document.querySelectorAll('.pf-tab').forEach(function(tab){tab.addEventListener('click',function(){document.querySelectorAll('.pf-tab').forEach(function(t){t.classList.remove('active');});document.querySelectorAll('.pf-panel').forEach(function(p){p.classList.remove('active');});tab.classList.add('active');document.getElementById('panel-'+tab.dataset.tab).classList.add('active');try{localStorage.setItem('pf_active_tab',tab.dataset.tab);}catch(e){}if(tab.dataset.tab==='trend')renderTrend();if(tab.dataset.tab==='dash')renderDashboard();});});
 try{var st=localStorage.getItem('pf_active_tab');if(st){var t=document.querySelector('.pf-tab[data-tab="'+st+'"]');if(t)t.click();}}catch(e){}
@@ -380,56 +386,59 @@ document.getElementById('inStartCap').addEventListener('input',function(){
 
 // 입력
 function numInput(id){document.getElementById(id).addEventListener('input',function(){var v=parseNum(this.value);if(v)this.value=fmt(v);var h=document.getElementById(id+'Hint');if(h)h.textContent=v?fmtKr(v)+'원':'';});}
-numInput('inAsset');numInput('inDepIn');numInput('inDepOut');
+numInput('inAsset');numInput('inLoan');numInput('inDepIn');numInput('inDepOut');
 document.getElementById('inDate').value=new Date().toISOString().slice(0,10);
 document.getElementById('inputForm').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();addEntry();}});
 // 빠른입력 numInput
 document.getElementById('qfDate').value=new Date().toISOString().slice(0,10);
-['qfAsset','qfDepIn','qfDepOut'].forEach(function(id){document.getElementById(id).addEventListener('input',function(){var v=parseNum(this.value);if(v)this.value=fmt(v);});});
+['qfAsset','qfLoan','qfDepIn','qfDepOut'].forEach(function(id){document.getElementById(id).addEventListener('input',function(){var v=parseNum(this.value);if(v)this.value=fmt(v);});});
 document.getElementById('quickForm').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();quickAdd();}});
 
 window.addEntry=function(){
   var d=document.getElementById('inDate').value,a=parseNum(document.getElementById('inAsset').value);
   var di=Math.abs(parseNum(document.getElementById('inDepIn').value)),dout=Math.abs(parseNum(document.getElementById('inDepOut').value));
-  if(!d){alert('날짜');return;}if(!a){alert('투자자산');return;}
+  var lo=Math.abs(parseNum(document.getElementById('inLoan').value));
+  if(!d){alert('날짜');return;}if(!a){alert('순자산');return;}
   if(editingDate)entries=entries.filter(function(e){return e.date!==editingDate;});
   entries=entries.filter(function(e){return e.date!==d;});
-  entries.push({date:d,asset:a,depIn:di,depOut:dout});
+  entries.push({date:d,asset:a,loan:lo,depIn:di,depOut:dout});
   entries.sort(function(a,b){return a.date.localeCompare(b.date);});
   cancelEdit();triggerSave();renderAll();
 };
 window.quickAdd=function(){
   var d=document.getElementById('qfDate').value,a=parseNum(document.getElementById('qfAsset').value);
   var di=Math.abs(parseNum(document.getElementById('qfDepIn').value)),dout=Math.abs(parseNum(document.getElementById('qfDepOut').value));
-  if(!d){alert('날짜');return;}if(!a){alert('투자자산');return;}
+  var lo=Math.abs(parseNum(document.getElementById('qfLoan').value));
+  if(!d){alert('날짜');return;}if(!a){alert('순자산');return;}
   entries=entries.filter(function(e){return e.date!==d;});
-  entries.push({date:d,asset:a,depIn:di,depOut:dout});
+  entries.push({date:d,asset:a,loan:lo,depIn:di,depOut:dout});
   entries.sort(function(a,b){return a.date.localeCompare(b.date);});
   triggerSave();renderAll();
-  document.getElementById('qfAsset').value='';document.getElementById('qfDepIn').value='';document.getElementById('qfDepOut').value='';
+  document.getElementById('qfAsset').value='';document.getElementById('qfLoan').value='';document.getElementById('qfDepIn').value='';document.getElementById('qfDepOut').value='';
   document.getElementById('qfDate').value=new Date().toISOString().slice(0,10);
 };
 window.editEntry=function(date){
   var e=entries.find(function(x){return x.date===date;});if(!e)return;editingDate=date;
   document.getElementById('inDate').value=e.date;
   document.getElementById('inAsset').value=fmt(e.asset);document.getElementById('inAssetHint').textContent=fmtKr(e.asset)+'원';
+  document.getElementById('inLoan').value=e.loan?fmt(e.loan):'';document.getElementById('inLoanHint').textContent=e.loan?fmtKr(e.loan)+'원':'';
   document.getElementById('inDepIn').value=fmt(e.depIn||0);document.getElementById('inDepInHint').textContent=fmtKr(e.depIn||0)+'원';
   document.getElementById('inDepOut').value=fmt(e.depOut||0);document.getElementById('inDepOutHint').textContent=fmtKr(e.depOut||0)+'원';
   document.getElementById('addBtn').textContent='수정';document.getElementById('cancelBtn').style.display='';
   // 입력탭으로 이동
   var tab=document.querySelector('.pf-tab[data-tab="input"]');if(tab)tab.click();
 };
-window.cancelEdit=function(){editingDate=null;document.getElementById('inDate').value=new Date().toISOString().slice(0,10);['inAsset','inDepIn','inDepOut'].forEach(function(id){document.getElementById(id).value='';var h=document.getElementById(id+'Hint');if(h)h.textContent='';});document.getElementById('addBtn').textContent='추가';document.getElementById('cancelBtn').style.display='none';};
+window.cancelEdit=function(){editingDate=null;document.getElementById('inDate').value=new Date().toISOString().slice(0,10);['inAsset','inLoan','inDepIn','inDepOut'].forEach(function(id){document.getElementById(id).value='';var h=document.getElementById(id+'Hint');if(h)h.textContent='';});document.getElementById('addBtn').textContent='추가';document.getElementById('cancelBtn').style.display='none';};
 window.delEntry=function(date,ev){ev.stopPropagation();if(!confirm(date+' 삭제?'))return;entries=entries.filter(function(e){return e.date!==date;});if(editingDate===date)cancelEdit();triggerSave();renderAll();};
 
 function renderInput(){
   var tb=document.getElementById('historyBody');document.getElementById('entryCnt').textContent=entries.length+'건';
-  if(!entries.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:#999;padding:16px">데이터 없음</td></tr>';return;}
+  if(!entries.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:#999;padding:16px">데이터 없음</td></tr>';return;}
   var html='';
   for(var i=entries.length-1;i>=0;i--){
     var e=entries[i],cum=getCumPrincipal(i),gain=e.asset-cum,rate=startCap>0?(gain/startCap*100):0;
     html+='<tr onclick="editEntry(\''+e.date+'\')">';
-    html+='<td>'+e.date+'</td><td>'+fmt(e.asset)+'</td>';
+    html+='<td>'+e.date+'</td><td>'+fmt(e.asset)+'</td><td>'+(e.loan?fmt(e.loan):'-')+'</td>';
     html+='<td style="color:#2563eb">'+(e.depIn?'+'+fmt(e.depIn):'-')+'</td>';
     html+='<td style="color:#dc2626">'+(e.depOut?'-'+fmt(e.depOut):'-')+'</td>';
     html+='<td>'+fmt(cum)+'</td>';
@@ -441,8 +450,8 @@ function renderInput(){
 }
 
 // CSV
-window.exportCSV=function(){if(!entries.length)return;var c='날짜,투자자산,입금,출금\n';entries.forEach(function(e){c+=e.date+','+e.asset+','+(e.depIn||0)+','+(e.depOut||0)+'\n';});c+='# 시작금액,'+startCap+'\n';var b=new Blob(['\uFEFF'+c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='portfolio_history.csv';a.click();};
-window.importCSV=function(ev){var f=ev.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){var l=e.target.result.split('\n'),cnt=0;for(var i=1;i<l.length;i++){if(l[i].startsWith('# 시작금액')){startCap=parseNum(l[i].split(',')[1]);document.getElementById('inStartCap').value=fmt(startCap);continue;}var c=l[i].split(',');if(c.length<3)continue;var d=c[0].trim(),a=parseNum(c[1]),di=parseNum(c[2]),dout=c[3]?parseNum(c[3]):0;if(!d||!a)continue;entries=entries.filter(function(x){return x.date!==d;});entries.push({date:d,asset:a,depIn:Math.abs(di),depOut:Math.abs(dout)});cnt++;}entries.sort(function(a,b){return a.date.localeCompare(b.date);});triggerSave();renderAll();alert(cnt+'건');};r.readAsText(f);ev.target.value='';};
+window.exportCSV=function(){if(!entries.length)return;var c='날짜,순자산,입금,출금,신용\n';entries.forEach(function(e){c+=e.date+','+e.asset+','+(e.depIn||0)+','+(e.depOut||0)+','+(e.loan||0)+'\n';});c+='# 시작금액,'+startCap+'\n';var b=new Blob(['\uFEFF'+c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='portfolio_history.csv';a.click();};
+window.importCSV=function(ev){var f=ev.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){var l=e.target.result.split('\n'),cnt=0;for(var i=1;i<l.length;i++){if(l[i].startsWith('# 시작금액')){startCap=parseNum(l[i].split(',')[1]);document.getElementById('inStartCap').value=fmt(startCap);continue;}var c=l[i].split(',');if(c.length<3)continue;var d=c[0].trim(),a=parseNum(c[1]),di=parseNum(c[2]),dout=c[3]?parseNum(c[3]):0,lo=c[4]?Math.abs(parseNum(c[4])):0;if(!d||!a)continue;entries=entries.filter(function(x){return x.date!==d;});entries.push({date:d,asset:a,loan:lo,depIn:Math.abs(di),depOut:Math.abs(dout)});cnt++;}entries.sort(function(a,b){return a.date.localeCompare(b.date);});triggerSave();renderAll();alert(cnt+'건');};r.readAsText(f);ev.target.value='';};
 
 // ─── 수익률 ───
 function calcReturns(){
@@ -502,7 +511,7 @@ function renderDashboard(){
   // 히어로
   document.getElementById('dh_asset').textContent=fmtKr(last.asset)+'원';
   document.getElementById('dh_gain').innerHTML='<span style="color:'+(g>=0?'rgba(255,255,255,.95)':'#fca5a5')+'">'+(g>=0?'▲ +':'▼ ')+fmtKr(Math.abs(g))+'원 ('+(g>=0?'+':'')+r.toFixed(2)+'%)</span>';
-  document.getElementById('dh_date').textContent='기준 '+last.date+' · 누적원금 '+fmtKr(cumL)+'원';
+  document.getElementById('dh_date').textContent='기준 '+last.date+' · 누적원금 '+fmtKr(cumL)+'원'+(last.loan>0?' · 신용 '+fmtKr(last.loan)+'원 포함 총자산 '+fmtKr(last.asset+last.loan)+'원 (레버리지 '+((last.asset+last.loan)/last.asset).toFixed(2)+'배)':'');
   // 지표
   var ret=calcReturns();
   if(ret){
@@ -558,7 +567,8 @@ function renderTrend(){
   var cumL=getCumPrincipal(latIdx),g=latest.asset-cumL,r=startCap>0?(g/startCap*100):0;
   var first=filtered[0],pg=latest.asset-first.asset;
   document.getElementById('assetSummary').innerHTML=
-    '<div class="asset-card"><div class="label">투자 자산</div><div class="value">'+fmtKr(latest.asset)+'원</div><div class="sub '+(g>=0?'up':'down')+'">'+(g>=0?'▲':'▼')+' '+fmtKr(Math.abs(g))+'원</div></div>'+
+    '<div class="asset-card"><div class="label">순자산</div><div class="value">'+fmtKr(latest.asset)+'원</div><div class="sub '+(g>=0?'up':'down')+'">'+(g>=0?'▲':'▼')+' '+fmtKr(Math.abs(g))+'원</div></div>'+
+    (showLoan()&&latest.loan>0?'<div class="asset-card"><div class="label">신용 포함 총자산</div><div class="value">'+fmtKr(latest.asset+latest.loan)+'원</div><div class="sub">신용 '+fmtKr(latest.loan)+'원 · '+((latest.asset+latest.loan)/latest.asset).toFixed(2)+'배</div></div>':'')+
     '<div class="asset-card"><div class="label">누적 원금</div><div class="value">'+fmtKr(cumL)+'원</div></div>'+
     '<div class="asset-card"><div class="label">총 수익률</div><div class="value" style="color:'+colVal(g)+'">'+(g>=0?'+':'')+r.toFixed(2)+'%</div></div>'+
     '<div class="asset-card"><div class="label">기간 수익</div><div class="value" style="color:'+colVal(pg)+'">'+(pg>=0?'+':'')+fmtKr(pg)+'원</div></div>';
@@ -569,7 +579,7 @@ function renderTrend(){
   assetCI=new Chart(document.getElementById('assetChart'),{type:'line',data:{labels:labels,datasets:[
     {label:'내 자산',data:aD,borderColor:'#1F4E78',backgroundColor:'rgba(31,78,120,0.08)',fill:true,borderWidth:2.5,pointRadius:filtered.length>60?0:3,tension:0.3},
     {label:'누적원금',data:cD,borderColor:'#999',borderDash:[6,4],borderWidth:1.5,pointRadius:0,fill:false,tension:0.1}
-  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom',labels:{font:{size:10},usePointStyle:true,pointStyle:'line'}},tooltip:{callbacks:{label:function(ctx){return ctx.parsed.y==null?null:ctx.dataset.label+': '+fmt(ctx.parsed.y)+'원';}}}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:9}},grid:{display:false}},y:{ticks:{callback:function(v){return fmtKr(v);},font:{size:10}},grid:{color:'rgba(0,0,0,.06)'}}}}});
+  ].concat(showLoan()?[{label:'신용 포함 총자산',data:filtered.map(function(e){return e.loan==null?null:e.asset+e.loan;}),borderColor:'#f59e0b',borderDash:[3,3],borderWidth:2,pointRadius:filtered.length>60?0:2,fill:false,tension:0.3,spanGaps:false}]:[])},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom',labels:{font:{size:10},usePointStyle:true,pointStyle:'line'}},tooltip:{callbacks:{label:function(ctx){return ctx.parsed.y==null?null:ctx.dataset.label+': '+fmt(ctx.parsed.y)+'원';}}}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:9}},grid:{display:false}},y:{ticks:{callback:function(v){return fmtKr(v);},font:{size:10}},grid:{color:'rgba(0,0,0,.06)'}}}}});
   var bmC={KS11:'#dc2626',KQ11:'#f59e0b',GSPC:'#2563eb',IXIC:'#10b981'},bmN={KS11:'코스피',KQ11:'코스닥',GSPC:'S&P 500',IXIC:'나스닥'};
   var bmDS=[];
   var myPct=filtered.map(function(e){var c=getCumPrincipal(entries.indexOf(e));var g2=e.asset-c;return startCap>0?(g2/startCap*100):0;});
@@ -676,16 +686,17 @@ loadPortfolio();loadMarket();
     var d=document.getElementById('qfDate'),a=document.getElementById('qfAsset'),form=document.getElementById('quickForm');
     if(!d||!a||!form)return;
     d.value=p.date;a.value=fmt(p.asset);
+    var lo=document.getElementById('qfLoan');if(lo)lo.value=p.loan>0?fmt(p.loan):'';
     a.style.outline='2px solid #2563eb';
     var note=document.createElement('div');
     note.style.cssText='font-size:12px;color:#2563eb;font-weight:600;margin-top:8px';
-    note.textContent='↑ 평가 페이지에서 가져온 순자산 '+fmt(p.asset)+'원 ('+p.date+'). 입출금이 있었으면 입력하고 [추가]를 눌러야 기록됩니다.';
+    note.textContent='↑ 평가 페이지에서 가져온 순자산 '+fmt(p.asset)+'원'+(p.loan>0?' · 신용 '+fmt(p.loan)+'원':'')+' ('+p.date+'). 입출금이 있었으면 입력하고 [추가]를 눌러야 기록됩니다.';
     form.parentNode.appendChild(note);
     try{form.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}
   },400);});
 })();
 </script>
-<script src="/sf-slots.js?v=3"></script>
-<script src="/common.js?v=9"></script>
+<script src="/sf-slots.js?v=4"></script>
+<script src="/common.js?v=10"></script>
 </body>
 </html>

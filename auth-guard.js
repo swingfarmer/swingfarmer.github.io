@@ -4,10 +4,9 @@
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
 
-const ADMIN_UIDS = [
-  "1JrHgD2bpTRjrS2jw7MbpHciBph1",
-  "Ydd8v6LCN2TPjkqKD4DejLSWwaL2"
-];
+/* 관리자 UID는 common.js 의 window.SF_ADMIN_UIDS 한 곳에서 관리.
+   이 파일은 module이라 일반 script인 common.js가 실행된 뒤에 돈다. 없으면 아무도 통과 못 함(잠금 쪽으로 실패). */
+function isAdmin(uid){ return (window.SF_ADMIN_UIDS || []).includes(uid); }
 const firebaseConfig = {
   apiKey: "AIzaSyB-Ynu-KdYL4sqPers2XnPt5dEEsKsXvMY",
   authDomain: "swingfarmer-board01.firebaseapp.com",
@@ -101,7 +100,7 @@ function removeLogoutBtn() {
 
 /* ── Auth 상태 감시 ── */
 onAuthStateChanged(auth, (user) => {
-  if (user && ADMIN_UIDS.includes(user.uid)) {
+  if (user && isAdmin(user.uid)) {
     _rejected = null;
     const wall = document.getElementById("sf-auth-wall");
     if (wall) wall.remove();
@@ -111,7 +110,7 @@ onAuthStateChanged(auth, (user) => {
   } else {
     document.body.classList.remove("sf-authed");
     removeLogoutBtn();
-    if (user && !ADMIN_UIDS.includes(user.uid)) {
+    if (user && !isAdmin(user.uid)) {
       _rejected = { email: user.email, uid: user.uid };
       signOut(auth);
       return;
