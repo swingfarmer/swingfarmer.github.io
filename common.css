@@ -490,6 +490,40 @@ tr.current td { font-weight: 700; color: #b45309; }
 body.sf-dark { --sf-up: #f87171; --sf-down: #60a5fa; }
 
 /* ═══════════════════════════════════════════════════════════════
+   다크 표준 오버라이드 (078에서 공통으로 흡수)
+   예전에는 라이트 기본 페이지 89개에 똑같은 블록이 복붙돼 있었음.
+   새 페이지는 이 블록을 페이지에 넣지 말 것 — common.css만 포함하면 적용됨.
+   페이지에서 var(--p-surface) 등 --p-* 변수는 그대로 쓸 수 있음.
+   <body class="sf-no-pblock"> 인 페이지(자체 테마를 쓰는 메인·보고서 등)는 이 블록에서 제외됨.
+   ═══════════════════════════════════════════════════════════════ */
+body.sf-dark{
+  --p-brand:#60a5fa;--p-surface:#1a1d27;--p-surface2:#222532;--p-surface3:#2a2d3a;
+  --p-border:#2a2d3a;--p-border2:#475569;--p-border3:#334155;
+  --p-text:#e4e4e7;--p-text2:#a1a1aa;--p-text3:#a1a1aa;--p-text4:#71717a;
+  --p-green:#22c55e;--p-red:#f87171;--p-blue:#60a5fa;
+  --p-input-bg:#0f1117;--p-input-bd:#475569;--p-input-c:#fff;
+  --p-tab-bg:#1a1d27;--p-tab-active:#222532}
+body.sf-dark:where(:not(.sf-no-pblock)) .panel,body.sf-dark:where(:not(.sf-no-pblock)) .card-body,body.sf-dark:where(:not(.sf-no-pblock)) .calc-section,
+body.sf-dark:where(:not(.sf-no-pblock)) .result-box,body.sf-dark:where(:not(.sf-no-pblock)) .section,body.sf-dark:where(:not(.sf-no-pblock)) .tab-content,
+body.sf-dark:where(:not(.sf-no-pblock)) .manual,body.sf-dark:where(:not(.sf-no-pblock)) .manual-section{
+  background:var(--p-surface2)!important;border-color:var(--p-border)!important}
+body.sf-dark:where(:not(.sf-no-pblock)) input,body.sf-dark:where(:not(.sf-no-pblock)) select,body.sf-dark:where(:not(.sf-no-pblock)) textarea{
+  background:var(--p-input-bg)!important;border-color:var(--p-input-bd)!important;color:var(--p-input-c)!important}
+body.sf-dark:where(:not(.sf-no-pblock)) table th{background:var(--p-surface3)!important;color:var(--p-text2)!important}
+body.sf-dark:where(:not(.sf-no-pblock)) table td{border-color:var(--p-border3)!important}
+body.sf-dark:where(:not(.sf-no-pblock)) .gauge-bar-bg,body.sf-dark:where(:not(.sf-no-pblock)) .gauge-track{background:var(--p-surface3)!important}
+body.sf-dark:where(:not(.sf-no-pblock)) .stab{background:var(--p-tab-bg)!important;border-color:var(--p-border)!important;color:var(--p-text3)!important}
+body.sf-dark:where(:not(.sf-no-pblock)) .stab.active{background:var(--p-tab-active)!important;color:var(--p-brand)!important}
+body.sf-dark:where(:not(.sf-no-pblock)) .tab-body{background:var(--p-tab-active)!important;border-color:var(--p-border)!important}
+body.sf-dark:where(:not(.sf-no-pblock)) .bracket-box{background:var(--p-surface2)!important;border-color:var(--p-border)!important}
+body.sf-dark:where(:not(.sf-no-pblock)) .br-item{background:var(--p-surface3)!important;color:var(--p-text3)!important}
+body.sf-dark:where(:not(.sf-no-pblock)) .alert-safe{background:rgba(34,197,94,.1)!important;border-color:rgba(34,197,94,.3)!important;color:#4ade80!important}
+body.sf-dark:where(:not(.sf-no-pblock)) .alert-warn{background:rgba(251,191,36,.1)!important;border-color:rgba(251,191,36,.3)!important;color:#fbbf24!important}
+body.sf-dark:where(:not(.sf-no-pblock)) .alert-danger{background:rgba(239,68,68,.1)!important;border-color:rgba(239,68,68,.3)!important;color:#f87171!important}
+body.sf-dark:where(:not(.sf-no-pblock)) .alert-critical{background:rgba(69,10,10,.9)!important;color:#fca5a5!important}
+
+
+/* ═══════════════════════════════════════════════════════════════
    다크모드 보정 (078)
    1) 공통 클래스 중 다크 색이 빠져 있던 것
    2) style 속성에 직접 박힌 밝은 배경·어두운 글씨·밝은 테두리

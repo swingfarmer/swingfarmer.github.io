@@ -673,6 +673,17 @@ window.sfApiFetch = function(url, opts) {
     // 넘치는 표 가로 스크롤
     setupTableOverflow();
 
+    // 아이폰·아이패드: 입력칸(16px 미만 글씨)을 누르면 화면이 자동 확대되는 것 방지.
+    // 손가락 두 개로 확대하는 건 iOS에서 계속 됨. 안드로이드·PC는 건드리지 않음.
+    try {
+      var ua = navigator.userAgent || '';
+      var isIOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+      if (isIOS) {
+        var vp = document.querySelector('meta[name="viewport"]');
+        if (vp && !/maximum-scale/.test(vp.content)) vp.content = vp.content + ', maximum-scale=1';
+      }
+    } catch (e) {}
+
     // 다크모드 토글
     var darkBtn = document.getElementById('sf-dark-toggle');
     darkBtn.addEventListener('click', function () {
