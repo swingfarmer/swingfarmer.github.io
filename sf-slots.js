@@ -596,6 +596,19 @@ document.addEventListener('DOMContentLoaded', function(){
   fab.addEventListener('mouseleave', function(){ fab.style.transform='scale(1)'; });
   fab.addEventListener('click', function(){ window._sfSlots.open(); });
   document.body.appendChild(fab);
+
+  // 모바일: 맨 아래까지 내렸을 때 마지막 내용이 FAB에 가리지 않도록 빈 공간 추가 (PC는 표시 안 함)
+  // FAB 아래 끝 80px + 높이 48px + 여유 12px = 140px
+  if(!document.getElementById('sfFabSpacerCSS')){
+    var sc = document.createElement('style');
+    sc.id = 'sfFabSpacerCSS';
+    sc.textContent = '#sfFabSpacer{display:none}@media(max-width:599px){#sfFabSpacer{display:block;height:140px;height:calc(140px + env(safe-area-inset-bottom,0px))}}';
+    document.head.appendChild(sc);
+  }
+  var sp = document.createElement('div');
+  sp.id = 'sfFabSpacer';
+  sp.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(sp);
 });
 
 })();
