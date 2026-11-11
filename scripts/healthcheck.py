@@ -46,6 +46,8 @@ TARGETS = [
     ("data/krx/sector_change.json",        "KRX 업종등락",      "weekday", 0),
     ("data/krx/marketcap_top.json",        "KRX 시총순위",      "weekday", 0),
     ("data/krx/new_high_low.json",         "52주 신고가/신저가", "weekday", 0),
+    # 국내 ETF (082)
+    ("data/kr/etf/latest.json",           "국내 ETF",          "weekday", 0),
     # 선물
     ("data/futures_investor.json",         "선물 투자자별",     "weekday", 0),
     # 시장지표
