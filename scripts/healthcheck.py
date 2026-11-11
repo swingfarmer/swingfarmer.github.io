@@ -48,6 +48,7 @@ TARGETS = [
     ("data/krx/new_high_low.json",         "52주 신고가/신저가", "weekday", 0),
     # 국내 ETF (082)
     ("data/kr/etf/latest.json",           "국내 ETF",          "weekday", 0),
+    ("data/kr/etf/holdings.json",         "국내 ETF 구성종목", "weekly",  9),
     # 선물
     ("data/futures_investor.json",         "선물 투자자별",     "weekday", 0),
     # 시장지표

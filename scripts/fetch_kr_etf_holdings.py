@@ -8,8 +8,9 @@ pykrx get_etf_portfolio_deposit_file(티커, 날짜) 로 ETF별 구성종목을 
 출력
   data/kr/etf/holdings.json
   {date, updated, count, top_n,
-   h: {ETF코드: [전체구성종목수, [[종목코드, 종목명, 비중%], ...상위 TOP_N]]}}
-  ※ 비중이 비어 있는 ETF는 금액(원) 비율로 계산해서 채움 (w_src="amt" 표시)
+   h: {ETF코드: [전체구성종목수, [[종목코드, 종목명, 비중%], ...]]}}
+  - 국내: 비중 상위 TOP_N. 비중 칸이 비면 금액(원) 비율로 계산
+  - 해외: KRX가 비중·금액을 안 줌(계약수만). 구성 30개 이하면 이름 전체(비중 null), 초과면 빈 목록
 
 사용법
   python3 scripts/fetch_kr_etf_holdings.py --limit 20   # 테스트: 20개만, 저장 안 함, 시간·모양 출력
@@ -42,13 +43,19 @@ def num(v):
         return None
 
 
+NOW_MAX = 30   # 비중 없는(해외) ETF는 구성 이 개수 이하일 때만 이름 전체 저장
+
+
 def parse(df):
-    """DataFrame → (전체수, [[코드,이름,비중],...], 비중출처)"""
+    """DataFrame → (전체수, [[코드,이름,비중],...], 비중출처)
+    비중출처: 'w' 비중 칸 / 'amt' 금액 비율 / 'names' 비중 없음·이름만 / None 저장 안 함
+    해외 종목은 KRX가 비중·금액을 0으로 줌(계약수만 있음) → 비중 계산 불가"""
     if df is None or len(df) == 0:
         return 0, [], None
     rows = []
     for code, r in df.iterrows():
-        rows.append([str(code), str(r.get('구성종목명', '') or ''), num(r.get('비중')), num(r.get('금액'))])
+        rows.append([str(code), str(r.get('구성종목명', '') or '').strip(), num(r.get('비중')), num(r.get('금액'))])
+    n = len(rows)
     src = 'w'
     if not any(x[2] for x in rows):          # 비중이 전부 비었으면 금액 비율
         tot = sum(x[3] or 0 for x in rows)
@@ -57,10 +64,14 @@ def parse(df):
                 x[2] = (x[3] or 0) / tot * 100
             src = 'amt'
         else:
-            src = None
+            src = 'names' if n <= NOW_MAX else None
+    if src == 'names':
+        return n, [[x[0], x[1], None] for x in rows], src
+    if src is None:
+        return n, [], None
     rows.sort(key=lambda x: -(x[2] or 0))
-    top = [[x[0], x[1], round(x[2], 2) if x[2] is not None else None] for x in rows[:TOP_N]]
-    return len(rows), top, src
+    top = [[x[0], x[1], round(x[2], 2)] for x in rows[:TOP_N] if (x[2] or 0) > 0]
+    return n, top, src
 
 
 def main():
@@ -79,7 +90,7 @@ def main():
     log(f'기준일 {day} / 대상 {len(etfs)}개' + (' (테스트, 저장 안 함)' if limit else ''))
 
     from pykrx import stock
-    out, fail, amt_cnt, empty = {}, [], 0, 0
+    out, fail, amt_cnt, empty, names_cnt, none_cnt = {}, [], 0, 0, 0, 0
     t0 = time.time()
     for i, (code, name, aum) in enumerate(etfs, 1):
         try:
@@ -89,9 +100,13 @@ def main():
                 empty += 1
             if src == 'amt':
                 amt_cnt += 1
+            elif src == 'names':
+                names_cnt += 1
+            elif src is None and n:
+                none_cnt += 1
             out[code] = [n, top]
             if limit:
-                t = ' / '.join(f'{x[1][:10]} {x[2]}%' for x in top[:3])
+                t = ' / '.join(f'{x[1][:10]} {x[2]}%' if x[2] is not None else x[1][:12] for x in top[:3])
                 log(f'  {code} {name[:18]} 구성 {n}개 [{src}] {t}')
         except Exception as e:
             fail.append(code)
@@ -102,7 +117,8 @@ def main():
         time.sleep(SLEEP)
 
     el = time.time() - t0
-    log(f'완료 {len(out)}개 / 실패 {len(fail)} / 구성 0개 {empty} / 금액비율로 계산 {amt_cnt} / {el/60:.1f}분')
+    log(f'완료 {len(out)}개 / 실패 {len(fail)} / 구성 0개 {empty} / 금액비율 {amt_cnt} / '
+        f'해외 이름만 {names_cnt} / 해외 개수만 {none_cnt} / {el/60:.1f}분')
     if limit:
         log(f'  → 전체 1,190개 예상 약 {el/len(etfs)*1190/60:.0f}분')
         return

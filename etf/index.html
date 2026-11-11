@@ -20,11 +20,15 @@ body.sf-dark .etf-table td{border-bottom-color:#2c333f!important}
 body.sf-dark .tag{border-color:#2c333f!important}
 body.sf-dark .grp-btn{color:#85b5e0!important}
 body.sf-dark .more-btn{border-color:#2c333f!important;background-color:#1e242e!important;color:#cccccc!important}
+body.sf-dark .hold-btn{border-color:#2c333f!important;color:#cccccc!important}
+body.sf-dark .hold-btn.on{color:#85b5e0!important}
+body.sf-dark .find-head b{color:#85b5e0!important}
 body.sf-dark .chip:hover{border-color:#2d6da3!important}
 body.sf-dark .chip.on{background:var(--sf-brand)!important;border-color:#1F4E78!important;color:#fff!important}
 body.sf-dark .view-bar .vbtn.on{background:var(--sf-brand)!important;border-color:#1F4E78!important;color:#fff!important}
 body.sf-dark .tag.lev{border-color:#f2b8b8!important}
 body.sf-dark .tag.inv{border-color:#b9cdf5!important}
+body.sf-dark .hold-btn.on{border-color:#1F4E78!important}
 </style>
 <style>
 :root { --sf-max-w: 1200px; }
@@ -88,6 +92,17 @@ body.sf-dark .tag.inv{border-color:#b9cdf5!important}
 .etf-table tr.click { cursor:pointer; }
 .etf-table tr.click:hover td { background:color-mix(in srgb, var(--sf-brand) 5%, var(--sf-surface)); }
 
+.hold-btn { font-size:10.5px; border:1px solid var(--sf-border); color:var(--sf-text-sub); background:none; border-radius:9px; padding:0 6px; margin-left:4px; cursor:pointer; }
+.hold-btn.on { border-color:var(--sf-brand); color:var(--sf-brand); }
+.etf-table tr.hold td { white-space:normal; text-align:left; padding:8px 10px 12px; background:color-mix(in srgb, var(--sf-brand) 4%, var(--sf-surface)); }
+.hl-list { display:flex; flex-wrap:wrap; gap:4px 6px; }
+.hl-item { font-size:11.5px; border:1px solid var(--sf-border); border-radius:4px; padding:1px 6px; background:var(--sf-surface); }
+.hl-item b { font-weight:600; margin-left:3px; }
+.hl-meta { font-size:11px; color:var(--sf-text-dim); margin-top:5px; }
+#findBar input[type=search] { width:100%; max-width:420px; padding:7px 10px; font-size:14px; }
+#findBar .chips { margin-top:8px; }
+.find-head { font-size:13px; margin:2px 0 10px; }
+.find-head b { color:var(--sf-brand); }
 .empty { text-align:center; color:var(--sf-text-dim); padding:30px 0; font-size:13px; }
 .info-box p { margin:4px 0; }
 
@@ -96,6 +111,8 @@ body.sf-dark .etf-table th.hl, body.sf-dark .etf-table td.hl { background:rgba(1
 body.sf-dark .etf-table tr.sub td { background:rgba(255,255,255,.03)!important; }
 body.sf-dark .etf-table tr.click:hover td { background:rgba(133,181,224,.08)!important; }
 body.sf-dark .star { color:#4b5563!important; background:none!important; }
+body.sf-dark .etf-table tr.hold td { background:rgba(133,181,224,.06)!important; }
+body.sf-dark .hl-item { background:#1e242e!important; border-color:#2c333f!important; }
 body.sf-dark .star.on { color:#e8a317!important; }
 
 @media (max-width:599px) {
@@ -141,7 +158,14 @@ body.sf-dark .star.on { color:#e8a317!important; }
 <div class="view-bar">
   <button class="vbtn" data-v="table">📋 종목 표</button>
   <button class="vbtn" data-v="theme">🧭 테마 요약</button>
+  <button class="vbtn" data-v="find">🔎 종목으로 찾기</button>
   <span class="cnt" id="cnt"></span>
+</div>
+
+<div class="panel etf-box" id="findBar" hidden>
+  <input type="search" id="fq" placeholder="종목명 또는 코드 (예: 삼성전자, 000720, 엔비디아)">
+  <div class="chips" id="fCands"></div>
+  <div class="hl-meta">ETF마다 비중 상위 10종목 안에 든 경우만 잡힘. 해외 종목은 KRX가 비중을 안 줘서 구성 30개 이하 테마형 ETF만 포함 여부로 표시(비중 빈칸).</div>
 </div>
 
 <div class="panel etf-box" id="out"><div class="empty">불러오는 중…</div></div>
@@ -152,6 +176,7 @@ body.sf-dark .star.on { color:#e8a317!important; }
   <p><strong>순자산:</strong> 네이버 시가총액(억원)을 순자산 대용으로 씀. 괴리율 = 종가 ÷ NAV − 1.</p>
   <p><strong>자금유입(추정):</strong> 오늘 시총 − 어제 시총 × (오늘 종가 ÷ 어제 종가). 가격 변화분을 빼고 남은 설정·환매 금액. 첫 수집 다음 날부터 하루씩 쌓이고 최근 20거래일 보관. 좌수 반영이 하루 늦을 수 있어 하루 단위보다 5일·20일 합으로 볼 것.</p>
   <p><strong>분류:</strong> 대분류는 네이버 분류 그대로. 지역·테마·레버리지/커버드콜 표시는 이름 키워드로 자동 판단이라 틀린 게 있을 수 있음. 같은 상품 묶기 = 운용사 이름을 뗀 나머지 이름이 같은 ETF.</p>
+  <p><strong>구성종목:</strong> KRX PDF, 주 1회(토) 수집. 국내는 비중 상위 10종목. 해외 종목은 KRX가 비중을 주지 않아(주식 수만 있음) 구성 30개 이하 ETF만 이름 목록, 그보다 큰 지수형(S&amp;P500 등)은 구성 개수만.</p>
   <p><strong>관심(★):</strong> 별 누른 목록과 필터는 이 브라우저에 자동 저장. 폰과 맞추려면 💾 저장 버튼으로 슬롯 저장.</p>
 </div>
 
@@ -216,12 +241,13 @@ function classify(full, tab){
 // ── 상태 ──
 var LS = 'sf_etf_state_v1';
 var S = { tab:'all', reg:'all', theme:'all', per:'m1', aum:'0', brand:'', noLev:false, noInv:false, noCC:false,
-          group:false, q:'', view:'table', sort:'aum', dir:-1, stars:[] };
+          group:false, q:'', view:'table', sort:'aum', dir:-1, stars:[], fq:'', fsel:'', fsort:'w' };
 try { var sv = JSON.parse(localStorage.getItem(LS)||'null'); if (sv) for (var k in sv) if (k in S) S[k]=sv[k]; } catch(e){}
 var _canSave = false;
 function save(){ if(!_canSave) return; try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e){} }
 
-var D = null, ROWS = [], TABS = {}, FLOW = null, LIMIT = 300, openGroups = {};
+var D = null, ROWS = [], TABS = {}, FLOW = null, LIMIT = 300, openGroups = {}, openHold = {}, BYCODE = {};
+var H = null, HSTATE = 0, IDX = null;   // 구성종목: 0 안 불러옴 / 1 불러오는 중 / 2 완료 / 3 없음
 
 // ── sf-slots ──
 window.CALC_KEY = 'kr_etf';
@@ -283,6 +309,7 @@ function prepare(){
       gkey: rest.replace(/\(합성\)/g,'').replace(/\s+/g,'').toUpperCase(),
       lev:RE_LEV.test(rest), inv:RE_INV.test(rest), cc:RE_CC.test(rest), act:RE_ACT.test(rest), h:RE_H.test(rest) };
     o.f1 = flowSum(o.code,1); o.f5 = flowSum(o.code,5); o.f20 = flowSum(o.code,20);
+    BYCODE[o.code] = o;
     return o;
   });
   var sel = document.getElementById('oBrand');
@@ -378,6 +405,7 @@ function rowHtml(o, cls, grpN, gk){
       case 'star': h += '<td class="l"><button class="star'+(on?' on':'')+'" data-star="'+o.code+'" title="관심">★</button></td>'; break;
       case 'name': h += '<td class="l nm"><b>'+esc(o.name)+'</b><span class="code">'+o.code+'</span>'+tags(o)+
                         (grpN>1?'<button class="grp-btn" data-grp="'+esc(gk)+'">'+(openGroups[gk]?'접기':'+'+(grpN-1)+'개')+'</button>':'')+
+                        '<button class="hold-btn'+(openHold[o.code]?' on':'')+'" data-hold="'+o.code+'">구성</button>'+
                         '<div class="th2">'+esc(o.theme)+' · '+esc(o.region)+'</div></td>'; break;
       case 'close': h += '<td>'+fmtPrice(v)+'</td>'; break;
       case 'f5': case 'f20': h += '<td class="'+hl.trim()+'">'+fmtFlow(v)+'</td>'; break;
@@ -386,7 +414,9 @@ function rowHtml(o, cls, grpN, gk){
       default: h += '<td class="'+hl.trim()+'">'+fmtPct(v)+'</td>';
     }
   });
-  return h + '</tr>';
+  h += '</tr>';
+  if (openHold[o.code]) h += holdRow(o);
+  return h;
 }
 function headHtml(){
   var h = '<thead><tr>';
@@ -466,14 +496,94 @@ function renderTheme(list){
   return arr.length;
 }
 
+// ── 구성종목 ──
+function loadHold(){
+  if (HSTATE) return;
+  HSTATE = 1;
+  fetch('/data/kr/etf/holdings.json?'+v).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .then(function(j){ H = j; HSTATE = 2; render(); })
+    .catch(function(){ HSTATE = 3; render(); });
+}
+function holdRow(o){
+  var h = '<tr class="hold"><td></td><td colspan="'+(COLS.length-1)+'">';
+  if (HSTATE<2) { loadHold(); return h+'<span class="mu">'+(HSTATE===3?'구성종목 데이터 없음 (토요일 수집 후 생김)':'불러오는 중…')+'</span></td></tr>'; }
+  var e = H.h[o.code];
+  if (!e) return h+'<span class="mu">구성종목 정보 없음</span></td></tr>';
+  var n = e[0], list = e[1];
+  if (!list.length) return h+'<span class="mu">구성 '+n+'개 · 해외 지수형이라 KRX가 비중을 주지 않음</span></td></tr>';
+  h += '<div class="hl-list">';
+  list.forEach(function(x){ h += '<span class="hl-item">'+esc(x[1])+(x[2]!=null?'<b>'+x[2].toFixed(1)+'%</b>':'')+'</span>'; });
+  h += '</div><div class="hl-meta">구성 '+n+'개';
+  if (list[0][2]!=null) {
+    var sum = list.reduce(function(a,x){ return a+(x[2]||0); },0);
+    h += ' · 상위 '+list.length+'개 합 '+sum.toFixed(1)+'%';
+  } else h += ' · 해외 종목이라 비중 없음';
+  return h + ' · 기준 '+esc(H.date)+'</div></td></tr>';
+}
+function buildIdx(){
+  IDX = {};
+  Object.keys(H.h).forEach(function(etf){
+    H.h[etf][1].forEach(function(x){
+      var k = x[1]; if (!k) return;
+      (IDX[k] || (IDX[k] = {code:x[0], list:[]})).list.push([etf, x[2]]);
+    });
+  });
+}
+function renderFind(list){
+  var out = document.getElementById('out');
+  if (HSTATE<2) { loadHold(); out.innerHTML = '<div class="empty">'+(HSTATE===3?'구성종목 데이터 없음 (토요일 수집 후 생김)':'구성종목 불러오는 중…')+'</div>'; document.getElementById('fCands').innerHTML=''; return 0; }
+  if (!IDX) buildIdx();
+  var q = (S.fq||'').toUpperCase().replace(/\s+/g,'');
+  var cands = [];
+  if (q) Object.keys(IDX).forEach(function(k){
+    var kk = k.toUpperCase().replace(/\s+/g,'');
+    if (kk.indexOf(q)>=0 || IDX[k].code===q) cands.push(k);
+  });
+  cands.sort(function(a,b){
+    var ea = a.toUpperCase().replace(/\s+/g,'')===q ? 1:0, eb = b.toUpperCase().replace(/\s+/g,'')===q ? 1:0;
+    return (eb-ea) || (IDX[b].list.length - IDX[a].list.length);
+  });
+  var sel = cands.indexOf(S.fsel)>=0 ? S.fsel : (cands[0]||'');
+  document.getElementById('fCands').innerHTML = cands.slice(0,24).map(function(k){
+    return '<button class="chip'+(k===sel?' on':'')+'" data-fsel="'+esc(k)+'">'+esc(k)+'<span class="n">'+IDX[k].list.length+'</span></button>';
+  }).join('') + (cands.length>24?'<span class="n mu">외 '+(cands.length-24)+'개 — 더 정확히 입력</span>':'');
+  if (!q) { out.innerHTML = '<div class="empty">종목명이나 코드를 입력하면 그 종목을 담은 ETF가 나옴.</div>'; return 0; }
+  if (!sel) { out.innerHTML = '<div class="empty">"'+esc(S.fq)+'" 담은 ETF 없음 (비중 상위 10종목 기준).</div>'; return 0; }
+  var allow = {}; list.forEach(function(o){ allow[o.code]=1; });
+  var rows = IDX[sel].list.filter(function(x){ return allow[x[0]]; }).map(function(x){
+    var o = BYCODE[x[0]]; return {o:o, w:x[1], amt:(x[1]!=null && o.aum!=null) ? o.aum*x[1]/100 : null};
+  });
+  var hidden = IDX[sel].list.length - rows.length;
+  var fk = S.fsort;
+  rows.sort(function(a,b){
+    var x = fk==='w'?a.w:fk==='amt'?a.amt:a.o[fk], y = fk==='w'?b.w:fk==='amt'?b.amt:b.o[fk];
+    if (x==null&&y==null) return 0; if (x==null) return 1; if (y==null) return -1; return y-x;
+  });
+  var tot = rows.reduce(function(a,r){ return a+(r.amt||0); },0);
+  function th(k,t,l){ return '<th class="'+(l?'l ':'')+(fk===k?'sorted':'')+'"'+(k?' data-fsort="'+k+'"':'')+'>'+t+(fk===k?' ▼':'')+'</th>'; }
+  var h = '<div class="find-head"><b>'+esc(sel)+'</b> 담은 ETF '+rows.length+'개'+(tot>0?' · 추정 보유금액 합 '+fmtEok(tot):'')+
+          (hidden>0?' <span class="mu">(필터로 '+hidden+'개 숨김)</span>':'')+'</div>';
+  h += '<table class="etf-table"><thead><tr>'+th('','종목',true)+th('w','비중')+th('amt','추정 보유금액')+th('aum','순자산')+
+       th(S.per, PER_LABEL[S.per])+th('d1','1일')+'</tr></thead><tbody>';
+  rows.forEach(function(r){
+    var o = r.o;
+    h += '<tr><td class="l nm"><b>'+esc(o.name)+'</b><span class="code">'+o.code+'</span>'+tags(o)+'<div class="th2">'+esc(o.theme)+' · '+esc(o.region)+'</div></td>'+
+         '<td>'+(r.w!=null?r.w.toFixed(2)+'%':'<span class="mu">포함</span>')+'</td><td>'+fmtEok(r.amt)+'</td><td>'+fmtEok(o.aum)+'</td>'+
+         '<td>'+fmtPct(o[S.per])+'</td><td>'+fmtPct(o.d1)+'</td></tr>';
+  });
+  out.innerHTML = h + '</tbody></table><div class="th2 note">추정 보유금액 = ETF 순자산 × 비중. 같은 이름이 국내·해외에 겹치면 칩에서 골라야 함.</div>';
+  return rows.length;
+}
+
 // ── 그리기 ──
 function render(){
   if (!D) return;
   renderChips();
   document.querySelectorAll('.vbtn').forEach(function(b){ b.classList.toggle('on', b.dataset.v===S.view); });
   var list = ROWS.filter(function(o){ return passBase(o); });
-  var n = S.view==='theme' ? renderTheme(list) : renderTable(list);
-  document.getElementById('cnt').textContent = 'ETF ' + list.length + '개' + (S.view==='theme' ? ' · 테마 '+n+'개' : (S.group ? ' · 상품 '+n+'개' : ''));
+  document.getElementById('findBar').hidden = (S.view!=='find');
+  var n = S.view==='theme' ? renderTheme(list) : S.view==='find' ? renderFind(list) : renderTable(list);
+  document.getElementById('cnt').textContent = 'ETF ' + list.length + '개' + (S.view==='theme' ? ' · 테마 '+n+'개' : S.view==='find' ? ' · 찾은 '+n+'개' : (S.group ? ' · 상품 '+n+'개' : ''));
 }
 
 function syncInputs(){
@@ -485,6 +595,7 @@ function syncInputs(){
   document.getElementById('oNoCC').checked = S.noCC;
   document.getElementById('oGroup').checked = S.group;
   document.getElementById('oQ').value = S.q;
+  document.getElementById('fq').value = S.fq || '';
 }
 
 // ── 이벤트 ──
@@ -498,6 +609,8 @@ document.getElementById('filters').addEventListener('click', function(e){
 [['oNoLev','noLev'],['oNoInv','noInv'],['oNoCC','noCC'],['oGroup','group']].forEach(function(p){
   document.getElementById(p[0]).addEventListener('change', function(){ S[p[1]] = this.checked; LIMIT=300; save(); render(); });
 });
+var fqt; document.getElementById('fq').addEventListener('input', function(){ var val=this.value; clearTimeout(fqt); fqt=setTimeout(function(){ S.fq=val.trim(); S.fsel=''; save(); render(); }, 250); });
+document.getElementById('fCands').addEventListener('click', function(e){ var b=e.target.closest('[data-fsel]'); if(!b) return; S.fsel=b.dataset.fsel; save(); render(); });
 var qt; document.getElementById('oQ').addEventListener('input', function(){ var v=this.value; clearTimeout(qt); qt=setTimeout(function(){ S.q=v.trim(); LIMIT=300; save(); render(); }, 200); });
 document.querySelector('.view-bar').addEventListener('click', function(e){
   var b = e.target.closest('.vbtn'); if (!b) return; S.view = b.dataset.v; save(); render();
@@ -509,6 +622,8 @@ document.getElementById('out').addEventListener('click', function(e){
     if (i>=0) S.stars.splice(i,1); else S.stars.push(c);
     save(); render(); return;
   }
+  if ((t = e.target.closest('[data-hold]'))) { var hc=t.dataset.hold; openHold[hc]=!openHold[hc]; render(); return; }
+  if ((t = e.target.closest('th[data-fsort]'))) { S.fsort = t.dataset.fsort; save(); render(); return; }
   if ((t = e.target.closest('[data-grp]'))) { var g=t.dataset.grp; openGroups[g]=!openGroups[g]; render(); return; }
   if ((t = e.target.closest('th[data-sort]'))) {
     var k = t.dataset.sort;
