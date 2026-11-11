@@ -242,7 +242,11 @@ def shared_dark_rules():
         if os.path.exists(p):
             js = open(p, encoding='utf-8').read()
             css += '\n'.join(re.findall(r'body\.sf-dark[^{}]*\{[^{}]*\}', js)) + '\n'
-    return collect_dark(parse_rules(css))
+    rules = parse_rules(css)
+    # <body class="sf-no-pblock"> 페이지에는 적용되지 않는 규칙(흡수한 표준 블록)은 따로 구분
+    full = collect_dark(rules)
+    limited = collect_dark([r for r in rules if 'sf-no-pblock' not in r[0]])
+    return full, limited
 
 
 def common_vars():
@@ -470,7 +474,9 @@ def main():
         # 라이트 기본 페이지만 대상 (다크 전용 페이지는 common-dark.css를 씀)
         if 'common.css' not in html or 'common-dark.css' in html:
             continue
-        lines, stats = analyze(html, shared, cvars)
+        body_tag = re.search(r'<body[^>]*>', html)
+        use = shared[1] if (body_tag and 'sf-no-pblock' in body_tag.group(0)) else shared[0]
+        lines, stats = analyze(html, use, cvars)
         rel = os.path.relpath(path, ROOT)
         base = BLOCK_RE.sub('\n', html)
         if lines:
