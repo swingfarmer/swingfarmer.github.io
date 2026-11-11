@@ -625,7 +625,7 @@ window.sfApiFetch = function(url, opts) {
     'car-compare':'🧮 금융·생활', 'telecom':'🧮 금융·생활', 'health':'🧮 금융·생활',
     'card-manager':'🧮 금융·생활', 'company':'💼 근로·회사', 'commerce':'🏠 부동산',
     'schedule':'🧮 금융·생활', 'status':'🔒 개인 관리', 'community':'🔒 개인 관리',
-    'notes':'🔒 개인 관리', 'webtoon':'🔒 개인 관리'
+    'notes':'🔒 개인 관리', 'webtoon':'🔒 개인 관리', 'asset-notes':'🔒 개인 관리'
   };
   function buildBreadcrumb() {
     var path = location.pathname.replace(/\/$/,'') || '/';

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>자산 노트 | 스윙파머</title>
+
+
+<link rel="stylesheet" href="/common.css?v=12">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .page-desc{color:#c2c2c2!important}
+body.sf-dark .ctab{border-color:#2c333f!important;background-color:#1e242e!important;color:#c2c2c2!important}
+body.sf-dark .ctab:hover:not(.active){background-color:#152637!important;color:#85b5e0!important}
+body.sf-dark .research-card{background-color:#1e242e!important;border-color:#2c333f!important}
+body.sf-dark .rc-cat.macro{background-color:#151d37!important;color:#8e89dc!important}
+body.sf-dark .rc-cat.stock{background-color:#153721!important;color:#81e4a7!important}
+body.sf-dark .rc-cat.strategy{background-color:#373115!important;color:#f2a373!important}
+body.sf-dark .rc-cat.tax{background-color:#371529!important;color:#eb7aa7!important}
+body.sf-dark .rc-cat.corp{background-color:#371529!important;color:#eb7aa7!important}
+body.sf-dark .rc-cat.alloc{background-color:#151d37!important;color:#8e89dc!important}
+body.sf-dark .rc-cat.estate{background-color:#153721!important;color:#81e4a7!important}
+body.sf-dark .rc-cat.etc{background-color:#1a1f29!important;color:#cbcbcb!important}
+body.sf-dark .rc-title{color:#dedede!important}
+body.sf-dark .rc-tag{color:#85b5e0!important;background-color:#152237!important}
+body.sf-dark .sbtn{border-color:#2c333f!important;background-color:#1e242e!important;color:#cccccc!important}
+body.sf-dark .sbtn:hover{background-color:#1a1f29!important}
+body.sf-dark .ctab.active{background:#1F4E78!important;color:white!important;border-color:#1F4E78!important}
+body.sf-dark .sbtn.active{background:#1F4E78!important;color:white!important;border-color:#1F4E78!important}
+</style>
+<style>
+:root { --sf-max-w: 860px; }
+.page-desc{color:#666;font-size:14px;margin-bottom:24px}
+
+/* 카테고리 탭 */
+.cat-tabs{display:flex;gap:0;flex-wrap:wrap;margin-bottom:20px}
+.ctab{padding:8px 16px;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:13px;font-weight:600;color:#666;font-family:inherit;margin-right:-1px;transition:all .15s}
+.ctab:first-child{border-radius:6px 0 0 6px}
+.ctab:last-child{border-radius:0 6px 6px 0}
+.ctab.active{background:#1F4E78;color:white;border-color:#1F4E78;z-index:1;position:relative}
+.ctab:hover:not(.active){background:#f0f5fa;color:#1F4E78}
+.ctab .cnt{font-size:11px;font-weight:400;margin-left:4px;opacity:.7}
+
+/* 리서치 카드 리스트 */
+.research-list{display:flex;flex-direction:column;gap:12px}
+.research-card{display:block;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:20px 24px;text-decoration:none;color:inherit;transition:all .2s;border-left:4px solid #1F4E78}
+.research-card:hover{box-shadow:0 4px 12px rgba(31,78,120,.12);transform:translateY(-1px)}
+.rc-header{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.rc-cat{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px}
+.rc-cat.macro{background:#e0e7ff;color:#3730a3}
+.rc-cat.stock{background:#dcfce7;color:#166534}
+.rc-cat.strategy{background:#fef3c7;color:#92400e}
+.rc-cat.tax{background:#fce7f3;color:#9d174d}
+.rc-cat.corp{background:#fce7f3;color:#9d174d}
+.rc-cat.alloc{background:#e0e7ff;color:#3730a3}
+.rc-cat.estate{background:#dcfce7;color:#166534}
+.rc-cat.etc{background:#f3f4f6;color:#4b5563}
+.rc-date{font-size:12px;color:#aaa}
+.rc-title{font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:4px}
+.rc-desc{font-size:13px;color:#888;line-height:1.5}
+.rc-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.rc-tag{font-size:11px;color:#1F4E78;background:#e8f0fe;padding:2px 8px;border-radius:4px}
+
+.empty-msg{text-align:center;padding:60px 20px;color:#aaa;font-size:14px}
+.sbtn{font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid #d1d5db;background:white;cursor:pointer;font-family:inherit;color:#555}
+.sbtn:hover{background:#f3f4f6}
+.sbtn.active{background:#1F4E78;color:white;border-color:#1F4E78}
+</style>
+
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body class="sf-narrow">
+
+<h1 style="color:#1F4E78;border-bottom:3px solid #1F4E78;padding-bottom:10px;margin-bottom:8px">📒 자산 노트</h1>
+<p class="page-desc">내 자산 운용 결정 문서 모음 — 법인·세금 구조, 자산배분, 부동산 검토. 시장·종목 분석은 <a href="/research/">리서치 노트</a>.</p>
+
+<!-- 카테고리 탭 -->
+<div class="cat-tabs" id="catTabs">
+  <button class="ctab active" data-cat="all">전체<span class="cnt" id="cntAll"></span></button>
+  <button class="ctab" data-cat="corp">법인·세금<span class="cnt" id="cntCorp"></span></button>
+  <button class="ctab" data-cat="alloc">자산배분<span class="cnt" id="cntAlloc"></span></button>
+  <button class="ctab" data-cat="estate">부동산<span class="cnt" id="cntEstate"></span></button>
+  <button class="ctab" data-cat="etc">기타<span class="cnt" id="cntEtc"></span></button>
+</div>
+
+<!-- 정렬 -->
+<div class="sort-bar" id="sortBar" style="display:flex;gap:6px;margin-bottom:14px;align-items:center">
+  <span style="font-size:12px;color:#888;margin-right:4px">정렬:</span>
+  <button class="sbtn active" data-sort="date-desc">최신순</button>
+  <button class="sbtn" data-sort="date-asc">오래된순</button>
+  <button class="sbtn" data-sort="title-asc">ㄱㄴㄷ순</button>
+  <button class="sbtn" data-sort="reg">등록순</button>
+</div>
+
+<!-- 리서치 리스트 -->
+<div class="research-list" id="researchList"></div>
+
+<script>
+/* ── 리서치 문서 목록 (새 글 추가 시 여기에 추가) ── */
+const ARTICLES = [
+  {
+    title: '개인 vs 법인 금융투자 비교 — 자산별 유불리·출구전략',
+    desc: '국내주식·고배당·미국주식·미국채를 개인/법인 중 어디에 담을지. 해외주식 1억 순이익 5:5 분산 시뮬레이션, 법인 수익 인출 5대 출구. 2026 세율 변경·성실신고 소규모법인 검토 메모 포함.',
+    cat: 'corp',
+    date: '2026-11-12',
+    href: './corp-vs-personal.html',
+    tags: ['법인','개인','금종세','미국채','배당','가수금','퇴직금','법인세율']
+  }
+];
+
+const CAT_LABEL = {corp:'법인·세금',alloc:'자산배분',estate:'부동산',etc:'기타'};
+const listEl = document.getElementById('researchList');
+
+// 원본 순서(등록순) 보존
+ARTICLES.forEach(function(a,i){ a._regIdx = i; });
+
+var curCat = 'all';
+var curSort = 'date-desc';
+
+// localStorage에서 복원
+try {
+  var saved = localStorage.getItem('sf_assetnote_filter');
+  if (saved) {
+    var p = JSON.parse(saved);
+    if (p.cat) curCat = p.cat;
+    if (p.sort) curSort = p.sort;
+  }
+} catch(e){}
+
+function saveFilter() {
+  try { localStorage.setItem('sf_assetnote_filter', JSON.stringify({cat:curCat, sort:curSort})); } catch(e){}
+}
+
+function sortArticles(arr, mode) {
+  var sorted = arr.slice();
+  if (mode === 'date-desc') sorted.sort(function(a,b){ return b.date.localeCompare(a.date); });
+  else if (mode === 'date-asc') sorted.sort(function(a,b){ return a.date.localeCompare(b.date); });
+  else if (mode === 'title-asc') sorted.sort(function(a,b){ return a.title.localeCompare(b.title, 'ko'); });
+  else if (mode === 'reg') sorted.sort(function(a,b){ return a._regIdx - b._regIdx; });
+  return sorted;
+}
+
+function render() {
+  var filtered = curCat === 'all' ? ARTICLES : ARTICLES.filter(function(a){ return a.cat === curCat; });
+  filtered = sortArticles(filtered, curSort);
+
+  // 탭 active
+  document.querySelectorAll('.ctab').forEach(function(b){ b.classList.toggle('active', b.dataset.cat === curCat); });
+  // 정렬 버튼 active
+  document.querySelectorAll('.sbtn').forEach(function(b){ b.classList.toggle('active', b.dataset.sort === curSort); });
+
+  if (!filtered.length) {
+    listEl.innerHTML = '<div class="empty-msg">등록된 문서가 없습니다.</div>';
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(function(a){ return '\
+    <a href="'+a.href+'" class="research-card" data-cat="'+a.cat+'">\
+      <div class="rc-header">\
+        <span class="rc-cat '+a.cat+'">'+(CAT_LABEL[a.cat]||a.cat)+'</span>\
+        <span class="rc-date">'+a.date+'</span>\
+      </div>\
+      <div class="rc-title">'+a.title+'</div>\
+      <div class="rc-desc">'+a.desc+'</div>\
+      '+(a.tags ? '<div class="rc-tags">'+a.tags.map(function(t){return '<span class="rc-tag">#'+t+'</span>';}).join('')+'</div>' : '')+'\
+    </a>';
+  }).join('');
+
+  saveFilter();
+}
+
+// 카운트 표시
+document.getElementById('cntAll').textContent = '(' + ARTICLES.length + ')';
+['corp','alloc','estate','etc'].forEach(function(c){
+  var cnt = ARTICLES.filter(function(a){return a.cat===c;}).length;
+  var el = document.getElementById('cnt' + c.charAt(0).toUpperCase() + c.slice(1));
+  if(el) el.textContent = cnt ? '('+cnt+')' : '';
+});
+
+// 탭 클릭
+document.getElementById('catTabs').addEventListener('click', function(e){
+  var btn = e.target.closest('.ctab');
+  if(btn){ curCat = btn.dataset.cat; render(); }
+});
+
+// 정렬 클릭
+document.getElementById('sortBar').addEventListener('click', function(e){
+  var btn = e.target.closest('.sbtn');
+  if(btn){ curSort = btn.dataset.sort; render(); }
+});
+
+render();
+</script>
+
+<footer>© 스윙파머</footer>
+<script src="/common.js?v=10"></script>
+</body>
+</html>
