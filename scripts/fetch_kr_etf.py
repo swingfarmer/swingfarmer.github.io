@@ -81,8 +81,9 @@ def fetch_naver():
 def nearest_bday(stock, ymd):
     """ymd(YYYYMMDD) 이전(포함) 가장 가까운 영업일. 실패하면 그대로."""
     try:
-        return stock.get_nearest_business_day_in_a_day(ymd, prev=True)
-    except Exception:
+        return stock.get_nearest_business_day_in_a_week(ymd, prev=True)
+    except Exception as e:
+        log(f'  영업일 보정 실패 {ymd}: {repr(e)[:100]}')
         return ymd
 
 
