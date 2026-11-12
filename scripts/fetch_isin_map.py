@@ -14,11 +14,18 @@ OpenFIGI (Bloomberg 무료 공개 API) https://api.openfigi.com/v3/mapping
   키 있음(OPENFIGI_API_KEY): 6초당 25회, 1회 100건 — 무료 가입으로 받음, 없어도 동작
   ISIN 검사숫자가 틀린 코드(스왑·선물 등 KRX 내부 코드)는 조회 안 함
 
+2단계 (083) — 야후 티커 (data/kr/etf/yahoo_map.json, {updated, n, m: {ISIN: [야후티커 또는 null, 'YYYY-MM-DD']}})
+  OpenFIGI 결과로 바로 yfinance 티커를 만들 수 있는 것: 미국(US)·일본(JP→.T)·중국 A주(CH→.SS/.SZ)
+  나머지(영국·홍콩·대만·인도·유럽·케이맨 등)는 야후 검색(ISIN)으로 본국 티커를 받음 (예: 2330.TW, 0388.HK, BARC.L)
+  야후에서 못 찾은 건 30일 뒤 재시도
+
 사용법
-  python3 scripts/fetch_isin_map.py --limit 30   # 테스트: 새 ISIN 30개만 조회, 저장 안 함, 결과·속도 출력
-  python3 scripts/fetch_isin_map.py              # 새 ISIN 전부 조회 후 저장
+  python3 scripts/fetch_isin_map.py --limit 30          # 테스트: OpenFIGI 새 ISIN 30개만, 저장 안 함
+  python3 scripts/fetch_isin_map.py                     # OpenFIGI 새 ISIN 전부 → 저장 → 이어서 야후 단계
+  python3 scripts/fetch_isin_map.py --yahoo --limit 40  # 테스트: 야후 단계만 40개, 저장 안 함
+  python3 scripts/fetch_isin_map.py --yahoo             # 야후 단계만 (새로 필요한 것 전부) → 저장
 """
-import os, sys, json, time, urllib.request, urllib.error
+import os, sys, json, time, urllib.request, urllib.error, urllib.parse
 from datetime import datetime, timedelta, timezone
 
 KST = timezone(timedelta(hours=9))
@@ -30,6 +37,10 @@ KEY = os.environ.get('OPENFIGI_API_KEY', '').strip()
 JOBS = 100 if KEY else 10
 SLEEP = 0.3 if KEY else 2.5          # 키 없음 분당 25회 → 2.4초 간격
 RETRY_DAYS = 30
+YOUT = os.path.join(ROOT, 'data', 'kr', 'etf', 'yahoo_map.json')
+YAHOO_URL = 'https://query2.finance.yahoo.com/v1/finance/search'
+UA = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36'}
+YSLEEP = 0.5
 
 
 def log(*a):
@@ -80,8 +91,103 @@ def pick(data):
     return out[:4] or None
 
 
+def figi_symbol(isin, cands):
+    """OpenFIGI 후보로 바로 만들 수 있는 yfinance 티커. 못 만들면 None (→ 야후 검색)."""
+    c = isin[:2]
+    for ex, tk in cands or []:
+        if c == 'US' and ex == 'US':
+            return tk.replace('/', '-')                      # BRK/B → BRK-B
+        if c == 'JP' and ex == 'JP' and tk.isdigit():
+            return tk + '.T'
+        if c == 'CN' and ex == 'CH' and len(tk) == 6 and tk.isdigit():
+            if tk[0] == '6':
+                return tk + '.SS'                            # 상하이 (688 과창판 포함)
+            if tk[0] in '03':
+                return tk + '.SZ'                            # 선전 (300 창업판 포함)
+    return None
+
+
+def yahoo_search(isin):
+    """→ (야후 티커 또는 None, 오류문자열). 주식(EQUITY)·ETF 중 첫 번째, 독일 슈투트가르트 ISIN 티커(.SG)는 제외."""
+    url = YAHOO_URL + '?' + urllib.parse.urlencode({'q': isin, 'quotesCount': 5, 'newsCount': 0, 'listsCount': 0})
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=15) as r:
+            d = json.loads(r.read().decode())
+    except urllib.error.HTTPError as e:
+        return None, f'HTTP {e.code}'
+    except Exception as e:
+        return None, repr(e)[:80]
+    for q in d.get('quotes', []):
+        sym = q.get('symbol') or ''
+        if q.get('quoteType') in ('EQUITY', 'ETF') and sym and not sym.startswith(isin):
+            return sym, ''
+    return None, ''
+
+
+def yahoo_stage(limit):
+    m = json.load(open(OUT, encoding='utf-8')).get('m', {})
+    try:
+        ym = json.load(open(YOUT, encoding='utf-8')).get('m', {})
+    except Exception:
+        ym = {}
+    today = datetime.now(KST).strftime('%Y-%m-%d')
+    cutoff = (datetime.now(KST) - timedelta(days=RETRY_DAYS)).strftime('%Y-%m-%d')
+    figi_ok = sum(1 for i, v in m.items() if figi_symbol(i, v[1]))
+    need = [i for i, v in m.items() if not figi_symbol(i, v[1])]
+    # OpenFIGI가 못 찾은 미국·XS 코드는 거의 다 채권(국채·회사채)이라 야후도 안 물어봄
+    need = [i for i in need if not (m[i][1] is None and i[:2] in ('US', 'XS'))]
+    todo = [i for i in need if i not in ym or (ym[i][0] is None and ym[i][1] < cutoff)]
+    log(f'[야후] OpenFIGI로 바로 티커 {figi_ok}개 / 야후 필요 {len(need)}개 / 캐시 {len(ym)}개 / 새로 조회 {len(todo)}개')
+    if limit:
+        todo = todo[:limit]
+    if not todo:
+        log('✅ [야후] 새로 조회할 ISIN 없음')
+        return
+    t0, hit, fails, new = time.time(), 0, 0, {}
+    for n, isin in enumerate(todo, 1):
+        sym, err = yahoo_search(isin)
+        if err:
+            fails += 1
+            if err.startswith('HTTP 429') or fails >= 5:
+                log(f'  ⏳ [야후] {err} (연속 실패 {fails}) → 60초 쉼')
+                time.sleep(60)
+                if fails >= 8:
+                    log('❌ [야후] 계속 실패 — 중단, 지금까지 찾은 것만 저장')
+                    break
+            continue
+        fails = 0
+        new[isin] = [sym, today]
+        hit += 1 if sym else 0
+        if n % 200 == 0:
+            el = time.time() - t0
+            log(f'  [야후] 진행 {n}/{len(todo)} (찾음 {hit}, {el/60:.1f}분, 남은 약 {el/n*(len(todo)-n)/60:.0f}분)')
+        time.sleep(YSLEEP)
+    el = time.time() - t0
+    sfx = {}
+    for v in new.values():
+        if v[0]:
+            k = '.' + v[0].rsplit('.', 1)[1] if '.' in v[0] else '(미국)'
+            sfx[k] = sfx.get(k, 0) + 1
+    log(f'[야후] 완료 {len(new)}개 조회 / 찾음 {hit} / 못 찾음 {len(new)-hit} / {el/60:.1f}분')
+    log('[야후] 거래소 접미사별: ' + ', '.join(f'{k} {n}' for k, n in sorted(sfx.items(), key=lambda x: -x[1])[:25]))
+    if limit:
+        for isin in list(new)[:15]:
+            print(f'   {isin} {m[isin][0][:28]:<28} → {new[isin][0]}')
+        log(f'  → 전체 {len(need)-len(ym)}개 예상 약 {el/max(len(new),1)*(len(need)-len(ym))/60:.0f}분 (테스트라 저장 안 함)')
+        return
+    ym.update(new)
+    tmp = YOUT + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump({'updated': datetime.now(KST).strftime('%Y-%m-%d %H:%M'), 'n': len(ym), 'm': ym},
+                  f, ensure_ascii=False, separators=(',', ':'))
+    os.replace(tmp, YOUT)
+    log(f'💾 yahoo_map.json {len(ym)}개 ({os.path.getsize(YOUT)//1024}KB)')
+
+
 def main():
     limit = int(sys.argv[sys.argv.index('--limit') + 1]) if '--limit' in sys.argv else 0
+    if '--yahoo' in sys.argv:
+        return yahoo_stage(limit)
     global JOBS
     raw = json.load(open(RAW, encoding='utf-8'))
     names = {}
@@ -105,6 +211,8 @@ def main():
         todo = todo[:limit]
     if not todo:
         log('✅ 새로 조회할 ISIN 없음')
+        if not limit:
+            yahoo_stage(0)
         return
 
     t0, done, hit, i, calls, fails = time.time(), 0, 0, 0, 0, 0
@@ -163,6 +271,7 @@ def main():
         json.dump(out, f, ensure_ascii=False, separators=(',', ':'))
     os.replace(tmp, OUT)
     log(f'💾 isin_map.json {len(m)}개 ({os.path.getsize(OUT)//1024}KB)')
+    yahoo_stage(0)
 
 
 if __name__ == '__main__':
