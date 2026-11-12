@@ -217,6 +217,89 @@ def check_freshness():
     return results
 
 
+# ── (085) API 키·계정 만료 감시 ──
+# 목록: vm/key_expiry.json (이름·날짜만, 값 없음). 결과는 status.json(공개 페이지)에 안 넣고 텔레그램 DM으로만 보냄.
+# 알림: 남은 날 8~30일은 월요일·D-30에만, 7일 이하는 매일, 지난 것도 매일.
+KEY_FILE = os.path.join(ROOT_DIR, "vm", "key_expiry.json")
+
+def oracle_admin_expiry():
+    """Oracle ADMIN 비번 (상태, 만료일 date|None). 실패 시 (None, None)."""
+    try:
+        import oracledb
+        WALLET_DIR = os.path.expanduser('~/wallet')
+        conn = oracledb.connect(
+            user='ADMIN', password=os.environ.get('ORACLE_DB_PASSWORD', ''),
+            dsn='db1007_medium', config_dir=WALLET_DIR, wallet_location=WALLET_DIR,
+            wallet_password=os.environ.get('ORACLE_WALLET_PASSWORD', ''))
+        cur = conn.cursor()
+        try:
+            cur.execute("SELECT account_status, expiry_date FROM dba_users WHERE username='ADMIN'")
+        except Exception:
+            cur.execute("SELECT account_status, expiry_date FROM user_users")
+        r = cur.fetchone()
+        conn.close()
+        if not r: return (None, None)
+        return (r[0], r[1].date() if r[1] else None)
+    except Exception as e:
+        print(f"  ⚠ Oracle 계정 만료 조회 실패: {str(e)[:120]}")
+        return (None, None)
+
+def check_key_expiry(now=None):
+    """[(이름, 남은일수|None, 만료일문자열, 연장방법, 알림여부)]"""
+    now = now or datetime.now()
+    today = now.date()
+    try:
+        with open(KEY_FILE, encoding="utf-8") as f:
+            items = json.load(f).get("items", [])
+    except Exception as e:
+        print(f"  ⚠ key_expiry.json 읽기 실패: {e}")
+        return []
+    out = []
+    for it in items:
+        exp = it.get("expires")
+        if not exp: continue
+        if exp == "db":
+            st, d = oracle_admin_expiry()
+            if st and st != "OPEN":
+                out.append((it["name"], 0, f"상태 {st}", it.get("renew", ""), True)); continue
+            if not d:
+                out.append((it["name"], None, "만료 없음" if st else "조회 실패", it.get("renew", ""), False)); continue
+            exp_d = d
+        else:
+            try: exp_d = datetime.strptime(exp, "%Y-%m-%d").date()
+            except ValueError: continue
+        left = (exp_d - today).days
+        alert = left <= 7 or (left <= 30 and (today.weekday() == 0 or left == 30))
+        out.append((it["name"], left, exp_d.isoformat(), it.get("renew", ""), alert))
+    return out
+
+def key_watch_map():
+    """healthcheck 항목 이름 → 의심 키 이름 목록"""
+    try:
+        with open(KEY_FILE, encoding="utf-8") as f:
+            items = json.load(f).get("items", [])
+    except Exception:
+        return {}
+    m = {}
+    for it in items:
+        for w in it.get("watch", []): m.setdefault(w, []).append(it["name"])
+    return m
+
+def send_key_alert(keys):
+    hits = [k for k in keys if k[4]]
+    if not hits:
+        print("🔑 키 만료 알림 없음"); return
+    lines = ["🔑 <b>API 키·계정 만료 임박</b>"]
+    for name, left, exp, renew, _ in hits:
+        when = "이미 만료" if (left is not None and left < 0) else (f"D-{left}" if left is not None else "")
+        lines.append(f"• <b>{name}</b> {when} ({exp})")
+        if renew: lines.append(f"   {renew}")
+    if send_dm("\n".join(lines)):
+        print(f"📱 키 만료 DM 발송 ({len(hits)}건)")
+    else:
+        print("⚠ 키 만료 DM 발송 실패")
+
+
 def build_status_json(results):
     """status.json 생성 + 일자별 히스토리 저장."""
     now = datetime.now()
@@ -283,6 +366,7 @@ def send_alert(status):
     lines = [f"⚠️ <b>데이터 헬스체크 경고</b> ({status['checked_at'][:10]})"]
     lines.append(f"문제: {len(problems)}건 / 전체 {status['total']}건\n")
 
+    watch = key_watch_map()
     for p in problems:
         icon = "❌" if p["status"] == "missing" else "⏰"
         lines.append(f"{icon} <b>{p['desc']}</b>")
@@ -290,6 +374,8 @@ def send_alert(status):
         lines.append(f"   {p['message']}")
         if p.get("last_modified"):
             lines.append(f"   최종: {p['last_modified']}")
+        if p["desc"] in watch:   # (085) 키·로그인 만료도 의심해볼 것
+            lines.append(f"   🔑 키·로그인 확인: {', '.join(watch[p['desc']])}")
         lines.append("")
 
     msg = "\n".join(lines)
@@ -299,7 +385,16 @@ def send_alert(status):
         print("⚠ 텔레그램 발송 실패")
 
 
+def print_keys(keys):
+    print("\n🔑 키·계정 만료")
+    for name, left, exp, renew, alert in keys:
+        tag = "🔔" if alert else "  "
+        print(f"  {tag} {name:34s} {exp:>12s}  " + (f"D-{left}" if left is not None and left >= 0 else ("만료" if left is not None else "-")))
+
+
 def main():
+    if "--keys" in sys.argv:   # (085) 만료 목록만 출력 (status.json·텔레그램 안 건드림)
+        print_keys(check_key_expiry()); return
     print(f"\n{'='*50}")
     print(f"헬스체크 ({datetime.now().strftime('%Y-%m-%d %H:%M')})")
     print(f"{'='*50}\n")
@@ -321,6 +416,9 @@ def main():
         print(f"  {icon} {r['desc']:20s} {mod:>16s}  {r['message']}")
 
     send_alert(status)
+    keys = check_key_expiry()
+    print_keys(keys)
+    send_key_alert(keys)
     print(f"\n{'='*50}")
     print("완료!")
 
