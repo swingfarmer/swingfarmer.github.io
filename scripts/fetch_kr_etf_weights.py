@@ -181,7 +181,8 @@ def main():
         cover = round(len(vals) / total_eq * 100)
         tot = sum(v[2] for v in vals)
         vals.sort(key=lambda x: -x[2])
-        top = [[(c[3:9] if len(c) > 6 else c), nm, round(v / tot * 100, 2)] for c, nm, v in vals[:TOP_N]]
+        # 코드 칸: 해외는 티커(NVDA, 2330.TW …, 🔎 찾기에서 티커로 검색 가능), 국내는 6자리
+        top = [[(need.get(c) or (c[3:9] if len(c) > 6 else c)), nm, round(v / tot * 100, 2)] for c, nm, v in vals[:TOP_N]]
         if cover < MIN_COVER:
             low.append((etf, cover, total_eq))
             continue

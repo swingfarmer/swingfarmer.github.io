@@ -26,7 +26,7 @@ pykrx get_etf_portfolio_deposit_file(티커, 날짜) 로 ETF별 구성종목을 
 크론 (토 10:00, 아래 줄에 붙임: fetch_kr_etf.py 18:40 줄 아래)
 0 10 * * 6 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_kr_etf_holdings.py >> ~/logs/fetch_kr_etf_holdings.log 2>&1
 """
-import os, sys, json, time
+import os, sys, json, re, time
 from datetime import datetime, timedelta, timezone
 
 KST = timezone(timedelta(hours=9))
@@ -36,6 +36,9 @@ LATEST = os.path.join(ETF_DIR, 'latest.json')
 OUT = os.path.join(ETF_DIR, 'holdings.json')
 RAW_DIR = os.path.expanduser('~/sf_data')
 RAW_OUT = os.path.join(RAW_DIR, 'etf_pdf_foreign.json')   # 레포 밖 (083)
+BOND_OUT = os.path.join(RAW_DIR, 'etf_pdf_bond.json')     # 채권·금리·혼합형 ETF 전체 행 (083, 채권 ETF 분석용)
+BOND_RE = re.compile('국고채|국채|회사채|채권|크레딧|국공채|통안채|금융채|미국채|장기채|단기채|물가채|하이일드|은행채|'
+                     '머니마켓|CD금리|CD1년|KOFR|SOFR|금리|혼합|TDF|TRF|만기|단기자금|달러단기|국고|특수채|전단채|커버드콜채')
 TOP_N = 10
 SLEEP = 0.4
 
@@ -139,7 +142,7 @@ def main():
 
     compare = '--compare' in sys.argv
     out, fail, amt_cnt, empty, names_cnt, none_cnt = {}, [], 0, 0, 0, 0
-    foreign = {}
+    foreign, bond = {}, {}
     t0 = time.time()
     for i, (code, name, aum) in enumerate(etfs, 1):
         try:
@@ -147,6 +150,9 @@ def main():
             n, top, src = parse(df)
             if any(is_foreign(x[0]) for x in full):
                 foreign[code] = full
+            if BOND_RE.search(name or '') and df is not None:
+                ws = [round(float(x or 0), 4) for x in df['비중'].tolist()]
+                bond[code] = [x + [w] for x, w in zip(full, ws)]   # [코드, 이름, 계약수, 금액, 비중%]
             if n == 0:
                 empty += 1
             if src == 'amt':
@@ -215,6 +221,11 @@ def main():
         json.dump({'date': d['date'], 'updated': res['updated'], 'e': foreign}, f, ensure_ascii=False, separators=(',', ':'))
     os.replace(tmp, RAW_OUT)
     log(f'💾 {RAW_OUT} ETF {len(foreign)}개 ({os.path.getsize(RAW_OUT)//1024}KB)')
+    tmp = BOND_OUT + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump({'date': d['date'], 'updated': res['updated'], 'e': bond}, f, ensure_ascii=False, separators=(',', ':'))
+    os.replace(tmp, BOND_OUT)
+    log(f'💾 {BOND_OUT} 채권·금리·혼합형 ETF {len(bond)}개 ({os.path.getsize(BOND_OUT)//1024}KB)')
 
 
 if __name__ == '__main__':
