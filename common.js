@@ -615,7 +615,7 @@ window.sfApiFetch = function(url, opts) {
     'sector':'📈 주식·투자', 'momentum':'📈 주식·투자', 'similar':'📈 주식·투자',
     'strategy':'📈 주식·투자', 'valuation':'📈 주식·투자', 'return-calc':'📈 주식·투자',
     'portfolio':'🔒 개인 관리', 'rebalancing':'📈 주식·투자', 'futures':'📈 주식·투자',
-    'hdsteel':'📈 주식·투자', 'hd-enc':'📈 주식·투자', 'kr-finance':'📈 주식·투자', 'etf':'📈 주식·투자',
+    'hdsteel':'📈 주식·투자', 'hd-enc':'📈 주식·투자', 'kr-finance':'📈 주식·투자', 'etf':'📈 주식·투자', 'bond':'📈 주식·투자',
     'property':'🏠 부동산', 'realestate':'🏠 부동산', 'realestate-tracker':'🏠 부동산',
     'redevelopment':'🏠 부동산', 'landtax':'💸 세금', 'gambuk':'💸 세금',
     'tax':'💸 세금', 'corp-tax':'💸 세금', 'annual-check':'🧮 금융·생활', 'tax-calendar':'💸 세금',
