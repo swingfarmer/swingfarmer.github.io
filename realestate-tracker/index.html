@@ -113,6 +113,18 @@ body.sf-dark .chk-label.on-wolse{background-color:#153726!important;color:#71f4c
 .w-log div{font-size:12.5px;padding:7px 10px;background:#fff;border:1px solid #eee;border-radius:6px;line-height:1.5}
 .w-log b{color:#1F4E78}
 .w-help{font-size:12px;color:#888;line-height:1.7}
+.w-guide{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px 18px;margin-top:6px}
+.w-guide h3{font-size:15px;color:#1F4E78;margin:0 0 8px}
+.w-guide h4{font-size:13.5px;color:#1a1a1a;margin:12px 0 4px}
+.w-guide ul{padding-left:18px;margin:0}
+.w-guide li{font-size:12.5px;color:#444;line-height:1.75;margin-bottom:2px}
+.w-guide code{background:#f1f5f9;padding:0 4px;border-radius:3px;font-size:12px}
+.newb-s{display:inline-block;font-size:10.5px;background:#dc2626;color:#fff;border-radius:9px;padding:0 6px}
+body.sf-dark .w-guide{background:#1e242e;border-color:#2c333f}
+body.sf-dark .w-guide h3{color:#6ba3e0}
+body.sf-dark .w-guide h4{color:#e8ecf2}
+body.sf-dark .w-guide li{color:#c2c8d2}
+body.sf-dark .w-guide code{background:#2a313d;color:#e8ecf2}
 body.sf-dark .w-btn{background:#1e242e;color:#85b5e0;border-color:#2c4f75}
 body.sf-dark .w-btn.sub{color:#aab3c0;border-color:#3a4250}
 body.sf-dark .w-card,body.sf-dark .w-detail,body.sf-dark .w-log div{background:#1e242e;border-color:#2c333f}
@@ -242,8 +254,44 @@ body.sf-dark .prop-tabs{background:#162d4a}
   <div class="w-detail" id="wDetail" hidden></div>
   <h3 style="font-size:15px;margin:4px 0 8px">🔔 최근 알림 <span class="w-status" id="wLogInfo"></span></h3>
   <div class="w-log" id="wLog"></div>
-  <p class="w-help">관심 목록은 서버(DB)에 저장돼 PC·폰이 같은 목록을 봄. 🔔 켜진 항목은 실거래 수집 후 새 거래가 생기면 텔레그램(봇2)으로 옴 — 처음 등록한 날은 기존 거래를 기준으로만 저장하고 다음 수집부터 알림.<br>
-  국토부 신고는 계약 후 30일 이내라 알림은 계약보다 늦게 옴. 카드 숫자는 최근 3년 거래 기준, 평당가 = 금액 ÷ 전용면적(평). 해제(취소)된 거래는 반영 안 됨.</p>
+  <div class="w-guide">
+    <h3>📖 사용 설명</h3>
+    <h4>1. 관심 추가하는 법</h4>
+    <ul>
+      <li><b>＋ 새 관심 추가</b> — 직접 입력. 단지 하나를 볼 땐 <b>건물명</b>(일부만 써도 됨), 동네 전체를 볼 땐 <b>지역·동·면적·금액</b>으로.</li>
+      <li><b>📋 지금 검색조건으로 추가</b> — "최근 거래" 탭에서 검색해보고 마음에 드는 조건을 그대로 등록.</li>
+      <li><b>🔖 브라우저 즐겨찾기 가져오기</b> — 예전 "검색조건 저장"(이 브라우저에만 있던 것)을 관심 목록으로 옮김. 지역·건물명 없는 건 건너뜀.</li>
+    </ul>
+    <h4>2. 조건 칸 뜻</h4>
+    <ul>
+      <li><b>건물명</b>: 이름 일부. 쉼표로 여러 개 넣으면 그중 하나라도 맞으면 포함 (예: <code>브라이튼, 파인루체</code>). "아크로"처럼 짧게 쓰면 같은 지역의 아크로 단지가 다 잡힘.</li>
+      <li><b>전용</b>: 전용면적 ㎡ (3.3058㎡ = 1평). <b>금액</b>: 만원 단위, 매매는 매매가, 전월세는 보증금 기준.</li>
+      <li><b>지역이나 건물명 중 하나는 필수</b> (서울 전체 같은 조건은 너무 많아서 막아둠).</li>
+    </ul>
+    <h4>3. 카드 보는 법</h4>
+    <ul>
+      <li>큰 숫자 = <b>가장 최근 거래</b> (유형·면적·층·계약일). 그 아래 3개월·3년 거래 건수.</li>
+      <li><b>최근 6개월 평당가</b>와 <b>직전 6개월 대비 %</b> — 매매가 있으면 매매, 없으면 전세 보증금 기준. 평당가 = 금액 ÷ 전용면적(평).</li>
+      <li>아래 선 = 최근 3년 월별 평당가 추이. 3년 전보다 오르면 빨강, 내리면 파랑.</li>
+      <li><span class="newb-s">새 N</span> = 최근 14일 안에 알림이 간 거래 수.</li>
+      <li>카드를 누르면 아래에 <b>월별 평당가 차트 + 최근 거래 100건 표</b>. 다시 누르면 닫힘.</li>
+      <li>버튼: 🔔 알림 켜기/끄기 · ✏️ 조건 수정 · ⬆️ 순서 올리기 · 🗑️ 삭제</li>
+    </ul>
+    <h4>4. 텔레그램 알림</h4>
+    <ul>
+      <li>매일 새벽 실거래 수집이 끝나면 관심 항목마다 <b>새로 생긴 거래</b>를 찾아 텔레그램 봇2로 보냄. 메시지: 단지·면적(평)·층·금액·평당가·계약일, 같은 건물 비슷한 평형(±3㎡) <b>직전 거래 대비 %</b>.</li>
+      <li><b>처음 등록한 날은 알림 없음</b> — 그때까지의 거래를 "이미 본 것"으로 저장하고, 다음 수집부터 새 거래만 보냄.</li>
+      <li>국토부 신고는 <b>계약 후 30일 이내</b>라 알림은 계약보다 늦게 옴 (실시간 아님). 계약일이 최근 100일 안인 거래만 비교함.</li>
+      <li>🔔 꺼진 항목도 새 거래는 아래 "최근 알림" 이력에는 남음 (텔레그램만 안 감).</li>
+      <li>해제(취소)된 거래는 반영 안 됨.</li>
+    </ul>
+    <h4>5. 저장·데이터 범위</h4>
+    <ul>
+      <li>관심 목록은 <b>서버(DB)</b>에 저장 → PC·폰 어디서 열어도 같은 목록. 저장은 분당 10회 제한이라 버튼을 연달아 누르면 잠깐 "저장 실패"가 뜰 수 있음 (잠시 후 다시).</li>
+      <li>아파트: 강남·서초·송파·영등포 등 13곳은 20년치, 나머지 서울·분당·인천 일부 17곳은 3년치. 오피스텔: 서울 25개 구 (2023년 이후 전체). 상업업무용: <b>영등포구만</b>.</li>
+      <li>카드·차트 숫자는 최근 3년 거래 기준 (최대 최신 1,000건).</li>
+    </ul>
+  </div>
 </div>
 
 <script>
