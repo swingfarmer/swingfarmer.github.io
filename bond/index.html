@@ -107,7 +107,7 @@ body.sf-dark .warn{background-color:#373115!important;color:#f2a373!important}
   <h2>📋 미국채 목록</h2>
   <div class="opts">
     <label>이자 세율 <input type="number" id="oTax" value="15.4" step="0.1" min="0" max="60">%</label>
-    <label>단가 마진 <input type="number" id="oMg" value="0" step="0.05" min="0" max="5">%p</label>
+    <label title="증권사 매수가가 이론가보다 비싼 정도를 수익률로 표시. 11/12 삼성증권 T 0 5/8 05/15/30 매매단가 87.53 vs 이론가 86.79 → 약 25bp">증권사 마진 <input type="number" id="oMgBp" value="25" step="1" min="0" max="200">bp</label>
     <span class="sep"></span>
     <label>잔존 만기 <select id="oMat">
       <option value="all">전체</option><option value="0-1">1년 이하</option><option value="1-3">1~3년</option>
@@ -120,7 +120,7 @@ body.sf-dark .warn{background-color:#373115!important;color:#f2a373!important}
       <option value="">전체</option><option value="N">Note (발행 2~10년)</option><option value="B">Bond (발행 20~30년)</option>
     </select></label>
     <label>정렬 <select id="oSort">
-      <option value="at">세후수익률 높은 순</option><option value="mat">만기 빠른 순</option><option value="cpn">쿠폰 낮은 순</option><option value="amt">잔액 많은 순</option>
+      <option value="sat">세후 (앱식) 높은 순</option><option value="at">세후 (복리) 높은 순</option><option value="mat">만기 빠른 순</option><option value="cpn">쿠폰 낮은 순</option><option value="amt">잔액 많은 순</option>
     </select></label>
     <input type="search" id="oQ" placeholder="CUSIP·만기 검색 (예: 2030, 912828)">
     <span class="cnt" id="cnt"></span>
@@ -130,9 +130,10 @@ body.sf-dark .warn{background-color:#373115!important;color:#f2a373!important}
 
 <div class="info-box">
   <p><strong>출처:</strong> 미국 재무부 — 일별 par 금리곡선(Daily Treasury Par Yield Curve)과 MSPD(월말 기준 발행 잔액표). VM 크론 매일 07:10. 목록은 월말 기준이라 그 뒤 새로 발행된 종목은 다음 달에 들어옴. TIPS·변동금리채·단기채(Bills)는 뺐음.</p>
-  <p><strong>이론가(추정):</strong> 실제 시세가 아님. 금리곡선(par)에서 할인율을 만들어(부트스트랩) 종목별 현금흐름을 할인한 값. 실제 시장가와 보통 0.1~0.5%p 안쪽으로 차이 나고, 증권사 앱 매수가는 여기에 마진이 붙음 → 앱 가격과 이론가 차이를 "단가 마진"에 넣으면 세후수익률이 그만큼 낮아짐.</p>
+  <p><strong>이론가·추정 매수가:</strong> 실제 시세가 아님. 이론가 = 금리곡선(par)에서 할인율을 만들어(부트스트랩) 종목별 현금흐름을 할인한 값. 추정 매수가 = 이론 수익률에서 "증권사 마진(bp)"만큼 낮춘 수익률로 다시 계산한 가격. 기본 25bp는 11/12 삼성증권 T 0 5/8 05/15/30 한 건(매매단가 87.53, 이론가 86.79)에서 잰 값이라 종목·증권사·날마다 다를 수 있음. 앱 가격을 보고 맞춰 쓸 것.</p>
+  <p><strong>앱식(단리) vs 복리:</strong> 증권사 앱의 세후수익률·세전은행환산수익률은 단리 = (세후 이자 합 + 액면 − 매수금액) ÷ 매수금액 ÷ 잔존 연수. 삼성증권 값(세전 4.76·세후 4.65·환산 5.50)과 0.01~0.02%p 안에서 맞음. 복리(반기, 채권 관행)는 받은 이자를 다시 굴리는 가정이라 잔존이 길수록 앱식보다 낮게 나옴 — 3.5년 저쿠폰이면 약 0.25%p. 다른 채권·예금과 정확히 비교할 땐 복리 기준이 맞음.</p>
   <p><strong>세금(개인):</strong> 쿠폰 이자는 이자소득 15.4% 원천징수, 다른 이자·배당과 합쳐 연 2,000만원을 넘으면 넘는 부분은 종합과세(금종세). 채권 매매차익(할인 매수 후 만기 상환 차익 포함)은 소득세법에 열거되지 않아 비과세, 환차익도 개인 비과세 (삼일PwC One Point Tax 등). 그래서 저쿠폰(할인) 채권은 수익 대부분이 비과세. 금종세 대상이면 이자 세율 칸에 한계세율(예: 26.4·38.5·41.8%)을 넣어 볼 것.</p>
-  <p><strong>계산 가정:</strong> 첫 쿠폰도 전액 과세로 계산(보수적). 국내 증권사가 보유기간 이자만 과세하면 세후수익률이 조금 더 높아짐(미확인). 세후수익률은 쿠폰 재투자 가정(채권 수익률 관행). 원화 계산은 이자·원금을 모두 만기 환율로 환산한 단순 계산. 처음부터 할인 발행된 종목(OID)은 발행 할인액이 이자로 볼 여지가 있어 확인 필요.</p>
+  <p><strong>계산 가정:</strong> 첫 쿠폰도 전액 과세로 계산(보수적). 국내 증권사가 보유기간 이자만 과세하면 세후수익률이 조금 더 높아짐(미확인). 원화 계산은 이자·원금을 모두 만기 환율로 환산한 단순 계산. 처음부터 할인 발행된 종목(OID)은 발행 할인액이 이자로 볼 여지가 있어 확인 필요.</p>
   <p><strong>단위:</strong> 단가·이론가는 액면 100달러당 달러. 잔액은 억달러(재무부 원자료 백만달러 ÷ 100).</p>
   <p>저쿠폰 미국채를 포트폴리오에서 어떻게 쓰는지는 <a href="/barbell/">바벨 포트폴리오</a> 참고.</p>
 </div>
@@ -143,7 +144,7 @@ body.sf-dark .warn{background-color:#373115!important;color:#f2a373!important}
 // ── 저장 (sf-slots) ──
 window.CALC_KEY = 'bond';
 window.SF_RESET = true;
-var SAVE_IDS = ['cFace','cFx','cFxEnd','selCusip','oTax','oMg','oMat','oCpn','oType','oSort','oQ'];
+var SAVE_IDS = ['cFace','cFx','cFxEnd','selCusip','oTax','oMgBp','oMat','oCpn','oType','oSort','oQ'];
 window.slGetState = function(){
   var o = {}; SAVE_IDS.forEach(function(id){ o[id] = document.getElementById(id).value; }); return o;
 };
@@ -211,6 +212,17 @@ function ytm(dirty, b, cd, tax){
   for (var it=0; it<100; it++){ var mid=(lo+hi)/2; if (pv(mid)>dirty) lo=mid; else hi=mid; }
   return (lo+hi)/2;
 }
+// 수익률 y(반기 복리)에서의 dirty 가격
+function priceAt(y, b, cd){
+  var n=cd.cfs.length, w=(cd.cfs[0]-SETTLE)/(cd.cfs[0]-cd.prev), v=1+y/2, s=0;
+  for (var i=0;i<n;i++) s += (b.cpn/2 + (i===n-1?100:0))/Math.pow(v, w+i);
+  return s;
+}
+// 증권사 앱식 단리 수익률: (세후 이자 합 + 액면 − 매수 dirty) ÷ 매수 dirty ÷ 잔존 연수(일/365)
+function simpleY(dirty, b, cd, tax){
+  var n=cd.cfs.length, yrs=(pnum(b.mat)-SETTLE)/365;
+  return (b.cpn/2*n*(1-tax) + 100 - dirty)/dirty/yrs;
+}
 function frac8(c){
   var w=Math.floor(c+1e-9), e=Math.round((c-w)*8);
   if (Math.abs((c-w)*8-e)>1e-6) return String(c);
@@ -229,14 +241,18 @@ function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&am
 
 // ── 전체 다시 계산 ──
 function computeAll(){
-  var tax=(num('oTax')||0)/100, mg=num('oMg')||0;
+  var tax=(num('oTax')||0)/100, mg=(num('oMgBp')||0)/10000;
   BONDS = LIST.rows.map(function(r){
     var b={cusip:r[0], type:r[1], cpn:r[2], iss:r[3], mat:r[4], amt:r[5]};
-    var p=theo(b), buyDirty=p.dirty+mg;
+    var p=theo(b);
     b.name=bname(b); b.p=p; b.rem=(pnum(b.mat)-SETTLE)/365.25;
-    b.buyClean=p.clean+mg; b.buyDirty=buyDirty;
-    b.pre=ytm(buyDirty,b,p.cd,0)*100; b.at=ytm(buyDirty,b,p.cd,tax)*100;
-    b.eq = tax<1 ? b.at/(1-tax) : null;
+    if (!p.cd.cfs.length) return b;
+    b.theoY=ytm(p.dirty,b,p.cd,0);                       // 이론 수익률 (금리곡선 기준)
+    b.buyDirty=priceAt(b.theoY-mg, b, p.cd);              // 마진만큼 수익률 낮춘 가격 = 추정 매수가
+    b.buyClean=b.buyDirty-p.ai;
+    b.pre=(b.theoY-mg)*100; b.at=ytm(b.buyDirty,b,p.cd,tax)*100;          // 복리
+    b.sPre=simpleY(b.buyDirty,b,p.cd,0)*100; b.sAt=simpleY(b.buyDirty,b,p.cd,tax)*100;   // 앱식 단리
+    b.eq = tax<1 ? b.sAt/(1-tax) : null;
     return b;
   }).filter(function(b){ return b.p.cd.cfs.length>0; });
 }
@@ -258,17 +274,18 @@ function renderList(){
     if (q && (b.cusip+' '+b.mat+' '+b.name).toUpperCase().indexOf(q)<0) return false;
     return true;
   });
-  var S={at:function(a,b){return b.at-a.at;}, mat:function(a,b){return a.mat<b.mat?-1:a.mat>b.mat?1:a.cpn-b.cpn;},
+  var S={sat:function(a,b){return b.sAt-a.sAt;}, at:function(a,b){return b.at-a.at;}, mat:function(a,b){return a.mat<b.mat?-1:a.mat>b.mat?1:a.cpn-b.cpn;},
          cpn:function(a,b){return a.cpn-b.cpn || (a.mat<b.mat?-1:1);}, amt:function(a,b){return b.amt-a.amt;}};
-  rows.sort(S[so]||S.at);
+  rows.sort(S[so]||S.sat);
   document.getElementById('cnt').textContent = rows.length+'종 / 전체 '+BONDS.length+'종';
   if (!rows.length){ document.getElementById('list').innerHTML='<div class="empty">조건에 맞는 종목 없음</div>'; return rows; }
-  var h='<table class="sf-table bt"><thead><tr><th class="l">종목</th><th>만기</th><th>잔존(년)</th><th>쿠폰%</th><th>이론가</th>'
-    +'<th>세전 수익률%</th><th>세후 수익률%</th><th title="같은 세후를 내려면 전액 과세되는 예금·채권 금리가 얼마여야 하는지">세전 환산%</th><th>잔액(억$)</th></tr></thead><tbody>';
+  var h='<table class="sf-table bt"><thead><tr><th class="l">종목</th><th>만기</th><th>잔존(년)</th><th>쿠폰%</th><th title="이론가 + 증권사 마진">추정 매수가</th>'
+    +'<th title="증권사 앱과 같은 단리 방식">세전 (앱식)%</th><th title="증권사 앱과 같은 단리 방식">세후 (앱식)%</th><th title="세후(앱식) ÷ (1 − 세율). 같은 세후를 내려면 전액 과세되는 예금 금리가 얼마여야 하는지">세전 환산%</th>'
+    +'<th title="반기 복리(채권 관행). 기간이 길수록 앱식보다 낮게 나옴">세후 (복리)%</th><th>잔액(억$)</th></tr></thead><tbody>';
   rows.forEach(function(b){
     h+='<tr data-c="'+b.cusip+'"'+(b.cusip===sel?' class="sel"':'')+'><td class="l"><span class="nm">'+esc(b.name)+'</span><span class="cu">'+b.cusip+(b.type==='B'?' · Bond':'')+'</span></td>'
       +'<td>'+b.mat+'</td><td>'+b.rem.toFixed(1)+'</td><td>'+f3(b.cpn)+'</td><td>'+f2(b.buyClean)+'</td>'
-      +'<td>'+f2(b.pre)+'</td><td class="at">'+f2(b.at)+'</td><td>'+f2(b.eq)+'</td><td>'+comma(b.amt/100)+'</td></tr>';
+      +'<td>'+f2(b.sPre)+'</td><td class="at">'+f2(b.sAt)+'</td><td>'+f2(b.eq)+'</td><td>'+f2(b.at)+'</td><td>'+comma(b.amt/100)+'</td></tr>';
   });
   document.getElementById('list').innerHTML=h+'</tbody></table>';
   return rows;
@@ -294,7 +311,7 @@ function renderCalc(){
     +r('쿠폰 / 이자 지급', f3(b.cpn)+'% · 연 2회('+mo+') · 다음 '+nxt)
     +r('최초 발행 / 종류', (b.iss||'-')+' / '+(b.type==='B'?'Bond':'Note'))
     +'<tr class="hd"><td colspan="2">매수 (액면 100달러당)</td></tr>'
-    +r('이론가 + 마진 = 매수 단가', f3(b.p.clean)+' + '+f2(num('oMg')||0)+' = '+f3(b.buyClean))
+    +r('이론가 → 추정 매수가 (마진 '+(num('oMgBp')||0)+'bp)', f3(b.p.clean)+' → '+f3(b.buyClean)+' (+'+f2(b.buyClean-b.p.clean)+')')
     +r('경과이자 (매수 때 같이 냄)', f3(b.p.ai))
     +r('매수 금액', '$'+comma(buyUsd,2)+' ≈ '+won(buyKrw))
     +'<tr class="hd"><td colspan="2">만기까지 (달러)</td></tr>'
@@ -302,8 +319,9 @@ function renderCalc(){
     +r('이자 세금 ('+(tax*100).toFixed(1)+'%)', '−$'+comma(taxTot,2))
     +r('만기 상환 (액면)', '$'+comma(face,2))
     +r('세후 총 회수 / 수익', '$'+comma(back,2)+' / $'+comma(gain,2)+' ('+f2(gain/buyUsd*100)+'%)')
-    +'<tr class="big">'+'<td>세후 수익률 (연, 쿠폰 재투자 가정)</td><td class="v">'+f2(b.at)+'%</td></tr>'
-    +r('세전 수익률 / 세전 환산', f2(b.pre)+'% / '+f2(b.eq)+'%')
+    +'<tr class="big">'+'<td>세후 수익률 — 앱식 (단리)</td><td class="v">'+f2(b.sAt)+'%</td></tr>'
+    +r('세전 (앱식) / 세전 환산', f2(b.sPre)+'% / '+f2(b.eq)+'%')
+    +r('세후 / 세전 — 복리 (채권 관행)', f2(b.at)+'% / '+f2(b.pre)+'%')
     +'<tr class="hd"><td colspan="2">원화 (만기 환율 '+comma(fxEnd)+'원 가정)</td></tr>'
     +r('원화 회수 / 수익', won(krwEnd)+' / '+won(krwEnd-buyKrw)+' ('+f2((krwEnd/buyKrw-1)*100)+'%)')
     +r('원금 보전 환율 (이 아래로 내리면 원화 손실)', bep?comma(bep,1)+'원':'-')
