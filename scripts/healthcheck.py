@@ -32,6 +32,7 @@ TARGETS = [
     ("data/bond/ktb_curve.json",           "한국 금리(ECOS)",   "weekday", 0),
     # 미국 ETF
     ("data/us_etf.json",                   "미국 ETF",          "weekday", 0),
+    ("data/us/index_map.json",             "미국 지수 히트맵",  "weekday", 0),   # (088) 월~토 07:20 — 월요일은 금요일 종가 다시 저장(월요일 경고 방지)
     # 종가
     ("data/kr/prices.json",                "종가 수집",         "weekday", 0),
     # 스크리너

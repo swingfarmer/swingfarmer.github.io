@@ -26,6 +26,8 @@ a { color: var(--accent); text-decoration: none; }
 .tab-btn:not(:first-child) { border-left: none; }
 .tab-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 .tab-btn:hover:not(.active) { border-color: var(--text-dim); color: var(--text); }
+.us-note { font-size: 12px; color: var(--text-dim); line-height: 1.6; margin: -6px 0 14px; }
+.us-note summary { cursor: pointer; font-weight: 700; color: var(--accent); }
 .legend { display: flex; align-items: center; gap: 6px; margin-left: auto; font-size: 11px; color: var(--text-dim); }
 .legend-bar { width: 120px; height: 10px; border-radius: 4px;
   background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa, #64748b, #f87171, #ef4444, #dc2626); }
@@ -113,12 +115,24 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
       <button class="tab-btn" data-filter="KOSPI">코스피</button>
       <button class="tab-btn" data-filter="KOSDAQ">코스닥</button>
     </div>
+    <div class="tab-group">
+      <button class="tab-btn" data-filter="sp500">🇺🇸 S&amp;P500</button>
+      <button class="tab-btn" data-filter="ndx">🇺🇸 나스닥100</button>
+    </div>
     <div class="legend">
       <span>하락</span>
       <div class="legend-bar"></div>
       <span>상승</span>
     </div>
   </div>
+
+  <details class="us-note" id="usNote" style="display:none">
+    <summary>미국 맵 읽는 법 (눌러서 펼치기)</summary>
+    · <b>타일 크기 = 지수 안 비중</b>(≈ 유동 시가총액 비중). 국내 TIGER 미국S&amp;P500·TIGER 미국나스닥100 ETF의 구성종목(주식 수) × 전일 종가로 계산해요.<br>
+    · <b>색 = 미국 전일 종가 등락률</b>. 장중 실시간은 없고, 미장이 끝난 뒤 한국 아침 07:20쯤 하루 한 번 갱신돼요(화~토가 새 종가, 월요일은 금요일 종가 그대로).<br>
+    · 구성종목은 매주 토요일 ETF 구성 자료로 바뀌어서, 지수 편입·편출은 며칠 늦게 반영될 수 있어요. 회색 타일은 마지막 날 종가가 없는 종목(거래정지·신규 상장 등).<br>
+    · 타일 글자는 티커예요(AAPL=애플, NVDA=엔비디아…). 마우스를 올리면 회사 이름이 나와요.
+  </details>
 
   <div class="summary-row" id="summaryRow">
     <div class="summary-card"><div class="summary-label">종목 수</div><div class="summary-value" id="smCount">—</div></div>
@@ -144,6 +158,34 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
   let allItems = [];
   let marketMap = {};
   let currentFilter = 'all';
+  // (088) 미국 S&P500·나스닥100 — data/us/index_map.json (scripts/fetch_us_index_map.py, 월~토 07:20)
+  const US_KEYS = { sp500: 'S&P500', ndx: '나스닥100' };
+  let usData = null, usLoading = null;
+  let krLabel = '데이터 로딩 중…';
+  const isUS = f => !!US_KEYS[f];
+  function showLabel() {
+    const el = document.getElementById('updateDate');
+    if (isUS(currentFilter)) {
+      const d = usData && usData[currentFilter];
+      el.textContent = d ? `미국 ${usData.date} 종가 기준 · ${US_KEYS[currentFilter]} ${d.items.length}종목 · 화~토 아침 갱신 · 구성 ${d.etf.split(' ').slice(1).join(' ')} (${d.pdf_date})`
+        : (usData === false ? '미국 데이터 없음' : '미국 데이터 로딩 중…');
+    } else el.textContent = krLabel;
+  }
+  function loadUS() {
+    if (usLoading) return usLoading;
+    usLoading = fetch('/data/us/index_map.json', { cache: 'no-cache' })
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(j => {
+        usData = j;
+        Object.keys(US_KEYS).forEach(k => {
+          if (!j[k]) return;
+          j[k].list = j[k].items.map(x => ({ ticker: x[0], name: x[1], value: x[2], close: x[3],
+            change_pct: x[4] == null ? 0 : x[4], nodata: x[4] == null, us: true }));
+        });
+      })
+      .catch(() => { usData = false; });
+    return usLoading;
+  }
 
   // ── 준실시간 시세 (VM API, 평일 장중 1분 간격 수집) ──
   const LIVE_URL = 'https://swingfarmer.duckdns.org/api/prices/live';
@@ -185,7 +227,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
 
       baseDate = mcData.date || '';
       baseLabel = `${mcData.date} 종가 기준 · 시총 상위 ${allItems.length}종목 · 평일 20:50 자동 갱신`;
-      document.getElementById('updateDate').textContent = baseLabel;
+      krLabel = baseLabel; showLabel();
 
       // 실시간 값을 최대 2.5초 기다렸다가 한 번에 그림 (회색 화면이 먼저 뜨는 것 방지)
       await Promise.race([loadLive(), new Promise(r => setTimeout(r, 2500))]);
@@ -225,7 +267,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
           const label = live.market_open
             ? `🔴 장중 준실시간 · ${md} ${live.time} 기준 · 1분 간격 갱신 · 시총 상위 ${allItems.length}종목`
             : `${md} ${live.time} 기준 · 시총 상위 ${allItems.length}종목 · 장중에는 1분 간격 갱신`;
-          document.getElementById('updateDate').textContent = label;
+          krLabel = label; showLabel();
           render();
         }
         if (live.market_open) next = 60 * 1000;
@@ -244,8 +286,8 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
   });
 
   // ── 색상 계산 ──
-  function getColor(pct) {
-    if (pct === 0) return '#475569';
+  function getColor(pct, nodata) {
+    if (nodata || pct === 0) return '#475569';
     const abs = Math.min(Math.abs(pct), 6);
     const t = abs / 6;
     if (pct > 0) {
@@ -353,14 +395,23 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
     const isMobile = window.innerWidth <= 600;
     const mapH = isMobile ? MAP_HEIGHT_M : MAP_HEIGHT;
 
-    let filtered = currentFilter === 'all'
-      ? allItems
-      : allItems.filter(it => it.market === currentFilter);
+    let filtered;
+    if (isUS(currentFilter)) {
+      if (!usData) {
+        container.innerHTML = `<div class="loading">${usData === false ? '미국 데이터 로드 실패' : '미국 데이터를 불러오는 중…'}</div>`;
+        return;
+      }
+      filtered = (usData[currentFilter] && usData[currentFilter].list) || [];
+    } else {
+      filtered = currentFilter === 'all'
+        ? allItems
+        : allItems.filter(it => it.market === currentFilter);
+    }
 
     // 요약
-    const up = filtered.filter(it => it.change_pct > 0).length;
-    const down = filtered.filter(it => it.change_pct < 0).length;
-    const flat = filtered.filter(it => it.change_pct === 0).length;
+    const up = filtered.filter(it => !it.nodata && it.change_pct > 0).length;
+    const down = filtered.filter(it => !it.nodata && it.change_pct < 0).length;
+    const flat = filtered.filter(it => it.nodata || it.change_pct === 0).length;
     document.getElementById('smCount').textContent = filtered.length;
     document.getElementById('smUp').textContent = up;
     document.getElementById('smDown').textContent = down;
@@ -376,7 +427,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
 
     const treeItems = filtered.map(it => ({
       ...it,
-      value: it.market_cap
+      value: it.us ? it.value : it.market_cap
     }));
 
     const rects = squarify(treeItems, 0, 0, mapW, mapH);
@@ -384,8 +435,8 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
     let html = '';
     rects.forEach(r => {
       if (r.w < 2 || r.h < 2) return;
-      const bg = getColor(r.change_pct);
-      const pctStr = r.change_pct > 0 ? '+' + r.change_pct.toFixed(1) + '%'
+      const bg = getColor(r.change_pct, r.nodata);
+      const pctStr = r.nodata ? '—' : r.change_pct > 0 ? '+' + r.change_pct.toFixed(1) + '%'
         : r.change_pct < 0 ? r.change_pct.toFixed(1) + '%' : '0.0%';
 
       // 크기에 따라 폰트 조절
@@ -398,12 +449,18 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
       const showName = r.w > 28 && r.h > 20;
       const showPct = r.w > 36 && r.h > 28;
 
-      html += `<div class="hm-cell" style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px;background:${bg}"
+      const esc = v => String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+      html += r.us
+        ? `<div class="hm-cell" style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px;background:${bg}"
+        data-us="1" data-ticker="${esc(r.ticker)}" data-name="${esc(r.name)}" data-close="${r.close}"
+        data-pct="${r.nodata ? '' : r.change_pct}" data-w="${r.value}">`
+        : `<div class="hm-cell" style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px;background:${bg}"
         data-ticker="${r.ticker}" data-name="${r.name}" data-close="${r.close}"
         data-pct="${r.change_pct}" data-cap="${r.market_cap_tr}" data-market="${r.market}">`;
-      if (showName) html += `<div class="hm-name" style="font-size:${nameSize}px">${r.name}</div>`;
+      if (showName) html += `<div class="hm-name" style="font-size:${nameSize}px">${r.us ? esc(r.ticker) : r.name}</div>`;
       if (showPct) html += `<div class="hm-pct" style="font-size:${pctSize}px">${pctStr}</div>`;
-      if (showPrice && r.h > 50) html += `<div class="hm-price">${r.close.toLocaleString()}원</div>`;
+      if (showPrice && r.h > 50) html += r.us ? `<div class="hm-price">$${r.close.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>`
+        : `<div class="hm-price">${r.close.toLocaleString()}원</div>`;
       html += '</div>';
     });
 
@@ -416,27 +473,40 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentFilter = btn.dataset.filter;
+      document.getElementById('usNote').style.display = isUS(currentFilter) ? '' : 'none';
+      showLabel();
       render();
+      if (isUS(currentFilter) && !usData) loadUS().then(() => { showLabel(); render(); });
     });
   });
 
   // ── 툴팁 ──
+  function ttHtml(cell) {
+    const ds = cell.dataset;
+    const nod = ds.pct === '';
+    const pct = parseFloat(ds.pct) || 0;
+    const pctStr = nod ? '— (종가 없음)' : (pct > 0 ? '+' + pct.toFixed(2) + '%' : pct.toFixed(2) + '%');
+    const pctColor = nod ? 'var(--text-dim)' : pct > 0 ? 'var(--sf-up)' : pct < 0 ? 'var(--sf-down)' : 'var(--text)';
+    if (ds.us) {
+      return `
+      <div class="tt-name">${ds.ticker} <span style="color:var(--text-dim);font-size:12px;font-weight:400">${ds.name}</span></div>
+      <div class="tt-row"><span class="tt-label">전일 종가</span><span class="tt-val">$${parseFloat(ds.close).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+      <div class="tt-row"><span class="tt-label">등락률</span><span class="tt-val" style="color:${pctColor}">${pctStr}</span></div>
+      <div class="tt-row"><span class="tt-label">지수 비중</span><span class="tt-val">${parseFloat(ds.w).toFixed(2)}%</span></div>`;
+    }
+    return `
+      <div class="tt-name">${ds.name} <span style="color:var(--text-dim);font-size:12px;font-weight:400">${ds.ticker}</span></div>
+      <div class="tt-row"><span class="tt-label">현재가</span><span class="tt-val">${parseInt(ds.close).toLocaleString()}원</span></div>
+      <div class="tt-row"><span class="tt-label">등락률</span><span class="tt-val" style="color:${pctColor}">${pctStr}</span></div>
+      <div class="tt-row"><span class="tt-label">시총</span><span class="tt-val">${ds.cap}조</span></div>
+      <div class="tt-row"><span class="tt-label">시장</span><span class="tt-val">${ds.market || '—'}</span></div>`;
+  }
   const tooltip = document.getElementById('tooltip');
   document.getElementById('heatmap').addEventListener('mousemove', e => {
     const cell = e.target.closest('.hm-cell');
     if (!cell) { tooltip.classList.remove('show'); return; }
 
-    const pct = parseFloat(cell.dataset.pct);
-    const pctStr = pct > 0 ? '+' + pct.toFixed(2) + '%' : pct.toFixed(2) + '%';
-    const pctColor = pct > 0 ? 'var(--sf-up)' : pct < 0 ? 'var(--sf-down)' : 'var(--text)';
-
-    tooltip.innerHTML = `
-      <div class="tt-name">${cell.dataset.name} <span style="color:var(--text-dim);font-size:12px;font-weight:400">${cell.dataset.ticker}</span></div>
-      <div class="tt-row"><span class="tt-label">현재가</span><span class="tt-val">${parseInt(cell.dataset.close).toLocaleString()}원</span></div>
-      <div class="tt-row"><span class="tt-label">등락률</span><span class="tt-val" style="color:${pctColor}">${pctStr}</span></div>
-      <div class="tt-row"><span class="tt-label">시총</span><span class="tt-val">${cell.dataset.cap}조</span></div>
-      <div class="tt-row"><span class="tt-label">시장</span><span class="tt-val">${cell.dataset.market || '—'}</span></div>
-    `;
+    tooltip.innerHTML = ttHtml(cell);
     tooltip.classList.add('show');
 
     const tx = e.clientX + 16;
@@ -456,16 +526,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
     if (!cell) { tooltip.classList.remove('show'); return; }
     e.preventDefault();
     const touch = e.touches[0];
-    const pct = parseFloat(cell.dataset.pct);
-    const pctStr = pct > 0 ? '+' + pct.toFixed(2) + '%' : pct.toFixed(2) + '%';
-    const pctColor = pct > 0 ? 'var(--sf-up)' : pct < 0 ? 'var(--sf-down)' : 'var(--text)';
-    tooltip.innerHTML = `
-      <div class="tt-name">${cell.dataset.name} <span style="color:var(--text-dim);font-size:12px;font-weight:400">${cell.dataset.ticker}</span></div>
-      <div class="tt-row"><span class="tt-label">현재가</span><span class="tt-val">${parseInt(cell.dataset.close).toLocaleString()}원</span></div>
-      <div class="tt-row"><span class="tt-label">등락률</span><span class="tt-val" style="color:${pctColor}">${pctStr}</span></div>
-      <div class="tt-row"><span class="tt-label">시총</span><span class="tt-val">${cell.dataset.cap}조</span></div>
-      <div class="tt-row"><span class="tt-label">시장</span><span class="tt-val">${cell.dataset.market || '—'}</span></div>
-    `;
+    tooltip.innerHTML = ttHtml(cell);
     tooltip.classList.add('show');
     tooltip.style.left = Math.min(touch.clientX, window.innerWidth - 220) + 'px';
     tooltip.style.top = (touch.clientY - 140) + 'px';
