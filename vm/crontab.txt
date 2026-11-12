@@ -103,8 +103,8 @@
 55 20 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/screener_alert.py >> ~/cron.log 2>&1
 # 52주 신고가/신저가 — 평일 20:55
 55 20 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_new_high_low.py >> ~/logs/fetch_new_high_low.log 2>&1
-# 모멘텀 월간(22거래일) — ⚠ 원래 의도는 "말일 21:00"이지만, 날짜(28-31)와 요일(1-5)을 같이 쓰면 크론은 "둘 중 하나"로 해석해서 실제로는 매 평일 21:00에 돎
-0 21 28-31 * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_momentum.py --monthly >> ~/cron.log 2>&1
+# 모멘텀 월간(22거래일 롤링) — 평일 21:00 (083: 옛 줄 "0 21 28-31 * 1-5"가 크론 OR 규칙으로 이미 매 평일 돌고 있어서, 보이는 대로 동작하게 고침)
+0 21 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_momentum.py --monthly >> ~/cron.log 2>&1
 # 자동 push — 매일 21:10
 10 21 * * * bash ~/auto_push.sh >> ~/cron.log 2>&1
 # [봇2] 뉴스 — 코인 저녁 (--hours 12) — 매일 21:15
