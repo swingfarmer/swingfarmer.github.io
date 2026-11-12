@@ -12,9 +12,16 @@ pykrx get_etf_portfolio_deposit_file(티커, 날짜) 로 ETF별 구성종목을 
   - 국내: 비중 상위 TOP_N. 비중 칸이 비면 금액(원) 비율로 계산
   - 해외: KRX가 비중·금액을 안 줌(계약수만). 구성 30개 이하면 이름 전체(비중 null), 초과면 빈 목록
 
+  (083) pykrx 래퍼 대신 KRX 원본(PDF().fetch)을 직접 불러 해외 종목의 전체 ISIN(12자리)을 받음.
+        holdings.json 형식·값은 예전과 같음(pykrx와 같은 방식으로 6자리로 줄여 저장).
+        해외 종목이 하나라도 있는 ETF는 전체 행을 VM 로컬에 따로 저장 → 해외 비중 계산용
+          ~/sf_data/etf_pdf_foreign.json
+          {date, updated, e: {ETF코드: [[ISIN또는코드, 이름, CU당 계약수, 금액(원)], ...]}}
+
 사용법
-  python3 scripts/fetch_kr_etf_holdings.py --limit 20   # 테스트: 20개만, 저장 안 함, 시간·모양 출력
-  python3 scripts/fetch_kr_etf_holdings.py              # 전체 (약 20~30분)
+  python3 scripts/fetch_kr_etf_holdings.py --limit 20             # 테스트: 20개만, 저장 안 함, 시간·모양 출력
+  python3 scripts/fetch_kr_etf_holdings.py --limit 60 --compare   # 테스트 + 기존 holdings.json과 같은지 비교
+  python3 scripts/fetch_kr_etf_holdings.py                        # 전체 (약 16분)
 
 크론 (토 10:00, 아래 줄에 붙임: fetch_kr_etf.py 18:40 줄 아래)
 0 10 * * 6 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_kr_etf_holdings.py >> ~/logs/fetch_kr_etf_holdings.log 2>&1
@@ -27,6 +34,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ETF_DIR = os.path.join(ROOT, 'data', 'kr', 'etf')
 LATEST = os.path.join(ETF_DIR, 'latest.json')
 OUT = os.path.join(ETF_DIR, 'holdings.json')
+RAW_DIR = os.path.expanduser('~/sf_data')
+RAW_OUT = os.path.join(RAW_DIR, 'etf_pdf_foreign.json')   # 레포 밖 (083)
 TOP_N = 10
 SLEEP = 0.4
 
@@ -44,6 +53,45 @@ def num(v):
 
 
 NOW_MAX = 30   # 비중 없는(해외) ETF는 구성 이 개수 이하일 때만 이름 전체 저장
+
+
+def raw_num(v):
+    """KRX 원본 숫자 문자열 → float. '-'·빈칸은 0 (pykrx와 같은 처리)."""
+    s = str(v if v is not None else '').replace(',', '').strip()
+    if s in ('', '-'):
+        return 0.0
+    try:
+        f = float(s)
+        return 0.0 if f != f else f
+    except Exception:
+        return 0.0
+
+
+def fetch_pdf(code, day):
+    """KRX PDF 원본 → (pykrx 형식 DataFrame, 원본 행 [[전체코드, 이름, 계약수, 금액], ...]).
+    pykrx get_etf_portfolio_deposit_file 과 같은 DataFrame을 만들되, 잘리기 전 전체 ISIN도 같이 돌려줌."""
+    import pandas as pd
+    from pykrx.website.krx.etx.core import PDF
+    from pykrx.website.krx.etx.ticker import get_etx_isin
+    raw = PDF().fetch(day, get_etx_isin(code))
+    if raw is None or len(raw) == 0:
+        return None, []
+    idx, data, full = [], [], []
+    for _, r in raw.iterrows():
+        cd = str(r.get('COMPST_ISU_CD', '') or '').strip()
+        nm = str(r.get('COMPST_ISU_NM', '') or '').strip()
+        sh = raw_num(r.get('COMPST_ISU_CU1_SHRS'))
+        amt = raw_num(r.get('VALU_AMT'))
+        idx.append(cd[3:9] if len(cd) > 6 else cd)      # pykrx와 같은 6자리 축약
+        data.append({'구성종목명': nm, '계약수': sh, '금액': int(amt),
+                     '시가총액': int(raw_num(r.get('COMPST_AMT'))), '비중': raw_num(r.get('COMPST_RTO'))})
+        full.append([cd, nm, sh, int(amt)])
+    df = pd.DataFrame(data, index=idx)
+    return df, full
+
+
+def is_foreign(cd):
+    return len(cd) == 12 and cd[:2].isalpha() and not cd.startswith('KR')
 
 
 def parse(df):
@@ -89,13 +137,16 @@ def main():
         etfs = etfs[:limit]
     log(f'기준일 {day} / 대상 {len(etfs)}개' + (' (테스트, 저장 안 함)' if limit else ''))
 
-    from pykrx import stock
+    compare = '--compare' in sys.argv
     out, fail, amt_cnt, empty, names_cnt, none_cnt = {}, [], 0, 0, 0, 0
+    foreign = {}
     t0 = time.time()
     for i, (code, name, aum) in enumerate(etfs, 1):
         try:
-            df = stock.get_etf_portfolio_deposit_file(code, day)
+            df, full = fetch_pdf(code, day)
             n, top, src = parse(df)
+            if any(is_foreign(x[0]) for x in full):
+                foreign[code] = full
             if n == 0:
                 empty += 1
             if src == 'amt':
@@ -119,8 +170,34 @@ def main():
     el = time.time() - t0
     log(f'완료 {len(out)}개 / 실패 {len(fail)} / 구성 0개 {empty} / 금액비율 {amt_cnt} / '
         f'해외 이름만 {names_cnt} / 해외 개수만 {none_cnt} / {el/60:.1f}분')
+    # 해외 종목 통계 (083)
+    isins = {}
+    for rows in foreign.values():
+        for x in rows:
+            if is_foreign(x[0]):
+                isins[x[0]] = x[1]
+    by_cty = {}
+    for i in isins:
+        by_cty[i[:2]] = by_cty.get(i[:2], 0) + 1
+    log(f'해외 종목 든 ETF {len(foreign)}개 / 고유 해외 ISIN {len(isins)}개 / 국가별 '
+        + ', '.join(f'{k} {v}' for k, v in sorted(by_cty.items(), key=lambda x: -x[1])))
+
     if limit:
         log(f'  → 전체 1,190개 예상 약 {el/len(etfs)*1190/60:.0f}분')
+        if compare:
+            try:
+                old = json.load(open(OUT, encoding='utf-8'))
+            except Exception:
+                old = None
+            if not old or old.get('date') != d['date']:
+                log(f"  비교 불가: 기존 holdings.json 기준일 {old and old.get('date')} ≠ {d['date']}")
+            else:
+                same = sum(1 for c in out if old['h'].get(c) == out[c])
+                diff = [c for c in out if old['h'].get(c) != out[c]]
+                log(f'  기존 holdings.json과 비교: 같음 {same} / 다름 {len(diff)}')
+                for c in diff[:5]:
+                    log(f'    다름 {c}: 기존 {str(old["h"].get(c))[:150]}')
+                    log(f'           새것 {str(out[c])[:150]}')
         return
     if len(out) < len(etfs) * 0.8:
         log('❌ 80% 미만 성공 — 기존 파일 유지')
@@ -130,6 +207,14 @@ def main():
     with open(OUT, 'w', encoding='utf-8') as f:
         json.dump(res, f, ensure_ascii=False, separators=(',', ':'))
     log(f'✅ holdings.json {len(out)}개 ({os.path.getsize(OUT)//1024}KB)')
+
+    # 해외 종목 원본 — VM 로컬 (083, 해외 비중 계산용)
+    os.makedirs(RAW_DIR, exist_ok=True)
+    tmp = RAW_OUT + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump({'date': d['date'], 'updated': res['updated'], 'e': foreign}, f, ensure_ascii=False, separators=(',', ':'))
+    os.replace(tmp, RAW_OUT)
+    log(f'💾 {RAW_OUT} ETF {len(foreign)}개 ({os.path.getsize(RAW_OUT)//1024}KB)')
 
 
 if __name__ == '__main__':
