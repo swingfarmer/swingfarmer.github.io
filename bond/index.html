@@ -48,6 +48,7 @@ body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4
 .opts .sep { flex-basis:100%; height:0; }
 .cnt { font-size:12px; color:var(--sf-text-dim); margin-left:auto; }
 .bt td, .bt th { text-align:right; white-space:nowrap; }
+.bt thead th { line-height:1.25; vertical-align:bottom; }
 .bt td.l, .bt th.l { text-align:left; }
 .bt tbody tr { cursor:pointer; }
 .bt tbody tr:hover td { background:var(--sf-bg); }
@@ -99,7 +100,7 @@ body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4
 <body class="sf-narrow">
 
 <h1>📜 채권</h1>
-<p class="desc">미국채 직접매매 — 지금 남아 있는 미국 국채(Note·Bond) 전 종목의 이론가와 개인·법인 기준 세후수익률, 금리곡선. 개인은 저쿠폰(금종세 방어), 법인은 고쿠폰(매년 이자 현금흐름) 종목 고르기용.</p>
+<p class="desc">미국채 직접매매 — 지금 남아 있는 미국 국채(Note·Bond) 전 종목의 이론가와 개인·법인 기준 세후수익률, 금리곡선.<br>개인은 저쿠폰(금종세 방어), 법인은 고쿠폰(매년 이자 현금흐름) 종목 고르기용.</p>
 <div class="data-date" id="dataDate">불러오는 중…</div>
 
 <!-- ① 금리곡선 -->
@@ -176,13 +177,13 @@ body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4
     <div class="hb">
       <h4>👤 개인으로 살 때 — 저쿠폰 고르기</h4>
       <ol>
-        <li>과세 <b>개인</b>, 세율 <b>15.4</b> (금종세 대상이면 한계세율 26.4·38.5·41.8 등)</li>
+        <li>과세 <b>개인</b>, 세율 <b class="tx-p">15.4</b> (금종세 대상이면 한계세율 26.4·38.5·41.8 등)</li>
         <li>쿠폰 <b>1~3% 이하</b>, 정렬 <b>세후 (앱식) 높은 순</b></li>
       </ol>
       <div>이유: 개인은 쿠폰 이자만 과세되고 할인 매수 후 만기 차익은 비과세. 쿠폰이 낮을수록 수익 대부분이 비과세 차익이 되고, 매년 이자가 적어 금융소득 2,000만원(금종세) 기준도 덜 채움.</div>
       <h4>🏢 법인으로 살 때 — 이자 높으면서 전체 수익률 좋은 것</h4>
       <ol>
-        <li>과세 <b>법인</b>, 세율 <b>11</b> (법인세 10% + 지방소득세, 과표 2억 이하). 성실신고대상 소규모법인이면 <b>22</b></li>
+        <li>과세 <b>법인</b>, 세율 <b class="tx-c">11</b> (법인세 + 지방소득세, 과표 2억 이하). 성실신고대상 소규모법인이면 <b class="tx-cs">22</b></li>
         <li>쿠폰 <b>4% 이상</b>(또는 3%·5% 이상)으로 매년 현금흐름 확보</li>
         <li>정렬 <b>세후 (복리) 높은 순</b> → 그중 전체 수익률 좋은 것이 위로. 매년 들어오는 이자 비율은 <b>이자수익률%</b> 열</li>
         <li>쿠폰 조건 없이 고쿠폰·저쿠폰을 섞어 비교할 땐 앱식(단리) 말고 <b>복리</b>로 볼 것. 단리는 만기에 몰려 받는 큰 차익을 시간가치 없이 나눠서, 장기 할인채가 높게 나옴(예: T 1.25 05/15/50 법인 11% 앱식 6.74% vs 복리 4.83%)</li>
@@ -195,7 +196,7 @@ body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4
         <li><b>세후 (복리)%</b> = 반기 복리(채권 관행). 다른 채권·예금과 정확히 비교할 때</li>
         <li>쿠폰이 시장금리보다 높은 종목은 100보다 비싸게(할증) 사고 만기에 100만 받음 → 이자수익률이 세후 수익률보다 높게 보임. 그 차이가 만기 때 깎이는 원금</li>
       </ul>
-      <div>과세·세율 칸은 아래 종목 계산기에도 같이 적용됨. 세율 칸은 개인↔법인을 바꿀 때 기본값(15.4 ↔ 11)으로 자동으로 바뀌고, 직접 넣은 다른 값은 그대로 둠.</div>
+      <div>과세·세율 칸은 아래 종목 계산기에도 같이 적용됨. 세율 칸은 개인↔법인을 바꿀 때 기본값(<span class="tx-p">15.4</span> ↔ <span class="tx-c">11</span>)으로 자동으로 바뀌고, 직접 넣은 다른 값은 그대로 둠. 기본 세율은 사이트 공통 세율 파일(/tax-rates.js)에서 가져옴 — 세법이 바뀌면 그 파일만 고치면 여기도 바뀜.</div>
     </div>
   </details>
   <div id="list"><div class="empty">불러오는 중…</div></div>
@@ -243,6 +244,7 @@ body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4
 </div>
 
 <script src="/common.js?v=10"></script>
+<script src="/tax-rates.js?v=1"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
 // ── 저장 (sf-slots) ──
@@ -353,12 +355,16 @@ function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&am
 function mgOf(rem, s, l){ return rem<=5 ? s : rem>=10 ? l : s+(l-s)*(rem-5)/5; }
 
 // (086) 과세 방식: 개인 = 쿠폰만 과세 / 법인 = 쿠폰 + 만기 상환차익 과세
-var TAX_DEF = {p:15.4, c:11};
+// 기본 세율은 /tax-rates.js 에서 (세법 바뀌면 그 파일만 고침). 못 읽으면 2026 값
+var _T = window.SF_TAX;
+var TAX_DEF = {p: _T ? _T.interest : 15.4, c: _T ? _T.wl(_T.corp[0][1]) : 11, cs: _T ? _T.wl(_T.corpSmall[0][1]) : 22};
+document.getElementById('oTax').value = TAX_DEF.p;          // 저장값이 있으면 뒤에서 덮어씀
+['p','c','cs'].forEach(function(k){ document.querySelectorAll('.tx-'+k).forEach(function(e){ e.textContent = TAX_DEF[k]; }); });
 function isCorp(){ return document.getElementById('oTaxMode').value==='c'; }
 function taxHint(){
   document.getElementById('taxHint').innerHTML = isCorp()
-    ? '🏢 <b>법인</b>: 쿠폰 이자 + 만기 상환차익(할인분)까지 법인세. 세율 11% = 법인세 10% + 지방소득세(과표 2억 이하, 2026~). 성실신고대상 소규모법인이면 22%. 고쿠폰 고르기: 쿠폰 "4% 이상" + 정렬 "세후 (복리) 높은 순"'
-    : '👤 <b>개인</b>: 쿠폰 이자만 15.4% 과세, 할인 매수 후 만기 차익·환차익은 비과세. 금종세 대상이면 세율 칸에 한계세율. 저쿠폰 고르기: 쿠폰 "3% 이하" + 정렬 "세후 (앱식) 높은 순"';
+    ? '🏢 <b>법인</b>: 쿠폰 이자 + 만기 상환차익(할인분)까지 법인세. 세율 '+TAX_DEF.c+'% = 법인세 + 지방소득세(과표 2억 이하'+(_T?', '+_T.year+'~':'')+'). 성실신고대상 소규모법인이면 '+TAX_DEF.cs+'%. 고쿠폰 고르기: 쿠폰 "4% 이상" + 정렬 "세후 (복리) 높은 순"'
+    : '👤 <b>개인</b>: 쿠폰 이자만 '+TAX_DEF.p+'% 과세, 할인 매수 후 만기 차익·환차익은 비과세. 금종세 대상이면 세율 칸에 한계세율. 저쿠폰 고르기: 쿠폰 "3% 이하" + 정렬 "세후 (앱식) 높은 순"';
 }
 
 // ── 전체 다시 계산 ──
@@ -409,11 +415,11 @@ function renderList(){
   rows.sort(S[so]||S.sat);
   document.getElementById('cnt').textContent = rows.length+'종 / 전체 '+BONDS.length+'종';
   if (!rows.length){ document.getElementById('list').innerHTML='<div class="empty">조건에 맞는 종목 없음</div>'; return rows; }
-  var h='<table class="sf-table bt"><thead><tr><th class="l">종목</th><th>만기</th><th>잔존(년)</th><th>쿠폰%</th><th title="이론가 + 증권사 마진">추정 매수가</th><th title="쿠폰 ÷ 추정 매수가 × 100 (세전). 매수금 대비 매년 이자로 들어오는 비율. 만기 차익·손실은 안 들어감">이자수익률%</th>'
-    +'<th title="증권사 앱과 같은 단리 방식">세전 (앱식)%</th><th title="증권사 앱과 같은 단리 방식. 법인 모드면 만기차익 세금까지 뺀 값">세후 (앱식)%</th><th title="세후(앱식) ÷ (1 − 세율). 같은 세후를 내려면 전액 과세되는 예금 금리가 얼마여야 하는지">세전 환산%</th>'
-    +'<th title="반기 복리(채권 관행). 기간이 길수록 앱식보다 낮게 나옴">세후 (복리)%</th><th>잔액(억$)</th></tr></thead><tbody>';
+  var h='<table class="sf-table bt"><thead><tr><th class="l" title="마우스를 올리면 CUSIP(미국 채권 식별번호)·종류. 검색칸에 CUSIP을 넣어도 찾아짐">종목</th><th>만기</th><th>잔존<br>(년)</th><th>쿠폰<br>%</th><th title="이론가 + 증권사 마진">추정<br>매수가</th><th title="쿠폰 ÷ 추정 매수가 × 100 (세전). 매수금 대비 매년 이자로 들어오는 비율. 만기 차익·손실은 안 들어감">이자<br>수익률%</th>'
+    +'<th title="증권사 앱과 같은 단리 방식">세전<br>(앱식)%</th><th title="증권사 앱과 같은 단리 방식. 법인 모드면 만기차익 세금까지 뺀 값">세후<br>(앱식)%</th><th title="세후(앱식) ÷ (1 − 세율). 같은 세후를 내려면 전액 과세되는 예금 금리가 얼마여야 하는지">세전<br>환산%</th>'
+    +'<th title="반기 복리(채권 관행). 기간이 길수록 앱식보다 낮게 나옴">세후<br>(복리)%</th><th>잔액<br>(억$)</th></tr></thead><tbody>';
   rows.forEach(function(b){
-    h+='<tr data-c="'+b.cusip+'"'+(b.cusip===sel?' class="sel"':'')+'><td class="l"><span class="nm">'+esc(b.name)+'</span><span class="cu">'+b.cusip+(b.type==='B'?' · Bond':'')+'</span></td>'
+    h+='<tr data-c="'+b.cusip+'"'+(b.cusip===sel?' class="sel"':'')+'><td class="l" title="CUSIP '+b.cusip+' · '+(b.type==='B'?'Bond (발행 20~30년)':'Note (발행 2~10년)')+'"><span class="nm">'+esc(b.name)+'</span></td>'
       +'<td>'+b.mat+'</td><td>'+b.rem.toFixed(1)+'</td><td>'+f3(b.cpn)+'</td><td>'+f2(b.buyClean)+'</td><td>'+f2(b.cy)+'</td>'
       +'<td>'+f2(b.sPre)+'</td><td class="at">'+f2(b.sAt)+'</td><td>'+f2(b.eq)+'</td><td>'+f2(b.at)+'</td><td>'+comma(b.amt/100)+'</td></tr>';
   });
