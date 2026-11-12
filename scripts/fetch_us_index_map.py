@@ -77,6 +77,10 @@ def build(raw, fm, ym, get_closes):
     """→ (결과 dict 또는 None, 로그용 문자열 목록). get_closes 는 테스트에서 가짜로 바꿀 수 있게 인자로 받음."""
     def sym_of(isin):
         v = fm.get(isin)
+        # 미국 밖 ISIN이라도 미국에 상장돼 있으면 그 티커 (영국 CCEP, 캐나다 TRI 등 — 야후 검색은 본국 티커 CCEP.AS·TRI.TO를 줘서 빠졌음, 088)
+        for ex, tk in (v[1] if v and v[1] else []):
+            if ex == 'US':
+                return tk.replace('/', '-')
         s = figi_symbol(isin, v[1]) if v else None
         if not s and isin in ym:
             s = ym[isin][0]
