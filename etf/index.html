@@ -243,6 +243,7 @@ function classify(full, tab){
 var LS = 'sf_etf_state_v1';
 var S = { tab:'all', reg:'all', theme:'all', per:'m1', aum:'0', brand:'', noLev:false, noInv:false, noCC:false,
           group:false, q:'', view:'table', sort:'aum', dir:-1, stars:[], fq:'', fsel:'', fsort:'w' };
+var S_DEFAULT_RAW = JSON.parse(JSON.stringify(S));   // 저장값 복원 전 기본값 (↺ 처음 상태로)
 try { var sv = JSON.parse(localStorage.getItem(LS)||'null'); if (sv) for (var k in sv) if (k in S) S[k]=sv[k]; } catch(e){}
 var _canSave = false;
 function save(){ if(!_canSave) return; try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e){} }
@@ -260,6 +261,13 @@ window.slGetState = function(){
 window.slSetState = function(d){
   if (!d) return;
   for (var k in d) if (k in S) S[k]=d[k];
+  syncInputs(); save(); render();
+};
+// ↺ 처음 상태로 (083): 필터·정렬·보기만 기본값, ★관심 목록은 남김
+window.slReset = function(){
+  var keep = S.stars;
+  S = JSON.parse(JSON.stringify(S_DEFAULT_RAW)); S.stars = keep;
+  LIMIT = 300; openGroups = {}; openHold = {};
   syncInputs(); save(); render();
 };
 
@@ -375,7 +383,7 @@ var COLS = [
   {k:'star', t:'', l:true, nosort:true},
   {k:'name', t:'종목', l:true},
   {k:'close', t:'현재가'},
-  {k:'d1', t:'1일'}, {k:'w1', t:'1주'}, {k:'m1', t:'1개월'}, {k:'m3', t:'3개월'}, {k:'ytd', t:'연초'}, {k:'y1', t:'1년'},
+  {k:'d1', t:'1일'}, {k:'w1', t:'1주'}, {k:'m1', t:'1개월'}, {k:'m3', t:'3개월'}, {k:'m6', t:'6개월'}, {k:'ytd', t:'연초'}, {k:'y1', t:'1년'},
   {k:'f5', t:'유입 5일'}, {k:'f20', t:'유입 20일'},
   {k:'val', t:'거래대금'}, {k:'aum', t:'순자산'}, {k:'gap', t:'괴리율'}
 ];
@@ -710,6 +718,6 @@ Promise.all([
 });
 })();
 </script>
-<script src="/sf-slots.js?v=5"></script>
+<script src="/sf-slots.js?v=6"></script>
 </body>
 </html>

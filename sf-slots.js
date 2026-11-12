@@ -13,6 +13,11 @@
    - 내보내기/가져오기 (JSON)
    - 드래그 순서변경
    - 이름수정, 덮어쓰기, 삭제
+   - (083) ↺ 처음 상태로: 페이지가 켜야 보임 (기록 데이터가 지워지는 사고 막으려고 페이지별로 켬)
+       window.SF_RESET = true                 → 자동저장(sf_<KEY>_v2)만 지우고 새로고침 (입력칸이 HTML 기본값으로)
+       window.SF_RESET = ['키1','키2']        → 위 + 페이지 자체 localStorage 키도 지움
+       window.slReset = function(){...}       → 페이지가 직접 기본값으로 되돌림(관심 목록 등 남길 것 있을 때), 새로고침 없음
+     클라우드 저장 슬롯은 안 건드림 → "저장 → 초기화 → 필요하면 불러오기" 가능
    ============================================= */
 (function(){
 'use strict';
@@ -36,6 +41,7 @@ function autoSave(){
 }
 function autoLoad(){
   try{
+    if(sessionStorage.getItem('sf_reset_'+KEY)){ sessionStorage.removeItem('sf_reset_'+KEY); return; }   // 방금 초기화함 → 복원 안 함
     const d = localStorage.getItem(LS_KEY);
     if(d && window.slSetState) window.slSetState(JSON.parse(d));
   }catch(e){}
@@ -124,6 +130,7 @@ function injectModal(){
       전체 가져오기
     </button>
     <input type="file" id="sfsImportInput" accept=".json" style="display:none">
+    ${window.SF_RESET || window.slReset ? `<button onclick="window._sfSlots.reset()" class="sfs-tool-btn" title="입력·설정을 처음 상태로 (저장 슬롯은 그대로)">↺ 처음 상태로</button>` : ''}
   </div>
 
   <div class="sfs-sort-bar" id="sfsSortBar">
@@ -414,6 +421,22 @@ window._sfSlots = {
   close: function(){
     const o = $('sfSlotOverlay');
     if(o) o.classList.remove('open');
+  },
+
+  reset: function(){
+    if(!confirm('입력값·설정을 처음 상태로 되돌릴까요?\n\n위 목록의 저장 슬롯은 그대로 남습니다.\n지금 상태를 남기려면 취소하고 먼저 [저장]하세요.')) return;
+    try{
+      if(typeof window.slReset === 'function'){
+        window.slReset();
+        autoSave();
+        this.close();
+        return;
+      }
+      localStorage.removeItem(LS_KEY);
+      if(Array.isArray(window.SF_RESET)) window.SF_RESET.forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });
+      sessionStorage.setItem('sf_reset_'+KEY, '1');
+    }catch(e){}
+    location.reload();
   },
 
   load: function(i){
