@@ -128,8 +128,8 @@
 0 21 * * 5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_momentum.py --weekly >> ~/cron.log 2>&1
 # [봇1] 이평선 시그널 — 금 21:05
 5 21 * * 5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_ma_signal.py >> ~/cron.log 2>&1
-# 국내 ETF 구성종목(KRX PDF) → data/kr/etf/holdings.json — 토 10:00 (약 16분, 082)
-0 10 * * 6 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_kr_etf_holdings.py >> ~/logs/fetch_kr_etf_holdings.log 2>&1
+# 국내 ETF 구성종목(KRX PDF) → holdings.json, 이어서 해외 ISIN→티커(새 종목만) → 해외 추정 비중 — 토 10:00 (약 21분+수분+10분, 082·083)
+0 10 * * 6 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_kr_etf_holdings.py >> ~/logs/fetch_kr_etf_holdings.log 2>&1 ; python3 -u scripts/fetch_isin_map.py >> ~/logs/fetch_isin_map.log 2>&1 ; python3 -u scripts/fetch_kr_etf_weights.py >> ~/logs/fetch_kr_etf_weights.log 2>&1
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

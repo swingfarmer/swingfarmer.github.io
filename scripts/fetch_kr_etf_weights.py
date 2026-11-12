@@ -42,7 +42,8 @@ SFX = {'': ('USD', 1), 'T': ('JPY', 1), 'SS': ('CNY', 1), 'SZ': ('CNY', 1), 'HK'
        'SI': ('SGD', 1), 'TA': ('ILS', 100), 'SA': ('BRL', 1), 'NZ': ('NZD', 1), 'MX': ('MXN', 1),
        'JO': ('ZAR', 100), 'JK': ('IDR', 1), 'BK': ('THB', 1), 'KL': ('MYR', 1), 'VN': ('VND', 1),
        'WA': ('PLN', 1), 'IS': ('TRY', 1), 'SR': ('SAR', 1), 'QA': ('QAR', 1), 'KS': ('KRW', 1),
-       'KQ': ('KRW', 1), 'PR': ('CZK', 1), 'BD': ('HUF', 1), 'AT': ('EUR', 1), 'CL': ('CLP', 1)}
+       'KQ': ('KRW', 1), 'PR': ('CZK', 1), 'BD': ('HUF', 1), 'AT': ('EUR', 1), 'CL': ('CLP', 1),
+       'HA': ('EUR', 1), 'SG': ('EUR', 1), 'DU': ('EUR', 1), 'MU': ('EUR', 1), 'BE': ('EUR', 1), 'HM': ('EUR', 1)}
 
 
 def log(*a):
@@ -127,6 +128,14 @@ def main():
     px = last_close(syms)
     fxp = last_close([f'{c}KRW=X' for c in curs])
     fx = {c: fxp.get(f'{c}KRW=X') for c in curs}
+    # 원화 직거래 시세가 없는 통화(칠레·이스라엘·멕시코·노르웨이·베트남 등)는 달러 교차: XXX/KRW = USD/KRW ÷ USD/XXX
+    gap = [c for c in curs if not fx.get(c) and c != 'USD']
+    if gap and fx.get('USD'):
+        usdx = last_close([f'{c}=X' for c in gap])
+        for c in gap:
+            if usdx.get(f'{c}=X'):
+                fx[c] = fx['USD'] / usdx[f'{c}=X']
+        log(f'  ↪ 달러 교차환율 {sum(1 for c in gap if fx.get(c))}/{len(gap)}개 ({", ".join(gap)})')
     fx['KRW'] = 1.0
     miss_fx = [c for c in curs if not fx.get(c)]
     log(f'종가 {len(px)}/{len(syms)}개 · 환율 {len(curs)-len(miss_fx)}/{len(curs)}개'

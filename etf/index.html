@@ -177,7 +177,7 @@ body.sf-dark .star.on { color:#e8a317!important; }
   <p><strong>자금유입(추정):</strong> 오늘 시총 − 어제 시총 × (오늘 종가 ÷ 어제 종가). 가격 변화분을 빼고 남은 설정·환매 금액. 첫 수집 다음 날부터 하루씩 쌓이고 최근 20거래일 보관. 좌수 반영이 하루 늦을 수 있어 하루 단위보다 5일·20일 합으로 볼 것.</p>
   <p><strong>분류:</strong> 대분류는 네이버 분류 그대로. 지역·테마·레버리지/커버드콜 표시는 이름 키워드로 자동 판단이라 틀린 게 있을 수 있음. 같은 상품 묶기 = 운용사 이름을 뗀 나머지 이름이 같은 ETF.</p>
   <p><strong>장중 준실시간:</strong> 평일 장중에는 현재가·1일 등락률만 1분마다 KIS 시세로 바뀜(상단에 🔴 표시). 1주~1년 등락률·거래대금·순자산·괴리율·자금유입은 전일 종가 기준 그대로. 18:40 수집 뒤에는 그날 종가로 정리됨.</p>
-  <p><strong>구성종목:</strong> KRX PDF, 주 1회(토) 수집. 국내는 비중 상위 10종목. 해외 종목은 KRX가 비중을 주지 않아(주식 수만 있음) 구성 30개 이하 ETF만 이름 목록, 그보다 큰 지수형(S&amp;P500 등)은 구성 개수만.</p>
+  <p><strong>구성종목:</strong> KRX PDF, 주 1회(토) 수집. 비중 상위 10종목. 국내 종목은 KRX 비중 그대로. 해외 종목은 KRX가 주식 수만 주기 때문에 <b>추정 비중</b> = 주식 수 × 해외 종가(yfinance) × 원화 환율 ÷ 합계로 직접 계산(현금·채권·선물 제외한 주식 부분 기준). 값을 구한 종목이 80% 미만인 ETF(채권형 등)는 이름만 보이거나 비중 없음.</p>
   <p><strong>관심(★):</strong> 별 누른 목록과 필터는 이 브라우저에 자동 저장. 폰과 맞추려면 💾 저장 버튼으로 슬롯 저장.</p>
 </div>
 
@@ -519,6 +519,7 @@ function holdRow(o){
   if (list[0][2]!=null) {
     var sum = list.reduce(function(a,x){ return a+(x[2]||0); },0);
     h += ' · 상위 '+list.length+'개 합 '+sum.toFixed(1)+'%';
+    if (e[2]==='est') h += ' · <b>추정 비중</b>(계약수×해외 주가×환율, 주식 부분 기준, 값 구한 종목 '+e[3]+'%)';
   } else h += ' · 해외 종목이라 비중 없음';
   return h + ' · 기준 '+esc(H.date)+'</div></td></tr>';
 }
@@ -527,7 +528,7 @@ function buildIdx(){
   Object.keys(H.h).forEach(function(etf){
     H.h[etf][1].forEach(function(x){
       var k = x[1]; if (!k) return;
-      (IDX[k] || (IDX[k] = {code:x[0], list:[]})).list.push([etf, x[2]]);
+      (IDX[k] || (IDX[k] = {code:x[0], list:[]})).list.push([etf, x[2], H.h[etf][2]==='est']);
     });
   });
 }
@@ -553,7 +554,7 @@ function renderFind(list){
   if (!sel) { out.innerHTML = '<div class="empty">"'+esc(S.fq)+'" 담은 ETF 없음 (비중 상위 10종목 기준).</div>'; return 0; }
   var allow = {}; list.forEach(function(o){ allow[o.code]=1; });
   var rows = IDX[sel].list.filter(function(x){ return allow[x[0]]; }).map(function(x){
-    var o = BYCODE[x[0]]; return {o:o, w:x[1], amt:(x[1]!=null && o.aum!=null) ? o.aum*x[1]/100 : null};
+    var o = BYCODE[x[0]]; return {o:o, w:x[1], est:x[2], amt:(x[1]!=null && o.aum!=null) ? o.aum*x[1]/100 : null};
   });
   var hidden = IDX[sel].list.length - rows.length;
   var fk = S.fsort;
@@ -570,10 +571,10 @@ function renderFind(list){
   rows.forEach(function(r){
     var o = r.o;
     h += '<tr><td class="l nm"><b>'+esc(o.name)+'</b><span class="code">'+o.code+'</span>'+tags(o)+'<div class="th2">'+esc(o.theme)+' · '+esc(o.region)+'</div></td>'+
-         '<td>'+(r.w!=null?r.w.toFixed(2)+'%':'<span class="mu">포함</span>')+'</td><td>'+fmtEok(r.amt)+'</td><td>'+fmtEok(o.aum)+'</td>'+
+         '<td>'+(r.w!=null?(r.est?'<span class="mu" title="해외 종목 추정 비중">≈</span>':'')+r.w.toFixed(2)+'%':'<span class="mu">포함</span>')+'</td><td>'+fmtEok(r.amt)+'</td><td>'+fmtEok(o.aum)+'</td>'+
          '<td>'+fmtPct(o[S.per])+'</td><td>'+fmtPct(o.d1)+'</td></tr>';
   });
-  out.innerHTML = h + '</tbody></table><div class="th2 note">추정 보유금액 = ETF 순자산 × 비중. 같은 이름이 국내·해외에 겹치면 칩에서 골라야 함.</div>';
+  out.innerHTML = h + '</tbody></table><div class="th2 note">추정 보유금액 = ETF 순자산 × 비중. ≈ 표시는 해외 종목 추정 비중(KRX 계약수 × 해외 주가 × 환율, 주 1회). 같은 이름이 국내·해외에 겹치면 칩에서 골라야 함.</div>';
   return rows.length;
 }
 
