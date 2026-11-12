@@ -28,6 +28,9 @@ body.sf-dark .toggle-opt{background-color:#182534!important;color:#85b5e0!import
 body.sf-dark .note{background-color:#373115!important;border-color:#736326!important;color:#f2a373!important}
 body.sf-dark .warn-strong{background-color:#371515!important;border-color:#732626!important;color:#e87d7d!important}
 body.sf-dark summary{color:#85b5e0!important}
+body.sf-dark .howto{border-color:#2c333f!important;background-color:#1e242e!important}
+body.sf-dark .howto summary{color:#85b5e0!important}
+body.sf-dark .howto .hb{color:#cccccc!important}
 body.sf-dark .entity-card.best{border-color:#16a34a!important}
 body.sf-dark .entity-card.worst{border-color:#fca5a5!important}
 body.sf-dark .entity-card.best .entity-name{color:#16a34a!important}
@@ -82,6 +85,10 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   details { margin-top: 12px; }
   summary { cursor: pointer; font-weight: 600; color: #1F4E78; font-size: 13px; padding: 6px 0; }
   footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+.howto { border:1px solid var(--sf-border); border-radius:8px; margin:0 0 14px; background:var(--sf-surface); }
+.howto summary { cursor:pointer; padding:8px 12px; font-size:13px; font-weight:700; color:var(--sf-brand); }
+.howto .hb { padding:0 14px 12px; font-size:12.5px; line-height:1.8; color:var(--sf-text-sub); }
+.howto .hb ol { margin:2px 0 4px; padding-left:20px; }
 </style>
 
 <link rel="stylesheet" href="/auth-guard.css?v=4">
@@ -168,14 +175,42 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
       </select>
     </div>
     <div class="input-row">
+      <label>일반법인(임대용) 법인세 <span class="stat-sub">새 법인을 세워 사서 임대할 때</span> <span class="info-btn" onclick="toggleInfo('genTypeInfo')">i</span></label>
+      <select id="genCorpType" onchange="calculate()">
+        <option value="small" selected>성실신고 소규모법인 (22%) — 1인·가족 임대법인 대부분</option>
+        <option value="gen">일반 누진 (2억까지 11%) — 다른 사업 매출이 더 큰 법인</option>
+      </select>
+      <div class="info-box" id="genTypeInfo">임대만 하려고 세운 1인·가족 법인은 거의 다 <b>성실신고 소규모법인</b>이라 2억 이하 구간(11%) 없이 처음부터 <b class="tx-cs">22</b>%예요. 세 가지를 모두 충족하면 해당: ① 지배주주 등 지분 50% 초과 ② 상시근로자 5인 미만 ③ 부동산임대업이 주업이거나 임대·이자·배당 수입이 매출의 50% 이상. 이미 다른 사업(쇼핑몰 등)을 하는 법인이 사서 임대하고 그 사업 매출이 임대수입보다 크면 「일반 누진」을 고르세요.</div>
+    </div>
+    <div class="input-row">
+      <label>면세법인 본업 이익 <span class="stat-sub">병원·학원 등 법인이 직접 쓸 때</span> <span class="info-btn" onclick="toggleInfo('exBaseInfo')">i</span></label>
+      <select id="exemptBase" onchange="calculate()">
+        <option value="0" selected>과표 2억 이하 (11%)</option>
+        <option value="200000000">이미 2억 초과 (22%)</option>
+      </select>
+      <div class="info-box" id="exBaseInfo">면세법인이 직접 쓰면 월세가 안 나가는 만큼 법인 이익이 늘어서, 그 늘어난 이익에 <b>본업 이익이 있는 구간의 세율</b>이 붙어요. 본업이 주업이라 소규모법인 22%가 아니라 일반 누진(<b class="tx-c1">11</b>% / <b class="tx-c2">22</b>%)을 씁니다.</div>
+    </div>
+    <div class="input-row">
       <label>법인 수익 처리 <span class="stat-sub">법인에 쌓인 돈을 어떻게?</span> <span class="info-btn" onclick="toggleInfo('divInfo')">i</span></label>
       <div class="toggle-row">
         <div class="toggle-opt active" data-div="retain" onclick="setDiv('retain')">법인에 재투자</div>
         <div class="toggle-opt" data-div="payout" onclick="setDiv('payout')">개인 통장으로 인출</div>
       </div>
-      <div class="info-box" id="divInfo">법인세(9.9%)만 내면 끝이 아니에요. 법인에 쌓인 돈을 <b>내 통장으로 빼려면 배당소득세를 또 냅니다.</b><br>• <b>재투자</b>: 안 빼고 법인에서 굴리면 배당세 없음 → 법인세만. 재투자·자산증식 목적이면 법인이 유리.<br>• <b>인출</b>: 배당으로 빼면 배당세 추가. 2천만원 이하는 15.4% 분리과세, 초과분은 다른 소득과 합산해 종합과세돼요. 이걸 넣으면 법인의 실제 이점이 줄어듭니다.<br>실제로 쓸 돈이면 인출, 자산 불리기면 재투자로 보세요.</div>
+      <div class="info-box" id="divInfo">법인세만 내면 끝이 아니에요. 법인에 쌓인 돈을 <b>내 통장으로 빼려면 배당소득세를 또 냅니다.</b><br>• <b>재투자</b>: 안 빼고 법인에서 굴리면 배당세 없음 → 법인세만. 재투자·자산증식 목적이면 법인이 유리.<br>• <b>인출</b>: 배당으로 빼면 배당세 추가. 2천만원 이하는 <span class="tx-int">15.4</span>% 분리과세, 초과분은 다른 소득과 합산해 종합과세돼요. 이걸 넣으면 법인의 실제 이점이 줄어듭니다.<br>실제로 쓸 돈이면 인출, 자산 불리기면 재투자로 보세요.</div>
     </div>
   </div>
+
+  <details class="howto">
+    <summary>📖 이 계산기 쓰는 순서 (눌러서 펼치기)</summary>
+    <div class="hb"><ol>
+      <li><b>매물 조건</b>: 매수가는 부가세 빼고, 건물분 비율은 분양계약서·감정평가의 건물가 비율(오피스텔은 보통 40~60%). 이 비율만큼 부가세 10%가 붙고, 개인사업자·일반법인은 돌려받는다.</li>
+      <li><b>내 소득</b>: 근로·사업 등 이미 있는 과세표준 구간. 개인 명의면 임대소득이 여기에 얹혀 세율이 올라간다(이 계산기의 핵심 변수).</li>
+      <li><b>일반법인 세율</b>: 임대용으로 새로 세우는 1인·가족 법인이면 「성실신고 소규모법인 <span class="tx-cs">22</span>%」를 둔다. 예전 버전은 여기를 9.9%로 계산해서 법인을 실제보다 유리하게 보여줬다(087에서 고침).</li>
+      <li><b>면세법인 본업 이익</b>: 병원·학원 법인의 원래 이익이 2억을 넘으면 「2억 초과」.</li>
+      <li><b>법인 수익 처리</b>: 법인에 두고 굴릴 거면 재투자, 생활비로 빼 쓸 거면 인출(배당세가 붙어 법인 이점이 줄어든다).</li>
+      <li><b>건보료</b>: 직장가입자는 월급 외 소득이 연 <span class="tx-hf">2,000</span>만을 넘으면 넘는 부분에 <span class="tx-hr">7.19</span>% + 장기요양(건보료의 <span class="tx-hl">13.14</span>%)을 전액 본인이 낸다. 개인 명의 임대소득만 해당되고 법인 유보분은 해당 없음.</li>
+    </ol></div>
+  </details>
 
   <!-- 최종 추천 -->
   <div class="verdict-box" id="verdict">
@@ -220,8 +255,8 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   <div class="manual">
     <b>📘 핵심 판단 로직</b><br>
     • <b>개인사업자</b>: 부가세 환급 O, 하지만 임대소득이 기존 소득에 합산돼 누진세율 직격. 소득 낮을 때만 유리.<br>
-    • <b>일반법인</b>: 부가세 환급 O + 법인세 9.9%. 임대·투자 목적의 정석. 단 돈 인출이 자유롭지 않음.<br>
-    • <b>면세법인(직접사용)</b>: 부가세 환급 X(비용), 하지만 법인세 9.9%로 고소득자의 소득세 폭탄 회피. 매월 월세+부가세를 허공에 날리는 것보다 나음.<br>
+    • <b>일반법인</b>: 부가세 환급 O + 법인세(임대 주업 소규모법인 <span class="tx-cs">22</span>%, 일반 누진이면 <span class="tx-c1">11</span>%~). 임대·투자 목적의 정석. 단 돈 인출이 자유롭지 않음.<br>
+    • <b>면세법인(직접사용)</b>: 부가세 환급 X(비용), 하지만 법인세(본업 구간 <span class="tx-c1">11</span>%~)로 고소득자의 소득세 폭탄 회피. 매월 월세+부가세를 허공에 날리는 것보다 나음.<br>
     핵심은 <b>"부가세 환급 이득" vs "낮은 법인세로 아끼는 소득세"</b>의 줄다리기예요. 소득이 높을수록 후자가 커져 면세법인이 역전합니다.
   </div>
 
@@ -240,7 +275,29 @@ window.slSetState = function(d){ if(window.ecSetState) window.ecSetState(d); };
 <script>window.SF_RESET = ["sf_entitychoice_v1"];</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
 <script src="/sf-slots.js?v=7"></script>
 <script src="/common.js?v=10"></script>
+<script src="/tax-rates.js?v=4"></script>
 <script>
+// (087) 법인세·건보료율은 /tax-rates.js(SF_TAX)에서 읽는다. 못 읽으면 아래 기본값(2026년)
+const _T = window.SF_TAX;
+const TX = {
+  corp: _T ? _T.corp : [[2e8,10],[2e10,20],[3e11,22],[Infinity,25]],
+  corpSmall: _T ? _T.corpSmall : [[2e10,20],[3e11,22],[Infinity,25]],
+  local: _T ? _T.local : 0.1,
+  health: _T && _T.health ? _T.health : {rate:7.19, ltc:13.14, otherIncomeFree:20000000},
+  interest: _T ? _T.interest : 15.4
+};
+const _wl = r => Math.round(r*(1+TX.local)*100)/100;
+const prog = (b, br) => { let t=0, lo=0; if(!(b>0)) return 0; for(const [hi,r] of br){ if(b>lo) t += (Math.min(b,hi)-lo)*r/100; lo=hi; } return t; };
+(function fillTax(){
+  const put=(c,v)=>document.querySelectorAll('.'+c).forEach(e=>e.textContent=v);
+  put('tx-c1', _wl(TX.corp[0][1])); put('tx-c2', _wl(TX.corp[1][1])); put('tx-cs', _wl(TX.corpSmall[0][1]));
+  put('tx-int', TX.interest); put('tx-hr', TX.health.rate); put('tx-hl', TX.health.ltc); put('tx-hf', (TX.health.otherIncomeFree/1e4).toLocaleString('ko-KR'));
+  const g=document.getElementById('genCorpType').options;
+  g[0].text='성실신고 소규모법인 ('+_wl(TX.corpSmall[0][1])+'%) — 1인·가족 임대법인 대부분';
+  g[1].text='일반 누진 (2억까지 '+_wl(TX.corp[0][1])+'%) — 다른 사업 매출이 더 큰 법인';
+  const e=document.getElementById('exemptBase').options;
+  e[0].text='과표 2억 이하 ('+_wl(TX.corp[0][1])+'%)'; e[1].text='이미 2억 초과 ('+_wl(TX.corp[1][1])+'%)';
+})();
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
 function wonToKorean(n){ var neg=n<0; n=Math.round(Math.abs(n)); if(n===0)return ''; var eok=Math.floor(n/1e8),man=Math.floor((n%1e8)/1e4),won=n%1e4,p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(man>0)p.push(man.toLocaleString('ko-KR')+'만'); if(won>0)p.push(won.toLocaleString('ko-KR')); return (neg?'−':'')+p.join(' ')+'원'; }
@@ -326,21 +383,25 @@ function calculate(){
   const taxBase = incomeTax(incomeBase);
   const indivTax = taxWithRent - taxBase;
   const indivNet = netIncome - indivTax;
-  // 건보료 (직장가입자, 임대 소득금액 2000만 초과분 7.09%)
+  // 건보료 (직장가입자, 월급 외 소득 연 2천만 초과분 × 건보료율, + 장기요양) — (087) 7.09% → SF_TAX.health
   let indivHealth = 0;
-  if(insured==='employee' && netIncome>20000000){ indivHealth = (netIncome-20000000)*0.0709; }
+  const hFree = TX.health.otherIncomeFree;
+  if(insured==='employee' && netIncome>hFree){ indivHealth = (netIncome-hFree)*TX.health.rate/100*(1+TX.health.ltc/100); }
   const indivFinal = indivNet - indivHealth;
 
-  // === 일반법인 === 법인세 9.9%(2억이하), 부가세 환급 O
-  const corpRate = netIncome<=200000000 ? 0.099 : 0.209;
-  const genTax = netIncome*corpRate;
+  // === 일반법인 === 부가세 환급 O. (087) 예전엔 2억 이하 9.9% / 초과면 전체에 20.9% 단일 적용이었음 → 구간 누진 + 소규모법인 선택
+  const genType = $('genCorpType').value;
+  const genTax = prog(netIncome, genType==='gen' ? TX.corp : TX.corpSmall) * (1+TX.local);
+  const genRate = netIncome>0 ? genTax/netIncome : _wl((genType==='gen'?TX.corp:TX.corpSmall)[0][1])/100;
   const genAfterCorp = netIncome - genTax; // 법인세 후
   // 배당 인출 시 배당세 추가
   const genDivTax = divMode==='payout' ? dividendTax(genAfterCorp, incomeBase) : 0;
   const genNet = genAfterCorp - genDivTax;
 
-  // === 면세법인(직접사용) === 부가세 환급 X
-  const exemptTax = netIncome*corpRate;
+  // === 면세법인(직접사용) === 부가세 환급 X. 본업 이익 위에 얹히는 한계 세금 (일반 누진)
+  const exBase = parseFloat($('exemptBase').value)||0;
+  const exemptTax = (prog(exBase+netIncome, TX.corp) - prog(exBase, TX.corp)) * (1+TX.local);
+  const exemptRate = netIncome>0 ? exemptTax/netIncome : _wl(TX.corp[exBase>=2e8?1:0][1])/100;
   const exemptAfterCorp = netIncome - exemptTax;
   const exemptDivTax = divMode==='payout' ? dividendTax(exemptAfterCorp, incomeBase) : 0;
   const exemptNet = exemptAfterCorp - exemptDivTax;
@@ -348,8 +409,8 @@ function calculate(){
   // 카드 렌더 (세후 순수익 기준 순위)
   const entities = [
     { key:'indiv', name:'개인사업자', net:indivFinal, vatRefund:true, detail:`임대소득 ${fmt(netIncome)}원에 한계세율 ${(marginalRate(incomeBase+netIncome)*100).toFixed(1)}% 적용<br>세금 −${fmt(indivTax)}${indivHealth>0?`<br>건보료 −${fmt(indivHealth)}`:''}<br>부가세 <b style="color:#16a34a">환급 O</b>` },
-    { key:'gen', name:'일반법인', net:genNet, vatRefund:true, detail:`법인세 ${(corpRate*100).toFixed(1)}% −${fmt(genTax)}${genDivTax>0?`<br>배당세 −${fmt(genDivTax)}`:'<br><span style="color:#16a34a">재투자(배당세 0)</span>'}<br>부가세 <b style="color:#16a34a">환급 O</b>` },
-    { key:'exempt', name:'면세법인', net:exemptNet, vatRefund:false, detail:`법인세 ${(corpRate*100).toFixed(1)}% −${fmt(exemptTax)}${exemptDivTax>0?`<br>배당세 −${fmt(exemptDivTax)}`:'<br><span style="color:#16a34a">재투자(배당세 0)</span>'}<br>부가세 <b style="color:#dc2626">환급 X</b> (+${fmt(vat)})` }
+    { key:'gen', name:'일반법인', net:genNet, vatRefund:true, detail:`법인세 ${(genRate*100).toFixed(1)}%${genType==='gen'?'':' (소규모)'} −${fmt(genTax)}${genDivTax>0?`<br>배당세 −${fmt(genDivTax)}`:'<br><span style="color:#16a34a">재투자(배당세 0)</span>'}<br>부가세 <b style="color:#16a34a">환급 O</b>` },
+    { key:'exempt', name:'면세법인', net:exemptNet, vatRefund:false, detail:`법인세 ${(exemptRate*100).toFixed(1)}% −${fmt(exemptTax)}${exemptDivTax>0?`<br>배당세 −${fmt(exemptDivTax)}`:'<br><span style="color:#16a34a">재투자(배당세 0)</span>'}<br>부가세 <b style="color:#dc2626">환급 X</b> (+${fmt(vat)})` }
   ];
   // 부가세 손실을 연 환산(취득원가 증가→감가상각 단순화)하지 않고, 세후순익으로만 순위
   const sorted = [...entities].sort((a,b)=>b.net-a.net);
@@ -370,7 +431,7 @@ function calculate(){
   // 상세표
   $('taxBody').innerHTML = `
     <tr><td class="label">연 임대 순소득(월세−이자)</td><td class="num">${fmt(netIncome)}</td><td class="num">${fmt(netIncome)}</td><td class="num">${fmt(netIncome)}</td></tr>
-    <tr><td class="label">적용 세율</td><td class="num">${(marginalRate(incomeBase+netIncome)*100).toFixed(1)}%<br><span style="font-size:10px;color:#888">한계</span></td><td class="num">${(corpRate*100).toFixed(1)}%</td><td class="num">${(corpRate*100).toFixed(1)}%</td></tr>
+    <tr><td class="label">적용 세율</td><td class="num">${(marginalRate(incomeBase+netIncome)*100).toFixed(1)}%<br><span style="font-size:10px;color:#888">한계</span></td><td class="num">${(genRate*100).toFixed(1)}%${genType==='gen'?'':'<br><span style="font-size:10px;color:#888">소규모법인</span>'}</td><td class="num">${(exemptRate*100).toFixed(1)}%</td></tr>
     <tr><td class="label">소득/법인세</td><td class="num col-indiv">−${fmt(indivTax)}</td><td class="num col-gen">−${fmt(genTax)}</td><td class="num col-exempt">−${fmt(exemptTax)}</td></tr>
     <tr><td class="label">건강보험료</td><td class="num col-indiv">${indivHealth>0?'−'+fmt(indivHealth):'-'}</td><td class="num">-</td><td class="num">-</td></tr>
     <tr><td class="label">배당세 ${divMode==='payout'?'<span style="font-size:10px;color:#888">(인출)</span>':'<span style="font-size:10px;color:#16a34a">(재투자=0)</span>'}</td><td class="num">-</td><td class="num col-gen">${genDivTax>0?'−'+fmt(genDivTax):'-'}</td><td class="num col-exempt">${exemptDivTax>0?'−'+fmt(exemptDivTax):'-'}</td></tr>
@@ -395,13 +456,13 @@ function calculate(){
   let vMain, vSub;
   if(best.key==='indiv'){
     vMain = '개인사업자 매수 + (필요시) 내 법인에 임대';
-    vSub = `현재 소득 구간에선 임대소득 한계세율(${(margRate*100).toFixed(1)}%)이 법인세(9.9%)와 격차가 크지 않아, <b>부가세 환급 이득이 더 큽니다.</b> 부가세 전액 환급받고 시작하세요. 소득이 더 커지면 법인 전환을 검토하세요.`;
+    vSub = `현재 소득 구간에선 임대소득 한계세율(${(margRate*100).toFixed(1)}%)이 법인세(${(genRate*100).toFixed(1)}%)와 격차가 크지 않아, <b>부가세 환급 이득이 더 큽니다.</b> 부가세 전액 환급받고 시작하세요. 소득이 더 커지면 법인 전환을 검토하세요.`;
   } else if(best.key==='gen'){
     vMain = '일반법인 신규 설립 후 매수·임대';
-    vSub = `부가세 환급 + 낮은 법인세(9.9%)로 가장 깔끔한 정석입니다. 임대소득이 개인 소득과 분리돼 누진을 피합니다. 단 법인 잉여금 인출 시 배당세를 고려하세요.`;
+    vSub = `부가세 환급 + 법인세(${(genRate*100).toFixed(1)}%)로 가장 깔끔한 정석입니다. 임대소득이 개인 소득과 분리돼 누진을 피합니다. 단 법인 잉여금 인출 시 배당세를 고려하세요.`;
   } else {
     vMain = '면세법인 직접 매수 (자가 사용)';
-    vSub = `소득이 높아(한계세율 ${(margRate*100).toFixed(1)}%) 개인 임대는 세금 폭탄입니다. 부가세 환급을 포기하더라도 <b>법인세 9.9%로 소득세 누진을 회피</b>하는 게 유리해요. 어차피 월세로 있어도 매월 부가세가 나가니, 직접 매수가 장기적으로 낫습니다.`;
+    vSub = `소득이 높아(한계세율 ${(margRate*100).toFixed(1)}%) 개인 임대는 세금 폭탄입니다. 부가세 환급을 포기하더라도 <b>법인세 ${(exemptRate*100).toFixed(1)}%로 소득세 누진을 회피</b>하는 게 유리해요. 어차피 월세로 있어도 매월 부가세가 나가니, 직접 매수가 장기적으로 낫습니다.`;
   }
   $('verdictMain').innerHTML = vMain;
   $('verdictSub').innerHTML = vSub;

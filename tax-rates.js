@@ -1,8 +1,8 @@
 /* 세율 공통 (086) — 세법이 바뀌면 이 파일 하나만 고치면 됨
- * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=3 을 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
+ * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=4 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
  * 구간 배열: [[상한(원), 세율%], ...] 누진. 세율은 국세 기준, 지방소득세(국세의 10%)는 별도 → SF_TAX.wl(세율)로 포함값.
  * 바꾼 뒤: 이 파일 ?v= 를 쓰는 페이지 전부 올릴 것. 확인일(checked)도 고칠 것.
- * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/  (나머지 세금 페이지는 순차 이전 예정)
+ * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/  (나머지 세금 페이지는 순차 이전 예정)
  */
 window.SF_TAX = Object.freeze({
   year: 2026,
@@ -30,6 +30,8 @@ window.SF_TAX = Object.freeze({
   majorHold: {amount: 5e9, kospiPct: 1, kosdaqPct: 2},
   // 법인 수입배당금 익금불산입률 (법인세법 18조의2, 2023~) — 지분율 20% 미만 30, 20~50% 80, 50% 이상 100. 배당기준일 현재 3개월 이상 보유. ETF·리츠 분배금은 대상 아님 (087 확인)
   divExcl: [[20,30],[50,80],[Infinity,100]],
+  // 건강보험료율 (세금은 아니지만 매년 바뀌어 같이 둠) — 2026년 7.19%, 장기요양 = 건보료의 13.14%. 직장가입자 보수 외 소득 연 2천만 초과분에 소득월액보험료(전액 본인) (087 확인)
+  health: {rate: 7.19, ltc: 13.14, otherIncomeFree: 20000000},
   wl: function(r){ return Math.round(r*1.1*100)/100; },
   // 누진 구간 세금(국세) — prog(과표, SF_TAX.corp) 처럼 쓴다. 지방세 포함은 결과 × (1 + local)
   prog: function(base, br){ var t=0, lo=0; if(!(base>0)) return 0; for(var i=0;i<br.length;i++){ var hi=br[i][0]; if(base>lo){ t += (Math.min(base,hi)-lo)*br[i][1]/100; } lo=hi; } return t; }
