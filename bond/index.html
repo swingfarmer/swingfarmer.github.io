@@ -16,6 +16,11 @@ body.sf-dark .rt td.v{color:#85b5e0!important}
 body.sf-dark .rt tr.hd td{color:#cccccc!important;background-color:#1a2433!important}
 body.sf-dark .sel-title{color:#85b5e0!important}
 body.sf-dark .warn{background-color:#373115!important;color:#f2a373!important}
+body.sf-dark .tabs .tb{border-color:#2c333f!important;background-color:#1e242e!important;color:#cccccc!important}
+body.sf-dark .et tbody tr.r:hover td{background-color:#1a2433!important}
+body.sf-dark .et tr.hold td{background-color:#1a2433!important}
+body.sf-dark .et .tag2{border-color:#2c333f!important;color:#cccccc!important}
+body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4E78!important;color:#fff!important}
 </style>
 <style>
 :root { --sf-max-w: 1000px; }
@@ -56,6 +61,19 @@ body.sf-dark .warn{background-color:#373115!important;color:#f2a373!important}
 .sel-title { font-size:15px; font-weight:700; color:var(--sf-brand); margin-bottom:8px; }
 .empty { padding:20px; text-align:center; color:var(--sf-text-dim); font-size:13px; }
 .warn { background:var(--sf-warn-bg); color:var(--sf-warn-text); padding:8px 12px; border-radius:6px; font-size:12px; margin-top:8px; }
+.tabs { display:flex; gap:6px; margin:4px 0 12px; flex-wrap:wrap; }
+.tabs .tb { border:1px solid var(--sf-border); background:var(--sf-surface); padding:7px 16px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; color:var(--sf-text-sub); font-family:var(--sf-font); }
+.tabs .tb.on { background:var(--sf-brand); border-color:var(--sf-brand); color:#fff; }
+.et td, .et th { text-align:right; white-space:nowrap; }
+.et td.l, .et th.l { text-align:left; }
+.et td.nmc { white-space:normal; min-width:200px; }
+.et .nm { font-weight:600; }
+.et .cu { font-size:11px; color:var(--sf-text-dim); margin-left:4px; }
+.et tbody tr.r { cursor:pointer; }
+.et tbody tr.r:hover td { background:var(--sf-bg); }
+.et tr.hold td { white-space:normal; text-align:left; background:var(--sf-bg); font-size:12px; line-height:1.7; }
+.et .tag2 { display:inline-block; font-size:10.5px; padding:0 5px; border-radius:4px; border:1px solid var(--sf-border); color:var(--sf-text-sub); margin-left:4px; }
+.up { color:var(--sf-up); } .dn { color:var(--sf-down); }
 @media (max-width: 760px) {
   .bd-grid, .calc-grid { grid-template-columns: 1fr; }
   .opts input[type=search] { width:100%; }
@@ -80,6 +98,13 @@ body.sf-dark .warn{background-color:#373115!important;color:#f2a373!important}
   <div id="keyTbl"></div>
 </div>
 
+<div class="tabs" id="tabs">
+  <button class="tb" data-t="ust">🇺🇸 미국채 직접매매</button>
+  <button class="tb" data-t="etf">🧺 채권 ETF (국내 상장)</button>
+  <input type="hidden" id="oTab" value="ust">
+</div>
+
+<div id="secUst">
 <!-- ② 계산기 -->
 <div class="panel bd-box" id="calcBox">
   <h2>🧮 종목 계산기</h2>
@@ -129,6 +154,32 @@ body.sf-dark .warn{background-color:#373115!important;color:#f2a373!important}
   </div>
   <div id="list"><div class="empty">불러오는 중…</div></div>
 </div>
+</div>
+
+<!-- ④ 채권 ETF -->
+<div id="secEtf" hidden>
+<div class="panel bd-box">
+  <h2>🧺 국내 상장 채권 ETF</h2>
+  <div class="opts">
+    <label>분류 <select id="eTyp">
+      <option value="">전체</option><option value="현금성">현금성·단기금리</option><option value="국채">국채</option>
+      <option value="종합">종합채권</option><option value="회사금융">회사·금융채</option><option value="만기매칭">만기매칭형</option>
+      <option value="CC">커버드콜</option><option value="혼합">혼합·기타</option>
+    </select></label>
+    <label>지역 <select id="eReg"><option value="">전체</option><option value="국내">국내 채권</option><option value="미국">미국 채권</option><option value="해외">기타 해외</option></select></label>
+    <label>환헤지 <select id="eH"><option value="">전체</option><option value="H">헤지(H)만</option><option value="N">환노출만</option></select></label>
+    <label>순자산 <select id="eAum"><option value="0">전체</option><option value="100" selected>100억 이상</option><option value="500">500억 이상</option><option value="1000">1,000억 이상</option></select></label>
+    <label><input type="checkbox" id="eNoLev" checked> 레버리지·인버스 제외</label>
+    <span class="sep"></span>
+    <label>정렬 <select id="eSort">
+      <option value="aum">순자산 큰 순</option><option value="dur">기간 긴 순</option><option value="m1">1개월 높은 순</option><option value="m3">3개월 높은 순</option><option value="y1">1년 높은 순</option>
+    </select></label>
+    <input type="search" id="eQ" placeholder="이름·코드 검색 (예: 30년, 국고채)">
+    <span class="cnt" id="eCnt"></span>
+  </div>
+  <div id="eList"><div class="empty">탭을 열면 불러옴</div></div>
+</div>
+</div>
 
 <div class="info-box">
   <p><strong>출처:</strong> 미국 재무부 — 일별 par 금리곡선(Daily Treasury Par Yield Curve)과 MSPD(월말 기준 발행 잔액표). VM 크론 매일 07:10. 목록은 월말 기준이라 그 뒤 새로 발행된 종목은 다음 달에 들어옴. TIPS·변동금리채·단기채(Bills)는 뺐음.</p>
@@ -136,6 +187,8 @@ body.sf-dark .warn{background-color:#373115!important;color:#f2a373!important}
   <p><strong>앱식(단리) vs 복리:</strong> 증권사 앱의 세후수익률·세전은행환산수익률은 단리 = (세후 이자 합 + 액면 − 매수금액) ÷ 매수금액 ÷ 잔존 연수. 삼성증권 값(세전 4.76·세후 4.65·환산 5.50)과 0.01~0.02%p 안에서 맞음. 복리(반기, 채권 관행)는 받은 이자를 다시 굴리는 가정이라 잔존이 길수록 앱식보다 낮게 나옴 — 3.5년 저쿠폰이면 약 0.25%p. 다른 채권·예금과 정확히 비교할 땐 복리 기준이 맞음.</p>
   <p><strong>세금(개인):</strong> 쿠폰 이자는 이자소득 15.4% 원천징수, 다른 이자·배당과 합쳐 연 2,000만원을 넘으면 넘는 부분은 종합과세(금종세). 채권 매매차익(할인 매수 후 만기 상환 차익 포함)은 소득세법에 열거되지 않아 비과세, 환차익도 개인 비과세 (삼일PwC One Point Tax 등). 그래서 저쿠폰(할인) 채권은 수익 대부분이 비과세. 금종세 대상이면 이자 세율 칸에 한계세율(예: 26.4·38.5·41.8%)을 넣어 볼 것.</p>
   <p><strong>계산 가정:</strong> 첫 쿠폰도 전액 과세로 계산(보수적). 국내 증권사가 보유기간 이자만 과세하면 세후수익률이 조금 더 높아짐(미확인). 원화 계산은 이자·원금을 모두 만기 환율로 환산한 단순 계산. 처음부터 할인 발행된 종목(OID)은 발행 할인액이 이자로 볼 여지가 있어 확인 필요.</p>
+  <p><strong>채권 ETF:</strong> 국내 ETF 페이지(/etf/)와 같은 데이터(네이버·KRX, 평일 18:40)에서 '채권' 분류 173개. 분류·지역·환헤지·기간은 이름 키워드로 자동 판단이라 틀린 게 있을 수 있음. 등락률은 가격만 비교한 값이라 분배금을 주는 ETF는 실제 수익보다 낮게 나옴. 줄을 누르면 구성 상위 10종목(주 1회, 토).</p>
+  <p><strong>직접매매 vs ETF 세금:</strong> 미국채를 직접 사면 쿠폰만 과세(15.4%)되고 매매차익·환차익은 비과세. 국내 상장 채권 ETF는 분배금과 매매차익 모두 배당소득 15.4%(매매차익은 과표기준가 증가분과 실제 차익 중 작은 쪽) — 둘 다 금종세 합산 대상. 대신 ETF는 ISA·연금저축·IRP에 담을 수 있어서 그 계좌에선 과세가 미뤄지거나 낮아짐. 미국 상장 채권 ETF(TLT 등)는 매매차익 양도소득세 22%(연 250만원 공제).</p>
   <p><strong>종목 표기:</strong> T 0.625 05/15/30 = 미국 국채(Treasury), 쿠폰 연 0.625%, 만기 2030-05-15. 삼성증권 앱 표기와 같음. 다른 곳에선 쿠폰을 8분의 1 단위 분수로 "T 0 5/8"처럼 쓰기도 함(0과 8분의 5 = 0.625).</p>
   <p><strong>단위:</strong> 단가·이론가는 액면 100달러당 달러. 잔액은 억달러(재무부 원자료 백만달러 ÷ 100).</p>
   <p>저쿠폰 미국채를 포트폴리오에서 어떻게 쓰는지는 <a href="/barbell/">바벨 포트폴리오</a> 참고.</p>
@@ -147,14 +200,16 @@ body.sf-dark .warn{background-color:#373115!important;color:#f2a373!important}
 // ── 저장 (sf-slots) ──
 window.CALC_KEY = 'bond';
 window.SF_RESET = true;
-var SAVE_IDS = ['cFace','cFx','cFxEnd','selCusip','oTax','oMgBp','oMat','oCpn','oType','oSort','oQ'];
+var SAVE_IDS = ['cFace','cFx','cFxEnd','selCusip','oTax','oMgBp','oMat','oCpn','oType','oSort','oQ','oTab','eTyp','eReg','eH','eAum','eNoLev','eSort','eQ'];
+function gv(el){ return el.type==='checkbox' ? (el.checked?'1':'0') : el.value; }
+function sv(el,v){ if (el.type==='checkbox') el.checked = (v==='1'||v===true); else el.value=v; }
 window.slGetState = function(){
-  var o = {}; SAVE_IDS.forEach(function(id){ o[id] = document.getElementById(id).value; }); return o;
+  var o = {}; SAVE_IDS.forEach(function(id){ o[id] = gv(document.getElementById(id)); }); return o;
 };
 window.slSetState = function(d){
   if (!d) return;
-  SAVE_IDS.forEach(function(id){ if (d[id] != null) document.getElementById(id).value = d[id]; });
-  render();
+  SAVE_IDS.forEach(function(id){ if (d[id] != null) sv(document.getElementById(id), d[id]); });
+  showTab(); render(); renderEtf();
 };
 function saveNow(){ try { localStorage.setItem('sf_bond_v2', JSON.stringify(window.slGetState())); } catch(e){} }
 
@@ -378,10 +433,118 @@ document.getElementById('list').addEventListener('click', function(e){
 });
 SAVE_IDS.forEach(function(id){
   var el=document.getElementById(id); if (el.type==='hidden') return;
-  el.addEventListener('input', function(){ clearTimeout(window._bt); window._bt=setTimeout(render, 150); });
+  var fn = id.charAt(0)==='e' ? function(){ renderEtf(); } : render;
+  el.addEventListener('input', function(){ clearTimeout(window._bt); window._bt=setTimeout(fn, 150); });
+  el.addEventListener('change', function(){ clearTimeout(window._bt); window._bt=setTimeout(fn, 50); });
+});
+
+// ── 탭 ──
+function showTab(){
+  var t=document.getElementById('oTab').value==='etf'?'etf':'ust';
+  document.getElementById('secUst').hidden = t!=='ust';
+  document.getElementById('secEtf').hidden = t!=='etf';
+  document.querySelectorAll('#tabs .tb').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-t')===t); });
+  if (t==='etf') loadEtf();
+}
+document.getElementById('tabs').addEventListener('click', function(e){
+  var b=e.target.closest('.tb'); if (!b) return;
+  document.getElementById('oTab').value=b.getAttribute('data-t'); saveNow(); showTab();
+});
+
+// ── 채권 ETF ──
+var ETF=null, ETF_ST=0, HOLD=null, HOLD_ST=0, OPEN={};
+function eTyp(n){
+  if (/커버드콜/.test(n)) return 'CC';
+  if (/혼합/.test(n)) return '혼합';
+  if (/\d{2}-\d{2}|자동연장/.test(n)) return '만기매칭';
+  if (/CD|KOFR|SOFR|머니마켓|초단기|전단채|단기|통안|금리액티브|금리투자|금리플러스|자동연장/.test(n)) return '현금성';
+  if (/국고채|국채|국공채|Treasury/i.test(n)) return '국채';
+  if (/회사채|금융채|은행채|크레딧|하이일드|특수채|공사채|우량채/.test(n)) return '회사금융';
+  if (/종합|중기채권|장기채권/.test(n)) return '종합';
+  return '혼합';
+}
+var TYP_NM={'현금성':'현금성','국채':'국채','종합':'종합','회사금융':'회사·금융','만기매칭':'만기매칭','CC':'커버드콜','혼합':'혼합·기타'};
+function eReg(n){
+  if (/아시아|중국|일본|글로벌|신흥|유로|인도|베트남|월드/.test(n)) return '해외';
+  if (/미국|달러|USD/.test(n)) return '미국';
+  return '국내';
+}
+// 기간: [표시, 정렬용 연수]
+function eDur(n, typ){
+  var m=n.match(/(\d{2})-(\d{2})/);
+  if (m && typ==='만기매칭'){ var y=2000+(+m[1]), mo=+m[2]; var left=((y*12+mo)-(new Date().getFullYear()*12+new Date().getMonth()+1))/12; return [y+'-'+m[2]+' 만기', Math.max(left,0)]; }
+  if (/자동연장/.test(n)) return ['1년 이내 롤링', 0.5];
+  m=n.match(/(\d+)년/); if (m) return [m[1]+'년', +m[1]];
+  if (/3개월이하|초단기|CD|KOFR|SOFR|머니마켓|전단채/.test(n)) return ['초단기', 0.1];
+  if (/1~2년/.test(n)) return ['1~2년', 1.5];
+  if (/단기|통안/.test(n)) return ['단기', 0.7];
+  if (/중장기/.test(n)) return ['중장기', 7];
+  if (/장기/.test(n)) return ['장기', 15];
+  if (/중기/.test(n)) return ['중기', 3];
+  return ['-', null];
+}
+function loadEtf(){
+  if (ETF_ST) return; ETF_ST=1;
+  fetch('/data/kr/etf/latest.json',{cache:'no-cache'}).then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); }).then(function(d){
+    var C={}; d.cols.forEach(function(c,i){ C[c]=i; });
+    ETF={date:d.date, rows:d.rows.filter(function(r){ return r[C.tab]===6; }).map(function(r){
+      var n=r[C.name], t=eTyp(n), du=eDur(n,t);
+      return {code:r[C.code], name:n, typ:t, reg:eReg(n), h:/\(H\)|합성 H\)|\bH\)/.test(n) && !/엔화노출/.test(n), jpy:/엔화노출/.test(n), lev:/레버리지|인버스/.test(n), fut:/선물/.test(n),
+              dur:du[0], durY:du[1], close:r[C.close], m1:r[C.m1], m3:r[C.m3], y1:r[C.y1], aum:r[C.aum_eok], val:r[C.value_eok], gap:r[C.gap]};
+    })};
+    ETF_ST=2; renderEtf();
+  }).catch(function(e){ ETF_ST=0; document.getElementById('eList').innerHTML='<div class="empty">ETF 데이터 불러오기 실패: '+esc(e.message)+'</div>'; });
+}
+function loadHold(cb){
+  if (HOLD_ST===2) return cb(); if (HOLD_ST===1) return; HOLD_ST=1;
+  fetch('/data/kr/etf/holdings.json',{cache:'no-cache'}).then(function(r){ return r.json(); }).then(function(d){ HOLD=d; HOLD_ST=2; cb(); })
+    .catch(function(){ HOLD_ST=3; cb(); });
+}
+function pct(v){ if (v==null||!isFinite(v)) return '<td>-</td>'; return '<td class="'+(v>0?'up':v<0?'dn':'')+'">'+(v>0?'+':'')+v.toFixed(2)+'</td>'; }
+function renderEtf(){
+  if (!ETF) return;
+  var ty=document.getElementById('eTyp').value, rg=document.getElementById('eReg').value, hh=document.getElementById('eH').value,
+      am=+document.getElementById('eAum').value, nl=document.getElementById('eNoLev').checked, so=document.getElementById('eSort').value,
+      q=document.getElementById('eQ').value.trim().toUpperCase();
+  var rows=ETF.rows.filter(function(e){
+    if (ty && e.typ!==ty) return false;
+    if (rg && e.reg!==rg) return false;
+    if (hh==='H' && !e.h) return false;
+    if (hh==='N' && (e.h || e.reg==='국내')) return false;
+    if ((e.aum||0)<am) return false;
+    if (nl && e.lev) return false;
+    if (q && (e.name+' '+e.code).toUpperCase().indexOf(q)<0) return false;
+    return true;
+  });
+  var K=function(k){ return function(a,b){ return (b[k]==null?-1e9:b[k])-(a[k]==null?-1e9:a[k]); }; };
+  rows.sort(so==='dur'?K('durY'):so==='m1'?K('m1'):so==='m3'?K('m3'):so==='y1'?K('y1'):K('aum'));
+  document.getElementById('eCnt').textContent=rows.length+'개 / 채권 ETF '+ETF.rows.length+'개 · '+ETF.date+' 종가';
+  if (!rows.length){ document.getElementById('eList').innerHTML='<div class="empty">조건에 맞는 ETF 없음</div>'; return; }
+  var h='<table class="sf-table et"><thead><tr><th class="l">ETF</th><th class="l">분류</th><th>기간</th><th>순자산(억)</th><th>1개월%</th><th>3개월%</th><th>1년%</th><th>괴리율%</th><th>거래대금(억)</th></tr></thead><tbody>';
+  rows.forEach(function(e){
+    var tags=(e.reg!=='국내'?'<span class="tag2">'+e.reg+'</span>':'')+(e.reg!=='국내'?'<span class="tag2">'+(e.jpy?'엔화노출':e.h?'환헤지':'환노출')+'</span>':'')+(e.fut?'<span class="tag2">선물</span>':'')+(e.lev?'<span class="tag2">레버리지·인버스</span>':'');
+    h+='<tr class="r" data-c="'+e.code+'"><td class="l nmc"><span class="nm">'+esc(e.name)+'</span><span class="cu">'+e.code+'</span>'+tags+'</td>'
+      +'<td class="l">'+TYP_NM[e.typ]+'</td><td>'+e.dur+'</td><td>'+comma(e.aum)+'</td>'+pct(e.m1)+pct(e.m3)+pct(e.y1)
+      +'<td>'+(e.gap==null?'-':e.gap.toFixed(2))+'</td><td>'+(e.val==null?'-':comma(e.val,1))+'</td></tr>';
+    if (OPEN[e.code]) h+='<tr class="hold"><td colspan="9">'+holdHtml(e.code)+'</td></tr>';
+  });
+  document.getElementById('eList').innerHTML=h+'</tbody></table>';
+}
+function holdHtml(code){
+  if (HOLD_ST!==2) return HOLD_ST===3?'구성종목 불러오기 실패':'구성종목 불러오는 중…';
+  var x=HOLD.h && HOLD.h[code]; if (!x) return '구성종목 정보 없음';
+  var top=x[1]||[], est=x[2]==='est';
+  return '<b>구성 '+x[0]+'종목 중 상위 '+top.length+'</b>'+(HOLD.date?' ('+HOLD.date+' 기준)':'')+(est?' · 추정 비중':'')+'<br>'
+    + top.map(function(t){ return esc(t[1])+(t[2]?' <b>'+(est?'≈':'')+t[2].toFixed(1)+'%</b>':''); }).join(' · ');
+}
+document.getElementById('eList').addEventListener('click', function(e){
+  var tr=e.target.closest('tr.r'); if (!tr) return;
+  var c=tr.getAttribute('data-c'); OPEN[c]=!OPEN[c];
+  renderEtf(); if (OPEN[c]) loadHold(renderEtf);
 });
 
 // ── 데이터 ──
+showTab();
 (function(){
   var t=new Date(); SETTLE=dnum(t.getFullYear(), t.getMonth()+1, t.getDate());
   Promise.all([
