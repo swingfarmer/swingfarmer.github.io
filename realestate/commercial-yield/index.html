@@ -185,13 +185,16 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
     <div class="input-row">
       <label>개인 한계세율 (%) <span class="stat-sub">종합소득세, 지방세 포함</span> <span class="info-btn" onclick="toggleInfo('rateInfo')">i</span></label>
       <input type="number" id="indivRate" value="38.5" step="0.1" inputmode="decimal">
-      <div class="preset-row">
-        <div class="preset" onclick="setIndiv(16.5)">16.5%</div>
-        <div class="preset" onclick="setIndiv(26.4)">26.4%</div>
-        <div class="preset active" onclick="setIndiv(38.5)">38.5%</div>
-        <div class="preset" onclick="setIndiv(46.2)">46.2%</div>
+      <div class="preset-row" id="indivPresets"></div>
+      <div class="info-box" id="rateInfo">월세 수입에 적용될 <b>한계세율</b>(가장 높은 구간의 세율)을 넣으세요. 다른 소득(근로·사업 등)과 합산되므로, 이미 소득이 많으면 높은 구간이 적용돼요. 지방소득세 포함 구간: <span class="tx-inc">6.6 / 16.5 / 26.4 / 38.5 / 41.8 / 44 / 46.2 / 49.5</span>%.<br>고르는 법: 작년 종합소득세 신고서의 과세표준을 보고, 거기에 이 월세 소득을 더한 금액이 걸리는 구간을 고르세요. 근로소득만 있으면 연말정산 원천징수영수증의 과세표준을 봅니다.</div>
+    </div>
+    <div class="input-row">
+      <label>법인 유형 <span class="stat-sub">법인 세후 계산용</span> <span class="info-btn" onclick="toggleInfo('corpTypeInfo')">i</span></label>
+      <div class="toggle-row" style="margin-bottom:6px">
+        <div class="toggle-opt active" data-corp="small" onclick="setCorp('small')">성실신고 소규모법인 (<span class="tx-cs">22</span>%)</div>
+        <div class="toggle-opt" data-corp="gen" onclick="setCorp('gen')">일반법인 (2억까지 <span class="tx-c1">11</span>%)</div>
       </div>
-      <div class="info-box" id="rateInfo">월세 수입에 적용될 <b>한계세율</b>(가장 높은 구간의 세율)을 넣으세요. 다른 소득과 합산되므로, 이미 소득이 많으면 높은 구간이 적용돼요. 지방소득세 포함: 6.6 / 16.5 / 26.4 / 38.5 / 41.8 / 44 / 46.2 / 49.5%. 법인은 2억 이하 9.9%(지방세 포함)로 자동 계산됩니다.</div>
+      <div class="info-box" id="corpTypeInfo">이 상가 월세가 법인 수입의 대부분이면 <b>성실신고 소규모법인</b>이에요. 2억 이하 구간(<span class="tx-c1">11</span>%) 없이 처음부터 <b class="tx-cs">22</b>%(지방세 포함)입니다. 세 가지를 <b>모두</b> 충족하면 해당: ① 지배주주 등 지분 50% 초과 ② 상시근로자 5인 미만 ③ 부동산임대업이 주업이거나 임대·이자·배당 수입이 매출의 50% 이상. 임대용으로 새로 세운 1인·가족 법인은 거의 다 해당돼서 기본값으로 뒀어요.<br>이미 다른 사업(쇼핑몰·제조 등)을 하는 법인이 사고, 그 사업 매출이 임대수입보다 크면 <b>일반법인</b>을 고르세요. 판정은 사업연도마다 다시 합니다.</div>
     </div>
   </div>
 
@@ -238,6 +241,21 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
       <tbody id="compareBody"></tbody>
     </table>
     <div class="note" id="leverageNote" style="display:none"></div>
+    <details class="howto" style="margin-top:12px">
+      <summary>📖 법인 칸 읽는 법 (눌러서 펼치기)</summary>
+      <div class="hb" style="padding:4px 14px 12px;font-size:12.5px;line-height:1.7">
+        <ol style="margin:0;padding-left:18px">
+          <li><b>법인 세금</b> = 과세 대상 소득에 위 「법인 유형」의 구간 세율을 누진으로 적용(지방세 포함). 괄호 안 %는 실효세율이에요.
+            <ul style="margin:2px 0;padding-left:16px">
+              <li>일반법인: 2억까지 <span class="tx-c1">11</span>%, 2억~200억 <span class="tx-c2">22</span>%</li>
+              <li>성실신고 소규모법인: 200억까지 <span class="tx-cs">22</span>% (2억 이하 구간 없음)</li>
+            </ul></li>
+          <li><b>법인 세후 순수익은 법인 통장에 남은 돈</b>이에요. 개인이 꺼내 쓰려면 배당소득세(<span class="tx-int">15.4</span>%~, 금융소득 2천만 넘으면 종합과세)가 한 번 더 붙어요. 꺼낼 계획이면 「<a href="/realestate/entity-choice/">개인 vs 법인 명의</a>」 계산기로 인출까지 비교하세요.</li>
+          <li>과세 대상 소득은 월세 − 대출이자만 뺀 간단 계산이에요. 감가상각·재산세·관리비·세무사 비용(소규모법인은 성실신고확인 비용 추가)은 빠져 있어서 실제 세금은 이보다 적고 비용은 더 들어요.</li>
+          <li>예전 버전은 법인을 9.9%로 계산해서 법인을 실제보다 유리하게 보여줬어요(2025년 세율 + 소규모법인 미반영, 088에서 고침).</li>
+        </ol>
+      </div>
+    </details>
   </div>
 
   <div class="manual">
@@ -245,7 +263,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
     <span class="badge">적정 매수가</span> (연 월세 ÷ 목표 수익률) + 보증금<br>
     <span class="badge">표면 수익률</span> 연 월세 ÷ (매수가 − 보증금) × 100<br>
     <span class="badge">실질 수익률</span> 부가세·대출이자 반영 후, 실투자금 대비<br>
-    <span class="badge">세후</span> 월세에서 이자(경비) 빼고 세금 적용. 법인은 9.9%(2억 이하), 개인은 한계세율<br>
+    <span class="badge">세후</span> 월세에서 이자(경비) 빼고 세금 적용. 법인은 법인 유형별 구간 세율(소규모 <span class="tx-cs">22</span>% / 일반 2억까지 <span class="tx-c1">11</span>%), 개인은 한계세율<br>
     실현 수익률이 목표보다 <b>높으면 이익, 같으면 본전, 낮으면 손해</b>로 판정합니다.
   </div>
 
@@ -258,6 +276,7 @@ window.slGetState = function(){ return window.cyGetState ? window.cyGetState() :
 window.slSetState = function(d){ if(window.cySetState) window.cySetState(d); };
 </script>
 <script>window.SF_RESET = ["sf_commercialyield_v1"];</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/tax-rates.js?v=4"></script>
 <script src="/sf-slots.js?v=7"></script>
 <script src="/common.js?v=10"></script>
 <script>
@@ -267,6 +286,27 @@ function wonToKorean(n){ var neg=n<0; n=Math.round(Math.abs(n)); if(n===0)return
 function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
 
 let vatMode = 'refund';
+let corpType = 'small'; // (088) 법인 유형: small = 성실신고 소규모법인, gen = 일반법인
+
+// (088) 세율은 /tax-rates.js(SF_TAX)에서 읽는다. 못 읽으면 아래 기본값(2026년)
+const _T = window.SF_TAX;
+const TX = {
+  corp: _T ? _T.corp : [[2e8,10],[2e10,20],[3e11,22],[Infinity,25]],
+  corpSmall: _T ? _T.corpSmall : [[2e10,20],[3e11,22],[Infinity,25]],
+  income: _T ? _T.income : [[14e6,6],[50e6,15],[88e6,24],[150e6,35],[300e6,38],[500e6,40],[1e9,42],[Infinity,45]],
+  local: _T ? _T.local : 0.1,
+  interest: _T ? _T.interest : 15.4
+};
+const _wl = r => Math.round(r*(1+TX.local)*100)/100;
+const prog = (b, br) => { let t=0, lo=0; if(!(b>0)) return 0; for(const [hi,r] of br){ if(b>lo) t += (Math.min(b,hi)-lo)*r/100; lo=hi; } return t; };
+const INDIV_PRESETS = [1,2,3,6].map(i => _wl(TX.income[i][1])); // 16.5 / 26.4 / 38.5 / 46.2
+(function fillTax(){
+  const put=(c,v)=>document.querySelectorAll('.'+c).forEach(e=>e.textContent=v);
+  put('tx-c1', _wl(TX.corp[0][1])); put('tx-c2', _wl(TX.corp[1][1])); put('tx-cs', _wl(TX.corpSmall[0][1]));
+  put('tx-int', TX.interest); put('tx-inc', TX.income.map(b=>_wl(b[1])).join(' / '));
+  $('indivPresets').innerHTML = INDIV_PRESETS.map(r=>`<div class="preset" onclick="setIndiv(${r})">${r}%</div>`).join('');
+  $('indivRate').value = INDIV_PRESETS[2]; // 기본 38.5 — 저장값 복원이 뒤에서 덮어씀
+})();
 
 const KOR_FIELDS=['deposit','monthlyRent','buyPrice'];
 function updateKor(){ KOR_FIELDS.forEach(id=>{ var el=$(id),box=$(id+'_kor'); if(el&&box){ var v=parseFloat(el.value)||0; box.textContent=v>0?wonToKorean(v):''; } }); }
@@ -274,6 +314,7 @@ function updateKor(){ KOR_FIELDS.forEach(id=>{ var el=$(id),box=$(id+'_kor'); if
 function setTarget(r){ $('targetRate').value=r; document.querySelectorAll('#targetRate ~ .preset-row .preset').forEach(el=>el.classList.toggle('active', parseFloat(el.textContent)===r)); calculate(); }
 function setAcq(r){ $('acqRate').value=r; document.querySelectorAll('#acqRate ~ .preset-row .preset').forEach(el=>el.classList.toggle('active', parseFloat(el.textContent.match(/[\d.]+/)[0])===r)); calculate(); }
 function setIndiv(r){ $('indivRate').value=r; document.querySelectorAll('#indivRate ~ .preset-row .preset').forEach(el=>el.classList.toggle('active', parseFloat(el.textContent)===r)); calculate(); }
+function setCorp(m){ corpType=(m==='gen')?'gen':'small'; document.querySelectorAll('[data-corp]').forEach(el=>el.classList.toggle('active', el.dataset.corp===corpType)); calculate(); cySaveLocal(); }
 function setVat(m){ vatMode=m; document.querySelectorAll('[data-vat]').forEach(el=>el.classList.toggle('active', el.dataset.vat===m)); calculate(); }
 
 function calculate(){
@@ -338,9 +379,9 @@ function calculate(){
   const indivTax = taxableIncome * indivRate;
   const indivNet = netIncomeBeforeTax - indivTax;
   const indivYield = selfCapital>0 ? indivNet/selfCapital*100 : 0;
-  // 법인 (2억 이하 9.9%, 초과분 단순화)
-  const corpRate = 0.099;
-  const corpTax = taxableIncome * corpRate;
+  // 법인 (088) 예전엔 전액 9.9% 단일 → 법인 유형별 누진(지방세 포함)
+  const corpTax = prog(taxableIncome, corpType==='gen' ? TX.corp : TX.corpSmall) * (1+TX.local);
+  const corpRate = taxableIncome>0 ? corpTax/taxableIncome : _wl((corpType==='gen'?TX.corp:TX.corpSmall)[0][1])/100;
   const corpNet = netIncomeBeforeTax - corpTax;
   const corpYield = selfCapital>0 ? corpNet/selfCapital*100 : 0;
 
@@ -348,7 +389,7 @@ function calculate(){
     <tr><td class="label">연 월세 수입</td><td class="num">${fmt(annualRent)}</td><td class="num">${fmt(annualRent)}</td></tr>
     ${annualInterest>0?`<tr><td class="label">− 대출이자(경비)</td><td class="num" style="color:#dc2626">−${fmt(annualInterest)}</td><td class="num" style="color:#dc2626">−${fmt(annualInterest)}</td></tr>`:''}
     <tr><td class="label">과세 대상 소득</td><td class="num">${fmt(taxableIncome)}</td><td class="num">${fmt(taxableIncome)}</td></tr>
-    <tr><td class="label">− 세금</td><td class="num" style="color:#dc2626">−${fmt(indivTax)}<br><span style="font-size:10px;color:#888">(${(indivRate*100).toFixed(1)}%)</span></td><td class="num" style="color:#dc2626">−${fmt(corpTax)}<br><span style="font-size:10px;color:#888">(9.9%)</span></td></tr>
+    <tr><td class="label">− 세금</td><td class="num" style="color:#dc2626">−${fmt(indivTax)}<br><span style="font-size:10px;color:#888">(${(indivRate*100).toFixed(1)}%)</span></td><td class="num" style="color:#dc2626">−${fmt(corpTax)}<br><span style="font-size:10px;color:#888">(${(corpRate*100).toFixed(1)}%${corpType==='gen'?'':' 소규모'})</span></td></tr>
     <tr class="highlight"><td class="label">세후 순수익</td><td class="num">${fmt(indivNet)}</td><td class="num">${fmt(corpNet)}</td></tr>
     <tr><td class="label">세후 수익률</td><td class="num">${indivYield.toFixed(2)}%</td><td class="num">${corpYield.toFixed(2)}%</td></tr>
   `;
@@ -397,6 +438,7 @@ function calculate(){
     else lnote.innerHTML=`⚠️ 표면 수익률(${grossYield.toFixed(2)}%)이 대출 금리(${(loanRate*100).toFixed(1)}%)보다 낮아, 대출할수록 수익이 깎이는 <b>negative 레버리지</b>예요. 대출 비중을 줄이세요.`;
   } else { lnote.style.display='none'; }
 
+  document.querySelectorAll('#indivPresets .preset').forEach(el=>el.classList.toggle('active', parseFloat(el.textContent)===indivRate*100 || Math.abs(parseFloat(el.textContent)-indivRate*100)<0.001));
   updateKor();
 }
 
@@ -404,12 +446,14 @@ document.querySelectorAll('input').forEach(el=>el.addEventListener('input', calc
 
 // 상태 저장/복원 (모든 input + vatMode)
 function cyGetState(){
-  const s={vatMode};
+  const s={vatMode, corpType};
   document.querySelectorAll('input[id]').forEach(el=>{ s[el.id]=el.value; });
   return s;
 }
 function cySetState(d){
   if(!d) return;
+  corpType = d.corpType==='gen' ? 'gen' : 'small'; // 옛 저장값(corpType 없음)은 기본 소규모
+  document.querySelectorAll('[data-corp]').forEach(el=>el.classList.toggle('active', el.dataset.corp===corpType));
   if(d.vatMode){ vatMode=d.vatMode; document.querySelectorAll('[data-vat]').forEach(el=>el.classList.toggle('active', el.dataset.vat===d.vatMode)); }
   document.querySelectorAll('input[id]').forEach(el=>{ if(d[el.id]!==undefined) el.value=d[el.id]; });
   calculate();
