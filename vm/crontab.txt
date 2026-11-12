@@ -39,6 +39,8 @@
 # ── 아침 (07:00~09:00) ──
 # 미국 ETF·종목 시세 → data/us_etf.json — 평일 07:05
 5 7 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_us_etf.py >> ~/cron.log 2>&1
+# [봇1] 미국채 금리곡선(매일) + 국채 목록(MSPD 월말 기준) → data/bond/ (실패 시만 알림) — 매일 07:10 (084)
+10 7 * * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_ust.py >> ~/logs/fetch_ust.log 2>&1
 # 풋콜레이쇼 — 화~토 07:15 (미장 마감 후)
 15 7 * * 2-6 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_putcall.py >> ~/cron.log 2>&1
 # [봇2] 뉴스 — 정치 아침 (--hours 12) — 매일 07:25

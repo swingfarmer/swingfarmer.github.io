@@ -26,6 +26,9 @@ TARGETS = [
     # 환율/금리
     ("data/rates.json",                    "환율/금리",         "daily",   0),
     ("data/rates_history.json",            "환율/금리 히스토리", "daily",   0),
+    # 미국채 (084)
+    ("data/bond/ust_curve.json",           "미국채 금리곡선",   "daily",   0),
+    ("data/bond/ust_list.json",            "미국채 목록",       "daily",   0),
     # 미국 ETF
     ("data/us_etf.json",                   "미국 ETF",          "weekday", 0),
     # 종가
