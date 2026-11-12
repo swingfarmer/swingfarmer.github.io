@@ -1318,5 +1318,36 @@ def api_prices_live():
     return resp
 
 
+# ── 국내 ETF 장중 준실시간 (VM 로컬 ~/sf_live/etf_live.json, 083) ──
+# scripts/fetch_live_etf.py 가 평일 장중 1분마다 갱신 (주식과 30초 엇갈림). KIS 호출 없음, 파일만 읽음.
+LIVE_ETF_FILE = os.path.join(os.path.expanduser(os.environ.get('SF_LIVE_DIR', '~/sf_live')), 'etf_live.json')
+_live_etf_cache = {'mtime': 0, 'data': None}
+
+@app.route('/api/etf/live')
+@limiter.limit("120/minute")
+def api_etf_live():
+    """ETF 준실시간 시세 {etfs:{code:{p,r,v}}}. age_sec = 마지막 수집 후 경과 초."""
+    try:
+        mtime = os.path.getmtime(LIVE_ETF_FILE)
+    except OSError:
+        return jsonify({'error': 'ETF 실시간 파일 없음 (수집기 미실행)'}), 404
+    if _live_etf_cache['data'] is None or mtime != _live_etf_cache['mtime']:
+        try:
+            with open(LIVE_ETF_FILE, 'r', encoding='utf-8') as f:
+                _live_etf_cache['data'] = json.load(f)
+            _live_etf_cache['mtime'] = mtime
+        except Exception:
+            if _live_etf_cache['data'] is None:
+                return jsonify({'error': 'ETF 실시간 파일 읽기 실패'}), 503
+    data = dict(_live_etf_cache['data'])
+    data['age_sec'] = int(time.time() - _live_etf_cache['mtime'])
+    if data['age_sec'] > 300:          # 5분 넘게 멈췄으면 장중 표시 내림
+        data['market_open'] = False
+        data['stale'] = True
+    resp = jsonify(data)
+    resp.headers['Cache-Control'] = 'no-store'
+    return resp
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)

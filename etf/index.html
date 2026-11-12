@@ -176,6 +176,7 @@ body.sf-dark .star.on { color:#e8a317!important; }
   <p><strong>순자산:</strong> 네이버 시가총액(억원)을 순자산 대용으로 씀. 괴리율 = 종가 ÷ NAV − 1.</p>
   <p><strong>자금유입(추정):</strong> 오늘 시총 − 어제 시총 × (오늘 종가 ÷ 어제 종가). 가격 변화분을 빼고 남은 설정·환매 금액. 첫 수집 다음 날부터 하루씩 쌓이고 최근 20거래일 보관. 좌수 반영이 하루 늦을 수 있어 하루 단위보다 5일·20일 합으로 볼 것.</p>
   <p><strong>분류:</strong> 대분류는 네이버 분류 그대로. 지역·테마·레버리지/커버드콜 표시는 이름 키워드로 자동 판단이라 틀린 게 있을 수 있음. 같은 상품 묶기 = 운용사 이름을 뗀 나머지 이름이 같은 ETF.</p>
+  <p><strong>장중 준실시간:</strong> 평일 장중에는 현재가·1일 등락률만 1분마다 KIS 시세로 바뀜(상단에 🔴 표시). 1주~1년 등락률·거래대금·순자산·괴리율·자금유입은 전일 종가 기준 그대로. 18:40 수집 뒤에는 그날 종가로 정리됨.</p>
   <p><strong>구성종목:</strong> KRX PDF, 주 1회(토) 수집. 국내는 비중 상위 10종목. 해외 종목은 KRX가 비중을 주지 않아(주식 수만 있음) 구성 30개 이하 ETF만 이름 목록, 그보다 큰 지수형(S&amp;P500 등)은 구성 개수만.</p>
   <p><strong>관심(★):</strong> 별 누른 목록과 필터는 이 브라우저에 자동 저장. 폰과 맞추려면 💾 저장 버튼으로 슬롯 저장.</p>
 </div>
@@ -247,6 +248,7 @@ var _canSave = false;
 function save(){ if(!_canSave) return; try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e){} }
 
 var D = null, ROWS = [], TABS = {}, FLOW = null, LIMIT = 300, openGroups = {}, openHold = {}, BYCODE = {};
+var LIVE_URL = 'https://swingfarmer.duckdns.org/api/etf/live', liveTimer = null, LIVE_TXT = '';
 var H = null, HSTATE = 0, IDX = null;   // 구성종목: 0 안 불러옴 / 1 불러오는 중 / 2 완료 / 3 없음
 
 // ── sf-slots ──
@@ -634,6 +636,36 @@ document.getElementById('out').addEventListener('click', function(e){
   if ((t = e.target.closest('tr[data-theme]'))) { S.theme = t.dataset.theme; S.view='table'; LIMIT=300; save(); render(); window.scrollTo({top:document.getElementById('filters').offsetTop-70, behavior:'smooth'}); }
 });
 
+// ── 장중 준실시간 (083) ──
+// latest.json(전일 종가)보다 새 날짜일 때만 현재가·1일 등락률을 덮어씀. 실패하면 종가 화면 그대로.
+var BASE_TXT = '';
+function showDate(){ document.getElementById('dataDate').textContent = BASE_TXT + LIVE_TXT; }
+function loadLive(){
+  var next = 5 * 60 * 1000;   // 장 마감 중에는 5분마다만 확인
+  fetch(LIVE_URL, {cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error('live '+r.status); return r.json(); })
+  .then(function(live){
+    var q = live.etfs || {}, hit = 0;
+    if (live.date && D && live.date > D.date) {
+      ROWS.forEach(function(o){
+        var x = q[o.code]; if (!x || !x.p) return;
+        if (o.close0 === undefined) { o.close0 = o.close; o.d10 = o.d1; }
+        o.close = x.p; o.d1 = (typeof x.r === 'number') ? x.r : o.d1; hit++;
+      });
+    }
+    if (hit) {
+      LIVE_TXT = live.market_open ? ' · 🔴 장중 ' + live.time + ' (현재가·1일만, 1분 갱신)'
+                                  : ' · 현재가·1일은 ' + live.date.slice(5).replace('-','/') + ' ' + live.time + ' 기준';
+      showDate(); render();
+    }
+    if (live.market_open) next = 60 * 1000;
+  }).catch(function(){ /* API 접속 불가 → 종가 화면 유지 */ })
+  .then(function(){
+    clearTimeout(liveTimer);
+    liveTimer = setTimeout(function(){ if (!document.hidden) loadLive(); }, next);
+  });
+}
+document.addEventListener('visibilitychange', function(){ if (!document.hidden && D) { clearTimeout(liveTimer); loadLive(); } });
+
 // ── 로드 ──
 var v = Date.now() - Date.now() % 600000;   // 10분 단위 캐시
 Promise.all([
@@ -644,10 +676,12 @@ Promise.all([
   prepare();
   syncInputs();
   var nf = FLOW && FLOW.dates ? FLOW.dates.length : 0;
-  document.getElementById('dataDate').textContent = '기준일 ' + D.date + ' · 갱신 ' + D.updated + ' · ' + D.count + '개' +
+  BASE_TXT = '기준일 ' + D.date + ' · 갱신 ' + D.updated + ' · ' + D.count + '개' +
     ' · 자금유입 ' + (nf>1 ? (nf-1)+'일치 쌓임' : '내일부터 쌓임');
+  showDate();
   _canSave = true;
   render();
+  loadLive();
 }).catch(function(err){
   document.getElementById('out').innerHTML = '<div class="empty">데이터를 못 불러옴 ('+esc(err.message)+'). VM에서 fetch_kr_etf.py가 한 번 돌아야 생김.</div>';
   document.getElementById('dataDate').textContent = '';

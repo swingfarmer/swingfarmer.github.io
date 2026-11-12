@@ -49,6 +49,9 @@ TARGETS = [
     # 국내 ETF (082)
     ("data/kr/etf/latest.json",           "국내 ETF",          "weekday", 0),
     ("data/kr/etf/holdings.json",         "국내 ETF 구성종목", "weekly",  9),
+    # 장중 준실시간 — 레포 밖 VM 로컬 파일 (~로 시작하면 홈 기준, 083)
+    ("~/sf_live/prices_live.json",        "주식 준실시간",     "weekday", 0),
+    ("~/sf_live/etf_live.json",           "국내 ETF 준실시간", "weekday", 0),
     # 선물
     ("data/futures_investor.json",         "선물 투자자별",     "weekday", 0),
     # 시장지표
@@ -165,7 +168,7 @@ def check_freshness():
     results = []
 
     for rel_path, desc, cycle, max_stale_days in TARGETS:
-        abs_path = os.path.join(ROOT_DIR, rel_path)
+        abs_path = os.path.expanduser(rel_path) if rel_path.startswith('~') else os.path.join(ROOT_DIR, rel_path)
         effective_max = get_effective_max_stale(cycle, max_stale_days, now)
         entry = {
             "file": rel_path,
