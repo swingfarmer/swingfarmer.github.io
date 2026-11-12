@@ -137,7 +137,7 @@ body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4
   <h2>📋 미국채 목록</h2>
   <div class="opts">
     <label>이자 세율 <input type="number" id="oTax" value="15.4" step="0.1" min="0" max="60">%</label>
-    <label title="증권사 매수가가 이론가보다 비싼 정도를 수익률로 표시. 11/12 삼성증권 T 0 5/8 05/15/30 매매단가 87.53 vs 이론가 86.79 → 약 25bp">증권사 마진 <input type="number" id="oMgBp" value="25" step="1" min="0" max="200">bp</label>
+    <label title="증권사 매수가가 이론가보다 비싼 정도(수익률). 잔존 5년 이하는 단기값, 10년 이상은 장기값, 5~10년은 둘 사이 선형. 기본값은 11/12 삼성증권 4종목에서 잰 값(3.5년 25bp, 9.8년 20bp, 23.5년 18bp, 29.8년 19bp)">증권사 마진 ≤5년 <input type="number" id="oMgS" value="25" step="1" min="0" max="200">bp · ≥10년 <input type="number" id="oMgL" value="19" step="1" min="0" max="200">bp</label>
     <span class="sep"></span>
     <label>잔존 만기 <select id="oMat">
       <option value="all">전체</option><option value="0-1">1년 이하</option><option value="1-3">1~3년</option>
@@ -187,7 +187,7 @@ body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4
 <div class="info-box">
   <p><strong>한국 금리:</strong> 한국은행 ECOS 시장금리(일별) — 국고채 1·3·5·10·20·30년, 기준금리, CD·CP 91일, 회사채 AA-·BBB- 3년. VM이 평일 18:10 받아 DB에 쌓고 바로 이 페이지용 파일로 내보냄. 한국은 2년물이 없어 장단기는 10Y−3Y로 봄.</p>
   <p><strong>출처:</strong> 미국 재무부 — 일별 par 금리곡선(Daily Treasury Par Yield Curve)과 MSPD(월말 기준 발행 잔액표). VM 크론 매일 07:10. 목록은 월말 기준이라 그 뒤 새로 발행된 종목은 다음 달에 들어옴. TIPS·변동금리채·단기채(Bills)는 뺐음.</p>
-  <p><strong>이론가·추정 매수가:</strong> 실제 시세가 아님. 이론가 = 금리곡선(par)에서 할인율을 만들어(부트스트랩) 종목별 현금흐름을 할인한 값. 추정 매수가 = 이론 수익률에서 "증권사 마진(bp)"만큼 낮춘 수익률로 다시 계산한 가격. 기본 25bp는 11/12 삼성증권 T 0 5/8 05/15/30 한 건(매매단가 87.53, 이론가 86.79)에서 잰 값이라 종목·증권사·날마다 다를 수 있음. 앱 가격을 보고 맞춰 쓸 것.</p>
+  <p><strong>이론가·추정 매수가:</strong> 실제 시세가 아님. 이론가 = 금리곡선(par)에서 할인율을 만들어(부트스트랩) 종목별 현금흐름을 할인한 값. 추정 매수가 = 이론 수익률에서 "증권사 마진(bp)"만큼 낮춘 수익률로 다시 계산한 가격. 마진은 잔존 5년 이하 25bp, 10년 이상 19bp, 그 사이는 선형. 11/12 삼성증권 앱 4종목에서 잰 값: T 0.625 05/15/30 25bp(87.53 vs 이론 86.79), T 4.625 08/15/36 20bp(98.86 vs 97.32), T 1.25 05/15/50 18bp(45.98 vs 44.54), T 5.125 08/15/56 19bp(99.42 vs 96.62). 이 차이에는 증권사 마진과 이론가 오차가 섞여 있고 종목·증권사·날마다 다를 수 있음. 앱 가격을 보고 맞춰 쓸 것.</p>
   <p><strong>앱식(단리) vs 복리:</strong> 증권사 앱의 세후수익률·세전은행환산수익률은 단리 = (세후 이자 합 + 액면 − 매수금액) ÷ 매수금액 ÷ 잔존 연수. 삼성증권 값(세전 4.76·세후 4.65·환산 5.50)과 0.01~0.02%p 안에서 맞음. 복리(반기, 채권 관행)는 받은 이자를 다시 굴리는 가정이라 잔존이 길수록 앱식보다 낮게 나옴 — 3.5년 저쿠폰이면 약 0.25%p. 다른 채권·예금과 정확히 비교할 땐 복리 기준이 맞음.</p>
   <p><strong>세금(개인):</strong> 쿠폰 이자는 이자소득 15.4% 원천징수, 다른 이자·배당과 합쳐 연 2,000만원을 넘으면 넘는 부분은 종합과세(금종세). 채권 매매차익(할인 매수 후 만기 상환 차익 포함)은 소득세법에 열거되지 않아 비과세, 환차익도 개인 비과세 (삼일PwC One Point Tax 등). 그래서 저쿠폰(할인) 채권은 수익 대부분이 비과세. 금종세 대상이면 이자 세율 칸에 한계세율(예: 26.4·38.5·41.8%)을 넣어 볼 것.</p>
   <p><strong>계산 가정:</strong> 첫 쿠폰도 전액 과세로 계산(보수적). 국내 증권사가 보유기간 이자만 과세하면 세후수익률이 조금 더 높아짐(미확인). 원화 계산은 이자·원금을 모두 만기 환율로 환산한 단순 계산. 처음부터 할인 발행된 종목(OID)은 발행 할인액이 이자로 볼 여지가 있어 확인 필요.</p>
@@ -204,7 +204,7 @@ body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4
 // ── 저장 (sf-slots) ──
 window.CALC_KEY = 'bond';
 window.SF_RESET = true;
-var SAVE_IDS = ['cFace','cFx','cFxEnd','selCusip','oTax','oMgBp','oMat','oCpn','oType','oSort','oQ','oTab','oCty','eTyp','eReg','eH','eAum','eNoLev','eSort','eQ'];
+var SAVE_IDS = ['cFace','cFx','cFxEnd','selCusip','oTax','oMgS','oMgL','oMat','oCpn','oType','oSort','oQ','oTab','oCty','eTyp','eReg','eH','eAum','eNoLev','eSort','eQ'];
 function gv(el){ return el.type==='checkbox' ? (el.checked?'1':'0') : el.value; }
 function sv(el,v){ if (el.type==='checkbox') el.checked = (v==='1'||v===true); else el.value=v; }
 window.slGetState = function(){
@@ -304,13 +304,18 @@ function won(v){ if (v==null||!isFinite(v)) return '-'; var a=Math.abs(v), s=v<0
   if (a>=1e8) return s+(a/1e8).toFixed(2)+'억원'; if (a>=1e4) return s+comma(Math.round(a/1e4))+'만원'; return s+comma(Math.round(a))+'원'; }
 function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
+// (085) 잔존기간별 마진(bp): 5년 이하 단기값, 10년 이상 장기값, 사이 선형
+function mgOf(rem, s, l){ return rem<=5 ? s : rem>=10 ? l : s+(l-s)*(rem-5)/5; }
+
 // ── 전체 다시 계산 ──
 function computeAll(){
-  var tax=(num('oTax')||0)/100, mg=(num('oMgBp')||0)/10000;
+  var tax=(num('oTax')||0)/100, mgS=num('oMgS'), mgL=num('oMgL');
+  if (mgS==null) mgS=0; if (mgL==null) mgL=mgS;
   BONDS = LIST.rows.map(function(r){
     var b={cusip:r[0], type:r[1], cpn:r[2], iss:r[3], mat:r[4], amt:r[5]};
     var p=theo(b);
     b.name=bname(b); b.p=p; b.rem=(pnum(b.mat)-SETTLE)/365.25;
+    b.mgBp=mgOf(b.rem, mgS, mgL); var mg=b.mgBp/10000;
     if (!p.cd.cfs.length) return b;
     b.theoY=ytm(p.dirty,b,p.cd,0);                       // 이론 수익률 (금리곡선 기준)
     b.buyDirty=priceAt(b.theoY-mg, b, p.cd);              // 마진만큼 수익률 낮춘 가격 = 추정 매수가
@@ -376,7 +381,7 @@ function renderCalc(){
     +r('쿠폰 / 이자 지급', f3(b.cpn)+'% · 연 2회('+mo+') · 다음 '+nxt)
     +r('최초 발행 / 종류', (b.iss||'-')+' / '+(b.type==='B'?'Bond':'Note'))
     +'<tr class="hd"><td colspan="2">매수 (액면 100달러당)</td></tr>'
-    +r('이론가 → 추정 매수가 (마진 '+(num('oMgBp')||0)+'bp)', f3(b.p.clean)+' → '+f3(b.buyClean)+' (+'+f2(b.buyClean-b.p.clean)+')')
+    +r('이론가 → 추정 매수가 (마진 '+(+b.mgBp.toFixed(1))+'bp)', f3(b.p.clean)+' → '+f3(b.buyClean)+' (+'+f2(b.buyClean-b.p.clean)+')')
     +r('경과이자 (매수 때 같이 냄)', f3(b.p.ai))
     +r('매수 금액', '$'+comma(buyUsd,2)+' ≈ '+won(buyKrw))
     +'<tr class="hd"><td colspan="2">만기까지 (달러)</td></tr>'
