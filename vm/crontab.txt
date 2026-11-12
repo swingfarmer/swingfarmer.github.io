@@ -1,0 +1,147 @@
+# ═══════════════════════════════════════════════════════
+# 크론탭 — swingfarmer-server   (083 정리, 시간은 모두 KST)
+# 원본: 레포 vm/crontab.txt → 적용: crontab vm/crontab.txt
+#   ※ crontab -e로 직접 고쳤으면 이 파일도 같이 고칠 것 (안 그러면 다음 적용 때 되돌아감)
+# [봇1] = 기술알림 (TELEGRAM_BOT_TOKEN)
+# [봇2] = 뉴스·관심 부동산 (TELEGRAM_BOT2_TOKEN)
+# 구역: ① 매분 ② 매시간 ③ 매일·평일(시간순) ④ 주간 ⑤ 월간·분기
+# ═══════════════════════════════════════════════════════
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ① 매분
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 장중 준실시간 시세 — 평일 08:00~15:59 매분 (스크립트가 08:59~15:40만 조회) → ~/sf_live/prices_live.json → 히트맵·담보비율
+* 8-15 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_live_prices.py >> ~/logs/fetch_live_prices.log 2>&1
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ② 매시간
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# [봇2] 뉴스 — 증권/해외증시/경제 — 매시간 :05
+5 * * * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/news_alert.py --cats 증권 해외증시 경제 >> ~/cron.log 2>&1
+# 뉴스 수집 (VM 로컬 저장) — 매시간 :10
+10 * * * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_news.py >> ~/cron.log 2>&1
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ③ 매일·평일 (시간순)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# ── 새벽 (05:00~06:00) ──
+# [봇2] 실거래가 수집(아파트 → 오피스텔·상업) + 관심 부동산 새 거래 알림 — 매일 05:30 (082)
+30 5 * * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 -u scripts/fetch_realestate.py --months 2 >> ~/logs/fetch_realestate.log 2>&1 ; python3 -u scripts/fetch_offi_comm.py --months 2 >> ~/logs/fetch_offi_comm.log 2>&1 ; python3 scripts/re_watch.py >> ~/logs/re_watch.log 2>&1
+# 로그 정리 — 매일 06:00
+0 6 * * * bash ~/rotate_log.sh
+
+# ── 아침 (07:00~09:00) ──
+# 미국 ETF·종목 시세 → data/us_etf.json — 평일 07:05
+5 7 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_us_etf.py >> ~/cron.log 2>&1
+# 풋콜레이쇼 — 화~토 07:15 (미장 마감 후)
+15 7 * * 2-6 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_putcall.py >> ~/cron.log 2>&1
+# [봇2] 뉴스 — 정치 아침 (--hours 12) — 매일 07:25
+25 7 * * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/news_alert.py --cats 정치 --hours 12 >> ~/cron.log 2>&1
+# 자동 push — 매일 07:30
+30 7 * * * bash ~/auto_push.sh >> ~/cron.log 2>&1
+# [봇2] 뉴스 — 코인 아침 (--hours 12) — 매일 07:35
+35 7 * * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/news_alert.py --cats 코인 --hours 12 >> ~/cron.log 2>&1
+# 환율/금리 — 매일 07:50
+50 7 * * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_rates.py >> ~/cron.log 2>&1
+# 시장지표 수집 — 평일 07:52 (fetch_rates 다음)
+52 7 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_market_indicators.py >> ~/cron.log 2>&1
+# [봇1] 시장지표 텔레그램 — 평일 08:00
+0 8 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/market_alert.py >> ~/cron.log 2>&1
+# [봇1] 세금 납부 알림 (D-7·D-3·당일에만 발송) — 매일 09:00
+0 9 * * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/tax_reminder.py >> ~/cron.log 2>&1
+
+# ── 장중 (09:00~15:30) ──
+# 모멘텀 인트라데이 — 평일 10:05
+5 10 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_momentum.py --intraday >> ~/cron.log 2>&1
+# [봇2] 뉴스 — 부동산/하남감북 (--hours 24) — 매일 12:00
+0 12 * * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/news_alert.py --cats 부동산 "하남 감북" --hours 24 >> ~/cron.log 2>&1
+# [봇1·실패 시] 수출입은행 환율 — 평일 13:00
+0 13 * * 1-5 cd ~/swingfarmer.github.io && . ~/.env_secrets && python3 scripts/fetch_exim.py >> ~/logs/fetch_exim.log 2>&1
+# [봇1·실패 시] 수출입은행 환율 백업 (전날 누락분) — 화~토 14:00
+0 14 * * 2-6 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_exim.py >> ~/logs/fetch_exim.log 2>&1
+
+# ── 장 마감 후 (18:00~19:30) ──
+# 한국은행 금리 — 평일 18:10
+10 18 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_ecos.py >> ~/logs/fetch_ecos.log 2>&1
+# 종가 수집 (KIS) → data/kr/prices.json — 평일 18:30
+30 18 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_prices.py >> ~/cron.log 2>&1
+# 버핏지수 — 평일 18:35 (종가 수집 다음)
+35 18 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_buffett.py >> ~/cron.log 2>&1
+# 국내 ETF 전종목 (네이버+KRX, 기간등락률·자금유입) → data/kr/etf/ — 평일 18:40 (082)
+40 18 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_kr_etf.py >> ~/logs/fetch_kr_etf.log 2>&1
+# 시장지표 수집(저녁) — 평일 18:45
+45 18 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_market_indicators.py >> ~/cron.log 2>&1
+# [봇1] 시장지표 텔레그램(저녁) — 평일 18:50
+50 18 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/market_alert.py >> ~/cron.log 2>&1
+# 금시세 — 평일 18:50
+50 18 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_gold.py >> ~/logs/fetch_gold.log 2>&1
+# 매크로 비교 차트 — 평일 18:50
+50 18 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_macro_compare.py >> ~/logs/fetch_macro.log 2>&1
+# [봇2] 뉴스 — 정치 저녁 (--hours 12) — 매일 19:25
+25 19 * * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/news_alert.py --cats 정치 --hours 12 >> ~/cron.log 2>&1
+
+# ── 저녁 배치 (20:00~21:30) ──
+# 종가+지수 일일수집 — 평일 20:10
+10 20 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_daily_prices.py >> ~/cron.log 2>&1
+# 업종지수 일일수집 — 평일 20:15
+15 20 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_sector_prices.py >> ~/cron.log 2>&1
+# [봇1] 업종 시그널 텔레그램 — 평일 20:20
+20 20 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/sector_alert.py >> ~/cron.log 2>&1
+# 선물 투자자별 매매동향 — 평일 20:25
+25 20 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_futures_investor.py >> ~/logs/fetch_futures_investor.log 2>&1
+# 스크리너+프매 — 평일 20:45
+45 20 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_screener.py >> ~/cron.log 2>&1
+# 외국인수급 합산 — 평일 20:50
+50 20 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_foreign_flow.py >> ~/cron.log 2>&1
+# KRX 투자자 지표 대시보드 (pykrx) → data/krx/marketcap_top.json — 평일 20:50
+50 20 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_krx_dashboard.py >> ~/logs/fetch_krx_dashboard.log 2>&1
+# [봇1] 스크리너 텔레그램 — 평일 20:55
+55 20 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/screener_alert.py >> ~/cron.log 2>&1
+# 52주 신고가/신저가 — 평일 20:55
+55 20 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_new_high_low.py >> ~/logs/fetch_new_high_low.log 2>&1
+# 모멘텀 월간(22거래일) — ⚠ 원래 의도는 "말일 21:00"이지만, 날짜(28-31)와 요일(1-5)을 같이 쓰면 크론은 "둘 중 하나"로 해석해서 실제로는 매 평일 21:00에 돎
+0 21 28-31 * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_momentum.py --monthly >> ~/cron.log 2>&1
+# 자동 push — 매일 21:10
+10 21 * * * bash ~/auto_push.sh >> ~/cron.log 2>&1
+# [봇2] 뉴스 — 코인 저녁 (--hours 12) — 매일 21:15
+15 21 * * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/news_alert.py --cats 코인 --hours 12 >> ~/cron.log 2>&1
+# [봇1] 헬스체크 — 매일 21:30
+30 21 * * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/healthcheck.py >> ~/logs/healthcheck.log 2>&1
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ④ 주간
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# [봇1] 주봉 10주선 체크 — 금 16:10
+10 16 * * 5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_ma_check.py --weekly >> ~/logs/ma_check.log 2>&1
+# [봇1] 월봉 20월선 중간점검 — 금 16:15
+15 16 * * 5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_ma_check.py --monthly >> ~/logs/ma_check.log 2>&1
+# [봇1] 5주선 스크리너 — 금 20:50
+50 20 * * 5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_weekly_ma.py >> ~/cron.log 2>&1
+# 모멘텀 주간(5거래일) — 금 21:00
+0 21 * * 5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_momentum.py --weekly >> ~/cron.log 2>&1
+# [봇1] 이평선 시그널 — 금 21:05
+5 21 * * 5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_ma_signal.py >> ~/cron.log 2>&1
+# 국내 ETF 구성종목(KRX PDF) → data/kr/etf/holdings.json — 토 10:00 (약 16분, 082)
+0 10 * * 6 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_kr_etf_holdings.py >> ~/logs/fetch_kr_etf_holdings.log 2>&1
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ⑤ 월간·분기
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 종목리스트 갱신 — 매월 1일 06:00
+0 6 1 * * cd ~/swingfarmer.github.io && /usr/bin/python3 scripts/update_stock_list.py >> ~/cron.log 2>&1
+# [봇1] 월봉 20월선 확정 — 매월 말일 16:20 (28~31일에 돌고, 내일이 다음 달일 때만 실행)
+20 16 28-31 * * [ "$(date -d tomorrow +\%m)" != "$(date +\%m)" ] && . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_ma_check.py --monthly-final >> ~/logs/ma_check.log 2>&1
+# DART 재무 — 연간 — 4/5 09:00
+0 9 5 4 * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_dart.py --period annual >> ~/cron.log 2>&1
+# DART 재무 — 1분기 — 5/20 09:00
+0 9 20 5 * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_dart.py --period q1 >> ~/cron.log 2>&1
+# DART 재무 — 2분기 — 8/20 09:00
+0 9 20 8 * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_dart.py --period q2 >> ~/cron.log 2>&1
+# DART 재무 — 3분기 — 11/20 09:00
+0 9 20 11 * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_dart.py --period q3 >> ~/cron.log 2>&1
