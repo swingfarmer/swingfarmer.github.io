@@ -1,8 +1,8 @@
 /* 세율 공통 (086) — 세법이 바뀌면 이 파일 하나만 고치면 됨
- * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=2 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
+ * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=3 을 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
  * 구간 배열: [[상한(원), 세율%], ...] 누진. 세율은 국세 기준, 지방소득세(국세의 10%)는 별도 → SF_TAX.wl(세율)로 포함값.
  * 바꾼 뒤: 이 파일 ?v= 를 쓰는 페이지 전부 올릴 것. 확인일(checked)도 고칠 것.
- * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/  (나머지 세금 페이지는 순차 이전 예정)
+ * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/  (나머지 세금 페이지는 순차 이전 예정)
  */
 window.SF_TAX = Object.freeze({
   year: 2026,
@@ -28,6 +28,8 @@ window.SF_TAX = Object.freeze({
   majorCgtShort: 30,
   // 대주주 판정 (종목별) — 평가액 50억 이상, 또는 지분율 코스피 1%·코스닥 2% 이상 (2025.9 정부가 10억 하향안 철회, 087 확인)
   majorHold: {amount: 5e9, kospiPct: 1, kosdaqPct: 2},
+  // 법인 수입배당금 익금불산입률 (법인세법 18조의2, 2023~) — 지분율 20% 미만 30, 20~50% 80, 50% 이상 100. 배당기준일 현재 3개월 이상 보유. ETF·리츠 분배금은 대상 아님 (087 확인)
+  divExcl: [[20,30],[50,80],[Infinity,100]],
   wl: function(r){ return Math.round(r*1.1*100)/100; },
   // 누진 구간 세금(국세) — prog(과표, SF_TAX.corp) 처럼 쓴다. 지방세 포함은 결과 × (1 + local)
   prog: function(base, br){ var t=0, lo=0; if(!(base>0)) return 0; for(var i=0;i<br.length;i++){ var hi=br[i][0]; if(base>lo){ t += (Math.min(base,hi)-lo)*br[i][1]/100; } lo=hi; } return t; }
