@@ -9,12 +9,19 @@
 <style id="sf-auto-dark">
 /* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
 body.sf-dark .compare-box{background-color:#1e242e!important;border-color:#2c333f!important}
+body.sf-dark .howto{border-color:#2c333f!important;background-color:#1e242e!important}
+body.sf-dark .howto summary{color:#85b5e0!important}
+body.sf-dark .howto .hb{color:#cccccc!important}
 body.sf-dark .compare-box.person{border-top-color:#3b82f6!important}
 body.sf-dark .compare-box.corp{border-top-color:#8b5cf6!important}
 </style>
 <style>
 :root { --sf-max-w: 1100px; }
 .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}@media(max-width:700px){.compare-grid{grid-template-columns:1fr}}.compare-box{background:white;border-radius:8px;padding:18px;border:2px solid #e5e7eb}.compare-box.person{border-top:4px solid #3b82f6}.compare-box.corp{border-top:4px solid #8b5cf6}.compare-box h3{margin-top:0;font-size:16px;color:#1F4E78}.row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:13px}.row .v{font-weight:600;font-variant-numeric:tabular-nums}.row.subtotal{border-top:1px solid #1F4E78;margin-top:4px;padding-top:8px;font-weight:600}.row.total{border-top:2px solid #1F4E78;margin-top:8px;padding-top:10px;font-weight:700;font-size:14px}.row.total .v{color:#1F4E78}.row.net{font-size:15px;color:#10b981;font-weight:700;margin-top:6px}.row.net.negative{color:#dc2626}
+.howto { border:1px solid var(--sf-border); border-radius:8px; margin:6px 0 4px; background:var(--sf-surface); grid-column:1/-1; }
+.howto summary { cursor:pointer; padding:8px 12px; font-size:13px; font-weight:700; color:var(--sf-brand); }
+.howto .hb { padding:0 14px 12px; font-size:12.5px; line-height:1.8; color:var(--sf-text-sub); }
+.howto .hb ol { margin:2px 0 4px; padding-left:20px; }
 </style>
 
 <link rel="stylesheet" href="/auth-guard.css?v=4">
@@ -24,7 +31,7 @@ body.sf-dark .compare-box.corp{border-top-color:#8b5cf6!important}
 
 
 <h1>🌎 해외주식 수수료·세금 계산기</h1>
-<p class="desc">해외주식 매매 시 거래수수료·환전수수료·양도세 자동 계산. 개인 vs 법인 비교. (2026년 5월 기준)</p>
+<p class="desc">해외주식 매매 시 거래수수료·환전수수료·양도세 자동 계산. 개인 vs 법인 비교. (세율 확인일 <span class="tx-checked">2026-11-13</span>)</p>
 
 <div class="panel">
   <h2>📥 입력값</h2>
@@ -74,23 +81,34 @@ body.sf-dark .compare-box.corp{border-top-color:#8b5cf6!important}
 
     <div class="section-label">④ 양도세 가정</div>
     <div class="input-row">
-      <label>개인 양도세율 (%) <span style="font-size:11px;color:#888;">(20% + 지방세 2% = 22%)</span></label>
+      <label>개인 양도세율 (%) <span style="font-size:11px;color:#888;">(지방세 포함 <span class="tx-ov">22</span>%)</span></label>
       <input type="number" id="cgtRate" value="22" step="0.1">
     </div>
     <div class="input-row">
       <label>법인세 적용 방식</label>
       <select id="corpMode">
-        <option value="auto" selected>자동 누진 (2억까지 9.9%, 초과 20.9%)</option>
-        <option value="rate1">단일세율 9.9% (과표 2억 이하 가정)</option>
-        <option value="rate2">단일세율 20.9% (과표 2~200억 가정)</option>
-        <option value="rate3">단일세율 23.1% (과표 200억 초과 가정)</option>
+        <option value="auto" selected>일반법인 자동 누진 (2억까지 11%, 초과 22%)</option>
+        <option value="small">성실신고 소규모법인 자동 누진 (200억까지 22%)</option>
+        <option value="rate1">단일세율 11% (과표 2억 이하 가정)</option>
+        <option value="rate2">단일세율 22% (과표 2~200억 가정)</option>
+        <option value="rate3">단일세율 24.2% (과표 200~3,000억 가정)</option>
         <option value="custom">사용자 지정</option>
       </select>
     </div>
     <div class="input-row" id="corpCustomBox" style="display:none">
       <label>사용자 지정 법인세율 (%)</label>
-      <input type="number" id="corpTaxRate" value="20.9" step="0.1">
+      <input type="number" id="corpTaxRate" value="22" step="0.1">
     </div>
+    <details class="howto">
+      <summary>📖 법인세 방식 고르는 법 (눌러서 펼치기)</summary>
+      <div class="hb"><ol>
+        <li><b>보통은 「일반법인 자동 누진」</b>을 둔다. 과표 2억까지 <b class="tx-c1">11</b>%, 2억~200억 <b class="tx-c2">22</b>%, 200억~3,000억 <b class="tx-c3">24.2</b>% (법인세 + 지방소득세 10%, <span class="tx-year">2026</span>년 1월 1일 이후 시작 사업연도).</li>
+        <li><b>「성실신고 소규모법인」</b>은 2억 이하 구간이 없어 처음부터 <b class="tx-cs">22</b>%. 세 가지를 <b>모두</b> 충족해야 해당: ① 지배주주 등 지분 50% 초과 ② 상시근로자 5인 미만 ③ 부동산임대업이 주업이거나, 임대·이자·<b>배당</b> 수입이 매출의 50% 이상.</li>
+        <li>왜 이 선택지가 있나: 1인 투자법인은 ①②를 거의 다 충족해서 ③이 갈림길이다. <b>주식 매매차익은 ③의 이자·배당에 들어가지 않는다</b> → 매매 위주면 일반법인일 가능성이 크고, 배당·이자 수입이 매출 절반을 넘는 해에는 소규모법인이 될 수 있다. 연도마다 다시 판정되니 애매하면 세무사 확인.</li>
+        <li>「단일세율」은 다른 소득과 합쳐서 이미 그 구간에 있을 때(예: 다른 이익이 이미 2억을 넘음) 이 매매분에만 붙는 한계세율을 보려고 쓴다.</li>
+        <li>개인과 달리 법인은 연 <span class="tx-ovd">250</span>만 기본공제가 없다.</li>
+      </ol></div>
+    </details>
   </div>
 </div>
 
@@ -110,9 +128,9 @@ body.sf-dark .compare-box.corp{border-top-color:#8b5cf6!important}
     <div class="row"><span>(-) 환전수수료 (매도)</span><span class="v" id="P_sellFxFee">-</span></div>
     <div class="row subtotal"><span>매도 순수령</span><span class="v" id="P_sellNet">-</span></div>
     <div class="row"><span>양도차익 (수수료 후)</span><span class="v" id="P_gain">-</span></div>
-    <div class="row"><span>기본공제 (연 250만)</span><span class="v" id="P_basicDed">-</span></div>
+    <div class="row"><span>기본공제 (연 <span class="tx-ovd">250</span>만)</span><span class="v" id="P_basicDed">-</span></div>
     <div class="row"><span>과세표준</span><span class="v" id="P_taxBase">-</span></div>
-    <div class="row"><span>(-) 양도세 + 지방세 (22%)</span><span class="v" id="P_cgt">-</span></div>
+    <div class="row"><span>(-) 양도세 + 지방세 (<span id="P_cgtPct">22</span>%)</span><span class="v" id="P_cgt">-</span></div>
     <div class="row total"><span>총 비용 (수수료+세금)</span><span class="v" id="P_totalCost">-</span></div>
     <div class="row net" id="P_netRow"><span>실현 차익 (세후)</span><span class="v" id="P_net">-</span></div>
     <div class="row" style="font-size:12px;color:#666"><span>실수익률 (KRW 기준)</span><span class="v" id="P_yield">-</span></div>
@@ -151,7 +169,7 @@ body.sf-dark .compare-box.corp{border-top-color:#8b5cf6!important}
   <h3>① 해외주식 양도세의 핵심</h3>
   <ul>
     <li>국내주식과 달리 <b>개인도 양도세 부과 대상.</b></li>
-    <li>1년간 모든 해외주식 양도차익 합산해서 <b>250만 공제 후 22% 과세.</b></li>
+    <li>1년간 모든 해외주식 양도차익 합산해서 <b><span class="tx-ovd">250</span>만 공제 후 <span class="tx-ov">22</span>% 과세.</b></li>
     <li>매년 5월 종합소득세 신고 시 별도 신고. 증권사가 자동 신고 X.</li>
     <li>국가별 차이: 미국·중국 등 대부분 동일. 일부 국가는 현지 양도세 추가.</li>
   </ul>
@@ -180,14 +198,14 @@ body.sf-dark .compare-box.corp{border-top-color:#8b5cf6!important}
   <h3>③ 개인 양도세 계산</h3>
   <ul>
     <li><b>양도차익(KRW) = 매도금액(KRW 환산) − 매수금액(KRW 환산) − 수수료</b></li>
-    <li><b>과세표준 = 양도차익 − 250만 (연 1회 공제)</b></li>
-    <li><b>양도세 = 과세표준 × 22%</b> (양도세 20% + 지방세 2%)</li>
+    <li><b>과세표준 = 양도차익 − <span class="tx-ovd">250</span>만 (연 1회 공제)</b></li>
+    <li><b>양도세 = 과세표준 × <span class="tx-ov">22</span>%</b> (양도세 + 지방세 10%)</li>
     <li>손실은 다른 해외주식 이익과 상계 가능. 다음 해 이월 X.</li>
   </ul>
 
   <h3>④ 법인 매매 특징</h3>
   <ul>
-    <li>양도차익이 사업소득에 합산되어 <b>법인세(9.9~24%)</b> 부과.</li>
+    <li>양도차익이 사업소득에 합산되어 <b>법인세(<span class="tx-c1">11</span>~<span class="tx-c4">27.5</span>%, 지방세 포함)</b> 부과. 성실신고 소규모법인이면 첫 구간부터 <span class="tx-cs">22</span>%.</li>
     <li>250만 기본공제 없음.</li>
     <li>장점: 손익통산, 다른 사업비용과 상계, 재투자 시 절세.</li>
     <li>단점: 법인 → 개인 인출 시 배당세 또는 종합과세 추가.</li>
@@ -201,7 +219,36 @@ body.sf-dark .compare-box.corp{border-top-color:#8b5cf6!important}
   </div>
 </div>
 
+<script src="/tax-rates.js?v=2"></script>
 <script>
+// (087) 세율은 /tax-rates.js(SF_TAX)에서 읽는다. 못 읽으면 아래 기본값(2026년)
+const _T = window.SF_TAX;
+const TX = {
+  corp: _T ? _T.corp : [[2e8,10],[2e10,20],[3e11,22],[Infinity,25]],
+  corpSmall: _T ? _T.corpSmall : [[2e10,20],[3e11,22],[Infinity,25]],
+  local: _T ? _T.local : 0.1,
+  ov: _T ? _T.overseasStock : {rate:22, deduct:2500000},
+  year: _T ? _T.year : 2026,
+  checked: _T ? _T.checked : '2026-11-13'
+};
+const wl = r => Math.round(r * (1 + TX.local) * 100) / 100;      // 국세 → 지방세 포함 %
+const prog = (b, br) => { let t = 0, lo = 0; if (!(b > 0)) return 0; for (const [hi, r] of br) { if (b > lo) t += (Math.min(b, hi) - lo) * r / 100; lo = hi; } return t; };
+(function fillTax(){
+  const C = TX.corp.map(x => wl(x[1])), CS = wl(TX.corpSmall[0][1]);
+  const put = (cls, v) => document.querySelectorAll('.' + cls).forEach(el => el.textContent = v);
+  put('tx-c1', C[0]); put('tx-c2', C[1]); put('tx-c3', C[2]); put('tx-c4', C[3]); put('tx-cs', CS);
+  put('tx-ov', TX.ov.rate); put('tx-ovd', TX.ov.deduct / 1e4); put('tx-year', TX.year); put('tx-checked', TX.checked);
+  const o = document.getElementById('corpMode').options;
+  o[0].text = '일반법인 자동 누진 (2억까지 ' + C[0] + '%, 초과 ' + C[1] + '%)';
+  o[1].text = '성실신고 소규모법인 자동 누진 (200억까지 ' + CS + '%)';
+  o[2].text = '단일세율 ' + C[0] + '% (과표 2억 이하 가정)';
+  o[3].text = '단일세율 ' + C[1] + '% (과표 2~200억 가정)';
+  o[4].text = '단일세율 ' + C[2] + '% (과표 200~3,000억 가정)';
+  // 입력칸 기본값도 공통 세율로 (저장 슬롯을 불러오면 그 값이 우선)
+  document.getElementById('cgtRate').value = TX.ov.rate;
+  document.getElementById('corpTaxRate').value = C[1];
+})();
+
 const fmt = n => Math.round(n).toLocaleString('ko-KR') + ' 원';
 const fmtPct = n => (n * 100).toFixed(2) + '%';
 
@@ -222,14 +269,13 @@ function calculate() {
 
   function corpTaxFunc(gain) {
     if (gain <= 0) return 0;
-    if (corpMode === 'auto') {
-      if (gain <= 200000000) return gain * 0.099;
-      if (gain <= 20000000000) return 200000000 * 0.099 + (gain - 200000000) * 0.209;
-      return 200000000 * 0.099 + (20000000000 - 200000000) * 0.209 + (gain - 20000000000) * 0.231;
-    } else if (corpMode === 'rate1') return gain * 0.099;
-    else if (corpMode === 'rate2') return gain * 0.209;
-    else if (corpMode === 'rate3') return gain * 0.231;
-    else return gain * corpRateInput;
+    // (087) 누진·단일 모두 SF_TAX 구간에서 계산. 지방소득세(국세의 10%) 포함
+    if (corpMode === 'auto') return prog(gain, TX.corp) * (1 + TX.local);
+    if (corpMode === 'small') return prog(gain, TX.corpSmall) * (1 + TX.local);
+    if (corpMode === 'rate1') return gain * wl(TX.corp[0][1]) / 100;
+    if (corpMode === 'rate2') return gain * wl(TX.corp[1][1]) / 100;
+    if (corpMode === 'rate3') return gain * wl(TX.corp[2][1]) / 100;
+    return gain * corpRateInput;
   }
 
   // 외화 거래 수수료
@@ -258,7 +304,8 @@ function calculate() {
   const set = (id, val) => document.getElementById(id).textContent = val;
 
   // === 개인 ===
-  const basicDed = 2500000;
+  const basicDed = TX.ov.deduct;
+  document.getElementById('P_cgtPct').textContent = Math.round(cgtRate * 10000) / 100;
   const P_taxBase = Math.max(0, tradeGain - basicDed);
   const P_cgt = P_taxBase * cgtRate;
   const P_totalCost = buyFeeKrw + sellFeeKrw + buyFxFeeKrw + sellFxFeeKrw + P_cgt;
