@@ -64,8 +64,11 @@ TARGETS = [
     ("data/kr/weekly_ma/latest.json",      "5주선 스크리너",    "weekly",  9),
     ("data/kr/ma_signal/latest.json",      "이평선 시그널",     "weekly",  9),
     ("data/kr/momentum/weekly.json",       "모멘텀(주간)",      "weekly",  9),
-    # 뉴스
-    ("data/news/index.json",               "뉴스",             "daily",   0),
+    # 뉴스 — (086) 실제 저장 위치는 VM 로컬 ~/news_data (예전 data/news/index.json 은 없는 경로라 11/8부터 매일 "파일 없음" 경고가 났음)
+    ("~/news_data/news.json",              "뉴스",             "daily",   0),
+    # 미국 지수·VIX·환율 (야후, 086 추가)
+    ("data/market_indicators.json",        "시장지표(야후)",    "weekday", 0),
+    ("data/market_history.json",           "시장지표 히스토리", "weekday", 0),
     # 매크로
     ("data/macro/sector_etf.json",         "매크로 비교",       "weekday", 0),
 ]
@@ -110,6 +113,11 @@ def check_db_freshness():
     DB_TARGETS = [
         # (쿼리, 설명, 주기, 허용 stale 일수 override — 0이면 동적)
         ("SELECT MAX(rate_date) FROM exchange_rates", "수출입은행 환율 (DB)", "weekday", 0),
+        # (086) 추가. 금은 미국 전날 종가 날짜라 4일 허용, ECOS는 하루 늦게 올라오는 날이 있어 4일
+        ("SELECT MAX(trade_date) FROM daily_prices",  "일봉 (DB)",          "weekday", 0),
+        ("SELECT MAX(trade_date) FROM sector_prices", "업종 일봉 (DB)",     "weekday", 0),
+        ("SELECT MAX(price_date) FROM gold_prices",   "금 시세(야후, DB)",  "weekday", 4),
+        ("SELECT MAX(rate_date) FROM interest_rates", "ECOS 금리 (DB)",     "weekday", 4),
     ]
     results = []
     try:
@@ -166,10 +174,64 @@ def check_db_freshness():
     return results
 
 
+# ── (086) 내용이 며칠째 그대로인지 감시 ──
+# 파일 갱신 시각만 보면 "스크립트는 돌았는데 소스(야후 등)가 옛 값·빈 값을 준 경우"를 못 잡음.
+# 갱신 시각 같은 칸을 빼고 내용 해시를 비교해, 바뀌어야 하는 날이 3번 지나도록 그대로면 경고.
+# 상태는 VM 로컬 파일(~/.sf_healthcheck_state.json)에만 저장 — 레포·공개 페이지에 안 올라감.
+import hashlib
+HASH_STATE = os.path.expanduser("~/.sf_healthcheck_state.json")
+HASH_DAYS = 3
+HASH_SKIP = {"data/bond/ust_list.json"}          # 월말 기준 목록이라 한 달 내내 같음
+VOLATILE_KEYS = {"updated", "generated", "last_updated", "checked_at", "updated_at", "fetched_at", "ts"}
+
+def load_hash_state():
+    try:
+        with open(HASH_STATE) as f: return json.load(f)
+    except Exception: return {}
+
+def save_hash_state(st):
+    try:
+        with open(HASH_STATE, "w") as f: json.dump(st, f, indent=1)
+    except Exception as e:
+        print(f"  ⚠ 해시 상태 저장 실패: {e}")
+
+def content_hash(abs_path):
+    with open(abs_path, encoding="utf-8") as f:
+        d = json.load(f)
+    if isinstance(d, dict):
+        d = {k: v for k, v in d.items() if k not in VOLATILE_KEYS}
+    return hashlib.sha1(json.dumps(d, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
+
+def change_days(since, today, cycle):
+    """since 다음 날부터 today까지, 데이터가 바뀌어야 하는 날 수 (weekday면 월~금만)"""
+    a = datetime.strptime(since, "%Y-%m-%d"); b = datetime.strptime(today, "%Y-%m-%d")
+    n, d = 0, a + timedelta(days=1)
+    while d <= b:
+        if cycle == "daily" or d.weekday() <= 4: n += 1
+        d += timedelta(days=1)
+    return n
+
+def check_unchanged(rel_path, abs_path, cycle, st, today):
+    """그대로면 (일수, since) 반환, 아니면 None"""
+    if cycle not in ("weekday", "daily") or rel_path in HASH_SKIP:
+        return None
+    try:
+        h = content_hash(abs_path)
+    except Exception:
+        return None
+    prev = st.get(rel_path)
+    if not prev or prev.get("h") != h:
+        st[rel_path] = {"h": h, "since": today}
+        return None
+    n = change_days(prev["since"], today, cycle)
+    return (n, prev["since"]) if n >= HASH_DAYS else None
+
+
 def check_freshness():
     """각 파일의 freshness 체크. status 리스트 반환."""
     now = datetime.now()
     results = []
+    st = load_hash_state(); today = now.strftime("%Y-%m-%d")
 
     for rel_path, desc, cycle, max_stale_days in TARGETS:
         abs_path = os.path.expanduser(rel_path) if rel_path.startswith('~') else os.path.join(ROOT_DIR, rel_path)
@@ -211,9 +273,14 @@ def check_freshness():
             else:
                 entry["status"] = "ok"
                 entry["message"] = "정상"
+                un = check_unchanged(rel_path, abs_path, cycle, st, today)
+                if un:
+                    entry["status"] = "stale"
+                    entry["message"] = f"파일은 갱신되는데 내용이 {un[1]} 이후 그대로 ({un[0]}일) — 소스 주소·차단 확인 (연휴면 무시)"
 
         results.append(entry)
 
+    save_hash_state(st)
     return results
 
 
