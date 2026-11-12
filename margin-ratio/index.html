@@ -148,7 +148,7 @@ h1 { color: #1F4E78; font-size: 22px; margin-bottom: 4px; border-bottom: none; p
   <!-- 종목 리스트 -->
   <div class="panel">
     <h2 style="display:flex;align-items:center">📊 종목별 입력
-      <button id="btnReset" class="btn" type="button" style="margin-left:auto;background:#fef2f2;color:#dc2626;border-color:#fca5a5;font-size:12px;padding:6px 10px">🔄 전체 초기화</button>
+      
     </h2>
     <div class="quote-bar">
       <span class="q-status" id="quoteStatus">시세 불러오는 중…</span>
@@ -162,7 +162,7 @@ h1 { color: #1F4E78; font-size: 22px; margin-bottom: 4px; border-bottom: none; p
       💡 <b>종목명</b>을 수집 종목(코스피 시총 1조↑·코스닥 5천억↑, 약 380개)과 똑같이 넣으면 현재가가 자동으로 들어감. 장중에는 1분 간격으로 갱신. 목록에 없는 종목은 현재가를 직접 입력.<br>
       💡 <b>파란색 필드</b>는 자동 계산됨 (주식수 × 단가). 미세 조정 필요하면 직접 수정 가능. 이후 주식수·단가를 다시 만지면 자동 값으로 덮어써짐.<br>
       💡 신용 안 쓰는 종목은 신용 섹션 비워두면 됨.<br>
-      💡 입력값은 <b>브라우저에 자동 저장</b>됨. 나갔다 와도 마지막 입력 상태 유지. 초기화하려면 위 [🔄 전체 초기화] 클릭.
+      💡 입력값은 <b>브라우저에 자동 저장</b>됨. 나갔다 와도 마지막 입력 상태 유지. 처음 상태로 되돌리려면 저장 관리 창의 [↺ 화면 처음으로].
     </div>
   </div>
 
@@ -224,7 +224,7 @@ window.CALC_KEY = 'margin-ratio';
 window.slGetState = function(){ return window.mGetState ? window.mGetState() : {}; };
 window.slSetState = function(d){ if(window.mSetState) window.mSetState(d); };
 </script>
-<script src="/sf-slots.js?v=6"></script>
+<script src="/sf-slots.js?v=7"></script>
 <script src="/common.js?v=10"></script>
 <script>
 'use strict';
@@ -683,15 +683,15 @@ $('btnAddStock').addEventListener('click', () => {
   renderStocks(); saveLocal();
 });
 
-$('btnReset').addEventListener('click', () => {
-  if (!confirm('모든 입력을 초기화할까요?\n\n(저장된 브라우저 데이터도 삭제됩니다. 클라우드 저장은 유지됨)')) return;
+window.slReset = () => {   // (085) 저장 관리 창 [↺ 화면 처음으로]
   try { localStorage.removeItem('sf_mr_state_v2'); localStorage.removeItem('sf_mr_state_v1'); localStorage.removeItem('sf_mr_loaded_slot'); } catch(e){}
   var lsEl = document.getElementById('loadedSlot'); if (lsEl) lsEl.style.display = 'none';
   $('inCash').value = '';
   $('inThreshold').value = '140';
+  autoPrice = true; $('chkAutoPrice').checked = true;
   stocks = [{ name: '', ordQty: 0, ordPrice: 0, ordCurr: 0, ordBuy: 0, ordVal: 0, crdQty: 0, crdPrice: 0, crdCurr: 0, crdBuy: 0, crdVal: 0 }];
   renderStocks();
-});
+};
 
 ['inCash', 'inThreshold'].forEach(id => {
   $(id).addEventListener('input', () => { calc(); saveLocal(); });

@@ -83,7 +83,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
 
   <div class="btn-row">
     <button class="btn btn-blue" onclick="addCustom()">+ 항목 추가</button>
-    <button class="btn btn-gray" onclick="resetChecks()">🔄 체크 초기화</button>
+    
   </div>
 
   <div class="manual">
@@ -184,9 +184,7 @@ function addCustom(){
   items.push({ g:'추가 항목', t:t.trim(), s:'', critical:false, c:false });
   save(); render();
 }
-function resetChecks(){
-  if(confirm('모든 체크를 해제할까요?')){ items.forEach(it=>it.c=false); save(); render(); }
-}
+window.slReset = function(){ items.forEach(it=>it.c=false); $('stockName').value=''; stockName=''; save(); render(); };   // (085) 저장 관리 창 [↺ 화면 처음으로] — 추가한 항목은 두고 종목명·체크만 비움
 
 $('stockName').addEventListener('input', save);
 load(); render();
@@ -196,6 +194,6 @@ window.CALC_KEY = 'risk_checklist';
 window.slGetState = function(){ return { items: JSON.parse(JSON.stringify(items)), stockName: $('stockName').value }; };
 window.slSetState = function(d){ if(d){ if(d.items) items = d.items; if(d.stockName != null) $('stockName').value = d.stockName; save(); render(); } };
 </script>
-<script src="/sf-slots.js?v=6"></script>
+<script src="/sf-slots.js?v=7"></script>
 </body>
 </html>

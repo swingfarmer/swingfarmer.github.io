@@ -145,7 +145,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   <div class="btn-row">
     <button class="btn btn-green" onclick="saveJson()">💾 내보내기</button>
     <label class="btn btn-blue" style="cursor:pointer">📂 불러오기<input type="file" id="fileLoad" accept=".json" style="display:none" onchange="loadJson(event)"></label>
-    <button class="btn btn-gray" onclick="resetAll()">🔄 초기화</button>
+    
   </div>
 
   <div class="manual">
@@ -280,7 +280,7 @@ function delRow(i){ rows.splice(i,1); if(rows.length===0)rows.push(blankRow()); 
 
 function saveJson(){ const blob=new Blob([JSON.stringify(rows,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); const d=new Date(); a.href=url; a.download=`포트리스크_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`; a.click(); URL.revokeObjectURL(url); }
 function loadJson(e){ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{ try{ rows=JSON.parse(ev.target.result); save(); render(); alert('✅ 불러왔어요.'); }catch(err){ alert('파일 오류: '+err.message); } }; r.readAsText(f); e.target.value=''; }
-function resetAll(){ if(confirm('초기화할까요?')){ rows=[blankRow()]; save(); render(); } }
+window.slReset = function(){ rows=[blankRow()]; save(); render(); };   // (085) 저장 관리 창 [↺ 화면 처음으로]
 
 load(); render();
 
@@ -289,6 +289,6 @@ window.CALC_KEY = 'portfolio_risk';
 window.slGetState = function(){ return { rows: JSON.parse(JSON.stringify(rows)) }; };
 window.slSetState = function(d){ if(d && d.rows){ rows = d.rows; save(); render(); } };
 </script>
-<script src="/sf-slots.js?v=6"></script>
+<script src="/sf-slots.js?v=7"></script>
 </body>
 </html>

@@ -68,7 +68,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
 <div class="wrap">
   <p class="desc">재건축초과이익환수제(재초환) <b>조합원 1인당 부담금</b>을 추정합니다. 종료·개시 주택가액과 정상상승분·개발비용으로 초과이익을 구하고, 누진 부과율과 장기보유 1주택 감면을 적용해 최종 납부액을 계산해요.</p>
   <div class="info-box" style="display:block;margin-bottom:16px">📍 <b>기본값 = 목동 6단지 65㎡ 기준</b>. B 개시가액(22억)은 실거래 기반(2025.1 20.2억 → 2025.11 25억, 조합설립 2025.5 시점 약 22억). A 종료가액(35억)·C 정상상승분(3.5억)은 인근 신축·재건축 평균 추정치, D 개발비용은 공사비 950만원/평(DL이앤씨 입찰)으로 자동 계산해요. 본인 단지·평형에 맞게 모두 수정하세요.</div>
-  <button id="resetBtn" style="width:100%;margin-bottom:16px;background:#64748b;color:white;border:none;border-radius:8px;padding:11px;font-size:13px;font-weight:700;cursor:pointer">🔄 기본값으로 초기화 (목동 6단지)</button>
+  
   <div class="panel">
     <div class="section-label">1️⃣ 초과이익 산정 <span class="info-btn" onclick="toggleInfo('exInfo')">i</span></div>
     <div class="info-box" id="exInfo">초과이익 = A 종료시점 주택가액 − (B 개시시점 주택가액 + C 정상 주택가격 상승분 + D 개발비용). 모두 조합원 1인당 기준이며, 현실화율(시세반영률)은 개시·종료를 동일하게 맞추는 게 개정 취지예요. 부과 개시 시점은 조합설립 인가일 기준입니다.</div>
@@ -168,7 +168,7 @@ window.CALC_KEY = 'jaechohwan';
 window.slGetState = function(){ return window.jcGetState ? window.jcGetState() : {}; };
 window.slSetState = function(d){ if(window.jcSetState) window.jcSetState(d); };
 </script>
-<script src="/sf-slots.js?v=6"></script>
+<script src="/sf-slots.js?v=7"></script>
 <script src="/common.js?v=10"></script>
 <script>
 const $ = id => document.getElementById(id);
@@ -257,12 +257,11 @@ if(!loadLocal()){ calc(); }
 
 // 기본값 초기화 (목동 6단지)
 const DEFAULTS={ valEnd:'350000', valStart:'220000', valNormal:'35000', costUnit:'950', costArea:'34', costEtcPct:'30', discount:'0' };
-document.getElementById('resetBtn').addEventListener('click', function(){
-  if(!confirm('모든 값을 목동 6단지 기본값으로 되돌릴까요? (저장된 입력이 지워집니다)')) return;
+window.slReset = function(){   // (085) 저장 관리 창 [↺ 화면 처음으로]
   Object.keys(DEFAULTS).forEach(id=>{ const el=document.getElementById(id); if(el) el.value=DEFAULTS[id]; });
   try{ localStorage.removeItem('sf_jaechohwan_v1'); }catch(e){}
   calc();
-});
+};
 
 // 자랑하기 - 결과 이미지 저장
 document.getElementById('shareBtn').addEventListener('click', function(){

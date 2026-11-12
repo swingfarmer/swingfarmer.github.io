@@ -118,9 +118,6 @@ h1{color:#1F4E78;font-size:22px;margin-bottom:4px;border-bottom:none;padding-bot
 
   <!-- ═══════════ 시뮬레이터 탭 ═══════════ -->
   <div id="tab-sim" class="tab-content active">
-    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
-      <button id="btnReset" class="btn reset" type="button">🔄 전체 초기화</button>
-    </div>
 
     <div class="panel"><h2>🏭 대형원전 (AP1000)</h2>
       <div class="proj" id="p-kozloduy">
@@ -370,7 +367,8 @@ h1{color:#1F4E78;font-size:22px;margin-bottom:4px;border-bottom:none;padding-bot
 
 
 
-<script src="/sf-slots.js?v=6"></script>
+<script>window.SF_RESET = true;</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/sf-slots.js?v=7"></script>
 <script src="/common.js?v=10"></script>
 <script>
 'use strict';
@@ -437,7 +435,7 @@ function eSetState(s){if(!s)return;Object.entries(s).forEach(([pid,values])=>{co
 function saveLocal(){try{localStorage.setItem('sf_hd-enc_v2',JSON.stringify(eGetState()));}catch(e){}}
 function loadLocal(){try{const r=localStorage.getItem('sf_hd-enc_v2');if(r)eSetState(JSON.parse(r));}catch(e){}}
 window.eGetState=eGetState;window.eSetState=eSetState;
-$('btnReset').addEventListener('click',()=>{if(!confirm('모든 입력을 초기값으로 되돌릴까요?'))return;try{localStorage.removeItem('sf_hd-enc_v2');}catch(e){}location.reload();});
+// (085) 초기화는 저장 관리 창 [↺ 화면 처음으로] (SF_RESET)
 loadLocal();render();
 </script>
 

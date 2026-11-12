@@ -102,7 +102,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
     <div class="btn-row">
       <button class="btn btn-blue" onclick="saveJson()">💾 내보내기 (JSON)</button>
       <label class="btn" style="background:#10b981;color:white;cursor:pointer">📂 불러오기<input type="file" id="fileLoad" accept=".json" style="display:none" onchange="loadJson(event)"></label>
-      <button class="btn btn-gray" onclick="resetAll()">🔄 초기화</button>
+      
     </div>
   </div>
 
@@ -231,12 +231,10 @@ function loadJson(e){
   };
   reader.readAsText(file); e.target.value='';
 }
-function resetAll(){
-  if(confirm('모든 평가를 초기화할까요? (기본 항목으로 되돌아갑니다)')){
-    items = JSON.parse(JSON.stringify(DEFAULT_ITEMS)); placeName='';
-    save(); render();
-  }
-}
+window.slReset = function(){   // (085) 저장 관리 창 [↺ 화면 처음으로]
+  items = JSON.parse(JSON.stringify(DEFAULT_ITEMS)); placeName=''; $('placeName').value='';
+  save(); render();
+};
 
 $('placeName').addEventListener('input', save);
 
@@ -249,6 +247,6 @@ window.CALC_KEY = 'location_check';
 window.slGetState = function(){ return { items: JSON.parse(JSON.stringify(items)), placeName: $('placeName').value }; };
 window.slSetState = function(d){ if(d){ if(d.items) items = d.items; if(d.placeName != null) $('placeName').value = d.placeName; save(); render(); } };
 </script>
-<script src="/sf-slots.js?v=6"></script>
+<script src="/sf-slots.js?v=7"></script>
 </body>
 </html>

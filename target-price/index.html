@@ -186,7 +186,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   <div class="btn-row">
     <button class="btn btn-blue" onclick="saveJson()">💾 내보내기 (JSON)</button>
     <label class="btn btn-green" style="cursor:pointer">📂 불러오기<input type="file" id="fileLoad" accept=".json" style="display:none" onchange="loadJson(event)"></label>
-    <button class="btn btn-gray" onclick="resetAll()">🔄 초기화</button>
+    
   </div>
 
   <div class="manual">
@@ -489,7 +489,7 @@ function loadJson(e){
   reader.onload=ev=>{ try{ rows=JSON.parse(ev.target.result); save(); render(); alert('✅ 불러왔어요.'); }catch(err){ alert('파일 오류: '+err.message); } };
   reader.readAsText(file); e.target.value='';
 }
-function resetAll(){ if(confirm('모두 초기화할까요?')){ rows=[blankRow()]; save(); render(); } }
+window.slReset = function(){ rows=[blankRow()]; save(); render(); };   // (085) 저장 관리 창 [↺ 화면 처음으로]
 
 load(); render();
 </script>
@@ -498,7 +498,7 @@ window.CALC_KEY = 'targetprice';
 window.slGetState = function(){ return window.tpGetRows ? window.tpGetRows() : []; };
 window.slSetState = function(d){ if(window.tpSetRows) window.tpSetRows(d); };
 </script>
-<script src="/sf-slots.js?v=6"></script>
+<script src="/sf-slots.js?v=7"></script>
 
 <script src="/common.js?v=10"></script>
 </body>

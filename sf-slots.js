@@ -13,8 +13,8 @@
    - 내보내기/가져오기 (JSON)
    - 드래그 순서변경
    - 이름수정, 덮어쓰기, 삭제
-   - (083) ↺ 처음 상태로: 페이지가 켜야 보임 (기록 데이터가 지워지는 사고 막으려고 페이지별로 켬)
-       window.SF_RESET = true                 → 자동저장(sf_<KEY>_v2)만 지우고 새로고침 (입력칸이 HTML 기본값으로)
+   - (083→085) ↺ 화면 처음으로: 페이지가 켜야 보임 (기록 데이터가 지워지는 사고 막으려고 페이지별로 켬)
+       window.SF_RESET = true                 → 자동저장(sf_<KEY>_v2) + 이 페이지 선택칸·탭 상태(common.js sf-sel-/sf-tp-) 지우고 새로고침
        window.SF_RESET = ['키1','키2']        → 위 + 페이지 자체 localStorage 키도 지움
        window.slReset = function(){...}       → 페이지가 직접 기본값으로 되돌림(관심 목록 등 남길 것 있을 때), 새로고침 없음
      클라우드 저장 슬롯은 안 건드림 → "저장 → 초기화 → 필요하면 불러오기" 가능
@@ -130,7 +130,7 @@ function injectModal(){
       전체 가져오기
     </button>
     <input type="file" id="sfsImportInput" accept=".json" style="display:none">
-    ${window.SF_RESET || window.slReset ? `<button onclick="window._sfSlots.reset()" class="sfs-tool-btn" title="입력·설정을 처음 상태로 (저장 슬롯은 그대로)">↺ 처음 상태로</button>` : ''}
+    ${window.SF_RESET || window.slReset ? `<button onclick="window._sfSlots.reset()" class="sfs-tool-btn" title="입력칸·설정만 기본값으로 (저장 슬롯·기록은 그대로)">↺ 화면 처음으로</button><div class="sfs-reset-note">↺ 화면 처음으로 = 입력칸만 기본값으로 돌아감 · 저장한 슬롯·기록은 안 지워짐</div>` : ''}
   </div>
 
   <div class="sfs-sort-bar" id="sfsSortBar">
@@ -184,10 +184,11 @@ function injectStyles(){
 .sfs-btn-save:active{background:#004EA3;transform:scale(.97)}
 .sfs-btn-save:disabled{background:#ccc;cursor:default;transform:none}
 
-.sfs-toolbar{display:flex;gap:6px;padding:0 20px 12px;border-bottom:1px solid #f0f0f0}
+.sfs-toolbar{display:flex;flex-wrap:wrap;gap:6px;padding:0 20px 12px;border-bottom:1px solid #f0f0f0}
 .sfs-tool-btn{display:flex;align-items:center;gap:4px;background:none;border:1px solid #e0e0e0;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:#666;cursor:pointer;font-family:inherit;transition:all .15s}
 .sfs-tool-btn:hover{border-color:#007AFF;color:#007AFF}
 .sfs-tool-btn svg{flex-shrink:0}
+.sfs-reset-note{flex-basis:100%;font-size:11px;color:#888;line-height:1.4}
 
 .sfs-sort-bar{display:flex;align-items:center;gap:8px;padding:8px 20px 10px}
 .sfs-sort-label{font-size:11px;font-weight:600;color:#999;flex-shrink:0}
@@ -245,6 +246,7 @@ body.sf-dark .sfs-btn-save:hover{background:#2563eb}
 body.sf-dark .sfs-btn-save:disabled{background:#2a2d3a;color:#71717a}
 body.sf-dark .sfs-toolbar{border-color:#2a2d3a}
 body.sf-dark .sfs-tool-btn{border-color:#2a2d3a;color:#71717a}
+body.sf-dark .sfs-reset-note{color:#71717a}
 body.sf-dark .sfs-tool-btn:hover{border-color:#3b82f6;color:#3b82f6}
 body.sf-dark .sfs-slot{background:#222532;border-color:#2a2d3a}
 body.sf-dark .sfs-slot:hover{background:#2a2d3a;border-color:#3b82f6}
@@ -424,14 +426,24 @@ window._sfSlots = {
   },
 
   reset: function(){
-    if(!confirm('입력값·설정을 처음 상태로 되돌릴까요?\n\n위 목록의 저장 슬롯은 그대로 남습니다.\n지금 상태를 남기려면 취소하고 먼저 [저장]하세요.')) return;
+    if(!confirm('화면을 처음 상태로 되돌릴까요?\n\n입력칸·설정만 기본값으로 돌아갑니다.\n위 목록의 저장 슬롯과 기록은 지워지지 않습니다.\n지금 입력을 남기려면 취소하고 먼저 [저장]하세요.')) return;
+    // (085) common.js가 따로 저장하는 이 페이지의 선택칸(sf-sel-)·탭(sf-tp-) 상태도 지움 — 안 지우면 다시 열 때 옛 값으로 돌아감
+    function clearPageUi(){
+      try{
+        var tp = location.pathname.replace(/\/$/,'') || '/', pre = ['sf-sel-'+tp+':', 'sf-tp-'+tp+':'], del = [];
+        for(var i=0;i<localStorage.length;i++){ var k = localStorage.key(i); if(pre.some(function(x){ return k.indexOf(x)===0; })) del.push(k); }
+        del.forEach(function(k){ localStorage.removeItem(k); });
+      }catch(e){}
+    }
     try{
       if(typeof window.slReset === 'function'){
-        window.slReset();
+        try{ window.slReset(); }catch(e){ console.warn('[sf-slots] slReset', e); }   // 페이지 계산 오류가 나도 저장은 새 값으로
         autoSave();
+        clearPageUi();
         this.close();
         return;
       }
+      clearPageUi();
       localStorage.removeItem(LS_KEY);
       if(Array.isArray(window.SF_RESET)) window.SF_RESET.forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });
       sessionStorage.setItem('sf_reset_'+KEY, '1');
