@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="/common.css?v=12">
 <style id="sf-auto-dark">
 /* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .kr-us{color:#cccccc!important}
 body.sf-dark .bt tbody tr:hover td{background-color:#1a2433!important}
 body.sf-dark .bt tbody tr.sel td{background-color:#152437!important}
 body.sf-dark .bt .nm{color:#85b5e0!important}
@@ -26,6 +27,8 @@ body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4
 :root { --sf-max-w: 1000px; }
 .bd-box { padding:14px 16px; }
 .bd-box h2 { font-size:16px; color:var(--sf-brand); margin:0 0 10px; }
+.bd-box h2 .cty { font-size:13px; padding:3px 6px; margin-left:8px; font-weight:600; }
+.kr-us { font-size:12px; margin-top:6px; color:var(--sf-text-sub); }
 .bd-grid { display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
 .bd-grid .chart-wrap { position:relative; height:260px; }
 .bd-meta { font-size:12px; color:var(--sf-text-dim); margin-top:6px; line-height:1.6; }
@@ -90,7 +93,7 @@ body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4
 
 <!-- ① 금리곡선 -->
 <div class="panel bd-box">
-  <h2>📈 미국채 금리곡선</h2>
+  <h2>📈 금리곡선 <select id="oCty" class="cty"><option value="us">🇺🇸 미국 국채</option><option value="kr">🇰🇷 한국 국고채</option></select></h2>
   <div class="bd-grid">
     <div><div class="chart-wrap"><canvas id="cvCurve"></canvas></div></div>
     <div><div class="chart-wrap"><canvas id="cvHist"></canvas></div></div>
@@ -182,6 +185,7 @@ body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4
 </div>
 
 <div class="info-box">
+  <p><strong>한국 금리:</strong> 한국은행 ECOS 시장금리(일별) — 국고채 1·3·5·10·20·30년, 기준금리, CD·CP 91일, 회사채 AA-·BBB- 3년. VM이 평일 18:10 받아 DB에 쌓고 바로 이 페이지용 파일로 내보냄. 한국은 2년물이 없어 장단기는 10Y−3Y로 봄.</p>
   <p><strong>출처:</strong> 미국 재무부 — 일별 par 금리곡선(Daily Treasury Par Yield Curve)과 MSPD(월말 기준 발행 잔액표). VM 크론 매일 07:10. 목록은 월말 기준이라 그 뒤 새로 발행된 종목은 다음 달에 들어옴. TIPS·변동금리채·단기채(Bills)는 뺐음.</p>
   <p><strong>이론가·추정 매수가:</strong> 실제 시세가 아님. 이론가 = 금리곡선(par)에서 할인율을 만들어(부트스트랩) 종목별 현금흐름을 할인한 값. 추정 매수가 = 이론 수익률에서 "증권사 마진(bp)"만큼 낮춘 수익률로 다시 계산한 가격. 기본 25bp는 11/12 삼성증권 T 0 5/8 05/15/30 한 건(매매단가 87.53, 이론가 86.79)에서 잰 값이라 종목·증권사·날마다 다를 수 있음. 앱 가격을 보고 맞춰 쓸 것.</p>
   <p><strong>앱식(단리) vs 복리:</strong> 증권사 앱의 세후수익률·세전은행환산수익률은 단리 = (세후 이자 합 + 액면 − 매수금액) ÷ 매수금액 ÷ 잔존 연수. 삼성증권 값(세전 4.76·세후 4.65·환산 5.50)과 0.01~0.02%p 안에서 맞음. 복리(반기, 채권 관행)는 받은 이자를 다시 굴리는 가정이라 잔존이 길수록 앱식보다 낮게 나옴 — 3.5년 저쿠폰이면 약 0.25%p. 다른 채권·예금과 정확히 비교할 땐 복리 기준이 맞음.</p>
@@ -200,7 +204,7 @@ body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4
 // ── 저장 (sf-slots) ──
 window.CALC_KEY = 'bond';
 window.SF_RESET = true;
-var SAVE_IDS = ['cFace','cFx','cFxEnd','selCusip','oTax','oMgBp','oMat','oCpn','oType','oSort','oQ','oTab','eTyp','eReg','eH','eAum','eNoLev','eSort','eQ'];
+var SAVE_IDS = ['cFace','cFx','cFxEnd','selCusip','oTax','oMgBp','oMat','oCpn','oType','oSort','oQ','oTab','oCty','eTyp','eReg','eH','eAum','eNoLev','eSort','eQ'];
 function gv(el){ return el.type==='checkbox' ? (el.checked?'1':'0') : el.value; }
 function sv(el,v){ if (el.type==='checkbox') el.checked = (v==='1'||v===true); else el.value=v; }
 window.slGetState = function(){
@@ -209,10 +213,11 @@ window.slGetState = function(){
 window.slSetState = function(d){
   if (!d) return;
   SAVE_IDS.forEach(function(id){ if (d[id] != null) sv(document.getElementById(id), d[id]); });
-  showTab(); render(); renderEtf();
+  showTab(); render(); renderEtf(); if (CURVE) renderCurve();
 };
 function saveNow(){ try { localStorage.setItem('sf_bond_v2', JSON.stringify(window.slGetState())); } catch(e){} }
 
+var KTB = null, CHARTS = [];
 var CURVE = null, LIST = null, FX = null, ZF = null, SETTLE = 0, BONDS = [];
 var TEN_Y = {'1M':1/12,'1.5M':1.5/12,'2M':2/12,'3M':0.25,'4M':4/12,'6M':0.5,'1Y':1,'2Y':2,'3Y':3,'5Y':5,'7Y':7,'10Y':10,'20Y':20,'30Y':30};
 
@@ -223,8 +228,9 @@ function pnum(s){ var a=s.split('-'); return dnum(+a[0],+a[1],+a[2]); }
 function lastDay(y,m){ return new Date(Date.UTC(y,m,0)).getUTCDate(); }
 
 // ── 금리곡선 → 할인율 ──
-function curvePts(row){
-  var pts=[]; CURVE.tenors.forEach(function(t,i){ if (row[i+1]!=null) pts.push([TEN_Y[t], row[i+1]]); });
+function curvePts(row, C){
+  C = C || CURVE;
+  var pts=[]; C.tenors.forEach(function(t,i){ if (row[i+1]!=null) pts.push([TEN_Y[t], row[i+1]]); });
   return pts;
 }
 function parAt(pts,t){
@@ -393,35 +399,53 @@ function renderCalc(){
 }
 
 // ── 금리곡선 표·차트 ──
-function rowNear(days){
-  var target=pnum(CURVE.date)-days, rows=CURVE.rows;
+function rowNear(C, days){
+  var target=pnum(C.date)-days, rows=C.rows;
   for (var i=rows.length-1;i>=0;i--) if (pnum(rows[i][0])<=target) return rows[i];
   return null;
 }
+function colOf(C, name){ return 1 + C.tenors.concat(C.extra||[]).indexOf(name); }
+function vOf(C, row, name){ var i=colOf(C,name); return row && i>0 ? row[i] : null; }
 function renderCurve(){
-  var last=CURVE.rows[CURVE.rows.length-1], m1=rowNear(30), y1=rowNear(365);
-  var pick=['3M','2Y','5Y','10Y','30Y'];
-  function val(row,t){ return row ? row[1+CURVE.tenors.indexOf(t)] : null; }
+  var kr = document.getElementById('oCty').value==='kr' && KTB;
+  if (document.getElementById('oCty').value==='kr' && !KTB) document.getElementById('oCty').value='us';
+  var C = kr ? KTB : CURVE;
+  var last=C.rows[C.rows.length-1], m1=rowNear(C,30), y1=rowNear(C,365);
   function bp(a,b){ if (a==null||b==null) return '<td>-</td>'; var d=Math.round((a-b)*100); return '<td class="'+(d>0?'chg-up':d<0?'chg-dn':'')+'">'+(d>0?'+':'')+d+'</td>'; }
-  var h='<table class="sf-table kt"><thead><tr><th>만기</th><th>'+last[0]+'</th><th>1개월 전'+(m1?' ('+m1[0].slice(5)+')':'')+'</th><th>변화(bp)</th><th>1년 전'+(y1?' ('+y1[0].slice(2)+')':'')+'</th><th>변화(bp)</th></tr></thead><tbody>';
-  pick.forEach(function(t){ var a=val(last,t), b=val(m1,t), c=val(y1,t);
-    h+='<tr><td>'+t+'</td><td>'+f2(a)+'%</td><td>'+f2(b)+'%</td>'+bp(a,b)+'<td>'+f2(c)+'%</td>'+bp(a,c)+'</tr>'; });
-  var s=function(r){ return r ? val(r,'10Y')-val(r,'2Y') : null; };
-  h+='<tr><td>10Y−2Y</td><td>'+f2(s(last))+'%p</td><td>'+f2(s(m1))+'%p</td>'+bp(s(last),s(m1))+'<td>'+f2(s(y1))+'%p</td>'+bp(s(last),s(y1))+'</tr>';
-  document.getElementById('keyTbl').innerHTML=h+'</tbody></table><div class="bd-meta">par 금리 = 액면가(100)에 거래되는 가상 국채의 수익률. 금리가 오르면(빨강) 채권 가격은 내림.</div>';
+  var lines = kr
+    ? [['기준금리','기준금리'],['CD 91일','CD91일'],['1Y','1Y'],['3Y','3Y'],['5Y','5Y'],['10Y','10Y'],['30Y','30Y'],['회사채 AA- 3년','회사채AA-3Y']]
+    : [['3M','3M'],['2Y','2Y'],['5Y','5Y'],['10Y','10Y'],['30Y','30Y']];
+  var h='<table class="sf-table kt"><thead><tr><th>'+(kr?'금리':'만기')+'</th><th>'+last[0]+'</th><th>1개월 전'+(m1?' ('+m1[0].slice(5)+')':'')+'</th><th>변화(bp)</th><th>1년 전'+(y1?' ('+y1[0].slice(2)+')':'')+'</th><th>변화(bp)</th></tr></thead><tbody>';
+  lines.forEach(function(L){ var a=vOf(C,last,L[1]), b=vOf(C,m1,L[1]), c=vOf(C,y1,L[1]);
+    h+='<tr><td>'+L[0]+'</td><td>'+f2(a)+'%</td><td>'+f2(b)+'%</td>'+bp(a,b)+'<td>'+f2(c)+'%</td>'+bp(a,c)+'</tr>'; });
+  var sp = kr ? [['10Y−3Y (장단기)','10Y','3Y'],['AA−국고 3Y (신용 스프레드)','회사채AA-3Y','3Y']] : [['10Y−2Y (장단기)','10Y','2Y']];
+  sp.forEach(function(S){ var f=function(r){ var x=vOf(C,r,S[1]), y=vOf(C,r,S[2]); return x==null||y==null?null:x-y; };
+    h+='<tr><td>'+S[0]+'</td><td>'+f2(f(last))+'%p</td><td>'+f2(f(m1))+'%p</td>'+bp(f(last),f(m1))+'<td>'+f2(f(y1))+'%p</td>'+bp(f(last),f(y1))+'</tr>'; });
+  h+='</tbody></table>';
+  if (KTB && CURVE){
+    var kl=KTB.rows[KTB.rows.length-1], ul=CURVE.rows[CURVE.rows.length-1];
+    h+='<div class="kr-us"><b>한미 금리차 (한국 − 미국)</b> · 한국 '+kl[0]+' / 미국 '+ul[0]+' — '+['3Y','5Y','10Y','30Y'].map(function(t){
+      var a=vOf(KTB,kl,t), b=vOf(CURVE,ul,t); return t+' '+(a==null||b==null?'-':((a-b>0?'+':'')+(a-b).toFixed(2)+'%p'));
+    }).join(' · ')+'</div>';
+  }
+  h+='<div class="bd-meta">'+(kr?'한국은행 ECOS 시장금리(장외 최종호가 수익률). ':'par 금리 = 액면가(100)에 거래되는 가상 국채의 수익률. ')+'금리가 오르면(빨강) 채권 가격은 내림.</div>';
+  document.getElementById('keyTbl').innerHTML=h;
 
   if (typeof Chart==='undefined') return;
-  function ds(row,label,color,dash){ return {label:label, data: row?curvePts(row).map(function(p){ return {x:p[0], y:p[1]}; }):[], borderColor:color, backgroundColor:color, borderWidth:2, pointRadius:2, borderDash:dash||[], tension:0.2}; }
-  new Chart(document.getElementById('cvCurve'), {type:'line',
+  CHARTS.forEach(function(c){ c.destroy(); }); CHARTS=[];
+  function ds(row,label,color,dash){ return {label:label, data: row?curvePts(row,C).map(function(p){ return {x:p[0], y:p[1]}; }):[], borderColor:color, backgroundColor:color, borderWidth:2, pointRadius:2, borderDash:dash||[], tension:0.2}; }
+  CHARTS.push(new Chart(document.getElementById('cvCurve'), {type:'line',
     data:{datasets:[ds(last,last[0],'#1F4E78'), ds(m1,'1개월 전','#9ca3af',[4,3]), ds(y1,'1년 전','#f59e0b',[2,2])]},
-    options:{maintainAspectRatio:false, parsing:false, plugins:{title:{display:true,text:'만기별 금리 (%)'}, legend:{labels:{boxWidth:12}}},
-      scales:{x:{type:'linear',min:0,max:30,title:{display:true,text:'만기(년)'}}, y:{ticks:{callback:function(v){return v.toFixed(1);}}}}}});
-  var lab=CURVE.rows.map(function(r){return r[0];});
-  function ser(t,color){ var i=1+CURVE.tenors.indexOf(t); return {label:t, data:CURVE.rows.map(function(r){return r[i];}), borderColor:color, backgroundColor:color, borderWidth:1.5, pointRadius:0, spanGaps:true}; }
-  new Chart(document.getElementById('cvHist'), {type:'line',
-    data:{labels:lab, datasets:[ser('2Y','#9ca3af'), ser('5Y','#10b981'), ser('10Y','#1F4E78'), ser('30Y','#f59e0b')]},
+    options:{maintainAspectRatio:false, parsing:false, plugins:{title:{display:true,text:(kr?'한국 국고채':'미국 국채')+' 만기별 금리 (%)'}, legend:{labels:{boxWidth:12}}},
+      scales:{x:{type:'linear',min:0,max:30,title:{display:true,text:'만기(년)'}}, y:{ticks:{callback:function(v){return v.toFixed(1);}}}}}}));
+  var lab=C.rows.map(function(r){return r[0];});
+  function ser(t,label,color){ var i=colOf(C,t); return {label:label, data:C.rows.map(function(r){return r[i];}), borderColor:color, backgroundColor:color, borderWidth:1.5, pointRadius:0, spanGaps:true, stepped: t==='기준금리'}; }
+  var S2 = kr ? [ser('기준금리','기준금리','#9ca3af'), ser('3Y','3Y','#10b981'), ser('10Y','10Y','#1F4E78'), ser('회사채AA-3Y','회사채AA-','#f59e0b')]
+              : [ser('2Y','2Y','#9ca3af'), ser('5Y','5Y','#10b981'), ser('10Y','10Y','#1F4E78'), ser('30Y','30Y','#f59e0b')];
+  CHARTS.push(new Chart(document.getElementById('cvHist'), {type:'line',
+    data:{labels:lab, datasets:S2},
     options:{maintainAspectRatio:false, plugins:{title:{display:true,text:'기간별 추이 (%)'}, legend:{labels:{boxWidth:12}}},
-      interaction:{mode:'index',intersect:false}, scales:{x:{ticks:{maxTicksLimit:8}}}}});
+      interaction:{mode:'index',intersect:false}, scales:{x:{ticks:{maxTicksLimit:8}}}}}));
 }
 
 // ── 이벤트 ──
@@ -433,7 +457,7 @@ document.getElementById('list').addEventListener('click', function(e){
 });
 SAVE_IDS.forEach(function(id){
   var el=document.getElementById(id); if (el.type==='hidden') return;
-  var fn = id.charAt(0)==='e' ? function(){ renderEtf(); } : render;
+  var fn = id.charAt(0)==='e' ? function(){ renderEtf(); } : id==='oCty' ? function(){ if (CURVE) renderCurve(); } : render;
   el.addEventListener('input', function(){ clearTimeout(window._bt); window._bt=setTimeout(fn, 150); });
   el.addEventListener('change', function(){ clearTimeout(window._bt); window._bt=setTimeout(fn, 50); });
 });
@@ -550,11 +574,13 @@ showTab();
   Promise.all([
     fetch('/data/bond/ust_curve.json',{cache:'no-cache'}).then(function(r){ if(!r.ok) throw new Error('금리곡선 '+r.status); return r.json(); }),
     fetch('/data/bond/ust_list.json',{cache:'no-cache'}).then(function(r){ if(!r.ok) throw new Error('국채 목록 '+r.status); return r.json(); }),
-    fetch('/data/rates.json',{cache:'no-cache'}).then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; })
+    fetch('/data/rates.json',{cache:'no-cache'}).then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; }),
+    fetch('/data/bond/ktb_curve.json',{cache:'no-cache'}).then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; })
   ]).then(function(res){
-    CURVE=res[0]; LIST=res[1]; FX=res[2]&&res[2].rates&&res[2].rates.USD_KRW || 1350;
+    CURVE=res[0]; LIST=res[1]; KTB=res[3];
+    if (!KTB) document.querySelector('#oCty option[value=kr]').disabled=true; FX=res[2]&&res[2].rates&&res[2].rates.USD_KRW || 1350;
     ZF=buildZero(curvePts(CURVE.rows[CURVE.rows.length-1]));
-    document.getElementById('dataDate').textContent='금리곡선 '+CURVE.date+' · 국채 목록 '+LIST.date+' 월말 기준 · 계산일 '+dstr(SETTLE)+' (수집 '+CURVE.updated+')';
+    document.getElementById('dataDate').textContent='미국 금리 '+CURVE.date+(KTB?' · 한국 금리 '+KTB.date:'')+' · 국채 목록 '+LIST.date+' 월말 기준 · 계산일 '+dstr(SETTLE)+' (수집 '+CURVE.updated+')';
     document.getElementById('fxHint').textContent='비우면 최근 환율 '+comma(FX,2)+'원'+(res[2]&&res[2].updated?' ('+res[2].updated.slice(0,10)+')':'');
     renderCurve();
     if (!document.getElementById('selCusip').value){

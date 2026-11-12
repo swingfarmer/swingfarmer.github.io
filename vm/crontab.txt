@@ -69,8 +69,8 @@
 0 14 * * 2-6 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_exim.py >> ~/logs/fetch_exim.log 2>&1
 
 # ── 장 마감 후 (18:00~19:30) ──
-# 한국은행 금리 — 평일 18:10
-10 18 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_ecos.py >> ~/logs/fetch_ecos.log 2>&1
+# 한국은행 금리 → DB, 이어서 /bond/용 data/bond/ktb_curve.json 내보내기 — 평일 18:10 (084)
+10 18 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_ecos.py >> ~/logs/fetch_ecos.log 2>&1 ; python3 scripts/export_ktb.py >> ~/logs/export_ktb.log 2>&1
 # 종가 수집 (KIS) → data/kr/prices.json — 평일 18:30
 30 18 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_prices.py >> ~/cron.log 2>&1
 # 버핏지수 — 평일 18:35 (종가 수집 다음)

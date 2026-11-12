@@ -29,6 +29,7 @@ TARGETS = [
     # 미국채 (084)
     ("data/bond/ust_curve.json",           "미국채 금리곡선",   "daily",   0),
     ("data/bond/ust_list.json",            "미국채 목록",       "daily",   0),
+    ("data/bond/ktb_curve.json",           "한국 금리(ECOS)",   "weekday", 0),
     # 미국 ETF
     ("data/us_etf.json",                   "미국 ETF",          "weekday", 0),
     # 종가
