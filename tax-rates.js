@@ -1,12 +1,12 @@
 /* 세율 공통 (086) — 세법이 바뀌면 이 파일 하나만 고치면 됨
- * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=10 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
+ * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=11 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
  * 구간 배열: [[상한(원), 세율%], ...] 누진. 세율은 국세 기준, 지방소득세(국세의 10%)는 별도 → SF_TAX.wl(세율)로 포함값.
  * 바꾼 뒤: 이 파일 ?v= 를 쓰는 페이지 전부 올릴 것. 확인일(checked)도 고칠 것.
  * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/, /realestate/commercial-yield/, /tax/income/, /tax/retirement/, /tax/retirement-compare/, /severance-exec/, /salary/, /insurance4/, /tax/corp-invest/, /tax/house/, /tax/land/, /realestate/home-swap/, /stock-tools/dividend/, /finance-tools/compound/, /fire/, /tax/financial-income/, /barbell/, /paygrowth/, /landtax/  (나머지 세금 페이지는 순차 이전 예정)
  */
 window.SF_TAX = Object.freeze({
   year: 2026,
-  checked: '2026-11-13',  // 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가 / 090: 고용보험 사업주분·고배당 분리과세·미국 배당 원천·주택·토지 양도세 추가, 양도세 정부안도 여기로(cgtPlan·cgtRule), ISA·연금 분리과세 / 092: 근로소득공제·근로소득세액공제·자녀세액공제(나이 연도별)·공익수용 감면(조특법 77) 추가, 토지 자경 5년 한도
+  checked: '2026-11-13',  // 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가 / 090: 고용보험 사업주분·고배당 분리과세·미국 배당 원천·주택·토지 양도세 추가, 양도세 정부안도 여기로(cgtPlan·cgtRule), ISA·연금 분리과세 / 092: 근로소득공제·근로소득세액공제·자녀세액공제(나이 연도별)·공익수용 감면(조특법 77) 추가, 토지 자경 5년 한도 / 092_03: 국민연금 연도별 인상(socialPlan·socialRule), 4대보험 근로자분 계산(ins4), 간이세액 근사(wageTax) 공통 함수
   // 이자·배당 원천징수 (소득세 14% + 지방소득세 1.4%)
   interest: 15.4,
   // 금융소득 종합과세 기준 (이자+배당, 연)
@@ -82,6 +82,9 @@ window.SF_TAX = Object.freeze({
   // 4대보험 근로자 부담 (089 확인) — 국민연금 2026년 9.5%(근로자 4.75, 매년 1월 0.5%p씩 2033년 13%까지),
   //   기준소득월액 하한 41만·상한 659만 (2026.7~2027.6, 매년 7월 바뀜), 고용보험 근로자 0.9. 건보는 위 health(근로자 = rate/2)
   social: {nps: 4.75, npsMin: 410000, npsMax: 6590000, emp: 0.9},
+  // 국민연금 근로자분 예정 인상 (092, 국민연금법 2025.3 개정 — 전체 9.5%에서 매년 1월 0.5%p씩 2033년 13%) — 그 해부터 social 위에 덮어씀(누적).
+  //   페이지는 SF_TAX.socialRule(연도)로 그 해 요율을 받는다 → 2027.1.1이 되면 자동으로 5.0. 상·하한(npsMin/npsMax)은 매년 7월 고시라 미리 못 넣음(그때 social만 고칠 것)
+  socialPlan: {2027: {nps: 5.0}, 2028: {nps: 5.25}, 2029: {nps: 5.5}, 2030: {nps: 5.75}, 2031: {nps: 6.0}, 2032: {nps: 6.25}, 2033: {nps: 6.5}},
   // 4대보험 사업주 부담 (090 확인) — 국민연금·건보·장기요양은 근로자와 같은 비율. 고용보험은 실업급여 0.9 + 고용안정·직업능력개발(사업주만):
   //   상시근로자 150인 미만 0.25 / 150인 이상 우선지원대상기업 0.45 / 150~1,000인 미만 0.65 / 1,000인 이상·국가·지자체 0.85. 산재는 업종별(페이지 입력)
   socialEmp: {emp: 0.9, stab: {u150: 0.25, prio: 0.45, u1000: 0.65, o1000: 0.85}},
@@ -109,6 +112,24 @@ window.SF_TAX = Object.freeze({
   // 누진 구간 세금(국세) — prog(과표, SF_TAX.corp) 처럼 쓴다. 지방세 포함은 결과 × (1 + local)
   // 근속연수공제 — 근속연수는 1년 미만 끝수를 1년으로 올려서 넣을 것 (페이지에서 Math.ceil)
   retYearDed: function(y){ var br=window.SF_TAX.retireYear, t=0, lo=0; for(var i=0;i<br.length;i++){ var hi=br[i][0]; if(y>lo){ t += (Math.min(y,hi)-lo)*br[i][1]; } lo=hi; } return t; },
+  // socialRule(연도) → 그 해 4대보험 근로자 요율 {nps, npsMin, npsMax, emp, hh(건보 근로자분), hr(건보 전체), ltc}. 연도 생략 = 올해
+  socialRule: function(year){ var T=window.SF_TAX, r={}, k, y = year == null ? new Date().getFullYear() : year;
+    for (k in T.social) r[k] = T.social[k]; r.hh = Math.round(T.health.rate / 2 * 10000) / 10000; r.hr = T.health.rate; r.ltc = T.health.ltc;
+    var ys = Object.keys(T.socialPlan).map(Number).sort(function(a,b){return a-b;});
+    for (var i = 0; i < ys.length; i++){ if (ys[i] <= y){ var o = T.socialPlan[ys[i]]; for (k in o) r[k] = o[k]; } }
+    r.year = y; return r; },
+  // ins4(비과세 뺀 월급, 연도, 요율 덮어쓰기) → 4대보험 근로자분 월액 {base(국민연금 기준소득월액), pension, health, care, employ, total, rate}
+  //   국민연금은 상·하한으로 자른 뒤 요율, 급여 0이면 0. 사업주분 국민연금·건보·장기요양은 같은 금액(고용보험만 다름 → socialEmp)
+  ins4: function(wage, year, over){ var s = window.SF_TAX.socialRule(year), k; if (over) for (k in over) if (over[k] != null) s[k] = over[k];
+    var b = wage > 0 ? Math.min(s.npsMax, Math.max(s.npsMin, wage)) : 0, p = b * s.nps / 100, h = wage * s.hh / 100, c = h * s.ltc / 100, e = wage * s.emp / 100;
+    return {base: b, pension: p, health: h, care: c, employ: e, total: p + h + c + e, rate: s}; },
+  // 간이세액표 자녀 공제 월액 (childMonthly)
+  childMonAmt: function(n){ var c = window.SF_TAX.childMonthly; n = parseInt(n,10) || 0; if (n <= 0) return 0; if (n === 1) return c.one; return c.two + (n - 2) * c.extra; },
+  // wageTax(연 과세급여, 공제대상 가족수(본인 포함), 자녀 수) → 간이세액표 근사 연 소득세(국세) {calc 산출, credit 근로소득세액공제, child 자녀 공제(월×12), tax 결정}
+  //   근로소득공제 → 인적공제 1인당 150만 → 누진세율 → 근로소득세액공제 → 간이세액표 자녀 공제. 4대보험 소득공제는 안 뺌(간이세액표 방식). /salary/, /tax/income/
+  wageTax: function(gross, family, kids){ var T = window.SF_TAX, base = Math.max(0, gross - T.earnedDedAmt(gross) - (family || 1) * 1.5e6),
+    calc = T.prog(base, T.income), cr = T.earnedCrAmt(calc, gross), ch = T.childMonAmt(kids) * 12;
+    return {base: base, calc: calc, credit: cr, child: ch, tax: Math.max(0, calc - cr - ch)}; },
   earnedDedAmt: function(g){ var T=window.SF_TAX; if(!(g>0)) return 0; return Math.min(T.prog(g, T.earnedDed.br), T.earnedDed.cap); },
   earnedCrAmt: function(tax, g){ var c=window.SF_TAX.earnedCr, lo=0, cap=0, cr; if(!(tax>0)) return 0;
     cr = tax <= c.base ? tax*c.r1/100 : c.base*c.r1/100 + (tax-c.base)*c.r2/100;

@@ -159,7 +159,7 @@ window.slSetState = function(d){ if(window.slSetState) window.slSetState(d); };
 <script>window.SF_RESET = true;</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
 <script src="/sf-slots.js?v=7"></script>
 <script src="/common.js?v=11"></script>
-<script src="/tax-rates.js?v=10"></script>
+<script src="/tax-rates.js?v=11"></script>
 <script>
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
@@ -181,12 +181,13 @@ function setMode(m){
 // (090) 세율·4대보험 요율은 /tax-rates.js(window.SF_TAX)에서 읽음. 못 읽으면 아래 기본값(2026년 값)
 //   (089까지: 국민연금 4.5%·상한 637만·하한 40만 옛 값, 근로소득세액공제 한도 74만 고정, 자녀 공제 옛 연 15만/35만)
 const _T = window.SF_TAX;
+const SR = _T ? _T.socialRule() : null;   // (092) 올해 4대보험 요율 — 국민연금 연도별 인상이 자동 반영됨
 const TX = {
   income: _T ? _T.income : [[14e6,6],[50e6,15],[88e6,24],[150e6,35],[300e6,38],[500e6,40],[1e9,42],[Infinity,45]],
-  nps: _T ? _T.social.nps : 4.75, npsMin: _T ? _T.social.npsMin : 410000, npsMax: _T ? _T.social.npsMax : 6590000,
-  hh: _T ? _T.health.rate / 2 : 3.595, ltc: _T ? _T.health.ltc : 13.14, emp: _T ? _T.social.emp : 0.9,
+  nps: SR ? SR.nps : 4.75, npsMin: SR ? SR.npsMin : 410000, npsMax: SR ? SR.npsMax : 6590000,
+  hh: SR ? SR.hh : 3.595, ltc: SR ? SR.ltc : 13.14, emp: SR ? SR.emp : 0.9,
   child: _T ? _T.childMonthly : {one: 20830, two: 45830, extra: 33330},
-  year: _T ? _T.year : 2026, checked: _T ? _T.checked : '2026-11-13'
+  year: SR ? SR.year : 2026, checked: _T ? _T.checked : '2026-11-13'
 };
 function prog(b, br){ let t = 0, lo = 0; if (!(b > 0)) return 0; for (const [hi, r] of br){ if (b > lo) t += (Math.min(b, hi) - lo) * r / 100; lo = hi; } return t; }
 (function fillTax(){
@@ -225,6 +226,7 @@ function childMonthly(kids){
   return TX.child.two + (kids - 2) * TX.child.extra;
 }
 function approxIncomeTax(monthlyTaxable, dependents, children){
+  if (_T) return _T.wageTax(monthlyTaxable * 12, dependents, children).tax / 12;   // (092) 공통 함수 — /tax/income/과 같은 식
   const annual = monthlyTaxable * 12;
   const taxBase = Math.max(0, annual - calcEarnDeduction(annual) - dependents * 1500000);
   const calc = prog(taxBase, TX.income);
@@ -244,16 +246,17 @@ function calculate(){
 
   // 4대보험 (과세 기준)
   // (090) 국민연금은 기준소득월액 상·하한으로 자름 (월급 0이면 0)
-  const pensionBase = taxableMonth > 0 ? Math.min(TX.npsMax, Math.max(TX.npsMin, taxableMonth)) : 0;
-  const pension = pensionBase * TX.nps / 100;
-  const health = taxableMonth * TX.hh / 100;
-  const care = health * TX.ltc / 100;
-  const employ = taxableMonth * TX.emp / 100;
-  const insTotal = pension+health+care+employ;
+  //   (092) 공통 함수 SF_TAX.ins4 — /tax/income/, /insurance4/, /paygrowth/와 같은 식. 아래는 공통 파일을 못 읽었을 때
+  const I = _T ? _T.ins4(taxableMonth) : (function(){
+    const pensionBase = taxableMonth > 0 ? Math.min(TX.npsMax, Math.max(TX.npsMin, taxableMonth)) : 0;
+    const p = pensionBase * TX.nps / 100, h = taxableMonth * TX.hh / 100, c = h * TX.ltc / 100, e = taxableMonth * TX.emp / 100;
+    return {pension: p, health: h, care: c, employ: e, total: p + h + c + e};
+  })();
+  const pension = I.pension, health = I.health, care = I.care, employ = I.employ, insTotal = I.total;
 
   // 소득세
   const incomeTax = approxIncomeTax(taxableMonth, dependents, children);
-  const localTax = incomeTax*0.1;
+  const localTax = incomeTax * (_T ? _T.local : 0.1);
   const taxTotal = incomeTax+localTax;
 
   const net = grossMonth - insTotal - taxTotal;

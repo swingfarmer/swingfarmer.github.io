@@ -174,14 +174,15 @@ body.sf-dark .box.social{border-top-color:#d97706!important}
   </div>
 </div>
 
-<script src="/tax-rates.js?v=10"></script>
+<script src="/tax-rates.js?v=11"></script>
 <script>
 // (089) 세율·4대보험 요율은 /tax-rates.js(window.SF_TAX)에서 읽음. 못 읽으면 아래 기본값(2026년 값)
 const _T = window.SF_TAX;
+const SR = _T ? _T.socialRule() : null;   // (092) 올해 4대보험 요율 — 국민연금 연도별 인상이 자동 반영됨
 const TX = {
   income: _T ? _T.income : [[14e6,6],[50e6,15],[88e6,24],[150e6,35],[300e6,38],[500e6,40],[1e9,42],[Infinity,45]],
-  nps: _T ? _T.social.nps : 4.75, npsMin: _T ? _T.social.npsMin : 410000, npsMax: _T ? _T.social.npsMax : 6590000,
-  hh: _T ? _T.health.rate / 2 : 3.595, ltc: _T ? _T.health.ltc : 13.14, emp: _T ? _T.social.emp : 0.9,
+  nps: SR ? SR.nps : 4.75, npsMin: SR ? SR.npsMin : 410000, npsMax: SR ? SR.npsMax : 6590000,
+  hh: SR ? SR.hh : 3.595, ltc: SR ? SR.ltc : 13.14, emp: SR ? SR.emp : 0.9,
   child: _T ? _T.childMonthly : {one: 20830, two: 45830, extra: 33330},
   checked: _T ? _T.checked : '2026-11-13'
 };
@@ -240,6 +241,7 @@ function childMonthly(kids) {
 
 // 간이세액표 알고리즘 (월 원천징수 = 연 환산 세액 / 12)
 function calcMonthlyIncomeTax(monthlyGross, family, kids, ratio) {
+  if (_T) return Math.max(0, _T.wageTax(monthlyGross * 12, family, kids).tax / 12 * ratio);   // (092) 공통 함수 — /salary/와 같은 식. 아래는 공통 파일을 못 읽었을 때
   // 1. 연 환산
   const annualGross = monthlyGross * 12;
   // 2. 근로소득공제
@@ -273,16 +275,17 @@ function calculate() {
 
   // 4대보험 (월 기준) — (089) 비과세 뺀 월급(gross) 기준. 국민연금은 기준소득월액 상·하한으로 자름
   //   (088까지: 비과세 포함 월급 × 옛 요율 4.5·3.545·12.95, 국민연금 상한을 본인부담 553,500원으로 잘못 둠)
-  const npsBase = gross > 0 ? Math.min(Math.max(gross, TX.npsMin), TX.npsMax) : 0;
-  const nps = npsBase * TX.nps / 100;
-  const health = gross * TX.hh / 100;
-  const ltc = health * TX.ltc / 100;
-  const emp = gross * TX.emp / 100;
-  const social = nps + health + ltc + emp;
+  //   (092) 공통 함수 SF_TAX.ins4 — /salary/, /insurance4/, /paygrowth/와 같은 식. 아래는 공통 파일을 못 읽었을 때
+  const I = _T ? _T.ins4(gross) : (function(){
+    const npsBase = gross > 0 ? Math.min(Math.max(gross, TX.npsMin), TX.npsMax) : 0;
+    const p = npsBase * TX.nps / 100, h = gross * TX.hh / 100, c = h * TX.ltc / 100, e = gross * TX.emp / 100;
+    return {pension: p, health: h, care: c, employ: e, total: p + h + c + e};
+  })();
+  const nps = I.pension, health = I.health, ltc = I.care, emp = I.employ, social = I.total;
 
   // 소득세
   const incomeTax = calcMonthlyIncomeTax(gross, family, kids, ratio);
-  const localTax = incomeTax * 0.10;
+  const localTax = incomeTax * (_T ? _T.local : 0.1);
   const taxTotal = incomeTax + localTax;
 
   // 실수령

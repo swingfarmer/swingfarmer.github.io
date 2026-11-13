@@ -141,7 +141,7 @@ window.slSetState = function(d){ if(window.i4SetState) window.i4SetState(d); };
 <script>window.SF_RESET = ["sf_i4_state_v1"];</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
 <script src="/sf-slots.js?v=7"></script>
 <script src="/common.js?v=11"></script>
-<script src="/tax-rates.js?v=10"></script>
+<script src="/tax-rates.js?v=11"></script>
 <script>
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
@@ -151,12 +151,13 @@ function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='blo
 // (090) 요율은 /tax-rates.js(window.SF_TAX)에서 읽음. 못 읽으면 아래 기본값(2026년 값)
 //   (089까지: 국민연금 4.5%·상한 637만·하한 40만 옛 값, 고용보험 사업주 1.15% 고정)
 const _T = window.SF_TAX;
+const SR = _T ? _T.socialRule() : null;   // (092) 올해 4대보험 요율 — 국민연금 연도별 인상이 자동 반영됨
 const TX = {
-  nps: _T ? _T.social.nps : 4.75, npsMin: _T ? _T.social.npsMin : 410000, npsMax: _T ? _T.social.npsMax : 6590000,
-  hh: _T ? _T.health.rate / 2 : 3.595, hr: _T ? _T.health.rate : 7.19, ltc: _T ? _T.health.ltc : 13.14,
-  emp: _T ? _T.social.emp : 0.9, eEmp: _T ? _T.socialEmp.emp : 0.9,
+  nps: SR ? SR.nps : 4.75, npsMin: SR ? SR.npsMin : 410000, npsMax: SR ? SR.npsMax : 6590000,
+  hh: SR ? SR.hh : 3.595, hr: SR ? SR.hr : 7.19, ltc: SR ? SR.ltc : 13.14,
+  emp: SR ? SR.emp : 0.9, eEmp: _T ? _T.socialEmp.emp : 0.9,
   stab: _T ? _T.socialEmp.stab : {u150: 0.25, prio: 0.45, u1000: 0.65, o1000: 0.85},
-  year: _T ? _T.year : 2026, checked: _T ? _T.checked : '2026-11-13'
+  year: SR ? SR.year : 2026, checked: _T ? _T.checked : '2026-11-13'
 };
 (function fillTax(){
   const put = (cls, v) => document.querySelectorAll('.' + cls).forEach(el => el.textContent = v);
@@ -176,17 +177,17 @@ function calculate(){
 
   const stab=TX.stab[$('corpSize').value]; const stabRate=(stab===undefined?TX.stab.u150:stab);
   // (090) 국민연금은 기준소득월액 상·하한으로 자름 (급여 0이면 0)
-  const pensionBase=wage>0?Math.min(TX.npsMax,Math.max(TX.npsMin,wage)):0;
-  // 근로자
-  const w_pension=pensionBase*TX.nps/100;
-  const w_health=wage*TX.hh/100;
-  const w_care=w_health*TX.ltc/100;
-  const w_employ=wage*TX.emp/100;
-  const w_total=w_pension+w_health+w_care+w_employ;
-  // 사업주
-  const e_pension=pensionBase*TX.nps/100;
-  const e_health=wage*TX.hh/100;
-  const e_care=e_health*TX.ltc/100;
+  // 근로자 — (092) 공통 함수 SF_TAX.ins4 (/salary/, /tax/income/, /paygrowth/와 같은 식). 아래는 공통 파일을 못 읽었을 때
+  const I = _T ? _T.ins4(wage) : (function(){
+    const pensionBase=wage>0?Math.min(TX.npsMax,Math.max(TX.npsMin,wage)):0;
+    const p=pensionBase*TX.nps/100, h=wage*TX.hh/100, c=h*TX.ltc/100, e=wage*TX.emp/100;
+    return {pension:p, health:h, care:c, employ:e, total:p+h+c+e};
+  })();
+  const w_pension=I.pension, w_health=I.health, w_care=I.care, w_employ=I.employ, w_total=I.total;
+  // 사업주 — 국민연금·건보·장기요양은 근로자와 같은 금액, 고용보험만 사업주 요율
+  const e_pension=w_pension;
+  const e_health=w_health;
+  const e_care=w_care;
   const e_employ=wage*(TX.eEmp+stabRate)/100;
   const e_injury=wage*injuryRate;
   const e_total=e_pension+e_health+e_care+e_employ+e_injury;

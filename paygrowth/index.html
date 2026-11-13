@@ -151,7 +151,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
 
     <details class="adv">
       <summary>⚙️ 4대보험 요율 조정 (기본값: <span class="tx-year">2026</span>년 요율)</summary>
-      <p class="adv-help">ⓘ 기본값은 공통 세율 파일(tax-rates.js)에서 매년 자동으로 채워집니다 — 요율은 매년 1월, 국민연금 상·하한은 매년 7월 바뀜. 저장한 시나리오를 불러올 때 <b>저장 당시 기본값 그대로였던 칸은 올해 값으로</b> 바뀌고, <b>직접 고친 칸만</b> 저장값이 남습니다. 회사가 다른 요율을 쓰거나 내년 값을 미리 넣어보고 싶을 때만 고치세요.</p>
+      <p class="adv-help">ⓘ 기본값은 공통 세율 파일(tax-rates.js)에서 매년 자동으로 채워집니다 — 요율은 매년 1월, 국민연금 상·하한은 매년 7월 바뀜. 저장한 시나리오를 불러올 때 <b>저장 당시 기본값 그대로였던 칸은 올해 값으로</b> 바뀌고, <b>직접 고친 칸만</b> 저장값이 남습니다. 회사가 다른 요율을 쓰거나 내년 값을 미리 넣어보고 싶을 때만 고치세요. <b>국민연금 칸을 기본값 그대로 두면</b> 연차별 표에서 해마다 법으로 정해진 인상(2027년 5.0% → 매년 +0.25%p → 2033년 6.5%)이 반영되고, 직접 고치면 모든 연차에 그 값을 씁니다.</p>
       <div class="grid">
         <div class="fld">
           <label>국민연금 근로자부담률 (%)</label>
@@ -206,7 +206,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   <div class="panel">
     <h2>📖 계산 방식</h2>
     <ul style="font-size:12.5px; line-height:1.9; padding-left:18px; color:#444">
-      <li><b>4대보험 (<span class="tx-year">2026</span>년 요율)</b>: 국민연금 <span class="tx-nps">4.75</span>%(기준소득월액 상한 <span class="tx-npsmax">659</span>만원·하한 <span class="tx-npsmin">41</span>만원으로 자른 뒤), 건강보험 <span class="tx-hl">3.595</span>%, 장기요양 = 건강보험료×<span class="tx-ltc">13.14</span>%, 고용보험 <span class="tx-emp">0.9</span>%. 보수월액 = 월급여 − 비과세.</li>
+      <li><b>4대보험 (<span class="tx-year">2026</span>년 요율)</b>: 국민연금 <span class="tx-nps">4.75</span>%(기준소득월액 상한 <span class="tx-npsmax">659</span>만원·하한 <span class="tx-npsmin">41</span>만원으로 자른 뒤), 건강보험 <span class="tx-hl">3.595</span>%, 장기요양 = 건강보험료×<span class="tx-ltc">13.14</span>%, 고용보험 <span class="tx-emp">0.9</span>%. 보수월액 = 월급여 − 비과세. 국민연금 칸이 기본값이면 2년차부터 그 해 법정 요율(2033년 6.5%까지 매년 인상)을 씀.</li>
       <li><b>근로소득공제</b>: 총급여 구간별 국세청 공제표 적용 (500만원 이하 70% ~ 1억원 초과분 2%), 공제 한도 <span class="tx-edcap">2,000</span>만원.</li>
       <li><b>인적공제</b>: 부양가족 1인당 연 150만원.</li>
       <li><b>연금·특별소득공제</b>: 국민연금·건강보험·장기요양·고용보험 근로자부담분 전액을 과세표준에서 추가 공제.</li>
@@ -220,7 +220,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   <footer>© 스윙파머 · 누적 연봉 계산기</footer>
 </div>
 
-<script src="/tax-rates.js?v=10"></script>
+<script src="/tax-rates.js?v=11"></script>
 <script>
 window.CALC_KEY = 'paygrowth';
 // (092) 4대보험 요율 기본값은 공통 세율 파일에서 채움 — 매년 바뀌어도 이 페이지는 안 고쳐도 됨
@@ -377,6 +377,10 @@ function childTaxCredit(children) {
 
 // ============= 4대보험 계산 =============
 function insurance(monthlyTaxable, rates) {
+  if (_T) {   // (092) 공통 함수 SF_TAX.ins4 — /salary/, /tax/income/, /insurance4/와 같은 식 (요율은 이 페이지 입력칸 값으로 덮어씀)
+    const I = _T.ins4(monthlyTaxable, null, { nps: rates.pension, hh: rates.health, ltc: rates.ltc, emp: rates.emp, npsMin: rates.pensionFloor, npsMax: rates.pensionCap });
+    return { pension: I.pension, health: I.health, ltc: I.care, employment: I.employ, total: I.total };
+  }
   const pensionBase = Math.min(rates.pensionCap, Math.max(rates.pensionFloor, monthlyTaxable));
   const pension = pensionBase * (rates.pension / 100);
   const health = monthlyTaxable * (rates.health / 100);
@@ -444,8 +448,12 @@ function calculate() {
   let cumulative = 0;
   const rows = [];
 
+  // (092) 국민연금 요율 칸이 기본값 그대로면 연차마다 그 해 법정 요율(2027 5.0% → 매년 +0.25 → 2033 6.5%)을 씀. 직접 고쳤으면 그 값으로 고정
+  const npsAuto = _T && pgSame($('rPension').value, PG_DEF.rPension);
+  const Y0 = new Date().getFullYear();
   for (let i = 1; i <= years; i++) {
-    const r = annualTaxCalc(currentSalary, nontax, dependents, children, rates);
+    const rr = npsAuto ? Object.assign({}, rates, { pension: _T.socialRule(Y0 + i - 1).nps }) : rates;
+    const r = annualTaxCalc(currentSalary, nontax, dependents, children, rr);
     cumulative += r.netYearly;
     rows.push({ year: i, salary: currentSalary, ...r, cumulative });
     currentSalary = currentSalary * (1 + raiseRate);
