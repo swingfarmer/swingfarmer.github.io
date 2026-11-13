@@ -84,7 +84,7 @@ body.sf-dark .info-btn:hover{background:#93c5fd!important}
     </div>
   </div>
   <div style="margin-top:10px;font-size:11px;opacity:.8;line-height:1.6">
-    * 3% = 세금(배당/이자 15.4%)·건보료·인플레 감안 한국형 안전 인출률. 4%는 미국 원조 룰. / 계산 근거: 아래 <b>현재 자산</b>과 <b>연 지출액</b> 입력값.
+    * 3% = 세금(배당/이자 <span class="tx-int">15.4</span>%)·건보료·인플레 감안 한국형 안전 인출률. 4%는 미국 원조 룰. / 계산 근거: 아래 <b>현재 자산</b>과 <b>연 지출액</b> 입력값.
   </div>
 </div>
 
@@ -338,7 +338,13 @@ body.sf-dark .info-btn:hover{background:#93c5fd!important}
   </div>
 </div>
 
+<script src="/tax-rates.js?v=9"></script>
 <script>
+// (090) 세율은 /tax-rates.js(window.SF_TAX)에서 — 기본값 칸·설명 숫자를 채움 (저장 슬롯 복원이 뒤에 덮어씀)
+(function(){ var T = window.SF_TAX; if (!T) return; var put = function(c, v){ document.querySelectorAll('.' + c).forEach(function(el){ el.textContent = v; }); };
+  var man = function(n){ return (n / 1e4).toLocaleString('ko-KR') + '만'; };
+  put('tx-int', T.interest); put('tx-int14', +(T.interest / (1 + T.local)).toFixed(1)); put('tx-intl', +(T.interest - T.interest / (1 + T.local)).toFixed(1)); put('tx-fin', man(T.finThreshold)); put('tx-checked', T.checked);
+})();
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
 const fmtShort = n => {
   if (Math.abs(n) >= 1e8) return (n / 1e8).toFixed(2) + '억';

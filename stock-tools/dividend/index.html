@@ -161,7 +161,7 @@ tr:hover td { background: #f0f5fa; }
     <li><span class="badge">배당성장률</span> 매년 회사가 배당을 얼마씩 늘리는지. 보수적 3%, 평균 5%, 우수 기업 8%+.</li>
     <li><span class="badge">주가 성장률</span> 주가 자체가 매년 얼마씩 오르는지 (배당과 별개). 한국 시장 평균 2~5%.</li>
     <li><span class="badge">월 추가 적립</span> 매달 추가로 사들이는 금액. DRIP(배당재투자) + 추가 적립이 장기 복리 핵심.</li>
-    <li><span class="badge">배당소득세</span> 한국은 15.4% (소득세 14% + 지방세 1.4%). 금융소득 종합과세 대상이면 더 높을 수 있음.</li>
+    <li><span class="badge">배당소득세</span> 한국은 <span class="tx-int">15.4</span>% (소득세 <span class="tx-int14">14</span>% + 지방세 <span class="tx-intl">1.4</span>%). 금융소득 종합과세 대상이면 더 높을 수 있음. 기본값은 공통 세율 파일에서 옴.</li>
   </ul>
 
   <h3>② 핵심 지표 해석</h3>
@@ -185,11 +185,18 @@ tr:hover td { background: #f0f5fa; }
     <li>배당성장률·주가성장률 모두 <b>가정</b>. 실제 시장은 변동성 큼.</li>
     <li>배당컷(배당 삭감) 가능성 미반영.</li>
     <li>물가상승 미반영. 30년 뒤 자산의 구매력은 명목값보다 낮음 (인플레 3% 가정 시 30년 뒤 가치 약 41%).</li>
-    <li>금융소득 2천만 초과 시 종합과세 대상 (한계세율 적용). 본 계산기는 15.4% 분리과세 가정.</li>
+    <li>금융소득 <span class="tx-fin">2,000만</span> 초과 시 종합과세 대상 (한계세율 적용). 본 계산기는 <span class="tx-int">15.4</span>% 분리과세 가정 — 넘는지는 <a href="/tax/financial-income/">금융소득 종합과세 계산기</a>로 확인.</li>
   </ul>
 </div>
 
+<script src="/tax-rates.js?v=9"></script>
 <script>
+// (090) 세율은 /tax-rates.js(window.SF_TAX)에서 — 기본값 칸·설명 숫자를 채움 (저장 슬롯 복원이 뒤에 덮어씀)
+(function(){ var T = window.SF_TAX; if (!T) return; var put = function(c, v){ document.querySelectorAll('.' + c).forEach(function(el){ el.textContent = v; }); };
+  var man = function(n){ return (n / 1e4).toLocaleString('ko-KR') + '만'; };
+  put('tx-int', T.interest); put('tx-int14', +(T.interest / (1 + T.local)).toFixed(1)); put('tx-intl', +(T.interest - T.interest / (1 + T.local)).toFixed(1)); put('tx-fin', man(T.finThreshold)); put('tx-checked', T.checked);
+  var el = document.getElementById('taxRate'); if (el) el.value = T.interest;
+})();
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
 const fmtPct = n => n.toFixed(2) + '%';
 const fmtShort = n => {

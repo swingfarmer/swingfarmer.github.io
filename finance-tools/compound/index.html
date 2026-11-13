@@ -275,7 +275,14 @@ table.yearly td:first-child{text-align:center;font-weight:600}
 </div>
 </div>
 
+<script src="/tax-rates.js?v=9"></script>
 <script>
+// (090) 세율은 /tax-rates.js(window.SF_TAX)에서 — 기본값 칸·설명 숫자를 채움 (저장 슬롯 복원이 뒤에 덮어씀)
+(function(){ var T = window.SF_TAX; if (!T) return; var put = function(c, v){ document.querySelectorAll('.' + c).forEach(function(el){ el.textContent = v; }); };
+  var man = function(n){ return (n / 1e4).toLocaleString('ko-KR') + '만'; };
+  put('tx-int', T.interest); put('tx-int14', +(T.interest / (1 + T.local)).toFixed(1)); put('tx-intl', +(T.interest - T.interest / (1 + T.local)).toFixed(1)); put('tx-fin', man(T.finThreshold)); put('tx-checked', T.checked);
+  ['b_taxRate','s_taxRate','w_taxRate'].forEach(function(id){ var el = document.getElementById(id); if (el) el.value = T.interest; });
+})();
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
 const fmtWon = n => fmt(n) + '원';
 const fmtShort = n => {

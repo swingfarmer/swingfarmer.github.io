@@ -1,12 +1,12 @@
 /* 세율 공통 (086) — 세법이 바뀌면 이 파일 하나만 고치면 됨
- * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=8 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
+ * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=9 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
  * 구간 배열: [[상한(원), 세율%], ...] 누진. 세율은 국세 기준, 지방소득세(국세의 10%)는 별도 → SF_TAX.wl(세율)로 포함값.
  * 바꾼 뒤: 이 파일 ?v= 를 쓰는 페이지 전부 올릴 것. 확인일(checked)도 고칠 것.
- * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/, /realestate/commercial-yield/, /tax/income/, /tax/retirement/, /tax/retirement-compare/, /severance-exec/, /salary/, /insurance4/, /tax/corp-invest/, /tax/house/, /tax/land/, /realestate/home-swap/  (나머지 세금 페이지는 순차 이전 예정)
+ * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/, /realestate/commercial-yield/, /tax/income/, /tax/retirement/, /tax/retirement-compare/, /severance-exec/, /salary/, /insurance4/, /tax/corp-invest/, /tax/house/, /tax/land/, /realestate/home-swap/, /stock-tools/dividend/, /finance-tools/compound/, /fire/, /tax/financial-income/, /barbell/  (나머지 세금 페이지는 순차 이전 예정)
  */
 window.SF_TAX = Object.freeze({
   year: 2026,
-  checked: '2026-11-13',  // 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가 / 090: 고용보험 사업주분·고배당 분리과세·미국 배당 원천·주택·토지 양도세 추가, 양도세 정부안도 여기로(cgtPlan·cgtRule)
+  checked: '2026-11-13',  // 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가 / 090: 고용보험 사업주분·고배당 분리과세·미국 배당 원천·주택·토지 양도세 추가, 양도세 정부안도 여기로(cgtPlan·cgtRule), ISA·연금 분리과세
   // 이자·배당 원천징수 (소득세 14% + 지방소득세 1.4%)
   interest: 15.4,
   // 금융소득 종합과세 기준 (이자+배당, 연)
@@ -73,6 +73,8 @@ window.SF_TAX = Object.freeze({
     r.plan = used.length > 0; r.planYears = used; r.year = year;
     return r;
   },
+  // 절세계좌 분리과세 (090) — ISA 비과세 한도 넘는 이익 9.9%(지방세 포함), 연금 수령 연금소득세(지방세 포함) 70세 미만 5.5 / 80세 미만 4.4 / 80세 이상 3.3
+  isaSep: 9.9, pensionTax: [5.5, 4.4, 3.3],
   // 미국 배당 원천징수 (한미 조세조약, 090) — 개인은 2천만 이하면 이걸로 끝, 법인은 외국납부세액공제
   usWithhold: 15,
   // 건강보험료율 (세금은 아니지만 매년 바뀌어 같이 둠) — 2026년 7.19%, 장기요양 = 건보료의 13.14%. 직장가입자 보수 외 소득 연 2천만 초과분에 소득월액보험료(전액 본인) (087 확인)
