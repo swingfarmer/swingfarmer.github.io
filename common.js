@@ -166,10 +166,7 @@ window.sfApiFetch = function(url, opts) {
   }
   #sf-header .sf-logo:hover { opacity: 0.85; }
   #sf-header .sf-logo .sf-logo-icon {
-    width: 28px; height: 28px; border-radius: 6px;
-    background: linear-gradient(135deg, #fff, #cfe0f5);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px;
+    width: 28px; height: 28px; display: block; flex-shrink: 0;
   }
   #sf-header .sf-tools { display: flex; align-items: center; gap: 6px; }
   #sf-header .sf-btn {
@@ -300,7 +297,7 @@ window.sfApiFetch = function(url, opts) {
     header.id = 'sf-header';
     header.innerHTML =
       '<a class="sf-logo" href="' + MAIN_URL + '">' +
-        '<span class="sf-logo-icon">📈</span>' +
+        '<svg class="sf-logo-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="0.5" y="0.5" width="31" height="31" rx="6" fill="#FFFFFF" stroke="#CBD5E1"/><g stroke="#E2E8F0" stroke-width="1"><line x1="9" y1="9" x2="27" y2="9"/><line x1="9" y1="15" x2="27" y2="15"/><line x1="9" y1="21" x2="27" y2="21"/></g><g stroke="#94A3B8" stroke-width="1.4" stroke-linecap="round"><line x1="6" y1="5" x2="6" y2="26"/><line x1="6" y1="26" x2="27" y2="26"/><line x1="4" y1="9" x2="6" y2="9"/><line x1="4" y1="15" x2="6" y2="15"/><line x1="4" y1="21" x2="6" y2="21"/></g><path d="M 8.5 22 L 13.5 16 L 18 19 L 26 8.5" stroke="#16A34A" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' +  // 091: 📈 이모지 → favicon.svg와 같은 그림(기기마다 이모지 모양 달라서)
         '<span>스윙파머</span>' +
       '</a>' +
       '<div class="sf-tools">' +
