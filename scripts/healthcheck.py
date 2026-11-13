@@ -478,10 +478,16 @@ def main():
 
     print(f"\n✅ 정상: {ok}  ⏰ 지연: {stale}  ❌ 없음: {missing}  (총 {total})\n")
 
+    # (093) 파일 없음·DB 실패 항목은 last_modified가 None → 예전엔 여기서 TypeError로 죽어서
+    #       아래 send_alert까지 못 가고 텔레그램이 아예 안 갔음(11/12 실행). None이면 "-"로 찍고,
+    #       찍다가 무슨 에러가 나도 알림은 무조건 보내도록 항목마다 감쌈.
     for r in results:
-        icon = {"ok": "✅", "stale": "⏰", "missing": "❌"}[r["status"]]
-        mod = r.get("last_modified", "-")
-        print(f"  {icon} {r['desc']:20s} {mod:>16s}  {r['message']}")
+        try:
+            icon = {"ok": "✅", "stale": "⏰", "missing": "❌"}.get(r.get("status"), "?")
+            mod = str(r.get("last_modified") or "-")
+            print(f"  {icon} {str(r.get('desc')):20s} {mod:>16s}  {r.get('message', '')}")
+        except Exception as e:
+            print(f"  ? 출력 실패 {r.get('desc')}: {e}")
 
     send_alert(status)
     keys = check_key_expiry()
@@ -492,4 +498,14 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # (093) 헬스체크 자체가 죽으면 "알림 없음 = 정상"으로 착각하게 됨 → 죽었다는 DM을 따로 보냄
+    try:
+        main()
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        try:
+            send_dm(f"🚨 <b>헬스체크 자체 에러</b>\n{type(e).__name__}: {str(e)[:200]}\n로그: tail -40 ~/logs/healthcheck.log")
+        except Exception:
+            pass
+        sys.exit(1)
