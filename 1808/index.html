@@ -45,6 +45,13 @@ body.sf-dark .tag.ext{background:rgba(99,102,241,.15)!important;color:#818cf8!im
 body.sf-dark .tag.new{background:rgba(34,197,94,.15)!important;color:#4ade80!important}
 body.sf-dark .tag.db{background:rgba(251,191,36,.15)!important;color:#fbbf24!important}
 body.sf-dark footer{color:#71717a}
+.sec-tools{display:flex;justify-content:flex-end;gap:6px;margin:6px 0 -14px}
+.sec-tools button{background:none;border:1px solid #d1d5db;color:#1F4E78;font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer}
+.sec-tools button:hover{border-color:#1F4E78}
+.auto-note{font-size:12px;color:#888;margin-top:8px}
+.load-msg{text-align:center;color:#888;font-size:13px;padding:30px 0}
+body.sf-dark .sec-tools button{border-color:#3f4354;color:#60a5fa}
+body.sf-dark .auto-note,body.sf-dark .load-msg{color:#a1a1aa}
 </style>
 
 <link rel="stylesheet" href="/auth-guard.css?v=4">
@@ -54,264 +61,105 @@ body.sf-dark footer{color:#71717a}
 
 <header>
   <h1>스윙파머 전체 메뉴</h1>
-  <p class="subtitle">개인 재무 시뮬레이션 & 분석 모음</p>
-  <div class="hidden-badge">🔒 전체 목록 · 119개 도구</div>
+  <p class="subtitle">개인 재무 시뮬레이션 &amp; 분석 모음</p>
+  <div class="hidden-badge" id="allBadge">🔒 전체 목록</div>
+  <p class="auto-note">메인 화면의 카드를 그대로 불러와서 카테고리별로 펼쳐 보여줌 — 메인만 고치면 여기도 자동으로 같아짐</p>
   <div style="margin-top:16px"><a href="/" style="display:inline-block;background:#1F4E78;color:white;text-decoration:none;font-size:14px;font-weight:600;padding:10px 24px;border-radius:8px">🏠 메인으로</a></div>
 </header>
 
-<!-- 메뉴 찾기 (089) — 동작은 /menu-search.js, 카드(a.card)를 읽어서 찾음 -->
+<!-- 메뉴 찾기 (089) — 동작은 /menu-search.js, 카드(a.card)를 읽어서 찾음. 카드를 다 그린 뒤에 불러옴(아래 스크립트) -->
 <div id="sfMenuSearch"></div>
 
+<div class="sec-tools"><button type="button" id="btnOpenAll">모두 펼치기</button><button type="button" id="btnCloseAll">모두 접기</button></div>
 
-<div class="section-title" data-section="info">📰 정보·시장 <span class="cnt">18</span><span class="arrow">▼</span></div>
-<div class="section-body" data-body="info">
-<div class="row">
-  <a href="/news/" class="card"><div class="icon">📰</div><div class="card-title">뉴스 헤드라인</div><div class="card-desc">주요 언론사 실시간 헤드라인. 8개 카테고리.</div><div class="tag live">LIVE</div></a>
-  <a href="/correlation/" class="card"><div class="icon">🔗</div><div class="card-title">상관관계 분석기</div><div class="card-desc">DXY·KOSPI·S&P500 상관계수·산점도.</div></a>
-  <a href="/indicators/" class="card"><div class="icon">📉</div><div class="card-title">시장 지표 대시보드</div><div class="card-desc">S&P·나스닥·VIX·금리·환율·유가 히스토리.</div></a>
-  <a href="/today/" class="card"><div class="icon">📋</div><div class="card-title">오늘 증시 한눈에</div><div class="card-desc">지수·환율·수급·업종·시그널 이상 감지 요약.</div><div class="tag new">NEW</div></a>
-  <a href="/dashboard/" class="card"><div class="icon">📊</div><div class="card-title">시장 종합 대시보드</div><div class="card-desc">종합진단·외국인수급·풋콜레이쇼·S&amp;P500.</div><div class="tag new">NEW</div></a>
-</div>
-<div class="row">
-  <a href="/market/" class="card"><div class="icon">📊</div><div class="card-title">실시간 시장 대시보드</div><div class="card-desc">코스피·다우·나스닥·환율·금리·유가·금.</div><div class="tag live">LIVE</div></a>
-  <a href="https://longnshort.kr/" target="_blank" rel="noopener" class="card"><div class="icon">🌙</div><div class="card-title">야간선물 대시보드 ↗</div><div class="card-desc">야간선물·달러원·원유·비트코인·나스닥.</div><div class="tag ext">외부</div></a>
-  <a href="/crash-history/" class="card"><div class="icon">🚨</div><div class="card-title">역대 폭락장 비교</div><div class="card-desc">IMF·닷컴·금융위기·코로나·긴축장.</div></a>
-  <a href="/macro/" class="card"><div class="icon">📊</div><div class="card-title">매크로 비교 차트</div><div class="card-desc">반도체 랠리·3저 호황·환율/금리/유가.</div><div class="tag new">NEW</div></a>
-</div>
-<div class="row">
-  <a href="/quotes/" class="card"><div class="icon">💬</div><div class="card-title">오늘의 투자 명언</div><div class="card-desc">195개 매일 로테이션.</div></a>
-  <a href="/events/" class="card"><div class="icon">🎪</div><div class="card-title">증권사 이벤트 바로가기</div><div class="card-desc">전 증권사 이벤트·프로모션 페이지 모음.</div><div class="tag new">NEW</div></a>
-  <a href="/books/" class="card"><div class="icon">📚</div><div class="card-title">책 베스트셀러</div><div class="card-desc">교보·예스24·알라딘·영풍 4개 서점 비교.</div></a>
-</div>
-<div class="row">
-  <a href="/rates/" class="card"><div class="icon">🏦</div><div class="card-title">환율·금리·금시세 추이</div><div class="card-desc">수출입은행 환율 + ECOS 금리 + 금시세 차트.</div><div class="tag db">Oracle DB</div></a>
-  <a href="/breadth/" class="card"><div class="icon">📊</div><div class="card-title">52주 신고가/신저가</div><div class="card-desc">KRX 전종목 52주 신고가·신저가 비율 추이.</div><div class="tag new">NEW</div></a>
-  <a href="/krx/" class="card"><div class="icon">📋</div><div class="card-title">KRX 투자자 지표</div><div class="card-desc">외국인/기관 수급·거래대금·업종 등락·시총 순위.</div><div class="tag new">NEW</div></a>
-  <a href="/data/" class="card"><div class="icon">💱</div><div class="card-title">환율·금시세 (심플)</div><div class="card-desc">USD·JPY·CNY 환율 + 금 시세 빠른 조회.</div></a>
-  <a href="/research/" class="card"><div class="icon">📄</div><div class="card-title">리서치 노트</div><div class="card-desc">매크로·종목·전략 분석 문서 모음.</div><div class="tag new">NEW</div></a>
-  <a href="/heatmap/" class="card"><div class="icon">🗺️</div><div class="card-title">시가총액 히트맵</div><div class="card-desc">국내 시총 상위 200종목 + 미국 S&amp;P500·나스닥100 등락률 트리맵.</div><div class="tag new">NEW</div></a>
-</div>
-</div>
+<!-- (094) 카드는 여기 직접 쓰지 않는다. 메인(/)의 .tool-panel을 불러와서 그림 → 새 페이지는 메인에만 카드 추가 -->
+<div id="sections"><div class="load-msg">메뉴 불러오는 중…</div></div>
 
-<div class="section-title" data-section="asset">💰 자산 설계·연금·파이어 <span class="cnt">10</span><span class="arrow">▼</span></div>
-<div class="section-body" data-body="asset">
-<div class="row">
-  <a href="/barbell/" class="card"><div class="icon">🛡️</div><div class="card-title">바벨 포트폴리오</div><div class="card-desc">절세 리밸런서·금종세 방어·법인 세금.</div><div class="tag new">NEW</div></a>
-  <a href="/free/" class="card"><div class="icon">📈</div><div class="card-title">경제적자유 계산기</div><div class="card-desc">자산·수입·지출·연금 → 은퇴 시점 추이.</div></a>
-  <a href="/pension/" class="card"><div class="icon">🏛️</div><div class="card-title">국민연금 수령 시뮬레이터</div><div class="card-desc">NPS 예상액 → 급여 변동·조기/연기 비교.</div><div class="tag new">NEW</div></a>
-  <a href="/gold-calc/" class="card"><div class="icon">🥇</div><div class="card-title">금값 계산기</div><div class="card-desc">금 시세 기반 매수·매도 손익.</div></a>
-</div>
-<div class="row">
-  <a href="/assets/" class="card"><div class="icon">📊</div><div class="card-title">내 순자산 대시보드</div><div class="card-desc">자산·부채·순자산 추이. 카테고리별 비중.</div></a>
-  <a href="/wealth-reports/" class="card"><div class="icon">📊</div><div class="card-title">부자보고서 모음</div><div class="card-desc">KB·하나·NH·UBS 부자보고서 직링크.</div></a>
-  <a href="/tax/pension-deduction/" class="card"><div class="icon">💰</div><div class="card-title">연금저축·IRP 세액공제</div><div class="card-desc">납입액 → 공제한도·공제율·환급액 계산.</div><div class="tag new">NEW</div></a>
-</div>
-<div class="row">
-  <a href="/budget/" class="card"><div class="icon">💳</div><div class="card-title">예산 소비 추적기</div><div class="card-desc">예산 설정 → 남은 예산·초과 확인.</div></a>
-  <a href="/fire/" class="card"><div class="icon">🔥</div><div class="card-title">파이어족 계산기</div><div class="card-desc">월 소비·상속 → 필요 은퇴 자금 역산. 연금 반영.</div></a>
-  <a href="/cashflow/" class="card"><div class="icon">💵</div><div class="card-title">현금흐름 트래커</div><div class="card-desc">월별 수입·지출, 순증감·저축률.</div></a>
-</div>
-</div>
-
-
-<div class="section-title" data-section="stock">📈 주식·투자 분석 <span class="cnt">35</span><span class="arrow">▼</span></div>
-<div class="section-body" data-body="stock">
-<div class="row">
-  <a href="/etf/" class="card"><div class="icon">🧺</div><div class="card-title">국내 ETF</div><div class="card-desc">전종목 분류·테마별 수익률·자금유입 비교.</div><div class="tag new">NEW</div></a>
-  <a href="/price-compare/" class="card"><div class="icon">📊</div><div class="card-title">기간별 등락률 비교</div><div class="card-desc">405종목 기간별 종가 변동률 비교·정렬.</div><div class="tag new">NEW</div></a>
-  <a href="/stock-tools/mdd-diverge/" class="card"><div class="icon">📉</div><div class="card-title">MDD·이격도 계산기</div><div class="card-desc">최대낙폭 시뮬 + 이동평균 이격도.</div></a>
-  <a href="/margin-ratio/" class="card"><div class="icon">⚖️</div><div class="card-title">내 주식 평가 · 신용 담보비율</div><div class="card-desc">보유 종목 평가금액·순자산. 신용 담보비율과 마진콜까지 여유폭.</div></a>
-  <a href="/stock-tools/kal-sotp/" class="card"><div class="icon">✈️</div><div class="card-title">대한항공 SOTP 기업가치</div><div class="card-desc">사업부별 밸류에이션.</div></a>
-  <a href="/stock-tools/kal/" class="card"><div class="icon">✈️</div><div class="card-title">대한항공 실적 시뮬레이터</div><div class="card-desc">유가→OP / 환율→NI 분리. 시나리오 토글.</div></a>
-</div>
-<div class="row">
-  <a href="/leverage-backtester/" class="card"><div class="icon">📈</div><div class="card-title">레버리지 오버레이 백테스터</div><div class="card-desc">B&H + ATH 낙폭 레버리지. KOSPI 일봉 3,000일 시뮬레이션.</div><div class="tag new">NEW</div></a>
-  <a href="/risk/risk-checklist/" class="card"><div class="icon">✅</div><div class="card-title">매매 전 리스크 체크</div><div class="card-desc">진입 전 15개 항목 체크리스트.</div></a>
-  <a href="/target-simple/" class="card"><div class="icon">💵</div><div class="card-title">목표가 계산기 (심플)</div><div class="card-desc">매수가·수량 → 목표가·손절가 시나리오.</div></a>
-  <a href="/target-price/" class="card"><div class="icon">🎯</div><div class="card-title">목표주가 역산 계산기</div><div class="card-desc">예산·목표금액 → 매수가별 수량·목표가.</div></a>
-</div>
-<div class="row">
-  <a href="/avg/" class="card"><div class="icon">📉</div><div class="card-title">물타기·불타기 평단</div><div class="card-desc">추가 매수 후 평단·손익, 본전 회복가.</div></a>
-  <a href="/us-dividend/" class="card"><div class="icon">🇺🇸</div><div class="card-title">미국주식 대시보드</div><div class="card-desc">미국 배당 ETF 추적·비교.</div></a>
-  <a href="/stock-tools/dividend/" class="card"><div class="icon">💰</div><div class="card-title">배당 수익 계산기</div><div class="card-desc">배당 재투자·배당성장률·세후 시뮬레이션.</div></a>
-</div>
-<div class="row">
-  <a href="/dividend-calendar/" class="card"><div class="icon">📅</div><div class="card-title">배당 캘린더</div><div class="card-desc">배당락일·지급일 월별 캘린더.</div></a>
-  <a href="/dividend-manager/" class="card"><div class="icon">📋</div><div class="card-title">배당 포트폴리오 관리기</div><div class="card-desc">배당주·ETF → 연 배당·월별 캘린더.</div></a>
-  <a href="/stock-tools/buffett/" class="card"><div class="icon">🧮</div><div class="card-title">버핏지수 계산기</div><div class="card-desc">시총/GDP 비율로 과열·저평가 판단.</div></a>
-</div>
-<div class="row">
-  <a href="/risk/risk-reward/" class="card"><div class="icon">⚖️</div><div class="card-title">손익비 계산기</div><div class="card-desc">손절가·목표가 → 손익비·승률 조건.</div></a>
-  <a href="/return-calc/" class="card"><div class="icon">📐</div><div class="card-title">수익률 계산기</div><div class="card-desc">가중평균·복리·손익분기·물타기·CAGR.</div><div class="tag new">NEW</div></a>
-  <a href="/screener/" class="card"><div class="icon">🔎</div><div class="card-title">스크리너 · 시그널 & 수급</div><div class="card-desc">조건 스크리닝 + 수급 분석.</div></a>
-</div>
-<div class="row">
-  <a href="/stock-tools/sensitivity/" class="card"><div class="icon">📊</div><div class="card-title">실적 민감도 계산기</div><div class="card-desc">실적 변수별 EPS·영업이익 민감도.</div></a>
-  <a href="/sector/" class="card"><div class="icon">🏭</div><div class="card-title">업종지수 대시보드</div><div class="card-desc">KOSPI 26개 업종지수 등락률·이평선·RSI.</div><div class="tag new">NEW</div></a>
-  <a href="/futures/" class="card"><div class="icon">📊</div><div class="card-title">선물 외국인 포지션</div><div class="card-desc">KOSPI200 선물 투자자별 순매수·환산지수.</div><div class="tag new">NEW</div></a>
-  <a href="/momentum/" class="card"><div class="icon">🚀</div><div class="card-title">업종·종목 모멘텀</div><div class="card-desc">주간/월간 강세 업종·종목 랭킹.</div></a>
-  <a href="/similar/" class="card"><div class="icon">🔍</div><div class="card-title">유사종목 찾기</div><div class="card-desc">업종·재무 유사 종목 추천.</div></a>
-</div>
-<div class="row">
-  <a href="/strategy/" class="card"><div class="icon">📊</div><div class="card-title">이평선 시그널</div><div class="card-desc">10WMA 비율 + 5WMA 이탈. 매주 자동 갱신.</div><div class="tag new">NEW</div></a>
-  <a href="/valuation/" class="card"><div class="icon">🎯</div><div class="card-title">적정주가 계산기</div><div class="card-desc">고든성장·멀티플·DCF·RIM 종합.</div></a>
-  <a href="/stock-tools/metrics/" class="card"><div class="icon">📐</div><div class="card-title">주식 지표 계산기</div><div class="card-desc">PER·PBR·ROE·배당수익률 직접 계산.</div></a>
-  <a href="/bond/" class="card"><div class="icon">📜</div><div class="card-title">채권 · 미국채 직접매매</div><div class="card-desc">미국채 전 종목 이론가·저쿠폰 세후수익률·금리곡선·증권사 견적 비교.</div><div class="tag new">NEW</div></a>
-  <a href="/risk/position-sizing/" class="card"><div class="icon">📏</div><div class="card-title">포지션 사이징</div><div class="card-desc">리스크 기반 적정 투자 수량 계산.</div></a>
-</div>
-<div class="row">
-  <a href="/rebalancing/" class="card"><div class="icon">♻️</div><div class="card-title">포트폴리오 리밸런싱</div><div class="card-desc">목표 비중 → 매수·매도 수량 계산.</div></a>
-  <a href="/risk/portfolio-risk/" class="card"><div class="icon">🛡️</div><div class="card-title">포트폴리오 리스크</div><div class="card-desc">종목별 비중·상관계수 → 변동성·VaR.</div></a>
-  <a href="/kr-finance/" class="card"><div class="icon">🇰🇷</div><div class="card-title">한국주식 재무 트래커</div><div class="card-desc">재무제표 주요 지표 추이.</div></a>
-</div>
-<div class="row">
-  <a href="/stock-tools/fuel-tracker/" class="card"><div class="icon">⛽</div><div class="card-title">항공유·유류할증료 분석</div><div class="card-desc">항공유 가격 추이 + 유류할증료 단계.</div></a>
-  <a href="/hd-enc/" class="card"><div class="icon">⚡</div><div class="card-title">현대건설 원전 시뮬레이터</div><div class="card-desc">원전·SMR·DC 14건. 27~35 연도별 추정.</div></a>
-  <a href="/hdsteel/" class="card"><div class="icon">🔩</div><div class="card-title">현대제철 실적 시뮬레이터</div><div class="card-desc">고로·전기로·자회사 OPM → 연결 OP·EPS.</div></a>
-
-</div>
-</div>
-
-
-<div class="section-title" data-section="realestate">🏠 부동산 <span class="cnt">15</span><span class="arrow">▼</span></div>
-<div class="section-body" data-body="realestate">
-<div class="row">
-  <a href="/realestate-tracker/" class="card"><div class="icon">🏢</div><div class="card-title">실거래가 트래커</div><div class="card-desc">APT·오피스텔·상업용 실거래가 검색.</div><div class="tag db">Oracle DB</div></a>
-  <a href="/redevelopment/" class="card"><div class="icon">🏗️</div><div class="card-title">재건축 사업성 분석</div><div class="card-desc">일반분양 수입·공사비 → 분담금·수익률.</div></a>
-  <a href="/redevelopment/cases/" class="card"><div class="icon">📋</div><div class="card-title">재건축 사례 분석</div><div class="card-desc">실제 재건축 사업지 비교.</div></a>
-  <a href="/realestate/rebuild-share/" class="card"><div class="icon">🧮</div><div class="card-title">재건축 분담금 계산기</div><div class="card-desc">조합원 분담금 시뮬레이션.</div></a>
-  <a href="/realestate/jaechohwan/" class="card"><div class="icon">💰</div><div class="card-title">재초환 계산기</div><div class="card-desc">재건축 초과이익부담금 산출.</div></a>
-  <a href="/realestate/home-swap/" class="card"><div class="icon">🔄</div><div class="card-title">갈아타기 손익 계산기</div><div class="card-desc">현 주택 처분 → 신규 매수 손익.</div></a>
-</div>
-<div class="row">
-  <a href="/realestate/jeonse-vs-buy/" class="card"><div class="icon">🏠</div><div class="card-title">전세 vs 매매 비교</div><div class="card-desc">총비용 기준 전세·매매 유불리.</div></a>
-  <a href="/realestate/jeonse-vs-wolse/" class="card"><div class="icon">💰</div><div class="card-title">전세대출 이자 vs 월세</div><div class="card-desc">대출이자 부담 vs 월세 비교.</div></a>
-  <a href="/realestate/dsr-limit/" class="card"><div class="icon">🏦</div><div class="card-title">대출 한도·DSR 계산기</div><div class="card-desc">소득·기대출 → DSR 기반 한도.</div></a>
-  <a href="/realestate/entity-choice/" class="card"><div class="icon">🏷️</div><div class="card-title">오피스텔 매수 명의 선택</div><div class="card-desc">개인 vs 법인 세금·수익 비교.</div></a>
-  <a href="/realestate/commercial-yield/" class="card"><div class="icon">🏪</div><div class="card-title">상가·오피스텔 적정 매수가</div><div class="card-desc">임대 수익률 → 적정 매수가 역산.</div></a>
-  <a href="/realestate/location-check/" class="card"><div class="icon">📍</div><div class="card-title">입지 체크리스트</div><div class="card-desc">교통·학군·편의시설 점수 평가.</div></a>
-  <a href="/property/" class="card"><div class="icon">📊</div><div class="card-title">상가 수익률 분석기</div><div class="card-desc">보증금·월세·관리비 → NOI·Cap Rate.</div></a>
-  <a href="/commerce/" class="card"><div class="icon">🏪</div><div class="card-title">상권분석 도구</div><div class="card-desc">상권 데이터 분석 도구.</div></a>
-  <a href="/realestate/office-buy-vs-rent/" class="card"><div class="icon">🏢</div><div class="card-title">법인 사무실 매매 vs 월세</div><div class="card-desc">법인 매수 vs 월세 N년 순비용·기회비용·손익분기.</div></a>
-</div>
-</div>
-
-
-<div class="section-title" data-section="tax">💸 세금 <span class="cnt">18</span><span class="arrow">▼</span></div>
-<div class="section-body" data-body="tax">
-<div class="row">
-  <a href="/gambuk/" class="card"><div class="icon">🗺️</div><div class="card-title">감북동 토지보상 전략</div><div class="card-desc">감정평가 의견서 + 협의양도인 주택.</div></a>
-<a href="/tax/corp-invest/" class="card"><div class="icon">🏦</div><div class="card-title">개인 vs 법인 투자 세금 비교</div><div class="card-desc">자산별 개인·일반법인·소규모법인 세금+건보료, 인출세 반영.</div></a>
-  <a href="/tax/stock-kr/" class="card"><div class="icon">🇰🇷</div><div class="card-title">국내주식 수수료·세금</div><div class="card-desc">매매 수수료·양도세·배당세.</div></a>
-  <a href="/tax/income/" class="card"><div class="icon">💼</div><div class="card-title">근로소득세 (원천징수)</div><div class="card-desc">월 급여 → 원천징수 소득세.</div></a>
-</div>
-<div class="row">
-  <a href="/corp-tax/" class="card"><div class="icon">🏢</div><div class="card-title">법인세 시뮬레이터</div><div class="card-desc">구간별 세액·접대비 한도·감가상각·세액공제.</div></a>
-  <a href="/tax/brokerage/" class="card"><div class="icon">🏘️</div><div class="card-title">부동산 중개수수료</div><div class="card-desc">매매·전세·월세 중개수수료.</div></a>
-  <a href="/tax/inheritance/" class="card"><div class="icon">📜</div><div class="card-title">상속세 계산기</div><div class="card-desc">상속 재산·공제·세율.</div></a>
-</div>
-<div class="row">
-  <a href="/tax-calendar/" class="card"><div class="icon">🗓️</div><div class="card-title">세금 신고·납부 캘린더</div><div class="card-desc">개인+법인 매년 반복 일정. 달력·목록 뷰.</div></a>
-  <a href="/tax/pension-deduction/" class="card"><div class="icon">💰</div><div class="card-title">연금저축·IRP 세액공제</div><div class="card-desc">납입액 → 공제한도·공제율·환급액.</div><div class="tag new">NEW</div></a>
-  <a href="/tax/house/" class="card"><div class="icon">🏠</div><div class="card-title">주택 양도소득세</div><div class="card-desc">1세대1주택. 3시점 비교. 장특공 반영.</div></a>
-</div>
-<div class="row">
-  <a href="/tax/gift/" class="card"><div class="icon">🎁</div><div class="card-title">증여세 계산기</div><div class="card-desc">증여 재산·공제·세율.</div></a>
-  <a href="/tax/acquisition/" class="card"><div class="icon">🏷️</div><div class="card-title">취득세 계산기</div><div class="card-desc">주택·토지·상가 취득세.</div></a>
-  <a href="/tax/land/" class="card"><div class="icon">🚧</div><div class="card-title">토지 양도소득세</div><div class="card-desc">농지·임야·대지 양도세.</div></a>
-</div>
-<div class="row">
-  <a href="/landtax/" class="card"><div class="icon">🏗️</div><div class="card-title">토지수용 양도세</div><div class="card-desc">현금·3년채권·5년채권 감면율 비교.</div></a>
-  <a href="/tax/retirement-compare/" class="card"><div class="icon">⚖️</div><div class="card-title">퇴직금 수령 방식 비교</div><div class="card-desc">일시금 vs 연금 세금 비교.</div></a>
-  <a href="/tax/retirement/" class="card"><div class="icon">🧳</div><div class="card-title">퇴직소득세 계산기</div><div class="card-desc">퇴직금 → 퇴직소득세.</div></a>
-</div>
-<div class="row">
-  <a href="/tax/stock-us/" class="card"><div class="icon">🇺🇸</div><div class="card-title">해외주식 수수료·세금</div><div class="card-desc">미국주식 매매세·양도세·환전.</div></a>
-  <a href="/tax/financial-income/" class="card"><div class="icon">💰</div><div class="card-title">금종세 관리 (금융소득종합과세)</div><div class="card-desc">채권이자·배당·예금 합산 → 2,000만원 한도 여유구간.</div></a>
-</div>
-</div>
-
-
-<div class="section-title" data-section="labor">💼 근로·회사 <span class="cnt">6</span><span class="arrow">▼</span></div>
-<div class="section-body" data-body="labor">
-<div class="row">
-  <a href="/insurance4/" class="card"><div class="icon">🧾</div><div class="card-title">4대보험 계산기</div><div class="card-desc">근로자·사업주 부담분. 실부담 인건비.</div></a>
-  <a href="/company/invoice/" class="card"><div class="icon">📄</div><div class="card-title">거래명세표</div><div class="card-desc">거래명세표 작성·출력.</div></a>
-  <a href="/paygrowth/" class="card"><div class="icon">📈</div><div class="card-title">누적 연봉·실수령액</div><div class="card-desc">인상률·부양가족 반영 N년 누적.</div></a>
-</div>
-<div class="row">
-  <a href="/salary/" class="card"><div class="icon">💰</div><div class="card-title">연봉 실수령액</div><div class="card-desc">2026년 4대보험·소득세 반영.</div></a>
-  <a href="/severance-exec/" class="card"><div class="icon">👔</div><div class="card-title">임원 퇴직금 계산기</div><div class="card-desc">정관 배수·§22 한도. 초과분 근로소득세.</div></a>
-</div>
-<div class="row">
-  <a href="/severance/" class="card"><div class="icon">🧳</div><div class="card-title">퇴직금 계산기</div><div class="card-desc">근속기간·평균임금 → 법정 퇴직금.</div></a>
-</div>
-</div>
-
-
-<div class="section-title" data-section="life">🧮 금융·생활 <span class="cnt">10</span><span class="arrow">▼</span></div>
-<div class="section-body" data-body="life">
-<div class="row">
-  <a href="/health/" class="card"><div class="icon">🩺</div><div class="card-title">건강관리 체크리스트</div><div class="card-desc">고지혈증·고혈압·간수치 관리.</div></a>
-  <a href="/loan-switch/" class="card"><div class="icon">🔄</div><div class="card-title">대출 갈아타기·중도상환</div><div class="card-desc">기존 vs 신규 비교. 중도상환수수료 감안.</div></a>
-  <a href="/finance-tools/loan/" class="card"><div class="icon">🏦</div><div class="card-title">대출 상환 계산기</div><div class="card-desc">원리금균등·원금균등·만기일시 비교.</div></a>
-</div>
-<div class="row">
-  <a href="/finance-tools/compound/" class="card"><div class="icon">📈</div><div class="card-title">복리 계산기</div><div class="card-desc">원금·이율·기간 → 복리 성장.</div></a>
-  <a href="/workout/" class="card"><div class="icon">🏋️</div><div class="card-title">운동 루틴</div><div class="card-desc">전신 맨몸운동. 3단계, 타이머.</div></a>
-  <a href="/schedule/" class="card"><div class="icon">📅</div><div class="card-title">일정표</div><div class="card-desc">투자·개인 일정 통합. 달력, D-day.</div></a>
-  <a href="/annual-check/" class="card"><div class="icon">📋</div><div class="card-title">연간 체크리스트</div><div class="card-desc">법인·개인 납부, 연금·ISA, 자산목표.</div><div class="tag new">NEW</div></a>
-</div>
-<div class="row">
-  <a href="/car-compare/" class="card"><div class="icon">🚗</div><div class="card-title">자동차 구입 vs 렌트</div><div class="card-desc">현금·할부·장기렌트 총비용 비교.</div></a>
-  <a href="/card-manager/" class="card"><div class="icon">💳</div><div class="card-title">카드풍차 관리</div><div class="card-desc">카드 이벤트 실적·혜택·해지 일정 추적.</div><div class="tag new">NEW</div></a>
-  <a href="/telecom/" class="card"><div class="icon">📱</div><div class="card-title">통신 회선 관리기</div><div class="card-desc">약정·요금·D-Day·M+3. 할부·결합할인.</div></a>
-</div>
-</div>
-
-
-<div class="section-title" data-section="personal">🔒 개인 관리 <span class="cnt">7</span><span class="arrow">▼</span></div>
-<div class="section-body" data-body="personal">
-<div class="row">
-  <a href="/community/" class="card"><div class="icon">💬</div><div class="card-title">커뮤니티</div><div class="card-desc">게시판·자료실. 공지·문의·자료 공유.</div></a>
-  <a href="/notes/" class="card"><div class="icon">📝</div><div class="card-title">투자 메모·일지</div><div class="card-desc">시장 관찰·종목 분석·매매 기록.</div></a>
-  <a href="/asset-notes/" class="card"><div class="icon">📒</div><div class="card-title">자산 노트</div><div class="card-desc">법인·세금 구조, 자산배분, 부동산 검토 문서.</div><div class="tag new">NEW</div></a>
-</div>
-<div class="row">
-  <a href="/portfolio/" class="card"><div class="icon">📊</div><div class="card-title">포트폴리오</div><div class="card-desc">분기별 자산 배분·종목 비중.</div></a>
-  <a href="/webtoon/" class="card"><div class="icon">📚</div><div class="card-title">웹툰 트래커</div><div class="card-desc">웹툰 시청 기록·별점·진행 관리.</div><div class="tag new">NEW</div></a>
-  <a href="/status/" class="card"><div class="icon">🔧</div><div class="card-title">시스템 상태</div><div class="card-desc">데이터 수집 파이프라인 상태 모니터링.</div></a>
-</div>
-  <div class="card"><div class="icon">⚙️</div><div class="card-title">접속 통계 · 관리</div><div class="card-desc">GA + Firebase 콘솔.</div>
-    <div style="display:flex;gap:6px;margin-top:6px">
-      <a href="https://analytics.google.com" target="_blank" rel="noopener" style="flex:1;text-align:center;background:#1F4E78;color:white;text-decoration:none;font-size:11px;font-weight:600;padding:6px;border-radius:6px">📊 GA</a>
-      <a href="https://console.firebase.google.com/project/swingfarmer-board01" target="_blank" rel="noopener" style="flex:1;text-align:center;background:#f59e0b;color:white;text-decoration:none;font-size:11px;font-weight:600;padding:6px;border-radius:6px">🔥 Firebase</a>
-    </div>
-  </div>
-</div>
-
-
-<footer>© 스윙파머 · 전체 메뉴 · 119개 도구</footer>
+<footer id="allFooter">© 스윙파머 · 전체 메뉴</footer>
 
 <script>
 (function(){
-  var KEY='sf_hidden_collapsed';
-  var collapsed={};
-  try{collapsed=JSON.parse(localStorage.getItem(KEY))||{};}catch(e){}
-  document.querySelectorAll('.section-title[data-section]').forEach(function(title){
-    var sec=title.getAttribute('data-section');
-    var body=document.querySelector('.section-body[data-body="'+sec+'"]');
-    if(collapsed[sec]){title.classList.add('collapsed');if(body)body.classList.add('collapsed');}
-    title.addEventListener('click',function(){
-      var isCol=title.classList.toggle('collapsed');
-      if(body)body.classList.toggle('collapsed',isCol);
-      collapsed[sec]=isCol;
-      try{localStorage.setItem(KEY,JSON.stringify(collapsed));}catch(e){}
+  var KEY = 'sf_hidden_collapsed';   // 섹션 접힘 상태 (예전 1808과 같은 키)
+  var collapsed = {};
+  try{ collapsed = JSON.parse(localStorage.getItem(KEY)) || {}; }catch(e){}
+  function saveCol(){ try{ localStorage.setItem(KEY, JSON.stringify(collapsed)); }catch(e){} }
+  var box = document.getElementById('sections');
+
+  function loadSearch(){
+    // 메뉴 찾기는 처음 검색할 때 카드를 읽음 → 카드를 다 그린 뒤에 스크립트를 붙여야 빈 목록이 안 됨
+    var sc = document.createElement('script');
+    sc.src = '/menu-search.js?v=2';
+    document.body.appendChild(sc);
+  }
+
+  function setSec(title, body, isCol){
+    title.classList.toggle('collapsed', isCol);
+    body.classList.toggle('collapsed', isCol);
+    collapsed[title.getAttribute('data-section')] = isCol;
+  }
+
+  function render(doc){
+    var panels = doc.querySelectorAll('.tool-panel[id^="panel-"]');
+    if(!panels.length) throw new Error('메인에서 카테고리를 못 찾음');
+    var frag = document.createDocumentFragment(), total = 0;
+    panels.forEach(function(p){
+      var key = p.id.replace(/^panel-/, '');
+      var h = p.querySelector('.panel-header h2');
+      var cards = p.querySelectorAll('.tool-grid > .card');
+      total += cards.length;
+
+      var title = document.createElement('div');
+      title.className = 'section-title';
+      title.setAttribute('data-section', key);
+      title.textContent = (h ? h.textContent.trim() : key) + ' ';
+      var cnt = document.createElement('span'); cnt.className = 'cnt'; cnt.textContent = cards.length;
+      var arr = document.createElement('span'); arr.className = 'arrow'; arr.textContent = '▼';
+      title.appendChild(cnt); title.appendChild(arr);
+
+      var body = document.createElement('div');
+      body.className = 'section-body';
+      body.setAttribute('data-body', key);
+      var row = document.createElement('div'); row.className = 'row';
+      cards.forEach(function(c){
+        var n = document.importNode(c, true);
+        n.querySelectorAll('.star-btn').forEach(function(x){ x.remove(); });
+        row.appendChild(n);
+      });
+      body.appendChild(row);
+
+      if(collapsed[key]){ title.classList.add('collapsed'); body.classList.add('collapsed'); }
+      title.addEventListener('click', function(){
+        setSec(title, body, !title.classList.contains('collapsed')); saveCol();
+      });
+      frag.appendChild(title); frag.appendChild(body);
     });
-  });
+    box.innerHTML = '';
+    box.appendChild(frag);
+    document.getElementById('allBadge').textContent = '🔒 전체 목록 · ' + total + '개 도구';
+    document.getElementById('allFooter').textContent = '© 스윙파머 · 전체 메뉴 · ' + total + '개 도구';
+  }
+
+  function all(isCol){
+    document.querySelectorAll('.section-title[data-section]').forEach(function(t){
+      var b = document.querySelector('.section-body[data-body="' + t.getAttribute('data-section') + '"]');
+      if(b) setSec(t, b, isCol);
+    });
+    saveCol();
+  }
+  document.getElementById('btnOpenAll').addEventListener('click', function(){ all(false); });
+  document.getElementById('btnCloseAll').addEventListener('click', function(){ all(true); });
+
+  fetch('/', {cache: 'no-cache'})
+    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+    .then(function(html){
+      render(new DOMParser().parseFromString(html, 'text/html'));
+      loadSearch();
+    })
+    .catch(function(e){
+      box.innerHTML = '<div class="load-msg">메인 메뉴를 못 불러왔어요 (' + String(e.message || e).replace(/[<>&]/g, '') + ') — 새로고침하거나 메인에서 보세요.</div>';
+    });
 })();
 </script>
-<script src="/menu-search.js?v=2"></script>
 <script src="/common.js?v=11"></script>
 </body>
 </html>
