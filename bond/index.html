@@ -89,6 +89,29 @@ body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4
 .howto .hb { padding:0 14px 12px; font-size:12.5px; line-height:1.8; color:var(--sf-text-sub); }
 .howto .hb h4 { margin:10px 0 2px; font-size:13px; color:var(--sf-text); }
 .howto .hb ol, .howto .hb ul { margin:2px 0 4px; padding-left:20px; }
+/* (091) 매수 가이드 탭 · 앱 매수 단가 마진 */
+.gd-base { font-size:13px; margin:0 0 10px; line-height:1.6; }
+.gq td, .gq th { text-align:right; white-space:nowrap; }
+.gq td.l, .gq th.l { text-align:left; }
+.gq input[type=text] { width:120px; padding:4px 6px; }
+.gq input[type=number] { width:84px; padding:4px 6px; }
+.gq select { padding:4px 6px; }
+.gr td, .gr th { text-align:right; white-space:nowrap; }
+.gr td.l, .gr th.l { text-align:left; }
+.gr thead th { line-height:1.25; vertical-align:bottom; }
+.gr tr.ref td { font-size:12px; }
+.gbest { color:var(--sf-up); font-weight:700; }
+.mg-ok { color:#16a34a; font-weight:700; }
+.mg-mid { color:#d97706; font-weight:700; }
+.mg-bad { color:#dc2626; font-weight:700; }
+.hint3 { font-size:11.5px; margin:6px 0 0; line-height:1.6; }
+.gc { margin-top:4px; }
+.gd-text details { margin:0 0 10px; }
+.gd-text summary { cursor:pointer; font-weight:700; font-size:13.5px; padding:4px 0; }
+.gd-text ul, .gd-text ol { margin:4px 0; padding-left:20px; font-size:12.5px; line-height:1.8; }
+.gd-text p { font-size:12.5px; line-height:1.8; margin:6px 0; }
+.gs td, .gs th { text-align:left; white-space:normal; font-size:12px; vertical-align:top; }
+.unc { color:#b45309; font-size:11.5px; }
 @media (max-width: 760px) {
   .bd-grid, .calc-grid { grid-template-columns: 1fr; }
   .opts input[type=search] { width:100%; }
@@ -116,6 +139,7 @@ body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4
 <div class="tabs" id="tabs">
   <button class="tb" data-t="ust">🇺🇸 미국채 직접매매</button>
   <button class="tb" data-t="etf">🧺 채권 ETF (국내 상장)</button>
+  <button class="tb" data-t="guide">🏦 매수 가이드·견적 비교</button>
   <input type="hidden" id="oTab" value="ust">
 </div>
 
@@ -130,6 +154,10 @@ body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4
       <label>액면 금액 (달러)
         <input type="number" id="cFace" value="10000" step="100" min="100">
         <div class="hint2">증권사 최소 단위 보통 액면 100달러</div>
+      </label>
+      <label>증권사 앱 매수 단가 (선택, 액면 100 기준)
+        <input type="number" id="cApp" value="" step="0.01" min="0" placeholder="비우면 추정 매수가">
+        <div class="hint2">앱의 '단가'·'매수가' (경과이자 뺀 값, 결제금액 아님). 넣으면 이론가 대비 숨은 마진(bp)이 나오고 아래 계산도 이 가격으로 함. 다른 종목을 누르면 비워짐</div>
       </label>
       <label>매수 환율 (원/달러)
         <input type="number" id="cFx" value="" step="1" placeholder="최근 환율">
@@ -150,6 +178,7 @@ body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4
   <div class="opts">
     <label title="개인: 쿠폰 이자만 과세(매매차익·환차익 비과세). 법인: 쿠폰 이자 + 만기 상환차익(할인분)까지 법인세">과세 <select id="oTaxMode"><option value="p">개인 (쿠폰만 과세)</option><option value="c">법인 (쿠폰+만기차익 과세)</option></select></label>
     <label>세율 <input type="number" id="oTax" value="15.4" step="0.1" min="0" max="60">%</label>
+    <label title="개인만 적용. 직장가입자로 월급 외 소득(이자·배당 등)이 이미 연 2천만원을 넘은 경우 넘는 부분에 건보료(건강보험 + 장기요양)가 붙음. 그때만 체크"><input type="checkbox" id="oNhis"> 건보료 +<span class="tx-nhis">8.13</span>% (개인)</label>
     <label title="증권사 매수가가 이론가보다 비싼 정도(수익률). 잔존 5년 이하는 단기값, 10년 이상은 장기값, 5~10년은 둘 사이 선형. 기본값은 11/12 삼성증권 4종목에서 잰 값(3.5년 25bp, 9.8년 20bp, 23.5년 18bp, 29.8년 19bp)">증권사 마진 ≤5년 <input type="number" id="oMgS" value="25" step="1" min="0" max="200">bp · ≥10년 <input type="number" id="oMgL" value="19" step="1" min="0" max="200">bp</label>
     <span class="sep"></span>
     <div class="tax-hint" id="taxHint"></div>
@@ -228,6 +257,123 @@ body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4
 </div>
 </div>
 
+<!-- ⑤ 매수 가이드 (091: 「법인 투자 전략」 채팅의 미국채 매수 가이드 계산기를 옮김) -->
+<div id="secGuide" hidden>
+<div class="panel bd-box">
+  <h2>🏦 증권사 견적 비교</h2>
+  <div class="gd-base" id="gBase">기준 종목: 미국채 탭에서 종목을 고르면 여기 나옴</div>
+  <details class="howto">
+    <summary>📖 사용법 — 같은 채권을 여러 증권사가 부른 값 비교 (눌러서 펼치기)</summary>
+    <div class="hb">
+      <ol>
+        <li><b>🇺🇸 미국채 직접매매</b> 탭 목록에서 사려는 종목을 누른다. 이 탭은 그 종목(만기·쿠폰·이자일)으로 계산함</li>
+        <li>증권사 앱에서 같은 종목(예: T 0.625 05/15/30)을 띄우고 <b>매수 단가</b>를 적는다. 액면 100 기준, 경과이자 뺀 값(앱의 '단가'·'매수가'). 결제금액이 아님</li>
+        <li><b>수수료 방식</b> 고르기 — 단가에 포함(삼성·키움·메리츠 등, 수수료율 0) / 거래금액 %(한투·신한 등, 매수 때 한 번) / 연 %×잔존연수(미래에셋 등, 장기채일수록 커짐)</li>
+        <li><b>환전 우대율</b> — 그 증권사에서 원화를 달러로 바꿀 때 우대율. 다른 곳에서 바꿔 옮길 거면 그곳 우대율</li>
+        <li>결과의 <b>최종 실질 수익률</b>이 높은 순으로 순위. <b>숨은 마진</b>은 이론 수익률(금리곡선)보다 낮아진 정도라 수수료까지 합친 증권사 몫</li>
+      </ol>
+      <div>단가가 싸 보여도 수수료를 따로 떼는 곳은 더하면 비쌀 수 있어서 수수료·환전을 합쳐 비교함. 세금은 어느 증권사에서 사든 같아서 세전으로 비교. 빈 줄(단가 비움)은 빠짐.</div>
+    </div>
+  </details>
+  <div class="opts">
+    <label title="순위표의 「1위 대비」 금액 계산용">투자금 <input type="number" id="gInv" value="10000" step="1000" min="0">만원</label>
+    <label title="우대 0%일 때 매매기준율 대비 붙는 폭. 증권사 정규시간 보통 약 1%(1,400원이면 14원)">기본 환전 스프레드 <input type="number" id="gSpread" value="1.0" step="0.05" min="0">%</label>
+    <label title="달러로 계속 둘 거면 끄기"><input type="checkbox" id="gBack" checked> 만기 때 원화로 되돌리는 환전도 포함</label>
+  </div>
+  <table class="sf-table gq">
+    <thead><tr><th class="l">증권사</th><th>매수 단가<br>(액면 100)</th><th class="l">수수료 방식</th><th>수수료율<br>(%)</th><th>환전<br>우대율(%)</th></tr></thead>
+    <tbody>
+      <tr><td class="l"><input type="text" id="g0n" placeholder="증권사1"></td><td><input type="number" id="g0p" value="" step="0.01" placeholder="예: 90.30"></td><td class="l"><select id="g0t"><option value="incl" selected>단가에 포함</option><option value="pct">거래금액의 %</option><option value="ann">연 %×잔존연수</option></select></td><td><input type="number" id="g0f" value="0" step="0.01" min="0"></td><td><input type="number" id="g0x" value="100" step="5" min="0" max="100"></td></tr>
+      <tr><td class="l"><input type="text" id="g1n" placeholder="증권사2"></td><td><input type="number" id="g1p" value="" step="0.01"></td><td class="l"><select id="g1t"><option value="incl">단가에 포함</option><option value="pct" selected>거래금액의 %</option><option value="ann">연 %×잔존연수</option></select></td><td><input type="number" id="g1f" value="0.3" step="0.01" min="0"></td><td><input type="number" id="g1x" value="95" step="5" min="0" max="100"></td></tr>
+      <tr><td class="l"><input type="text" id="g2n" placeholder="증권사3"></td><td><input type="number" id="g2p" value="" step="0.01"></td><td class="l"><select id="g2t"><option value="incl">단가에 포함</option><option value="pct">거래금액의 %</option><option value="ann" selected>연 %×잔존연수</option></select></td><td><input type="number" id="g2f" value="0.15" step="0.01" min="0"></td><td><input type="number" id="g2x" value="50" step="5" min="0" max="100"></td></tr>
+    </tbody>
+  </table>
+  <div id="gCmp"></div>
+  <div class="warn">⚠ 최종 실질 수익률 = 수수료 포함 단가로 구한 수익률(반기 복리) − 환전비용 ÷ 잔존연수. 중도 매도 시 매도 호가 차이는 안 들어감. 숨은 마진에는 증권사 몫과 이론가 오차(금리곡선 보간)가 섞여 있음 — 정확한 값이 아니라 「대략 이 정도 녹아 있다」 확인용.</div>
+</div>
+
+<div class="panel bd-box">
+  <h2>🏢 법인: 현물 국채 vs 미국 채권 ETF</h2>
+  <details class="howto">
+    <summary>📖 사용법 — 법인이 채권을 직접 살지 ETF로 살지 (눌러서 펼치기)</summary>
+    <div class="hb">
+      <ol>
+        <li>미국채 탭에서 종목을 고른다. 종목 계산기에 <b>앱 매수 단가</b>를 넣었으면 그 값으로, 없으면 추정 매수가로 계산</li>
+        <li>법인 구분 — 일반법인 과표 2억 이하면 <b class="tx-c">11</b>%, 성실신고 소규모법인이거나 과표 2억 넘는 부분이면 <b class="tx-cs">22</b>%</li>
+        <li>비교할 ETF의 분배율(SEC yield 권장)·총보수. SGOV 총보수 약 0.09%, TLT 약 0.15%</li>
+      </ol>
+      <div>왜 이 비교가 먼저인가: 결정 순서는 ① 현물로 살지 ETF로 살지 → ② 현물이면 저쿠폰인지 고쿠폰인지. 미국 국채 이자는 외국 투자자 원천징수 0%(portfolio interest)인데, 미국 채권 ETF 분배금은 미국에서 <span class="tx-us">15</span>% 원천징수됨. 법인세 국세분(<span class="tx-cn">10</span>%)까지만 공제되고 남는 부분은 10년 이월 → <span class="tx-c">11</span>% 법인은 실효 약 <span class="tx-etf16">16</span>%. 22% 법인은 전액 공제돼 손해 없음.</div>
+    </div>
+  </details>
+  <div class="opts">
+    <label>법인 구분 <select id="gCorp"><option value="c">일반법인 (과표 2억 이하)</option><option value="cs">소규모법인 / 2억 초과분</option></select></label>
+    <label>ETF 분배율 <input type="number" id="gEtfY" value="3.9" step="0.05">%</label>
+    <label>총보수 <input type="number" id="gEtfEr" value="0.09" step="0.01" min="0">%</label>
+    <label title="국내 증권사는 대부분 15% 떼는 것으로 알려짐. 내 계좌 거래내역으로 확인"><input type="checkbox" id="gEtfWh" checked> 분배금 미국 원천징수됨</label>
+  </div>
+  <div id="gCorpOut"></div>
+</div>
+
+<div class="panel bd-box gd-text">
+  <h2>📚 판단 기준 (2026.11 작성)</h2>
+  <details open><summary>개인 = 저쿠폰 현물</summary>
+  <ul>
+    <li>개인은 채권 매매차익·환차익 비과세, 표면이자만 <span class="tx-p">15.4</span>%(금종세 합산). 쿠폰이 낮을수록 수익 중 비과세 비중이 커짐</li>
+    <li>대신 쿠폰이 낮을수록 듀레이션이 길어 금리 변동에 민감. 장기 저쿠폰(2040~2050년물)은 금리 리스크가 크고, 3~5년 중기 저쿠폰은 비과세 비중은 작지만 안정적</li>
+    <li>환차익 비과세 = 환차손도 그대로 떠안음. 종목 계산기의 원금 보전 환율 확인</li>
+    <li>해외상장 채권 ETF(TLT 등)는 개인에게 매매차익 <span class="tx-os">22</span>% 양도세 → 개인은 현물이 유리</li>
+    <li>참고: 개인이 미국 상장 ETF를 들고 있으면 미국 상속세 노출, 미국 국채 현물은 대상 아님 <span class="unc">⚠ 전문가 확인 권장</span></li>
+  </ul></details>
+  <details open><summary>법인 = 고쿠폰? → 쿠폰을 고르기 전에 「채권을 직접 살지, 채권 ETF를 살지」부터</summary>
+  <p><b>용어.</b> <b>현물</b>은 채권 자체를 사는 것(증권사 '해외채권' 메뉴, 저쿠폰이든 고쿠폰이든 다 현물). <b>ETF</b>는 채권 수백 개를 담은 펀드를 주식처럼 사는 것(SGOV·TLT 등). 결정 순서는 <b>① 현물로 살지 ETF로 살지 → ② 현물이면 저쿠폰인지 고쿠폰인지</b>. 「쿠폰보다 현물이 먼저」는 ①의 수익률 차이가 ②보다 크다는 뜻.</p>
+  <ul>
+    <li>법인은 쿠폰이든 차익이든 전부 과세라 개인처럼 저쿠폰 절세 효과는 없음</li>
+    <li><b><span class="tx-c">11</span>% 법인이면 현물 국채가 ETF보다 유리할 수 있음</b>: 국채 이자 미국 원천징수 0%, ETF 분배금은 <span class="tx-us">15</span>% 원천징수. 만기 보유면 현물 마진을 보유기간으로 나눈 비용이 이보다 작은 경우가 많음 → 위 계산 확인</li>
+    <li><span class="tx-cs">22</span>% 법인이면 ETF 원천징수 손해가 없어 둘이 비슷. 중간에 사고팔 계획이면 ETF(호가 촘촘, 수수료 0.07~0.25%)</li>
+    <li>쿠폰 선택: 법인 운영비로 쓸 현금흐름이 필요하면 고쿠폰. 쌓아둘 돈이면 저쿠폰이 할인분 과세를 만기·매도 시점으로 미루는 이연 효과(3~5년물은 몇 bp 수준) <span class="unc">⚠ 해외 국채 할인 매입분 과세 시점은 세무사 확인</span></li>
+    <li>소규모법인 판정이 걸린 상태(금융투자업 주업 미인정)라면 고쿠폰 이자는 판정 분자(이자·배당)를 키움 → <a href="/tax/corp-invest/">개인 vs 법인 투자 세금 비교</a> <span class="unc">⚠ 저쿠폰 할인분이 이자로 분류될지 처분이익으로 분류될지 세무사 확인</span></li>
+    <li>외화 평가: 금융회사가 아닌 일반 법인은 「취득일 환율」(평가 안 함)과 「사업연도 종료일 환율」 중 신고한 방법을 쓰고, 종료일 방법은 처음 적용하는 해 신고서를 내야 함(법인세법 시행령 §76②·⑥). 그래서 신고 안 한 법인은 미실현 환차익이 매년 과세되지 않음 <span class="unc">⚠ 외화 채권이 이 「화폐성 외화자산」에 들어가는지는 세무사 확인</span></li>
+  </ul></details>
+  <details open><summary>증권사별 정리 — 수수료 떼는 방식·환전 (자료 날짜 표시, 수시로 바뀜)</summary>
+  <p><b>환율 적용 방식.</b> 실제 환율 = 매매기준율 ± 기본 스프레드 × (1 − 우대율). 매매기준율 1,400원, 스프레드 1%(14원)면 살 때 우대 0% 1,414원, 95% 1,400.7원, 100% 1,400원. 1억 환전 시 우대 0%와 95% 차이 약 95만원. 야간엔 우대율이 낮아지거나 임시 환율(가환율)을 쓰는 곳이 있어 평일 주간 환전이 안전. 만기에 원화로 되돌리면 환전비용이 한 번 더 듦(달러로 계속 두면 없음).</p>
+  <table class="sf-table gs">
+    <thead><tr><th class="l">증권사</th><th class="l">채권 수수료 방식</th><th class="l">환전</th><th class="l">개인</th><th class="l">법인</th><th class="l">확인 수준</th></tr></thead>
+    <tbody>
+      <tr><td>삼성증권</td><td>단가에 포함 (잔존기간별 상한 1.0~3.3% 이하 안내)</td><td>이벤트 여부 자료 충돌</td><td>비교 1순위 후보 (저쿠폰 재고 많다는 평)</td><td>견적 1곳 후보</td><td>수수료 상한은 2025.6 자료. 재고·단가 우위는 후기</td></tr>
+      <tr><td>메리츠증권</td><td>단가에 포함 (미국채권 LIVE 실시간 호가)</td><td>Super365 계좌 달러 환전 무료</td><td>비교 1순위 후보 + 환전용</td><td>Super365는 개인 비대면 전용</td><td>환전 무료는 여러 자료 일치(2026 말 이후 ⚠). 스프레드 최소는 후기</td></tr>
+      <tr><td>키움증권</td><td>미국 국채 별도 수수료 없음 (단가 반영)</td><td>앱에서 확인</td><td>비교 후보</td><td>-</td><td>2025.6 자료</td></tr>
+      <tr><td>한국투자증권</td><td>거래금액 % (잔존 1년 미만 0.1%, 2년 미만 0.2%, 그 이상 0.3%, 소액시장 0.6%)</td><td>앱에서 확인</td><td>수수료 더해서 비교</td><td>견적 1곳 후보 (대형사 지점)</td><td>2025.6 자료</td></tr>
+      <tr><td>미래에셋증권</td><td>연 환산 요율 (온라인 연 0.15% 수준) × 잔존기간</td><td>앱에서 확인</td><td>장기채는 불리, 단기채는 비교 가치</td><td>견적 1곳 후보 (대형사 지점)</td><td>2026 블로그 자료</td></tr>
+      <tr><td>신한투자증권</td><td>거래금액 0.19% (최소 수수료 가능)</td><td>앱에서 확인</td><td>수수료 더해서 비교</td><td>-</td><td>2025.6 자료</td></tr>
+      <tr><td>토스증권</td><td>앱에서 확인 (장기채 수수료가 크다는 주장 있음)</td><td>정규시간 95% 우대, 그 외 50%</td><td>편의성 좋음, 장기채는 수수료 꼭 확인</td><td>-</td><td>환전 조건은 여러 자료 일치. 채권 수수료 ⚠ 미확인</td></tr>
+      <tr><td>KB증권 등</td><td>-</td><td>100% 우대 조건이 있는 계좌면 환전용</td><td>환전 후 외화 이체 루트</td><td>-</td><td>계좌 조건마다 다름. 외화 이체 수수료 확인</td></tr>
+    </tbody>
+  </table>
+  <p><b>추천 방식.</b> 개인: 삼성·메리츠·키움 중 2~3곳에서 같은 종목 단가를 보고, 한투·미래·신한은 수수료를 더해 위 비교표에 넣는다. 환전은 우대 100%인 곳에서 하고 외화로 옮겨도 됨. 법인: 비대면 이벤트가 안 되니 대형사 2곳(예: 삼성 + 한투 또는 미래)에 계좌를 두고 지점에 환전 우대율·채권 단가를 요청해 견적 경쟁. 표는 출발점일 뿐, 실제 단가로 판단.</p>
+  </details>
+  <details><summary>호구 방지 체크리스트</summary>
+  <ol>
+    <li><b>단가를 수익률로 바꿔 비교</b> — 종목 계산기에 앱 매수 단가를 넣으면 이론 수익률 대비 숨은 마진(bp)이 나옴. <span class="tx-mgok">30</span>bp 이하 무난, <span class="tx-mgbad">50</span>bp 넘으면 다른 곳 견적 필수 <span class="unc">⚠ 기준선은 경험칙</span></li>
+    <li><b>앱의 큰 숫자 무시</b> — 「세전환산수익률」(비과세분을 세전으로 부풀린 수치)과 「단리 환산 수익률」(장기 누적수익을 연수로 나눈 수치)은 실제보다 높게 보임. 다른 상품과 비교는 세전 복리 수익률로</li>
+    <li><b>같은 종목(같은 만기·같은 쿠폰) 2~3곳 견적</b> — 증권사마다 재고와 마진이 다름. 특정 증권사가 항상 싸다는 보장 없음</li>
+    <li><b>사기 전에 매도 호가 확인</b> — 중도 매도 계획이 있으면 매수가와 매도가 차이부터</li>
+    <li><b>환전은 평일 주간</b> — 야간은 우대율이 낮아지는 증권사가 많음. 이벤트는 수시로 바뀌니 앱에서 현재 조건 확인</li>
+    <li><b>경과이자는 손해 아님</b> — 매수 때 낸 경과이자는 다음 이자일에 돌려받음</li>
+    <li><b>법인 계좌</b> — 개인 비대면 우대 이벤트는 자동 적용 안 됨. 환전 우대율과 채권 단가를 지점에 사전 요청, 억 단위면 2곳 견적 경쟁</li>
+    <li><b>법인 원천징수</b> — 국내 증권사가 이자 지급 때 <span class="tx-p">15.4</span>%(법인세 14% + 지방세) 원천징수 → 법인세 신고 때 기납부세액으로 공제</li>
+    <li><b>이자 세금 처리(삼성 예)</b> — 이자는 달러로 들어오고 세금은 원화 예수금에서 빠짐. 원화가 없으면 다음 영업일 달러 자동 환전</li>
+  </ol></details>
+  <details><summary>⚠ 확인되지 않은 정보 (다른 자료에서 흔히 보이는 주장)</summary>
+  <ul>
+    <li>「삼성·메리츠 단가가 가장 싸다」, 「메리츠 중도매도 스프레드가 가장 좁다」 — 후기·마케팅 수준. 실제 견적으로 확인</li>
+    <li>「토스는 장기채 수수료 약 1.5%」 — 확인 못함</li>
+    <li>「법인은 지점 협의로 마진 20~40bp까지 가능」 — 근거 확인 못함. 금액·시점마다 다름</li>
+    <li>「중도 매도 시 시장가보다 1.5~3% 낮게 팔린다」 — 종목·증권사별 차이 큼</li>
+    <li>증권사 환전·수수료 이벤트 — 자료마다 시점이 달라 서로 충돌. 앱에서 현재 조건 확인</li>
+  </ul></details>
+</div>
+</div>
+
 <div class="info-box">
   <p><strong>한국 금리:</strong> 한국은행 ECOS 시장금리(일별) — 국고채 1·3·5·10·20·30년, 기준금리, CD·CP 91일, 회사채 AA-·BBB- 3년. VM이 평일 18:10 받아 DB에 쌓고 바로 이 페이지용 파일로 내보냄. 한국은 2년물이 없어 장단기는 10Y−3Y로 봄.</p>
   <p><strong>출처:</strong> 미국 재무부 — 일별 par 금리곡선(Daily Treasury Par Yield Curve)과 MSPD(월말 기준 발행 잔액표). VM 크론 매일 07:10. 목록은 월말 기준이라 그 뒤 새로 발행된 종목은 다음 달에 들어옴. TIPS·변동금리채·단기채(Bills)는 뺐음.</p>
@@ -240,6 +386,7 @@ body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4
   <p><strong>직접매매 vs ETF 세금:</strong> 미국채를 직접 사면 쿠폰만 과세(15.4%)되고 매매차익·환차익은 비과세. 국내 상장 채권 ETF는 분배금과 매매차익 모두 배당소득 15.4%(매매차익은 과표기준가 증가분과 실제 차익 중 작은 쪽) — 둘 다 금종세 합산 대상. 대신 ETF는 ISA·연금저축·IRP에 담을 수 있어서 그 계좌에선 과세가 미뤄지거나 낮아짐. 미국 상장 채권 ETF(TLT 등)는 매매차익 양도소득세 22%(연 250만원 공제).</p>
   <p><strong>종목 표기:</strong> T 0.625 05/15/30 = 미국 국채(Treasury), 쿠폰 연 0.625%, 만기 2030-05-15. 삼성증권 앱 표기와 같음. 다른 곳에선 쿠폰을 8분의 1 단위 분수로 "T 0 5/8"처럼 쓰기도 함(0과 8분의 5 = 0.625).</p>
   <p><strong>단위:</strong> 단가·이론가는 액면 100달러당 달러. 잔액은 억달러(재무부 원자료 백만달러 ÷ 100).</p>
+  <p><strong>매수 가이드 탭 (091):</strong> 「법인 투자 전략」 채팅에서 만든 미국채 매수 가이드 계산기를 옮김. 원본은 시장 금리를 손으로 넣어 마진을 봤는데, 여기선 이 페이지의 이론 수익률(금리곡선)과 비교해서 종목마다 정확한 만기로 계산함. 증권사 표는 2026.11 작성 기준이고 수수료·이벤트는 수시로 바뀜. 세율(이자 <span class="tx-p">15.4</span>%, 법인세, 미국 원천징수 <span class="tx-us">15</span>%, 건보료)은 /tax-rates.js에서 가져옴.</p>
   <p>저쿠폰 미국채를 포트폴리오에서 어떻게 쓰는지는 <a href="/barbell/">바벨 포트폴리오</a> 참고.</p>
 </div>
 
@@ -250,7 +397,7 @@ body.sf-dark .tabs .tb.on{background:var(--sf-brand)!important;border-color:#1F4
 // ── 저장 (sf-slots) ──
 window.CALC_KEY = 'bond';
 window.SF_RESET = true;
-var SAVE_IDS = ['cFace','cFx','cFxEnd','selCusip','oTaxMode','oTax','oMgS','oMgL','oMat','oCpn','oType','oSort','oQ','oTab','oCty','eTyp','eReg','eH','eAum','eNoLev','eSort','eQ'];
+var SAVE_IDS = ['cFace','cApp','cFx','cFxEnd','selCusip','oTaxMode','oTax','oNhis','gInv','gSpread','gBack','g0n','g0p','g0t','g0f','g0x','g1n','g1p','g1t','g1f','g1x','g2n','g2p','g2t','g2f','g2x','gCorp','gEtfY','gEtfEr','gEtfWh','oMgS','oMgL','oMat','oCpn','oType','oSort','oQ','oTab','oCty','eTyp','eReg','eH','eAum','eNoLev','eSort','eQ'];
 function gv(el){ return el.type==='checkbox' ? (el.checked?'1':'0') : el.value; }
 function sv(el,v){ if (el.type==='checkbox') el.checked = (v==='1'||v===true); else el.value=v; }
 window.slGetState = function(){
@@ -259,6 +406,7 @@ window.slGetState = function(){
 window.slSetState = function(d){
   if (!d) return;
   SAVE_IDS.forEach(function(id){ if (d[id] != null) sv(document.getElementById(id), d[id]); });
+  hashTab();
   showTab(); render(); renderEtf(); if (CURVE) renderCurve();
 };
 function saveNow(){ try { localStorage.setItem('sf_bond_v2', JSON.stringify(window.slGetState())); } catch(e){} }
@@ -360,16 +508,26 @@ var _T = window.SF_TAX;
 var TAX_DEF = {p: _T ? _T.interest : 15.4, c: _T ? _T.wl(_T.corp[0][1]) : 11, cs: _T ? _T.wl(_T.corpSmall[0][1]) : 22};
 document.getElementById('oTax').value = TAX_DEF.p;          // 저장값이 있으면 뒤에서 덮어씀
 ['p','c','cs'].forEach(function(k){ document.querySelectorAll('.tx-'+k).forEach(function(e){ e.textContent = TAX_DEF[k]; }); });
+// 숨은 마진 기준선 (bp) — 경험칙. 이하 무난 / 사이 주의 / 넘으면 다른 곳 견적
+var MG_OK = 30, MG_BAD = 50;
+// (091) 건보료(개인, 월급 외 소득 2천만 초과분) = 건보료율 × (1 + 장기요양 비율)
+var NHIS = _T ? _T.health.rate*(1+_T.health.ltc/100) : 8.1348;
+(function(){ var cn=_T?_T.corp[0][1]:10, us=_T?_T.usWithhold:15, loc=_T?_T.local:0.1;
+  var F={nhis:NHIS.toFixed(2), us:us, cn:cn, os:_T?_T.overseasStock.rate:22, etf16:+(us+cn*loc).toFixed(1), mgok:MG_OK, mgbad:MG_BAD};
+  for (var k in F) document.querySelectorAll('.tx-'+k).forEach(function(e){ e.textContent=F[k]; }); })();
 function isCorp(){ return document.getElementById('oTaxMode').value==='c'; }
+function nhisOn(){ return !isCorp() && document.getElementById('oNhis').checked; }
+// 이자 세율(소수). 개인이고 건보료 체크면 더함
+function curTax(){ return ((num('oTax')||0) + (nhisOn()?NHIS:0))/100; }
 function taxHint(){
   document.getElementById('taxHint').innerHTML = isCorp()
     ? '🏢 <b>법인</b>: 쿠폰 이자 + 만기 상환차익(할인분)까지 법인세. 세율 '+TAX_DEF.c+'% = 법인세 + 지방소득세(과표 2억 이하'+(_T?', '+_T.year+'~':'')+'). 성실신고대상 소규모법인이면 '+TAX_DEF.cs+'%. 고쿠폰 고르기: 쿠폰 "4% 이상" + 정렬 "세후 (복리) 높은 순"'
-    : '👤 <b>개인</b>: 쿠폰 이자만 '+TAX_DEF.p+'% 과세, 할인 매수 후 만기 차익·환차익은 비과세. 금종세 대상이면 세율 칸에 한계세율. 저쿠폰 고르기: 쿠폰 "3% 이하" + 정렬 "세후 (앱식) 높은 순"';
+    : '👤 <b>개인</b>: 쿠폰 이자만 '+TAX_DEF.p+'% 과세, 할인 매수 후 만기 차익·환차익은 비과세. 금종세 대상이면 세율 칸에 한계세율'+(nhisOn()?' + 건보료 '+NHIS.toFixed(2)+'% (계산에 '+((num('oTax')||0)+NHIS).toFixed(2)+'% 적용)':'')+'. 저쿠폰 고르기: 쿠폰 "3% 이하" + 정렬 "세후 (앱식) 높은 순"';
 }
 
 // ── 전체 다시 계산 ──
 function computeAll(){
-  var tax=(num('oTax')||0)/100, mgS=num('oMgS'), mgL=num('oMgL'), corp=isCorp();
+  var tax=curTax(), mgS=num('oMgS'), mgL=num('oMgL'), corp=isCorp();
   if (mgS==null) mgS=0; if (mgL==null) mgL=mgS;
   BONDS = LIST.rows.map(function(r){
     var b={cusip:r[0], type:r[1], cpn:r[2], iss:r[3], mat:r[4], amt:r[5]};
@@ -378,21 +536,25 @@ function computeAll(){
     b.mgBp=mgOf(b.rem, mgS, mgL); var mg=b.mgBp/10000;
     if (!p.cd.cfs.length) return b;
     b.theoY=ytm(p.dirty,b,p.cd,0);                       // 이론 수익률 (금리곡선 기준)
-    b.buyDirty=priceAt(b.theoY-mg, b, p.cd);              // 마진만큼 수익률 낮춘 가격 = 추정 매수가
-    b.buyClean=b.buyDirty-p.ai;
-    b.gt = corp ? tax*(100-b.buyClean) : 0;                // (086) 법인: 만기 상환차익 세금
-    b.pre=(b.theoY-mg)*100; b.at=ytm(b.buyDirty,b,p.cd,tax,b.gt)*100;          // 복리
-    b.sPre=simpleY(b.buyDirty,b,p.cd,0)*100; b.sAt=simpleY(b.buyDirty,b,p.cd,tax,b.gt)*100;   // 앱식 단리
-    b.cy = b.buyClean>0 ? b.cpn/b.buyClean*100 : null;     // (086) 이자수익률 = 쿠폰 ÷ 매수가(세전)
-    b.eq = tax<1 ? b.sAt/(1-tax) : null;
+    priced(b, priceAt(b.theoY-mg, b, p.cd), tax, corp, b.theoY-mg);   // 마진만큼 수익률 낮춘 가격 = 추정 매수가
     return b;
   }).filter(function(b){ return b.p.cd.cfs.length>0; });
+}
+
+// 매수가(dirty)로 수익률 칸 채우기 — 목록(추정 매수가)과 종목 계산기(앱 매수 단가, 091)가 같이 씀
+function priced(b, dirty, tax, corp, preY){
+  var p=b.p; b.buyDirty=dirty; b.buyClean=dirty-p.ai;
+  b.gt = corp ? tax*(100-b.buyClean) : 0;                // (086) 법인: 만기 상환차익 세금
+  b.pre=(preY!=null?preY:ytm(dirty,b,p.cd,0))*100; b.at=ytm(dirty,b,p.cd,tax,b.gt)*100;          // 복리
+  b.sPre=simpleY(dirty,b,p.cd,0)*100; b.sAt=simpleY(dirty,b,p.cd,tax,b.gt)*100;   // 앱식 단리
+  b.cy = b.buyClean>0 ? b.cpn/b.buyClean*100 : null;     // (086) 이자수익률 = 쿠폰 ÷ 매수가(세전)
+  b.eq = tax<1 ? b.sAt/(1-tax) : null;
 }
 
 function render(){
   taxHint();
   if (!LIST || !CURVE) return;
-  computeAll(); renderList(); renderCalc();
+  computeAll(); renderList(); renderCalc(); renderGuide();
 }
 
 function renderList(){
@@ -433,7 +595,10 @@ function renderCalc(){
   var out=document.getElementById('calcOut');
   if (!b){ document.getElementById('selTitle').textContent='종목 선택 전'; out.innerHTML='<div class="empty">아래 목록에서 종목을 누르면 계산됨</div>'; return; }
   document.getElementById('selTitle').textContent=b.name+'  ('+b.cusip+')';
-  var tax=(num('oTax')||0)/100, face=num('cFace')||0, fx=num('cFx')||FX, fxEnd=num('cFxEnd')||fx;
+  // (091) 앱 매수 단가를 넣었으면 그 가격으로 다시 계산 (b0 = 추정 매수가 기준 원래 값)
+  var b0=b, app=appClean();
+  if (app){ b=Object.create(b0); priced(b, app+b0.p.ai, curTax(), isCorp()); }
+  var tax=curTax(), face=num('cFace')||0, fx=num('cFx')||FX, fxEnd=num('cFxEnd')||fx;
   var cd=b.p.cd, n=cd.cfs.length, cpnEach=face*b.cpn/200;
   var buyUsd=face*b.buyDirty/100, buyKrw=buyUsd*fx;
   var corp=isCorp(), gTax=face*(b.gt||0)/100;               // (086) 법인 만기차익 세금 (할증이면 음수)
@@ -448,12 +613,16 @@ function renderCalc(){
     +r('쿠폰 / 이자 지급', f3(b.cpn)+'% · 연 2회('+mo+') · 다음 '+nxt)
     +r('최초 발행 / 종류', (b.iss||'-')+' / '+(b.type==='B'?'Bond':'Note'))
     +'<tr class="hd"><td colspan="2">매수 (액면 100달러당)</td></tr>'
-    +r('이론가 → 추정 매수가 (마진 '+(+b.mgBp.toFixed(1))+'bp)', f3(b.p.clean)+' → '+f3(b.buyClean)+' (+'+f2(b.buyClean-b.p.clean)+')')
+    +(app ? r('이론가 → 앱 매수 단가', f3(b.p.clean)+' → '+f3(b.buyClean)+' ('+(b.buyClean>=b.p.clean?'+':'')+f2(b.buyClean-b.p.clean)+')')
+        + (function(){ var bp=(b0.theoY-b.pre/100)*1e4, usd=face*(b.buyDirty-b0.p.dirty)/100;
+            return r('숨은 마진 (이론 수익률 '+f2(b0.theoY*100)+'% → 앱가 '+f2(b.pre)+'%)', '<span class="'+mgCls(bp)+'">'+bp.toFixed(0)+'bp · '+mgTxt(bp)+'</span>')
+              + r('마진 금액 (이 액면 기준, 매수 때 증권사 몫)', (usd>=0?'':'−')+'$'+comma(Math.abs(usd),2)+' ≈ '+won(usd*fx)); })()
+      : r('이론가 → 추정 매수가 (마진 '+(+b.mgBp.toFixed(1))+'bp)', f3(b.p.clean)+' → '+f3(b.buyClean)+' (+'+f2(b.buyClean-b.p.clean)+')'))
     +r('경과이자 (매수 때 같이 냄)', f3(b.p.ai))
     +r('매수 금액', '$'+comma(buyUsd,2)+' ≈ '+won(buyKrw))
     +'<tr class="hd"><td colspan="2">만기까지 (달러)</td></tr>'
     +r('이자 '+n+'회 세전 합계', '$'+comma(cpnTot,2))
-    +r('이자 세금 ('+(tax*100).toFixed(1)+'%, '+(corp?'법인':'개인')+')', '−$'+comma(taxTot,2))
+    +r('이자 세금 ('+(tax*100).toFixed(nhisOn()?2:1)+'%, '+(corp?'법인':'개인')+(nhisOn()?'·건보료 포함':'')+')', '−$'+comma(taxTot,2))
     +r('만기 상환 (액면)', '$'+comma(face,2))
     +(corp ? r('만기차익 세금 (법인, 100 − 매수가 '+f3(b.buyClean)+')', (gTax>=0?'−$':'+$')+comma(Math.abs(gTax),2)+(gTax<0?' (할증 손실 상계)':'')) : '')
     +r('세후 총 회수 / 수익', '$'+comma(back,2)+' / $'+comma(gain,2)+' ('+f2(gain/buyUsd*100)+'%)')
@@ -467,6 +636,7 @@ function renderCalc(){
     +r('연간 이자 세전 / 세후', '$'+comma(yrInt,2)+' ≈ '+won(yrIntKrw)+' / $'+comma(yrInt*(1-tax),2))
     +r('이자수익률 (쿠폰 ÷ 매수가) 세전 / 세후', f2(b.cy)+'% / '+f2(b.cy*(1-tax))+'%')
     +'</table>';
+  if (app && (b0.theoY-b.pre/100)*1e4 < 0) h+='<div class="warn">앱 단가가 이론가보다 쌈 — 단가를 잘못 넣었거나(결제금액·다른 종목) 이론가 오차일 수 있음. 앱의 \'단가\'(경과이자 뺀 값)인지 확인.</div>';
   if (corp) h+='<div class="warn">법인: 원화 수익은 세전 기준. 환차손익도 법인 과세 대상일 수 있음(외화자산 평가 방법에 따라 다름).</div>';
   if (b.rem<0.5) h+='<div class="warn">잔존 6개월 미만 — 이론가 오차가 커질 수 있음(단기 구간은 금리곡선 보간).</div>';
   out.innerHTML=h;
@@ -530,22 +700,79 @@ document.getElementById('oTaxMode').addEventListener('change', function(){
 });
 document.getElementById('list').addEventListener('click', function(e){
   var tr=e.target.closest('tr[data-c]'); if (!tr) return;
+  if (document.getElementById('selCusip').value!==tr.getAttribute('data-c')) document.getElementById('cApp').value='';   // (091) 앱 단가는 그 종목 것이라 비움
   document.getElementById('selCusip').value=tr.getAttribute('data-c');
   saveNow(); renderList(); renderCalc();
   document.getElementById('calcBox').scrollIntoView({behavior:'smooth', block:'start'});
 });
 SAVE_IDS.forEach(function(id){
   var el=document.getElementById(id); if (el.type==='hidden') return;
-  var fn = id.charAt(0)==='e' ? function(){ renderEtf(); } : id==='oCty' ? function(){ if (CURVE) renderCurve(); } : render;
+  var fn = id.charAt(0)==='e' ? function(){ renderEtf(); } : id==='oCty' ? function(){ if (CURVE) renderCurve(); } : (id.charAt(0)==='g' ? renderGuide : render);
   el.addEventListener('input', function(){ clearTimeout(window._bt); window._bt=setTimeout(fn, 150); });
   el.addEventListener('change', function(){ clearTimeout(window._bt); window._bt=setTimeout(fn, 50); });
 });
 
+// ── (091) 매수 가이드 탭: 증권사 견적 비교 + 법인 현물 vs ETF ──
+function mgCls(bp){ return bp<=MG_OK ? 'mg-ok' : bp<=MG_BAD ? 'mg-mid' : 'mg-bad'; }
+function mgTxt(bp){ return bp<=MG_OK ? '무난' : bp<=MG_BAD ? '주의' : '다른 곳 견적 필수'; }
+function selBond(){ var cu=document.getElementById('selCusip').value; for (var i=0;i<BONDS.length;i++) if (BONDS[i].cusip===cu) return BONDS[i]; return null; }
+// 종목 계산기에 넣은 앱 매수 단가(클린). 없으면 null
+function appClean(){ var v=num('cApp'); return v!=null && v>0 ? v : null; }
+function pct2(y){ return (y*100).toFixed(2)+'%'; }
+function renderGuide(){
+  var b = (LIST && CURVE) ? selBond() : null;
+  var base=document.getElementById('gBase');
+  if (!b){ base.textContent='기준 종목: 미국채 탭에서 종목을 고르면 여기 나옴'; document.getElementById('gCmp').innerHTML=''; document.getElementById('gCorpOut').innerHTML=''; return; }
+  var cd=b.p.cd, yrs=b.rem, ai=b.p.ai, app=appClean();
+  base.innerHTML='기준 종목: <b>'+esc(b.name)+'</b> · 만기 '+b.mat+' · 잔존 '+yrs.toFixed(2)+'년 · 이론가 '+f3(b.p.clean)+' (이론 수익률 '+pct2(b.theoY)+') · 경과이자 '+f3(ai)+(app?' · 앱 매수 단가 '+f3(app):'');
+  // 1) 견적 비교
+  var sp=(num('gSpread')||0)/100, back=document.getElementById('gBack').checked, inv=num('gInv')||0, rows=[];
+  for (var i=0;i<3;i++){
+    var p=num('g'+i+'p'); if (!(p>0)) continue;
+    var typ=document.getElementById('g'+i+'t').value, f=(num('g'+i+'f')||0)/100, x=Math.min(100,Math.max(0,num('g'+i+'x')||0))/100;
+    var fee = typ==='pct' ? p*f : typ==='ann' ? p*f*yrs : 0;
+    var y=ytm(p+fee+ai, b, cd, 0), fxA=sp*(1-x)*(back?2:1)/yrs;
+    rows.push({name:document.getElementById('g'+i+'n').value.trim()||('증권사'+(i+1)), all:p+fee, y:y, mg:(b.theoY-y)*1e4, fxA:fxA, eff:y-fxA});
+  }
+  rows.sort(function(a,c){ return c.eff-a.eff; });
+  var top=rows.length?rows[0].eff:0;
+  var h='<table class="sf-table gr"><thead><tr><th>순위</th><th class="l">증권사</th><th>수수료 포함<br>실질 단가</th><th>실질 수익률<br>(세전 복리)</th><th title="이론 수익률 − 실질 수익률. 수수료까지 합친 증권사 몫 + 이론가 오차">숨은 마진<br>(bp)</th><th>환전비용<br>(연환산 bp)</th><th>최종 실질<br>수익률</th><th title="잔존 기간 동안 1위보다 덜 버는 돈 (단순 계산)">1위 대비<br>(만원)</th></tr></thead><tbody>';
+  if (!rows.length) h+='<tr><td colspan="8" class="empty">증권사 단가를 넣으면 순위가 나옴</td></tr>';
+  rows.forEach(function(r,k){
+    h+='<tr><td>'+(k+1)+'</td><td class="l">'+esc(r.name)+'</td><td>'+f3(r.all)+'</td><td>'+pct2(r.y)+'</td><td class="'+mgCls(r.mg)+'">'+r.mg.toFixed(0)+'</td><td>'+(r.fxA*1e4).toFixed(1)+'</td><td class="'+(k===0?'gbest':'')+'"><b>'+pct2(r.eff)+'</b></td><td>'+(k===0?'-':'−'+comma(Math.round(inv*(top-r.eff)*yrs)))+'</td></tr>';
+  });
+  h+='<tr class="ref"><td>참고</td><td class="l">이론가 (마진 0)</td><td>'+f3(b.p.clean)+'</td><td>'+pct2(b.theoY)+'</td><td>0</td><td>-</td><td>-</td><td>-</td></tr>';
+  h+='<tr class="ref"><td>참고</td><td class="l">추정 매수가 (목록 마진 '+(+b.mgBp.toFixed(1))+'bp)</td><td>'+f3(b.buyClean)+'</td><td>'+pct2(b.pre/100)+'</td><td>'+(+b.mgBp.toFixed(0))+'</td><td>-</td><td>-</td><td>-</td></tr>';
+  document.getElementById('gCmp').innerHTML=h+'</tbody></table><div class="hint3">숨은 마진 색: <span class="mg-ok">'+MG_OK+'bp 이하 무난</span> · <span class="mg-mid">'+MG_OK+'~'+MG_BAD+'bp 주의</span> · <span class="mg-bad">'+MG_BAD+'bp 넘으면 다른 곳 견적</span> (경험칙). 1bp = 0.01%p</div>';
+  // 2) 법인 현물 vs ETF
+  var key=document.getElementById('gCorp').value==='cs'?'cs':'c', t=TAX_DEF[key]/100, loc=_T?_T.local:0.1, nat=t/(1+loc), wh=(_T?_T.usWithhold:15)/100;
+  var clean = app || b.buyClean, dirty=clean+ai;
+  var pre=ytm(dirty,b,cd,0), ann=pre*(1-t), def=ytm(dirty,b,cd,t,t*(100-clean));
+  var eY=(num('gEtfY')||0)/100, eEr=(num('gEtfEr')||0)/100, whOn=document.getElementById('gEtfWh').checked;
+  var eTax = whOn ? Math.max(wh,nat)+nat*loc : t, eAft=eY*(1-eTax)-eEr, diff=ann-eAft;
+  var o='<table class="sf-table rt gc">'
+    +'<tr class="hd"><td colspan="2">현물 국채 — '+esc(b.name)+' ('+(app?'앱 매수 단가 '+f3(app):'추정 매수가 '+f3(clean))+')</td></tr>'
+    +'<tr><td>세전 수익률 (복리)</td><td class="v">'+pct2(pre)+'</td></tr>'
+    +'<tr><td>세후 — 매년 전부 과세 가정 (보수적, 비교 기준)</td><td class="v">'+pct2(ann)+'</td></tr>'
+    +'<tr><td>세후 — 할인분은 만기에 과세 (이연)</td><td class="v">'+pct2(def)+'</td></tr>'
+    +'<tr><td>미국 원천징수</td><td class="v">0% (portfolio interest)</td></tr>'
+    +'<tr class="hd"><td colspan="2">미국 채권 ETF</td></tr>'
+    +'<tr><td>세금 실효 (분배금 대비)</td><td class="v">'+(eTax*100).toFixed(1)+'%</td></tr>'
+    +'<tr><td>세후 − 총보수</td><td class="v">'+pct2(eAft)+'</td></tr>'
+    +'<tr class="big"><td>판정 ('+TAX_DEF[key]+'% 법인, 만기 보유)</td><td class="v '+(diff>=0?'gbest':'')+'">'+(diff>=0?'현물':'ETF')+' +'+Math.abs(diff*1e4).toFixed(0)+'bp</td></tr>'
+    +'</table>';
+  o+='<div class="warn">⚠ ETF와 이 종목의 만기가 다르면 세금 차이가 아니라 금리 차이가 섞임 (이 종목 잔존 '+yrs.toFixed(1)+'년). SGOV(초단기)와 비교하려면 미국채 탭에서 잔존 1년 이하 종목을, 10년물이면 중장기 ETF 분배율을 넣을 것. 현물의 국내 원천징수 <span class="tx-p">'+TAX_DEF.p+'</span>%는 법인세 신고 때 기납부세액으로 공제돼 결과에 안 넣음. 중도 매매할 거면 ETF 쪽이 유리해짐(호가 촘촘).</div>';
+  document.getElementById('gCorpOut').innerHTML=o;
+}
+
 // ── 탭 ──
+// (091) 주소 끝이 #guide 면 처음 한 번 매수 가이드 탭으로 (자산 노트 링크용). 저장값 복원보다 우선
+function hashTab(){ if (location.hash==='#guide' && !window._hashDone){ document.getElementById('oTab').value='guide'; window._hashDone=1; } }
 function showTab(){
-  var t=document.getElementById('oTab').value==='etf'?'etf':'ust';
+  var v=document.getElementById('oTab').value, t= v==='etf'||v==='guide' ? v : 'ust';
   document.getElementById('secUst').hidden = t!=='ust';
   document.getElementById('secEtf').hidden = t!=='etf';
+  document.getElementById('secGuide').hidden = t!=='guide';
   document.querySelectorAll('#tabs .tb').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-t')===t); });
   if (t==='etf') loadEtf();
 }
@@ -647,6 +874,7 @@ document.getElementById('eList').addEventListener('click', function(e){
 });
 
 // ── 데이터 ──
+hashTab();
 showTab();
 (function(){
   var t=new Date(); SETTLE=dnum(t.getFullYear(), t.getMonth()+1, t.getDate());
