@@ -49,7 +49,7 @@ body.sf-dark .box.social{border-top-color:#d97706!important}
       <input type="number" id="family" value="1" min="1" max="11">
     </div>
     <div class="input-row">
-      <label>8세 이상 20세 이하 자녀수</label>
+      <label><span class="tx-cage">9</span>세 이상 20세 이하 자녀수</label>
       <input type="number" id="kidsAged" value="0" min="0">
     </div>
 
@@ -142,7 +142,7 @@ body.sf-dark .box.social{border-top-color:#d97706!important}
         <li>예: 본인+배우자+자녀2 = <b>4명</b></li>
       </ul>
     </li>
-    <li><span class="badge">8~20세 자녀</span> 간이세액표 금액에서 자녀 수별로 매달 더 빼줌: 1명 <span class="tx-ch1">20,830</span>원, 2명 <span class="tx-ch2">45,830</span>원, 3명 이상은 1명당 <span class="tx-chx">33,330</span>원씩 추가 (2026.3.1 지급분부터 개정 금액). 연 소득 100만 원 넘는 자녀는 빼고 셈.</li>
+    <li><span class="badge"><span class="tx-cage">9</span>~20세 자녀</span> 간이세액표 금액에서 자녀 수별로 매달 더 빼줌: 1명 <span class="tx-ch1">20,830</span>원, 2명 <span class="tx-ch2">45,830</span>원, 3명 이상은 1명당 <span class="tx-chx">33,330</span>원씩 추가 (2026.3.1 지급분부터 개정 금액). 연 소득 100만 원 넘는 자녀는 빼고 셈. <span class="age-note">ⓘ 대상 나이는 아동수당 확대로 매년 1세씩 올라감(2026.4.21 개정: 2025년 8세 → 2026년 9세 → 2030년 13세). 그보다 어린 자녀는 아동수당 대상이라 빼고 세세요. 회사 급여 프로그램이 아직 옛 나이로 셀 수도 있음.</span></li>
     <li><span class="badge">원천징수 비율</span>
       <ul>
         <li><b>100% (기본):</b> 표준 비율</li>
@@ -194,6 +194,7 @@ function fillTax(){
   put('tx-snmaxamt', Math.round(TX.npsMax * TX.nps / 100).toLocaleString('ko-KR'));
   put('tx-ch1', TX.child.one.toLocaleString('ko-KR')); put('tx-ch2', TX.child.two.toLocaleString('ko-KR')); put('tx-chx', TX.child.extra.toLocaleString('ko-KR'));
   put('tx-checked', TX.checked);
+  put('tx-cage', _T ? _T.childAge(new Date().getFullYear()) : 9);   // (092) 자녀 공제 대상 나이, 연도별
 }
 fillTax();
 
@@ -208,6 +209,7 @@ function calcAnnualTax(taxBase) {
 
 // 근로소득공제 (연)
 function calcEarnDeduction(gross) {
+  if (_T) return _T.earnedDedAmt(gross);   // (092) 공통 파일
   if (gross <= 5000000) return gross * 0.70;
   if (gross <= 15000000) return 3500000 + (gross - 5000000) * 0.40;
   if (gross <= 45000000) return 7500000 + (gross - 15000000) * 0.15;
@@ -217,18 +219,19 @@ function calcEarnDeduction(gross) {
 
 // 근로소득세액공제
 function calcEarnCredit(calcTax, gross) {
+  if (_T) return _T.earnedCrAmt(calcTax, gross);   // (092) 공통 파일
   let credit;
   if (calcTax <= 1300000) credit = calcTax * 0.55;
   else credit = 715000 + (calcTax - 1300000) * 0.30;
   let limit;
   if (gross <= 33000000) limit = 740000;
   else if (gross <= 70000000) limit = Math.max(660000, 740000 - (gross - 33000000) * 0.008);
-  else if (gross <= 120000000) limit = Math.max(500000, 660000 - (gross - 70000000) * 0.005);
-  else limit = Math.max(200000, 500000 - (gross - 120000000) * 0.005);
+  else if (gross <= 120000000) limit = Math.max(500000, 660000 - (gross - 70000000) * 0.5);   // (092) 법은 ×1/2 — 0.005로 잘못 둬서 7천만~1.2억 공제가 최대 16만 과다였음
+  else limit = Math.max(200000, 500000 - (gross - 120000000) * 0.5);
   return Math.min(credit, limit);
 }
 
-// 간이세액표 8~20세 자녀 공제 (월) — (089) 2026.3.1 개정 금액, SF_TAX.childMonthly
+// 간이세액표 자녀 공제 (월, 대상 나이는 SF_TAX.childAge — 092) — (089) 2026.3.1 개정 금액, SF_TAX.childMonthly
 function childMonthly(kids) {
   if (kids <= 0) return 0;
   if (kids === 1) return TX.child.one;

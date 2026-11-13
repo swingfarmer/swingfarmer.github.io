@@ -94,7 +94,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
       <input type="number" id="dependents" value="1" inputmode="numeric" min="1">
     </div>
     <div class="input-row">
-      <label>8~20세 자녀 수 <span class="stat-sub">간이세액표 자녀 공제 (1명 월 <span class="tx-ch1">20,830</span>원 · 2명 <span class="tx-ch2">45,830</span>원 · 3명부터 1명당 <span class="tx-chx">33,330</span>원 추가)</span></label>
+      <label><span class="tx-cage">9</span>~20세 자녀 수 <span class="stat-sub">간이세액표 자녀 공제 (1명 월 <span class="tx-ch1">20,830</span>원 · 2명 <span class="tx-ch2">45,830</span>원 · 3명부터 1명당 <span class="tx-chx">33,330</span>원 추가)</span></label>
       <input type="number" id="children" value="0" inputmode="numeric" min="0">
     </div>
   </div>
@@ -143,7 +143,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   <div class="manual">
     <b>📘 계산 방법</b><br>
     • <b>4대보험</b>: (월급−비과세)에 요율 적용. 국민연금은 기준소득월액 <span class="tx-snmin">41만</span>~<span class="tx-snmax">659만</span>원으로 자른 뒤 곱함(본인 부담 최대 <span class="tx-snmaxamt">313,025</span>원). 요율은 매년 1월, 상·하한은 매년 7월 바뀜.<br>
-    • <b>소득세</b>: 간이세액표 근사 — 근로소득공제(한도 2천만) → 인적공제 1인당 150만 → 누진세율 → 근로소득세액공제(총급여별 한도) → 8~20세 자녀 공제. <a href="/tax/income/">근로소득세 계산기</a>와 같은 식.<br>
+    • <b>소득세</b>: 간이세액표 근사 — 근로소득공제(한도 2천만) → 인적공제 1인당 150만 → 누진세율 → 근로소득세액공제(총급여별 한도 74만~20만, 7천만 넘으면 초과액의 1/2씩 줄어 바로 50만) → <span class="tx-cage">9</span>~20세 자녀 공제. <span class="age-note">ⓘ 대상 나이는 아동수당 확대로 매년 1세씩 올라감(2026.4.21 개정: 2025년 8세 → 2026년 9세 → 2030년 13세). 그보다 어린 자녀는 아동수당 대상이라 빼고 세세요. 회사 급여 프로그램이 아직 옛 나이로 셀 수도 있음.</span> <a href="/tax/income/">근로소득세 계산기</a>와 같은 식.<br>
     • <b>지방소득세</b>: 소득세의 10%.<br>
     • 실수령 = 세전 − 4대보험 − 소득세 − 지방세
   </div>
@@ -197,10 +197,12 @@ function prog(b, br){ let t = 0, lo = 0; if (!(b > 0)) return 0; for (const [hi,
   put('tx-snmaxamt', Math.round(TX.npsMax * TX.nps / 100).toLocaleString('ko-KR'));
   put('tx-ch1', TX.child.one.toLocaleString('ko-KR')); put('tx-ch2', TX.child.two.toLocaleString('ko-KR')); put('tx-chx', TX.child.extra.toLocaleString('ko-KR'));
   put('tx-year', TX.year); put('tx-checked', TX.checked);
+  put('tx-cage', _T ? _T.childAge(new Date().getFullYear()) : 9);   // (092) 자녀 공제 대상 나이, 연도별
 })();
 
 // 간이세액표 근사 (090) — /tax/income/ 과 같은 식으로 맞춤
 function calcEarnDeduction(gross){
+  if (_T) return _T.earnedDedAmt(gross);   // (092) 공통 파일
   if (gross <= 5000000) return gross * 0.70;
   if (gross <= 15000000) return 3500000 + (gross - 5000000) * 0.40;
   if (gross <= 45000000) return 7500000 + (gross - 15000000) * 0.15;
@@ -208,12 +210,13 @@ function calcEarnDeduction(gross){
   return Math.min(14750000 + (gross - 100000000) * 0.02, 20000000);   // 근로소득공제 한도 2천만
 }
 function calcEarnCredit(calcTax, gross){
+  if (_T) return _T.earnedCrAmt(calcTax, gross);   // (092) 공통 파일
   const credit = calcTax <= 1300000 ? calcTax * 0.55 : 715000 + (calcTax - 1300000) * 0.30;
   let limit;
   if (gross <= 33000000) limit = 740000;
   else if (gross <= 70000000) limit = Math.max(660000, 740000 - (gross - 33000000) * 0.008);
-  else if (gross <= 120000000) limit = Math.max(500000, 660000 - (gross - 70000000) * 0.005);
-  else limit = Math.max(200000, 500000 - (gross - 120000000) * 0.005);
+  else if (gross <= 120000000) limit = Math.max(500000, 660000 - (gross - 70000000) * 0.5);   // (092) 법은 ×1/2 — 0.005로 잘못 둬서 7천만~1.2억 공제가 최대 16만 과다였음
+  else limit = Math.max(200000, 500000 - (gross - 120000000) * 0.5);
   return Math.min(credit, limit);
 }
 function childMonthly(kids){
