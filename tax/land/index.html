@@ -84,7 +84,7 @@
       <tr><td>산출세액 (국세)</td><td id="calcTax">-</td><td>보유기간·사업용 여부 최종 세액</td></tr>
       <tr><td>자경농지 감면 (세액)</td><td id="farmExempt">-</td><td id="farmNote">산출세액에서 빼는 세액 감면, 1년 1억 한도</td></tr>
       <tr><td>지방소득세 (10%)</td><td id="localTax">-</td><td>(산출세액 − 감면) × 10%</td></tr>
-      <tr id="planRow"><td>참고: 2028년 이후 양도 시 (정부안)</td><td id="planTax">-</td><td>비사업용 토지 장특공제 배제 + 가산 20%p (국회 심의 중)</td></tr>
+      <tr id="planRow"><td id="planLabel">참고: 2028년 이후 양도 시 (정부안)</td><td id="planTax">-</td><td id="planDesc">비사업용 토지 장특공제 배제 + 가산 20%p (국회 심의 중)</td></tr>
     </tbody>
   </table>
 </div>
@@ -115,10 +115,10 @@
 
   <h3>② 계산 로직</h3>
   <ul>
-    <li><b>장기보유특별공제:</b> 보유 3년 이상부터 매년 2%, 최대 30% (사업용·비사업용 동일).</li>
+    <li><b>장기보유특별공제:</b> 보유 3년 이상부터 매년 <span class="tx-llr">2</span>%, 최대 <span class="tx-llm">30</span>% (사업용·비사업용 동일).</li>
     <li><b>자경농지 감면:</b> 조특법 69조 세액감면 — 산출세액에서 1년 1억까지 뺌(5년 누적 2억 한도는 미반영). 감면분은 농특세 비과세.</li>
     <li><b>기본 누진세율:</b> 6%~45% 8단계.</li>
-    <li><b>비사업용 토지 중과:</b> 기본세율 + <span class="tx-lnb">10</span>%p. 2026 세제개편 정부안은 2028년 양도분부터 +20%p·장특공제 배제(표 맨 아래 참고 줄).</li>
+    <li><b>비사업용 토지 중과:</b> 기본세율 + <span class="tx-lnb">10</span>%p. <span id="planManual"></span></li>
     <li><b>단기보유 세율:</b> 1년 미만 <span class="tx-ls1">50</span>% / 1~2년 <span class="tx-ls2">40</span>%. 누진+가산과 비교해서 큰 값 적용.</li>
     <li><b>지방소득세:</b> 양도세의 10%.</li>
   </ul>
@@ -128,38 +128,42 @@
   </div>
 </div>
 
-<script src="/tax-rates.js?v=7"></script>
+<script src="/tax-rates.js?v=8"></script>
 <script>
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
 const fmtPct = n => (n * 100).toFixed(1) + '%';
 
-// (090) 세율은 /tax-rates.js(window.SF_TAX)에서 읽음. 못 읽으면 아래 기본값(2026.11 현행법)
+// (090) 세율은 /tax-rates.js의 SF_TAX.cgtRule('land', 양도연도)에서 받음 — 현행(cgtLand)과 정부안(cgtPlan)이 한 곳에 있음. 못 읽으면 아래 기본값(2026.11 현행)
 const _T = window.SF_TAX;
 const INCOME = _T ? _T.income : [[14e6,6],[50e6,15],[88e6,24],[150e6,35],[300e6,38],[500e6,40],[1e9,42],[Infinity,45]];
-const LT = (_T && _T.cgtLand) ? _T.cgtLand : {nonBiz: 10, short1: 50, short2: 40, farmCap: 1e8, basicDed: 2.5e6};
+const FALLBACK = {nonBiz: 10, nonBizLtc: true, short1: 50, short2: 40, farmCap: 1e8, basicDed: 2.5e6, ltcRate: 2, ltcMax: 30, plan: false};
+const rule = y => (_T && _T.cgtRule) ? _T.cgtRule('land', y) : FALLBACK;
+const NOW_Y = new Date().getFullYear();
+const LT = rule(NOW_Y);                       // 지금 양도 규칙 (해가 바뀌면 자동으로 그해 규칙)
+// 비교 줄: 비사업용 규칙이 지금과 달라지는 첫 해 (정부안 2028)
+const PLAN_Y = (() => { if (!_T || !_T.cgtPlan) return null; const ys = Object.keys(_T.cgtPlan).filter(y => /^\d{4}$/.test(y)).map(Number).sort();
+  for (const y of ys) { if (y <= NOW_Y) continue; const r = rule(y); if (r.nonBiz !== LT.nonBiz || r.nonBizLtc !== LT.nonBizLtc) return y; } return null; })();
+const LP = PLAN_Y ? rule(PLAN_Y) : null;
 function prog(b, br){ let t = 0, lo = 0; if (!(b > 0)) return 0; for (const [hi, r] of br){ if (b > lo) t += (Math.min(b, hi) - lo) * r / 100; lo = hi; } return t; }
 function calcProgressiveTax(taxBase) { return prog(taxBase, INCOME); }
-// 2026 세제개편 정부안(국회 심의 중): 2028년 양도분부터 비사업용 토지 장특공제 배제 + 가산 10→20%p — 확정 전이라 여기에만 둠
-const PLAN_NB = {from: 2028, add: 20, noLtc: true};
 
-// 세액 계산 (plan=true면 정부안 2028~ 비사업용 규칙)
-function landTax(gain, holdYears, isNonBusiness, farmOk, plan) {
-  const noLtc = plan && isNonBusiness && PLAN_NB.noLtc;
-  const ltcRate = (!noLtc && holdYears >= 3) ? Math.min(holdYears * 0.02, 0.30) : 0;
+// 세액 계산 — R = 그 해 규칙
+function landTax(R, gain, holdYears, isNonBusiness, farmOk) {
+  const noLtc = isNonBusiness && !R.nonBizLtc;
+  const ltcRate = (!noLtc && holdYears >= 3) ? Math.min(holdYears * R.ltcRate, R.ltcMax) / 100 : 0;
   const ltcAmount = Math.max(0, gain * ltcRate);
   const taxableGain = gain - ltcAmount;
-  const basicDeduction = taxableGain > 0 ? LT.basicDed : 0;
+  const basicDeduction = taxableGain > 0 ? R.basicDed : 0;
   const taxBase = Math.max(0, taxableGain - basicDeduction);
   const baseTax = calcProgressiveTax(taxBase);
-  const add = isNonBusiness ? (plan ? PLAN_NB.add : LT.nonBiz) : 0;
-  let surtax = taxBase * add / 100;
-  let surtaxDesc = isNonBusiness ? `비사업용 토지 → +${add}%p` : '해당 없음';
-  let calcTax = baseTax + surtax;
+  const add = isNonBusiness ? R.nonBiz : 0;
+  let surtaxDesc = isNonBusiness ? `비사업용 토지 → +${add}%p` + (noLtc ? ' · 장특공제 배제' : '') : '해당 없음';
+  let calcTax = baseTax + taxBase * add / 100;
   // 단기보유 세율과 비교해 큰 값 (소득세법 104조 7항)
-  const shortR = holdYears < 1 ? LT.short1 : (holdYears < 2 ? LT.short2 : 0);
+  const shortR = holdYears < 1 ? R.short1 : (holdYears < 2 ? R.short2 : 0);
   if (shortR && taxBase * shortR / 100 > calcTax) { calcTax = taxBase * shortR / 100; surtaxDesc = `단기 ${holdYears < 1 ? '1년 미만' : '1~2년'} ${shortR}% 적용`; }
-  // (090) 8년 자경농지 감면은 「세액」 감면 (조특법 69조, 1년 1억 한도). 089까지는 소득에서 1억을 빼서 세금이 적게 나왔음
-  const farmExempt = farmOk ? Math.min(calcTax, LT.farmCap) : 0;
+  // 8년 자경농지 감면은 「세액」 감면 (조특법 69조, 1년 1억 한도)
+  const farmExempt = farmOk ? Math.min(calcTax, R.farmCap) : 0;
   const afterFarm = calcTax - farmExempt;
   const localTax = afterFarm * 0.10;
   return {ltcRate, ltcAmount, taxableGain, basicDeduction, taxBase, baseTax, surtax: calcTax - baseTax, surtaxDesc, calcTax, farmExempt, afterFarm, localTax, finalTax: afterFarm + localTax};
@@ -177,12 +181,12 @@ function calculate() {
 
   const gain = salePrice - acquisitionPrice - expenses;
   const farmOk = selfFarm && document.getElementById('landCategory').value === '농지';
-  const R = landTax(gain, holdYears, isNonBusiness, farmOk, false);
+  const R = landTax(LT, gain, holdYears, isNonBusiness, farmOk);
   const { ltcRate, ltcAmount, taxableGain, farmExempt, basicDeduction, taxBase, baseTax, surtax, surtaxDesc, localTax, finalTax } = R;
   const finalCalcTax = R.calcTax;
   const afterTaxGain = gain - finalTax;
   // 정부안 2028~ 비사업용 비교
-  const P = isNonBusiness ? landTax(gain, holdYears, true, false, true) : null;
+  const P = (isNonBusiness && LP) ? landTax(LP, gain, holdYears, true, false) : null;
   document.getElementById('planRow').style.display = P ? '' : 'none';
   if (P) document.getElementById('planTax').textContent = fmt(P.finalTax) + ' 원 (' + (P.finalTax >= finalTax ? '+' : '−') + fmt(Math.abs(P.finalTax - finalTax)) + ')';
   document.getElementById('farmNote').textContent = selfFarm && !farmOk ? '지목이 농지가 아니라 감면 안 함' : '산출세액에서 빼는 세액 감면, 1년 1억 한도';
@@ -207,7 +211,13 @@ document.querySelectorAll('input, select').forEach(el => {
   el.addEventListener('input', calculate);
   el.addEventListener('change', calculate);
 });
-(function fillTax(){ const put = (c, v) => document.querySelectorAll('.' + c).forEach(el => el.textContent = v); put('tx-lnb', LT.nonBiz); put('tx-ls1', LT.short1); put('tx-ls2', LT.short2); if (_T) put('tx-checked', _T.checked); })();
+(function fillTax(){ const put = (c, v) => document.querySelectorAll('.' + c).forEach(el => el.textContent = v);
+  put('tx-lnb', LT.nonBiz); put('tx-ls1', LT.short1); put('tx-ls2', LT.short2); put('tx-llr', LT.ltcRate); put('tx-llm', LT.ltcMax); if (_T) put('tx-checked', _T.checked);
+  const tag = (_T && _T.cgtPlan) ? _T.cgtPlan.status : '';
+  const desc = LP ? `비사업용 토지 +${LP.nonBiz}%p${LP.nonBizLtc ? '' : ' · 장특공제 배제'} (${_T.cgtPlan.note})` : '';
+  if (LP) { document.getElementById('planLabel').textContent = `참고: ${PLAN_Y}년 이후 양도 시 (${tag})`; document.getElementById('planDesc').textContent = desc;
+            document.getElementById('planManual').textContent = `${tag}: ${PLAN_Y}년 양도분부터 ${desc.replace(/ \(.*\)$/, '')} (표 맨 아래 참고 줄).`; }
+})();
 calculate();
 </script>
 <script>
