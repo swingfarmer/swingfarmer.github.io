@@ -8,7 +8,9 @@
    - 순서 (위일수록 먼저):
        ① 제목에 친 글자가 그대로 들어있음
        ② 초성으로 제목이 맞음 (ㅂㄷㅅ → 부동산)
-       ③ 설명·카테고리에 그대로 들어있음
+       ③ 설명·카테고리에 그대로 들어있음 (초성이 카테고리와 맞는 것 포함: ㅂㄷㅅ → 🏠 부동산 카테고리 전부)
+       같은 순위 안에서는 카테고리 이름까지 맞는 메뉴가 먼저 (089_03)
+       ②끼리는 맞은 글자가 다른 메뉴에도 자주 나오는 단어인 쪽이 먼저 — ㅂㄷㅅ: "부동산"(여러 메뉴) > "배당수"(1개)
        ④ 친 글자가 순서 상관없이 전부 들어있음
        ⑤ 한 글자라도 겹침 → 회색으로 맨 아래 따로 (사용자 요청: "1글자라도 겹치는 건 다 나오게")
           단, 초성만 친 경우(ㅂㄷㅅ)는 ⑤를 안 보여줌 — ㅅ 하나로 거의 전부 걸려서 의미 없음
@@ -103,12 +105,12 @@
       if(!href) return;
       if(byHref[href]){   // 같은 메뉴가 두 카테고리에 있으면 한 줄로 합치고 카테고리만 이어 붙임
         var it0 = byHref[href];
-        if(cat && it0.cat.indexOf(cat) < 0){ it0.cat += ' / ' + cat; it0.nRest = norm(it0.desc + ' ' + it0.cat); }
+        if(cat && it0.cat.indexOf(cat) < 0){ it0.cat += ' / ' + cat; it0.nRest = norm(it0.desc + ' ' + it0.cat); it0.nCat = norm(it0.cat); it0.catCho = norm(chosung(it0.cat)); }
         return;
       }
       var it = {
         href: href, target: target || '', order: order, icon: icon || '📌', title: title, desc: desc, cat: cat,
-        nTitle: norm(title), nRest: norm(desc + ' ' + cat), cho: norm(chosung(title))
+        nTitle: norm(title), nRest: norm(desc + ' ' + cat), cho: norm(chosung(title)), nCat: norm(cat), catCho: norm(chosung(cat))
       };
       byHref[href] = it;
       items.push(it);
@@ -142,6 +144,12 @@
     var multi = words.length > 1;
     function allIn(str){ return words.every(function(w){ return str.indexOf(w) >= 0; }); }
     var res = [];
+    // 초성 검색: 맞은 자리의 실제 글자(ㅂㄷㅅ → "부동산" / "배당수")가 전체 메뉴에 몇 번 나오는지 → 많이 나오는 쪽이 진짜 찾는 단어로 보고 위로
+    var freqCache = {};
+    function wordFreq(w){
+      if(freqCache[w] === undefined){ var c = 0; items.forEach(function(x){ if((x.nTitle + x.nRest).indexOf(w) >= 0) c++; }); freqCache[w] = c; }
+      return freqCache[w];
+    }
     items.forEach(function(it){
       var all = it.nTitle + it.nRest;
       var hit = 0;
@@ -149,16 +157,20 @@
       var tier;
       if(it.nTitle.indexOf(nq) >= 0 || (multi && allIn(it.nTitle))) tier = 0;
       else if(choQ && it.cho.indexOf(nq) >= 0) tier = 1;
-      else if(it.nRest.indexOf(nq) >= 0 || (multi && allIn(all))) tier = 2;
+      else if(it.nRest.indexOf(nq) >= 0 || (multi && allIn(all)) || (choQ && it.catCho.indexOf(nq) >= 0)) tier = 2;   // 초성이 카테고리와 맞아도(ㅂㄷㅅ → 🏠 부동산) ③
       else if(hit === keys.length) tier = 3;
       else if(hit > 0 && !choQ) tier = 4;   // 초성만 친 경우는 일부 겹침을 안 보여줌(ㅅ 하나로 거의 다 걸려서 의미 없음)
       else return;
       var tHit = 0;
       keys.forEach(function(ch){ if(it.nTitle.indexOf(ch) >= 0) tHit++; });
-      res.push({it: it, tier: tier, hit: hit, tHit: tHit});
+      // (089_03) 카테고리 이름까지 맞으면 같은 순위 안에서 위로 — ㅂㄷㅅ: 부동산 중개수수료(제목+카테고리) → 배당 수익(제목만)
+      var catHit = (it.nCat.indexOf(nq) >= 0 || (choQ && it.catCho.indexOf(nq) >= 0)) ? 1 : 0;
+      var wf = 0;
+      if(tier === 1){ var at = it.cho.indexOf(nq); wf = wordFreq(it.nTitle.substr(at, nq.length)); }
+      res.push({it: it, tier: tier, hit: hit, tHit: tHit, catHit: catHit, wf: wf});
     });
     res.sort(function(a, b){
-      return a.tier - b.tier || b.hit - a.hit || b.tHit - a.tHit || a.it.order - b.it.order;
+      return a.tier - b.tier || b.wf - a.wf || b.catHit - a.catHit || b.hit - a.hit || b.tHit - a.tHit || a.it.order - b.it.order;
     });
     return {list: res, chars: chars};
   }
