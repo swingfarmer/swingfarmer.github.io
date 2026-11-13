@@ -94,7 +94,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
       <input type="number" id="dependents" value="1" inputmode="numeric" min="1">
     </div>
     <div class="input-row">
-      <label>20세 이하 자녀 수 <span class="stat-sub">추가 공제</span></label>
+      <label>8~20세 자녀 수 <span class="stat-sub">간이세액표 자녀 공제 (1명 월 <span class="tx-ch1">20,830</span>원 · 2명 <span class="tx-ch2">45,830</span>원 · 3명부터 1명당 <span class="tx-chx">33,330</span>원 추가)</span></label>
       <input type="number" id="children" value="0" inputmode="numeric" min="0">
     </div>
   </div>
@@ -124,10 +124,10 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
     <div class="section-label">📋 공제 내역 (월 기준)</div>
     <table class="breakdown">
       <tr class="subtotal"><td class="label">세전 월급</td><td class="num" id="grossM">-</td></tr>
-      <tr><td class="label">− 국민연금 (4.75%)</td><td class="num minus" id="pension">-</td></tr>
-      <tr><td class="label">− 건강보험 (3.595%)</td><td class="num minus" id="health">-</td></tr>
-      <tr><td class="label">− 장기요양 (건보의 13.14%)</td><td class="num minus" id="care">-</td></tr>
-      <tr><td class="label">− 고용보험 (0.9%)</td><td class="num minus" id="employ">-</td></tr>
+      <tr><td class="label">− 국민연금 (<span class="tx-snps">4.75</span>%)</td><td class="num minus" id="pension">-</td></tr>
+      <tr><td class="label">− 건강보험 (<span class="tx-shh">3.595</span>%)</td><td class="num minus" id="health">-</td></tr>
+      <tr><td class="label">− 장기요양 (건보의 <span class="tx-sltc">13.14</span>%)</td><td class="num minus" id="care">-</td></tr>
+      <tr><td class="label">− 고용보험 (<span class="tx-semp">0.9</span>%)</td><td class="num minus" id="employ">-</td></tr>
       <tr class="subtotal"><td class="label">4대보험 합계</td><td class="num minus" id="insTotal">-</td></tr>
       <tr><td class="label">− 소득세 (간이세액)</td><td class="num minus" id="incomeTax">-</td></tr>
       <tr><td class="label">− 지방소득세 (소득세의 10%)</td><td class="num minus" id="localTax">-</td></tr>
@@ -137,13 +137,13 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   </div>
 
   <div class="note">
-    ⚠️ <b>참고용 추정치</b>입니다. 소득세는 국세청 간이세액표를 <b>근사식</b>으로 계산해 실제와 수만원 차이날 수 있어요. 회사·개인 상황(추가 공제, 상여 분리 등)에 따라 달라지며, 연말정산으로 정산됩니다. 4대보험 요율은 2026년 기준입니다.
+    ⚠️ <b>참고용 추정치</b>입니다. 소득세는 국세청 간이세액표를 <b>근사식</b>으로 계산해 실제와 수만원 차이날 수 있어요. 회사·개인 상황(추가 공제, 상여 분리 등)에 따라 달라지며, 연말정산으로 정산됩니다. 4대보험 요율은 <span class="tx-year">2026</span>년 기준입니다 (세율 확인일 <span class="tx-checked">2026-11-13</span>). 같은 계산을 <a href="/tax/income/">근로소득세 계산기</a>에서 상여 비율까지 넣어 볼 수 있어요.
   </div>
 
   <div class="manual">
     <b>📘 계산 방법</b><br>
-    • <b>4대보험</b>: (월급−비과세)에 요율 적용. 국민연금은 기준소득월액 상한 637만원.<br>
-    • <b>소득세</b>: 간이세액표 근사. 부양가족·자녀 수로 공제 반영.<br>
+    • <b>4대보험</b>: (월급−비과세)에 요율 적용. 국민연금은 기준소득월액 <span class="tx-snmin">41만</span>~<span class="tx-snmax">659만</span>원으로 자른 뒤 곱함(본인 부담 최대 <span class="tx-snmaxamt">313,025</span>원). 요율은 매년 1월, 상·하한은 매년 7월 바뀜.<br>
+    • <b>소득세</b>: 간이세액표 근사 — 근로소득공제(한도 2천만) → 인적공제 1인당 150만 → 누진세율 → 근로소득세액공제(총급여별 한도) → 8~20세 자녀 공제. <a href="/tax/income/">근로소득세 계산기</a>와 같은 식.<br>
     • <b>지방소득세</b>: 소득세의 10%.<br>
     • 실수령 = 세전 − 4대보험 − 소득세 − 지방세
   </div>
@@ -159,6 +159,7 @@ window.slSetState = function(d){ if(window.slSetState) window.slSetState(d); };
 <script>window.SF_RESET = true;</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
 <script src="/sf-slots.js?v=7"></script>
 <script src="/common.js?v=10"></script>
+<script src="/tax-rates.js?v=6"></script>
 <script>
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
@@ -177,50 +178,55 @@ function setMode(m){
   calculate();
 }
 
-// 2026 4대보험 요율 (근로자 부담)
-const RATE = {
-  pension: 0.045,      // 국민연금 4.5% (근로자), 총9.5%의 절반은 4.75? → 근로자 4.5%가 표준
-  pensionCap: 6370000, // 기준소득월액 상한
-  pensionFloor: 400000,
-  health: 0.03595,     // 건강보험 3.595%
-  care: 0.1314,        // 장기요양 = 건보료 × 13.14%
-  employ: 0.009        // 고용보험 0.9%
+// (090) 세율·4대보험 요율은 /tax-rates.js(window.SF_TAX)에서 읽음. 못 읽으면 아래 기본값(2026년 값)
+//   (089까지: 국민연금 4.5%·상한 637만·하한 40만 옛 값, 근로소득세액공제 한도 74만 고정, 자녀 공제 옛 연 15만/35만)
+const _T = window.SF_TAX;
+const TX = {
+  income: _T ? _T.income : [[14e6,6],[50e6,15],[88e6,24],[150e6,35],[300e6,38],[500e6,40],[1e9,42],[Infinity,45]],
+  nps: _T ? _T.social.nps : 4.75, npsMin: _T ? _T.social.npsMin : 410000, npsMax: _T ? _T.social.npsMax : 6590000,
+  hh: _T ? _T.health.rate / 2 : 3.595, ltc: _T ? _T.health.ltc : 13.14, emp: _T ? _T.social.emp : 0.9,
+  child: _T ? _T.childMonthly : {one: 20830, two: 45830, extra: 33330},
+  year: _T ? _T.year : 2026, checked: _T ? _T.checked : '2026-11-13'
 };
+function prog(b, br){ let t = 0, lo = 0; if (!(b > 0)) return 0; for (const [hi, r] of br){ if (b > lo) t += (Math.min(b, hi) - lo) * r / 100; lo = hi; } return t; }
+(function fillTax(){
+  const put = (cls, v) => document.querySelectorAll('.' + cls).forEach(el => el.textContent = v);
+  const man = n => (n / 10000).toLocaleString('ko-KR') + '만';
+  put('tx-snps', TX.nps); put('tx-shh', +TX.hh.toFixed(4)); put('tx-sltc', TX.ltc); put('tx-semp', TX.emp);
+  put('tx-snmin', man(TX.npsMin)); put('tx-snmax', man(TX.npsMax));
+  put('tx-snmaxamt', Math.round(TX.npsMax * TX.nps / 100).toLocaleString('ko-KR'));
+  put('tx-ch1', TX.child.one.toLocaleString('ko-KR')); put('tx-ch2', TX.child.two.toLocaleString('ko-KR')); put('tx-chx', TX.child.extra.toLocaleString('ko-KR'));
+  put('tx-year', TX.year); put('tx-checked', TX.checked);
+})();
 
-// 간이세액표 근사: 과세표준(월) 기반 누진 근사 + 부양가족 공제
+// 간이세액표 근사 (090) — /tax/income/ 과 같은 식으로 맞춤
+function calcEarnDeduction(gross){
+  if (gross <= 5000000) return gross * 0.70;
+  if (gross <= 15000000) return 3500000 + (gross - 5000000) * 0.40;
+  if (gross <= 45000000) return 7500000 + (gross - 15000000) * 0.15;
+  if (gross <= 100000000) return 12000000 + (gross - 45000000) * 0.05;
+  return Math.min(14750000 + (gross - 100000000) * 0.02, 20000000);   // 근로소득공제 한도 2천만
+}
+function calcEarnCredit(calcTax, gross){
+  const credit = calcTax <= 1300000 ? calcTax * 0.55 : 715000 + (calcTax - 1300000) * 0.30;
+  let limit;
+  if (gross <= 33000000) limit = 740000;
+  else if (gross <= 70000000) limit = Math.max(660000, 740000 - (gross - 33000000) * 0.008);
+  else if (gross <= 120000000) limit = Math.max(500000, 660000 - (gross - 70000000) * 0.005);
+  else limit = Math.max(200000, 500000 - (gross - 120000000) * 0.005);
+  return Math.min(credit, limit);
+}
+function childMonthly(kids){
+  if (kids <= 0) return 0;
+  if (kids === 1) return TX.child.one;
+  return TX.child.two + (kids - 2) * TX.child.extra;
+}
 function approxIncomeTax(monthlyTaxable, dependents, children){
-  // 연 환산 후 근로소득공제·인적공제 대략 반영하는 근사
-  const annual = monthlyTaxable*12;
-  // 근로소득공제 (대략)
-  let earnedDeduct;
-  if(annual<=5000000) earnedDeduct=annual*0.7;
-  else if(annual<=15000000) earnedDeduct=3500000+(annual-5000000)*0.4;
-  else if(annual<=45000000) earnedDeduct=7500000+(annual-15000000)*0.15;
-  else if(annual<=100000000) earnedDeduct=12000000+(annual-45000000)*0.05;
-  else earnedDeduct=14750000+(annual-100000000)*0.02;
-  // 인적공제: 1인당 150만
-  const personalDeduct = dependents*1500000;
-  // 표준세액공제 등 대략
-  let taxBase = annual - earnedDeduct - personalDeduct;
-  if(taxBase<=0) return 0;
-  // 종합소득세 누진 (지방세 제외)
-  let tax;
-  if(taxBase<=14000000) tax=taxBase*0.06;
-  else if(taxBase<=50000000) tax=taxBase*0.15-1260000;
-  else if(taxBase<=88000000) tax=taxBase*0.24-5760000;
-  else if(taxBase<=150000000) tax=taxBase*0.35-15440000;
-  else if(taxBase<=300000000) tax=taxBase*0.38-19940000;
-  else if(taxBase<=500000000) tax=taxBase*0.40-25940000;
-  else tax=taxBase*0.42-35940000;
-  // 근로소득세액공제 (대략 산출세액의 일부)
-  let taxCredit = Math.min(tax*0.55, 740000);
-  // 자녀세액공제 (1명 15만, 2명 35만 등 대략 연)
-  let childCredit = 0;
-  if(children===1) childCredit=150000;
-  else if(children===2) childCredit=350000;
-  else if(children>=3) childCredit=350000+(children-2)*300000;
-  let annualTax = Math.max(0, tax - taxCredit - childCredit);
-  return annualTax/12; // 월
+  const annual = monthlyTaxable * 12;
+  const taxBase = Math.max(0, annual - calcEarnDeduction(annual) - dependents * 1500000);
+  const calc = prog(taxBase, TX.income);
+  const annualTax = Math.max(0, calc - calcEarnCredit(calc, annual) - childMonthly(children) * 12);
+  return annualTax / 12; // 월
 }
 
 function calculate(){
@@ -229,16 +235,17 @@ function calculate(){
   else grossMonth = parseFloat($('monthlySalary').value)||0;
   const taxFree = parseFloat($('taxFree').value)||0;
   const dependents = Math.max(1, parseFloat($('dependents').value)||1);
-  const children = Math.max(0, parseFloat($('children').value)||0);
+  const children = Math.max(0, Math.floor(parseFloat($('children').value)||0));
 
   const taxableMonth = Math.max(0, grossMonth - taxFree); // 과세 대상
 
   // 4대보험 (과세 기준)
-  const pensionBase = Math.min(RATE.pensionCap, Math.max(RATE.pensionFloor, taxableMonth));
-  const pension = pensionBase*RATE.pension;
-  const health = taxableMonth*RATE.health;
-  const care = health*RATE.care;
-  const employ = taxableMonth*RATE.employ;
+  // (090) 국민연금은 기준소득월액 상·하한으로 자름 (월급 0이면 0)
+  const pensionBase = taxableMonth > 0 ? Math.min(TX.npsMax, Math.max(TX.npsMin, taxableMonth)) : 0;
+  const pension = pensionBase * TX.nps / 100;
+  const health = taxableMonth * TX.hh / 100;
+  const care = health * TX.ltc / 100;
+  const employ = taxableMonth * TX.emp / 100;
   const insTotal = pension+health+care+employ;
 
   // 소득세

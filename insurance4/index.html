@@ -68,6 +68,16 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
       <input type="number" id="injuryRate" value="0.7" step="0.1" inputmode="decimal">
       <div class="info-box" id="injInfo">산재보험은 업종별로 요율이 달라요(보통 0.6~3% 안팎). 사업주가 전액 부담하며, 정확한 율은 근로복지공단에서 업종 코드로 확인하세요. 사무직은 낮고, 건설·제조는 높아요.</div>
     </div>
+    <div class="input-row">
+      <label>회사 규모 (고용보험 사업주 추가분) <span class="info-btn" onclick="toggleInfo('stabInfo')">i</span></label>
+      <select id="corpSize">
+        <option value="u150" selected>상시근로자 150인 미만 (+0.25%)</option>
+        <option value="prio">150인 이상 · 우선지원대상기업 (+0.45%)</option>
+        <option value="u1000">150~1,000인 미만 (+0.65%)</option>
+        <option value="o1000">1,000인 이상 · 국가·지자체 (+0.85%)</option>
+      </select>
+      <div class="info-box" id="stabInfo">고용보험은 실업급여분(근로자 <span class="tx-semp">0.9</span>% + 사업주 <span class="tx-eemp">0.9</span>%) 외에 <b>고용안정·직업능력개발사업</b>분을 사업주만 더 냅니다. 이 추가분이 회사 규모로 갈려요: 150인 미만 <span class="tx-st0">0.25</span>% · 150인 이상 우선지원대상기업 <span class="tx-st1">0.45</span>% · 150~1,000인 미만 <span class="tx-st2">0.65</span>% · 1,000인 이상 <span class="tx-st3">0.85</span>%. 인원은 같은 사업주의 모든 사업장 상시근로자를 합쳐서 셉니다. 1인법인·소규모 회사는 맨 위.</div>
+    </div>
   </div>
 
   <!-- 결과 -->
@@ -107,15 +117,15 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   </div>
 
   <div class="note">
-    ⚠️ <b>참고용</b>입니다. 2026년 요율(국민연금 9.5%·건강보험 7.19%·장기요양 13.14%·고용보험 등) 기준이며, 고용보험 사업주분은 사업장 규모·고용안정사업에 따라 0.25~0.85%p 추가될 수 있어요. 산재요율은 업종별로 다릅니다. 국민연금은 기준소득월액 상한(637만)이 적용됩니다.
+    ⚠️ <b>참고용</b>입니다. <span class="tx-year">2026</span>년 요율(국민연금 <span class="tx-npst">9.5</span>%·건강보험 <span class="tx-hr">7.19</span>%·장기요양 <span class="tx-sltc">13.14</span>%·고용보험 등) 기준이며, 고용보험 사업주분은 위 「회사 규모」에 따라 0.25~0.85%p가 더 붙어요. 산재요율은 업종별로 다릅니다. 국민연금은 기준소득월액 <span class="tx-snmin">41만</span>~<span class="tx-snmax">659만</span>원으로 잘라서 계산합니다(매년 7월 바뀜). 세율 확인일 <span class="tx-checked">2026-11-13</span>.
   </div>
 
   <div class="manual">
     <b>📘 2026 요율 (근로자 / 사업주)</b><br>
-    • 국민연금: 4.5% / 4.5%<br>
-    • 건강보험: 3.595% / 3.595%<br>
-    • 장기요양: 건강보험료의 13.14% (절반씩)<br>
-    • 고용보험: 0.9% / 1.15%~ (사업주가 더 부담)<br>
+    • 국민연금: <span class="tx-snps">4.75</span>% / <span class="tx-snps">4.75</span>% (기준소득월액 <span class="tx-snmin">41만</span>~<span class="tx-snmax">659만</span>원으로 자른 뒤)<br>
+    • 건강보험: <span class="tx-shh">3.595</span>% / <span class="tx-shh">3.595</span>%<br>
+    • 장기요양: 건강보험료의 <span class="tx-sltc">13.14</span>% (절반씩)<br>
+    • 고용보험: <span class="tx-semp">0.9</span>% / <span class="tx-eemp">0.9</span>% + 회사 규모별 <span class="tx-st0">0.25</span>~<span class="tx-st3">0.85</span>% (사업주가 더 부담)<br>
     • 산재보험: 0 / 사업주 전액<br>
     회사는 급여 외에 약 10~12%를 보험료로 더 부담해요.
   </div>
@@ -131,43 +141,60 @@ window.slSetState = function(d){ if(window.i4SetState) window.i4SetState(d); };
 <script>window.SF_RESET = ["sf_i4_state_v1"];</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
 <script src="/sf-slots.js?v=7"></script>
 <script src="/common.js?v=10"></script>
+<script src="/tax-rates.js?v=6"></script>
 <script>
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
 function wonToKorean(n){ var neg=n<0; n=Math.round(Math.abs(n)); if(n===0)return ''; var eok=Math.floor(n/1e8),man=Math.floor((n%1e8)/1e4),won=n%1e4,p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(man>0)p.push(man.toLocaleString('ko-KR')+'만'); if(won>0)p.push(won.toLocaleString('ko-KR')); return (neg?'−':'')+p.join(' ')+'원'; }
 function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
 
-// 2026 요율
-const R = {
-  pensionW:0.045, pensionE:0.045, pensionCap:6370000, pensionFloor:400000,
-  healthW:0.03595, healthE:0.03595,
-  careRate:0.1314, // 건보료 대비
-  employW:0.009, employE:0.0115 // 사업주 고용보험 (고용안정 포함 근사)
+// (090) 요율은 /tax-rates.js(window.SF_TAX)에서 읽음. 못 읽으면 아래 기본값(2026년 값)
+//   (089까지: 국민연금 4.5%·상한 637만·하한 40만 옛 값, 고용보험 사업주 1.15% 고정)
+const _T = window.SF_TAX;
+const TX = {
+  nps: _T ? _T.social.nps : 4.75, npsMin: _T ? _T.social.npsMin : 410000, npsMax: _T ? _T.social.npsMax : 6590000,
+  hh: _T ? _T.health.rate / 2 : 3.595, hr: _T ? _T.health.rate : 7.19, ltc: _T ? _T.health.ltc : 13.14,
+  emp: _T ? _T.social.emp : 0.9, eEmp: _T ? _T.socialEmp.emp : 0.9,
+  stab: _T ? _T.socialEmp.stab : {u150: 0.25, prio: 0.45, u1000: 0.65, o1000: 0.85},
+  year: _T ? _T.year : 2026, checked: _T ? _T.checked : '2026-11-13'
 };
+(function fillTax(){
+  const put = (cls, v) => document.querySelectorAll('.' + cls).forEach(el => el.textContent = v);
+  const man = n => (n / 10000).toLocaleString('ko-KR') + '만';
+  put('tx-snps', TX.nps); put('tx-npst', +(TX.nps * 2).toFixed(2)); put('tx-shh', +TX.hh.toFixed(4)); put('tx-hr', TX.hr);
+  put('tx-sltc', TX.ltc); put('tx-semp', TX.emp); put('tx-eemp', TX.eEmp);
+  put('tx-snmin', man(TX.npsMin)); put('tx-snmax', man(TX.npsMax));
+  ['u150','prio','u1000','o1000'].forEach((k, i) => put('tx-st' + i, TX.stab[k]));
+  const lab = {u150:'상시근로자 150인 미만', prio:'150인 이상 · 우선지원대상기업', u1000:'150~1,000인 미만', o1000:'1,000인 이상 · 국가·지자체'};
+  document.querySelectorAll('#corpSize option').forEach(o => { if (lab[o.value]) o.textContent = lab[o.value] + ' (+' + TX.stab[o.value] + '%)'; });
+  put('tx-year', TX.year); put('tx-checked', TX.checked);
+})();
 
 function calculate(){
   const wage=parseFloat($('wage').value)||0;
   const injuryRate=(parseFloat($('injuryRate').value)||0)/100;
 
-  const pensionBase=Math.min(R.pensionCap,Math.max(R.pensionFloor,wage));
+  const stab=TX.stab[$('corpSize').value]; const stabRate=(stab===undefined?TX.stab.u150:stab);
+  // (090) 국민연금은 기준소득월액 상·하한으로 자름 (급여 0이면 0)
+  const pensionBase=wage>0?Math.min(TX.npsMax,Math.max(TX.npsMin,wage)):0;
   // 근로자
-  const w_pension=pensionBase*R.pensionW;
-  const w_health=wage*R.healthW;
-  const w_care=w_health*R.careRate;
-  const w_employ=wage*R.employW;
+  const w_pension=pensionBase*TX.nps/100;
+  const w_health=wage*TX.hh/100;
+  const w_care=w_health*TX.ltc/100;
+  const w_employ=wage*TX.emp/100;
   const w_total=w_pension+w_health+w_care+w_employ;
   // 사업주
-  const e_pension=pensionBase*R.pensionE;
-  const e_health=wage*R.healthE;
-  const e_care=e_health*R.careRate;
-  const e_employ=wage*R.employE;
+  const e_pension=pensionBase*TX.nps/100;
+  const e_health=wage*TX.hh/100;
+  const e_care=e_health*TX.ltc/100;
+  const e_employ=wage*(TX.eEmp+stabRate)/100;
   const e_injury=wage*injuryRate;
   const e_total=e_pension+e_health+e_care+e_employ+e_injury;
 
   $('workerTotal').textContent=fmt(w_total)+'원';
-  $('workerPct').textContent='급여의 '+(w_total/wage*100).toFixed(1)+'%';
+  $('workerPct').textContent=wage>0?'급여의 '+(w_total/wage*100).toFixed(1)+'%':'';
   $('employerTotal').textContent=fmt(e_total)+'원';
-  $('employerPct').textContent='급여의 '+(e_total/wage*100).toFixed(1)+'%';
+  $('employerPct').textContent=wage>0?'급여의 '+(e_total/wage*100).toFixed(1)+'%':'';
 
   $('detailBody').innerHTML=`
     <tr><td class="label">국민연금</td><td class="num">${fmt(w_pension)}</td><td class="num">${fmt(e_pension)}</td></tr>
@@ -187,6 +214,7 @@ function calculate(){
 }
 
 document.querySelectorAll('input').forEach(el=>el.addEventListener('input', calculate));
+document.querySelectorAll('select').forEach(el=>el.addEventListener('change', calculate));
 // 상태 저장/복원 (input + select)
 function i4GetState(){
   const s={};

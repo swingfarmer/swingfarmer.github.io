@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<title>개인 vs 법인 투자 세금 비교 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=12">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .hint{color:#cccccc!important}
+body.sf-dark .verdict.va{background-color:#153727!important;border-color:#267350!important}
+body.sf-dark .verdict.vb{background-color:#372815!important;border-color:#734f26!important}
+body.sf-dark .verdict .why{color:#cccccc!important}
+body.sf-dark .howto{border-color:#2c333f!important;background-color:#1e242e!important}
+body.sf-dark .howto summary{color:#85b5e0!important}
+body.sf-dark .howto .hb{color:#cccccc!important}
+body.sf-dark .alloc details{border-color:#2c333f!important;background-color:#1e242e!important}
+body.sf-dark .alloc summary{color:#85b5e0!important}
+body.sf-dark .unc{color:#f2a373!important}
+body.sf-dark .copy-row button{border-color:#2c333f!important;background-color:#1e242e!important;color:#85b5e0!important}
+</style>
+<style>
+:root { --sf-max-w: 1100px; }
+.hint { font-size:11.5px; color:var(--sf-text-sub); line-height:1.5; margin-top:3px; }
+.input-row.chk label { display:flex; gap:8px; align-items:flex-start; font-weight:600; cursor:pointer; }
+.input-row.chk input { margin-top:3px; flex:0 0 auto; }
+.verdict { margin-top:14px; padding:12px 14px; border-radius:8px; font-weight:700; font-size:15px; }
+.verdict.va { background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; }
+.verdict.vb { background:#fff7ed; color:#b45309; border:1px solid #fed7aa; }
+.verdict .why { display:block; font-weight:400; font-size:12.5px; color:var(--sf-text-sub); margin-top:4px; }
+.c-ind { color:#2563eb; } .c-a { color:#047857; } .c-b { color:#b45309; }
+.summary-grid .stat.cur { outline:2px solid var(--sf-brand); outline-offset:-2px; }
+.stat .cur-tag { display:inline-block; font-size:10.5px; font-weight:700; color:#fff; background:var(--sf-brand); border-radius:8px; padding:1px 7px; margin-left:4px; vertical-align:middle; }
+table.compare td.memo { font-size:12px; color:var(--sf-text-sub); text-align:left; white-space:normal; min-width:220px; }
+table.compare td.best { font-weight:700; text-decoration:underline; text-underline-offset:3px; }
+table.compare tr.tot td { font-weight:700; border-top:2px solid var(--sf-brand); }
+table.compare thead th { line-height:1.25; vertical-align:bottom; }
+.howto { border:1px solid var(--sf-border); border-radius:8px; margin:10px 0 4px; background:var(--sf-surface); grid-column:1/-1; }
+.howto summary { cursor:pointer; padding:8px 12px; font-size:13px; font-weight:700; color:var(--sf-brand); }
+.howto .hb { padding:0 14px 12px; font-size:12.5px; line-height:1.8; color:var(--sf-text-sub); }
+.howto .hb ol, .howto .hb ul { margin:2px 0 4px; padding-left:20px; }
+.alloc details { border:1px solid var(--sf-border); border-radius:8px; margin-bottom:8px; background:var(--sf-surface); }
+.alloc summary { cursor:pointer; padding:9px 12px; font-weight:700; font-size:14px; color:var(--sf-brand); }
+.alloc ul { margin:0 0 10px; padding:0 16px 0 34px; font-size:13px; line-height:1.75; }
+.unc { color:#92400e; }
+.copy-row { margin-top:10px; display:flex; gap:10px; align-items:center; }
+.copy-row button { padding:7px 14px; border-radius:6px; border:1px solid var(--sf-border); background:var(--sf-surface); cursor:pointer; font-size:13px; font-weight:600; color:var(--sf-brand); }
+#copied { font-size:12px; color:#047857; display:none; }
+</style>
+
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body class="sf-narrow">
+
+<h1>🏦 개인 vs 법인 투자 세금 비교</h1>
+<p class="desc">같은 투자수익을 개인 계좌로 받을 때와 법인 계좌로 받을 때 세금·건보료가 얼마나 다른지 자산별로 비교합니다. 법인은 두 경우로 나눠 계산합니다 — <b class="c-a">A</b>: 일반법인 세율(과표 2억까지 <span class="tx-c1">11</span>%), <b class="c-b">B</b>: 성실신고 소규모법인(처음부터 <span class="tx-cs">22</span>%). 금액은 모두 <b>만원</b>, 세율은 지방소득세 포함. (세율 확인일 <span class="tx-checked">2026-11-13</span>)</p>
+
+<div class="panel">
+  <h2>① 우리 법인은 A인가 B인가</h2>
+  <div class="inputs">
+    <div class="input-row chk">
+      <label><input type="checkbox" id="jMajor" checked> 지배주주와 특수관계인 지분 합계 50% 초과</label>
+      <div class="hint">1인법인·가족법인이면 체크 그대로.</div>
+    </div>
+    <div class="input-row">
+      <label>상시근로자 수 (명)</label>
+      <input type="number" id="jWorkers" value="1" min="0">
+      <div class="hint">5명 이상이면 소규모법인 아님. 이름만 올린 고용은 세무조사 때 부인될 수 있음.</div>
+    </div>
+    <div class="input-row">
+      <label>본업 매출 (연, 만원)</label>
+      <input type="number" id="jSales" value="3000" min="0">
+      <div class="hint">투자 말고 원래 사업(유통·스토어·광고 등) 매출.</div>
+    </div>
+    <div class="input-row">
+      <label>부동산 임대수입 (연, 만원)</label>
+      <input type="number" id="jRent" value="0" min="0">
+      <div class="hint">사무실을 사서 일부 세 놓으면 여기에.</div>
+    </div>
+    <div class="input-row chk">
+      <label><input type="checkbox" id="jFin"> 금융투자업 주업 + 투자손익을 영업수익(매출)으로 장부 처리</label>
+      <div class="hint">정관 목적(유가증권 투자업) + 사업자등록 업종(기타 금융업) + 세무사가 영업수익으로 기장해야 체크. <b>정관만 바꾼 상태면 체크하지 말 것.</b></div>
+    </div>
+    <details class="howto">
+      <summary>📖 판정 기준 — 왜 A/B로 나누나 (눌러서 펼치기)</summary>
+      <div class="hb"><ol>
+        <li>성실신고 소규모법인은 세 가지를 <b>모두</b> 갖추면 해당: ① 지배주주 등 지분 50% 초과 ② 상시근로자 5인 미만 ③ 부동산임대업이 주업이거나, <b>이자·배당·임대수입이 매출의 50% 이상</b>. 해당되면 과표 2억 이하 구간 없이 처음부터 <span class="tx-cs">22</span>%(지방세 포함). 결손금 공제도 소득의 80%까지로 줄고, 접대비·업무용승용차 한도가 줄고, 조특법상 중소기업에서 빠짐.</li>
+        <li>1인 투자법인은 ①②를 거의 다 충족하므로 ③이 갈림길. 국내·미국 <b>주식 매매차익은 ③의 이자·배당이 아님</b> → 매매 위주면 A, 배당·분배금·이자 위주면 B로 기울어짐. 그래서 계산 결과도 A와 B를 둘 다 보여줌.</li>
+        <li>체크박스 「금융투자업」: 금융투자업이 주업인 법인이 계속·반복해서 받은 이자·배당은 ③의 분자에서 빼고(재정경제부 법인세제과-119, 2026.2.27), 금융업 법인의 매출(영업수익)에는 주식 처분이익도 들어간다(국세청 서면-2024-법인-2912, 2025.3.24)는 해석을 반영. 체크하면 분자에서 이자·배당이 빠지고 분모에 매매차익이 더해짐.</li>
+        <li>⚠ 유권해석이지 법령이 아님. 「주업」인지는 실질로 판단하고, 해석이 바뀔 수 있음. 장기보유 ETF 분배금도 「계속·반복 사업소득」으로 봐줄지는 확인된 사례가 없음. 판정은 사업연도마다 다시 함. 실행 전 세무사 확인.</li>
+      </ol></div>
+    </details>
+  </div>
+  <div id="jResult"></div>
+</div>
+
+<div class="panel">
+  <h2>② 조건 입력</h2>
+  <div class="inputs">
+    <div class="section-label">개인</div>
+    <div class="input-row">
+      <label>다른 종합소득 과세표준 (만원)</label>
+      <input type="number" id="iOther" value="3000" min="0">
+      <div class="hint">근로·사업소득 등 금융소득 외 소득의 <b>과세표준</b>(공제 뺀 금액). 금융소득이 2천만을 넘을 때 몇 % 구간에 얹히는지 정함.</div>
+    </div>
+    <div class="input-row">
+      <label>건보료 매기는 다른 보수외소득 (만원)</label>
+      <input type="number" id="iNhisOther" value="0" min="0">
+      <div class="hint">직장가입자 기준. 월급 말고 사업·임대 등 소득. 금융소득과 합쳐 연 <span class="tx-hfree">2,000</span>만 넘는 부분에 건보료가 붙음.</div>
+    </div>
+    <div class="input-row">
+      <label>건보료율 (%, 장기요양 포함)</label>
+      <input type="number" id="iNhisRate" value="8.13" step="0.01">
+      <div class="hint"><span class="tx-year">2026</span>년 건보 <span class="tx-hr">7.19</span>% + 장기요양(건보료의 <span class="tx-hl">13.14</span>%) ≈ <span class="tx-hsum">8.13</span>%. 보수외소득 보험료는 전액 본인 부담.</div>
+    </div>
+    <div class="input-row chk">
+      <label><input type="checkbox" id="iHdNhis"> 고배당 분리과세 배당도 건보료에 넣기</label>
+      <div class="hint">실무상 안 매긴다는 안내가 있지만 법령에 빼준다는 명시는 없음. 보수적으로 보려면 체크.</div>
+    </div>
+
+    <div class="section-label">법인</div>
+    <div class="input-row">
+      <label>법인 본업 과세소득 (만원)</label>
+      <input type="number" id="cOther" value="0">
+      <div class="hint">본업 이익 − 경비. 적자면 음수(−)로. 투자수익이 몇 % 구간부터 과세되는지 정함. 적자면 투자수익과 상계돼 법인이 더 유리해짐.</div>
+    </div>
+    <div class="input-row">
+      <label>세후 이익 중 개인이 꺼내 쓸 비율 (%)</label>
+      <input type="number" id="cWd" value="0" min="0" max="100" step="10">
+      <div class="hint">법인 돈은 개인이 쓰려면 배당·급여로 꺼내야 하고 그때 세금이 또 붙음. <b>0 = 법인에 계속 재투자</b>. 가수금(내가 빌려준 원금) 회수는 세금 없음 — 여기는 수익분만.</div>
+    </div>
+    <div class="input-row">
+      <label>꺼낼 때 세율 (%)</label>
+      <input type="number" id="cExit" value="15.4" step="0.1">
+      <div class="hint">배당으로 꺼내고 개인 금융소득이 2천만 이하면 <span class="tx-int">15.4</span>%. 넘으면 종합과세라 더 높을 수 있음.</div>
+    </div>
+
+    <div class="section-label">자산별 연간 예상 소득 (만원)</div>
+    <div class="input-row">
+      <label>국내주식 매매차익</label>
+      <input type="number" id="aKr" value="1000">
+      <div class="hint">개인 비과세(대주주 제외). 법인은 법인세.</div>
+    </div>
+    <div class="input-row">
+      <label>저쿠폰 채권 매매·환차익</label>
+      <input type="number" id="aBond" value="300">
+      <div class="hint">한·미 국채 현물을 직접 산 경우. 개인은 매매·환차익 비과세(표면이자는 아래 이자 칸).</div>
+    </div>
+    <div class="input-row">
+      <label>미국 주식·ETF 매매차익</label>
+      <input type="number" id="aUsg" value="1000">
+      <div class="hint">개인은 연 <span class="tx-ovd">250</span>만 공제 후 <span class="tx-ov">22</span>%, 손실은 그해만 통산. 법인은 결손금 15년 이월.</div>
+    </div>
+    <div class="input-row">
+      <label>미국 ETF 분배금·배당</label>
+      <input type="number" id="aUsd" value="500">
+      <div class="hint">SGOV·TLT·배당ETF 등. 미국에서 <span class="tx-usw">15</span>% 원천징수.</div>
+    </div>
+    <div class="input-row">
+      <label>국내 고배당 개별주 배당</label>
+      <input type="number" id="aHd" value="600">
+      <div class="hint">금융지주 등 국내 상장사 개별 종목 배당(ETF 분배금 아님).</div>
+    </div>
+    <div class="input-row chk">
+      <label><input type="checkbox" id="aHdElig" checked> 위 배당주가 고배당기업 분리과세 대상</label>
+      <div class="hint">배당성향 40% 이상, 또는 25% 이상 + 전년 대비 배당 10% 이상 증가 (전년보다 배당이 줄면 안 됨). KIND 공시로 확인. 2026~2028년 지급 배당 한시. 개인만 해당.</div>
+    </div>
+    <div class="input-row chk">
+      <label><input type="checkbox" id="aHd3m" checked> 배당기준일 3개월 전부터 보유</label>
+      <div class="hint">법인 수입배당금 익금불산입(지분 20% 미만 <span class="tx-dx">30</span>%) 조건. 스윙으로 잠깐 들고 있던 종목은 해당 없음. 차입금 이자가 있으면 일부 깎임(미반영).</div>
+    </div>
+    <div class="input-row">
+      <label>국내상장 해외ETF 분배금</label>
+      <input type="number" id="aEtfd" value="300">
+      <div class="hint">TIGER 미국S&amp;P500 같은 것, ISA·연금 계좌 밖에서 받은 것만.</div>
+    </div>
+    <div class="input-row">
+      <label>국내상장 해외ETF 매매차익</label>
+      <input type="number" id="aEtfg" value="200">
+      <div class="hint">개인은 매매차익도 배당소득(금융소득 합산). 법인은 법인세.</div>
+    </div>
+    <div class="input-row">
+      <label>예금·채권 표면이자</label>
+      <input type="number" id="aInt" value="200">
+      <div class="hint">이자소득. 개인 금융소득 2천만 판정에 들어감.</div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>③ 결과</h2>
+  <div class="summary-grid" id="sum"></div>
+  <div class="table-wrap">
+    <table class="compare">
+      <thead><tr><th>자산</th><th>소득</th><th class="c-ind">개인</th><th class="c-a">법인 A<br>(11% 구간)</th><th class="c-b">법인 B<br>(소규모 22%)</th><th>메모</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <div class="hint">개인 금융소득(분배금·배당·이자) 세금은 전체를 계산한 뒤 자산별로 금액 비례로 나눠 표시. 밑줄 = 그 줄에서 세금이 가장 적은 쪽(법인은 꺼내기 전 기준).</div>
+  <details class="howto">
+    <summary>📖 결과 읽는 법 (눌러서 펼치기)</summary>
+    <div class="hb"><ol>
+      <li>먼저 위 ①의 판정이 A인지 B인지 본다. 요약 칸에서 판정된 쪽에 「판정」 표시가 붙음. 판정이 애매하면 B로 보고 계획하는 게 안전(B는 A의 보수적인 경우).</li>
+      <li>「합계(꺼내기 전)」는 법인에 돈을 계속 두는 경우. 「합계(꺼낸 뒤)」는 ②의 꺼내 쓸 비율만큼 배당으로 꺼낸 경우. 법인이 유리한 건 대부분 <b>법인에 남겨둘 돈</b>에서만 성립.</li>
+      <li>줄별로 개인이 0인 자산(국내주식 매매, 저쿠폰 채권)은 법인에 둘 이유가 없음. 법인이 이기는 줄은 보통 미국 주식 차익(A일 때)과 금융소득 2천만을 넘기는 인컴 자산.</li>
+      <li>법인 A의 미국 분배금은 미국 원천 15% 중 법인세(10%)만큼만 공제되고 나머지 5%p는 10년 이월 — 여기서는 이월분을 비용으로 넣어서 보수적.</li>
+    </ol></div>
+  </details>
+  <div class="copy-row"><button type="button" id="copyBtn">결과 텍스트 복사</button><span id="copied">복사됨</span></div>
+</div>
+
+<div class="panel alloc">
+  <h2>배분 원칙 요약</h2>
+  <details open><summary>공통: 개인 계좌에 둘 것 (A·B 무관)</summary>
+  <ul>
+    <li>국내주식 매매 — 개인 비과세, 법인은 <span class="tx-c1">11</span>~<span class="tx-c2">22</span>% 과세</li>
+    <li>저쿠폰 국채 현물 — 개인은 매매·환차익 비과세, 법인은 전부 과세</li>
+    <li>ISA·연금 한도 안의 국내상장 해외ETF</li>
+    <li>해외주식 연 <span class="tx-ovd">250</span>만 공제분</li>
+    <li>(선택) 고배당기업 분리과세 대상 국내 배당주 — 개인 분리과세와 법인 B가 비슷</li>
+  </ul></details>
+  <details><summary>A (일반 11%)일 때 법인에 둘 것</summary>
+  <ul>
+    <li>미국 무배당·저배당 성장 코어 (장기, 꺼내 쓸 돈 아닌 것) — 11% vs 개인 22% <span class="unc">(미국 상속세: 개인이 미국 상장 주식·ETF를 6만 달러 넘게 들고 사망하면 미국 상속세 대상, 한국 법인 보유분은 해당 없음 — 전문가 확인 권장)</span></li>
+    <li>미국 개별주 공격 매매 — 법인은 결손금 15년 이월, 개인은 그해만 통산</li>
+    <li>달러 파킹용 단기채 ETF — 금종세·건보료 차단, 실효 약 16% (미국 원천 15% 중 5%p 이월)</li>
+    <li>국내 고배당 개별주 3개월 이상 보유분 — 익금불산입 30%, 실효 약 7.7%</li>
+    <li>개인 ISA·연금 한도를 넘는 국내상장 해외ETF</li>
+    <li>장기채 ETF는 금리 베팅용 소액. 커버드콜 ETF는 세금이 아니라 원금 잠식 구조라 비추</li>
+  </ul></details>
+  <details><summary>B (소규모 22%)일 때 법인에 둘 것</summary>
+  <ul>
+    <li>이미 법인에 있는 이익잉여금, 앞으로도 꺼낼 계획 없는 돈</li>
+    <li>개인으로 받으면 금융소득 2천만을 넘기는 인컴 자산의 초과분</li>
+    <li>미국 ETF 장기분 중 상속세 회피 목적분</li>
+    <li>그 외 미국주식은 세율 22%로 같고 개인은 250만 공제·인출세 없음 → 개인 유리</li>
+    <li>B로 시작해 A 요건이 확정되면 인컴 자산을 법인으로 늘림 (B는 A의 보수적 부분집합이라 방향이 안 꼬임)</li>
+  </ul></details>
+  <details><summary>꼭 기억할 함정</summary>
+  <ul>
+    <li><b>출구 과세</b>: 법인 이익을 개인이 쓰려면 배당·급여로 꺼내야 하고 그때 또 과세. 11% + 인출 15.4% ≈ 24.7%, 22% + 15.4% ≈ 34%. 가수금 원금 회수는 세금 없음, 갇히는 건 수익분</li>
+    <li><b>미국 분배금</b>: 법인 11% 구간은 미국 원천 15% 중 10%만 공제, 5%p는 10년 이월(못 쓰면 소멸)</li>
+    <li><b>국내 배당 익금불산입</b>: 배당기준일 전 3개월 이내 취득분 제외, 차입금 이자 있으면 일부 차감, ETF·리츠 분배금은 대상 아님</li>
+    <li><b>소규모법인 부수 불이익</b>: 결손금 공제 소득의 80% 한도, 접대비·업무용승용차 한도 축소, 조특법상 중소기업 제외(세액공제·감면 제한)</li>
+    <li><b>부가세</b>: 금융업은 면세. 과세 매출(유통 등)과 겸영하면 공통매입세액 일부 불공제</li>
+  </ul></details>
+</div>
+
+<div class="manual">
+  <h3>📘 계산 방법과 단순화한 것</h3>
+  <ul>
+    <li><b>개인</b>: 국내주식·채권 매매차익 0. 미국 주식 차익 (차익 − <span class="tx-ovd">250</span>만) × <span class="tx-ov">22</span>%. 금융소득(미국 분배금·국내 배당·국내상장 해외ETF 분배금·매매차익·이자)이 <span class="tx-fin">2,000</span>만 이하면 원천징수(<span class="tx-int">15.4</span>%, 미국분 <span class="tx-usw">15</span>%)로 끝. 넘으면 비교과세: max(다른 소득 + 초과분 누진 + 2천만 × 14%, 금융소득 전체 × 14%) − 원래 다른 소득 세금, ×1.1(지방세).</li>
+    <li><b>고배당 분리과세</b>: 선택제라 「분리과세」와 「종합과세」 중 세금+건보료가 적은 쪽을 자동 선택. 분리과세분은 2천만 판정에서 빠지고 <span class="tx-hd">14/20/25/30</span>% 누진 × 1.1.</li>
+    <li><b>건보료</b>: (다른 보수외소득 + 금융소득) 중 연 <span class="tx-hfree">2,000</span>만 넘는 부분 × 건보료율. 개인 해외주식 양도차익은 대상 아님.</li>
+    <li><b>법인</b>: 투자소득 합계(국내 고배당 3개월 이상 보유분은 30% 뺌)를 본업 과세소득 위에 얹어 누진 (A: <span class="tx-cA">10/20/22/25</span>%, B: <span class="tx-cB">20/22/25</span>%) × 1.1. 미국 원천 15%는 그 소득에 붙는 법인세만큼만 공제.</li>
+    <li class="unc">⚠ 개인 종합과세 때 국내 배당 Gross-up·배당세액공제 미반영 → 국내 배당의 개인 세금이 실제보다 조금 높게 나올 수 있음. 미국분 외국납부세액공제는 「max(한국 세금 몫, 미국 15%)」로 단순화.</li>
+    <li class="unc">⚠ 건보료는 직장가입자 기준. 지역가입자·피부양자는 기준이 다름(피부양자는 금융소득 등 2천만 넘으면 자격 상실).</li>
+    <li class="unc">⚠ 법인지방소득세에는 외국납부세액공제 없는 것으로 계산. 이월결손금·증권거래세·수수료 미반영.</li>
+    <li class="unc">⚠ 개인 국내주식 대주주(종목당 50억 이상 등)는 양도세 대상 — 이 계산은 비과세로 봄.</li>
+  </ul>
+</div>
+
+<div class="source-box">
+  <h3>근거</h3>
+  <ul>
+    <li>법인세법 §55 (2025.12 개정, 2026.1.1 이후 시작 사업연도) · §60의2, 시행령 §42②·§97의4 (성실신고확인 소규모법인)</li>
+    <li>재정경제부 법인세제과-119 (2026.2.27) · 국세청 서면-2024-법인-2912 (2025.3.24) — 금융투자업 법인 판정</li>
+    <li>조세특례제한법 §104의27 (고배당기업 배당소득 분리과세) · 법인세법 §18의2 (수입배당금 익금불산입)</li>
+    <li>참고용 계산. 실행 전 세무사 확인 필요.</li>
+  </ul>
+</div>
+
+<script src="/tax-rates.js?v=6"></script>
+<script>
+// (090) 세율은 /tax-rates.js(window.SF_TAX)에서 읽음. 금액은 만원 단위라 구간 상한을 1만으로 나눠 씀. 못 읽으면 아래 기본값(2026년 값)
+const _T = window.SF_TAX;
+const toMan = br => br.map(([hi, r]) => [hi / 1e4, r]);
+const TX = {
+  income: toMan(_T ? _T.income : [[14e6,6],[50e6,15],[88e6,24],[150e6,35],[300e6,38],[500e6,40],[1e9,42],[Infinity,45]]),
+  corp: toMan(_T ? _T.corp : [[2e8,10],[2e10,20],[3e11,22],[Infinity,25]]),
+  corpSmall: toMan(_T ? _T.corpSmall : [[2e10,20],[3e11,22],[Infinity,25]]),
+  highDiv: toMan(_T ? _T.highDiv : [[2e7,14],[3e8,20],[5e9,25],[Infinity,30]]),
+  local: _T ? _T.local : 0.1,
+  interest: _T ? _T.interest : 15.4,
+  fin: (_T ? _T.finThreshold : 20000000) / 1e4,
+  ov: _T ? _T.overseasStock.rate : 22, ovd: (_T ? _T.overseasStock.deduct : 2500000) / 1e4,
+  usw: _T ? _T.usWithhold : 15,
+  dx: _T ? _T.divExcl[0][1] : 30,
+  hr: _T ? _T.health.rate : 7.19, hl: _T ? _T.health.ltc : 13.14, hfree: (_T ? _T.health.otherIncomeFree : 20000000) / 1e4,
+  year: _T ? _T.year : 2026, checked: _T ? _T.checked : '2026-11-13'
+};
+TX.base14 = TX.interest / (1 + TX.local);      // 원천 소득세율 14 (지방세 뺀 값)
+TX.hsum = Math.round(TX.hr * (1 + TX.hl / 100) * 100) / 100;
+function prog(b, br){ let t = 0, lo = 0; if (!(b > 0)) return 0; for (const [hi, r] of br){ if (b > lo) t += (Math.min(b, hi) - lo) * r / 100; lo = hi; } return t; }
+const wl = r => Math.round(r * (1 + TX.local) * 100) / 100;
+(function fillTax(){
+  const put = (cls, v) => document.querySelectorAll('.' + cls).forEach(el => el.textContent = v);
+  const n0 = v => v.toLocaleString('ko-KR');
+  put('tx-c1', wl(TX.corp[0][1])); put('tx-c2', wl(TX.corp[1][1])); put('tx-cs', wl(TX.corpSmall[0][1]));
+  put('tx-cA', TX.corp.map(x => x[1]).join('/')); put('tx-cB', TX.corpSmall.map(x => x[1]).join('/'));
+  put('tx-hd', TX.highDiv.map(x => x[1]).join('/'));
+  put('tx-int', TX.interest); put('tx-fin', n0(TX.fin)); put('tx-ov', TX.ov); put('tx-ovd', n0(TX.ovd));
+  put('tx-usw', TX.usw); put('tx-dx', TX.dx); put('tx-hr', TX.hr); put('tx-hl', TX.hl); put('tx-hsum', TX.hsum);
+  put('tx-hfree', n0(TX.hfree)); put('tx-year', TX.year); put('tx-checked', TX.checked);
+  // 입력칸 기본값도 공통 파일에서 (저장 슬롯 복원이 뒤에 덮어씀)
+  document.getElementById('iNhisRate').value = TX.hsum;
+  document.getElementById('cExit').value = TX.interest;
+})();
+
+const $ = id => document.getElementById(id);
+const n = id => { const v = parseFloat($(id).value); return isNaN(v) ? 0 : v; };
+const won = x => Math.round(x).toLocaleString('ko-KR');
+const pct = (a, b) => b > 0 ? (a / b * 100).toFixed(1) + '%' : '-';
+const pos = v => Math.max(0, v);
+
+function judge(inc){
+  const major = $('jMajor').checked, workers = n('jWorkers'), sales = pos(n('jSales')), rent = pos(n('jRent')), fin = $('jFin').checked;
+  const divInt = pos(inc.usd) + pos(inc.hd) + pos(inc.etfd) + pos(inc.int);
+  const gains = pos(inc.kr) + pos(inc.bond) + pos(inc.usg) + pos(inc.etfg);
+  const num = (fin ? 0 : divInt) + rent;
+  const den = sales + rent + divInt + (fin ? gains : 0);
+  const ratio = den > 0 ? num / den : 0;
+  const rentMain = rent > 0 && rent >= sales && !fin;   // 부동산임대업 주업 (근사: 임대수입 ≥ 본업 매출)
+  const small = major && workers < 5 && (ratio >= 0.5 || rentMain);
+  const why = [];
+  why.push(major ? '지분 50% 초과 ✔' : '지분 50% 이하 → 해당 없음');
+  why.push(workers < 5 ? '근로자 5인 미만 ✔' : '근로자 5인 이상 → 해당 없음');
+  why.push('이자·배당·임대 ÷ 매출 = ' + (ratio * 100).toFixed(1) + '% ' + (ratio >= 0.5 ? '(50% 이상 ✔)' : '(50% 미만)') + (rentMain ? ' · 임대업 주업 ✔' : ''));
+  if (fin) why.push('금융투자업: 사업성 이자·배당은 분자에서 빼고 매매차익을 매출에 넣음');
+  return {small, ratio, why: why.join(' / ')};
+}
+
+function calc(){
+  const inc = {kr:n('aKr'), bond:n('aBond'), usg:n('aUsg'), usd:n('aUsd'), hd:n('aHd'), etfd:n('aEtfd'), etfg:n('aEtfg'), int:n('aInt')};
+  const hdElig = $('aHdElig').checked, hd3m = $('aHd3m').checked;
+  const L = 1 + TX.local, b14 = TX.base14 / 100, usw = TX.usw / 100;
+
+  // ---- 판정
+  const j = judge(inc);
+  $('jResult').innerHTML = '<div class="verdict ' + (j.small ? 'vb' : 'va') + '">' +
+    (j.small ? '→ 지금 입력으로는 B (성실신고 소규모법인 ' + wl(TX.corpSmall[0][1]) + '%) 가능성 높음' : '→ 지금 입력으로는 A (일반법인, 2억까지 ' + wl(TX.corp[0][1]) + '%) 가능성 높음') +
+    '<span class="why">' + j.why + '</span></div>';
+
+  // ---- 개인
+  const iOther = n('iOther'), nOther = n('iNhisOther'), nRate = n('iNhisRate') / 100, hdNhis = $('iHdNhis').checked;
+  const usgTax = pos(inc.usg - TX.ovd) * TX.ov / 100;
+  // 금융소득 세금: 2천만 이하 원천징수로 끝, 넘으면 비교과세. 미국분은 max(한국 세금 몫, 미국 원천 15%)
+  function finTax(F, us){
+    if (F <= 0) return {total:0, usPart:0};
+    if (F <= TX.fin) return {total: us * usw + (F - us) * TX.interest / 100, usPart: us * usw};
+    const base = prog(iOther, TX.income);
+    const nat = Math.max(prog(iOther + F - TX.fin, TX.income) + TX.fin * b14, base + F * b14) - base;
+    const kor = nat * L;
+    const usShare = kor * us / F;
+    const usPart = Math.max(usShare, us * usw);
+    return {total: kor - usShare + usPart, usPart};
+  }
+  const nhis = x => (pos(nOther + x - TX.hfree) - pos(nOther - TX.hfree)) * nRate;
+  // 경우1: 고배당도 일반 금융소득에 합산
+  const F1 = pos(inc.usd) + pos(inc.hd) + pos(inc.etfd) + pos(inc.etfg) + pos(inc.int);
+  const t1 = finTax(F1, pos(inc.usd));
+  const o1 = {fin:t1.total, usPart:t1.usPart, hdSep:0, nh:nhis(F1), F:F1, sep:false};
+  let best = o1;
+  // 경우2: 고배당 분리과세 선택 (2천만 판정과 별도)
+  if (hdElig && inc.hd > 0){
+    const F2 = F1 - pos(inc.hd);
+    const t2 = finTax(F2, pos(inc.usd));
+    const o2 = {fin:t2.total, usPart:t2.usPart, hdSep: prog(pos(inc.hd), TX.highDiv) * L, nh: nhis(F2 + (hdNhis ? pos(inc.hd) : 0)), F:F2, sep:true};
+    if (o2.fin + o2.hdSep + o2.nh < o1.fin + o1.hdSep + o1.nh) best = o2;
+  }
+  const restF = best.F - pos(inc.usd), restTax = best.fin - best.usPart;
+  const share = k => restF > 0 ? restTax * pos(inc[k]) / restF : 0;
+  const ind = {kr:0, bond:0, usg:usgTax, usd:best.usPart, hd: best.sep ? best.hdSep : share('hd'), etfd:share('etfd'), etfg:share('etfg'), int:share('int')};
+  const indTax = Object.values(ind).reduce((a, b) => a + b, 0);
+  const indTotal = indTax + best.nh;
+
+  // ---- 법인
+  const cOther = n('cOther'), wd = Math.min(100, pos(n('cWd'))) / 100, exitR = n('cExit') / 100;
+  const taxable = {kr:inc.kr, bond:inc.bond, usg:inc.usg, usd:inc.usd, hd:inc.hd * (hd3m ? 1 - TX.dx / 100 : 1), etfd:inc.etfd, etfg:inc.etfg, int:inc.int};
+  const T = Object.values(taxable).reduce((a, b) => a + b, 0);
+  const gross = Object.values(inc).reduce((a, b) => a + b, 0);
+  function corp(br){
+    const nat = prog(cOther + T, br) - prog(cOther, br);
+    const local = nat * TX.local;
+    const w = pos(inc.usd) * usw;
+    const natOnUsd = T > 0 ? nat * pos(taxable.usd) / T : 0;
+    const credit = Math.min(w, pos(natOnUsd));
+    const total = nat + local + w - credit;
+    const row = {};
+    for (const k in taxable) row[k] = T > 0 ? (nat + local) * taxable[k] / T : 0;
+    row.usd += w - credit;
+    const exit = pos(gross - total) * wd * exitR;
+    return {total, row, exit, carry: w - credit};
+  }
+  const A = corp(TX.corp), B = corp(TX.corpSmall);
+
+  // ---- 표
+  const rows = [
+    ['kr', '국내주식 매매차익', '개인 비과세. 법인은 법인세'],
+    ['bond', '저쿠폰 채권 매매·환차익', '개인 비과세. 법인은 과세'],
+    ['usg', '미국 주식·ETF 매매차익', '개인 ' + won(TX.ovd) + '만 공제 후 ' + TX.ov + '%. A는 ' + wl(TX.corp[0][1]) + '%, B는 ' + wl(TX.corpSmall[0][1]) + '%로 개인과 비슷'],
+    ['usd', '미국 ETF 분배금·배당', '법인은 개인 금종세·건보료와 무관' + (A.carry > 0.5 ? '. A는 미국 원천 중 ' + won(A.carry) + '만 공제 못 받아 이월(여기선 비용 처리)' : '')],
+    ['hd', '국내 고배당 개별주 배당', (hd3m ? '법인 ' + TX.dx + '% 익금불산입 적용' : '3개월 미만 보유라 익금불산입 없음') + (best.sep ? ' / 개인은 분리과세 선택이 유리' : (hdElig && inc.hd > 0 ? ' / 개인은 종합과세가 유리(분리과세 안 고름)' : ''))],
+    ['etfd', '국내상장 해외ETF 분배금', '개인은 배당소득(금융소득 합산)'],
+    ['etfg', '국내상장 해외ETF 매매차익', '개인은 배당소득(금융소득 합산)'],
+    ['int', '예금·채권 표면이자', '개인은 이자소득(금융소득 합산)']
+  ];
+  let h = '';
+  for (const [k, name, memo] of rows){
+    const v = [ind[k], A.row[k], B.row[k]];
+    const mn = Math.min(...v);
+    const c = (x, cls) => '<td class="' + cls + (Math.abs(x - mn) < 0.5 && inc[k] !== 0 ? ' best' : '') + '">' + won(x) + '</td>';
+    h += '<tr><td>' + name + '</td><td>' + won(inc[k]) + '</td>' + c(v[0], 'c-ind') + c(v[1], 'c-a') + c(v[2], 'c-b') + '<td class="memo">' + memo + '</td></tr>';
+  }
+  h += '<tr><td>개인 건보료 증가분</td><td>-</td><td class="c-ind">' + won(best.nh) + '</td><td class="c-a">0</td><td class="c-b">0</td><td class="memo">보수외소득 ' + won(TX.hfree) + '만 넘는 부분 × ' + n('iNhisRate') + '%</td></tr>';
+  h += '<tr class="tot"><td>합계 (꺼내기 전)</td><td>' + won(gross) + '</td><td class="c-ind">' + won(indTotal) + '</td><td class="c-a">' + won(A.total) + '</td><td class="c-b">' + won(B.total) + '</td><td class="memo">실효 개인 ' + pct(indTotal, gross) + ' / A ' + pct(A.total, gross) + ' / B ' + pct(B.total, gross) + '</td></tr>';
+  h += '<tr><td>+ 꺼낼 때 세금 (' + Math.round(wd * 100) + '% 인출)</td><td>-</td><td class="c-ind">0</td><td class="c-a">' + won(A.exit) + '</td><td class="c-b">' + won(B.exit) + '</td><td class="memo">법인 세후이익 × 인출 비율 × ' + (exitR * 100).toFixed(1) + '%</td></tr>';
+  h += '<tr class="tot"><td>합계 (꺼낸 뒤)</td><td>' + won(gross) + '</td><td class="c-ind">' + won(indTotal) + '</td><td class="c-a">' + won(A.total + A.exit) + '</td><td class="c-b">' + won(B.total + B.exit) + '</td><td class="memo">실효 개인 ' + pct(indTotal, gross) + ' / A ' + pct(A.total + A.exit, gross) + ' / B ' + pct(B.total + B.exit, gross) + '</td></tr>';
+  $('tbody').innerHTML = h;
+
+  const diff = x => { const d = indTotal - x; return '개인보다 ' + won(Math.abs(d)) + '만 ' + (d >= 0 ? '덜 냄' : '더 냄'); };
+  const finTot = best.F + (best.sep ? pos(inc.hd) : 0);
+  const tag = on => on ? '<span class="cur-tag">판정</span>' : '';
+  $('sum').innerHTML =
+    '<div class="stat"><div class="stat-label">개인 세금+건보료</div><div class="stat-value c-ind">' + won(indTotal) + '만</div><div class="stat-sub">금융소득 ' + won(finTot) + '만' + (best.F > TX.fin ? ' · 종합과세 구간' : '') + (best.sep ? ' · 고배당 분리과세' : '') + '</div></div>' +
+    '<div class="stat' + (j.small ? '' : ' cur') + '"><div class="stat-label">법인 A (11% 구간)' + tag(!j.small) + '</div><div class="stat-value c-a">' + won(A.total + A.exit) + '만</div><div class="stat-sub">꺼내기 전 ' + won(A.total) + '만 · ' + diff(A.total + A.exit) + '</div></div>' +
+    '<div class="stat' + (j.small ? ' cur' : '') + '"><div class="stat-label">법인 B (소규모 22%)' + tag(j.small) + '</div><div class="stat-value c-b">' + won(B.total + B.exit) + '만</div><div class="stat-sub">꺼내기 전 ' + won(B.total) + '만 · ' + diff(B.total + B.exit) + '</div></div>';
+
+  window._last = {inc, ind, indTotal, best, A, B, j, gross, wd};
+}
+
+$('copyBtn').addEventListener('click', () => {
+  const L = window._last; if (!L) return;
+  const t = ['[개인 vs 법인 투자 세금 비교 · 단위 만원 · 세율 ' + TX.checked + ' 기준]',
+    '판정: ' + (L.j.small ? 'B (소규모법인)' : 'A (일반법인)') + ' — ' + L.j.why,
+    '연간 투자소득 합계: ' + won(L.gross),
+    '개인 세금+건보료: ' + won(L.indTotal) + (L.best.sep ? ' (고배당 분리과세 선택)' : ''),
+    '법인 A: 꺼내기 전 ' + won(L.A.total) + ' / 꺼낸 뒤 ' + won(L.A.total + L.A.exit),
+    '법인 B: 꺼내기 전 ' + won(L.B.total) + ' / 꺼낸 뒤 ' + won(L.B.total + L.B.exit),
+    '꺼내 쓸 비율: ' + Math.round(L.wd * 100) + '%'].join('\n');
+  const done = () => { $('copied').style.display = 'inline'; setTimeout(() => $('copied').style.display = 'none', 1500); };
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(done).catch(() => {}); 
+});
+
+document.querySelectorAll('input, select').forEach(el => { el.addEventListener('input', calc); el.addEventListener('change', calc); });
+calc();
+</script>
+<script>
+window.CALC_KEY = 'corp_invest';
+window.slGetState = function(){
+  const s = {};
+  document.querySelectorAll('input[id]').forEach(el => { s[el.id] = el.type === 'checkbox' ? el.checked : el.value; });
+  return s;
+};
+window.slSetState = function(d){
+  if (!d) return;
+  document.querySelectorAll('input[id]').forEach(el => { if (d[el.id] === undefined) return; if (el.type === 'checkbox') el.checked = !!d[el.id]; else el.value = d[el.id]; });
+  if (typeof calc === 'function') calc();
+};
+</script>
+<script>window.SF_RESET = true;</script>  <!-- (090) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/sf-slots.js?v=7"></script>
+<script src="/common.js?v=10"></script>
+</body>
+</html>
