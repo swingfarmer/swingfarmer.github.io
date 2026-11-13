@@ -1,12 +1,12 @@
 /* 세율 공통 (086) — 세법이 바뀌면 이 파일 하나만 고치면 됨
- * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=11 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
+ * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=12 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
  * 구간 배열: [[상한(원), 세율%], ...] 누진. 세율은 국세 기준, 지방소득세(국세의 10%)는 별도 → SF_TAX.wl(세율)로 포함값.
  * 바꾼 뒤: 이 파일 ?v= 를 쓰는 페이지 전부 올릴 것. 확인일(checked)도 고칠 것.
- * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/, /realestate/commercial-yield/, /tax/income/, /tax/retirement/, /tax/retirement-compare/, /severance-exec/, /salary/, /insurance4/, /tax/corp-invest/, /tax/house/, /tax/land/, /realestate/home-swap/, /stock-tools/dividend/, /finance-tools/compound/, /fire/, /tax/financial-income/, /barbell/, /paygrowth/, /landtax/  (나머지 세금 페이지는 순차 이전 예정)
+ * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/, /realestate/commercial-yield/, /tax/income/, /tax/retirement/, /tax/retirement-compare/, /severance-exec/, /salary/, /insurance4/, /tax/corp-invest/, /tax/house/, /tax/land/, /realestate/home-swap/, /stock-tools/dividend/, /finance-tools/compound/, /fire/, /tax/financial-income/, /barbell/, /paygrowth/, /landtax/, /tax/inheritance/, /tax/gift/, /tax/acquisition/  (나머지 세금 페이지는 순차 이전 예정)
  */
 window.SF_TAX = Object.freeze({
   year: 2026,
-  checked: '2026-11-13',  // 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가 / 090: 고용보험 사업주분·고배당 분리과세·미국 배당 원천·주택·토지 양도세 추가, 양도세 정부안도 여기로(cgtPlan·cgtRule), ISA·연금 분리과세 / 092: 근로소득공제·근로소득세액공제·자녀세액공제(나이 연도별)·공익수용 감면(조특법 77) 추가, 토지 자경 5년 한도 / 092_03: 국민연금 연도별 인상(socialPlan·socialRule), 4대보험 근로자분 계산(ins4), 간이세액 근사(wageTax) 공통 함수
+  checked: '2026-11-13',  // 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가 / 090: 고용보험 사업주분·고배당 분리과세·미국 배당 원천·주택·토지 양도세 추가, 양도세 정부안도 여기로(cgtPlan·cgtRule), ISA·연금 분리과세 / 092: 근로소득공제·근로소득세액공제·자녀세액공제(나이 연도별)·공익수용 감면(조특법 77) 추가, 토지 자경 5년 한도 / 092_03: 국민연금 연도별 인상(socialPlan·socialRule), 4대보험 근로자분 계산(ins4), 간이세액 근사(wageTax) 공통 함수 / 093: 상속·증여세 구간·공제(inhGift·inhDed·giftDed), 취득세(acq·acqHouseRate·acqCalc)
   // 이자·배당 원천징수 (소득세 14% + 지방소득세 1.4%)
   interest: 15.4,
   // 금융소득 종합과세 기준 (이자+배당, 연)
@@ -108,6 +108,28 @@ window.SF_TAX = Object.freeze({
   retireConv: [[8e6,100],[7e7,60],[1e8,55],[3e8,45],[Infinity,35]],
   //   퇴직금을 연금계좌로 받아 연금으로 수령 시 퇴직소득세 부과율% — 실제 수령연차 10년 이하 70, 20년 이하 60, 20년 초과 50 (50은 2026.1.1 수령분부터)
   pensionRetire: [[10,70],[20,60],[Infinity,50]],
+  // ── 상속세·증여세 (093, 상증세법 26·56조 — 두 세금 구간 같음) ──────────────────
+  //   2026.11 현행. 자녀공제 5억·최고세율 40%·유산취득세 전환은 정부안·국회 계류일 뿐 시행 안 됨 → 확정되면 여기만 고치면 /tax/inheritance/·/tax/gift/ 같이 바뀜
+  inhGift: [[1e8,10],[5e8,20],[1e9,30],[3e9,40],[Infinity,50]],
+  //   신고세액공제 % (상속 6개월·증여 3개월 안 신고, 상증세법 69조)
+  inhGiftReport: 3,
+  //   상속공제 (상증세법 18~22조) — 일괄 5억 vs 기초 2억+인적공제 중 큰 쪽. 미성년: 19세까지 남은 해 × 1천만, 장애인: 기대여명 × 1천만, 65세 이상 동거가족 5천만
+  //   배우자: 실제 상속분(법정상속분·30억 한도), 최소 5억. 법정지분: 배우자 1.5 : 자녀 각 1
+  //   금융재산(순금융재산 = 금융재산 − 금융채무): 2천만 이하 전액 / 1억 이하 2천만 / 1억 초과 20% (한도 2억)
+  inhDed: {lump: 5e8, basic: 2e8, child: 5e7, minorYear: 1e7, minorAge: 19, elderly: 5e7, disabledYear: 1e7,
+           spouseMin: 5e8, spouseMax: 3e9, spouseShare: 1.5, finAll: 2e7, finFlatTo: 1e8, finRate: 20, finMax: 2e8},
+  //   증여재산공제 (상증세법 53조·53조의2, 10년 합산) — 배우자 6억, 직계존속→성년 5천만·미성년 2천만, 직계비속→존속 5천만, 기타친족 1천만, 혼인·출산 1억(직계존속에게서, 2024~)
+  //   세대생략(조부모→손자녀) 산출세액 30% 할증, 미성년 손자녀가 20억 넘게 받으면 40% (57조)
+  giftDed: {spouse: 6e8, adult: 5e7, minor: 2e7, parent: 5e7, other: 1e7, marriage: 1e8, genSkip: 30, genSkipBig: 40, genSkipBigOver: 2e9},
+  // ── 취득세 (093, 지방세법 11·13조의2·15조, 지방교육세 151조, 농특세법 5조) ─────────────
+  //   취득세율 %. 주택 유상: 6억 이하 1, 9억 초과 3, 사이 (가액×2/3억 − 3)%. 중과: 조정 2주택 8 / 3주택 12, 비조정 3주택 8 / 4주택 12, 법인 12
+  //   증여 주택 중과 12: 조정지역 + 시가표준액 3억 이상 + 증여자 다주택(1세대 1주택자가 배우자·직계존비속에게 주면 제외)
+  //   오피스텔은 실제 주거용이어도 취득할 때는 주택이 아님 → 비주택 4% (주거용은 그 뒤 다른 주택 살 때 주택 수에만 들어감)
+  //   지방교육세 = (표준세율 − 2%) × 20% — 주택 유상 1~3%는 취득세 × 10%, 중과는 4% 기준(0.4%)
+  //   농특세 = 표준세율을 2%로 본 취득세 × 10% = 0.2%, 중과 주택은 (세율 − 2%) × 10% (8% → 0.6, 12% → 1.0). 주택은 전용 85㎡ 이하 비과세
+  acq: {house: {lo: 6e8, hi: 9e8, rLo: 1, rHi: 3, heavy2: 8, heavy3: 12, gift: 3.5, giftHeavy: 12, giftHeavyMin: 3e8, inherit: 2.8, build: 2.8},
+        farm: {buy: 3, gift: 3.5, inherit: 2.3, build: 2.8}, other: {buy: 4, gift: 3.5, inherit: 2.8, build: 2.8},
+        base: 2, eduHeavy: 4, eduR: 20, ruralR: 10, ruralArea: 85},
   wl: function(r){ return Math.round(r*1.1*100)/100; },
   // 누진 구간 세금(국세) — prog(과표, SF_TAX.corp) 처럼 쓴다. 지방세 포함은 결과 × (1 + local)
   // 근속연수공제 — 근속연수는 1년 미만 끝수를 1년으로 올려서 넣을 것 (페이지에서 Math.ceil)
@@ -137,5 +159,37 @@ window.SF_TAX = Object.freeze({
     return Math.min(cr, cap); },
   childCrAmt: function(n){ var c=window.SF_TAX.childCr; n=parseInt(n,10)||0; if(n<=0) return 0; if(n===1) return c.one; return c.two + (n-2)*c.extra; },
   childAge: function(y){ var m=window.SF_TAX.childCr.minAge, ks=Object.keys(m).map(Number).sort(function(a,b){return a-b;}), r=m[ks[0]]; for(var i=0;i<ks.length;i++){ if(ks[i]<=y) r=m[ks[i]]; } return r; },
+  // 상속세·증여세 산출세액(국세, 지방세 없음) — 과세표준 → 10~50% 누진
+  inhGiftTax: function(base){ var T=window.SF_TAX; return T.prog(base, T.inhGift); },
+  // 금융재산 상속공제 (순금융재산)
+  finDedAmt: function(net){ var d=window.SF_TAX.inhDed; if(!(net>0)) return 0; if(net<=d.finAll) return net; if(net<=d.finFlatTo) return d.finAll; return Math.min(net*d.finRate/100, d.finMax); },
+  // 배우자 상속공제 — actual 실제 상속분, base 법정상속분 계산 기준(상속재산 − 채무), kids 자녀 수(0이면 배우자 지분 100%로 봄)
+  spouseDedAmt: function(actual, base, kids){ var d=window.SF_TAX.inhDed, k=parseInt(kids,10)||0, legal = k>0 ? Math.max(0,base)*d.spouseShare/(d.spouseShare+k) : Math.max(0,base);
+    return Math.max(d.spouseMin, Math.min(Math.max(0,actual), legal, d.spouseMax)); },
+  // 주택 취득세율 % (매매) — price 취득가액, houses 취득 후 주택 수, reg 조정대상지역, corp 법인
+  acqHouseRate: function(price, houses, reg, corp){ var a=window.SF_TAX.acq.house, n=parseInt(houses,10)||1;
+    if (corp) return a.heavy3;
+    if (n >= 4 || (n === 3 && reg)) return a.heavy3;
+    if (n === 3 || (n === 2 && reg)) return a.heavy2;
+    if (price <= a.lo) return a.rLo; if (price > a.hi) return a.rHi;
+    return a.rLo + (price - a.lo) / (a.hi - a.lo) * (a.rHi - a.rLo); },
+  // acqCalc({kind:'house'|'farm'|'other', type:'buy'|'gift'|'inherit'|'build', price, area(㎡), houses, reg, corp, giftHeavy})
+  //   → {rate, eduRate, ruralRate(%), acq, edu, rural, total, heavy}. giftHeavy: 주택 증여 중과 요건(증여자 다주택·3억 이상·조정) 충족 여부를 페이지가 판정해서 넘김
+  acqCalc: function(o){ var A=window.SF_TAX.acq, kind=o.kind||'other', type=o.type||'buy', p=o.price||0, rate, heavy=false, edu, rural, std;
+    if (kind === 'house'){
+      if (type === 'buy'){ rate = window.SF_TAX.acqHouseRate(p, o.houses, o.reg, o.corp); heavy = rate >= A.house.heavy2; }
+      else if (type === 'gift'){ heavy = !!o.giftHeavy; rate = heavy ? A.house.giftHeavy : A.house.gift; }
+      else rate = A.house[type];
+      if (heavy) edu = (A.eduHeavy - A.base) * A.eduR / 100;
+      else if (type === 'buy') edu = rate / 10;
+      else edu = (rate - A.base) * A.eduR / 100;
+      rural = (o.area > A.ruralArea) ? (heavy ? (rate - A.base) * A.ruralR / 100 : A.base * A.ruralR / 100) : 0;
+    } else {
+      rate = A[kind === 'farm' ? 'farm' : 'other'][type];
+      edu = (rate - A.base) * A.eduR / 100; rural = A.base * A.ruralR / 100;
+    }
+    edu = Math.round(edu * 1e6) / 1e6; rural = Math.round(rural * 1e6) / 1e6;
+    var acq = p * rate / 100, e = p * edu / 100, r = p * rural / 100;
+    return {rate: rate, eduRate: edu, ruralRate: rural, acq: acq, edu: e, rural: r, total: acq + e + r, heavy: heavy}; },
   prog: function(base, br){ var t=0, lo=0; if(!(base>0)) return 0; for(var i=0;i<br.length;i++){ var hi=br[i][0]; if(base>lo){ t += (Math.min(base,hi)-lo)*br[i][1]/100; } lo=hi; } return t; }
 });

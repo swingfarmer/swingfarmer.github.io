@@ -18,7 +18,7 @@
 
 
 <h1>⚱️ 상속세 계산기</h1>
-<p class="desc">상속세 자동 계산. 일괄공제·배우자공제·금융재산공제 등 주요 공제 자동 반영. (2026년 5월 기준)</p>
+<p class="desc">상속세 자동 계산. 일괄공제·배우자공제·금융재산공제 등 주요 공제 자동 반영. 2026.11 현행법 기준 (세율 확인일 <span class="tx-checked">2026-11-13</span>).</p>
 
 <div class="panel">
   <h2>📥 입력값</h2>
@@ -30,7 +30,7 @@
       <input type="number" id="totalEstate" value="1000000000" data-won>
     </div>
     <div class="input-row">
-      <label>금융재산 가액 (원) <span style="font-size:11px;color:#888;">(예·적금·주식 등)</span></label>
+      <label>금융재산 가액 (원) <span style="font-size:11px;color:#888;">(예·적금·주식 등, 금융채무는 뺀 금액)</span></label>
       <input type="number" id="financial" value="200000000" data-won>
     </div>
     <div class="input-row">
@@ -44,7 +44,15 @@
 
     <div class="section-label">② 상속인 정보</div>
     <div class="input-row">
-      <label>배우자 상속 (원) <span style="font-size:11px;color:#888;">(없으면 0)</span></label>
+      <label>배우자 생존 <span class="info-btn" onclick="toggleInfo('spouseInfo')">i</span></label>
+      <select id="hasSpouse">
+        <option value="Y" selected>있음 (최소 5억 공제)</option>
+        <option value="N">없음</option>
+      </select>
+    </div>
+    <div class="info-box" id="spouseInfo" style="display:none">배우자가 살아 있으면 한 푼도 안 받아도 배우자공제 <b><span class="tx-spmin">5억</span></b>은 받아요. 실제로 받는 몫이 그보다 크면 그 금액을 공제하되, <b>법정상속분</b>(배우자 1.5 : 자녀 각 1 비율로 나눈 배우자 몫)과 <b><span class="tx-spmax">30억</span></b> 중 작은 금액까지만이에요. 예) 상속재산 20억·자녀 2명이면 법정상속분은 20억 × 1.5/3.5 ≈ 8.57억 → 배우자가 15억을 받아도 공제는 8.57억까지. 자녀가 없으면(부모님과 나누는 경우 등) 이 계산기는 배우자 몫 전체를 한도로 봐요 — 실제 한도는 더 작을 수 있어요.</div>
+    <div class="input-row">
+      <label>배우자 실제 상속분 (원)</label>
       <input type="number" id="spouseShare" value="400000000" data-won>
     </div>
     <div class="input-row">
@@ -83,10 +91,11 @@
       <tr><td>채무 등 차감</td><td id="debtOut">-</td><td>채무·장례비·공과금</td></tr>
       <tr><td>상속세 과세가액</td><td id="taxValue">-</td><td>총재산 + 사전증여 − 채무</td></tr>
       <tr><td>일괄공제 vs 기초+인적공제</td><td id="dedSummary">-</td><td id="dedDesc">큰 쪽 자동 적용</td></tr>
-      <tr><td>배우자상속공제</td><td id="spouseDed">-</td><td>최소 5억, 최대 30억</td></tr>
-      <tr><td>금융재산공제</td><td id="finDed">-</td><td>금융재산의 20%, 최대 2억</td></tr>
+      <tr><td>배우자상속공제</td><td id="spouseDed">-</td><td id="spouseDesc">최소 5억, 법정상속분·30억 한도</td></tr>
+      <tr><td>금융재산공제</td><td id="finDed">-</td><td>2천만 이하 전액 · 1억 이하 2천만 · 초과 20% (최대 2억)</td></tr>
+      <tr><td>공제 종합한도</td><td id="dedLimit">-</td><td id="dedLimitDesc">공제 합계 ≤ 과세가액 − 사전증여</td></tr>
       <tr><td>과세표준</td><td id="taxBase">-</td><td>과세가액 − 공제</td></tr>
-      <tr><td>산출세액 (누진세율)</td><td id="calcTax">-</td><td>10%~50% 5단계</td></tr>
+      <tr><td>산출세액 (누진세율)</td><td id="calcTax">-</td><td><span class="tx-brk">10%~50% 5단계</span></td></tr>
       <tr><td>증여세액공제</td><td id="prevTaxOut">-</td><td>10년 내 납부 증여세</td></tr>
       <tr><td>신고세액공제 (3%)</td><td id="reportDed">-</td><td>6개월 내 신고시</td></tr>
     </tbody>
@@ -105,37 +114,38 @@
   <h3>① 입력값 설명</h3>
   <ul>
     <li><span class="badge">총 상속재산</span> 부동산·금융자산·차량·골프회원권 등 모든 재산의 시가 합계.</li>
-    <li><span class="badge">금융재산</span> 예금·적금·주식·채권·보험금 등. 별도 공제 대상.</li>
+    <li><span class="badge">금융재산</span> 예금·적금·주식·채권·보험금 등. 별도 공제 대상. 금융기관 대출 같은 <b>금융채무는 뺀 순금액</b>을 넣으세요(공제는 순금융재산 기준).</li>
     <li><span class="badge">채무</span> 피상속인의 사망 시점 채무 + 장례비(1천만 한도) + 공과금.</li>
     <li><span class="badge">사전증여재산</span> 사망 전 10년 내 상속인에게 증여한 재산. 다시 상속재산에 합산.</li>
-    <li><span class="badge">배우자 상속분</span> 배우자가 실제 상속받는 금액. 공제액 결정에 사용.</li>
-    <li><span class="badge">자녀수·미성년·장애인</span> 인적공제 자동 계산용.</li>
+    <li><span class="badge">배우자</span> 생존 여부 + 실제 상속받는 금액. 배우자가 있으면 0원을 받아도 최소 공제는 적용.</li>
+    <li><span class="badge">자녀수·미성년·장애인</span> 인적공제 자동 계산용. 자녀수는 배우자 법정상속분 계산에도 씀.</li>
   </ul>
 
   <h3>② 주요 공제</h3>
   <ul>
-    <li><b>일괄공제 5억:</b> 그냥 정액 5억 공제 (가장 흔히 사용).</li>
-    <li><b>기초공제 2억 + 인적공제:</b>
+    <li><b>일괄공제 <span class="tx-lump">5억</span>:</b> 그냥 정액 공제 (가장 흔히 사용).</li>
+    <li><b>기초공제 <span class="tx-basic">2억</span> + 인적공제:</b>
       <ul>
-        <li>자녀 1인당 5천만</li>
-        <li>미성년 자녀: 만 19세까지 매년 1천만 (1천만 × 남은 햇수)</li>
+        <li>자녀 1인당 <span class="tx-child">5천만</span></li>
+        <li>미성년 자녀: 만 19세까지 매년 1천만 (1천만 × 남은 햇수) — 이 계산기는 나이를 안 받아서 1인당 5년(5천만)으로 가정</li>
         <li>65세 이상 동거가족: 1인당 5천만</li>
-        <li>장애인: 1인당 1천만 × 기대여명</li>
+        <li>장애인: 1인당 1천만 × 기대여명 — 이 계산기는 20년(2억)으로 가정</li>
       </ul>
       → 합계가 일괄공제 5억보다 크면 이쪽 사용.
     </li>
     <li><b>배우자상속공제:</b>
       <ul>
-        <li>배우자가 있으면 <b>최소 5억</b> 자동 공제</li>
-        <li>실제 상속분이 5억 초과면 그 금액, 최대 30억</li>
+        <li>배우자가 있으면 <b>최소 <span class="tx-spmin">5억</span></b> 자동 공제 (실제로 안 받아도)</li>
+        <li>실제 상속분이 그보다 크면 그 금액. 단 <b>법정상속분</b>(배우자 1.5 : 자녀 각 1)과 <span class="tx-spmax">30억</span> 중 작은 금액이 한도</li>
       </ul>
     </li>
-    <li><b>금융재산공제:</b> 금융재산의 20%, 최대 2억 (2천만 이하 전액).</li>
+    <li><b>금융재산공제:</b> 순금융재산 2천만 이하 전액 / 2천만~1억 2천만 / 1억 초과 20% (최대 2억).</li>
+    <li><b>공제 종합한도:</b> 공제 합계는 「과세가액 − 사전증여재산」을 넘을 수 없어요. 사전증여를 많이 했으면 공제가 그만큼 줄어요(원래 기준은 증여재산공제를 뺀 과세표준 — 이 계산기는 사전증여 금액으로 근사).</li>
   </ul>
 
   <h3>③ 상속세율 (증여세와 동일)</h3>
   <ul>
-    <li>1억 이하: 10% / 5억: 20% / 10억: 30% / 30억: 40% / 30억 초과: 50%</li>
+    <li class="tx-brkli">1억 이하: 10% / 5억: 20% / 10억: 30% / 30억: 40% / 30억 초과: 50%</li>
   </ul>
 
   <div class="warn-box">
@@ -143,30 +153,31 @@
   </div>
 </div>
 
+<script src="/tax-rates.js?v=12"></script>
 <script>
+// (093) 세율·공제액은 /tax-rates.js(SF_TAX.inhGift·inhDed·inhGiftReport, 함수 inhGiftTax·finDedAmt·spouseDedAmt)에서 받음 — 증여세(/tax/gift/)와 같은 구간 1벌.
+//       못 읽으면 아래 기본값(2026.11 현행). 093에서 고친 것: 금융재산공제 2천만~1억 구간(2천만), 배우자공제 법정상속분 한도·배우자 있는데 0원일 때 5억, 상속공제 종합한도
+const _T = window.SF_TAX;
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
 const fmtPct = n => (n * 100).toFixed(2) + '%';
-
-function calcInheritTax(taxBase) {
-  if (taxBase <= 0) return 0;
-  const brackets = [
-    [100000000, 0.10, 0],
-    [500000000, 0.20, 10000000],
-    [1000000000, 0.30, 60000000],
-    [3000000000, 0.40, 160000000],
-    [Infinity, 0.50, 460000000],
-  ];
-  for (const [upper, rate, deduction] of brackets) {
-    if (taxBase <= upper) return taxBase * rate - deduction;
-  }
-  return 0;
-}
+const D = _T ? _T.inhDed : {lump: 5e8, basic: 2e8, child: 5e7, minorYear: 1e7, minorAge: 19, elderly: 5e7, disabledYear: 1e7,
+  spouseMin: 5e8, spouseMax: 3e9, spouseShare: 1.5, finAll: 2e7, finFlatTo: 1e8, finRate: 20, finMax: 2e8};
+const BR = _T ? _T.inhGift : [[1e8,10],[5e8,20],[1e9,30],[3e9,40],[Infinity,50]];
+const RPT = _T ? _T.inhGiftReport : 3;
+function prog(b, br){ let t = 0, lo = 0; if (!(b > 0)) return 0; for (const [hi, r] of br){ if (b > lo) t += (Math.min(b, hi) - lo) * r / 100; lo = hi; } return t; }
+function calcInheritTax(taxBase) { return _T ? _T.inhGiftTax(taxBase) : prog(taxBase, BR); }
+function finDedOf(net){ if (_T) return _T.finDedAmt(net); if (!(net > 0)) return 0; if (net <= D.finAll) return net; if (net <= D.finFlatTo) return D.finAll; return Math.min(net * D.finRate / 100, D.finMax); }
+function legalShare(base, kids){ return kids > 0 ? Math.max(0, base) * D.spouseShare / (D.spouseShare + kids) : Math.max(0, base); }
+function spouseDedOf(actual, base, kids){ if (_T) return _T.spouseDedAmt(actual, base, kids);
+  return Math.max(D.spouseMin, Math.min(Math.max(0, actual), legalShare(base, kids), D.spouseMax)); }
+const man = v => { if (v >= 1e8) { const e = v / 1e8; return (Number.isInteger(e) ? e : e.toFixed(2).replace(/0+$/, '')) + '억'; } if (v >= 1e7 && v % 1e7 === 0) return (v / 1e7) + '천만'; return Math.round(v / 1e4).toLocaleString('ko-KR') + '만'; };
 
 function calculate() {
   const totalEstate = parseFloat(document.getElementById('totalEstate').value) || 0;
   const financial = parseFloat(document.getElementById('financial').value) || 0;
   const debt = parseFloat(document.getElementById('debt').value) || 0;
   const prevGift = parseFloat(document.getElementById('prevGift').value) || 0;
+  const hasSpouse = document.getElementById('hasSpouse').value === 'Y';
   const spouseShare = parseFloat(document.getElementById('spouseShare').value) || 0;
   const children = parseInt(document.getElementById('children').value) || 0;
   const minorChildren = parseInt(document.getElementById('minorChildren').value) || 0;
@@ -178,32 +189,41 @@ function calculate() {
   const taxValue = grossEstate - debt;
 
   // 일괄공제 vs 기초+인적공제
-  const lumpDed = 500000000;
-  const personalDed = 200000000 // 기초
-    + children * 50000000  // 자녀
-    + minorChildren * 10000000 * 5  // 미성년 (평균 5년 가정, 실제는 19-나이지만 단순화)
-    + disabled * 10000000 * 20;  // 장애인 (기대여명 20년 가정)
+  const lumpDed = D.lump;
+  const personalDed = D.basic // 기초
+    + children * D.child  // 자녀
+    + minorChildren * D.minorYear * 5  // 미성년 (평균 5년 가정, 실제는 19-나이지만 단순화)
+    + disabled * D.disabledYear * 20;  // 장애인 (기대여명 20년 가정)
   const dedAmount = Math.max(lumpDed, personalDed);
-  const dedSource = dedAmount === lumpDed ? '일괄공제 5억' : `기초+인적 ${fmt(personalDed)}원`;
+  const dedSource = dedAmount === lumpDed ? '일괄공제 ' + man(lumpDed) : `기초+인적 ${fmt(personalDed)}원`;
 
-  // 배우자공제
-  let spouseDed = 0;
-  if (spouseShare > 0) {
-    spouseDed = Math.min(Math.max(spouseShare, 500000000), 3000000000);
+  // 배우자공제 — 생존하면 최소 5억, 실제 상속분은 법정상속분(상속재산 − 채무 기준)·30억 한도
+  let spouseDed = 0, spouseDesc = '배우자 없음';
+  if (hasSpouse) {
+    const base = totalEstate - debt, legal = legalShare(base, children);
+    spouseDed = spouseDedOf(spouseShare, base, children);
+    if (spouseDed === D.spouseMin && spouseShare !== D.spouseMin) spouseDesc = '최소 ' + man(D.spouseMin);
+    else if (spouseShare > spouseDed && spouseDed === D.spouseMax && legal >= D.spouseMax) spouseDesc = '한도 ' + man(D.spouseMax) + ' 적용';
+    else if (spouseShare > spouseDed) spouseDesc = '법정상속분 한도 (' + man(legal) + ')';
+    else spouseDesc = '실제 상속분';
   }
 
-  // 금융재산공제
-  let finDed = 0;
-  if (financial >= 20000000) finDed = Math.min(financial * 0.2, 200000000);
-  else if (financial > 0) finDed = financial;
+  // 금융재산공제 (순금융재산)
+  const finDed = finDedOf(financial);
 
-  const taxBase = Math.max(0, taxValue - dedAmount - spouseDed - finDed);
+  // 상속공제 종합한도 — 공제 합계 ≤ 과세가액 − 사전증여 (원래는 사전증여 과세표준, 근사)
+  const dedSum = dedAmount + spouseDed + finDed;
+  const dedCap = Math.max(0, taxValue - prevGift);
+  const dedCut = prevGift > 0 ? Math.max(0, dedSum - dedCap) : 0;
+  const dedUsed = dedSum - dedCut;
+
+  const taxBase = Math.max(0, taxValue - dedUsed);
   const calcTax = calcInheritTax(taxBase);
 
   // 사전증여세 공제
   const prevTaxOut = Math.min(prevTax, calcTax);
   const beforeReport = Math.max(0, calcTax - prevTaxOut);
-  const reportDed = report ? beforeReport * 0.03 : 0;
+  const reportDed = report ? beforeReport * RPT / 100 : 0;
   const finalTax = beforeReport - reportDed;
   const effectiveRate = totalEstate > 0 ? finalTax / totalEstate : 0;
 
@@ -213,7 +233,10 @@ function calculate() {
   document.getElementById('dedSummary').textContent = fmt(dedAmount) + ' 원';
   document.getElementById('dedDesc').textContent = dedSource;
   document.getElementById('spouseDed').textContent = fmt(spouseDed) + ' 원';
+  document.getElementById('spouseDesc').textContent = spouseDesc;
   document.getElementById('finDed').textContent = fmt(finDed) + ' 원';
+  document.getElementById('dedLimit').textContent = dedCut > 0 ? '−' + fmt(dedCut) + ' 원' : '해당 없음';
+  document.getElementById('dedLimitDesc').textContent = dedCut > 0 ? '공제 합계 ' + fmt(dedSum) + ' → 한도 ' + fmt(dedCap) : '공제 합계 ≤ 과세가액 − 사전증여';
   document.getElementById('taxBase').textContent = fmt(taxBase) + ' 원';
   document.getElementById('calcTax').textContent = fmt(calcTax) + ' 원';
   document.getElementById('prevTaxOut').textContent = fmt(prevTaxOut) + ' 원';
@@ -221,6 +244,14 @@ function calculate() {
   document.getElementById('finalTax').textContent = fmt(finalTax) + ' 원';
   document.getElementById('effectiveRate').textContent = fmtPct(effectiveRate);
 }
+
+(function fillTax(){ const put = (c, v) => document.querySelectorAll('.' + c).forEach(el => el.textContent = v);
+  put('tx-lump', man(D.lump)); put('tx-basic', man(D.basic)); put('tx-child', man(D.child)); put('tx-spmin', man(D.spouseMin)); put('tx-spmax', man(D.spouseMax));
+  put('tx-brk', BR[0][1] + '%~' + BR[BR.length-1][1] + '% ' + BR.length + '단계');
+  let lo = 0; put('tx-brkli', BR.map(([hi, r]) => { const s = hi === Infinity ? man(lo) + ' 초과: ' + r + '%' : man(hi) + ' 이하: ' + r + '%'; lo = hi; return s; }).join(' / '));
+  if (_T) put('tx-checked', _T.checked);
+})();
+function toggleInfo(id){ const el = document.getElementById(id); if (el) el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
 
 document.querySelectorAll('input, select').forEach(el => {
   el.addEventListener('input', calculate);
@@ -236,6 +267,7 @@ window.slGetState = function(){
     financial: document.getElementById('financial').value,
     debt: document.getElementById('debt').value,
     prevGift: document.getElementById('prevGift').value,
+    hasSpouse: document.getElementById('hasSpouse').value,
     spouseShare: document.getElementById('spouseShare').value,
     children: document.getElementById('children').value,
     minorChildren: document.getElementById('minorChildren').value,
@@ -251,6 +283,8 @@ window.slSetState = function(d){
   if(d.debt !== undefined) document.getElementById('debt').value = d.debt;
   if(d.prevGift !== undefined) document.getElementById('prevGift').value = d.prevGift;
   if(d.spouseShare !== undefined) document.getElementById('spouseShare').value = d.spouseShare;
+  // (093) 배우자 생존 칸 — 옛 저장분엔 없음: 예전엔 「배우자 상속 0 = 배우자 없음」이었으니 그 기준으로 채움
+  document.getElementById('hasSpouse').value = d.hasSpouse !== undefined ? d.hasSpouse : ((parseFloat(d.spouseShare) || 0) > 0 ? 'Y' : 'N');
   if(d.children !== undefined) document.getElementById('children').value = d.children;
   if(d.minorChildren !== undefined) document.getElementById('minorChildren').value = d.minorChildren;
   if(d.disabled !== undefined) document.getElementById('disabled').value = d.disabled;
