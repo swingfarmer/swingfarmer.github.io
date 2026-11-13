@@ -1,12 +1,12 @@
 /* 세율 공통 (086) — 세법이 바뀌면 이 파일 하나만 고치면 됨
- * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=4 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
+ * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=5 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
  * 구간 배열: [[상한(원), 세율%], ...] 누진. 세율은 국세 기준, 지방소득세(국세의 10%)는 별도 → SF_TAX.wl(세율)로 포함값.
  * 바꾼 뒤: 이 파일 ?v= 를 쓰는 페이지 전부 올릴 것. 확인일(checked)도 고칠 것.
- * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/, /realestate/commercial-yield/  (나머지 세금 페이지는 순차 이전 예정)
+ * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/, /realestate/commercial-yield/, /tax/income/, /tax/retirement/, /tax/retirement-compare/, /severance-exec/  (나머지 세금 페이지는 순차 이전 예정)
  */
 window.SF_TAX = Object.freeze({
   year: 2026,
-  checked: '2026-11-13',
+  checked: '2026-11-13',  // 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가
   // 이자·배당 원천징수 (소득세 14% + 지방소득세 1.4%)
   interest: 15.4,
   // 금융소득 종합과세 기준 (이자+배당, 연)
@@ -32,7 +32,21 @@ window.SF_TAX = Object.freeze({
   divExcl: [[20,30],[50,80],[Infinity,100]],
   // 건강보험료율 (세금은 아니지만 매년 바뀌어 같이 둠) — 2026년 7.19%, 장기요양 = 건보료의 13.14%. 직장가입자 보수 외 소득 연 2천만 초과분에 소득월액보험료(전액 본인) (087 확인)
   health: {rate: 7.19, ltc: 13.14, otherIncomeFree: 20000000},
+  // 4대보험 근로자 부담 (089 확인) — 국민연금 2026년 9.5%(근로자 4.75, 매년 1월 0.5%p씩 2033년 13%까지),
+  //   기준소득월액 하한 41만·상한 659만 (2026.7~2027.6, 매년 7월 바뀜), 고용보험 근로자 0.9. 건보는 위 health(근로자 = rate/2)
+  social: {nps: 4.75, npsMin: 410000, npsMax: 6590000, emp: 0.9},
+  // 근로소득 간이세액표 8~20세 자녀 월 공제 (2026.3.1 지급분부터, 089 확인) — 1명 20,830 / 2명 45,830 / 3명 이상 2명 초과 1명당 33,330 추가
+  childMonthly: {one: 20830, two: 45830, extra: 33330},
+  // 퇴직소득세 (소득세법 48·55조, 2023~ / 089 확인)
+  //   근속연수공제: [근속 상한(년), 1년당 공제(원)] — ~5년 100만, ~10년 200만, ~20년 250만, 20년 초과 300만 (누적)
+  retireYear: [[5,1e6],[10,2e6],[20,2.5e6],[Infinity,3e6]],
+  //   환산급여공제: [환산급여 상한(원), 공제율%] 누적 → prog(환산급여, retireConv)
+  retireConv: [[8e6,100],[7e7,60],[1e8,55],[3e8,45],[Infinity,35]],
+  //   퇴직금을 연금계좌로 받아 연금으로 수령 시 퇴직소득세 부과율% — 실제 수령연차 10년 이하 70, 20년 이하 60, 20년 초과 50 (50은 2026.1.1 수령분부터)
+  pensionRetire: [[10,70],[20,60],[Infinity,50]],
   wl: function(r){ return Math.round(r*1.1*100)/100; },
   // 누진 구간 세금(국세) — prog(과표, SF_TAX.corp) 처럼 쓴다. 지방세 포함은 결과 × (1 + local)
+  // 근속연수공제 — 근속연수는 1년 미만 끝수를 1년으로 올려서 넣을 것 (페이지에서 Math.ceil)
+  retYearDed: function(y){ var br=window.SF_TAX.retireYear, t=0, lo=0; for(var i=0;i<br.length;i++){ var hi=br[i][0]; if(y>lo){ t += (Math.min(y,hi)-lo)*br[i][1]; } lo=hi; } return t; },
   prog: function(base, br){ var t=0, lo=0; if(!(base>0)) return 0; for(var i=0;i<br.length;i++){ var hi=br[i][0]; if(base>lo){ t += (Math.min(base,hi)-lo)*br[i][1]/100; } lo=hi; } return t; }
 });

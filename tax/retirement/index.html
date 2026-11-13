@@ -64,13 +64,13 @@
   <h3>① 입력값 설명</h3>
   <ul>
     <li><span class="badge">퇴직금</span> 세전 금액. DC형 적립금, 퇴직금 환산액, 명예퇴직금 모두 포함.</li>
-    <li><span class="badge">근속연수</span> 입사일~퇴사일. 1년 미만은 1년으로. 소수점 입력 가능.</li>
+    <li><span class="badge">근속연수</span> 입사일~퇴사일. 소수점으로 넣어도 됨 — 계산할 땐 1년 미만 끝수를 1년으로 올림(세법 규정, 예: 20.3년 → 21년).</li>
   </ul>
 
   <h3>② 계산 로직 (5단계)</h3>
   <ul>
     <li><b>1단계 - 근속연수공제:</b>
-      <ul>
+      <ul id="ruleYear">
         <li>~5년: 100만 × 근속</li>
         <li>~10년: 500만 + 200만 × (근속−5)</li>
         <li>~20년: 1,500만 + 250만 × (근속−10)</li>
@@ -79,7 +79,7 @@
     </li>
     <li><b>2단계 - 환산급여:</b> (퇴직금 − 근속연수공제) ÷ 근속연수 × 12</li>
     <li><b>3단계 - 환산급여공제:</b>
-      <ul>
+      <ul id="ruleConv">
         <li>~800만: 전액</li>
         <li>~7,000만: 800만 + (초과 × 60%)</li>
         <li>~1억: 위 + (초과 × 55%)</li>
@@ -95,50 +95,68 @@
   <p>장기 근속한 사람이 받는 큰 퇴직금이 한꺼번에 누진세율 최고구간(45%) 맞으면 너무 가혹하니까, 연 평균값으로 환산해서 세율 매기고 다시 근속연수 곱해서 분산 효과를 줌. 결과적으로 <b>근속이 길수록 실효세율 낮음.</b></p>
 
   <div class="warn-box">
-    <b>⚠ 주의:</b> IRP로 받아서 연금으로 수령하면 세금이 30~40% 적음 (퇴직소득세 비교 계산기 참고). 회사가 원천징수해서 차감 후 지급하는 게 일반적.
+    <b>⚠ 주의:</b> IRP로 받아서 연금으로 수령하면 세금이 <span class="tx-pc0">30</span>~<span class="tx-pc2">50</span>% 적음 (수령 <span class="tx-py0">10</span>년차까지 <span class="tx-pc0">30</span>%, <span class="tx-py1">20</span>년차까지 <span class="tx-pc1">40</span>%, <span class="tx-pyn1">21</span>년차부터 <span class="tx-pc2">50</span>% 감면) (퇴직소득세 비교 계산기 참고). 회사가 원천징수해서 차감 후 지급하는 게 일반적.
   </div>
 </div>
 
+<script src="/tax-rates.js?v=5"></script>
 <script>
+// (089) 종소세 구간·퇴직소득 공제표는 /tax-rates.js(window.SF_TAX)에서 읽음. 못 읽으면 아래 기본값(2026년 값)
+const _T = window.SF_TAX;
+const TX = {
+  income: _T ? _T.income : [[14e6,6],[50e6,15],[88e6,24],[150e6,35],[300e6,38],[500e6,40],[1e9,42],[Infinity,45]],
+  year: _T ? _T.retireYear : [[5,1e6],[10,2e6],[20,2.5e6],[Infinity,3e6]],
+  conv: _T ? _T.retireConv : [[8e6,100],[7e7,60],[1e8,55],[3e8,45],[Infinity,35]],
+  pension: _T ? _T.pensionRetire : [[10,70],[20,60],[Infinity,50]]
+};
+function prog(b, br){ let t = 0, lo = 0; if (!(b > 0)) return 0; for (const [hi, r] of br){ if (b > lo) t += (Math.min(b, hi) - lo) * r / 100; lo = hi; } return t; }
+function yearDedOf(y){ let t = 0, lo = 0; for (const [hi, per] of TX.year){ if (y > lo) t += (Math.min(y, hi) - lo) * per; lo = hi; } return t; }
+// 근속연수: 1년 미만 끝수는 1년으로 (소득세법). 20.3년 → 21년
+function taxYearsOf(y){ return y > 0 ? Math.ceil(y - 1e-9) : 0; }
+const _man = n => (n / 10000).toLocaleString('ko-KR') + '만';
+const _lab = n => { const e = Math.floor(n / 1e8), m = Math.round((n % 1e8) / 10000); return e ? e + '억' + (m ? ' ' + m.toLocaleString('ko-KR') + '만' : '') : _man(n); };
+// 사용법 속 공제표를 SF_TAX에서 다시 씀
+function fillRetireRules(){
+  const yEl = document.getElementById('ruleYear'), cEl = document.getElementById('ruleConv');
+  if (yEl){
+    let lo = 0, base = 0, h = '';
+    TX.year.forEach(([hi, per]) => {
+      h += '<li>' + (hi === Infinity ? lo + '년 초과' : '~' + hi + '년') + ': ' + (base ? _man(base) + ' + ' : '') + _man(per) + ' × ' + (lo ? '(근속−' + lo + ')' : '근속') + '</li>';
+      if (hi !== Infinity) base += (hi - lo) * per; lo = hi;
+    });
+    yEl.innerHTML = h;
+  }
+  if (cEl){
+    let lo = 0, base = 0, h = '';
+    TX.conv.forEach(([hi, r]) => {
+      const lab = hi === Infinity ? (lo >= 1e8 ? lo / 1e8 + '억' : _man(lo)) + ' 초과' : '~' + (hi >= 1e8 ? hi / 1e8 + '억' : _man(hi));
+      h += '<li>' + lab + ': ' + (r === 100 && !lo ? '전액' : (base ? _lab(base) + ' + ' : '') + '(' + (lo ? _lab(lo) + ' 초과분' : '금액') + ' × ' + r + '%)') + '</li>';
+      if (hi !== Infinity) base += (hi - lo) * r / 100; lo = hi;
+    });
+    cEl.innerHTML = h;
+  }
+  // 연금 수령 감면 문구: tx-pc0~2 = 감면율(100−부과율), tx-pr0~2 = 부과율, tx-py0~1 = 연차 경계
+  TX.pension.forEach(([hi, r], i) => {
+    document.querySelectorAll('.tx-pc' + i).forEach(el => el.textContent = 100 - r);
+    document.querySelectorAll('.tx-pr' + i).forEach(el => el.textContent = r);
+    if (hi !== Infinity){ document.querySelectorAll('.tx-py' + i).forEach(el => el.textContent = hi); document.querySelectorAll('.tx-pyn' + i).forEach(el => el.textContent = hi + 1); }
+  });
+}
+
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
 const fmtPct = n => (n * 100).toFixed(2) + '%';
 
 function calcProgressiveTax(taxBase) {
-  if (taxBase <= 0) return 0;
-  const brackets = [
-    [14000000, 0.06, 0],
-    [50000000, 0.15, 1260000],
-    [88000000, 0.24, 5760000],
-    [150000000, 0.35, 15440000],
-    [300000000, 0.38, 19940000],
-    [500000000, 0.40, 25940000],
-    [1000000000, 0.42, 35940000],
-    [Infinity, 0.45, 65940000],
-  ];
-  for (const [upper, rate, deduction] of brackets) {
-    if (taxBase <= upper) return taxBase * rate - deduction;
-  }
-  return 0;
+  return prog(taxBase, TX.income);   // (089) SF_TAX.income
 }
 
-function calcYearDeduction(years) {
-  if (years <= 5) return years * 1000000;
-  if (years <= 10) return 5000000 + (years - 5) * 2000000;
-  if (years <= 20) return 15000000 + (years - 10) * 2500000;
-  return 40000000 + (years - 20) * 3000000;
-}
-
-function calcConvDeduction(converted) {
-  if (converted <= 8000000) return converted;
-  if (converted <= 70000000) return 8000000 + (converted - 8000000) * 0.60;
-  if (converted <= 100000000) return 8000000 + 62000000 * 0.60 + (converted - 70000000) * 0.55;
-  if (converted <= 300000000) return 8000000 + 62000000 * 0.60 + 30000000 * 0.55 + (converted - 100000000) * 0.45;
-  return 8000000 + 62000000 * 0.60 + 30000000 * 0.55 + 200000000 * 0.45 + (converted - 300000000) * 0.35;
-}
+function calcYearDeduction(years) { return yearDedOf(years); }        // (089) SF_TAX.retireYear
+function calcConvDeduction(converted) { return prog(converted, TX.conv); }   // (089) SF_TAX.retireConv
 
 function calculate() {
   const retirement = parseFloat(document.getElementById('retirement').value) || 0;
-  const years = parseFloat(document.getElementById('years').value) || 0;
+  const yearsIn = parseFloat(document.getElementById('years').value) || 0;
+  const years = taxYearsOf(yearsIn);   // (089) 1년 미만 끝수 올림 — 088까지는 소수점 그대로 써서 세금이 조금 다르게 나왔음
 
   if (years <= 0 || retirement <= 0) {
     ['retire','yearDed','converted','convDed','taxBase','convTax','calcTax','localTax','finalTax','netRetire','effectiveRate']
@@ -147,10 +165,10 @@ function calculate() {
   }
 
   const yearDed = calcYearDeduction(years);
-  const yearDedDesc = years <= 5 ? `~5년: ${years}년 × 100만`
+  const yearDedDesc = (yearsIn !== years ? `${yearsIn}년 → ${years}년으로 올림 · ` : '') + (years <= 5 ? `~5년: ${years}년 × 100만`
     : years <= 10 ? `~10년 구간`
     : years <= 20 ? `~20년 구간`
-    : '20년 초과 구간';
+    : '20년 초과 구간');
 
   const converted = Math.max(0, (retirement - yearDed) / years * 12);
   const convDed = calcConvDeduction(converted);
@@ -186,6 +204,7 @@ function calculate() {
 document.querySelectorAll('input').forEach(el => {
   el.addEventListener('input', calculate);
 });
+fillRetireRules();
 calculate();
 </script>
 <script>

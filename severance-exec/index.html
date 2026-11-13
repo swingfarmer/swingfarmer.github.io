@@ -214,9 +214,9 @@ h1 { color: #1F4E78; font-size: 22px; margin-bottom: 4px; border-bottom: none; p
       <li><b>정관상 지급액</b> = 연평균 × 1/10 × 근속연수 × 정관배수</li>
       <li><b>소득세법 한도</b> = 연평균 × 1/10 × 근속연수 × <b>2</b> (2020년 이후 퇴직)</li>
       <li><b>한도 초과분</b> = 정관상 지급액 - 한도 → 근로소득 과세</li>
-      <li><b>근속연수공제</b>: 5년 이하 100만/년, 5~10년 500만+200만/년, 10~20년 1,500만+250만/년, 20년 초과 4,000만+300만/년 (2023 개정)</li>
+      <li><b>근속연수공제</b>: <span id="seRuleYear">5년 이하 100만/년, 5~10년 500만+200만/년, 10~20년 1,500만+250만/년, 20년 초과 4,000만+300만/년</span> — 세금 계산의 근속연수는 1년 미만 끝수를 1년으로 올림 (한도 계산은 실제 기간)</li>
       <li><b>환산급여</b> = (퇴직소득 - 근속연수공제) × 12 ÷ 근속연수</li>
-      <li><b>환산급여공제</b>: 800만 이하 100%, 800~7,000만 60%, 7,000만~1억 55%, 1억~3억 45%, 3억 초과 35%</li>
+      <li><b>환산급여공제</b>: <span id="seRuleConv">800만 이하 100%, 800~7,000만 60%, 7,000만~1억 55%, 1억~3억 45%, 3억 초과 35%</span></li>
       <li><b>퇴직소득세</b> = (환산과세표준 × 세율 - 누진공제) × 근속연수 ÷ 12</li>
       <li><b>지방소득세</b> = 각 산출세액 × 10%</li>
     </ul>
@@ -277,6 +277,56 @@ window.slSetState = function(d){ if(window.seSetState) window.seSetState(d); };
 <script>window.SF_RESET = ["sf_se_state_v1"];</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
 <script src="/sf-slots.js?v=7"></script>
 <script src="/common.js?v=10"></script>
+<script src="/tax-rates.js?v=5"></script>
+<script>
+// (089) 종소세 구간·퇴직소득 공제표는 /tax-rates.js(window.SF_TAX)에서 읽음. 못 읽으면 아래 기본값(2026년 값)
+const _T = window.SF_TAX;
+const TX = {
+  income: _T ? _T.income : [[14e6,6],[50e6,15],[88e6,24],[150e6,35],[300e6,38],[500e6,40],[1e9,42],[Infinity,45]],
+  year: _T ? _T.retireYear : [[5,1e6],[10,2e6],[20,2.5e6],[Infinity,3e6]],
+  conv: _T ? _T.retireConv : [[8e6,100],[7e7,60],[1e8,55],[3e8,45],[Infinity,35]],
+  pension: _T ? _T.pensionRetire : [[10,70],[20,60],[Infinity,50]]
+};
+function prog(b, br){ let t = 0, lo = 0; if (!(b > 0)) return 0; for (const [hi, r] of br){ if (b > lo) t += (Math.min(b, hi) - lo) * r / 100; lo = hi; } return t; }
+function yearDedOf(y){ let t = 0, lo = 0; for (const [hi, per] of TX.year){ if (y > lo) t += (Math.min(y, hi) - lo) * per; lo = hi; } return t; }
+// 근속연수: 1년 미만 끝수는 1년으로 (소득세법). 20.3년 → 21년
+function taxYearsOf(y){ return y > 0 ? Math.ceil(y - 1e-9) : 0; }
+const _man = n => (n / 10000).toLocaleString('ko-KR') + '만';
+const _lab = n => { const e = Math.floor(n / 1e8), m = Math.round((n % 1e8) / 10000); return e ? e + '억' + (m ? ' ' + m.toLocaleString('ko-KR') + '만' : '') : _man(n); };
+// 사용법 속 공제표를 SF_TAX에서 다시 씀
+function fillRetireRules(){
+  const yEl = document.getElementById('ruleYear'), cEl = document.getElementById('ruleConv');
+  if (yEl){
+    let lo = 0, base = 0, h = '';
+    TX.year.forEach(([hi, per]) => {
+      h += '<li>' + (hi === Infinity ? lo + '년 초과' : '~' + hi + '년') + ': ' + (base ? _man(base) + ' + ' : '') + _man(per) + ' × ' + (lo ? '(근속−' + lo + ')' : '근속') + '</li>';
+      if (hi !== Infinity) base += (hi - lo) * per; lo = hi;
+    });
+    yEl.innerHTML = h;
+  }
+  if (cEl){
+    let lo = 0, base = 0, h = '';
+    TX.conv.forEach(([hi, r]) => {
+      const lab = hi === Infinity ? (lo >= 1e8 ? lo / 1e8 + '억' : _man(lo)) + ' 초과' : '~' + (hi >= 1e8 ? hi / 1e8 + '억' : _man(hi));
+      h += '<li>' + lab + ': ' + (r === 100 && !lo ? '전액' : (base ? _lab(base) + ' + ' : '') + '(' + (lo ? _lab(lo) + ' 초과분' : '금액') + ' × ' + r + '%)') + '</li>';
+      if (hi !== Infinity) base += (hi - lo) * r / 100; lo = hi;
+    });
+    cEl.innerHTML = h;
+  }
+  // 연금 수령 감면 문구: tx-pc0~2 = 감면율(100−부과율), tx-pr0~2 = 부과율, tx-py0~1 = 연차 경계
+  TX.pension.forEach(([hi, r], i) => {
+    document.querySelectorAll('.tx-pc' + i).forEach(el => el.textContent = 100 - r);
+    document.querySelectorAll('.tx-pr' + i).forEach(el => el.textContent = r);
+    if (hi !== Infinity){ document.querySelectorAll('.tx-py' + i).forEach(el => el.textContent = hi); document.querySelectorAll('.tx-pyn' + i).forEach(el => el.textContent = hi + 1); }
+  });
+}
+// severance-exec 사용법 한 줄짜리 공제표도 SF_TAX에서
+function fillSeRules(){
+  const y = document.getElementById('seRuleYear'), c = document.getElementById('seRuleConv');
+  if (y){ let lo = 0, base = 0; y.textContent = TX.year.map(([hi, per]) => { const t = (hi === Infinity ? lo + '년 초과 ' : (lo ? lo + '~' : '') + hi + '년' + (lo ? ' ' : ' 이하 ')) + (base ? _man(base) + '+' : '') + _man(per) + '/년'; if (hi !== Infinity) base += (hi - lo) * per; lo = hi; return t; }).join(', '); }
+  if (c){ let lo = 0; const lab = n => n >= 1e8 ? n / 1e8 + '억' : (n / 10000).toLocaleString('ko-KR') + '만'; c.textContent = TX.conv.map(([hi, r]) => { const t = (hi === Infinity ? lab(lo) + ' 초과' : (lo ? lab(lo) + '~' + lab(hi) : lab(hi) + ' 이하')) + ' ' + r + '%'; lo = hi; return t; }).join(', '); }
+}
+</script>
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
@@ -302,41 +352,10 @@ function setKor(id, n) {
   $(id).textContent = n > 0 ? '≈ ' + fmtKor(n) : '';
 }
 
-// 세율 (2024)
-const BRACKETS = [
-  { upto: 14000000, rate: 0.06, ded: 0 },
-  { upto: 50000000, rate: 0.15, ded: 1260000 },
-  { upto: 88000000, rate: 0.24, ded: 5760000 },
-  { upto: 150000000, rate: 0.35, ded: 15440000 },
-  { upto: 300000000, rate: 0.38, ded: 19940000 },
-  { upto: 500000000, rate: 0.40, ded: 25940000 },
-  { upto: 1000000000, rate: 0.42, ded: 35940000 },
-  { upto: Infinity, rate: 0.45, ded: 65940000 }
-];
-function progressiveTax(base) {
-  if (base <= 0) return 0;
-  for (const b of BRACKETS) if (base <= b.upto) return base * b.rate - b.ded;
-  return 0;
-}
-
-// 근속연수공제 (2023 개정)
-function yearDeduction(years) {
-  const y = Math.max(0, years);
-  if (y <= 5) return 1000000 * y;
-  if (y <= 10) return 5000000 + 2000000 * (y - 5);
-  if (y <= 20) return 15000000 + 2500000 * (y - 10);
-  return 40000000 + 3000000 * (y - 20);
-}
-
-// 환산급여공제
-function convDeduction(conv) {
-  const c = Math.max(0, conv);
-  if (c <= 8000000) return c;
-  if (c <= 70000000) return 8000000 + (c - 8000000) * 0.60;
-  if (c <= 100000000) return 45200000 + (c - 70000000) * 0.55;
-  if (c <= 300000000) return 61700000 + (c - 100000000) * 0.45;
-  return 151700000 + (c - 300000000) * 0.35;
-}
+// (089) 종소세 구간·근속연수공제·환산급여공제는 SF_TAX (위 스크립트의 TX)
+function progressiveTax(base) { return prog(base, TX.income); }
+function yearDeduction(years) { return yearDedOf(Math.max(0, years)); }
+function convDeduction(conv) { return prog(Math.max(0, conv), TX.conv); }
 
 // 날짜 3분할 자동탭 바인딩 (landtax 패턴)
 function bindDateGroup(prefix) {
@@ -373,12 +392,17 @@ function calc() {
   const joinStr = getDateStr('inJoin');
   const leaveStr = getDateStr('inLeave');
   let years = 0;
+  let taxY = 0;   // (089) 세금용 근속연수: 달력으로 만 몇 년인지 센 뒤 남는 날이 있으면 +1 (365.25로 나누면 딱 15년도 15.0007 → 16이 됨)
   if (joinStr && leaveStr) {
     const j = new Date(joinStr);
     const l = new Date(leaveStr);
     if (!isNaN(j) && !isNaN(l) && l > j) {
       const days = Math.round((l - j) / 86400000);
       years = days / 365.25;
+      let fy = l.getFullYear() - j.getFullYear();
+      const ann = n => { const a = new Date(j); a.setFullYear(j.getFullYear() + n); return a; };
+      if (ann(fy) > l) fy--;
+      taxY = fy + (ann(fy) < l ? 1 : 0);
       const fullY = Math.floor(years);
       const remMonths = Math.round((years - fullY) * 12);
       $('serviceDisplay').textContent = `${fullY}년 ${remMonths}개월  ·  총 ${days.toLocaleString()}일  ·  ${years.toFixed(3)}년`;
@@ -428,14 +452,15 @@ function calc() {
   setCell('rInLimit', inLimit);
   setCell('rOverLimit', overLimit);
 
-  // 퇴직소득세 (한도 내분)
-  const yearDed = yearDeduction(years);
+  // 퇴직소득세 (한도 내분) — (089) 세금 계산의 근속연수는 1년 미만 끝수를 1년으로 올림(ty). 한도 계산은 위처럼 실제 기간 그대로
+  const ty = taxY || taxYearsOf(years);
+  const yearDed = yearDeduction(ty);
   const convBase = Math.max(0, inLimit - yearDed);
-  const conv = convBase * 12 / years;
+  const conv = convBase * 12 / ty;
   const convDed = convDeduction(conv);
   const taxBase = Math.max(0, conv - convDed);
   const convTax = progressiveTax(taxBase);
-  const retTax = convTax * years / 12;
+  const retTax = convTax * ty / 12;
   const retLocal = retTax * 0.1;
   const retTotal = retTax + retLocal;
 
@@ -490,6 +515,7 @@ function seLoadLocal() { try { const r = localStorage.getItem('sf_se_state_v1');
 document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', seSaveLocal));
 window.seGetState = seGetState;
 window.seSetState = seSetState;
+fillSeRules();
 seLoadLocal();
 calc();
 </script>
