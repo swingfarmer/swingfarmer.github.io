@@ -52,6 +52,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   details.adv { margin-top: 10px; border-top: 1px dashed #e5e7eb; padding-top: 10px; }
   details.adv summary { cursor: pointer; font-size: 12.5px; color: #1F4E78; font-weight: 600; }
   details.adv .grid { margin-top: 10px; }
+  .adv-help { font-size: 12px; line-height: 1.6; margin: 8px 0 0; }
   .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #92400e; margin-bottom: 14px; line-height: 1.6; }
   .note b { color: #78350f; }
   .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 14px; }
@@ -95,7 +96,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
 </header>
 
 <div class="wrap">
-  <p class="desc">연봉 인상률을 반영해 연차별 <b>4대보험·소득세·지방소득세</b>를 공제한 실수령액과 누적액을 계산합니다. 비과세 수당·자녀세액공제까지 반영. 2026년 확정 요율 기준. 국세청 <a href="https://teht.hometax.go.kr/websquare/websquare.wq?w2xPath=/ui/pp/index_pp.xml" target="_blank" rel="noopener" style="color:#1F4E78">홈택스 원천징수세액 자동계산</a> 결과와는 오차가 있을 수 있습니다. 저장 관리(💾 버튼)로 시나리오 저장·비교 가능.</p>
+  <p class="desc">연봉 인상률을 반영해 연차별 <b>4대보험·소득세·지방소득세</b>를 공제한 실수령액과 누적액을 계산합니다. 비과세 수당·자녀세액공제까지 반영. <span class="tx-year">2026</span>년 요율 기준(공통 세율 파일에서 자동). 국세청 <a href="https://teht.hometax.go.kr/websquare/websquare.wq?w2xPath=/ui/pp/index_pp.xml" target="_blank" rel="noopener" style="color:#1F4E78">홈택스 원천징수세액 자동계산</a> 결과와는 오차가 있을 수 있습니다. 저장 관리(💾 버튼)로 시나리오 저장·비교 가능.</p>
 
   <!-- sf-slots.js가 저장 관리 제공 -->
 
@@ -137,7 +138,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
         <div class="readable-hint" id="hintNontax"></div>
       </div>
       <div class="fld">
-        <label>8~20세 자녀 수 <small>(자녀세액공제용)</small></label>
+        <label><span class="tx-cage">8</span>~20세 자녀 수 <small>(자녀세액공제용)</small></label>
         <select id="inChildren">
           <option value="0" selected>없음</option>
           <option value="1">1명</option>
@@ -149,7 +150,8 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
     </div>
 
     <details class="adv">
-      <summary>⚙️ 4대보험 요율 조정 (기본값: 2026년 확정 요율)</summary>
+      <summary>⚙️ 4대보험 요율 조정 (기본값: <span class="tx-year">2026</span>년 요율)</summary>
+      <p class="adv-help">ⓘ 기본값은 공통 세율 파일(tax-rates.js)에서 매년 자동으로 채워집니다 — 요율은 매년 1월, 국민연금 상·하한은 매년 7월 바뀜. 저장한 시나리오를 불러올 때 <b>저장 당시 기본값 그대로였던 칸은 올해 값으로</b> 바뀌고, <b>직접 고친 칸만</b> 저장값이 남습니다. 회사가 다른 요율을 쓰거나 내년 값을 미리 넣어보고 싶을 때만 고치세요.</p>
       <div class="grid">
         <div class="fld">
           <label>국민연금 근로자부담률 (%)</label>
@@ -204,32 +206,48 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   <div class="panel">
     <h2>📖 계산 방식</h2>
     <ul style="font-size:12.5px; line-height:1.9; padding-left:18px; color:#444">
-      <li><b>4대보험 (2026년 요율)</b>: 국민연금 4.75%(상한 월 637만원·하한 40만원 기준), 건강보험 3.595%, 장기요양 = 건강보험료×13.14%, 고용보험 0.9%. 보수월액 = 월급여 − 비과세.</li>
-      <li><b>근로소득공제</b>: 총급여 구간별 국세청 공제표 적용 (500만원 이하 70% ~ 1억원 초과분 2%).</li>
+      <li><b>4대보험 (<span class="tx-year">2026</span>년 요율)</b>: 국민연금 <span class="tx-nps">4.75</span>%(기준소득월액 상한 <span class="tx-npsmax">659</span>만원·하한 <span class="tx-npsmin">41</span>만원으로 자른 뒤), 건강보험 <span class="tx-hl">3.595</span>%, 장기요양 = 건강보험료×<span class="tx-ltc">13.14</span>%, 고용보험 <span class="tx-emp">0.9</span>%. 보수월액 = 월급여 − 비과세.</li>
+      <li><b>근로소득공제</b>: 총급여 구간별 국세청 공제표 적용 (500만원 이하 70% ~ 1억원 초과분 2%), 공제 한도 <span class="tx-edcap">2,000</span>만원.</li>
       <li><b>인적공제</b>: 부양가족 1인당 연 150만원.</li>
       <li><b>연금·특별소득공제</b>: 국민연금·건강보험·장기요양·고용보험 근로자부담분 전액을 과세표준에서 추가 공제.</li>
-      <li><b>산출세액</b>: 종합소득세 기본세율(1,400만원 이하 6% ~ 10억원 초과 45%, 8단계 누진).</li>
-      <li><b>근로소득세액공제</b>: 산출세액 130만원 이하 55%, 초과분 30% (총급여 구간별 한도 74만/66만/50만원 적용).</li>
-      <li><b>자녀세액공제 (2025년 귀속분 인상 기준)</b>: 8~20세 자녀 1명 25만원, 2명 55만원, 3명 이상 55만원+2명 초과 1인당 40만원.</li>
-      <li>월 소득세 = 연간 결정세액 ÷ 12, 지방소득세 = 소득세의 10%.</li>
+      <li><b>산출세액</b>: 종합소득세 기본세율(<span class="tx-brk">1,400만원 이하 6% ~ 10억원 초과 45%, 8단계</span> 누진).</li>
+      <li><b>근로소득세액공제</b>: 산출세액 130만원 이하 55%, 초과분 30% (총급여 구간별 한도 <span class="tx-crlim">74만/66만/50만/20만</span>원 — 7천만원 넘으면 초과액의 1/2씩 줄어 바로 50만원, 1.2억 넘으면 20만원까지).</li>
+      <li><b>자녀세액공제</b>: <span class="tx-cage">8</span>~20세 자녀 1명 <span class="tx-c1">25</span>만원, 2명 <span class="tx-c2">55</span>만원, 3명 이상 <span class="tx-c2">55</span>만원+2명 초과 1인당 <span class="tx-cx">40</span>만원. 대상 나이는 아동수당 확대로 매년 1세씩 올라감(2025 귀속 8세 → 2026 9세 → 2030 13세, 그보다 어린 자녀는 아동수당 대상이라 빼고 세기).</li>
+      <li>월 소득세 = 연간 결정세액 ÷ 12, 지방소득세 = 소득세의 <span class="tx-local">10</span>%.</li>
     </ul>
   </div>
 
   <footer>© 스윙파머 · 누적 연봉 계산기</footer>
 </div>
 
+<script src="/tax-rates.js?v=10"></script>
 <script>
 window.CALC_KEY = 'paygrowth';
+// (092) 4대보험 요율 기본값은 공통 세율 파일에서 채움 — 매년 바뀌어도 이 페이지는 안 고쳐도 됨
+var _T = window.SF_TAX;
+var PG_OLD = { rPension:'4.75', rHealth:'3.595', rLtc:'13.14', rEmp:'0.9', rPensionCap:'6,370,000', rPensionFloor:'400,000' };  // 092 이전 HTML 기본값 (예전 저장분 판별용)
+var PG_DEF = _T ? {
+  rPension: String(_T.social.nps), rHealth: String(Math.round(_T.health.rate / 2 * 10000) / 10000), rLtc: String(_T.health.ltc),
+  rEmp: String(_T.social.emp), rPensionCap: _T.social.npsMax.toLocaleString('ko-KR'), rPensionFloor: _T.social.npsMin.toLocaleString('ko-KR')
+} : { rPension:'4.75', rHealth:'3.595', rLtc:'13.14', rEmp:'0.9', rPensionCap:'6,590,000', rPensionFloor:'410,000' };
+(function(){ for (var k in PG_DEF) document.getElementById(k).value = PG_DEF[k]; })();
+function pgSame(a, b){ var x = parseFloat(String(a).replace(/[,\s]/g,'')), y = parseFloat(String(b).replace(/[,\s]/g,'')); return !isNaN(x) && x === y; }
 window.slGetState = function(){
   var ids = ['inSalary','inRaise','inYears','inDependents','inNontax','inChildren','rPension','rHealth','rLtc','rEmp','rPensionCap','rPensionFloor'];
   var o = {};
   for(var i=0;i<ids.length;i++) o[ids[i]] = document.getElementById(ids[i]).value;
+  o._def = Object.assign({}, PG_DEF);   // 저장 당시 기본값 — 불러올 때 「안 고친 칸」을 올해 값으로 바꾸는 데 씀
   return o;
 };
 window.slSetState = function(d){
   if(!d) return;
   var ids = ['inSalary','inRaise','inYears','inDependents','inNontax','inChildren','rPension','rHealth','rLtc','rEmp','rPensionCap','rPensionFloor'];
-  for(var i=0;i<ids.length;i++) if(d[ids[i]] !== undefined) document.getElementById(ids[i]).value = d[ids[i]];
+  var def = d._def || PG_OLD;
+  for(var i=0;i<ids.length;i++) if(d[ids[i]] !== undefined){
+    var id = ids[i], v = d[id];
+    if (PG_DEF[id] !== undefined && def[id] !== undefined && pgSame(v, def[id])) v = PG_DEF[id];   // 기본값 그대로였던 칸 → 올해 기본값
+    document.getElementById(id).value = v;
+  }
   if(typeof updateHints === 'function') updateHints();
   if(typeof calculate === 'function') calculate();
 };
@@ -239,7 +257,7 @@ window.slSetState = function(d){
 const $ = id => document.getElementById(id);
 
 window.slReset = () => {   // (085) 저장 관리 창 [↺ 화면 처음으로]
-  window.slSetState({ inSalary:'40,000,000', inRaise:'5', inYears:'10', inDependents:'1', inNontax:'200,000', inChildren:'0', rPension:'4.75', rHealth:'3.595', rLtc:'13.14', rEmp:'0.9', rPensionCap:'6,370,000', rPensionFloor:'400,000' });
+  window.slSetState(Object.assign({ inSalary:'40,000,000', inRaise:'5', inYears:'10', inDependents:'1', inNontax:'200,000', inChildren:'0' }, PG_DEF));
 };
 
 // ============= Utils =============
@@ -297,12 +315,13 @@ function updateHints() {
 
 // ============= 근로소득공제 (연간, 총급여 기준) =============
 function earnedIncomeDeduction(annualGross) {
+  if (_T) return _T.earnedDedAmt(annualGross);
   const g = annualGross;
   if (g <= 5000000) return g * 0.7;
   if (g <= 15000000) return 3500000 + (g - 5000000) * 0.4;
   if (g <= 45000000) return 7500000 + (g - 15000000) * 0.15;
   if (g <= 100000000) return 12000000 + (g - 45000000) * 0.05;
-  return 14750000 + (g - 100000000) * 0.02;
+  return Math.min(14750000 + (g - 100000000) * 0.02, 20000000);   // 공제 한도 2천만 (092)
 }
 
 // ============= 종합소득세 기본세율 (2026 기준, 8단계) =============
@@ -318,6 +337,7 @@ const TAX_BRACKETS = [
 ];
 function calcTax(taxBase) {
   if (taxBase <= 0) return 0;
+  if (_T) return _T.prog(taxBase, _T.income);
   for (const b of TAX_BRACKETS) {
     if (taxBase <= b.upTo) return taxBase * b.rate - b.deduction;
   }
@@ -327,6 +347,7 @@ function calcTax(taxBase) {
 // ============= 근로소득세액공제 =============
 function earnedIncomeTaxCredit(calculatedTax, annualGross) {
   if (calculatedTax <= 0) return 0;
+  if (_T) return _T.earnedCrAmt(calculatedTax, annualGross);
   let credit;
   if (calculatedTax <= 1300000) credit = calculatedTax * 0.55;
   else credit = 715000 + (calculatedTax - 1300000) * 0.30;
@@ -336,14 +357,17 @@ function earnedIncomeTaxCredit(calculatedTax, annualGross) {
     cap = 740000;
   } else if (annualGross <= 70000000) {
     cap = Math.max(660000, 740000 - (annualGross - 33000000) * 0.008);
-  } else {
+  } else if (annualGross <= 120000000) {
     cap = Math.max(500000, 660000 - (annualGross - 70000000) * 0.5);
+  } else {
+    cap = Math.max(200000, 500000 - (annualGross - 120000000) * 0.5);   // 1.2억 초과 (092)
   }
   return Math.min(credit, cap);
 }
 
 // ============= 자녀세액공제 (2025년 귀속분 인상 기준) =============
 function childTaxCredit(children) {
+  if (_T) return _T.childCrAmt(children);
   const n = parseInt(children) || 0;
   if (n <= 0) return 0;
   if (n === 1) return 250000;
@@ -381,7 +405,7 @@ function annualTaxCalc(annualSalary, monthlyNontax, dependents, children, rates)
   const finalTax = Math.max(0, calculatedTax - earnedCredit - childCredit);
 
   const monthlyIncomeTax = finalTax / 12;
-  const monthlyLocalTax = monthlyIncomeTax * 0.1;
+  const monthlyLocalTax = monthlyIncomeTax * (_T ? _T.local : 0.1);
 
   const netMonthly = monthlyGross - ins.total - monthlyIncomeTax - monthlyLocalTax;
   const netYearly = netMonthly * 12;
@@ -395,12 +419,12 @@ function annualTaxCalc(annualSalary, monthlyNontax, dependents, children, rates)
 
 function getRates() {
   return {
-    pension: parseFloat($('rPension').value) || 4.75,
-    health: parseFloat($('rHealth').value) || 3.595,
-    ltc: parseFloat($('rLtc').value) || 13.14,
-    emp: parseFloat($('rEmp').value) || 0.9,
-    pensionCap: parseNum($('rPensionCap').value) || 6370000,
-    pensionFloor: parseNum($('rPensionFloor').value) || 400000
+    pension: parseFloat($('rPension').value) || parseFloat(PG_DEF.rPension),
+    health: parseFloat($('rHealth').value) || parseFloat(PG_DEF.rHealth),
+    ltc: parseFloat($('rLtc').value) || parseFloat(PG_DEF.rLtc),
+    emp: parseFloat($('rEmp').value) || parseFloat(PG_DEF.rEmp),
+    pensionCap: parseNum($('rPensionCap').value) || parseNum(PG_DEF.rPensionCap),
+    pensionFloor: parseNum($('rPensionFloor').value) || parseNum(PG_DEF.rPensionFloor)
   };
 }
 
@@ -494,6 +518,22 @@ $('btnCalc').addEventListener('click', calculate);
 document.querySelectorAll('.panel input, .panel select').forEach(el => {
   el.addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
 });
+
+// ============= 화면 문구 속 세율 (092, 공통 파일에서) =============
+function fillTx() {
+  if (!_T) return;
+  const set = (c, v) => document.querySelectorAll('.' + c).forEach(e => e.textContent = v);
+  const man = n => (n / 1e4).toLocaleString('ko-KR');
+  const y = new Date().getFullYear();
+  set('tx-year', _T.year); set('tx-nps', _T.social.nps); set('tx-npsmax', man(_T.social.npsMax)); set('tx-npsmin', man(_T.social.npsMin));
+  set('tx-hl', PG_DEF.rHealth); set('tx-ltc', _T.health.ltc); set('tx-emp', _T.social.emp); set('tx-local', Math.round(_T.local * 100));
+  set('tx-edcap', man(_T.earnedDed.cap)); set('tx-cage', _T.childAge(y));
+  set('tx-c1', man(_T.childCr.one)); set('tx-c2', man(_T.childCr.two)); set('tx-cx', man(_T.childCr.extra));
+  set('tx-crlim', _T.earnedCr.lim.map(L => man(L[3]) + '만').join('/').replace(/만$/, ''));
+  const br = _T.income, krw = n => n >= 1e8 ? (n / 1e8) + '억원' : man(n) + '만원';
+  set('tx-brk', krw(br[0][0]) + ' 이하 ' + br[0][1] + '% ~ ' + krw(br[br.length - 2][0]) + ' 초과 ' + br[br.length - 1][1] + '%, ' + br.length + '단계');
+}
+fillTx();
 
 // ============= Init =============
 updateHints();
