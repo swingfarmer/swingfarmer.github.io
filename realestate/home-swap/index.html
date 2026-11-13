@@ -50,7 +50,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
 </header>
 
 <div class="wrap">
-  <p class="desc" style="margin:8px 0 16px">지금 집을 팔고 다른 집으로 갈아탈 때, <b>양도세·취득세·중개비</b>까지 포함해 실제로 드는(또는 남는) 돈을 계산합니다. 2026년 세율 기준.</p>
+  <p class="desc" style="margin:8px 0 16px">지금 집을 팔고 다른 집으로 갈아탈 때, <b>양도세·취득세·중개비</b>까지 포함해 실제로 드는(또는 남는) 돈을 계산합니다. 양도세는 2026.11 현행법 기준(조정지역 다주택 중과 2026.5.10 부활). 2027년 이후 정부안 비교는 <a href="/tax/house/">주택 양도세 계산기</a>. (세율 확인일 <span class="tx-checked">2026-11-13</span>)</p>
 
   <!-- 기존 집 매도 -->
   <div class="panel">
@@ -144,8 +144,8 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
     <h3>📘 계산 방법</h3>
     <ul>
       <li><span class="badge">매도 실수령</span> 매도가 − 양도세 − 매도 중개비</li>
-      <li><span class="badge">양도세</span> 1주택·2년보유면 비과세(12억 이하). 12억 초과분만 과세. 다주택이면 차익 전체에 기본세율(+중과 가능).</li>
-      <li><span class="badge">장기보유공제</span> 1주택 보유+거주 시 연 8%(최대 80%). 일반은 연 2%(최대 30%).</li>
+      <li><span class="badge">양도세</span> 1주택·2년 이상 보유면 비과세(12억 이하). 12억 초과면 차익 × (매도가−12억)/매도가 만 과세. 1주택 해제 + 조정지역이면 2주택 중과(+<span class="tx-hh2">20</span>%p, 장특공제 없음). 보유 1년 미만 <span class="tx-hs1">70</span>%·2년 미만 <span class="tx-hs2">60</span>%와 비교해 큰 쪽.</li>
+      <li><span class="badge">장기보유공제</span> 보유 3년 이상부터. 1주택 + 2년 이상 거주 체크 시 보유 4%+거주 4%(거주기간 = 보유기간 가정, 최대 80%). 일반은 연 2%(3년 6% ~ 15년 30%). 보유기간은 만 년수로 셈(5.9년 → 5년).</li>
       <li><span class="badge">새집 총비용</span> 매수가 + 취득세 + 매수 중개비 + 기타</li>
       <li><span class="badge">추가 필요 자금</span> 새집 총비용 − 매도 실수령. (음수면 오히려 돈이 남음)</li>
     </ul>
@@ -159,11 +159,11 @@ window.slGetState = function(){
     sellPrice: document.getElementById('sellPrice').value,
     buyPriceOld: document.getElementById('buyPriceOld').value,
     holdYears: document.getElementById('holdYears').value,
-    oneHouse: document.getElementById('oneHouse').value,
-    lived2y: document.getElementById('lived2y').value,
+    oneHouse: document.getElementById('oneHouse').checked,
+    lived2y: document.getElementById('lived2y').checked,
     buyPriceNew: document.getElementById('buyPriceNew').value,
-    tempTwo: document.getElementById('tempTwo').value,
-    regulated: document.getElementById('regulated').value,
+    tempTwo: document.getElementById('tempTwo').checked,
+    regulated: document.getElementById('regulated').checked,
     sellFeeRate: document.getElementById('sellFeeRate').value,
     buyFeeRate: document.getElementById('buyFeeRate').value,
     etcCost: document.getElementById('etcCost').value,
@@ -174,11 +174,11 @@ window.slSetState = function(d){
   if(d.sellPrice !== undefined) document.getElementById('sellPrice').value = d.sellPrice;
   if(d.buyPriceOld !== undefined) document.getElementById('buyPriceOld').value = d.buyPriceOld;
   if(d.holdYears !== undefined) document.getElementById('holdYears').value = d.holdYears;
-  if(d.oneHouse !== undefined) document.getElementById('oneHouse').value = d.oneHouse;
-  if(d.lived2y !== undefined) document.getElementById('lived2y').value = d.lived2y;
+  if(typeof d.oneHouse === 'boolean') document.getElementById('oneHouse').checked = d.oneHouse;   // (090) 089까지 체크박스를 .value로 저장해서 체크 상태가 저장 안 됐음
+  if(typeof d.lived2y === 'boolean') document.getElementById('lived2y').checked = d.lived2y;   // (090) 089까지 체크박스를 .value로 저장해서 체크 상태가 저장 안 됐음
   if(d.buyPriceNew !== undefined) document.getElementById('buyPriceNew').value = d.buyPriceNew;
-  if(d.tempTwo !== undefined) document.getElementById('tempTwo').value = d.tempTwo;
-  if(d.regulated !== undefined) document.getElementById('regulated').value = d.regulated;
+  if(typeof d.tempTwo === 'boolean') document.getElementById('tempTwo').checked = d.tempTwo;   // (090) 089까지 체크박스를 .value로 저장해서 체크 상태가 저장 안 됐음
+  if(typeof d.regulated === 'boolean') document.getElementById('regulated').checked = d.regulated;   // (090) 089까지 체크박스를 .value로 저장해서 체크 상태가 저장 안 됐음
   if(d.sellFeeRate !== undefined) document.getElementById('sellFeeRate').value = d.sellFeeRate;
   if(d.buyFeeRate !== undefined) document.getElementById('buyFeeRate').value = d.buyFeeRate;
   if(d.etcCost !== undefined) document.getElementById('etcCost').value = d.etcCost;
@@ -188,6 +188,7 @@ window.slSetState = function(d){
 <script>window.SF_RESET = true;</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
 <script src="/sf-slots.js?v=7"></script>
 <script src="/common.js?v=10"></script>
+<script src="/tax-rates.js?v=7"></script>
 <script>
 const $ = id => document.getElementById(id);
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
@@ -197,24 +198,13 @@ function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='blo
 const KOR_FIELDS = ['sellPrice','buyPriceOld','buyPriceNew','etcCost'];
 function updateKor(){ KOR_FIELDS.forEach(id=>{ var el=$(id), box=$(id+'_kor'); if(el&&box){ var v=parseFloat(el.value)||0; box.textContent=v>0?wonToKorean(v):''; } }); }
 
-// 양도세 누진세율 (2024~ 기본세율)
-function incomeTax(base){
-  if(base<=0) return 0;
-  const brackets = [
-    [12000000, 0.06, 0],
-    [46000000, 0.15, 1080000],
-    [88000000, 0.24, 5220000],
-    [150000000, 0.35, 14900000],
-    [300000000, 0.38, 19400000],
-    [500000000, 0.40, 25400000],
-    [1000000000, 0.42, 35400000],
-    [Infinity, 0.45, 65400000]
-  ];
-  for(const [limit, rate, deduct] of brackets){
-    if(base <= limit) return base*rate - deduct;
-  }
-  return 0;
-}
+// (090) 양도세 세율은 /tax-rates.js(window.SF_TAX)에서 읽음. 못 읽으면 아래 기본값(2026.11 현행법)
+//   (089까지: 2023년 전 옛 구간(1,200만·4,600만)을 써서 세금이 조금 많이 나왔음)
+const _T = window.SF_TAX;
+const INCOME = _T ? _T.income : [[14e6,6],[50e6,15],[88e6,24],[150e6,35],[300e6,38],[500e6,40],[1e9,42],[Infinity,45]];
+const CG = (_T && _T.cgtHouse) ? _T.cgtHouse : {nontax: 12e8, short1: 70, short2: 60, heavy2: 20, heavy3: 30, basicDed: 2.5e6};
+function prog(b, br){ let t = 0, lo = 0; if (!(b > 0)) return 0; for (const [hi, r] of br){ if (b > lo) t += (Math.min(b, hi) - lo) * r / 100; lo = hi; } return t; }
+function incomeTax(base){ return prog(base, INCOME); }
 
 // 취득세율 (주택 매매)
 function acqTax(price, isMulti, isRegulated){
@@ -250,45 +240,48 @@ function calculate(){
   // 조정지역 체크박스는 다주택일 때만 의미
   $('regulatedRow').style.display = (!tempTwo) ? 'flex' : 'none';
 
-  // === 양도세 계산 ===
+  // === 양도세 계산 === (090) 보유기간은 만 년수(「몇 년 이상」 기준이라 끝수 버림)
+  const holdY = Math.max(0, Math.floor(holdYears));
   let gain = sellPrice - buyPriceOld; // 양도차익 (비용 단순화)
   if(gain < 0) gain = 0;
   let taxableGain = gain;
   let exemptNote = '';
+  const exemptOk = oneHouse && holdY >= 2;          // 비과세는 2년 이상 보유
+  const heavy = !oneHouse && isRegulated;           // 조정지역 다주택(2주택 가정) 중과 — 장특공제 배제
 
-  if(oneHouse){
-    // 1주택: 12억 이하 비과세, 초과분만 과세
-    if(sellPrice <= 1200000000){
+  if(exemptOk){
+    if(sellPrice <= CG.nontax){
       taxableGain = 0;
       exemptNote = '1주택 비과세 (12억 이하)';
     } else {
-      // 12억 초과분 비율만 과세
-      const ratio = (sellPrice - 1200000000) / sellPrice;
+      const ratio = (sellPrice - CG.nontax) / sellPrice;
       taxableGain = gain * ratio;
-      exemptNote = '12억 초과분만 과세';
+      exemptNote = '12억 초과분만 과세 (차익 × ' + (ratio*100).toFixed(1) + '%)';
     }
+  } else if(oneHouse){
+    exemptNote = '보유 2년 미만 → 비과세 안 됨';
   }
 
-  // 장기보유특별공제
+  // 장기보유특별공제 — (090) 일반 공제율이 (보유−2)×2%로 1년치 덜 나오던 것, 중과인데도 공제하던 것 고침
   let ltDeduction = 0, ltRate = 0;
-  if(taxableGain > 0 && holdYears >= 3){
-    if(oneHouse && lived2y){
-      // 1주택: 보유 연4% + 거주 연4%, 최대 80%
-      ltRate = Math.min(0.80, holdYears*0.04 + Math.min(holdYears,10)*0.04);
+  if(taxableGain > 0 && holdY >= 3 && !heavy){
+    if(exemptOk && lived2y){
+      // 1주택: 보유 연4%(최대 40%) + 거주 연4%(최대 40%) — 거주기간 = 보유기간으로 가정
+      ltRate = Math.min(0.80, Math.min(0.40, holdY*0.04) + Math.min(0.40, holdY*0.04));
     } else {
-      // 일반: 연2%, 최대 30% (15년)
-      ltRate = Math.min(0.30, (holdYears-2)*0.02);
-      if(ltRate<0) ltRate=0;
+      ltRate = Math.min(0.30, holdY*0.02);   // 일반: 3년 6% ~ 15년 30%
     }
     ltDeduction = taxableGain * ltRate;
   }
 
-  const taxBase = Math.max(0, taxableGain - ltDeduction - 2500000); // 기본공제 250만
+  const taxBase = Math.max(0, taxableGain - ltDeduction - (taxableGain > 0 ? CG.basicDed : 0)); // 기본공제 250만
   let transferTax = incomeTax(taxBase);
-  // 다주택 중과 (조정지역, 단순화: +20%p)
-  if(!oneHouse && isRegulated && taxBase > 0){
-    transferTax += taxBase * 0.20;
-  }
+  // 단기세율과 중과 중 큰 쪽 (소득세법 104조 7항)
+  const cands = [transferTax];
+  if(taxBase > 0 && holdY < 1) cands.push(taxBase * CG.short1 / 100);
+  else if(taxBase > 0 && holdY < 2) cands.push(taxBase * CG.short2 / 100);
+  if(heavy && taxBase > 0) cands.push(transferTax + taxBase * CG.heavy2 / 100);   // 2주택 +20%p (3주택 이상은 이 계산기 범위 밖)
+  transferTax = Math.max.apply(null, cands);
   transferTax += transferTax * 0.1; // 지방소득세 10%
 
   // === 취득세 (새 집) ===
@@ -324,6 +317,7 @@ function calculate(){
   rows.push(`<tr class="sub"><td>양도차익 (매도−취득)</td><td class="num">${fmt(gain)}</td></tr>`);
   if(exemptNote) rows.push(`<tr class="sub"><td>${exemptNote}</td><td class="num">${taxableGain>0?'과세 '+fmt(taxableGain):'비과세'}</td></tr>`);
   if(ltRate>0) rows.push(`<tr class="sub"><td>장기보유공제 (${(ltRate*100).toFixed(0)}%)</td><td class="num minus">−${fmt(ltDeduction)}</td></tr>`);
+  if(heavy) rows.push(`<tr class="sub"><td>조정지역 다주택 중과 +${CG.heavy2}%p (장특공제 없음)</td><td class="num">적용</td></tr>`);
   rows.push(`<tr><td>양도세 (지방세 포함)</td><td class="num minus">−${fmt(transferTax)}</td></tr>`);
   rows.push(`<tr><td>매도 중개비 (${(sellFeeRate*100).toFixed(2)}%)</td><td class="num minus">−${fmt(sellFee)}</td></tr>`);
   rows.push(`<tr class="total"><td>매도 실수령</td><td class="num plus">${fmt(sellNet)}</td></tr>`);
@@ -342,6 +336,7 @@ function calculate(){
 
   updateKor();
 }
+(function fillTax(){ const put = (c, v) => document.querySelectorAll('.' + c).forEach(el => el.textContent = v); put('tx-hh2', CG.heavy2); put('tx-hs1', CG.short1); put('tx-hs2', CG.short2); if (_T) put('tx-checked', _T.checked); })();
 
 // 입력 이벤트
 document.querySelectorAll('input').forEach(el=>{ el.addEventListener('input', calculate); });

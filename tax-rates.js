@@ -1,12 +1,12 @@
 /* 세율 공통 (086) — 세법이 바뀌면 이 파일 하나만 고치면 됨
- * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=6 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
+ * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=7 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
  * 구간 배열: [[상한(원), 세율%], ...] 누진. 세율은 국세 기준, 지방소득세(국세의 10%)는 별도 → SF_TAX.wl(세율)로 포함값.
  * 바꾼 뒤: 이 파일 ?v= 를 쓰는 페이지 전부 올릴 것. 확인일(checked)도 고칠 것.
- * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/, /realestate/commercial-yield/, /tax/income/, /tax/retirement/, /tax/retirement-compare/, /severance-exec/, /salary/, /insurance4/, /tax/corp-invest/  (나머지 세금 페이지는 순차 이전 예정)
+ * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/, /realestate/commercial-yield/, /tax/income/, /tax/retirement/, /tax/retirement-compare/, /severance-exec/, /salary/, /insurance4/, /tax/corp-invest/, /tax/house/, /tax/land/, /realestate/home-swap/  (나머지 세금 페이지는 순차 이전 예정)
  */
 window.SF_TAX = Object.freeze({
   year: 2026,
-  checked: '2026-11-13',  // 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가 / 090: 고용보험 사업주분·고배당 분리과세·미국 배당 원천 추가
+  checked: '2026-11-13',  // 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가 / 090: 고용보험 사업주분·고배당 분리과세·미국 배당 원천·주택·토지 양도세 추가
   // 이자·배당 원천징수 (소득세 14% + 지방소득세 1.4%)
   interest: 15.4,
   // 금융소득 종합과세 기준 (이자+배당, 연)
@@ -33,6 +33,13 @@ window.SF_TAX = Object.freeze({
   // 고배당기업 배당소득 분리과세 (조특법 104조의27, 2026~2028 지급 배당 한시, 090 확인) — 국세 %, 지방세 별도.
   //   2천만 이하 14 / 3억 이하 20 / 50억 이하 25 / 초과 30. 일반 금융소득 2천만 기준과 별도 계산. 선택제(종합과세가 유리하면 안 고름)
   highDiv: [[2e7,14],[3e8,20],[5e9,25],[Infinity,30]],
+  // 주택 양도소득세 (소득세법 89·95·104조, 2026.11 현행 / 090 확인) — 1세대1주택 비과세 기준 12억, 단기세율 1년 미만 70·1~2년 60(국세 %),
+  //   조정대상지역 다주택 중과 가산 2주택 +20·3주택+ +30%p (2026.5.9 유예 종료 → 5.10 양도분부터 적용, 장특공제 배제), 기본공제 연 250만.
+  //   2027~ 세제개편 정부안(중과 한시 완화·장특 거주 전환)은 확정 전이라 /tax/house/ 페이지 PLAN에만 둠
+  cgtHouse: {nontax: 12e8, short1: 70, short2: 60, heavy2: 20, heavy3: 30, basicDed: 2.5e6},
+  // 토지 양도소득세 (090 확인) — 비사업용 토지 가산 +10%p, 단기세율 1년 미만 50·1~2년 40(국세 %), 8년 자경농지 세액감면 1년 1억(조특법 69조), 기본공제 250만.
+  //   정부안(2028~ 비사업용 +20%p·장특 배제)은 확정 전이라 /tax/land/ 페이지에만 둠
+  cgtLand: {nonBiz: 10, short1: 50, short2: 40, farmCap: 1e8, basicDed: 2.5e6},
   // 미국 배당 원천징수 (한미 조세조약, 090) — 개인은 2천만 이하면 이걸로 끝, 법인은 외국납부세액공제
   usWithhold: 15,
   // 건강보험료율 (세금은 아니지만 매년 바뀌어 같이 둠) — 2026년 7.19%, 장기요양 = 건보료의 13.14%. 직장가입자 보수 외 소득 연 2천만 초과분에 소득월액보험료(전액 본인) (087 확인)
