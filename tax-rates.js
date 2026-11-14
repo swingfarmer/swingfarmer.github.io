@@ -1,12 +1,12 @@
 /* 세율 공통 (086) — 세법이 바뀌면 이 파일 하나만 고치면 됨
- * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=14 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
+ * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=15 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
  * 구간 배열: [[상한(원), 세율%], ...] 누진. 세율은 국세 기준, 지방소득세(국세의 10%)는 별도 → SF_TAX.wl(세율)로 포함값.
  * 바꾼 뒤: 이 파일 ?v= 를 쓰는 페이지 전부 올릴 것. 확인일(checked)도 고칠 것.
- * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/, /realestate/commercial-yield/, /tax/income/, /tax/retirement/, /tax/retirement-compare/, /severance-exec/, /salary/, /insurance4/, /tax/corp-invest/, /tax/house/, /tax/land/, /realestate/home-swap/, /stock-tools/dividend/, /finance-tools/compound/, /fire/, /tax/financial-income/, /barbell/, /paygrowth/, /landtax/, /tax/inheritance/, /tax/gift/, /tax/acquisition/, /corp-tax/, /tax/pension-deduction/, /pension/, /realestate/office-buy-vs-rent/  (나머지 세금 페이지는 순차 이전 예정)
+ * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/, /realestate/commercial-yield/, /tax/income/, /tax/retirement/, /tax/retirement-compare/, /severance-exec/, /salary/, /insurance4/, /tax/corp-invest/, /tax/house/, /tax/land/, /realestate/home-swap/, /stock-tools/dividend/, /finance-tools/compound/, /fire/, /tax/financial-income/, /barbell/, /paygrowth/, /landtax/, /tax/inheritance/, /tax/gift/, /tax/acquisition/, /corp-tax/, /tax/pension-deduction/, /pension/, /realestate/office-buy-vs-rent/, /realestate/jeonse-vs-buy/, /gambuk/  (나머지 세금 페이지는 순차 이전 예정)
  */
 window.SF_TAX = Object.freeze({
   year: 2026,
-  checked: '2026-11-14',  // 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가 / 090: 고용보험 사업주분·고배당 분리과세·미국 배당 원천·주택·토지 양도세 추가, 양도세 정부안도 여기로(cgtPlan·cgtRule), ISA·연금 분리과세 / 092: 근로소득공제·근로소득세액공제·자녀세액공제(나이 연도별)·공익수용 감면(조특법 77) 추가, 토지 자경 5년 한도 / 092_03: 국민연금 연도별 인상(socialPlan·socialRule), 4대보험 근로자분 계산(ins4), 간이세액 근사(wageTax) 공통 함수 / 093: 상속·증여세 구간·공제(inhGift·inhDed·giftDed), 취득세(acq·acqHouseRate·acqCalc) / 094: 법인세 연도별(corpBr)·최저한세·이월결손금·기업업무추진비 한도, 연금계좌 세액공제·사적연금 분리과세, 국민연금 수급연령·조기/연기 / 094_03: 과밀억제권역 법인 취득세 중과(acqCalc capHeavy)
+  checked: '2026-11-14',  // 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가 / 090: 고용보험 사업주분·고배당 분리과세·미국 배당 원천·주택·토지 양도세 추가, 양도세 정부안도 여기로(cgtPlan·cgtRule), ISA·연금 분리과세 / 092: 근로소득공제·근로소득세액공제·자녀세액공제(나이 연도별)·공익수용 감면(조특법 77) 추가, 토지 자경 5년 한도 / 092_03: 국민연금 연도별 인상(socialPlan·socialRule), 4대보험 근로자분 계산(ins4), 간이세액 근사(wageTax) 공통 함수 / 093: 상속·증여세 구간·공제(inhGift·inhDed·giftDed), 취득세(acq·acqHouseRate·acqCalc) / 094: 법인세 연도별(corpBr)·최저한세·이월결손금·기업업무추진비 한도, 연금계좌 세액공제·사적연금 분리과세, 국민연금 수급연령·조기/연기 / 094_03: 과밀억제권역 법인 취득세 중과(acqCalc capHeavy) / 094_04: 가족 간 금전대여 적정이자율(famLoan)
   // 이자·배당 원천징수 (소득세 14% + 지방소득세 1.4%)
   interest: 15.4,
   // 금융소득 종합과세 기준 (이자+배당, 연)
@@ -84,6 +84,9 @@ window.SF_TAX = Object.freeze({
     return r;
   },
   // 절세계좌 분리과세 (090) — ISA 비과세 한도 넘는 이익 9.9%(지방세 포함), 연금 수령 연금소득세(지방세 포함) 70세 미만 5.5 / 80세 미만 4.4 / 80세 이상 3.3
+  // 특수관계인 금전 무상·저리 대여 (상증세법 41조의4, 시행규칙 10조의5, 094_04) — 적정이자율 rate%, 이자 차액이 연 free원 미만이면 증여 안 봄
+  //   → 무이자 가능 원금 = free ÷ rate% (4.6% → 약 2억 1,739만). 2016.3 이후 4.6% 유지 (2026.6 기사까지 같은 기준 확인)
+  famLoan: {rate: 4.6, free: 1e7},
   isaSep: 9.9, pensionTax: [5.5, 4.4, 3.3],
   // 연금계좌 세액공제 (소득세법 59조의3, 094) — 연금저축 cap 600만, IRP 합산 total 900만. 공제율(국세 %) 총급여 wage 이하(근로소득만) 또는 종합소득금액 inc 이하 hi, 초과 lo
   //   → 지방세 포함은 SF_TAX.wl(). 페이지는 pensionCrPct(총급여)로 받음

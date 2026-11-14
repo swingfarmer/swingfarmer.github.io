@@ -130,7 +130,7 @@
 
   <h3>③ 오피스텔 (용도별)</h3>
   <ul>
-    <li><b>업무용:</b> 일반건물 4.6%(취득세4%+교육세0.4%+농특세0.2%) 단일. <b>주택 수에 포함 안 됨.</b> 부가세 환급 가능(일반임대사업자).</li>
+    <li><b>업무용:</b> 일반건물 <span class="tx-on">4.6</span>%(취득세<span class="tx-oa">4</span>%+교육세<span class="tx-oe">0.4</span>%+농특세<span class="tx-or">0.2</span>%) 단일. 서울 등 과밀억제권역에서 설립 5년 안 된 법인은 <span class="tx-oh">9.4</span>% 중과. <b>주택 수에 포함 안 됨.</b> 부가세 환급 가능(일반임대사업자).</li>
     <li><b>주거용:</b> 오피스텔 자체를 살 때는 <b>업무용과 같은 4.6%</b> — 건축물대장상 업무시설이라 주택 세율·중과가 안 붙음(093에서 고침: 예전엔 주택 세율로 계산했음). 대신 <b>2020.8.12 이후 취득분은 그 뒤 다른 주택을 살 때 주택 수에 포함</b>(그 집이 중과될 수 있음). 시가표준액 1억 이하는 주택 수 제외.</li>
     <li>주택 수 포함 여부는 실제 사용 용도(재산세 주택분 과세 여부)로 판정. 경계 사례는 세무 전문가 상담 권장.</li>
   </ul>
@@ -146,13 +146,16 @@
   </div>
 </div>
 
-<script src="/tax-rates.js?v=14"></script>
+<script src="/tax-rates.js?v=15"></script>
 <script>
 // (093) 취득세율·지방교육세·농특세는 /tax-rates.js(SF_TAX.acq, 함수 acqHouseRate·acqCalc)에서 받음 — /realestate/home-swap/과 같은 식.
 //       못 읽으면 아래 대체용(같은 규칙, 2026.11 현행). 093에서 고친 것:
 //       ① 주거용 오피스텔도 취득할 땐 비주택 4.6%(주택세율 아님) ② 지방교육세 = (표준세율−2%)×20% — 증여·상속·신축이 0.4%·취득세×10%로 잘못 나오던 것
 //       ③ 농특세: 8% 중과 0.6%(1%로 나오던 것), 농지도 0.2%(면제로 나오던 것) ④ 비조정 4주택 이상 12%(8%로 나오던 것) ⑤ 주택 증여 중과는 3억 이상일 때만
 const _T = window.SF_TAX;
+// (094_04) 업무용(비주택) 매매 세율 — 설명 글자도 공통 파일 값으로
+const _OA = _T.acqCalc({kind:'other', type:'buy', price:1}), _OH = _T.acqCalc({kind:'other', type:'buy', price:1, capHeavy:true});
+[['tx-on',_OA.totalRate],['tx-oa',_OA.rate],['tx-oe',_OA.eduRate],['tx-or',_OA.ruralRate],['tx-oh',_OH.totalRate]].forEach(function(x){ document.querySelectorAll('.'+x[0]).forEach(function(e){ e.textContent = x[1]; }); });
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
 const fmtPct = n => (n * 100).toFixed(2) + '%';
 const A = _T ? _T.acq : {house: {lo: 6e8, hi: 9e8, rLo: 1, rHi: 3, heavy2: 8, heavy3: 12, gift: 3.5, giftHeavy: 12, giftHeavyMin: 3e8, inherit: 2.8, build: 2.8},
@@ -243,7 +246,7 @@ function calculate() {
   if (propertyType === '오피스텔') {
     noteEl.style.display = 'block';
     if (officetelUse === '업무용') {
-      noteEl.innerHTML = '💡 <b>업무용 오피스텔</b>: 주택 수와 무관하게 일반건물 4.6%(취득세4%+교육세0.4%+농특세0.2%) 단일 적용. <b>다른 주택 취득 시 주택 수에 포함되지 않음.</b> 부가가치세(건물분 10%)는 일반임대사업자로 등록 시 환급 가능(이 계산기 미반영).';
+      noteEl.innerHTML = '💡 <b>업무용 오피스텔</b>: 주택 수와 무관하게 일반건물 ' + _OA.totalRate + '%(취득세' + _OA.rate + '%+교육세' + _OA.eduRate + '%+농특세' + _OA.ruralRate + '%) 단일 적용. <b>다른 주택 취득 시 주택 수에 포함되지 않음.</b> 부가가치세(건물분 10%)는 일반임대사업자로 등록 시 환급 가능(이 계산기 미반영).';
     } else {
       noteEl.innerHTML = '💡 <b>주거용 오피스텔</b>: 오피스텔 <b>자체를 살 때는 업무용과 같은 4.6%</b>(건축물대장상 업무시설이라 주택 세율·중과가 안 붙음). 대신 <b>2020.8.12 이후 취득분은 그 뒤 다른 주택을 살 때 주택 수에 포함</b>돼 그 집이 중과될 수 있음(시가표준액 1억 이하는 제외). 아파트 등을 살 계획이면 「주택」으로 바꾸고 주택수에 이 오피스텔을 넣어 계산하세요.';
     }

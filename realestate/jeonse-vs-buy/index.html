@@ -94,6 +94,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
       <label>취득세·비용 (원) <span class="stat-sub">살 때 드는 세금·중개비</span></label>
       <input type="number" id="buyCost" value="35000000" inputmode="numeric">
       <div class="won-kor" id="buyCost_kor"></div>
+      <div style="font-size:12px;color:#666;margin-top:4px">취득세 참고: <b id="acqHint">-</b> <span style="color:#999">(무주택→1주택 매매·전용 85㎡ 이하 기준, 중개비·법무비 별도)</span> <button type="button" id="acqFill" style="font-size:11px;padding:2px 8px;border:1px solid #1F4E78;background:none;color:#1F4E78;border-radius:5px;cursor:pointer">취득세만 넣기</button></div>
     </div>
   </div>
 
@@ -181,6 +182,7 @@ window.slSetState = function(d){
   if(typeof calculate === 'function') calculate();
 };
 </script>
+<script src="/tax-rates.js?v=15"></script>
 <script>window.SF_RESET = true;</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
 <script src="/sf-slots.js?v=7"></script>
 <script src="/common.js?v=11"></script>
@@ -273,6 +275,12 @@ function calculate(){
 }
 
 document.querySelectorAll('input').forEach(el=>{ el.addEventListener('input', calculate); });
+// (094_04) 취득세 참고값 — 공통 파일 acqCalc(주택·매매·1주택). 칸은 자동으로 안 바꾸고, 버튼 누를 때만 넣음(중개비 포함해 직접 넣은 값 보호)
+function acqEst(){ const T=window.SF_TAX; if(!T||!T.acqCalc) return null; return T.acqCalc({kind:'house', type:'buy', price:parseFloat($('housePrice').value)||0, houses:1, area:85}); }
+function showAcq(){ const a=acqEst(); if(!a){ $('acqHint').textContent='-'; return; } $('acqHint').textContent=Math.round(a.total).toLocaleString('ko-KR')+'원 ('+(Math.round(a.totalRate*100)/100)+'%)'; }
+$('housePrice').addEventListener('input', showAcq);
+$('acqFill').addEventListener('click', ()=>{ const a=acqEst(); if(!a) return; $('buyCost').value=Math.round(a.total); if(typeof updateKor==='function') updateKor(); calculate(); });
+showAcq();
 calculate();
 </script>
 </body>

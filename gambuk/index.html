@@ -335,8 +335,8 @@ body.sf-dark footer{border-color:#2a2d3a!important;color:#71717a!important}
   <h2>자금 조달 참고</h2>
   <div class="panel">
     <p class="panel-label">B → C 자금 대여 (분양 잔금)</p>
-    <p>2억 1,739만원 이하: 무이자 가능 (연 이자 차액 1,000만 미만).<br>
-    초과 시: 적정 이율 연 4.6%(2024 기준) 적용.<br>
+    <p><span class="tx-fl">2억 1,739만원</span> 이하: 무이자 가능 (연 이자 차액 <span class="tx-ff">1,000만</span> 미만).<br>
+    초과 시: 적정 이율 연 <span class="tx-fr">4.6</span>% 적용 (<span class="tx-chk">세율 확인일</span> 기준).<br>
     증빙: 차용증 + 우체국 내용증명 또는 공증사무소 공증 + 매월 이자 계좌이체 기록. (등기소 확정일자는 전세계약서용이므로 차용증에는 해당 없음)</p>
   </div>
   <div class="panel">
@@ -426,6 +426,15 @@ function switchTab(id) {
 </div>
 <script>
 if(location.hash==='#admin'||location.hash==='#관리자'){var rt=document.getElementById('relatedTools');if(rt)rt.style.display='block';}
+</script>
+<script src="/tax-rates.js?v=15"></script>
+<script>
+// (094_04) 가족 간 무이자 대여 한도·적정이자율은 공통 파일 /tax-rates.js (SF_TAX.famLoan)
+(function(){ var T = window.SF_TAX; if (!T) return; var f = T.famLoan, lim = f.free / (f.rate / 100);
+  var won = function(n){ var e = Math.floor(n / 1e8), m = Math.floor(n % 1e8 / 1e4); return (e ? e + '억 ' : '') + (m ? m.toLocaleString('ko-KR') + '만' : '') + '원'; };
+  var q = function(c, v){ document.querySelectorAll('.' + c).forEach(function(e){ e.textContent = v; }); };
+  q('tx-fl', won(lim)); q('tx-ff', (f.free / 1e4).toLocaleString('ko-KR') + '만'); q('tx-fr', f.rate); q('tx-chk', T.checked);
+})();
 </script>
 <script src="/common.js?v=11"></script>
 </body>
