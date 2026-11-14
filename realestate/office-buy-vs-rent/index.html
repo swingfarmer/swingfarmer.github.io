@@ -109,8 +109,8 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
     </div>
     <div class="input-row">
       <label>법인세 실효세율 (%) <span class="info-btn" onclick="toggleInfo('taxInfo')">i</span></label>
-      <input type="number" id="corpTaxRate" value="10" step="1" inputmode="numeric">
-      <div class="info-box" id="taxInfo">중소기업 과세표준 2억 이하 10% (지방세 포함 11%), 2억 초과 20% (22%). 비용처리 시 절감되는 세율입니다.</div>
+      <input type="number" id="corpTaxRate" value="11" step="0.1" inputmode="decimal">
+      <div class="info-box" id="taxInfo">비용처리로 줄어드는 세율이라 <b>지방세 포함</b>으로 넣어요. 일반법인 과세표준 2억 이하 <span class="tx-c1">11</span>%, 2억~200억 <span class="tx-c2">22</span>%. 1인·가족 임대 위주 법인(성실신고 소규모법인)은 2억 이하 구간 없이 <span class="tx-cs">22</span>%부터예요. 기본값은 일반법인 2억 이하.</div>
     </div>
     <div class="input-row">
       <label>여유자금 운용수익률 (%/년) <span class="stat-sub">기회비용 계산</span> <span class="info-btn" onclick="toggleInfo('invInfo')">i</span></label>
@@ -141,7 +141,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
       <div class="info-box" id="bldInfo">오피스텔 보통 40~60%. 계약서에 토지·건물 구분 기재. 감가상각과 부가세 계산에 사용.</div>
     </div>
     <div class="input-row">
-      <label>취득세율 (%) <span class="stat-sub">업무용 오피스텔 4.6%</span></label>
+      <label>취득세율 (%) <span class="stat-sub">업무용 오피스텔 <span class="tx-acqn">4.6</span>%</span></label>
       <input type="number" id="acqTaxRate" value="4.6" step="0.1" inputmode="decimal">
     </div>
     <div class="input-row">
@@ -240,6 +240,17 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   </div>
 </div>
 
+<script src="/tax-rates.js?v=14"></script>
+<script>
+// (094_03) 법인세율·취득세 기본값은 공통 파일 /tax-rates.js — 저장 슬롯을 불러오면 그 값이 우선
+(function(){ var T = window.SF_TAX; if (!T) return;
+  var wl = T.wl, g = function(id){ return document.getElementById(id); },
+      q = function(c, v){ document.querySelectorAll('.' + c).forEach(function(e){ e.textContent = v; }); };
+  var ac = T.acqCalc({kind:'other', type:'buy', price:1});
+  g('corpTaxRate').value = wl(T.corp[0][1]); g('acqTaxRate').value = ac.totalRate;
+  q('tx-c1', wl(T.corp[0][1])); q('tx-c2', wl(T.corp[1][1])); q('tx-cs', wl(T.corpSmall[0][1])); q('tx-acqn', ac.totalRate);
+})();
+</script>
 <script>
 window.CALC_KEY = 'office_buy_vs_rent';
 window.slGetState = function(){

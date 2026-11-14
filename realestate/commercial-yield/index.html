@@ -151,18 +151,18 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
   <div class="panel">
     <div class="section-label">🏷️ 취득세·부대비용 <span class="info-btn" onclick="toggleInfo('acqInfo')">i</span></div>
     <div class="input-row">
-      <label>취득세율 (%) <span class="stat-sub">업무용 상가·오피스텔 기본 4.6%</span></label>
+      <label>취득세율 (%) <span class="stat-sub">업무용 상가·오피스텔 기본 <span class="tx-acqn">4.6</span>%</span></label>
       <input type="number" id="acqRate" value="4.6" step="0.1" inputmode="decimal">
       <div class="preset-row">
-        <div class="preset active" onclick="setAcq(4.6)">업무용 4.6%</div>
-        <div class="preset" onclick="setAcq(4.0)">취득세만 4.0%</div>
+        <div class="preset active" id="pAcqAll" onclick="setAcq(ACQ.totalRate)">업무용 4.6%</div>
+        <div class="preset" id="pAcqOnly" onclick="setAcq(ACQ.rate)">취득세만 4.0%</div>
       </div>
     </div>
     <div class="input-row">
       <label>기타 부대비용 (%) <span class="stat-sub">중개수수료·법무비·채권 등</span></label>
       <input type="number" id="etcRate" value="1.0" step="0.1" inputmode="decimal">
     </div>
-    <div class="info-box" id="acqInfo">업무용 상가·오피스텔 취득세는 <b>4.6%</b>(취득세 4% + 농특세 0.2% + 지방교육세 0.4%)예요. 주택 수와 무관하게 중과 없이 단일 세율입니다. 여기에 중개수수료(법정 상한 0.9% 내외), 법무사 등기비, 국민주택채권 등이 더 붙어요. 이 부대비용은 <b>실제로 더 내는 돈</b>이라, 진짜 손익분기 매수가를 따질 때 반드시 반영해야 합니다.</div>
+    <div class="info-box" id="acqInfo">업무용 상가·오피스텔 취득세는 <b><span class="tx-acqn">4.6</span>%</b>(취득세 <span class="tx-acq">4</span>% + 농특세 <span class="tx-rural">0.2</span>% + 지방교육세 <span class="tx-edu">0.4</span>%)예요. 주택 수와 무관하게 단일 세율입니다. 단, 서울 등 과밀억제권역에서 <b>설립 5년 안 된 법인</b>이 사면 <span class="tx-acqh">9.4</span>%로 중과돼요. 여기에 중개수수료(법정 상한 0.9% 내외), 법무사 등기비, 국민주택채권 등이 더 붙어요. 이 부대비용은 <b>실제로 더 내는 돈</b>이라, 진짜 손익분기 매수가를 따질 때 반드시 반영해야 합니다.</div>
     <div style="background:#f8fafc;border-radius:8px;padding:10px;font-size:12.5px;color:#555;margin-top:10px" id="acqResult"></div>
   </div>
 
@@ -276,7 +276,7 @@ window.slGetState = function(){ return window.cyGetState ? window.cyGetState() :
 window.slSetState = function(d){ if(window.cySetState) window.cySetState(d); };
 </script>
 <script>window.SF_RESET = ["sf_commercialyield_v1"];</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
-<script src="/tax-rates.js?v=13"></script>
+<script src="/tax-rates.js?v=14"></script>
 <script src="/sf-slots.js?v=7"></script>
 <script src="/common.js?v=11"></script>
 <script>
@@ -313,6 +313,11 @@ function updateKor(){ KOR_FIELDS.forEach(id=>{ var el=$(id),box=$(id+'_kor'); if
 
 function setTarget(r){ $('targetRate').value=r; document.querySelectorAll('#targetRate ~ .preset-row .preset').forEach(el=>el.classList.toggle('active', parseFloat(el.textContent)===r)); calculate(); }
 function setAcq(r){ $('acqRate').value=r; document.querySelectorAll('#acqRate ~ .preset-row .preset').forEach(el=>el.classList.toggle('active', parseFloat(el.textContent.match(/[\d.]+/)[0])===r)); calculate(); }
+// (094_03) 취득세 기본값은 공통 파일 acqCalc (상가·업무용 매매)
+const ACQ = _T && _T.acqCalc ? _T.acqCalc({kind:'other', type:'buy', price:1}) : {rate:4, eduRate:0.4, ruralRate:0.2, totalRate:4.6};
+const ACQH = _T && _T.acqCalc ? _T.acqCalc({kind:'other', type:'buy', price:1, capHeavy:true}) : {totalRate:9.4};
+(function(){ $('acqRate').value = ACQ.totalRate; $('pAcqAll').textContent = '업무용 '+ACQ.totalRate+'%'; $('pAcqOnly').textContent = '취득세만 '+ACQ.rate+'%';
+  const q=(c,v)=>document.querySelectorAll('.'+c).forEach(e=>e.textContent=v); q('tx-acqn',ACQ.totalRate); q('tx-acq',ACQ.rate); q('tx-edu',ACQ.eduRate); q('tx-rural',ACQ.ruralRate); q('tx-acqh',ACQH.totalRate); })();
 function setIndiv(r){ $('indivRate').value=r; document.querySelectorAll('#indivRate ~ .preset-row .preset').forEach(el=>el.classList.toggle('active', parseFloat(el.textContent)===r)); calculate(); }
 function setCorp(m){ corpType=(m==='gen')?'gen':'small'; document.querySelectorAll('[data-corp]').forEach(el=>el.classList.toggle('active', el.dataset.corp===corpType)); calculate(); cySaveLocal(); }
 function setVat(m){ vatMode=m; document.querySelectorAll('[data-vat]').forEach(el=>el.classList.toggle('active', el.dataset.vat===m)); calculate(); }

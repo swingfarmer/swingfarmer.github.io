@@ -122,7 +122,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
       <input type="number" id="buildingRatio" value="50" step="1" inputmode="numeric">
     </div>
     <div class="input-row">
-      <label>취득세율 (%) <span class="stat-sub">업무용 4.6%</span></label>
+      <label>취득세율 (%) <span class="stat-sub">업무용 <span class="tx-acqn">4.6</span>%</span></label>
       <input type="number" id="acqRate" value="4.6" step="0.1" inputmode="decimal">
     </div>
     <div class="input-row">
@@ -148,14 +148,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
       <label>개인 기존 과세표준 (이미 있는 소득) <span class="stat-sub">근로·사업·배당 등 합산 후 과세표준</span> <span class="info-btn" onclick="toggleInfo('baseInfo')">i</span></label>
       <select id="incomeBase" onchange="calculate()">
         <option value="0">거의 없음 (임대소득만)</option>
-        <option value="14000000">1,400만 이하 (6%)</option>
-        <option value="50000000">1,400~5,000만 (15%)</option>
-        <option value="88000000" selected>5,000~8,800만 (24%)</option>
-        <option value="150000000">8,800만~1.5억 (35%)</option>
-        <option value="300000000">1.5억~3억 (38%)</option>
-        <option value="500000000">3억~5억 (40%)</option>
-        <option value="1000000000">5억~10억 (42%)</option>
-        <option value="1500000000">10억 초과 (45%)</option>
+        <!-- (094_03) 나머지 구간은 공통 파일 종합소득세 구간(SF_TAX.income)으로 자동 생성 -->
       </select>
       <div class="info-box" id="baseInfo">이미 벌고 있는 소득의 과세표준 구간이에요. 임대소득은 여기에 <b>얹어서</b> 누진세율이 적용되므로, 기존 소득이 높을수록 임대소득에 붙는 세율(한계세율)도 높아집니다. 이게 개인 명의의 핵심 약점이에요.</div>
     </div>
@@ -275,7 +268,7 @@ window.slSetState = function(d){ if(window.ecSetState) window.ecSetState(d); };
 <script>window.SF_RESET = ["sf_entitychoice_v1"];</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
 <script src="/sf-slots.js?v=7"></script>
 <script src="/common.js?v=11"></script>
-<script src="/tax-rates.js?v=13"></script>
+<script src="/tax-rates.js?v=14"></script>
 <script>
 // (087) 법인세·건보료율은 /tax-rates.js(SF_TAX)에서 읽는다. 못 읽으면 아래 기본값(2026년)
 const _T = window.SF_TAX;
@@ -303,30 +296,21 @@ const fmt = n => Math.round(n).toLocaleString('ko-KR');
 function wonToKorean(n){ var neg=n<0; n=Math.round(Math.abs(n)); if(n===0)return ''; var eok=Math.floor(n/1e8),man=Math.floor((n%1e8)/1e4),won=n%1e4,p=[]; if(eok>0)p.push(eok.toLocaleString('ko-KR')+'억'); if(man>0)p.push(man.toLocaleString('ko-KR')+'만'); if(won>0)p.push(won.toLocaleString('ko-KR')); return (neg?'−':'')+p.join(' ')+'원'; }
 function toggleInfo(id){ var el=$(id); el.style.display=(el.style.display==='block')?'none':'block'; }
 
-// 2026 종합소득세 누진세율 (지방세 10% 별도 → 표시는 지방세 포함)
-// [상한, 세율, 누진공제]
-const BRACKETS = [
-  [14000000, 0.06, 0],
-  [50000000, 0.15, 1260000],
-  [88000000, 0.24, 5760000],
-  [150000000, 0.35, 15440000],
-  [300000000, 0.38, 19940000],
-  [500000000, 0.40, 25940000],
-  [1000000000, 0.42, 35940000],
-  [Infinity, 0.45, 65940000]
-];
-// 과세표준에 대한 종합소득세 (지방세 포함 ×1.1)
-function incomeTax(base){
-  if(base<=0) return 0;
-  let rate, deduct;
-  for(const [cap,r,d] of BRACKETS){ if(base<=cap){ rate=r; deduct=d; break; } }
-  return (base*rate - deduct) * 1.1; // 지방세 포함
-}
+// (094_03) 종합소득세 구간은 공통 파일 /tax-rates.js (SF_TAX.income) — 페이지에 따로 두지 않음
+const INC = _T ? _T.income : [[14e6,6],[50e6,15],[88e6,24],[150e6,35],[300e6,38],[500e6,40],[1e9,42],[Infinity,45]];
+const FIN_TH = _T ? _T.finThreshold : 20000000;
+function progTax(base, br){ let t=0, lo=0; if(!(base>0)) return 0; for(const [hi,r] of br){ if(base>lo) t += (Math.min(base,hi)-lo)*r/100; lo=hi; } return t; }
+// 과세표준에 대한 종합소득세 (지방세 포함)
+function incomeTax(base){ return progTax(base, INC) * (1+TX.local); }
 // 한계세율 (지방세 포함)
-function marginalRate(base){
-  for(const [cap,r,d] of BRACKETS){ if(base<=cap) return r*1.1; }
-  return 0.495;
-}
+function marginalRate(base){ for(const [cap,r] of INC){ if(base<=cap) return r/100*(1+TX.local); } return INC[INC.length-1][1]/100*(1+TX.local); }
+// 기존 과세표준 고르기 칸 — 구간 상한마다 하나씩
+(function(){ const sel=$('incomeBase'), man=n=>n>=1e8?(n/1e8)+'억':(n/1e4).toLocaleString('ko-KR')+'만'; let lo=0;
+  INC.forEach(([hi,r],i)=>{ const o=document.createElement('option'); const top = hi===Infinity ? lo*1.5 : hi;
+    o.value=top; o.text = hi===Infinity ? man(lo)+' 초과 ('+r+'%)' : (lo===0? man(hi)+' 이하' : man(lo)+'~'+man(hi))+' ('+r+'%)';
+    if(i===2) o.selected=true; sel.appendChild(o); lo=hi; });
+  const ac = _T && _T.acqCalc ? _T.acqCalc({kind:'other', type:'buy', price:1}) : {totalRate:4.6};
+  $('acqRate').value = ac.totalRate; document.querySelectorAll('.tx-acqn').forEach(e=>e.textContent=ac.totalRate); })();
 
 let divMode = 'retain';
 function setDiv(m){ divMode=m; document.querySelectorAll('[data-div]').forEach(el=>el.classList.toggle('active', el.dataset.div===m)); calculate(); }
@@ -334,12 +318,12 @@ function setDiv(m){ divMode=m; document.querySelectorAll('[data-div]').forEach(e
 // 배당소득세 (지급액 기준). 2천만 이하 15.4% 분리, 초과분은 기존소득에 합산 종합과세
 function dividendTax(payout, existingBase){
   if(payout<=0) return 0;
-  if(payout<=20000000){
-    return payout*0.154; // 15.4% 분리과세
+  if(payout<=FIN_TH){
+    return payout*TX.interest/100; // 분리과세 (지방세 포함)
   } else {
-    // 2천만까지 15.4%, 초과분은 종합과세(기존 과표에 얹어 한계)
-    const flat = 20000000*0.154;
-    const excess = payout-20000000;
+    // 금융소득 기준까지 분리, 초과분은 종합과세(기존 과표에 얹어 한계)
+    const flat = FIN_TH*TX.interest/100;
+    const excess = payout-FIN_TH;
     const addTax = incomeTax(existingBase+excess) - incomeTax(existingBase);
     return flat + addTax;
   }
@@ -349,10 +333,12 @@ const KOR_FIELDS=['buyPrice','deposit','monthlyRent'];
 function updateKor(){ KOR_FIELDS.forEach(id=>{ var el=$(id),box=$(id+'_kor'); if(el&&box){ var v=parseFloat(el.value)||0; box.textContent=v>0?wonToKorean(v):''; } }); }
 
 function renderRateRef(activeBase){
-  const labels=['1,400만 이하','1,400~5,000만','5,000~8,800만','8,800만~1.5억','1.5억~3억','3억~5억','5억~10억','10억 초과'];
-  const rows=BRACKETS.map((b,i)=>{
-    const active = activeBase>(i===0?0:BRACKETS[i-1][0]) && activeBase<=b[0];
-    return `<tr class="${active?'active-bracket':''}"><td class="bracket">${labels[i]}</td><td>${(b[1]*100)}%</td><td>${(b[1]*110).toFixed(1)}%</td></tr>`;
+  const man=n=>n>=1e8?(n/1e8)+'억':(n/1e4).toLocaleString('ko-KR')+'만';
+  const rows=INC.map((b,i)=>{
+    const lo = i===0?0:INC[i-1][0];
+    const active = activeBase>lo && activeBase<=b[0];
+    const label = b[0]===Infinity ? man(lo)+' 초과' : (i===0 ? man(b[0])+' 이하' : man(lo)+'~'+man(b[0]));
+    return `<tr class="${active?'active-bracket':''}"><td class="bracket">${label}</td><td>${b[1]}%</td><td>${_wl(b[1]).toFixed(1)}%</td></tr>`;
   }).join('');
   $('rateRef').querySelector('tbody').innerHTML = rows;
 }

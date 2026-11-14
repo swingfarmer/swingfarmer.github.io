@@ -1,12 +1,12 @@
 /* 세율 공통 (086) — 세법이 바뀌면 이 파일 하나만 고치면 됨
- * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=13 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
+ * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=14 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
  * 구간 배열: [[상한(원), 세율%], ...] 누진. 세율은 국세 기준, 지방소득세(국세의 10%)는 별도 → SF_TAX.wl(세율)로 포함값.
  * 바꾼 뒤: 이 파일 ?v= 를 쓰는 페이지 전부 올릴 것. 확인일(checked)도 고칠 것.
- * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/, /realestate/commercial-yield/, /tax/income/, /tax/retirement/, /tax/retirement-compare/, /severance-exec/, /salary/, /insurance4/, /tax/corp-invest/, /tax/house/, /tax/land/, /realestate/home-swap/, /stock-tools/dividend/, /finance-tools/compound/, /fire/, /tax/financial-income/, /barbell/, /paygrowth/, /landtax/, /tax/inheritance/, /tax/gift/, /tax/acquisition/, /corp-tax/, /tax/pension-deduction/, /pension/  (나머지 세금 페이지는 순차 이전 예정)
+ * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/, /realestate/commercial-yield/, /tax/income/, /tax/retirement/, /tax/retirement-compare/, /severance-exec/, /salary/, /insurance4/, /tax/corp-invest/, /tax/house/, /tax/land/, /realestate/home-swap/, /stock-tools/dividend/, /finance-tools/compound/, /fire/, /tax/financial-income/, /barbell/, /paygrowth/, /landtax/, /tax/inheritance/, /tax/gift/, /tax/acquisition/, /corp-tax/, /tax/pension-deduction/, /pension/, /realestate/office-buy-vs-rent/  (나머지 세금 페이지는 순차 이전 예정)
  */
 window.SF_TAX = Object.freeze({
   year: 2026,
-  checked: '2026-11-14',  // 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가 / 090: 고용보험 사업주분·고배당 분리과세·미국 배당 원천·주택·토지 양도세 추가, 양도세 정부안도 여기로(cgtPlan·cgtRule), ISA·연금 분리과세 / 092: 근로소득공제·근로소득세액공제·자녀세액공제(나이 연도별)·공익수용 감면(조특법 77) 추가, 토지 자경 5년 한도 / 092_03: 국민연금 연도별 인상(socialPlan·socialRule), 4대보험 근로자분 계산(ins4), 간이세액 근사(wageTax) 공통 함수 / 093: 상속·증여세 구간·공제(inhGift·inhDed·giftDed), 취득세(acq·acqHouseRate·acqCalc) / 094: 법인세 연도별(corpBr)·최저한세·이월결손금·기업업무추진비 한도, 연금계좌 세액공제·사적연금 분리과세, 국민연금 수급연령·조기/연기
+  checked: '2026-11-14',  // 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가 / 090: 고용보험 사업주분·고배당 분리과세·미국 배당 원천·주택·토지 양도세 추가, 양도세 정부안도 여기로(cgtPlan·cgtRule), ISA·연금 분리과세 / 092: 근로소득공제·근로소득세액공제·자녀세액공제(나이 연도별)·공익수용 감면(조특법 77) 추가, 토지 자경 5년 한도 / 092_03: 국민연금 연도별 인상(socialPlan·socialRule), 4대보험 근로자분 계산(ins4), 간이세액 근사(wageTax) 공통 함수 / 093: 상속·증여세 구간·공제(inhGift·inhDed·giftDed), 취득세(acq·acqHouseRate·acqCalc) / 094: 법인세 연도별(corpBr)·최저한세·이월결손금·기업업무추진비 한도, 연금계좌 세액공제·사적연금 분리과세, 국민연금 수급연령·조기/연기 / 094_03: 과밀억제권역 법인 취득세 중과(acqCalc capHeavy)
   // 이자·배당 원천징수 (소득세 14% + 지방소득세 1.4%)
   interest: 15.4,
   // 금융소득 종합과세 기준 (이자+배당, 연)
@@ -146,7 +146,9 @@ window.SF_TAX = Object.freeze({
   //   농특세 = 표준세율을 2%로 본 취득세 × 10% = 0.2%, 중과 주택은 (세율 − 2%) × 10% (8% → 0.6, 12% → 1.0). 주택은 전용 85㎡ 이하 비과세
   acq: {house: {lo: 6e8, hi: 9e8, rLo: 1, rHi: 3, heavy2: 8, heavy3: 12, gift: 3.5, giftHeavy: 12, giftHeavyMin: 3e8, inherit: 2.8, build: 2.8},
         farm: {buy: 3, gift: 3.5, inherit: 2.3, build: 2.8}, other: {buy: 4, gift: 3.5, inherit: 2.8, build: 2.8},
-        base: 2, eduHeavy: 4, eduR: 20, ruralR: 10, ruralArea: 85},
+        base: 2, eduHeavy: 4, eduR: 20, ruralR: 10, ruralArea: 85, capMul: 3},
+  //   과밀억제권역 법인 중과 (지방세법 13조2항, 094_03) — 설립·지점설치 5년 안에 권역(서울 전역·경기 일부) 부동산 취득: 취득세 = 표준세율 × capMul − 2% × 2,
+  //   지방교육세도 × capMul(151조), 농특세 그대로 → 상가 4.6% → 9.4%. acqCalc({..., capHeavy: true})
   // corpBr(사업연도 시작 연도, 소규모 성실신고법인) → 그 해 법인세 구간
   corpBr: function(y, small){ var T=window.SF_TAX; y = y || new Date().getFullYear();
     if (y >= T.corpFrom) return small ? T.corpSmall : T.corp;
@@ -205,7 +207,7 @@ window.SF_TAX = Object.freeze({
     if (price <= a.lo) return a.rLo; if (price > a.hi) return a.rHi;
     return a.rLo + (price - a.lo) / (a.hi - a.lo) * (a.rHi - a.rLo); },
   // acqCalc({kind:'house'|'farm'|'other', type:'buy'|'gift'|'inherit'|'build', price, area(㎡), houses, reg, corp, giftHeavy})
-  //   → {rate, eduRate, ruralRate(%), acq, edu, rural, total, heavy}. giftHeavy: 주택 증여 중과 요건(증여자 다주택·3억 이상·조정) 충족 여부를 페이지가 판정해서 넘김
+  //   → {rate, eduRate, ruralRate(%), totalRate, acq, edu, rural, total, heavy}. capHeavy: 비주택 과밀억제권역 법인 중과. giftHeavy: 주택 증여 중과 요건(증여자 다주택·3억 이상·조정) 충족 여부를 페이지가 판정해서 넘김
   acqCalc: function(o){ var A=window.SF_TAX.acq, kind=o.kind||'other', type=o.type||'buy', p=o.price||0, rate, heavy=false, edu, rural, std;
     if (kind === 'house'){
       if (type === 'buy'){ rate = window.SF_TAX.acqHouseRate(p, o.houses, o.reg, o.corp); heavy = rate >= A.house.heavy2; }
@@ -216,11 +218,12 @@ window.SF_TAX = Object.freeze({
       else edu = (rate - A.base) * A.eduR / 100;
       rural = (o.area > A.ruralArea) ? (heavy ? (rate - A.base) * A.ruralR / 100 : A.base * A.ruralR / 100) : 0;
     } else {
-      rate = A[kind === 'farm' ? 'farm' : 'other'][type];
-      edu = (rate - A.base) * A.eduR / 100; rural = A.base * A.ruralR / 100;
+      std = A[kind === 'farm' ? 'farm' : 'other'][type];
+      edu = (std - A.base) * A.eduR / 100; rural = A.base * A.ruralR / 100; rate = std;
+      if (o.capHeavy){ rate = std * A.capMul - A.base * 2; edu = edu * A.capMul; heavy = true; }
     }
     edu = Math.round(edu * 1e6) / 1e6; rural = Math.round(rural * 1e6) / 1e6;
     var acq = p * rate / 100, e = p * edu / 100, r = p * rural / 100;
-    return {rate: rate, eduRate: edu, ruralRate: rural, acq: acq, edu: e, rural: r, total: acq + e + r, heavy: heavy}; },
+    return {rate: rate, eduRate: edu, ruralRate: rural, totalRate: Math.round((rate + edu + rural) * 1e6) / 1e6, acq: acq, edu: e, rural: r, total: acq + e + r, heavy: heavy}; },
   prog: function(base, br){ var t=0, lo=0; if(!(base>0)) return 0; for(var i=0;i<br.length;i++){ var hi=br[i][0]; if(base>lo){ t += (Math.min(base,hi)-lo)*br[i][1]/100; } lo=hi; } return t; }
 });
