@@ -10,10 +10,14 @@
 <link rel="stylesheet" href="/common.css?v=12">
 <style id="sf-auto-dark">
 /* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .cost-box{background-color:#172636!important}
+body.sf-dark .cost-break{color:#85b5e0!important;background-color:#1e242e!important}
+body.sf-dark .capture-area{background-color:#1a2433!important}
 body.sf-dark header{background-color:#1e242e!important}
 body.sf-dark .excess-box{background-color:#153720!important;border-color:#267341!important}
 body.sf-dark .excess-box.zero{background-color:#172636!important;border-color:#2c333f!important}
 body.sf-dark table.bracket th{border-bottom-color:#2c333f!important}
+body.sf-dark table.bracket tr.hit{background-color:#152437!important}
 body.sf-dark .disc-card{border-color:#2c333f!important}
 body.sf-dark .disc-card.active{background-color:#152437!important}
 body.sf-dark .disc-card .dc-val{color:#85b5e0!important}
@@ -22,6 +26,10 @@ body.sf-dark .disc-card.active{border-color:#1F4E78!important}
 </style>
 <style>
 :root { --sf-max-w: 780px; }
+  /* (095) 인라인 색 → 클래스 (다크 자동 보정 대상이 되게) */
+  .cost-box { background: #f8fafc; border-radius: 10px; padding: 14px; margin-bottom: 0; }
+  .cost-break { font-size: 12.5px; color: #1F4E78; font-weight: 700; background: white; border-radius: 6px; padding: 8px 10px; }
+  .capture-area { background: #f5f7fa; padding: 2px; }
 header { background: var(--sf-surface); border-bottom: 3px solid var(--sf-brand); padding: 18px 16px; }
 header .wrap { padding: 0; }
 header h1 { font-size: 20px; color: var(--sf-brand); margin: 0; border-bottom: none; }
@@ -89,7 +97,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
       <div class="info-box" id="normInfo" style="display:none">사업기간 지역 평균 상승액. 만원 단위로 넣어요.</div>
     </div>
     <div class="op">−</div>
-    <div class="input-row" style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:0">
+    <div class="input-row cost-box">
       <label style="margin-bottom:10px">D. 개발비용 (공사비 + 기타) <span class="info-btn" onclick="toggleInfo('costInfo')">i</span></label>
       <div class="info-box" id="costInfo">재초환 산식에서 빼주는 '정상 개발비용'이에요. 공사비 = 평당 단가 × 분양 평형, 기타사업비(설계·감리·금융비·이주비 이자·조합운영비·제세공과금)는 통상 공사비의 25~35%. 목동 6단지 기본값은 평당 950만원(DL이앤씨 입찰)이에요. 공사비 단가나 평형을 바꾸면 자동 재계산돼요.</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
@@ -106,11 +114,11 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
         <label style="font-size:12px">기타사업비 (공사비 %)</label>
         <input type="number" id="costEtcPct" value="30" step="1" inputmode="numeric">
       </div>
-      <div style="font-size:12.5px;color:#1F4E78;font-weight:700;background:white;border-radius:6px;padding:8px 10px" id="costBreakdown"></div>
+      <div class="cost-break" id="costBreakdown"></div>
       <input type="hidden" id="valCost" value="0">
     </div>
   </div>
-  <div id="captureArea" style="background:#f5f7fa;padding:2px">
+  <div id="captureArea" class="capture-area">
     <div class="excess-box" id="excessBox">
       <div class="eb-label">조합원 1인당 순수 초과이익</div>
       <div class="eb-val" id="excessVal">-</div>
@@ -202,7 +210,7 @@ function calc(){
   if(excess<=0){
     eb.className='excess-box zero';
     $('excessVal').textContent=manToKorean(excess)+' (부담금 없음)';
-    $('bracketTable').innerHTML='<tr><td style="padding:14px;color:#888;text-align:center">초과이익이 0 이하라 부담금이 없어요.</td></tr>';
+    $('bracketTable').innerHTML='<tr><td style="padding:14px;text-align:center">초과이익이 0 이하라 부담금이 없어요.</td></tr>';
     renderDiscounts(0);
     $('finalVal').textContent='0원'; $('finalSub').textContent='초과이익 없음';
     renderScenario(A, C, Dval, parseFloat($('discount').value)||0);

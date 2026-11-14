@@ -173,13 +173,21 @@ def split_selectors(sel):
     return parts
 
 
-def compounds(sel):
-    """'.a .b > .c:hover' → [{'.a'}, {'.b'}, {'.c'}] (가상클래스·속성 제거한 토큰 집합)."""
+STRUCT = re.compile(r':(?:nth-child|nth-of-type|nth-last-child|nth-last-of-type)\([^)]*\)|:(?:first|last|only)-(?:child|of-type)')
+
+
+def compounds(sel, keep_struct=False):
+    """'.a .b > .c:hover' → [{'.a'}, {'.b'}, {'.c'}] (가상클래스·속성 제거한 토큰 집합).
+    keep_struct=True: :nth-child(even) 같은 구조 가상클래스는 토큰으로 남김 (095, 배경 판정용)"""
+    if keep_struct:
+        sel = STRUCT.sub(lambda m: ' \x00' + m.group(0).replace(' ', '') + '\x00 ', sel)
+        sel = re.sub(r' \x00(.*?)\x00 ', lambda m: '\x01' + m.group(1).replace(':', '\x02').replace('(', '\x03').replace(')', '\x04').replace('+', '\x05'), sel)
     sel = re.sub(r'::?[\w-]+(\([^)]*\))?', '', sel)
     sel = re.sub(r'\[[^\]]*\]', '', sel)
     out = []
     for comp in re.split(r'[\s>+~]+', sel.strip()):
-        toks = set(re.findall(r'[.#]?[\w-]+', comp))
+        toks = set(t.replace('\x01', ':').replace('\x02', ':').replace('\x03', '(').replace('\x04', ')').replace('\x05', '+')
+                   for t in re.findall(r'\x01?[.#\x02]?[\w\x02\x03\x04\x05-]+', comp))
         if toks:
             out.append(toks)
     return out
@@ -225,6 +233,14 @@ def collect_dark(rules):
                 continue
             stripped = re.sub(r'^.*?sf-dark\S*\s*', '', part).strip()
             if not stripped:
+                continue
+            if 'bg' in groups and STRUCT.search(stripped):
+                # (095) 「짝수 줄만」 다크 배경은 같은 짝수 줄 규칙만 덮음 → 배경은 구조 가상클래스를 남긴 채 판정
+                #       (안 그러면 tr.hit 같은 밝은 줄 배경이 다크를 못 받음 — 095 jaechohwan 누진표)
+                out.append((compounds(stripped, True), {'bg'}))
+                rest = groups - {'bg'}
+                if rest:
+                    out.append((compounds(stripped), rest))
                 continue
             out.append((compounds(stripped), groups))
     return out
@@ -296,7 +312,7 @@ def analyze(html, shared, cvars=None):
     dark = shared + collect_dark(rules)
 
     def is_covered(sel_part, group):
-        lc = compounds(sel_part)
+        lc = compounds(sel_part, group == 'bg')
         for dc, groups in dark:
             if group in groups and covers(dc, lc):
                 return True
