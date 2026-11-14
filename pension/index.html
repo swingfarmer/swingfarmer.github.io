@@ -102,7 +102,7 @@ tr:hover{background:#f8fafc}
 
   <div class="panel">
     <h2>📊 조기수령 vs 정상 vs 연기수령 비교</h2>
-    <p style="font-size:12px;color:#888;margin-bottom:8px">조기: 1년당 6% 감액(최대 30%), 연기: 1년당 7.2% 증액(최대 36%). 부분연기(50~90%) 가능.</p>
+    <p style="font-size:12px;color:#888;margin-bottom:8px">조기: 1년당 <span class="tx-e">6</span>% 감액(최대 <span class="tx-emax">30</span>%), 연기: 1년당 <span class="tx-l">7.2</span>% 증액(최대 <span class="tx-lmax">36</span>%). 부분연기(50~90%) 가능.</p>
     <div class="table-wrap">
       <div class="table-scroll"><table id="compareTable">
         <thead><tr><th>구분</th><th>수령 시작</th><th>월 수령액</th><th>연 수령액</th><th>vs 정상</th></tr></thead>
@@ -116,7 +116,7 @@ tr:hover{background:#f8fafc}
     <p style="font-size:12px;color:#888;margin-bottom:8px">각 선택지를 유지했을 때, 나이별 누적 수령 총액. 조기수령은 일찍 시작하지만, 장수하면 정상·연기에 역전당함.</p>
     <div class="table-wrap">
       <div class="table-scroll"><table id="cumulTable">
-        <thead><tr><th>나이</th><th>조기5년<br><span style="font-weight:400;font-size:11px">-30%</span></th><th>조기3년<br><span style="font-weight:400;font-size:11px">-18%</span></th><th>정상</th><th>연기3년<br><span style="font-weight:400;font-size:11px">+21.6%</span></th><th>연기5년<br><span style="font-weight:400;font-size:11px">+36%</span></th></tr></thead>
+        <thead><tr><th>나이</th><th>조기5년<br><span style="font-weight:400;font-size:11px">-<span class="tx-emax">30</span>%</span></th><th>조기3년<br><span style="font-weight:400;font-size:11px">-<span class="tx-e3">18</span>%</span></th><th>정상</th><th>연기3년<br><span style="font-weight:400;font-size:11px">+<span class="tx-l3">21.6</span>%</span></th><th>연기5년<br><span style="font-weight:400;font-size:11px">+<span class="tx-lmax">36</span>%</span></th></tr></thead>
         <tbody></tbody>
       </table></div>
     </div>
@@ -133,21 +133,31 @@ tr:hover{background:#f8fafc}
   <p>국민연금 수령액은 <b>전체 가입기간의 평균소득</b>에 비례합니다. 향후 급여가 바뀌면, 남은 기간 동안의 평균소득이 변하므로 최종 수령액도 달라집니다. 이 계산기는 (향후소득 × 남은기간 + 현재소득 × 기가입기간) / 전체기간의 비율로 조정합니다.</p>
 
   <h3>조기·연기수령 기준 (2026년)</h3>
-  <p><badge class="badge">조기</badge> 수급개시연령보다 최대 5년 일찍 수령. <b>1년당 6% 감액</b>(월 0.5%), 최대 30%. 평생 고정.<br>
-  <badge class="badge">연기</badge> 수급개시연령보다 최대 5년 늦게 수령. <b>1년당 7.2% 증액</b>(월 0.6%), 최대 36%. 평생 고정. 부분연기(50~90%) 가능.</p>
+  <p><badge class="badge">조기</badge> 수급개시연령보다 최대 <span class="tx-y">5</span>년 일찍 수령. <b>1년당 <span class="tx-e">6</span>% 감액</b>(월 <span class="tx-em">0.5</span>%), 최대 <span class="tx-emax">30</span>%. 평생 고정.<br>
+  <badge class="badge">연기</badge> 수급개시연령보다 최대 <span class="tx-y">5</span>년 늦게 수령. <b>1년당 <span class="tx-l">7.2</span>% 증액</b>(월 <span class="tx-lm">0.6</span>%), 최대 <span class="tx-lmax">36</span>%. 평생 고정. 부분연기(50~90%) 가능.</p>
 
   <h3>출생연도별 수급개시연령</h3>
-  <p>1953~56년: 61세 / 1957~60년: 62세 / 1961~64년: 63세 / 1965~68년: 64세 / <b>1969년 이후: 65세</b></p>
+  <p id="ageList">1953~56년: 61세 / 1957~60년: 62세 / 1961~64년: 63세 / 1965~68년: 64세 / <b>1969년 이후: 65세</b></p>
 </div>
 
+<script src="/tax-rates.js?v=13"></script>
 <script>
-function getStartAge(birthYear) {
-  if (birthYear <= 1956) return 61;
-  if (birthYear <= 1960) return 62;
-  if (birthYear <= 1964) return 63;
-  if (birthYear <= 1968) return 64;
-  return 65;
-}
+// (094) 수급개시연령·조기/연기 비율은 공통 파일 /tax-rates.js (SF_TAX.npsRecv) — 법이 바뀌면 그 파일만 고침
+var NR = window.SF_TAX.npsRecv;
+function getStartAge(birthYear) { return window.SF_TAX.npsAge(birthYear); }
+function r1(n){ return Math.round(n * 10) / 10; }
+(function(){
+  var q = function(c, v){ document.querySelectorAll('.' + c).forEach(function(el){ el.textContent = v; }); };
+  q('tx-e', NR.early); q('tx-l', NR.late); q('tx-y', NR.maxYears); q('tx-emax', r1(NR.early * NR.maxYears)); q('tx-lmax', r1(NR.late * NR.maxYears));
+  q('tx-e3', r1(NR.early * 3)); q('tx-l3', r1(NR.late * 3)); q('tx-em', r1(NR.early / 12)); q('tx-lm', r1(NR.late / 12));
+  var a = NR.age, parts = [];
+  for (var i = 1; i < a.length; i++){
+    var from = a[i - 1][0] + 1;
+    if (a[i][0] === Infinity) parts.push('<b>' + from + '년 이후: ' + a[i][1] + '세</b>');
+    else parts.push(from + '~' + String(a[i][0]).slice(2) + '년: ' + a[i][1] + '세');
+  }
+  document.getElementById('ageList').innerHTML = parts.join(' / ');
+})();
 
 function wonToKorean(n) {
   if (n === 0) return '0원';
@@ -202,17 +212,17 @@ function calculate() {
 
   // 조기/연기 수령액 계산
   var scenarios = [];
-  for (var y = -5; y <= 5; y++) {
+  for (var y = -NR.maxYears; y <= NR.maxYears; y++) {
     var age = startAge + y;
     var label, rate, monthly;
     if (y < 0) {
-      rate = 1 + y * 0.06; // y is negative, so this reduces
+      rate = 1 + y * NR.early / 100; // y가 음수라 감액
       label = '조기 ' + Math.abs(y) + '년 (' + age + '세)';
     } else if (y === 0) {
       rate = 1;
       label = '정상 (' + age + '세)';
     } else {
-      rate = 1 + y * 0.072;
+      rate = 1 + y * NR.late / 100;
       label = '연기 ' + y + '년 (' + age + '세)';
     }
     monthly = Math.round(adjustedMonthly * rate);
@@ -225,12 +235,12 @@ function calculate() {
 
   // 요약 카드
   var early5 = scenarios[0]; // -5
-  var normal = scenarios[5]; // 0
-  var late5 = scenarios[10]; // +5
+  var normal = scenarios[NR.maxYears]; // 정상
+  var late5 = scenarios[NR.maxYears * 2]; // 최대 연기
   document.getElementById('summaryGrid').innerHTML =
-    '<div class="stat early"><div class="stat-label">조기 5년 (' + early5.age + '세~)</div><div class="stat-value">' + wonToKorean(early5.monthly) + '/월</div><div class="stat-sub">정상 대비 -30%</div></div>' +
+    '<div class="stat early"><div class="stat-label">조기 ' + NR.maxYears + '년 (' + early5.age + '세~)</div><div class="stat-value">' + wonToKorean(early5.monthly) + '/월</div><div class="stat-sub">정상 대비 -' + r1(NR.early * NR.maxYears) + '%</div></div>' +
     '<div class="stat"><div class="stat-label">정상 수령 (' + normal.age + '세~)</div><div class="stat-value">' + wonToKorean(normal.monthly) + '/월</div><div class="stat-sub">' + (adjustNote || 'NPS 예상액 그대로') + '</div></div>' +
-    '<div class="stat late"><div class="stat-label">연기 5년 (' + late5.age + '세~)</div><div class="stat-value">' + wonToKorean(late5.monthly) + '/월</div><div class="stat-sub">정상 대비 +36%</div></div>';
+    '<div class="stat late"><div class="stat-label">연기 ' + NR.maxYears + '년 (' + late5.age + '세~)</div><div class="stat-value">' + wonToKorean(late5.monthly) + '/월</div><div class="stat-sub">정상 대비 +' + r1(NR.late * NR.maxYears) + '%</div></div>';
 
   // 비교 테이블
   var tbody = document.querySelector('#compareTable tbody');
@@ -243,7 +253,7 @@ function calculate() {
   // 누적 수령액 (65~95세)
   var cumulKeys = [{y:-5,label:'조기5'},{y:-3,label:'조기3'},{y:0,label:'정상'},{y:3,label:'연기3'},{y:5,label:'연기5'}];
   var cumulData = cumulKeys.map(function(k) {
-    var sc = scenarios[k.y + 5];
+    var sc = scenarios[k.y + NR.maxYears];
     return { startAge: sc.age, monthly: sc.monthly, label: k.label };
   });
 

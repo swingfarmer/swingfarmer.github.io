@@ -1,12 +1,12 @@
 /* 세율 공통 (086) — 세법이 바뀌면 이 파일 하나만 고치면 됨
- * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=12 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
+ * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=13 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
  * 구간 배열: [[상한(원), 세율%], ...] 누진. 세율은 국세 기준, 지방소득세(국세의 10%)는 별도 → SF_TAX.wl(세율)로 포함값.
  * 바꾼 뒤: 이 파일 ?v= 를 쓰는 페이지 전부 올릴 것. 확인일(checked)도 고칠 것.
- * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/, /realestate/commercial-yield/, /tax/income/, /tax/retirement/, /tax/retirement-compare/, /severance-exec/, /salary/, /insurance4/, /tax/corp-invest/, /tax/house/, /tax/land/, /realestate/home-swap/, /stock-tools/dividend/, /finance-tools/compound/, /fire/, /tax/financial-income/, /barbell/, /paygrowth/, /landtax/, /tax/inheritance/, /tax/gift/, /tax/acquisition/  (나머지 세금 페이지는 순차 이전 예정)
+ * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/, /realestate/commercial-yield/, /tax/income/, /tax/retirement/, /tax/retirement-compare/, /severance-exec/, /salary/, /insurance4/, /tax/corp-invest/, /tax/house/, /tax/land/, /realestate/home-swap/, /stock-tools/dividend/, /finance-tools/compound/, /fire/, /tax/financial-income/, /barbell/, /paygrowth/, /landtax/, /tax/inheritance/, /tax/gift/, /tax/acquisition/, /corp-tax/, /tax/pension-deduction/, /pension/  (나머지 세금 페이지는 순차 이전 예정)
  */
 window.SF_TAX = Object.freeze({
   year: 2026,
-  checked: '2026-11-13',  // 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가 / 090: 고용보험 사업주분·고배당 분리과세·미국 배당 원천·주택·토지 양도세 추가, 양도세 정부안도 여기로(cgtPlan·cgtRule), ISA·연금 분리과세 / 092: 근로소득공제·근로소득세액공제·자녀세액공제(나이 연도별)·공익수용 감면(조특법 77) 추가, 토지 자경 5년 한도 / 092_03: 국민연금 연도별 인상(socialPlan·socialRule), 4대보험 근로자분 계산(ins4), 간이세액 근사(wageTax) 공통 함수 / 093: 상속·증여세 구간·공제(inhGift·inhDed·giftDed), 취득세(acq·acqHouseRate·acqCalc)
+  checked: '2026-11-14',  // 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가 / 090: 고용보험 사업주분·고배당 분리과세·미국 배당 원천·주택·토지 양도세 추가, 양도세 정부안도 여기로(cgtPlan·cgtRule), ISA·연금 분리과세 / 092: 근로소득공제·근로소득세액공제·자녀세액공제(나이 연도별)·공익수용 감면(조특법 77) 추가, 토지 자경 5년 한도 / 092_03: 국민연금 연도별 인상(socialPlan·socialRule), 4대보험 근로자분 계산(ins4), 간이세액 근사(wageTax) 공통 함수 / 093: 상속·증여세 구간·공제(inhGift·inhDed·giftDed), 취득세(acq·acqHouseRate·acqCalc) / 094: 법인세 연도별(corpBr)·최저한세·이월결손금·기업업무추진비 한도, 연금계좌 세액공제·사적연금 분리과세, 국민연금 수급연령·조기/연기
   // 이자·배당 원천징수 (소득세 14% + 지방소득세 1.4%)
   interest: 15.4,
   // 금융소득 종합과세 기준 (이자+배당, 연)
@@ -17,6 +17,16 @@ window.SF_TAX = Object.freeze({
   corp: [[2e8,10],[2e10,20],[3e11,22],[Infinity,25]],
   // 성실신고대상 소규모법인 (지배주주 50% 초과 + 상시근로자 5인 미만 + 임대·이자·배당 수입 50% 이상 등)
   corpSmall: [[2e10,20],[3e11,22],[Infinity,25]],
+  // 2025.12.31 이전 시작 사업연도 (094) — 일반 9/19/21/24. 성실신고 소규모법인은 2025.1.1 이후 시작 사업연도부터 2억 이하 구간 없이 19
+  //   → 페이지는 SF_TAX.corpBr(사업연도 시작 연도, 소규모법인 여부)로 받는다. corpFrom 이후 = corp·corpSmall
+  corpOld: [[2e8,9],[2e10,19],[3e11,21],[Infinity,24]], corpSmallOld: [[2e10,19],[3e11,21],[Infinity,24]], corpSmallFrom: 2025, corpFrom: 2026,
+  // 최저한세 (조특법 132조, 094) — 중소기업 7 / 일반은 과세표준 구간 누진 100억 이하 10·1,000억 이하 12·초과 17 (중소기업 졸업 유예 구간은 단순화로 뺌)
+  corpMin: {sme: 7, gen: [[1e10,10],[1e11,12],[Infinity,17]]},
+  // 이월결손금 공제 한도 (법인세법 13조, 094) — 각사업연도소득의 중소기업 100 / 일반 80 %
+  corpLoss: {sme: 100, gen: 80},
+  // 기업업무추진비(옛 접대비) 한도 (법인세법 25조, 094) — 기본 연 중소 3,600만·일반 1,200만(사업연도 개월 비례) + 수입금액 구간 누진 %(중소·일반 같음)
+  //   100억 이하 0.3 / 500억 이하 0.2 / 초과 0.03. 부동산임대업 주업 소규모법인(성실신고 요건)은 한도 smallRent% (= 50)
+  corpEnt: {sme: 36e6, gen: 12e6, br: [[1e10,0.3],[5e10,0.2],[Infinity,0.03]], smallRent: 50},
   // 지방소득세 = 국세 × 10%
   local: 0.1,
   // 해외주식 양도소득세 (지방세 포함 22%, 연 250만원 공제)
@@ -75,6 +85,13 @@ window.SF_TAX = Object.freeze({
   },
   // 절세계좌 분리과세 (090) — ISA 비과세 한도 넘는 이익 9.9%(지방세 포함), 연금 수령 연금소득세(지방세 포함) 70세 미만 5.5 / 80세 미만 4.4 / 80세 이상 3.3
   isaSep: 9.9, pensionTax: [5.5, 4.4, 3.3],
+  // 연금계좌 세액공제 (소득세법 59조의3, 094) — 연금저축 cap 600만, IRP 합산 total 900만. 공제율(국세 %) 총급여 wage 이하(근로소득만) 또는 종합소득금액 inc 이하 hi, 초과 lo
+  //   → 지방세 포함은 SF_TAX.wl(). 페이지는 pensionCrPct(총급여)로 받음
+  pensionCr: {cap: 6e6, total: 9e6, hi: 15, lo: 12, wage: 5.5e7, inc: 4.5e7},
+  // 사적연금 연 sepCap 넘게 받으면 종합과세 또는 sepRate% 분리과세 선택 (2024~) / 중도해지·연금외 수령 기타소득세 other% (지방세 포함, 094)
+  pensionSep: {sepCap: 1.5e7, sepRate: 16.5, other: 16.5},
+  // 국민연금 수령 (국민연금법 61·62·63조의2, 094) — 수급개시연령 [출생연도 상한, 나이]. 조기 1년당 early% 감액(최대 maxYears년), 연기 1년당 late% 가산(최대 maxYears년)
+  npsRecv: {age: [[1952,60],[1956,61],[1960,62],[1964,63],[1968,64],[Infinity,65]], early: 6, late: 7.2, maxYears: 5},
   // 미국 배당 원천징수 (한미 조세조약, 090) — 개인은 2천만 이하면 이걸로 끝, 법인은 외국납부세액공제
   usWithhold: 15,
   // 건강보험료율 (세금은 아니지만 매년 바뀌어 같이 둠) — 2026년 7.19%, 장기요양 = 건보료의 13.14%. 직장가입자 보수 외 소득 연 2천만 초과분에 소득월액보험료(전액 본인) (087 확인)
@@ -130,6 +147,20 @@ window.SF_TAX = Object.freeze({
   acq: {house: {lo: 6e8, hi: 9e8, rLo: 1, rHi: 3, heavy2: 8, heavy3: 12, gift: 3.5, giftHeavy: 12, giftHeavyMin: 3e8, inherit: 2.8, build: 2.8},
         farm: {buy: 3, gift: 3.5, inherit: 2.3, build: 2.8}, other: {buy: 4, gift: 3.5, inherit: 2.8, build: 2.8},
         base: 2, eduHeavy: 4, eduR: 20, ruralR: 10, ruralArea: 85},
+  // corpBr(사업연도 시작 연도, 소규모 성실신고법인) → 그 해 법인세 구간
+  corpBr: function(y, small){ var T=window.SF_TAX; y = y || new Date().getFullYear();
+    if (y >= T.corpFrom) return small ? T.corpSmall : T.corp;
+    return (small && y >= T.corpSmallFrom) ? T.corpSmallOld : T.corpOld; },
+  // 최저한세 (감면 전 과세표준 기준) / 이월결손금 공제 가능액 / 기업업무추진비 한도
+  corpMinTax: function(base, sme){ var m=window.SF_TAX.corpMin; if(!(base>0)) return 0; return sme ? base*m.sme/100 : window.SF_TAX.prog(base, m.gen); },
+  corpLossAmt: function(inc, loss, sme){ if(!(inc>0)||!(loss>0)) return 0; return Math.min(loss, inc*window.SF_TAX.corpLoss[sme?'sme':'gen']/100); },
+  corpEntLimit: function(rev, months, sme, smallRent){ var e=window.SF_TAX.corpEnt, m = months || 12;
+    var lim = (sme ? e.sme : e.gen) * m / 12 + window.SF_TAX.prog(rev, e.br);
+    return smallRent ? lim * e.smallRent / 100 : lim; },
+  // 연금계좌 세액공제율 % (지방세 포함) — 총급여 기준
+  pensionCrPct: function(wage){ var c=window.SF_TAX.pensionCr; return window.SF_TAX.wl(wage <= c.wage ? c.hi : c.lo); },
+  // 국민연금 수급개시연령
+  npsAge: function(birth){ var a=window.SF_TAX.npsRecv.age; for(var i=0;i<a.length;i++){ if(birth <= a[i][0]) return a[i][1]; } return 65; },
   wl: function(r){ return Math.round(r*1.1*100)/100; },
   // 누진 구간 세금(국세) — prog(과표, SF_TAX.corp) 처럼 쓴다. 지방세 포함은 결과 × (1 + local)
   // 근속연수공제 — 근속연수는 1년 미만 끝수를 1년으로 올려서 넣을 것 (페이지에서 Math.ceil)
