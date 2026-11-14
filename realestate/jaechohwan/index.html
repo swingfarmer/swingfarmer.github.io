@@ -27,7 +27,6 @@ header .wrap { padding: 0; }
 header h1 { font-size: 20px; color: var(--sf-brand); margin: 0; border-bottom: none; }
 header .back-link { display: inline-block; margin-bottom: 6px; }
 .final, .result-hero { background: linear-gradient(135deg, #1F4E78, #2d6da3); }
-  .unit-suffix { font-size: 12px; color: #888; margin-top: 3px; }
   .op { text-align: center; font-size: 13px; color: #888; font-weight: 700; margin: 2px 0; }
   .result-hero { border-radius: 14px; padding: 22px; text-align: center; margin-bottom: 16px; color: white; background: linear-gradient(135deg, #1F4E78, #2d6da3); }
   .result-hero .rh-val { font-size: 30px; font-weight: 800; }
@@ -73,21 +72,21 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
     <div class="section-label">1️⃣ 초과이익 산정 <span class="info-btn" onclick="toggleInfo('exInfo')">i</span></div>
     <div class="info-box" id="exInfo">초과이익 = A 종료시점 주택가액 − (B 개시시점 주택가액 + C 정상 주택가격 상승분 + D 개발비용). 모두 조합원 1인당 기준이며, 현실화율(시세반영률)은 개시·종료를 동일하게 맞추는 게 개정 취지예요. 부과 개시 시점은 조합설립 인가일 기준입니다.</div>
     <div class="input-row">
-      <label>A. 종료시점 주택가액 (준공 시 가치) <span class="stat-sub">준공 후 예상 시세(분양가 아님) · 만원</span></label>
-      <input type="number" id="valEnd" value="350000" inputmode="numeric">
-      <div class="unit-suffix" id="valEnd_disp"></div>
+      <label>A. 종료시점 주택가액 (준공 시 가치) (만원) <span class="info-btn" onclick="toggleInfo('endInfo')">i</span></label>
+      <input type="number" id="valEnd" data-won="man" value="350000" inputmode="numeric">
+      <div class="info-box" id="endInfo" style="display:none">준공 후 예상 시세(분양가 아님). 만원 단위로 넣어요.</div>
     </div>
     <div class="op">−</div>
     <div class="input-row">
-      <label>B. 개시시점 주택가액 (조합설립 기준) <span class="stat-sub">설립 당시 시세 × 현실화율 · 만원</span></label>
-      <input type="number" id="valStart" value="220000" inputmode="numeric">
-      <div class="unit-suffix" id="valStart_disp"></div>
+      <label>B. 개시시점 주택가액 (조합설립 기준) (만원) <span class="info-btn" onclick="toggleInfo('startInfo')">i</span></label>
+      <input type="number" id="valStart" data-won="man" value="220000" inputmode="numeric">
+      <div class="info-box" id="startInfo" style="display:none">설립 당시 시세 × 현실화율. 만원 단위로 넣어요.</div>
     </div>
     <div class="op">−</div>
     <div class="input-row">
-      <label>C. 정상 주택가격 상승분 <span class="stat-sub">사업기간 지역 평균 상승액 · 만원</span></label>
-      <input type="number" id="valNormal" value="35000" inputmode="numeric">
-      <div class="unit-suffix" id="valNormal_disp"></div>
+      <label>C. 정상 주택가격 상승분 (만원) <span class="info-btn" onclick="toggleInfo('normInfo')">i</span></label>
+      <input type="number" id="valNormal" data-won="man" value="35000" inputmode="numeric">
+      <div class="info-box" id="normInfo" style="display:none">사업기간 지역 평균 상승액. 만원 단위로 넣어요.</div>
     </div>
     <div class="op">−</div>
     <div class="input-row" style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:0">
@@ -96,7 +95,7 @@ header .back-link { display: inline-block; margin-bottom: 6px; }
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
         <div>
           <label style="font-size:12px">공사비 단가 (만원/평)</label>
-          <input type="number" id="costUnit" value="950" inputmode="numeric">
+          <input type="number" id="costUnit" data-won="man" value="950" inputmode="numeric">
         </div>
         <div>
           <label style="font-size:12px">분양 평형 (평)</label>
@@ -199,9 +198,6 @@ function calc(){
 
   const A=parseFloat($('valEnd').value)||0, B=parseFloat($('valStart').value)||0, C=parseFloat($('valNormal').value)||0, D=Dval;
   const excess=A-(B+C+D);
-  $('valEnd_disp').textContent='= '+manToKorean(A);
-  $('valStart_disp').textContent='= '+manToKorean(B);
-  $('valNormal_disp').textContent='= '+manToKorean(C);
   const eb=$('excessBox');
   if(excess<=0){
     eb.className='excess-box zero';

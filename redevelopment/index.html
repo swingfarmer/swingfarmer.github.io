@@ -21,6 +21,8 @@ body.sf-dark .unit-table td{border-bottom-color:#2c333f!important}
 body.sf-dark .unit-table .total-row{background-color:#172636!important}
 body.sf-dark .formula-box{background-color:#152637!important;color:#85b5e0!important}
 body.sf-dark .unit-table .total-row td{border-top-color:#1F4E78!important}
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; font-style: normal; cursor: pointer; margin-left: 4px; }  /* (093) 다른 페이지와 같은 동그라미 i */
+  .inputs > .info-box { grid-column: 1 / -1; margin-top: -6px; }  /* (093) i 설명은 한 줄 전체로 펼침 */
 </style>
 <style>
 :root { --sf-max-w: 1200px; }
@@ -192,12 +194,13 @@ footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
   <div class="inputs">
     <div class="input-row">
       <label>공사비 평당 단가 (만원/평)</label>
-      <input type="number" id="constructionPerPyung" value="1000">
+      <input type="number" id="constructionPerPyung" data-won="man" value="1000">
     </div>
     <div class="input-row">
-      <label>공사비 적용 면적 (평) <span style="font-size:11px;color:#888">(보통 총공급면적)</span></label>
+      <label>공사비 적용 면적 (평) <span class="info-btn" onclick="toggleInfo('areaInfo')">i</span></label>
       <input type="number" id="constructionArea" value="158140">
     </div>
+    <div class="info-box" id="areaInfo" style="display:none">보통 총공급면적(분양·조합원 물량 공급면적 합계)을 넣어요.</div>
     <div class="input-row">
       <label>사업비 비율 (공사비 대비 %)</label>
       <input type="number" id="businessCostRate" value="33" step="0.1">
@@ -341,6 +344,7 @@ footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
 </footer>
 
 <script>
+function toggleInfo(id){ const el = document.getElementById(id); if (el) el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
 const fmt = n => Math.round(n).toLocaleString('ko-KR');
 const fmtShort = n => {
   if (Math.abs(n) >= 1e12) return (n/1e12).toFixed(2) + '조';
