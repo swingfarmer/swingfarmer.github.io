@@ -582,6 +582,13 @@ window.sfApiFetch = function(url, opts) {
     if (input.__sfWonBound) return;
     input.__sfWonBound = true;
     var upd = function () { sfHintFor(input).textContent = wonToKorean(sfReadVal(input)); };
+    // (095) 슬롯 불러오기·버튼처럼 코드가 input.value를 바꿔도 표시가 따라가게 (이벤트가 안 나는 경우)
+    try {
+      var vd = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+      if (vd && vd.set) Object.defineProperty(input, 'value', { configurable: true,
+        get: function () { return vd.get.call(this); },
+        set: function (x) { vd.set.call(this, x); upd(); } });
+    } catch (e) {}
     input.addEventListener('input', upd);
     input.addEventListener('change', upd);
     upd();

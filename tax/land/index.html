@@ -9,6 +9,8 @@
 <style>
 :root { --sf-max-w: 1100px; }
 .final { background: linear-gradient(135deg, #d97706, #ea580c); }
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #1F4E78; color: white; font-size: 11px; font-style: normal; cursor: pointer; margin-left: 4px; }  /* (093) 다른 페이지와 같은 동그라미 i */
+  .inputs > .info-box { grid-column: 1 / -1; margin-top: -6px; }  /* (093) i 설명은 한 줄 전체로 펼침 */
 </style>
 
 <link rel="stylesheet" href="/auth-guard.css?v=4">
@@ -27,16 +29,17 @@
     <div class="section-label">① 거래 정보</div>
     <div class="input-row">
       <label>양도가액 (원)</label>
-      <input type="number" id="salePrice" value="500000000">
+      <input type="number" id="salePrice" data-won value="500000000">
     </div>
     <div class="input-row">
       <label>취득가액 (원)</label>
-      <input type="number" id="acquisitionPrice" value="300000000">
+      <input type="number" id="acquisitionPrice" data-won value="300000000">
     </div>
     <div class="input-row">
-      <label>필요경비 (원) <span style="font-size:11px;color:#888;">(취득세+중개+개발부담 등)</span></label>
-      <input type="number" id="expenses" value="10000000">
+      <label>필요경비 (원) <span class="info-btn" onclick="toggleInfo('expInfo')">i</span></label>
+      <input type="number" id="expenses" data-won value="10000000">
     </div>
+    <div class="info-box" id="expInfo" style="display:none">취득세·중개수수료·법무사 비용, 개발부담금, 자본적 지출(토지 형질변경 등)처럼 취득·양도에 든 돈. 증빙이 있어야 인정돼요.</div>
 
     <div class="section-label">② 보유 기간</div>
     <div class="input-row">
@@ -245,8 +248,11 @@ window.slSetState = function(d){
   if(typeof calculate === 'function') calculate();
 };
 </script>
+<script>
+function toggleInfo(id){ const el = document.getElementById(id); if (el) el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
+</script>
 <script>window.SF_RESET = true;</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
 <script src="/sf-slots.js?v=7"></script>
-<script src="/common.js?v=11"></script>
+<script src="/common.js?v=12"></script>
 </body>
 </html>
