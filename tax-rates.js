@@ -1,12 +1,12 @@
 /* 세율 공통 (086) — 세법이 바뀌면 이 파일 하나만 고치면 됨
- * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=15 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
+ * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=16 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
  * 구간 배열: [[상한(원), 세율%], ...] 누진. 세율은 국세 기준, 지방소득세(국세의 10%)는 별도 → SF_TAX.wl(세율)로 포함값.
  * 바꾼 뒤: 이 파일 ?v= 를 쓰는 페이지 전부 올릴 것. 확인일(checked)도 고칠 것.
- * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/, /realestate/commercial-yield/, /tax/income/, /tax/retirement/, /tax/retirement-compare/, /severance-exec/, /salary/, /insurance4/, /tax/corp-invest/, /tax/house/, /tax/land/, /realestate/home-swap/, /stock-tools/dividend/, /finance-tools/compound/, /fire/, /tax/financial-income/, /barbell/, /paygrowth/, /landtax/, /tax/inheritance/, /tax/gift/, /tax/acquisition/, /corp-tax/, /tax/pension-deduction/, /pension/, /realestate/office-buy-vs-rent/, /realestate/jeonse-vs-buy/, /gambuk/  (나머지 세금 페이지는 순차 이전 예정)
+ * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/, /realestate/commercial-yield/, /tax/income/, /tax/retirement/, /tax/retirement-compare/, /severance-exec/, /salary/, /insurance4/, /tax/corp-invest/, /tax/house/, /tax/land/, /realestate/home-swap/, /stock-tools/dividend/, /finance-tools/compound/, /fire/, /tax/financial-income/, /barbell/, /paygrowth/, /landtax/, /tax/inheritance/, /tax/gift/, /tax/acquisition/, /corp-tax/, /tax/pension-deduction/, /pension/, /realestate/office-buy-vs-rent/, /realestate/jeonse-vs-buy/, /gambuk/, /tax-calendar/  (나머지 세금 페이지는 순차 이전 예정)
  */
 window.SF_TAX = Object.freeze({
   year: 2026,
-  checked: '2026-11-14',  // 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가 / 090: 고용보험 사업주분·고배당 분리과세·미국 배당 원천·주택·토지 양도세 추가, 양도세 정부안도 여기로(cgtPlan·cgtRule), ISA·연금 분리과세 / 092: 근로소득공제·근로소득세액공제·자녀세액공제(나이 연도별)·공익수용 감면(조특법 77) 추가, 토지 자경 5년 한도 / 092_03: 국민연금 연도별 인상(socialPlan·socialRule), 4대보험 근로자분 계산(ins4), 간이세액 근사(wageTax) 공통 함수 / 093: 상속·증여세 구간·공제(inhGift·inhDed·giftDed), 취득세(acq·acqHouseRate·acqCalc) / 094: 법인세 연도별(corpBr)·최저한세·이월결손금·기업업무추진비 한도, 연금계좌 세액공제·사적연금 분리과세, 국민연금 수급연령·조기/연기 / 094_03: 과밀억제권역 법인 취득세 중과(acqCalc capHeavy) / 094_04: 가족 간 금전대여 적정이자율(famLoan)
+  checked: '2026-11-14',  // 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가 / 090: 고용보험 사업주분·고배당 분리과세·미국 배당 원천·주택·토지 양도세 추가, 양도세 정부안도 여기로(cgtPlan·cgtRule), ISA·연금 분리과세 / 092: 근로소득공제·근로소득세액공제·자녀세액공제(나이 연도별)·공익수용 감면(조특법 77) 추가, 토지 자경 5년 한도 / 092_03: 국민연금 연도별 인상(socialPlan·socialRule), 4대보험 근로자분 계산(ins4), 간이세액 근사(wageTax) 공통 함수 / 093: 상속·증여세 구간·공제(inhGift·inhDed·giftDed), 취득세(acq·acqHouseRate·acqCalc) / 094: 법인세 연도별(corpBr)·최저한세·이월결손금·기업업무추진비 한도, 연금계좌 세액공제·사적연금 분리과세, 국민연금 수급연령·조기/연기 / 094_03: 과밀억제권역 법인 취득세 중과(acqCalc capHeavy) / 094_04: 가족 간 금전대여 적정이자율(famLoan) / 095_01: 법인세 중간예납(corpInt·corpInterim·splitMax), 자동차세 연납 공제율(carPre)
   // 이자·배당 원천징수 (소득세 14% + 지방소득세 1.4%)
   interest: 15.4,
   // 금융소득 종합과세 기준 (이자+배당, 연)
@@ -87,6 +87,12 @@ window.SF_TAX = Object.freeze({
   // 특수관계인 금전 무상·저리 대여 (상증세법 41조의4, 시행규칙 10조의5, 094_04) — 적정이자율 rate%, 이자 차액이 연 free원 미만이면 증여 안 봄
   //   → 무이자 가능 원금 = free ÷ rate% (4.6% → 약 2억 1,739만). 2016.3 이후 4.6% 유지 (2026.6 기사까지 같은 기준 확인)
   famLoan: {rate: 4.6, free: 1e7},
+  // 법인세 중간예납 (법인세법 63조·63조의2, 095_01) — 직전 기준 = (직전 산출세액 − 공제·감면 − 원천징수 − 수시부과) × 6/12
+  //   가결산 = 상반기 과표 × 12/6 에 세율 → × 6/12 (corpInterim). 중소기업이 직전 기준 계산액 exempt원 미만이면 의무 없음(2023 개정 30만 → 50만)
+  //   법인지방소득세는 중간예납 없음 — 확정신고(사업연도 종료 4개월 이내) 때 전액. 분납: split원 초과면 가능(splitMax)
+  corpInt: {exempt: 5e5, split: 1e7},
+  // 자동차세 1월 연납 공제율 % (지방세법 시행령, 2024까지 7 → 2025~ 5). 실제 공제는 남은 11개월분이라 연세액 대비 약 4.6%
+  carPre: 5,
   isaSep: 9.9, pensionTax: [5.5, 4.4, 3.3],
   // 연금계좌 세액공제 (소득세법 59조의3, 094) — 연금저축 cap 600만, IRP 합산 total 900만. 공제율(국세 %) 총급여 wage 이하(근로소득만) 또는 종합소득금액 inc 이하 hi, 초과 lo
   //   → 지방세 포함은 SF_TAX.wl(). 페이지는 pensionCrPct(총급여)로 받음
@@ -228,5 +234,9 @@ window.SF_TAX = Object.freeze({
     edu = Math.round(edu * 1e6) / 1e6; rural = Math.round(rural * 1e6) / 1e6;
     var acq = p * rate / 100, e = p * edu / 100, r = p * rural / 100;
     return {rate: rate, eduRate: edu, ruralRate: rural, totalRate: Math.round((rate + edu + rural) * 1e6) / 1e6, acq: acq, edu: e, rural: r, total: acq + e + r, heavy: heavy}; },
+  // corpInterim(상반기 과표, 구간) → 가결산 중간예납 산출세액(국세). 6개월 기준: 연환산 × 2 → 세율 → ÷ 2
+  corpInterim: function(half, br){ if(!(half>0)) return 0; return window.SF_TAX.prog(half*2, br)/2; },
+  // splitMax(납부세액) → 분납 가능한 최대 금액 (국세: split 초과 ~ 2×split 이하는 초과분, 그보다 크면 50% 이하)
+  splitMax: function(tax){ var k=window.SF_TAX.corpInt.split; if(!(tax>k)) return 0; return tax <= 2*k ? tax-k : Math.floor(tax/2); },
   prog: function(base, br){ var t=0, lo=0; if(!(base>0)) return 0; for(var i=0;i<br.length;i++){ var hi=br[i][0]; if(base>lo){ t += (Math.min(base,hi)-lo)*br[i][1]/100; } lo=hi; } return t; }
 });

@@ -184,9 +184,11 @@ input[type="date"]{font-size:13px}
 <div class="panel">
   <h2>📆 중간예납</h2>
   <div class="inputs">
-    <div class="input-row"><label>방식</label><select id="intMethod"><option value="prior" selected>직전연도 50%</option><option value="provisional">가결산</option></select></div>
-    <div class="input-row"><label>직전 사업연도 법인세</label><input type="number" id="intPriorTax" value="5000000"></div>
+    <div class="input-row"><label>방식 <span class="info-btn" onclick="toggleInfo('intInfo')">i</span></label><select id="intMethod"><option value="prior" selected>직전연도 50%</option><option value="provisional">가결산</option></select></div>
+    <div class="input-row"><label>직전 사업연도 법인세 <span class="info-btn" onclick="toggleInfo('intPriorInfo')">i</span></label><input type="number" id="intPriorTax" value="5000000"></div>
+    <div class="info-box" id="intPriorInfo" style="display:none">직전 사업연도 <b>산출세액(가산세 포함) − 공제·감면세액 − 원천징수세액 − 수시부과세액</b>. 지방소득세는 빼고 국세만. 홈택스 「중간예납세액 조회서비스」에서 예상세액·면제 여부를 바로 볼 수 있어요.</div>
     <div class="input-row"><label>상반기 과세표준 <span class="hint">(가결산)</span></label><input type="number" id="intHalfIncome" value="15000000"></div>
+    <div class="info-box" id="intInfo" style="display:none"><b>직전연도 50%</b>: 위 금액 × 6/12. 아무것도 안 하면 이 방식으로 확정돼요. 중소기업이 이 금액 <span class="tx-ie">50만</span>원 미만이면 중간예납 의무 없음(①탭 기업 규모 기준).<br><b>가결산</b>: 상반기(6개월)를 한 사업연도로 보고 과세표준 × 12/6 → 세율 → × 6/12. 누진세율이라 상반기 과표에 세율을 바로 곱하면 적게 나와요. 사업연도 시작 연도·법인 유형(①탭) 세율을 써요. 가결산으로 냈다가 더 냈다는 걸 알아도 경정청구로 못 돌려받음.<br><b>법인지방소득세는 중간예납이 없어요</b> — 확정신고(사업연도 종료 4개월 이내) 때 전액 냄. <b>분납</b>: 납부세액이 <span class="tx-is">1,000만</span>원 넘으면 가능 (중소 2개월·일반 1개월 안).</div>
   </div>
 </div>
 <div class="panel" id="interimResult"></div>
@@ -203,7 +205,7 @@ input[type="date"]{font-size:13px}
       <li>이월결손금: 중소 <span class="tx-ls">100</span>% / 일반 <span class="tx-lg">80</span>% (각사업연도소득 대비)</li>
       <li>최저한세는 감면 전 과세표준 기준. 중소기업 졸업 유예 구간(8~9%)은 반영 안 함</li>
       <li>법인세 신고: 사업연도 종료 후 3개월 이내</li>
-      <li>중간예납: 6개월 경과 후 2개월 이내</li>
+      <li>중간예납: 6개월 경과 후 2개월 이내 (법인지방소득세는 중간예납 없음)</li>
       <li>본 시뮬레이터는 참고용. 정확한 세무는 세무사 상담.</li>
     </ul>
   </div>
@@ -213,7 +215,7 @@ input[type="date"]{font-size:13px}
 <!-- 클라우드 저장 모달 -->
 
 
-<script src="/tax-rates.js?v=15"></script>
+<script src="/tax-rates.js?v=16"></script>
 <script>
 // ── 유틸 ──
 function $(id){return document.getElementById(id)}
@@ -282,7 +284,7 @@ function renderRef(){
 }
 function putTx(){
   var q=function(c,v){document.querySelectorAll('.'+c).forEach(function(el){el.textContent=v;});};
-  q('tx-cs',TX.corpSmall[0][1]);q('tx-loc',TX.local*100);q('tx-ls',TX.corpLoss.sme);q('tx-lg',TX.corpLoss.gen);
+  q('tx-cs',TX.corpSmall[0][1]);q('tx-loc',TX.local*100);q('tx-ls',TX.corpLoss.sme);q('tx-lg',TX.corpLoss.gen);if(TX.corpInt){q('tx-ie',(TX.corpInt.exempt/1e4).toLocaleString()+'만');q('tx-is',(TX.corpInt.split/1e4).toLocaleString()+'만');}
   $('txChecked').textContent='(확인 '+TX.checked+')';
 }
 
@@ -432,9 +434,20 @@ function getCurrentTaxBase(){
   return Math.max(0,adj-calcCarryLossLimit(adj,v('carryLoss'),$('corpSize').value)-v('nonTaxable')-v('incomeDeduct'));
 }
 function calcInterim(){
-  var method=$('intMethod').value,h='<h2>📆 중간예납 결과</h2><table class="result-table">';
-  if(method==='prior'){var p=v('intPriorTax'),int=Math.round(p/2);h+='<tr><td>직전 법인세</td><td>'+fmt(p)+'원</td></tr><tr class="total"><td>중간예납(50%)</td><td>'+fmt(int)+'원</td></tr><tr><td>+지방소득세</td><td>'+fmt(Math.round(int*TX.local))+'원</td></tr><tr class="total"><td>합계</td><td>'+fmt(Math.round(int*(1+TX.local)))+'원</td></tr>';}
-  else{var hi=v('intHalfIncome'),ht=calcCorpTax(hi).tax,hl=Math.round(ht*TX.local);h+='<tr><td>상반기 과세표준</td><td>'+fmt(hi)+'원</td></tr><tr class="total"><td>가결산 법인세</td><td>'+fmt(ht)+'원</td></tr><tr><td>지방소득세</td><td>'+fmt(hl)+'원</td></tr><tr class="total"><td>합계</td><td>'+fmt(ht+hl)+'원</td></tr>';}
+  // 095_01: 가결산은 연환산(× 12/6 → 세율 → × 6/12), 법인지방소득세 중간예납 없음(옛 버전은 +10% 합계)
+  var method=$('intMethod').value,h='<h2>📆 중간예납 결과</h2><table class="result-table">',int,CI=TX.corpInt||{exempt:5e5,split:1e7};
+  if(method==='prior'){
+    var p=v('intPriorTax');int=Math.round(p/2);
+    h+='<tr><td>직전 사업연도 법인세</td><td>'+fmt(p)+'원</td></tr><tr class="total"><td>중간예납 (× 6/12)</td><td>'+fmt(int)+'원</td></tr>';
+    if(int>0&&int<CI.exempt&&$('corpSize').value==='sme')h+='<tr><td>면제</td><td>중소기업 + '+fmt(CI.exempt)+'원 미만 → 중간예납 안 해도 됨</td></tr>';
+  }else{
+    var hi=v('intHalfIncome'),br=curBr(),yt=calcCorpTax(hi*2,br).tax;
+    int=Math.round(TX.corpInterim?TX.corpInterim(hi,br):yt/2);
+    h+='<tr><td>상반기 과세표준</td><td>'+fmt(hi)+'원</td></tr><tr><td>연 환산 과세표준 (× 12/6)</td><td>'+fmt(hi*2)+'원</td></tr><tr><td>연 환산 법인세</td><td>'+fmt(yt)+'원</td></tr><tr class="total"><td>중간예납 (× 6/12)</td><td>'+fmt(int)+'원</td></tr>';
+  }
+  var sp=TX.splitMax?TX.splitMax(int):0;
+  if(sp>0)h+='<tr><td>분납 가능 (최대)</td><td>'+fmt(sp)+'원 (중소 2개월·일반 1개월 안)</td></tr>';
+  h+='<tr><td>법인지방소득세</td><td>중간예납 없음 — 확정신고 때 전액</td></tr>';
   h+='</table>';$('interimResult').innerHTML=h;
 }
 function calcAll(){updateBizMonths();renderRef();calcBasic();calcEntertain();calcDeprec();calcCredit();calcInterim();}

@@ -96,45 +96,47 @@ footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
   <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;font-size:12px;color:#92400e;line-height:1.8;margin-top:20px">
     💡 <b>참고사항</b><br>
     • 납부기한이 공휴일·토요일이면 다음 영업일로 자동 연장<br>
-    • 법인세 중간예납(8월)은 직전 사업연도 법인세 기준 — 소규모 법인은 면제 가능<br>
+    • 법인세 중간예납(8월)은 직전 사업연도 법인세의 절반 또는 상반기 가결산 중 선택 — 중소기업은 직전 기준 계산액이 <span class="tx-ie">50만</span>원 미만이면 면제 (계산: <a href="/corp-tax/">법인세 시뮬레이터</a> ⑤탭)<br>
     • 4대보험료는 매월 10일 납부 (근로자 있는 경우)<br>
-    • 지방소득세는 소득세/법인세 신고 시 별도 신고·납부<br>
+    • 지방소득세는 별도 신고·납부 — 개인은 종합소득세와 같은 5월, 법인은 사업연도 종료 4개월 안(12월 결산 4월). 법인지방소득세는 중간예납 없음<br>
     • 부가세 간이과세자는 1월(연 1회) 신고<br>
-    • 면세사업자는 2월 사업장현황신고 필수
+    • 면세사업자는 2월 10일까지 사업장현황신고 필수
   </div>
 
   <footer>© 스윙파머 · 세금 캘린더 (매년 반복 일정 기준)</footer>
 </div>
 
+<script src="/tax-rates.js?v=16"></script>
 <script>
 var now = new Date();
 var curMonth = now.getMonth() + 1;
+// 095_01: 바뀌는 값은 공통 세율 파일 (/tax-rates.js)
+var _T = window.SF_TAX;
+var CAR_PRE = _T ? _T.carPre : 5;
 
 // ── 데이터: 월별 세금·납부 이벤트 ──
 var events = {
   1: [
-    { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부 (전월분)' },
+    { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부 (전월분, 반기납부자는 7~12월분)' },
     { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부 (전월분)' },
-    { day: '25일', icon: '📋', who: 'both', txt: '부가가치세 확정신고 (7~12월분, 법인 2기)' },
-    { day: '31일', icon: '🏠', who: 'both', txt: '면세사업자 사업장현황신고 (전년도)' },
-    { day: '31일', icon: '🚗', who: 'both', txt: '자동차세 연납신청 (10% 할인)' },
+    { day: '16~31', icon: '🚗', who: 'both', txt: '자동차세 연납신청 (' + CAR_PRE + '% 공제, 남은 11개월분)' },
+    { day: '25일', icon: '📋', who: 'both', txt: '부가가치세 확정신고 (2기 — 개인 7~12월분, 법인 10~12월분)' },
   ],
   2: [
     { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
     { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부' },
-    { day: '말일', icon: '📋', who: 'both', txt: '면세사업자 사업장현황신고 마감' },
+    { day: '10일', icon: '🏠', who: 'both', txt: '면세사업자 사업장현황신고 (전년도)' },
   ],
   3: [
     { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
     { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부' },
     { day: '31일', icon: '🏢', who: 'corp', txt: '법인세 신고·납부 (12월 결산법인)' },
-    { day: '31일', icon: '🏢', who: 'corp', txt: '법인 지방소득세 신고·납부' },
   ],
   4: [
     { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
     { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부' },
     { day: '25일', icon: '📋', who: 'corp', txt: '부가가치세 예정신고 (법인 1기, 1~3월)' },
-    { day: '30일', icon: '📋', who: 'both', txt: '원천세 반기납부 신청 마감 (7월 적용)' },
+    { day: '30일', icon: '🏢', who: 'corp', txt: '법인지방소득세 신고·납부 (12월 결산법인)' },
   ],
   5: [
     { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
@@ -146,23 +148,23 @@ var events = {
     { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
     { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부' },
     { day: '16~30', icon: '🏠', who: 'both', txt: '자동차세 1기분 납부' },
-    { day: '말일', icon: '🏠', who: 'both', txt: '재산세 (건축물) 납부' },
+    { day: '30일', icon: '📋', who: 'both', txt: '원천세 반기납부 승인 신청 마감 (하반기부터, 상시 20명 이하)' },
   ],
   7: [
-    { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
+    { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부 (반기납부자는 1~6월분)' },
     { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부' },
-    { day: '25일', icon: '📋', who: 'both', txt: '부가가치세 확정신고 (1~6월분, 법인 1기)' },
-    { day: '31일', icon: '🏠', who: 'both', txt: '재산세 (주택 1기분) 납부' },
+    { day: '16~31', icon: '🏠', who: 'both', txt: '재산세 1기분 납부 (주택 1/2 · 건축물)' },
+    { day: '25일', icon: '📋', who: 'both', txt: '부가가치세 확정신고 (1기 — 개인 1~6월분, 법인 4~6월분)' },
   ],
   8: [
     { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
     { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부' },
-    { day: '31일', icon: '🏢', who: 'corp', txt: '법인세 중간예납 (12월 결산법인)' },
+    { day: '31일', icon: '🏢', who: 'corp', txt: '법인세 중간예납 신고·납부 (12월 결산법인, 지방소득세는 없음)' },
   ],
   9: [
     { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
     { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부' },
-    { day: '16~30', icon: '🏠', who: 'both', txt: '재산세 (주택 2기분, 토지) 납부' },
+    { day: '16~30', icon: '🏠', who: 'both', txt: '재산세 2기분 납부 (주택 1/2 · 토지)' },
   ],
   10: [
     { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
@@ -175,10 +177,11 @@ var events = {
     { day: '30일', icon: '💼', who: 'both', txt: '종합소득세 중간예납 (전년도 50%)' },
   ],
   12: [
+    { day: '1~15', icon: '🏠', who: 'both', txt: '종합부동산세 납부' },
     { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
     { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부' },
     { day: '16~31', icon: '🚗', who: 'both', txt: '자동차세 2기분 납부' },
-    { day: '31일', icon: '🏠', who: 'both', txt: '종합부동산세 납부' },
+    { day: '31일', icon: '📋', who: 'both', txt: '원천세 반기납부 승인 신청 마감 (다음 해 상반기부터)' },
   ],
 };
 
@@ -218,7 +221,8 @@ function renderList() {
   for (var m = 1; m <= 12; m++) {
     (events[m] || []).forEach(function(e) {
       var item = { month: m, day: e.day, icon: e.icon, who: e.who, txt: e.txt };
-      if (e.txt.includes('신고')) cats['세금 신고'].push(item);
+      if (e.txt.includes('신청')) cats['기타'].push(item);  // 095_01: 반기납부 신청이 '원천세' 글자로 매월 고정에 묻히던 것
+      else if (e.txt.includes('신고')) cats['세금 신고'].push(item);
       else if (e.txt.includes('납부') && !e.txt.includes('보험') && !e.txt.includes('원천세')) cats['세금 납부'].push(item);
       else if (e.txt.includes('원천세') || e.txt.includes('보험')) cats['매월 고정'].push(item);
       else cats['기타'].push(item);
@@ -260,6 +264,7 @@ document.querySelectorAll('.view-tab').forEach(function(tab) {
 
 renderCalendar();
 renderList();
+if (_T && _T.corpInt) document.querySelectorAll('.tx-ie').forEach(function(el){ el.textContent = (_T.corpInt.exempt/1e4).toLocaleString() + '만'; });
 </script>
 <script src="/common.js?v=11"></script>
 </body>
