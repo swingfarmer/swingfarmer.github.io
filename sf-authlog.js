@@ -1,5 +1,5 @@
 /**
- * sf-authlog.js v3 (110) — 로그인 풀림 원인 기록
+ * sf-authlog.js v4 (110) — 로그인 풀림 원인 기록
  * 108·109에서 내장 브라우저(aichatetc)가 몇 초~수십 분 만에 로그아웃됨. 사이트 코드의 signOut은
  * auth-guard 2곳(🔓 버튼, 관리자 아닌 계정)뿐이라, 그 밖의 이유로 풀리면 'lost'로 남긴다.
  *
@@ -26,13 +26,23 @@ if (read(LOG, null) === null) write(LOG, [{ t: Date.now(), type: 'log-start', pa
 
 /* (v3) Firebase 저장소 지우기 감시 — Firebase보다 먼저 실행되지 않아도 됨(지울 때 prototype을 거침) */
 function shortStack() {
-  return (new Error().stack || '').split('\n').slice(3, 10)
+  const lim = Error.stackTraceLimit; Error.stackTraceLimit = 60;
+  const st = new Error().stack || ''; Error.stackTraceLimit = lim;
+  return st.split('\n').slice(3, 40)
     .map(l => l.trim().replace(/^at /, '').replace(/https?:\/\/[^/]+\//g, '').replace(/\?[^:)]*/g, '')).join(' < ');
 }
 try {
   const P = IDBObjectStore.prototype, del0 = P.delete, clr0 = P.clear;
   P.delete = function (key) {
-    try { if (this.name === 'firebaseLocalStorage' && String(key).includes('authUser')) authLog('idb-del', { stack: shortStack() }); } catch (e) {}
+    try {
+      if (this.name === 'firebaseLocalStorage' && String(key).includes('authUser')) {
+        const stack = shortStack();
+        // 지우기 직전에 아직 남아 있었는지: true = 이 탭이 직접 지움 / false = 이미 밖에서 지워진 걸 따라 지움
+        const g = this.get(key);
+        g.onsuccess = () => authLog('idb-del', { existed: g.result !== undefined, stack });
+        g.onerror = () => authLog('idb-del', { existed: null, stack });
+      }
+    } catch (e) {}
     return del0.apply(this, arguments);
   };
   P.clear = function () {
