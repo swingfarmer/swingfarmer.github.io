@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>근로소득세 (월 원천징수) | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .box{background-color:#1e242e!important;border-color:#2c333f!important}
+body.sf-dark .family-table td{border-bottom-color:#2c333f!important}
+body.sf-dark .family-table td:first-child{background-color:#172636!important}
+body.sf-dark .box.tax{border-top-color:#dc2626!important}
+body.sf-dark .box.social{border-top-color:#d97706!important}
+</style>
+<style>
+:root { --sf-max-w: 1100px; }
+.final { background: linear-gradient(135deg, #10b981, #059669); }
+.final-value{font-size:28px;font-weight:800}.breakdown-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}@media(max-width:700px){.breakdown-grid{grid-template-columns:1fr}}.box{background:white;border-radius:8px;padding:18px;border:2px solid #e5e7eb}.box.tax{border-top:4px solid #dc2626}.box.social{border-top:4px solid #d97706}.box h3{margin-top:0;font-size:16px;color:#1F4E78}.row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:13px}.row .v{font-weight:600;font-variant-numeric:tabular-nums}.row.total{border-top:2px solid #1F4E78;margin-top:6px;padding-top:10px;font-weight:700;font-size:15px}.row.total .v{color:#1F4E78}.rate-info{font-size:11px;color:#888;margin-left:4px}.family-table{width:100%;border-collapse:collapse;font-size:13px}.family-table th{background:#1F4E78;color:white;padding:8px;font-size:12px;font-weight:600;text-align:right}.family-table th:first-child{text-align:center}.family-table td{padding:8px;border-bottom:1px solid #eee;text-align:right;font-variant-numeric:tabular-nums}.family-table td:first-child{text-align:center;font-weight:600;background:#f8fafc}.family-table tr.current{background:#fff8e8}.family-table tr.current td{font-weight:700;color:#b45309}
+/* (098) 다크 글자색 — 라이트 색(빨강·파랑·갈색·초록·남색)이 어두운 배경에서 안 읽히던 것 */
+body.sf-dark .family-table tr.current td{color:#f0b060}
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body class="sf-narrow">
+
+
+<h1>💵 근로소득세 (월 원천징수)</h1>
+<p class="desc">국세청 <b>근로소득 간이세액표</b> 기준 매달 월급에서 떼는 소득세 자동 계산. 4대보험 + 소득세 + 지방세 모든 품목 분리 표시. (세율·요율은 공통 파일 <span data-tx="checked">2026-11-17</span> 확인값)</p>
+
+<div class="panel">
+  <h2>📥 입력값</h2>
+  <div class="inputs">
+
+    <div class="section-label">① 급여 (월 기준)</div>
+    <div class="input-row">
+      <label>월 급여 (세전, 원)</label>
+      <input type="number" id="monthly" value="5000000" data-won>
+    </div>
+    <div class="input-row">
+      <label>비과세소득 (월, 원) <span style="font-size:11px;color:#888;">(식대·자가운전 등)</span></label>
+      <input type="number" id="nontax" value="200000" data-won>
+    </div>
+
+    <div class="section-label">② 공제대상 가족수 (간이세액표 기준)</div>
+    <div class="input-row">
+      <label>공제대상 가족수 (본인 포함)</label>
+      <input type="number" id="family" value="1" min="1" max="11">
+    </div>
+    <div class="input-row">
+      <label><span data-tx="childAge">9</span>세 이상 20세 이하 자녀수</label>
+      <input type="number" id="kidsAged" value="0" min="0">
+    </div>
+
+    <div class="section-label">③ 원천징수 비율 (선택)</div>
+    <div class="input-row">
+      <label>간이세액표 비율</label>
+      <select id="ratio">
+        <option value="0.8">80% (월 적게 떼고 연말 추징 가능성↑)</option>
+        <option value="1.0" selected>100% (기본)</option>
+        <option value="1.2">120% (월 많이 떼고 연말 환급 가능성↑)</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="final">
+  <div class="final-label">💰 월 실수령액</div>
+  <div class="final-value" id="netPay">-</div>
+  <div class="final-sub">월급 <b id="grossPay">-</b> · 공제합계 <b id="totalDeduction">-</b> · 실수령률 <b id="netRate">-</b></div>
+</div>
+
+<div class="breakdown-grid">
+
+  <!-- 4대보험 -->
+  <div class="box social">
+    <h3>🏥 4대보험 (본인부담)</h3>
+    <div class="row"><span>국민연금 <span class="rate-info">(<span data-tx="socialRule.nps">4.75</span>%)</span></span><span class="v" id="D_nps">-</span></div>
+    <div class="row"><span>건강보험 <span class="rate-info">(<span data-tx="socialRule.hh">3.595</span>%)</span></span><span class="v" id="D_health">-</span></div>
+    <div class="row"><span>장기요양 <span class="rate-info">(건강보험의 <span data-tx="socialRule.ltc">13.14</span>%)</span></span><span class="v" id="D_ltc">-</span></div>
+    <div class="row"><span>고용보험 <span class="rate-info">(<span data-tx="socialRule.emp">0.9</span>%)</span></span><span class="v" id="D_emp">-</span></div>
+    <div class="row total"><span>4대보험 합계</span><span class="v" id="D_social">-</span></div>
+    <div class="row" style="font-size:12px;color:#666"><span>월급 대비</span><span class="v" id="D_socialRate">-</span></div>
+    <div class="row" style="font-size:11px;color:#888;display:block;line-height:1.5">ⓘ 4대보험은 <b>비과세 뺀 월급</b>에 매김(식대 등 제외). 국민연금은 기준소득월액 <span data-tx="socialRule.npsMin" data-tx-f="man" data-tx-t="{}만">41만</span>~<span data-tx="socialRule.npsMax" data-tx-f="man" data-tx-t="{}만">659만</span> 원 범위로 잘라서 계산 → 월급이 상한보다 많으면 <span data-tx="=socialRule.npsMax*socialRule.nps/100" data-tx-f="r0">313,025</span>원에서 더 안 늘어남. 상·하한은 매년 7월, 요율은 매년 1월 바뀜.</div>
+  </div>
+
+  <!-- 세금 -->
+  <div class="box tax">
+    <h3>💸 세금 (간이세액표)</h3>
+    <div class="row"><span>소득세 (간이세액표)</span><span class="v" id="D_incomeTax">-</span></div>
+    <div class="row"><span>지방소득세 <span class="rate-info">(소득세의 <span data-tx="local" data-tx-f="pct">10</span>%)</span></span><span class="v" id="D_localTax">-</span></div>
+    <div class="row total"><span>세금 합계</span><span class="v" id="D_taxTotal">-</span></div>
+    <div class="row" style="font-size:12px;color:#666"><span>월급 대비</span><span class="v" id="D_taxRate">-</span></div>
+  </div>
+
+</div>
+
+<div class="panel">
+  <h2>👨‍👩‍👧 공제대상 가족수별 소득세 비교</h2>
+  <p class="desc" style="margin-bottom:8px">같은 월급에서 가족수가 늘어날수록 떼는 소득세가 줄어듭니다. (자녀공제는 별도 적용)</p>
+  <div class="table-scroll"><table class="family-table">
+    <thead>
+      <tr>
+        <th>가족수</th>
+        <th>소득세</th>
+        <th>지방세</th>
+        <th>세금 합계</th>
+        <th>4대보험</th>
+        <th>총 공제</th>
+        <th>실수령</th>
+      </tr>
+    </thead>
+    <tbody id="familyTable"></tbody>
+  </table></div>
+  <div class="info-box" style="margin-top:14px">
+    💡 <b>"공제대상 가족수"</b>는 본인 포함. 본인 1명 + 배우자 1 + 자녀 2 = 4명. 부모님 부양 시 +2.
+  </div>
+</div>
+
+<div class="manual">
+  <h3>📘 사용 설명서</h3>
+
+  <h3>① 이 계산기의 목적</h3>
+  <p>매달 받는 <b>월급명세서의 소득세 항목</b>을 정확히 알아보기 위한 계산기. 연말정산이 아닌 <b>매월 원천징수 기준</b>으로 계산. 국세청 근로소득 간이세액표(소득세법 시행령 별표2) 알고리즘 적용.</p>
+
+  <h3>② 간이세액표란?</h3>
+  <ul>
+    <li>회사가 매달 월급에서 떼서 국세청에 미리 내는 소득세 금액 표</li>
+    <li>"급여수준 × 공제대상 가족수"로 결정</li>
+    <li>실제 본인 세금은 연말정산에서 재계산되어 차이 정산 (추징 or 환급)</li>
+  </ul>
+
+  <h3>③ 입력값 설명</h3>
+  <ul>
+    <li><span class="badge">월 급여</span> 세전 월급. 회사가 공식적으로 주는 금액.</li>
+    <li><span class="badge">비과세소득</span> 식대(월 <span data-tx="nontaxMeal" data-tx-f="kor">20만</span>), 자가운전(월 20만), 출산·보육수당 등. 본 칸은 월 기준.</li>
+    <li><span class="badge">공제대상 가족수</span>
+      <ul>
+        <li>본인 + 배우자 + 자녀 + 부양가족 (연소득 100만 이하)</li>
+        <li>본인만이면 1, 배우자 추가시 2, 자녀 추가시 +1</li>
+        <li>예: 본인+배우자+자녀2 = <b>4명</b></li>
+      </ul>
+    </li>
+    <li><span class="badge"><span data-tx="childAge">9</span>~20세 자녀</span> 간이세액표 금액에서 자녀 수별로 매달 더 빼줌: 1명 <span data-tx="childMonthly.one">20,830</span>원, 2명 <span data-tx="childMonthly.two">45,830</span>원, 3명 이상은 1명당 <span data-tx="childMonthly.extra">33,330</span>원씩 추가 (2026.3.1 지급분부터 개정 금액). 연 소득 100만 원 넘는 자녀는 빼고 셈. <span class="age-note">ⓘ 대상 나이는 아동수당 확대로 매년 1세씩 올라감(2026.4.21 개정: 2025년 8세 → 2026년 9세 → 2030년 13세). 그보다 어린 자녀는 아동수당 대상이라 빼고 세세요. 회사 급여 프로그램이 아직 옛 나이로 셀 수도 있음.</span></li>
+    <li><span class="badge">원천징수 비율</span>
+      <ul>
+        <li><b>100% (기본):</b> 표준 비율</li>
+        <li><b>80%:</b> 매월 덜 떼고 연말에 추가 납부 가능성</li>
+        <li><b>120%:</b> 매월 더 떼고 연말에 환급 가능성</li>
+        <li>회사에 "소득세 원천징수세액 조정신청서" 제출하면 변경 가능</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h3>④ 4대보험 (본인부담)</h3>
+  <ul>
+    <li><b>국민연금:</b> 기준소득월액의 <span data-tx="socialRule.nps">4.75</span>% (회사도 같은 만큼 별도 부담). 기준소득월액 = 비과세 뺀 월급을 <span data-tx="socialRule.npsMin" data-tx-f="man" data-tx-t="{}만">41만</span>~<span data-tx="socialRule.npsMax" data-tx-f="man" data-tx-t="{}만">659만</span> 원 범위로 자른 값. 요율은 2033년 <span data-tx="socialPlan.-1.nps" data-tx-f="x2">13</span>%(근로자 <span data-tx="socialPlan.-1.nps">6.5</span>%)까지 매년 1월 <span data-tx="socialPlan.1.nps" data-tx-f="-socialPlan.0.nps x2">0.5</span>%p씩 오름</li>
+    <li><b>건강보험:</b> 비과세 뺀 월급의 <span data-tx="socialRule.hh">3.595</span>% (회사도 동일 부담)</li>
+    <li><b>장기요양보험:</b> 건강보험료의 <span data-tx="socialRule.ltc">13.14</span>%</li>
+    <li><b>고용보험:</b> 비과세 뺀 월급의 <span data-tx="socialRule.emp">0.9</span>% (회사도 동일)</li>
+    <li>산재보험은 100% 회사 부담</li>
+  </ul>
+
+  <h3>⑤ 연말정산과의 차이</h3>
+  <p>이 계산기는 <b>매월 원천징수</b> 기준. 실제 연간 세금은 연말정산에서 결정되며, 매월 떼인 금액과 차이가 있으면:</p>
+  <ul>
+    <li>매월 + 연말 떼인 세금 < 실제 연 세금 → <b>추가 납부</b></li>
+    <li>매월 + 연말 떼인 세금 > 실제 연 세금 → <b>환급</b> (13월의 월급)</li>
+  </ul>
+
+  <div class="warn-box">
+    <b>⚠ 주의:</b> 간이세액표는 단순화된 표라 실제 세금과 차이 있을 수 있음. 의료비·교육비·기부금·연금저축 등 별도 세액공제는 미반영 (이건 연말정산에서 정산). 정확한 매월 세금은 회사 급여팀 또는 국세청 홈택스 모의계산 권장.
+  </div>
+</div>
+
+<script src="/tax-rates.js?v=24"></script>
+<script>
+// (089) 세율·4대보험 요율은 /tax-rates.js(window.SF_TAX)에서 읽음. (101) 못 읽을 때 쓰던 기본값 사본은 지움 — 못 읽으면 common.js가 안내
+const _T = window.SF_TAX;
+const SR = _T.socialRule();   // (092) 올해 4대보험 요율 — 국민연금 연도별 인상이 자동 반영됨
+const TX = {
+  income: _T.income,
+  nps: SR.nps, npsMin: SR.npsMin, npsMax: SR.npsMax,
+  hh: SR.hh, ltc: SR.ltc, emp: SR.emp,
+  child: _T.childMonthly,
+  checked: _T.checked
+};
+// 화면 문구 속 요율은 HTML data-tx 가 채움 (101, 예전 fillTax)
+
+const fmt = n => sfNum(n);
+const fmtKrw = n => sfNum(n) + ' 원';
+const fmtPct = n => sfPct(n * 100, 2);
+
+// 누진세율 (연 기준)
+// 간이세액표 자녀 공제 (월, 대상 나이는 SF_TAX.childAge — 092) — (089) 2026.3.1 개정 금액, SF_TAX.childMonthly
+function childMonthly(kids) {
+  if (kids <= 0) return 0;
+  if (kids === 1) return TX.child.one;
+  return TX.child.two + (kids - 2) * TX.child.extra;
+}
+
+// 간이세액표 알고리즘 (월 원천징수 = 연 환산 세액 / 12)
+function calcMonthlyIncomeTax(monthlyGross, family, kids, ratio) {
+  return Math.max(0, _T.wageTax(monthlyGross * 12, family, kids).tax / 12 * ratio);   // (092) 공통 함수 — /salary/와 같은 식
+}
+
+function calculate() {
+  const monthly = parseFloat(document.getElementById('monthly').value) || 0;
+  const nontax = parseFloat(document.getElementById('nontax').value) || 0;
+  const family = parseInt(document.getElementById('family').value) || 1;
+  const kids = parseInt(document.getElementById('kidsAged').value) || 0;
+  const ratio = parseFloat(document.getElementById('ratio').value) || 1.0;
+
+  const gross = Math.max(0, monthly - nontax);
+
+  // 4대보험 (월 기준) — (089) 비과세 뺀 월급(gross) 기준. 국민연금은 기준소득월액 상·하한으로 자름
+  //   (088까지: 비과세 포함 월급 × 옛 요율 4.5·3.545·12.95, 국민연금 상한을 본인부담 553,500원으로 잘못 둠)
+  //   (092) 공통 함수 SF_TAX.ins4 — /salary/, /insurance4/, /paygrowth/와 같은 식
+  const I = _T.ins4(gross);
+  const nps = I.pension, health = I.health, ltc = I.care, emp = I.employ, social = I.total;
+
+  // 소득세
+  const incomeTax = calcMonthlyIncomeTax(gross, family, kids, ratio);
+  const localTax = incomeTax * (_T.local);
+  const taxTotal = incomeTax + localTax;
+
+  // 실수령
+  const totalDed = social + taxTotal;
+  const netPay = monthly - totalDed;
+  const netRate = monthly > 0 ? netPay / monthly : 0;
+
+  const set = (id, val) => document.getElementById(id).textContent = val;
+  set('netPay', fmtKrw(netPay));
+  set('grossPay', fmtKrw(monthly));
+  set('totalDeduction', fmtKrw(totalDed));
+  set('netRate', fmtPct(netRate));
+
+  set('D_nps', fmtKrw(nps));
+  set('D_health', fmtKrw(health));
+  set('D_ltc', fmtKrw(ltc));
+  set('D_emp', fmtKrw(emp));
+  set('D_social', fmtKrw(social));
+  set('D_socialRate', fmtPct(social / monthly));
+
+  set('D_incomeTax', fmtKrw(incomeTax));
+  set('D_localTax', fmtKrw(localTax));
+  set('D_taxTotal', fmtKrw(taxTotal));
+  set('D_taxRate', fmtPct(taxTotal / monthly));
+
+  // 가족수별 비교 테이블 (1~7명)
+  const tbody = document.getElementById('familyTable');
+  tbody.innerHTML = '';
+  for (let f = 1; f <= 7; f++) {
+    const it = calcMonthlyIncomeTax(gross, f, kids, ratio);
+    const lt = it * 0.10;
+    const tt = it + lt;
+    const tot = tt + social;
+    const net = monthly - tot;
+    const tr = document.createElement('tr');
+    if (f === family) tr.classList.add('current');
+    tr.innerHTML = `
+      <td>${f}명</td>
+      <td>${fmt(it)}</td>
+      <td>${fmt(lt)}</td>
+      <td>${fmt(tt)}</td>
+      <td>${fmt(social)}</td>
+      <td>${fmt(tot)}</td>
+      <td>${fmt(net)}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input', calculate);
+  el.addEventListener('change', calculate);
+});
+calculate();
+</script>
+<script>
+window.CALC_KEY = 'income_tax';
+window.slGetState = function(){
+  return {
+    monthly: document.getElementById('monthly').value,
+    nontax: document.getElementById('nontax').value,
+    family: document.getElementById('family').value,
+    kidsAged: document.getElementById('kidsAged').value,
+    ratio: document.getElementById('ratio').value,
+  };
+};
+window.slSetState = function(d){
+  if(!d) return;
+  if(d.monthly !== undefined) document.getElementById('monthly').value = d.monthly;
+  if(d.nontax !== undefined) document.getElementById('nontax').value = d.nontax;
+  if(d.family !== undefined) document.getElementById('family').value = d.family;
+  if(d.kidsAged !== undefined) document.getElementById('kidsAged').value = d.kidsAged;
+  if(d.ratio !== undefined) document.getElementById('ratio').value = d.ratio;
+  if(typeof calculate === 'function') calculate();
+};
+</script>
+<script>window.SF_RESET = true;</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

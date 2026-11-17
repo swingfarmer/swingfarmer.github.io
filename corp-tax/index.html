@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>법인세 시뮬레이터 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .loaded-name{color:#85b5e0!important}
+body.sf-dark .result-table td{border-bottom-color:#2c333f!important}
+body.sf-dark .result-table td:first-child{color:#d6d6d6!important}
+body.sf-dark .result-table tr:hover td{background-color:#172636!important}
+body.sf-dark .result-table tr.total td{background-color:#152637!important;color:#85b5e0!important}
+body.sf-dark .result-table tr.sub-total td{background-color:#1e242e!important}
+body.sf-dark .notice{background-color:#152437!important;color:#819be4!important}
+body.sf-dark .warn{background-color:#373115!important;color:#f2a373!important}
+body.sf-dark .item-table td{border-bottom-color:#2c333f!important}
+body.sf-dark .item-table tr.sum-row td{background-color:#152637!important;color:#85b5e0!important;border-top-color:#2c333f!important}
+body.sf-dark .rate-table th{border-color:#2c333f!important}
+body.sf-dark .rate-table td{border-color:#2c333f!important}
+body.sf-dark .modal-box{background-color:#1e242e!important}
+body.sf-dark .result-table tr.total td{border-top-color:#1F4E78!important}
+</style>
+<style>
+:root { --sf-max-w: 1100px; }
+.final { background: linear-gradient(135deg, #1F4E78, #2563eb); }
+*{box-sizing:border-box;margin:0;padding:0}
+.cloud-bar .tag-cloud{background:#0ea5e9;color:white;font-size:12px;font-weight:600;padding:3px 10px;border-radius:6px;cursor:pointer;border:none;font-family:inherit}
+.loaded-name{font-size:13px;color:#1F4E78;font-weight:700}
+.tab-content{display:none}.tab-content.active{display:block}
+.input-row label .hint{font-weight:400;color:#999;font-size:11px}
+.input-row input,.input-row select{padding:10px;font-size:13px;border:1px solid #ccc;border-radius:6px;background:#fff;font-weight:600;color:#1F4E78;font-family:inherit}
+.input-row input:focus,.input-row select:focus{outline:2px solid #1F4E78;background:#fff}
+.input-row input[readonly]{background:#f0f0f0;color:#666}
+input[type="date"]{font-size:13px}
+.summary-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:18px}
+.scard{padding:16px;border-radius:10px;color:white}
+.scard.blue{background:linear-gradient(135deg,#1F4E78,#2563eb)}
+.scard.green{background:linear-gradient(135deg,#059669,#10b981)}
+.scard.amber{background:linear-gradient(135deg,#d97706,#f59e0b)}
+.scard.red{background:linear-gradient(135deg,#dc2626,#ef4444)}
+.scard .lbl{font-size:12px;opacity:.9;margin-bottom:4px}
+.scard .val{font-size:18px;font-weight:800;letter-spacing:-.5px}
+.scard .sub{font-size:11px;opacity:.85;margin-top:4px}
+.result-table th:first-child{text-align:left}
+.result-table td{padding:9px 10px;text-align:right;border-bottom:1px solid #eee}
+.result-table td:first-child{text-align:left;color:#444;font-weight:600}
+.result-table tr:hover td{background:#f8fafc}
+.result-table tr.total td{background:#f0f5fa;font-weight:700;color:#1F4E78;border-top:2px solid #1F4E78}
+.result-table tr.sub-total td{background:#fafafa;font-weight:600}
+.notice{background:#dbeafe;border-left:4px solid #2563eb;padding:12px 16px;border-radius:6px;font-size:12.5px;color:#1e3a8a;line-height:1.7;margin-bottom:16px}
+.warn{background:#fef3c7;border-left:4px solid #f59e0b;padding:10px 14px;border-radius:6px;font-size:12.5px;color:#92400e;line-height:1.7;margin-top:12px}
+.btn{padding:8px 14px;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-primary{background:#1F4E78;color:white}.btn-primary:hover{background:#2d6ba3}
+.btn-green{background:#10b981;color:white}.btn-red{background:#dc2626;color:white}
+.btn-sm{padding:5px 10px;font-size:12px}
+.item-table td{padding:6px 4px;text-align:center;border-bottom:1px solid #f0f0f0}
+.item-table input,.item-table select{width:100%;padding:6px;font-size:13px;border:1px solid #ddd;border-radius:6px;background:#fff;font-weight:600;color:#1F4E78;font-family:inherit;text-align:right}
+.item-table input[type="text"]{text-align:left}
+.item-table tr.sum-row td{background:#f0f5fa;font-weight:700;color:#1F4E78;border-top:2px solid #ddd}
+.rate-table th,.rate-table td{padding:8px 10px;border:1px solid #ddd;text-align:right}
+.rate-table td:first-child{text-align:left}
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;justify-content:center;align-items:center}
+.modal.show{display:flex}
+.modal-box{background:white;border-radius:14px;padding:24px;width:90%;max-width:460px;max-height:80vh;overflow-y:auto}
+.inputs > .info-box{grid-column:1 / -1;margin-top:-6px}
+@media(max-width:600px){.summary-cards{grid-template-columns:repeat(2,1fr)}}
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body class="sf-narrow">
+<h1>🏢 법인세 시뮬레이터</h1>
+<p class="desc">법인세 산출·접대비 한도·감가상각·세액공제·중간예납 종합 계산. 세율·한도는 공통 세율 파일 기준 (사업연도 시작 연도별 자동). <span id="txChecked" data-tx="checked" data-tx-t="(확인 {})"></span></p>
+<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+</div>
+
+<div class="summary-cards" id="topSummary"></div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="basic">① 법인세</button>
+  <button class="tab" data-tab="entertain">② 접대비</button>
+  <button class="tab" data-tab="deprec">③ 감가상각</button>
+  <button class="tab" data-tab="credit">④ 세액공제</button>
+  <button class="tab" data-tab="interim">⑤ 중간예납</button>
+  <button class="tab" data-tab="ref">📋 참조</button>
+</div>
+
+<!-- ① 법인세 -->
+<div class="tab-content active" id="tab-basic">
+<div class="panel">
+  <h2>📥 기본 입력</h2>
+  <div class="inputs">
+    <div class="section-label">사업연도</div>
+    <div class="input-row"><label>시작일</label><input type="date" id="bizStart" value="2025-01-01"></div>
+    <div class="input-row"><label>종료일</label><input type="date" id="bizEnd" value="2025-12-31"></div>
+    <div class="input-row"><label>기간 <span class="hint">(자동)</span></label><input type="text" id="bizMonthsDisp" readonly></div>
+    <div class="input-row"><label>기업 규모</label><select id="corpSize"><option value="sme" selected>중소기업</option><option value="mid">중견기업</option><option value="large">대기업</option></select></div>
+    <div class="input-row"><label>법인 유형 <span class="info-btn" onclick="toggleInfo('smallInfo')">i</span></label><select id="corpType"><option value="gen" selected>일반</option><option value="small">성실신고 소규모법인</option></select></div>
+    <div class="info-box" id="smallInfo" style="display:none"><b>성실신고 소규모법인</b> = 지배주주 등 지분 50% 초과 + 상시근로자 5인 미만 + 부동산임대업이 주업이거나 임대·이자·배당 수입이 매출의 50% 이상. <span data-tx="corpSmallFrom" data-tx-f="y">2025</span>년 시작 사업연도부터 <span data-tx="corp.0.0" data-tx-f="kor">2억</span> 이하 낮은 세율 구간 없이 처음부터 다음 구간 세율로 매겨요 (<span data-tx="corpSmallFrom" data-tx-f="y">2025</span>년 <span data-tx="corpSmallOld.0.1">19</span>%, <span data-tx="corpFrom" data-tx-f="y">2026</span>년~ <span data-tx="corpSmall.0.1">20</span>%). 기업업무추진비 한도도 <span data-tx="corpEnt.smallRent">50</span>%만 인정(②탭에서 따로 고름).</div>
+    <div class="section-label">손익 항목 (원)</div>
+    <div class="input-row"><label>매출(수입금액)</label><input type="number" id="revenue" data-won value="100000000"></div>
+    <div class="input-row"><label>당기순이익(세전)</label><input type="number" id="netIncome" data-won value="30000000"></div>
+    <div class="section-label">세무 조정</div>
+    <div class="input-row"><label>익금산입</label><input type="number" id="addIncome" data-won value="0"></div>
+    <div class="input-row"><label>손금산입</label><input type="number" id="addExpense" data-won value="0"></div>
+    <div class="input-row"><label>익금불산입</label><input type="number" id="subIncome" data-won value="0"></div>
+    <div class="input-row"><label>손금불산입</label><input type="number" id="subExpense" data-won value="0"></div>
+    <div class="section-label">공제</div>
+    <div class="input-row"><label>이월결손금</label><input type="number" id="carryLoss" data-won value="0"></div>
+    <div class="input-row"><label>비과세소득</label><input type="number" id="nonTaxable" data-won value="0"></div>
+    <div class="input-row"><label>소득공제</label><input type="number" id="incomeDeduct" data-won value="0"></div>
+  </div>
+</div>
+<div class="panel" id="basicResult"></div>
+</div>
+
+<!-- ② 접대비 -->
+<div class="tab-content" id="tab-entertain">
+<div class="panel">
+  <h2>🍽️ 기업업무추진비(접대비) 한도 <span style="font-size:12px;color:#888;font-weight:400">(항목별 입력)</span></h2>
+  <div class="notice">접대비 한도 초과분은 손금불산입 → ①법인세 탭 "손금불산입"에 반영하세요.</div>
+  <div class="inputs" style="margin-bottom:14px">
+    <div class="input-row"><label>기업 규모</label><select id="entCorpSize"><option value="sme" selected>중소기업</option><option value="mid">중견기업</option><option value="large">대기업</option></select></div>
+    <div class="input-row"><label>임대 주업 소규모법인 <span class="info-btn" onclick="toggleInfo('entSmallInfo')">i</span></label><select id="entSmallRent"><option value="0" selected>아니오</option><option value="1" data-tx="corpEnt.smallRent" data-tx-t="예 (한도 {}%)">예 (한도 50%)</option></select></div>
+    <div class="info-box" id="entSmallInfo" style="display:none">부동산임대업이 주업이거나 임대·이자·배당 수입이 50% 이상인 지배주주 법인(상시근로자 5인 미만)은 기업업무추진비 한도가 일반 계산의 <b><span data-tx="corpEnt.smallRent">50</span>%</b>만 인정돼요.</div>
+    <div class="input-row"><label>매출(수입금액)</label><input type="number" id="entRevenue" data-won value="100000000"></div>
+  </div>
+  <button class="btn btn-primary btn-sm" onclick="addEntItem()">+ 접대비 항목 추가</button>
+  <div class="table-scroll"><table class="item-table" id="entTable">
+    <thead><tr><th style="width:30%">항목</th><th style="width:20%">거래처</th><th style="width:15%">일자</th><th style="width:20%">금액(원)</th><th style="width:15%"></th></tr></thead>
+    <tbody id="entBody"></tbody>
+    <tfoot><tr class="sum-row"><td colspan="3" style="text-align:right">합계</td><td id="entSum" style="text-align:right">0</td><td></td></tr></tfoot>
+  </table></div>
+</div>
+<div class="panel" id="entertainResult"></div>
+</div>
+
+<!-- ③ 감가상각 -->
+<div class="tab-content" id="tab-deprec">
+<div class="panel">
+  <h2>🏗️ 감가상각 <span style="font-size:12px;color:#888;font-weight:400">(자산별 입력 → 합산)</span></h2>
+  <button class="btn btn-primary btn-sm" onclick="addDepItem()">+ 자산 추가</button>
+  <div class="table-scroll"><table class="item-table" id="depTable">
+    <thead><tr><th style="width:18%">자산명</th><th style="width:14%">취득가(원)</th><th style="width:12%">잔존가</th><th style="width:10%">내용연수</th><th style="width:10%">경과</th><th style="width:12%">방법</th><th style="width:14%">연 상각비</th><th style="width:10%"></th></tr></thead>
+    <tbody id="depBody"></tbody>
+    <tfoot><tr class="sum-row"><td colspan="6" style="text-align:right">연간 감가상각비 합계</td><td id="depSum" style="text-align:right">0</td><td></td></tr></tfoot>
+  </table></div>
+</div>
+<div class="panel" id="deprecResult"></div>
+</div>
+
+<!-- ④ 세액공제 -->
+<div class="tab-content" id="tab-credit">
+<div class="panel">
+  <h2>💳 세액공제·감면</h2>
+  <div class="notice">최저한세 한도 내에서만 적용. 초과분은 이월.</div>
+  <div class="inputs">
+    <div class="section-label">세액공제</div>
+    <div class="input-row"><label>중소기업 특별세액감면</label><input type="number" id="crSmeRelief" data-won value="0"></div>
+    <div class="input-row"><label>R&D 세액공제</label><input type="number" id="crRnd" data-won value="0"></div>
+    <div class="input-row"><label>투자세액공제</label><input type="number" id="crInvest" data-won value="0"></div>
+    <div class="input-row"><label>고용증대 세액공제</label><input type="number" id="crEmploy" data-won value="0"></div>
+    <div class="input-row"><label>기타 세액공제</label><input type="number" id="crOther" data-won value="0"></div>
+    <div class="section-label">가산세</div>
+    <div class="input-row"><label>무신고 가산세</label><input type="number" id="penNoFile" data-won value="0"></div>
+    <div class="input-row"><label>과소신고 가산세</label><input type="number" id="penUnder" data-won value="0"></div>
+    <div class="input-row"><label>납부불성실 가산세</label><input type="number" id="penLate" data-won value="0"></div>
+  </div>
+</div>
+<div class="panel" id="creditResult"></div>
+</div>
+
+<!-- ⑤ 중간예납 -->
+<div class="tab-content" id="tab-interim">
+<div class="panel">
+  <h2>📆 중간예납</h2>
+  <div class="inputs">
+    <div class="input-row"><label>방식 <span class="info-btn" onclick="toggleInfo('intInfo')">i</span></label><select id="intMethod"><option value="prior" selected>직전연도 50%</option><option value="provisional">가결산</option></select></div>
+    <div class="input-row"><label>직전 사업연도 법인세 <span class="info-btn" onclick="toggleInfo('intPriorInfo')">i</span></label><input type="number" id="intPriorTax" data-won value="5000000"></div>
+    <div class="info-box" id="intPriorInfo" style="display:none">직전 사업연도 <b>산출세액(가산세 포함) − 공제·감면세액 − 원천징수세액 − 수시부과세액</b>. 지방소득세는 빼고 국세만. 홈택스 「중간예납세액 조회서비스」에서 예상세액·면제 여부를 바로 볼 수 있어요.</div>
+    <div class="input-row"><label>상반기 과세표준 <span class="hint">(가결산)</span></label><input type="number" id="intHalfIncome" data-won value="15000000"></div>
+    <div class="info-box" id="intInfo" style="display:none"><b>직전연도 50%</b>: 위 금액 × 6/12. 아무것도 안 하면 이 방식으로 확정돼요. 중소기업이 이 금액 <span data-tx="corpInt.exempt" data-tx-f="kor">50만</span>원 미만이면 중간예납 의무 없음(①탭 기업 규모 기준).<br><b>가결산</b>: 상반기(6개월)를 한 사업연도로 보고 과세표준 × 12/6 → 세율 → × 6/12. 누진세율이라 상반기 과표에 세율을 바로 곱하면 적게 나와요. 사업연도 시작 연도·법인 유형(①탭) 세율을 써요. 가결산으로 냈다가 더 냈다는 걸 알아도 경정청구로 못 돌려받음.<br><b>법인지방소득세는 중간예납이 없어요</b> — 확정신고(사업연도 종료 4개월 이내) 때 전액 냄. <b>분납</b>: 납부세액이 <span data-tx="corpInt.split" data-tx-f="kor">1,000만</span>원 넘으면 가능 (중소 2개월·일반 1개월 안).</div>
+  </div>
+</div>
+<div class="panel" id="interimResult"></div>
+</div>
+
+<!-- 📋 참조 -->
+<div class="tab-content" id="tab-ref">
+<div class="panel">
+  <div id="refTables"></div>
+  <div class="manual">
+    <h3>참고</h3>
+    <ul>
+      <li>지방소득세: 법인세의 <span data-tx="local" data-tx-f="pct">10</span>%</li>
+      <li>이월결손금: 중소 <span data-tx="corpLoss.sme">100</span>% / 일반 <span data-tx="corpLoss.gen">80</span>% (각사업연도소득 대비)</li>
+      <li>최저한세는 감면 전 과세표준 기준. 중소기업 졸업 유예 구간(8~9%)은 반영 안 함</li>
+      <li>법인세 신고: 사업연도 종료 후 3개월 이내</li>
+      <li>중간예납: 6개월 경과 후 2개월 이내 (법인지방소득세는 중간예납 없음)</li>
+      <li>본 시뮬레이터는 참고용. 정확한 세무는 세무사 상담.</li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<!-- 클라우드 저장 모달 -->
+
+
+<script src="/tax-rates.js?v=24"></script>
+<script>
+// ── 유틸 ──
+function $(id){return document.getElementById(id)}
+function v(id){return parseFloat($(id).value)||0}
+function fmt(n){return sfNum(n)}
+function fmtPct(n){return sfPct(n,2)}
+
+// ── 사업연도 개월 계산 ──
+function getBizMonths(){
+  var s=new Date($('bizStart').value), e=new Date($('bizEnd').value);
+  if(isNaN(s)||isNaN(e)||e<=s)return 12;
+  var m=(e.getFullYear()-s.getFullYear())*12+(e.getMonth()-s.getMonth())+1;
+  return Math.max(1,Math.min(12,m));
+}
+function updateBizMonths(){
+  var m=getBizMonths();
+  $('bizMonthsDisp').value=m+'개월';
+}
+
+// ── 법인세 구간 (094: 공통 세율 파일 /tax-rates.js — 사업연도 시작 연도·법인 유형별) ──
+var TX=window.SF_TAX;
+function bizYear(){var d=new Date($('bizStart').value);return isNaN(d)?new Date().getFullYear():d.getFullYear();}
+function curBr(){return TX.corpBr(bizYear(),$('corpType').value==='small');}
+function calcCorpTax(base,br){
+  br=br||curBr();
+  if(base<=0)return{tax:0,effectiveRate:0,detail:[]};
+  var detail=[],remain=base,total=0,prev=0;
+  for(var i=0;i<br.length;i++){
+    var lim=br[i][0],r=br[i][1]/100,slice=Math.min(remain,lim-prev);
+    if(slice<=0)break;
+    var t=slice*r;
+    detail.push({from:prev,to:prev+slice,rate:r,tax:t});
+    total+=t;remain-=slice;prev=lim;
+  }
+  return{tax:Math.round(total),effectiveRate:base>0?total/base*100:0,detail:detail};
+}
+function calcMinTax(base,sz){return Math.round(TX.corpMinTax(base,sz==='sme'));}
+function calcCarryLossLimit(inc,loss,sz){return Math.round(TX.corpLossAmt(inc,loss,sz==='sme'));}
+function brRows(br){
+  var h='',prev=0,acc=0;
+  br.forEach(function(b){
+    var lim=b[0],r=b[1];
+    var ded=Math.round(prev*r/100-acc);
+    var lbl=prev===0?sfKor(lim, 'short')+' 이하':(lim===Infinity?sfKor(prev, 'short')+' 초과':sfKor(prev, 'short')+'~'+sfKor(lim, 'short'));
+    h+='<tr><td>'+lbl+'</td><td>'+r+'%</td><td>'+(ded>0?sfKor(ded, 'short'):'-')+'</td></tr>';
+    if(lim!==Infinity)acc+=(lim-prev)*r/100;prev=lim;
+  });
+  return h;
+}
+function renderRef(){
+  var y=bizYear(),T=TX,h='';
+  var tb=function(title,br){return '<h2 style="margin-top:18px">'+title+'</h2><div class="table-scroll"><table class="rate-table"><thead><tr><th>과세표준</th><th>세율</th><th>누진공제</th></tr></thead><tbody>'+brRows(br)+'</tbody></table></div>';};
+  h+=tb('📋 법인세율표 — '+y+'년 시작 사업연도 (일반)',T.corpBr(y,false));
+  h+=tb('📋 성실신고 소규모법인 — '+y+'년',T.corpBr(y,true));
+  h+='<div style="font-size:12px;color:#888;margin-top:6px">'+(T.corpFrom-1)+'.12.31 이전 시작 사업연도는 일반 '+T.corpOld.map(function(b){return b[1];}).join('·')+'%, '+T.corpFrom+'.1.1 이후 '+T.corp.map(function(b){return b[1];}).join('·')+'%. 사업연도 시작일을 바꾸면 표가 따라 바뀜</div>';
+  h+='<h2 style="margin-top:18px">📋 최저한세</h2><div class="table-scroll"><table class="rate-table"><thead><tr><th>구분</th><th>세율</th></tr></thead><tbody><tr><td>중소기업</td><td>'+T.corpMin.sme+'%</td></tr>';
+  var p=0;T.corpMin.gen.forEach(function(b){h+='<tr><td>일반 '+(p===0?sfKor(b[0], 'short')+' 이하':(b[0]===Infinity?sfKor(p, 'short')+' 초과분':sfKor(p, 'short')+'~'+sfKor(b[0], 'short')+' 부분'))+'</td><td>'+b[1]+'%</td></tr>';p=b[0];});
+  h+='</tbody></table></div>';
+  var e=T.corpEnt;
+  h+='<h2 style="margin-top:18px">📋 기업업무추진비(접대비) 한도</h2><div class="table-scroll"><table class="rate-table"><thead><tr><th>수입금액</th><th>중소</th><th>일반</th></tr></thead><tbody><tr><td>기본(12개월)</td><td>'+sfKor(e.sme, 'short')+'</td><td>'+sfKor(e.gen, 'short')+'</td></tr>';
+  p=0;e.br.forEach(function(b){h+='<tr><td>'+(p===0?sfKor(b[0], 'short')+' 이하':(b[0]===Infinity?sfKor(p, 'short')+' 초과분':sfKor(p, 'short')+'~'+sfKor(b[0], 'short')+' 부분'))+'</td><td colspan="2">'+b[1]+'%</td></tr>';p=b[0];});
+  h+='<tr><td>임대 주업 소규모법인</td><td colspan="2">위 한도의 '+e.smallRent+'%</td></tr></tbody></table></div>';
+  $('refTables').innerHTML=h;
+}
+
+// ── 접대비 항목 ──
+var entItems=[];
+function addEntItem(item){
+  entItems.push(item||{desc:'',client:'',date:'',amount:0});
+  renderEntItems();
+}
+function removeEntItem(i){entItems.splice(i,1);renderEntItems();calcAll();}
+function renderEntItems(){
+  var html='';
+  entItems.forEach(function(it,i){
+    html+='<tr><td><input type="text" value="'+esc(it.desc)+'" onchange="entItems['+i+'].desc=this.value"></td>'
+      +'<td><input type="text" value="'+esc(it.client)+'" onchange="entItems['+i+'].client=this.value"></td>'
+      +'<td><input type="date" value="'+(it.date||'')+'" onchange="entItems['+i+'].date=this.value"></td>'
+      +'<td><input type="number" value="'+(it.amount||0)+'" oninput="entItems['+i+'].amount=parseFloat(this.value)||0;calcAll()"></td>'
+      +'<td><button class="btn btn-red btn-sm" onclick="removeEntItem('+i+')">✕</button></td></tr>';
+  });
+  $('entBody').innerHTML=html;
+}
+function getEntTotal(){return entItems.reduce(function(s,it){return s+(it.amount||0);},0);}
+function esc(s){return String(s||'').replace(/"/g,'&quot;');}
+
+// ── 감가상각 자산별 ──
+var depItems=[];
+function addDepItem(item){
+  depItems.push(item||{name:'',cost:0,salvage:0,life:5,elapsed:0,method:'straight'});
+  renderDepItems();
+}
+function removeDepItem(i){depItems.splice(i,1);renderDepItems();calcAll();}
+function calcDepAnnual(it){
+  if(!it.cost||!it.life||it.life<=0)return 0;
+  if(it.method==='straight')return Math.round((it.cost-(it.salvage||0))/it.life);
+  var rate=1-Math.pow(0.05,1/it.life);
+  var book=it.cost;
+  for(var y=0;y<(it.elapsed||0);y++){book-=Math.round(book*rate);book=Math.max(book,it.cost*0.05);}
+  return Math.round(book*rate);
+}
+function renderDepItems(){
+  var html='';
+  depItems.forEach(function(it,i){
+    var ann=calcDepAnnual(it);
+    html+='<tr><td><input type="text" value="'+esc(it.name)+'" onchange="depItems['+i+'].name=this.value"></td>'
+      +'<td><input type="number" value="'+(it.cost||0)+'" oninput="depItems['+i+'].cost=parseFloat(this.value)||0;calcAll()"></td>'
+      +'<td><input type="number" value="'+(it.salvage||0)+'" oninput="depItems['+i+'].salvage=parseFloat(this.value)||0;calcAll()"></td>'
+      +'<td><input type="number" value="'+(it.life||5)+'" min="1" oninput="depItems['+i+'].life=parseInt(this.value)||5;calcAll()"></td>'
+      +'<td><input type="number" value="'+(it.elapsed||0)+'" min="0" oninput="depItems['+i+'].elapsed=parseInt(this.value)||0;calcAll()"></td>'
+      +'<td><select onchange="depItems['+i+'].method=this.value;calcAll()"><option value="straight"'+(it.method==='straight'?' selected':'')+'>정액</option><option value="declining"'+(it.method==='declining'?' selected':'')+'>정률</option></select></td>'
+      +'<td style="text-align:right;font-weight:700;color:#059669">'+fmt(ann)+'</td>'
+      +'<td><button class="btn btn-red btn-sm" onclick="removeDepItem('+i+')">✕</button></td></tr>';
+  });
+  $('depBody').innerHTML=html;
+  $('depSum').textContent=fmt(getDepTotal());
+}
+function getDepTotal(){return depItems.reduce(function(s,it){return s+calcDepAnnual(it);},0);}
+
+// ── 계산 ──
+function calcBasic(){
+  var months=getBizMonths(),sz=$('corpSize').value;
+  var ni=v('netIncome');
+  var adjIncome=ni+v('addIncome')+v('subExpense')-v('subIncome')-v('addExpense');
+  var lossLimit=calcCarryLossLimit(adjIncome,v('carryLoss'),sz);
+  var taxBase=Math.max(0,adjIncome-lossLimit-v('nonTaxable')-v('incomeDeduct'));
+  var result;
+  if(months<12&&months>0){var ann=taxBase*12/months;var at=calcCorpTax(ann);result={tax:Math.round(at.tax*months/12),effectiveRate:taxBase>0?Math.round(at.tax*months/12)/taxBase*100:0,detail:at.detail};}
+  else result=calcCorpTax(taxBase);
+  var corpTax=result.tax,localTax=Math.round(corpTax*TX.local),totalTax=corpTax+localTax;
+  var effectiveRate=taxBase>0?totalTax/taxBase*100:0;
+  $('topSummary').innerHTML=
+    '<div class="scard blue"><div class="lbl">과세표준</div><div class="val">'+fmt(taxBase)+'원</div></div>'
+    +'<div class="scard amber"><div class="lbl">법인세</div><div class="val">'+fmt(corpTax)+'원</div></div>'
+    +'<div class="scard red"><div class="lbl">법인세+지방</div><div class="val">'+fmt(totalTax)+'원</div><div class="sub">실효 '+fmtPct(effectiveRate)+'</div></div>'
+    +'<div class="scard green"><div class="lbl">세후 소득</div><div class="val">'+fmt(adjIncome-totalTax)+'원</div></div>';
+  var h='<h2>📊 법인세 계산 <span style="font-size:12px;color:#888;font-weight:400">'+bizYear()+'년 시작 · '+($('corpType').value==='small'?'성실신고 소규모법인':'일반')+' 세율</span></h2><table class="result-table">';
+  h+='<tr><td>당기순이익</td><td>'+fmt(ni)+'원</td></tr>';
+  var adj=v('addIncome')+v('subExpense')-v('subIncome')-v('addExpense');
+  if(adj)h+='<tr><td>세무조정</td><td>'+fmt(adj)+'원</td></tr>';
+  h+='<tr class="sub-total"><td>각사소득</td><td>'+fmt(adjIncome)+'원</td></tr>';
+  if(lossLimit>0)h+='<tr><td>(-) 이월결손금</td><td>'+fmt(lossLimit)+'원</td></tr>';
+  if(v('nonTaxable'))h+='<tr><td>(-) 비과세</td><td>'+fmt(v('nonTaxable'))+'원</td></tr>';
+  if(v('incomeDeduct'))h+='<tr><td>(-) 소득공제</td><td>'+fmt(v('incomeDeduct'))+'원</td></tr>';
+  h+='<tr class="total"><td>과세표준'+(months<12?' ('+months+'개월)':'')+'</td><td>'+fmt(taxBase)+'원</td></tr></table>';
+  h+='<table class="result-table" style="margin-top:14px"><thead><tr><th style="text-align:left">구간</th><th>세율</th><th>세액</th></tr></thead><tbody>';
+  result.detail.forEach(function(d){h+='<tr><td>'+fmt(d.from)+'~'+fmt(d.to)+'</td><td>'+(Math.round(d.rate*1000)/10)+'%</td><td>'+fmt(d.tax)+'원</td></tr>';});
+  h+='<tr class="total"><td>산출세액</td><td></td><td>'+fmt(corpTax)+'원</td></tr>';
+  h+='<tr><td>지방소득세</td><td>'+(TX.local*100)+'%</td><td>'+fmt(localTax)+'원</td></tr>';
+  h+='<tr class="total"><td>총 납부</td><td>'+fmtPct(effectiveRate)+'</td><td>'+fmt(totalTax)+'원</td></tr></tbody></table>';
+  var minT=calcMinTax(taxBase,sz);
+  h+='<div style="margin-top:10px;padding:10px;background:#f8fafc;border-radius:6px;font-size:12px">최저한세: '+fmt(minT)+'원 — '+(corpTax>=minT?'<span style="color:#059669">✓ 충족</span>':'<span style="color:#dc2626">⚠ 미달</span>')+'</div>';
+  $('basicResult').innerHTML=h;
+}
+function calcEntertain(){
+  var sz=$('entCorpSize').value,months=getBizMonths(),rev=v('entRevenue'),actual=getEntTotal();
+  $('entSum').textContent=fmt(actual);
+  var smallRent=$('entSmallRent').value==='1',base=(sz==='sme'?TX.corpEnt.sme:TX.corpEnt.gen)*months/12;
+  var revL=TX.prog(rev,TX.corpEnt.br);
+  var full=base+revL;
+  var limit=Math.round(smallRent?full*TX.corpEnt.smallRent/100:full),excess=Math.max(0,actual-limit);
+  var h='<h2>🍽️ 기업업무추진비 결과</h2><table class="result-table">';
+  h+='<tr><td>기본한도</td><td>'+fmt(base)+'원</td></tr>';
+  h+='<tr><td>수입금액 한도</td><td>'+fmt(Math.round(revL))+'원</td></tr>';
+  if(smallRent)h+='<tr><td>임대 주업 소규모법인 ('+TX.corpEnt.smallRent+'%)</td><td>× '+(TX.corpEnt.smallRent/100)+'</td></tr>';
+  h+='<tr class="total"><td>한도 합계</td><td>'+fmt(limit)+'원</td></tr>';
+  h+='<tr><td>실제 지출 ('+entItems.length+'건)</td><td>'+fmt(actual)+'원</td></tr>';
+  if(excess>0)h+='<tr class="total" style="color:#dc2626"><td>⚠️ 한도 초과</td><td>'+fmt(excess)+'원</td></tr>';
+  else h+='<tr class="total" style="color:#059669"><td>✅ 잔여</td><td>'+fmt(limit-actual)+'원</td></tr>';
+  h+='</table>';
+  if(excess>0)h+='<div class="warn">초과 '+fmt(excess)+'원 → ①법인세 탭 "손금불산입"에 입력</div>';
+  $('entertainResult').innerHTML=h;
+}
+function calcDeprec(){
+  renderDepItems();
+  var total=getDepTotal();
+  var h='<h2>🏗️ 자산별 감가상각 요약</h2>';
+  if(depItems.length===0){h+='<div style="color:#999;padding:20px;text-align:center">자산을 추가하세요</div>';$('deprecResult').innerHTML=h;return;}
+  h+='<table class="result-table"><thead><tr><th style="text-align:left">자산</th><th>취득가</th><th>방법</th><th>연수</th><th>경과</th><th>올해 상각비</th></tr></thead><tbody>';
+  depItems.forEach(function(it){
+    h+='<tr><td>'+esc(it.name||'(미입력)')+'</td><td>'+fmt(it.cost)+'</td><td>'+(it.method==='straight'?'정액':'정률')+'</td><td>'+it.life+'년</td><td>'+it.elapsed+'년</td><td style="color:#059669;font-weight:700">'+fmt(calcDepAnnual(it))+'원</td></tr>';
+  });
+  h+='<tr class="total"><td colspan="5">연간 감가상각비 합계</td><td>'+fmt(total)+'원</td></tr></tbody></table>';
+  h+='<div style="margin-top:10px;font-size:12px;color:#888">💡 감가상각비를 ①법인세 탭 "손금산입"에 반영하면 과세표준이 줄어듭니다.</div>';
+  $('deprecResult').innerHTML=h;
+}
+function calcCredit(){
+  var totalCr=v('crSmeRelief')+v('crRnd')+v('crInvest')+v('crEmploy')+v('crOther');
+  var totalPen=v('penNoFile')+v('penUnder')+v('penLate');
+  var sz=$('corpSize').value,taxBase=getCurrentTaxBase();
+  var ct=calcCorpTax(taxBase).tax,minT=calcMinTax(taxBase,sz);
+  var maxCr=Math.max(0,ct-minT),applied=Math.min(totalCr,maxCr),blocked=totalCr-applied;
+  var final=Math.max(0,ct-applied)+totalPen,local=Math.round(final*TX.local);
+  var h='<h2>💳 세액공제 결과</h2><table class="result-table">';
+  h+='<tr><td>산출세액</td><td>'+fmt(ct)+'원</td></tr>';
+  h+='<tr><td>최저한세</td><td>'+fmt(minT)+'원</td></tr>';
+  h+='<tr><td>공제 한도</td><td>'+fmt(maxCr)+'원</td></tr>';
+  h+='<tr><td>공제 신청</td><td>'+fmt(totalCr)+'원</td></tr>';
+  h+='<tr class="sub-total"><td>적용 공제</td><td>'+fmt(applied)+'원</td></tr>';
+  if(blocked>0)h+='<tr style="color:#dc2626"><td>⚠️ 미적용(이월)</td><td>'+fmt(blocked)+'원</td></tr>';
+  h+='<tr><td>(+) 가산세</td><td>'+fmt(totalPen)+'원</td></tr>';
+  h+='<tr class="total"><td>최종 법인세</td><td>'+fmt(final)+'원</td></tr>';
+  h+='<tr><td>지방소득세</td><td>'+fmt(local)+'원</td></tr>';
+  h+='<tr class="total"><td>총 납부</td><td>'+fmt(final+local)+'원</td></tr></table>';
+  $('creditResult').innerHTML=h;
+}
+function getCurrentTaxBase(){
+  var ni=v('netIncome'),adj=ni+v('addIncome')+v('subExpense')-v('subIncome')-v('addExpense');
+  return Math.max(0,adj-calcCarryLossLimit(adj,v('carryLoss'),$('corpSize').value)-v('nonTaxable')-v('incomeDeduct'));
+}
+function calcInterim(){
+  // 095_01: 가결산은 연환산(× 12/6 → 세율 → × 6/12), 법인지방소득세 중간예납 없음(옛 버전은 +10% 합계)
+  var method=$('intMethod').value,h='<h2>📆 중간예납 결과</h2><table class="result-table">',int,CI=TX.corpInt||{exempt:5e5,split:1e7};
+  if(method==='prior'){
+    var p=v('intPriorTax');int=Math.round(p/2);
+    h+='<tr><td>직전 사업연도 법인세</td><td>'+fmt(p)+'원</td></tr><tr class="total"><td>중간예납 (× 6/12)</td><td>'+fmt(int)+'원</td></tr>';
+    if(int>0&&int<CI.exempt&&$('corpSize').value==='sme')h+='<tr><td>면제</td><td>중소기업 + '+fmt(CI.exempt)+'원 미만 → 중간예납 안 해도 됨</td></tr>';
+  }else{
+    var hi=v('intHalfIncome'),br=curBr(),yt=calcCorpTax(hi*2,br).tax;
+    int=Math.round(TX.corpInterim?TX.corpInterim(hi,br):yt/2);
+    h+='<tr><td>상반기 과세표준</td><td>'+fmt(hi)+'원</td></tr><tr><td>연 환산 과세표준 (× 12/6)</td><td>'+fmt(hi*2)+'원</td></tr><tr><td>연 환산 법인세</td><td>'+fmt(yt)+'원</td></tr><tr class="total"><td>중간예납 (× 6/12)</td><td>'+fmt(int)+'원</td></tr>';
+  }
+  var sp=TX.splitMax?TX.splitMax(int):0;
+  if(sp>0)h+='<tr><td>분납 가능 (최대)</td><td>'+fmt(sp)+'원 (중소 2개월·일반 1개월 안)</td></tr>';
+  h+='<tr><td>법인지방소득세</td><td>중간예납 없음 — 확정신고 때 전액</td></tr>';
+  h+='</table>';$('interimResult').innerHTML=h;
+}
+function calcAll(){updateBizMonths();renderRef();calcBasic();calcEntertain();calcDeprec();calcCredit();calcInterim();}
+
+// ── 저장/복원 ──
+window.gcGetState=function(){
+  var ids=['bizStart','bizEnd','corpSize','corpType','revenue','netIncome','addIncome','addExpense','subIncome','subExpense','carryLoss','nonTaxable','incomeDeduct','entCorpSize','entSmallRent','entRevenue','crSmeRelief','crRnd','crInvest','crEmploy','crOther','penNoFile','penUnder','penLate','intMethod','intPriorTax','intHalfIncome'];
+  var data={};ids.forEach(function(id){data[id]=$(id).value;});
+  data._entItems=JSON.parse(JSON.stringify(entItems));
+  data._depItems=JSON.parse(JSON.stringify(depItems));
+  return data;
+};
+window.gcSetState=function(data){
+  if(!data)return;
+  Object.keys(data).forEach(function(k){if(k.charAt(0)==='_')return;var el=$(k);if(el)el.value=data[k];});
+  entItems=data._entItems||[];renderEntItems();
+  depItems=data._depItems||[];renderDepItems();
+  calcAll();
+};
+
+// localStorage 자동 저장
+function autoSave(){try{localStorage.setItem('sf_corp-tax_v2',JSON.stringify(window.gcGetState()));}catch(e){}}
+function autoLoad(){try{var d=localStorage.getItem('sf_corp-tax_v2');if(d)window.gcSetState(JSON.parse(d));}catch(e){}}
+
+// ── 탭 ──
+document.querySelectorAll('.tab').forEach(function(tab){tab.addEventListener('click',function(){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.tab-content').forEach(function(c){c.classList.remove('active');});
+  tab.classList.add('active');$('tab-'+tab.dataset.tab).classList.add('active');
+});});
+document.querySelectorAll('input,select').forEach(function(el){
+  el.addEventListener('input',function(){calcAll();autoSave();});
+  el.addEventListener('change',function(){calcAll();autoSave();});
+});
+
+// 초기화 — 사업연도 기본값은 올해 (094)
+(function(){var y=new Date().getFullYear();$('bizStart').value=y+'-01-01';$('bizEnd').value=y+'-12-31';})();
+
+autoLoad();
+calcAll();
+
+// ── sf-slots 연동 ──
+window.CALC_KEY = 'corp-tax';
+window.slGetState = function(){ return window.gcGetState ? window.gcGetState() : {}; };
+window.slSetState = function(d){ if(window.gcSetState) window.gcSetState(d); };
+</script>
+
+<script>window.SF_RESET = true;</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

@@ -1,0 +1,255 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>전세대출 이자 vs 월세 비교 | 스윙파머</title>
+<meta name="description" content="전세(보증금 대출이자) vs 월세 중 어디가 더 저렴한지 비교. 전세보증금 기회비용·대출이자와 월세+보증금 기회비용을 따져 월 부담을 계산.">
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark header{background-color:#1e242e!important}
+body.sf-dark .compare-card{border-color:#2c333f!important;background-color:#1d2630!important}
+body.sf-dark .compare-card.win{background-color:#153720!important}
+body.sf-dark .compare-card .cc-name{color:#c2c2c2!important}
+body.sf-dark .compare-card .cc-cost{color:#85b5e0!important}
+body.sf-dark table.breakdown th{border-bottom-color:#2c333f!important}
+body.sf-dark .note{background-color:#373115!important;border-color:#736326!important;color:#f2a373!important}
+body.sf-dark .compare-card.win{border-color:#16a34a!important}
+body.sf-dark .compare-card.win .cc-name{color:#16a34a!important}
+</style>
+<style>
+:root { --sf-max-w: 760px; }
+header { background: var(--sf-surface); border-bottom: 3px solid var(--sf-brand); padding: 18px 16px; }
+header .wrap { padding: 0; }
+header h1 { font-size: 20px; color: var(--sf-brand); margin: 0; border-bottom: none; }
+header .back-link { display: inline-block; margin-bottom: 6px; }
+.final { background: linear-gradient(135deg, #d97706, #ea580c); }
+  input:focus { outline: 2px solid #1F4E78; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px){ .two-col { grid-template-columns: 1fr; } }
+  .info-box{display:none}  /* (097) i 버튼으로 펼침 — 전에는 처음부터 펼쳐져 있어 i 첫 클릭이 안 먹었음 */
+  .verdict-hero { border-radius: 14px; padding: 22px; text-align: center; margin-bottom: 16px; color: white; }
+  .verdict-hero.jeonse { background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+  .verdict-hero.wolse { background: linear-gradient(135deg, #d97706, #f59e0b); }
+  .verdict-hero.even { background: linear-gradient(135deg, #64748b, #94a3b8); }
+  .verdict-hero .vh-verdict { font-size: 24px; font-weight: 800; }
+  .verdict-hero .vh-detail { font-size: 13.5px; opacity: .95; margin-top: 8px; line-height: 1.6; }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .compare-card { border-radius: 12px; padding: 16px; border: 2px solid #e5e7eb; background: #fafbfc; text-align: center; }
+  .compare-card.win { border-color: #16a34a; background: #f0fdf4; }
+  .compare-card .cc-name { font-size: 14px; font-weight: 700; color: #666; margin-bottom: 6px; }
+  .compare-card.win .cc-name { color: #16a34a; }
+  .compare-card .cc-cost { font-size: 22px; font-weight: 800; color: #1F4E78; }
+  .compare-card .cc-sub { font-size: 11px; color: #888; margin-top: 4px; }
+  table.breakdown { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.breakdown th { background: #f8fafc; padding: 8px; border-bottom: 2px solid #e5e7eb; font-size: 12px; color: #555; }
+  table.breakdown td { padding: 9px 8px; border-bottom: 1px solid #f0f0f0; }
+  table.breakdown td.label { color: #555; font-weight: 500; }
+  table.breakdown td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  table.breakdown tr.total td { border-top: 2px solid #1F4E78; font-weight: 800; color: #1F4E78; }
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; line-height: 1.7; margin-top: 14px; }
+  footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+/* (098) 다크 글자색 — 라이트 색(빨강·파랑·갈색·초록·남색)이 어두운 배경에서 안 읽히던 것 */
+body.sf-dark table.breakdown tr.total td{color:#85b5e0}
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>🏠 전세 vs 월세 비교</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc"><b>전세(대출이자)</b>와 <b>월세</b> 중 어느 쪽이 매달 덜 나가는지 비교합니다. 전세보증금에 묶인 돈의 <b>기회비용</b>과 대출이자를, 월세는 월세+보증금 기회비용을 따져 <b>실질 월 부담</b>으로 비교해요.</p>
+
+
+
+  <!-- 전세 -->
+  <div class="panel">
+    <div class="section-label">🏢 전세 조건</div>
+    <div class="input-row">
+      <label>전세보증금 (원)</label>
+      <input type="number" id="jeonseDeposit" value="300000000" inputmode="numeric" data-won>
+    </div>
+    <div class="two-col">
+      <div class="input-row">
+        <label>전세대출 금액 (원) <span class="stat-sub">대출 안 받으면 0</span></label>
+        <input type="number" id="jeonseLoan" value="200000000" inputmode="numeric" data-won>
+      </div>
+      <div class="input-row">
+        <label>전세대출 금리 (연 %)</label>
+        <input type="number" id="jeonseLoanRate" value="3.5" step="0.1" inputmode="decimal">
+      </div>
+    </div>
+  </div>
+
+  <!-- 월세 -->
+  <div class="panel">
+    <div class="section-label">🏠 월세 조건</div>
+    <div class="two-col">
+      <div class="input-row">
+        <label>월세 보증금 (원)</label>
+        <input type="number" id="wolseDeposit" value="30000000" inputmode="numeric" data-won>
+      </div>
+      <div class="input-row">
+        <label>월세 (원/월)</label>
+        <input type="number" id="wolseMonthly" value="1200000" inputmode="numeric" data-won>
+      </div>
+    </div>
+  </div>
+
+  <!-- 기회비용 -->
+  <div class="panel">
+    <div class="section-label">💡 내 돈의 기회비용 <span class="info-btn" onclick="toggleInfo('oppInfo')">i</span></div>
+    <div class="input-row">
+      <label>기회비용 금리 (연 %) <span class="stat-sub">예금·투자로 벌 수 있는 수익률</span></label>
+      <input type="number" id="oppRate" value="3.0" step="0.1" inputmode="decimal">
+    </div>
+    <div class="info-box" id="oppInfo">보증금으로 묶인 <b>내 돈</b>은, 다른 곳에 넣었으면 벌었을 수익(기회비용)을 포기하는 거예요. 예금 금리나 기대 투자수익률을 넣으세요. 전세는 큰 보증금이 묶이니 기회비용이 크고, 월세는 보증금이 작은 대신 월세를 내요. 이 기회비용을 같이 따져야 공정한 비교예요.</div>
+  </div>
+
+  <!-- 판정 -->
+  <div class="verdict-hero even" id="verdict">
+    <div class="vh-verdict" id="verdictText">-</div>
+    <div class="vh-detail" id="verdictDetail"></div>
+  </div>
+
+  <!-- 비교 카드 -->
+  <div class="compare-grid">
+    <div class="compare-card" id="jeonseCard">
+      <div class="cc-name">전세</div>
+      <div class="cc-cost" id="jeonseCost">-</div>
+      <div class="cc-sub">실질 월 부담</div>
+    </div>
+    <div class="compare-card" id="wolseCard">
+      <div class="cc-name">월세</div>
+      <div class="cc-cost" id="wolseCost">-</div>
+      <div class="cc-sub">실질 월 부담</div>
+    </div>
+  </div>
+
+  <!-- 상세 -->
+  <div class="panel">
+    <div class="section-label">📊 월 부담 상세</div>
+    <table class="breakdown">
+      <thead><tr><th style="text-align:left">항목</th><th>전세</th><th>월세</th></tr></thead>
+      <tbody>
+        <tr><td class="label">월세</td><td class="num">-</td><td class="num" id="r_wolse">-</td></tr>
+        <tr><td class="label">전세대출 이자</td><td class="num" id="r_loanInt">-</td><td class="num">-</td></tr>
+        <tr><td class="label">내 돈 기회비용</td><td class="num" id="r_jeonseOpp">-</td><td class="num" id="r_wolseOpp">-</td></tr>
+        <tr class="total"><td class="label">월 부담 합계</td><td class="num" id="r_jeonseTotal">-</td><td class="num" id="r_wolseTotal">-</td></tr>
+      </tbody>
+    </table>
+    <div style="font-size:11.5px;color:#888;margin-top:10px;line-height:1.6">※ "내 돈"이란 보증금에서 대출을 뺀 실제 자기 돈이에요. 전세는 (전세보증금−대출), 월세는 월세보증금이 묶여요.</div>
+  </div>
+
+  <div class="note">
+    ⚠️ <b>참고용</b>입니다. 전세는 대출 한도·자격, 보증보험, 갱신 시 보증금 인상 위험이 있고, 월세는 매년 인상 가능성이 있어요. 전세보증금 미반환 위험(깡통전세)도 고려하세요. 세액공제(월세 세액공제, 전세대출 이자 소득공제)는 미반영입니다.
+  </div>
+
+  <div class="manual">
+    <b>📘 비교 방법</b><br>
+    <span class="badge">전세 월부담</span> 전세대출 이자(월) + 내 돈(전세보증금−대출) 기회비용(월)<br>
+    <span class="badge">월세 월부담</span> 월세 + 월세보증금 기회비용(월)<br>
+    숫자가 작은 쪽이 매달 덜 나가요. 단, 전세는 만기에 보증금을 <b>돌려받지만</b>, 월세·이자·기회비용은 <b>사라지는 돈</b>이에요.
+  </div>
+
+  <footer>© 스윙파머</footer>
+</div>
+
+<script>
+window.CALC_KEY = 'jeonsewolse';
+window.slGetState = function(){ return window.jwGetState ? window.jwGetState() : {}; };
+window.slSetState = function(d){ if(window.jwSetState) window.jwSetState(d); };
+</script>
+<script>window.SF_RESET = ["sf_jw_state_v1"];</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => sfNum(n);
+
+function calculate(){
+  const jeonseDeposit=parseFloat($('jeonseDeposit').value)||0;
+  const jeonseLoan=parseFloat($('jeonseLoan').value)||0;
+  const jeonseLoanRate=(parseFloat($('jeonseLoanRate').value)||0)/100;
+  const wolseDeposit=parseFloat($('wolseDeposit').value)||0;
+  const wolseMonthly=parseFloat($('wolseMonthly').value)||0;
+  const oppRate=(parseFloat($('oppRate').value)||0)/100;
+
+  // 전세: 대출이자(월) + 내돈(전세보증금-대출) 기회비용(월)
+  const jeonseLoanInterestM = jeonseLoan*jeonseLoanRate/12;
+  const jeonseOwnMoney = Math.max(0, jeonseDeposit - jeonseLoan);
+  const jeonseOppM = jeonseOwnMoney*oppRate/12;
+  const jeonseTotal = jeonseLoanInterestM + jeonseOppM;
+
+  // 월세: 월세 + 월세보증금 기회비용(월)
+  const wolseOppM = wolseDeposit*oppRate/12;
+  const wolseTotal = wolseMonthly + wolseOppM;
+
+  $('jeonseCost').textContent = fmt(jeonseTotal)+'원';
+  $('wolseCost').textContent = fmt(wolseTotal)+'원';
+  $('r_wolse').textContent = fmt(wolseMonthly);
+  $('r_loanInt').textContent = fmt(jeonseLoanInterestM);
+  $('r_jeonseOpp').textContent = fmt(jeonseOppM);
+  $('r_wolseOpp').textContent = fmt(wolseOppM);
+  $('r_jeonseTotal').textContent = fmt(jeonseTotal);
+  $('r_wolseTotal').textContent = fmt(wolseTotal);
+
+  const diff = wolseTotal - jeonseTotal;
+  const v=$('verdict');
+  $('jeonseCard').classList.toggle('win', jeonseTotal<wolseTotal);
+  $('wolseCard').classList.toggle('win', wolseTotal<jeonseTotal);
+  if(Math.abs(diff)<30000){
+    v.className='verdict-hero even';
+    $('verdictText').textContent='⚖️ 비슷함';
+    $('verdictDetail').innerHTML=`월 부담이 거의 같아요 (차이 ${fmt(Math.abs(diff))}원). 보증금 회수·위험을 더 따져보세요.`;
+  } else if(diff>0){
+    v.className='verdict-hero jeonse';
+    $('verdictText').textContent='🏢 전세가 유리';
+    $('verdictDetail').innerHTML=`전세가 월 <b>${fmt(diff)}원</b> 덜 나가요. 연 ${fmt(diff*12)}원 차이.`;
+  } else {
+    v.className='verdict-hero wolse';
+    $('verdictText').textContent='🏠 월세가 유리';
+    $('verdictDetail').innerHTML=`월세가 월 <b>${fmt(Math.abs(diff))}원</b> 덜 나가요. 연 ${fmt(Math.abs(diff)*12)}원 차이.`;
+  }
+
+  // (098) 금액칸 아래 표시는 common.js data-won이 함
+}
+
+document.querySelectorAll('input').forEach(el=>el.addEventListener('input', calculate));
+// 상태 저장/복원 (input + select)
+function jwGetState(){
+  const s={};
+  
+  document.querySelectorAll('input[id], select[id]').forEach(el=>{ s[el.id]=el.value; });
+  return s;
+}
+function jwSetState(d){
+  if(!d) return;
+  
+  document.querySelectorAll('input[id], select[id]').forEach(el=>{ if(d[el.id]!==undefined) el.value=d[el.id]; });
+  calculate();
+}
+function jwSaveLocal(){ try{ localStorage.setItem('sf_jw_state_v1', JSON.stringify(jwGetState())); }catch(e){} }
+function jwLoadLocal(){ try{ const r=localStorage.getItem('sf_jw_state_v1'); if(r) jwSetState(JSON.parse(r)); }catch(e){} }
+document.querySelectorAll('input, select').forEach(el=>el.addEventListener('input', jwSaveLocal));
+document.querySelectorAll('select').forEach(el=>el.addEventListener('change', jwSaveLocal));
+window.jwGetState=jwGetState; window.jwSetState=jwSetState;
+jwLoadLocal();
+calculate();
+</script>
+
+
+
+
+</body>
+</html>

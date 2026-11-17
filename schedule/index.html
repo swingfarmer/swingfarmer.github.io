@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>일정표 | 스윙파머</title>
+<meta name="description" content="투자·개인 일정을 한 곳에. 달력 모드와 리스트 모드, 카테고리 색상 구분, 완료 체크. 실적발표·배당락·약속 등 주요 일정 관리.">
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark header{background-color:#1e242e!important}
+body.sf-dark .mode-btn{background-color:#1e242e!important;color:#85b5e0!important;border-color:#2c333f!important}
+body.sf-dark .cal-nav button{background-color:#182534!important;color:#85b5e0!important}
+body.sf-dark .cal-nav .cal-title{color:#85b5e0!important}
+body.sf-dark .today-btn{background-color:#152437!important;color:#85b5e0!important;border-color:#264873!important}
+body.sf-dark .calendar{background-color:#1e242e!important}
+body.sf-dark .cal-cell{background-color:#1d2630!important}
+body.sf-dark .cal-cell:hover{background-color:#152437!important}
+body.sf-dark .cal-cell.today{background-color:#152437!important}
+body.sf-dark .cal-daynum{color:#cccccc!important}
+body.sf-dark .filter-chip{border-color:#2c333f!important;background-color:#1e242e!important}
+body.sf-dark .list-item{background-color:#1e242e!important}
+body.sf-dark .list-check{border-color:#384b61!important}
+body.sf-dark .list-date b{color:#dedede!important}
+body.sf-dark .add-btn{background-color:#152637!important;color:#85b5e0!important}
+body.sf-dark .modal-box{background-color:#1e242e!important}
+body.sf-dark .btn-cancel{background-color:#232a35!important;color:#cccccc!important}
+body.sf-dark .btn-delete{background-color:#371515!important}
+body.sf-dark .mode-btn.active{background:#1F4E78!important;color:white!important;border-color:#1F4E78!important}
+body.sf-dark .cal-cell.sun .cal-daynum{color:#dc2626!important}
+body.sf-dark .filter-chip.active{background:#1F4E78!important;border-color:#1F4E78!important}
+body.sf-dark .list-item.done .list-check{border-color:#16a34a!important}
+</style>
+<style>
+:root { --sf-max-w: 820px; }
+header { background: var(--sf-surface); border-bottom: 3px solid var(--sf-brand); padding: 18px 16px; }
+header .wrap { padding: 0; }
+header h1 { font-size: 20px; color: var(--sf-brand); margin: 0; border-bottom: none; }
+header .back-link { display: inline-block; margin-bottom: 6px; }
+  /* 모드 토글 */
+  .mode-toggle { display: flex; gap: 6px; margin-bottom: 14px; }
+  .mode-btn { flex: 1; padding: 10px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; background: white; color: #1F4E78; border: 2px solid #e5e7eb; text-align: center; }
+  .mode-btn.active { background: #1F4E78; color: white; border-color: #1F4E78; }
+  /* 달력 네비 */
+  .cal-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 14px; }
+  .cal-nav button { background: #eef2f7; border: none; width: 38px; height: 38px; border-radius: 9px; font-size: 18px; cursor: pointer; color: #1F4E78; }
+  .cal-nav .cal-title { font-size: 18px; font-weight: 800; color: #1F4E78; min-width: 150px; text-align: center; }
+  .today-btn { font-size: 12px; padding: 6px 12px; border-radius: 7px; background: #eff6ff; color: #1F4E78; border: 1px solid #bfdbfe; cursor: pointer; font-weight: 600; }
+  /* 달력 그리드 */
+  .calendar { background: white; border-radius: 12px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 14px; }
+  .cal-weekdays { display: grid; grid-template-columns: repeat(7,1fr); margin-bottom: 6px; }
+  .cal-weekday { text-align: center; font-size: 11.5px; font-weight: 700; color: #888; padding: 4px 0; }
+  .cal-weekday.sun { color: #dc2626; } .cal-weekday.sat { color: #2563eb; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
+  .cal-cell { min-height: 62px; border-radius: 7px; padding: 4px; cursor: pointer; border: 1px solid transparent; transition: all .1s; background: #fafbfc; }
+  .cal-cell:hover { background: #eff6ff; }
+  .cal-cell.other-month { opacity: .35; }
+  .cal-cell.today { border-color: #1F4E78; background: #eff6ff; }
+  .cal-daynum { font-size: 12px; font-weight: 600; color: #555; }
+  .cal-cell.sun .cal-daynum { color: #dc2626; } .cal-cell.sat .cal-daynum { color: #2563eb; }
+  .cal-events { margin-top: 2px; display: flex; flex-direction: column; gap: 2px; }
+  .cal-ev { font-size: 9.5px; padding: 1px 4px; border-radius: 3px; color: white; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4; }
+  .cal-ev.done { opacity: .5; text-decoration: line-through; }
+  .cal-more { font-size: 9px; color: #888; padding-left: 4px; }
+  /* 리스트 모드 */
+  .list-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .filter-chip { font-size: 12px; padding: 5px 12px; border-radius: 20px; border: 1px solid #ddd; background: white; cursor: pointer; font-weight: 600; }
+  .filter-chip.active { background: #1F4E78; color: white; border-color: #1F4E78; }
+  .list-group { margin-bottom: 16px; }
+  .list-item { display: flex; align-items: center; gap: 10px; background: white; border-radius: 10px; padding: 11px 13px; margin-bottom: 7px; box-shadow: 0 1px 2px rgba(0,0,0,.04); border-left: 4px solid #ccc; }
+  .list-item.done { opacity: .55; }
+  .list-check { width: 24px; height: 24px; border: 2px solid #cbd5e1; border-radius: 7px; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; color: white; }
+  .list-item.done .list-check { background: #16a34a; border-color: #16a34a; }
+  .list-date { font-size: 12px; color: #888; width: 56px; flex-shrink: 0; text-align: center; line-height: 1.3; }
+  .list-date b { display: block; font-size: 17px; color: #333; }
+  .list-title { font-size: 14px; font-weight: 600; }
+  .list-item.done .list-title { text-decoration: line-through; }
+  .list-memo { font-size: 11.5px; color: #999; margin-top: 1px; }
+  .list-cat { font-size: 10px; padding: 1px 7px; border-radius: 4px; color: white; flex-shrink: 0; }
+  .list-dday { font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .list-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 16px; flex-shrink: 0; }
+  .list-del:hover { color: #dc2626; }
+  .empty { text-align: center; color: #bbb; font-size: 13px; padding: 30px; }
+  /* FAB */
+  .add-btn { display: block; width: 100%; padding: 10px; margin-bottom: 14px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; background: #eef4fa; color: #1F4E78; border: 2px dashed #9db8d3; }
+  body.sf-dark .add-btn { border-color: #35506b !important; }
+  /* 모달 */
+  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
+  .modal.show { display: flex; }
+  .modal-box { background: white; border-radius: 16px; max-width: 420px; width: 100%; padding: 20px; max-height: 90vh; overflow:auto; }
+  .modal-box h3 { font-size: 16px; color: #1F4E78; margin-bottom: 16px; }
+  .field { margin-bottom: 12px; }
+  .field input, .field textarea, .field select { width: 100%; padding: 9px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; font-family: inherit; }
+  .field input:focus, .field textarea:focus { outline: 2px solid #1F4E78; }
+  .cat-picker { display: flex; gap: 6px; flex-wrap: wrap; }
+  .cat-opt { padding: 6px 12px; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; color: white; opacity: .45; border: 2px solid transparent; }
+  .cat-opt.sel { opacity: 1; border-color: #1a1a1a; }
+  .modal-btns { display: flex; gap: 8px; margin-top: 18px; }
+  .modal-btns button { flex: 1; padding: 11px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; border: none; }
+  .btn-save { background: #1F4E78; color: white; }
+  .btn-cancel { background: #e5e7eb; color: #555; }
+  .btn-delete { background: #fee2e2; color: #dc2626; flex: 0 0 auto !important; padding: 11px 16px !important; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .btn { border: none; border-radius: 6px; padding: 9px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .btn-blue { background: #1F4E78; color: white; } .btn-green { background: #10b981; color: white; } .btn-gray { background: #9ca3af; color: white; }
+  footer { text-align: center; margin-top: 30px; color: #999; font-size: 12px; }
+/* (098) 다크 글자색 — 라이트 색(빨강·파랑·갈색·초록·남색)이 어두운 배경에서 안 읽히던 것 */
+body.sf-dark .cal-cell.sat .cal-daynum{color:#60a5fa}
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>📅 일정표</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc">투자·개인 주요 일정을 한 곳에. <b>달력</b>으로 한눈에 보고, <b>리스트</b>로 다가오는 일정을 확인하세요. 카테고리 색상으로 구분하고 완료를 체크할 수 있어요.</p>
+
+
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="modeCalBtn" onclick="setMode('cal')">📅 달력</button>
+    <button class="mode-btn" id="modeListBtn" onclick="setMode('list')">📋 리스트</button>
+  </div>
+  <button class="add-btn" onclick="openAdd()">＋ 일정 추가</button>
+
+  <label style="display:flex;align-items:center;gap:8px;background:white;border-radius:10px;padding:10px 14px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;font-size:13px;font-weight:600;color:#1F4E78">
+    <input type="checkbox" id="econToggle" onchange="toggleEcon()" style="width:18px;height:18px">
+    📈 경제지표 자동 표시 <span style="font-size:11px;color:#888;font-weight:400">(마녀의날·CPI·FOMC·옵션만기 등)</span>
+  </label>
+
+  <label style="display:flex;align-items:center;gap:8px;background:white;border-radius:10px;padding:10px 14px;margin-bottom:6px;box-shadow:0 1px 3px rgba(0,0,0,.06);cursor:pointer;font-size:13px;font-weight:600;color:#b45309">
+    <input type="checkbox" id="taxToggle" onchange="toggleTax()" style="width:18px;height:18px">
+    🧾 세금 일정 자동 표시 <span style="font-size:11px;color:#888;font-weight:400">(원천세·부가세·법인세·세금계산서 등)</span>
+  </label>
+  <div id="taxNote" style="display:none;font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;margin-bottom:14px;line-height:1.6">
+    ⚠️ 주말이면 다음 영업일로 자동 보정되지만, <b>공휴일(빨간날)은 반영되지 않습니다.</b> 신고일이 공휴일이면 실제 기한은 더 밀릴 수 있어요. 12월 결산 법인 기준이며, 큰 신고는 홈택스에서 확인하세요.
+  </div>
+
+  <!-- 오늘/이번주 요약 위젯 -->
+  <div id="summaryWidget" style="background:linear-gradient(135deg,#1F4E78,#2d6da3);color:white;border-radius:12px;padding:14px 16px;margin-bottom:14px;font-size:13px;line-height:1.6"></div>
+
+  <!-- 달력 모드 -->
+  <div id="calMode">
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <button class="mode-btn active" id="viewMonthBtn" onclick="setView('month')" style="padding:7px;font-size:13px">월</button>
+      <button class="mode-btn" id="viewWeekBtn" onclick="setView('week')" style="padding:7px;font-size:13px">주</button>
+    </div>
+    <div class="cal-nav">
+      <button onclick="movePeriod(-1)">‹</button>
+      <span class="cal-title" id="calTitle">-</span>
+      <button onclick="movePeriod(1)">›</button>
+    </div>
+    <div style="text-align:center;margin-bottom:10px"><button class="today-btn" onclick="goToday()">오늘로</button></div>
+    <div class="calendar">
+      <div class="cal-weekdays">
+        <div class="cal-weekday sun">일</div><div class="cal-weekday">월</div><div class="cal-weekday">화</div><div class="cal-weekday">수</div><div class="cal-weekday">목</div><div class="cal-weekday">금</div><div class="cal-weekday sat">토</div>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+    <!-- 범례 -->
+    <div id="calLegend" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;padding:10px 12px;background:white;border-radius:10px;font-size:11px;color:#666;box-shadow:0 1px 3px rgba(0,0,0,.06)"></div>
+  </div>
+
+  <!-- 리스트 모드 -->
+  <div id="listMode" style="display:none">
+    <div class="list-filters" id="listFilters"></div>
+    <div id="listContent"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-green" onclick="saveJson()">💾 내보내기</button>
+    <label class="btn btn-blue" style="cursor:pointer">📂 불러오기<input type="file" id="fileLoad" accept=".json" style="display:none" onchange="loadJson(event)"></label>
+    <button class="btn btn-gray" onclick="manageCats()">🏷️ 카테고리</button>
+  </div>
+
+  <footer>© 스윙파머</footer>
+</div>
+
+
+<!-- 일정 추가/수정 모달 -->
+<div class="modal" id="evModal">
+  <div class="modal-box">
+    <h3 id="modalTitle">일정 추가</h3>
+    <div class="field">
+      <label>날짜</label>
+      <input type="date" id="evDate">
+    </div>
+    <div class="field">
+      <label>제목</label>
+      <input type="text" id="evTitle" placeholder="예: 대한항공 2Q 실적발표" maxlength="60">
+    </div>
+    <div class="field">
+      <label>카테고리</label>
+      <div class="cat-picker" id="catPicker"></div>
+    </div>
+    <div class="field">
+      <label>반복</label>
+      <select id="evRepeat">
+        <option value="none">반복 없음</option>
+        <option value="weekly">매주</option>
+        <option value="monthly">매월 (같은 날짜)</option>
+        <option value="yearly">매년</option>
+      </select>
+      <div style="font-size:11px;color:#999;margin-top:3px">반복은 표시만 됩니다. 개별 완료 체크는 안 돼요.</div>
+    </div>
+    <div class="field">
+      <label>메모 (선택)</label>
+      <textarea id="evMemo" rows="2" placeholder="상세 내용" maxlength="200"></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-delete" id="delBtn" onclick="deleteEvent()" style="display:none">삭제</button>
+      <button class="btn-cancel" onclick="closeModal()">취소</button>
+      <button class="btn-save" onclick="saveEvent()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 카테고리 관리 모달 -->
+<div class="modal" id="catModal">
+  <div class="modal-box">
+    <h3>🏷️ 카테고리 관리</h3>
+    <div id="catManageList"></div>
+    <div style="display:flex;gap:6px;margin-top:12px">
+      <input type="text" id="newCatName" placeholder="새 카테고리" maxlength="12" style="flex:1;padding:9px;border:1px solid #ccc;border-radius:8px;font-size:13px">
+      <input type="color" id="newCatColor" value="#1F4E78" style="width:44px;height:40px;border:1px solid #ccc;border-radius:8px;cursor:pointer">
+      <button onclick="addCat()" style="background:#1F4E78;color:white;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer">추가</button>
+    </div>
+    <div class="modal-btns"><button class="btn-cancel" onclick="$('catModal').classList.remove('show')">닫기</button></div>
+  </div>
+</div>
+
+
+
+<script>
+window.CALC_KEY = 'schedule';
+window.slGetState = function(){ return window.scGetState ? window.scGetState() : {}; };
+window.slSetState = function(d){ if(window.scSetState) window.scSetState(d); };
+</script>
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+<script>
+const $ = id => document.getElementById(id);
+const STORE_KEY = 'sf_schedule_v2';
+const WEEK = ['일','월','화','수','목','금','토'];
+
+let events = []; // {id, date:'YYYY-MM-DD', title, cat, memo, done}
+let categories = []; // {name, color}
+let viewDate = new Date();
+let calView = 'month'; // month | week
+let mode = 'cal';
+let editingId = null;
+let pickedCat = '';
+let listFilter = 'all';
+let showEcon = false; // 경제지표 표시 여부
+let showTax = false; // 세금 일정 표시 여부
+
+// === 경제지표 자동 생성 ===
+// N번째 특정요일 날짜 구하기 (year, month0, weekday0=일~6, nth=1~4)
+function nthWeekday(y, m, weekday, nth){
+  const first=new Date(y,m,1); const firstDow=first.getDay();
+  let day = 1 + ((weekday - firstDow + 7)%7) + (nth-1)*7;
+  return new Date(y, m, day);
+}
+function fmtD(d){ return sfDate(d); }
+
+// 특정 연·월의 경제지표 일정 생성
+function genEconForMonth(y, m){
+  const list = [];
+  // 1=월요일 기준 아님, 0=일 1=월 2=화 3=수 4=목 5=금 6=토
+  // NFP 미국 고용보고서: 첫째 주 금요일 (확실)
+  list.push({ date: fmtD(nthWeekday(y,m,5,1)), title:'미국 고용보고서(NFP)', cat:'__econ_sure', memo:'매월 첫째 주 금요일' });
+  // 미국 CPI: 둘째 주 화요일 근처 (예상)
+  list.push({ date: fmtD(nthWeekday(y,m,2,2)), title:'미국 CPI (예상)', cat:'__econ_est', memo:'보통 둘째 주 화요일~, 실제 10~15일 사이 변동' });
+  // PPI: CPI 다음날(수) 근처 (예상)
+  list.push({ date: fmtD(nthWeekday(y,m,3,2)), title:'미국 PPI (예상)', cat:'__econ_est', memo:'보통 CPI 다음날 전후' });
+  // 미국 옵션만기: 셋째 주 금요일 (확실)
+  list.push({ date: fmtD(nthWeekday(y,m,5,3)), title:'미국 옵션만기', cat:'__econ_sure', memo:'매월 셋째 주 금요일' });
+  // 네 마녀의 날: 3·6·9·12월 둘째 주 목요일 (한국, 확실)
+  if([2,5,8,11].includes(m)){
+    list.push({ date: fmtD(nthWeekday(y,m,4,2)), title:'네 마녀의 날 (선물·옵션 동시만기)', cat:'__econ_sure', memo:'3·6·9·12월 둘째 주 목요일 (한국)' });
+  }
+  // FOMC: 분기말 대표월 (1·3·4·6·7·9·10·12월 중 점도표는 3·6·9·12) — 예상
+  // 간단히 3·6·9·12월 셋째 주 수요일로 표기 (예상)
+  if([2,5,8,11].includes(m)){
+    list.push({ date: fmtD(nthWeekday(y,m,3,3)), title:'FOMC 금리결정 (예상·점도표)', cat:'__econ_est', memo:'분기말, 실제 일정은 연준 공지 확인' });
+  }
+  return list;
+}
+
+// 보이는 범위(앞뒤 3개월)의 경제지표 생성
+function getEconEvents(centerDate){
+  let out=[];
+  for(let off=-2; off<=2; off++){
+    const d=new Date(centerDate.getFullYear(), centerDate.getMonth()+off, 1);
+    out = out.concat(genEconForMonth(d.getFullYear(), d.getMonth()));
+  }
+  return out.map((e,i)=>({ ...e, id:'econ_'+e.date+'_'+i, done:false, isEcon:true }));
+}
+function econColor(cat){ return cat==='__econ_sure' ? '#0891b2' : '#94a3b8'; } // 확실=청록, 예상=회색
+
+// === 세금 일정 자동 생성 ===
+// 주말이면 다음 영업일(월)로 미루기
+function nextBizDay(d){
+  const x=new Date(d);
+  while(x.getDay()===0 || x.getDay()===6) x.setDate(x.getDate()+1);
+  return x;
+}
+function taxDate(y,m,day){ return fmtD(nextBizDay(new Date(y,m,day))); }
+
+// 특정 연·월의 세금 일정 생성
+function genTaxForMonth(y, m){
+  const list=[];
+  const M = m+1; // 1~12
+  // 매월 공통: 원천세 신고·납부 (다음달 10일 → 이 달 10일이 '전월분')
+  list.push({ date: taxDate(y,m,10), title:'원천세 신고·납부', cat:'__tax', memo:'전월 급여 원천징수분, 매월 10일 (주말이면 다음 영업일)' });
+  // 매월: 전월분 전자세금계산서 발행 기한 (다음달 10일)
+  list.push({ date: taxDate(y,m,10), title:'전자세금계산서 발행기한', cat:'__tax', memo:'전월 매출분, 다음달 10일까지' });
+  // 부가세
+  if(M===1) list.push({ date: taxDate(y,m,25), title:'부가세 2기 확정신고', cat:'__tax_big', memo:'전년 하반기(7~12월), 1/25 (개인·법인 공통 확정)' });
+  if(M===4) list.push({ date: taxDate(y,m,25), title:'부가세 1기 예정신고/고지', cat:'__tax', memo:'법인 예정신고·개인 예정고지, 4/25' });
+  if(M===7) list.push({ date: taxDate(y,m,25), title:'부가세 1기 확정신고', cat:'__tax_big', memo:'상반기(1~6월), 7/25' });
+  if(M===10) list.push({ date: taxDate(y,m,25), title:'부가세 2기 예정신고/고지', cat:'__tax', memo:'법인 예정신고·개인 예정고지, 10/25' });
+  // 법인세 (12월 결산 기준 3/31)
+  if(M===3) list.push({ date: taxDate(y,m,31), title:'법인세 신고·납부', cat:'__tax_big', memo:'12월 결산법인, 사업연도 종료 후 3개월(3/31)' });
+  // 종합소득세 (5월)
+  if(M===5) list.push({ date: taxDate(y,m,31), title:'종합소득세 신고·납부', cat:'__tax_big', memo:'전년 귀속, 5/31' });
+  // 간이지급명세서 (반기: 1월·7월 말) - 간단 표기
+  if(M===1 || M===7) list.push({ date: taxDate(y,m,31), title:'간이지급명세서 제출', cat:'__tax', memo:'반기별(상용근로·거주자 사업소득)' });
+  return list;
+}
+function getTaxEvents(centerDate){
+  let out=[];
+  for(let off=-2; off<=2; off++){
+    const d=new Date(centerDate.getFullYear(), centerDate.getMonth()+off, 1);
+    out = out.concat(genTaxForMonth(d.getFullYear(), d.getMonth()));
+  }
+  return out.map((e,i)=>({ ...e, id:'tax_'+e.date+'_'+i, done:false, isTax:true }));
+}
+function taxColor(cat){ return cat==='__tax_big' ? '#b45309' : '#d97706'; } // 큰 신고=진한주황, 일반=주황
+
+const DEFAULT_CATS = [
+  { name:'실적', color:'#dc2626' },
+  { name:'배당', color:'#16a34a' },
+  { name:'금리/지표', color:'#f59e0b' },
+  { name:'부동산', color:'#8b5cf6' },
+  { name:'개인', color:'#1F4E78' }
+];
+
+function load(){
+  try{ const raw=localStorage.getItem(STORE_KEY); if(raw){ const d=JSON.parse(raw); events=d.events||[]; categories=d.categories||[]; showEcon=d.showEcon||false; showTax=d.showTax||false; } }catch(e){}
+  if(categories.length===0) categories=JSON.parse(JSON.stringify(DEFAULT_CATS));
+}
+function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify({events, categories, showEcon, showTax})); }catch(e){} }
+function toggleEcon(){ showEcon=$('econToggle').checked; save(); render(); }
+function toggleTax(){ showTax=$('taxToggle').checked; $('taxNote').style.display=showTax?'block':'none'; save(); render(); }
+
+function catColor(name){ const c=categories.find(x=>x.name===name); return c?c.color:'#9ca3af'; }
+function todayStr(){ return sfDate(); }   // (106) 표기는 sf-fmt.js
+function fmtDate(d){ return sfDate(d); }
+
+function setMode(m){
+  mode=m;
+  $('modeCalBtn').classList.toggle('active', m==='cal');
+  $('modeListBtn').classList.toggle('active', m==='list');
+  $('calMode').style.display = m==='cal'?'block':'none';
+  $('listMode').style.display = m==='list'?'block':'none';
+  render();
+}
+function moveMonth(d){ viewDate.setMonth(viewDate.getMonth()+d); render(); }
+function goToday(){ viewDate=new Date(); render(); }
+function setView(v){
+  calView=v;
+  $('viewMonthBtn').classList.toggle('active', v==='month');
+  $('viewWeekBtn').classList.toggle('active', v==='week');
+  render();
+}
+function movePeriod(d){
+  if(calView==='week') viewDate.setDate(viewDate.getDate()+d*7);
+  else viewDate.setMonth(viewDate.getMonth()+d);
+  render();
+}
+
+function render(){ if(mode==='cal') renderCalendar(); else renderList(); renderSummary(); }
+
+// 반복 일정이 특정 날짜에 발생하는지 판정 → 발생하면 그 날짜용 가상 이벤트 반환(없으면 null)
+function repeatOccurrence(ev, dateStr){
+  if(!ev.repeat || ev.repeat==='none') return null;
+  const start=new Date(ev.date), target=new Date(dateStr);
+  if(target<start) return null;
+  if(ev.date===dateStr) return null; // 원본날은 따로 처리
+  let hit=false;
+  if(ev.repeat==='weekly'){ hit = (start.getDay()===target.getDay()); }
+  else if(ev.repeat==='monthly'){ hit = (start.getDate()===target.getDate()); }
+  else if(ev.repeat==='yearly'){ hit = (start.getDate()===target.getDate() && start.getMonth()===target.getMonth()); }
+  if(!hit) return null;
+  return { ...ev, id:ev.id+'__r_'+dateStr, date:dateStr, isRepeat:true, baseId:ev.id, done:false };
+}
+// 특정 날짜의 유저 이벤트 (반복 전개 포함)
+function userEventsOn(dateStr){
+  let arr = events.filter(e=>e.date===dateStr);
+  events.forEach(e=>{ const r=repeatOccurrence(e,dateStr); if(r) arr.push(r); });
+  return arr;
+}
+
+// 특정 날짜의 모든 이벤트(유저+토글된 지표/세금) 모으기
+function eventsOn(dateStr){
+  const center = new Date(dateStr);
+  let arr = userEventsOn(dateStr);
+  if(showEcon) arr = arr.concat(getEconEvents(center).filter(e=>e.date===dateStr));
+  if(showTax) arr = arr.concat(getTaxEvents(center).filter(e=>e.date===dateStr));
+  return arr;
+}
+// 자동(지표/세금) 이벤트를 id로 찾기 (클릭 상세용)
+function findAutoEvent(id){
+  const all = getEconEvents(viewDate).concat(getTaxEvents(viewDate))
+    .concat(getEconEvents(new Date())).concat(getTaxEvents(new Date()));
+  return all.find(e=>e.id===id);
+}
+// 자동 이벤트 상세 팝업
+function showAutoDetail(id){
+  const e = findAutoEvent(id);
+  if(!e) return;
+  const typeLabel = e.isEcon ? (e.cat==='__econ_est'?'경제지표 (예상)':'경제지표') : '세금 일정';
+  alert('📌 '+e.title+'\n\n['+typeLabel+']\n날짜: '+e.date+'\n'+(e.memo||''));
+}
+
+// 오늘/이번주 요약 위젯 (+ 임박 D-day)
+function renderSummary(){
+  const box=$('summaryWidget'); if(!box) return;
+  const today=todayStr();
+  const todayEvs = eventsOn(today);
+  // 앞으로 7일 내 (오늘 제외) 임박 일정
+  const upcoming=[];
+  for(let i=1;i<=7;i++){
+    const d=new Date(); d.setDate(d.getDate()+i);
+    eventsOn(fmtDate(d)).forEach(e=> upcoming.push({...e, dday:i}));
+  }
+  let html = `<div style="font-size:12px;opacity:.85;margin-bottom:4px">📍 오늘 (${today})</div>`;
+  if(todayEvs.length>0){
+    html += `<div style="font-weight:700;font-size:15px">${todayEvs.map(e=>e.title).slice(0,3).join(' · ')}${todayEvs.length>3?' 외 '+(todayEvs.length-3)+'건':''}</div>`;
+  } else {
+    html += `<div style="font-weight:600;font-size:14px;opacity:.8">오늘 일정 없음</div>`;
+  }
+  if(upcoming.length>0){
+    const u=upcoming.slice(0,3).map(e=>`<span style="background:rgba(255,255,255,.2);padding:1px 7px;border-radius:10px;white-space:nowrap"><b>D-${e.dday}</b> ${e.title}</span>`).join(' ');
+    html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.25);font-size:12px;opacity:.95"><span style="opacity:.8">⏳ 다가오는 일정 (7일내)</span><br><div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap">${u}${upcoming.length>3?'<span style="opacity:.7;padding:1px 4px">외 '+(upcoming.length-3)+'건</span>':''}</div></div>`;
+  } else {
+    html += `<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.25);font-size:12px;opacity:.7">⏳ 7일 내 일정 없음</div>`;
+  }
+  box.innerHTML = html;
+}
+
+function buildCell(c, today, econ, tax){
+  const dow=new Date(c.date).getDay();
+  const userEv=userEventsOn(c.date).sort((a,b)=>(a.done?1:0)-(b.done?1:0));
+  const econEv=econ.filter(e=>e.date===c.date);
+  const taxEv=tax.filter(e=>e.date===c.date);
+  const dayEvents=userEv.concat(econEv).concat(taxEv);
+  const limit = calView==='week' ? 8 : 3;
+  const shown=dayEvents.slice(0,limit);
+  const more=dayEvents.length-shown.length;
+  const evHtml=shown.map(e=>{
+    let col, style, click;
+    if(e.isEcon){ col=econColor(e.cat); style=`background:${col};${e.cat==='__econ_est'?'border:1px dashed rgba(255,255,255,.6)':''}`; click=`event.stopPropagation();showAutoDetail('${e.id}')`; }
+    else if(e.isTax){ col=taxColor(e.cat); style=`background:${col}`; click=`event.stopPropagation();showAutoDetail('${e.id}')`; }
+    else { col=catColor(e.cat); style=`background:${col}`; click=`event.stopPropagation();openEdit('${e.baseId||e.id}')`; }
+    const rep = e.isRepeat ? '🔁' : '';
+    return `<div class="cal-ev ${e.done?'done':''}" style="${style}" onclick="${click}">${rep}${e.title.replace(/</g,'&lt;')}</div>`;
+  }).join('') + (more>0?`<div class="cal-more">+${more}</div>`:'');
+  return `<div class="cal-cell ${c.other?'other-month':''} ${c.date===today?'today':''} ${dow===0?'sun':''} ${dow===6?'sat':''}" style="${calView==='week'?'min-height:120px':''}" onclick="openAddFor('${c.date}')">
+    <div class="cal-daynum">${c.day}${calView==='week'?' <span style="font-size:10px;color:#aaa">'+WEEK[dow]+'</span>':''}</div>
+    <div class="cal-events">${evHtml}</div>
+  </div>`;
+}
+
+function renderCalendar(){
+  const today=todayStr();
+  const econ = showEcon ? getEconEvents(viewDate) : [];
+  const tax = showTax ? getTaxEvents(viewDate) : [];
+  let cells=[];
+
+  if(calView==='week'){
+    // 주간: viewDate가 속한 주(일~토)
+    const base=new Date(viewDate); base.setDate(base.getDate()-base.getDay());
+    for(let i=0;i<7;i++){ const d=new Date(base); d.setDate(base.getDate()+i); cells.push({day:d.getDate(), other:false, date:fmtDate(d)}); }
+    const endD=new Date(base); endD.setDate(base.getDate()+6);
+    $('calTitle').textContent = (base.getMonth()+1)+'/'+base.getDate()+' ~ '+(endD.getMonth()+1)+'/'+endD.getDate();
+  } else {
+    const y=viewDate.getFullYear(), m=viewDate.getMonth();
+    $('calTitle').textContent = y+'년 '+(m+1)+'월';
+    const startDay=new Date(y,m,1).getDay();
+    const daysInMonth=new Date(y,m+1,0).getDate();
+    const prevDays=new Date(y,m,0).getDate();
+    for(let i=startDay-1;i>=0;i--) cells.push({day:prevDays-i, other:true, date:fmtDate(new Date(y,m-1,prevDays-i))});
+    for(let d=1;d<=daysInMonth;d++) cells.push({day:d, other:false, date:fmtDate(new Date(y,m,d))});
+    // 마지막 날이 포함된 주의 토요일까지 채움
+    let next=1; while(cells.length%7!==0){ cells.push({day:next, other:true, date:fmtDate(new Date(y,m+1,next))}); next++; }
+    // 마지막 날이 토요일이면(=다음달 칸이 안 붙음) 다음 주 한 줄을 더 보여줌
+    const lastDow = new Date(y,m,daysInMonth).getDay();
+    if(lastDow===6){ for(let k=0;k<7;k++){ cells.push({day:next, other:true, date:fmtDate(new Date(y,m+1,next))}); next++; } }
+  }
+
+  $('calGrid').innerHTML = cells.map(c=>buildCell(c, today, econ, tax)).join('');
+  renderLegend();
+}
+
+function renderLegend(){
+  const box=$('calLegend'); if(!box) return;
+  let items=[];
+  // 카테고리
+  categories.forEach(c=> items.push(`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:${c.color}"></span>${c.name}</span>`));
+  if(showEcon){ items.push(`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:#0891b2"></span>📈 지표</span>`); items.push(`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:#94a3b8;border:1px dashed #666"></span>예상</span>`); }
+  if(showTax){ items.push(`<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:3px;background:#b45309"></span>🧾 세금</span>`); }
+  box.innerHTML = '<span style="font-weight:700;color:#888">범례:</span> ' + items.join(' ');
+}
+
+function renderList(){
+  // 필터칩
+  $('listFilters').innerHTML = `<div class="filter-chip ${listFilter==='all'?'active':''}" onclick="setFilter('all')">전체</div>` +
+    categories.map(c=>`<div class="filter-chip ${listFilter===c.name?'active':''}" onclick="setFilter('${c.name}')" style="${listFilter===c.name?'background:'+c.color+';border-color:'+c.color:''}">${c.name}</div>`).join('');
+
+  const today=todayStr();
+  // 경제지표/세금 합치기 (토글 시, 전체 필터일 때만)
+  let allEvents = events.slice();
+  // 반복 일정 전개 (오늘부터 90일)
+  events.forEach(e=>{
+    if(e.repeat && e.repeat!=='none'){
+      for(let i=0;i<=90;i++){ const d=new Date(); d.setDate(d.getDate()+i); const r=repeatOccurrence(e, fmtDate(d)); if(r) allEvents.push(r); }
+    }
+  });
+  if(listFilter==='all'){
+    if(showEcon) allEvents = allEvents.concat(getEconEvents(new Date()));
+    if(showTax) allEvents = allEvents.concat(getTaxEvents(new Date()));
+  }
+  let evs = allEvents.filter(e=> listFilter==='all' || e.cat===listFilter);
+  evs.sort((a,b)=> a.date<b.date?-1:a.date>b.date?1:0);
+
+  const upcoming = evs.filter(e=>e.date>=today);
+  const past = evs.filter(e=>e.date<today).reverse();
+
+  if(evs.length===0){ $('listContent').innerHTML='<div class="empty">일정이 없어요. + 버튼으로 추가하세요.</div>'; return; }
+
+  let html='';
+  if(upcoming.length>0){ html += groupByMonth(upcoming, today); }
+  if(past.length>0){
+    html += `<div class="list-month-label" style="color:#aaa;margin-top:20px">지난 일정</div>`;
+    html += past.map(e=>listItemHtml(e, today)).join('');
+  }
+  $('listContent').innerHTML = html;
+}
+
+function groupByMonth(evs, today){
+  const groups={};
+  evs.forEach(e=>{ const ym=e.date.slice(0,7); (groups[ym]=groups[ym]||[]).push(e); });
+  return Object.keys(groups).sort().map(ym=>{
+    const [y,m]=ym.split('-');
+    return `<div class="list-group"><div class="list-month-label">${y}년 ${parseInt(m)}월</div>` +
+      groups[ym].map(e=>listItemHtml(e,today)).join('') + `</div>`;
+  }).join('');
+}
+
+function listItemHtml(e, today){
+  const d=new Date(e.date);
+  const dday = Math.round((new Date(e.date)-new Date(today))/(1000*60*60*24));
+  let ddayText='', ddayColor='#888';
+  if(dday===0){ ddayText='D-DAY'; ddayColor='#dc2626'; }
+  else if(dday>0){ ddayText='D-'+dday; ddayColor= dday<=7?'#f59e0b':'#888'; }
+  else { ddayText='D+'+(-dday); ddayColor='#ccc'; }
+
+  // 경제지표 (자동 생성) — 체크/삭제 없음, 색 다름
+  if(e.isEcon){
+    const col=econColor(e.cat);
+    const estTag = e.cat==='__econ_est' ? '<span style="font-size:9px;background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:3px;margin-left:4px">예상</span>' : '';
+    return `<div class="list-item" style="border-left-color:${col};opacity:.92">
+      <div style="width:24px;flex-shrink:0;text-align:center;font-size:16px">📈</div>
+      <div class="list-date"><b>${d.getDate()}</b>${WEEK[d.getDay()]}</div>
+      <div class="list-body">
+        <div class="list-title" style="font-weight:600">${e.title.replace(/</g,'&lt;')}${estTag}</div>
+        ${e.memo?`<div class="list-memo">${e.memo.replace(/</g,'&lt;')}</div>`:''}
+      </div>
+      <span class="list-cat" style="background:${col}">지표</span>
+      <span class="list-dday" style="color:${ddayColor}">${ddayText}</span>
+    </div>`;
+  }
+
+  // 세금 일정 (자동 생성) — 체크/삭제 없음
+  if(e.isTax){
+    const col=taxColor(e.cat);
+    return `<div class="list-item" style="border-left-color:${col};opacity:.92">
+      <div style="width:24px;flex-shrink:0;text-align:center;font-size:16px">🧾</div>
+      <div class="list-date"><b>${d.getDate()}</b>${WEEK[d.getDay()]}</div>
+      <div class="list-body">
+        <div class="list-title" style="font-weight:600">${e.title.replace(/</g,'&lt;')}</div>
+        ${e.memo?`<div class="list-memo">${e.memo.replace(/</g,'&lt;')}</div>`:''}
+      </div>
+      <span class="list-cat" style="background:${col}">세금</span>
+      <span class="list-dday" style="color:${ddayColor}">${ddayText}</span>
+    </div>`;
+  }
+
+  return `<div class="list-item ${e.done?'done':''}" style="border-left-color:${catColor(e.cat)}">
+    <div class="list-check" onclick="event.stopPropagation();toggleDone('${e.baseId||e.id}')">${e.done?'✓':''}</div>
+    <div class="list-date"><b>${d.getDate()}</b>${WEEK[d.getDay()]}</div>
+    <div class="list-body" onclick="openEdit('${e.baseId||e.id}')">
+      <div class="list-title">${e.isRepeat?'🔁 ':''}${e.title.replace(/</g,'&lt;')}</div>
+      ${e.memo?`<div class="list-memo">${e.memo.replace(/</g,'&lt;')}</div>`:''}
+    </div>
+    <span class="list-cat" style="background:${catColor(e.cat)}">${e.cat||'-'}</span>
+    <span class="list-dday" style="color:${ddayColor}">${ddayText}</span>
+    ${e.isRepeat?'':`<button class="list-del" onclick="event.stopPropagation();delEventDirect('${e.id}')">×</button>`}
+  </div>`;
+}
+
+function setFilter(f){ listFilter=f; renderList(); }
+function toggleDone(id){ const e=events.find(x=>x.id===id); if(e){ e.done=!e.done; save(); render(); } }
+function delEventDirect(id){ if(confirm('이 일정을 삭제할까요?')){ events=events.filter(x=>x.id!==id); save(); render(); } }
+
+// 모달
+function renderCatPicker(){
+  $('catPicker').innerHTML = categories.map(c=>`<div class="cat-opt ${pickedCat===c.name?'sel':''}" style="background:${c.color}" onclick="pickCat('${c.name}')">${c.name}</div>`).join('');
+}
+function pickCat(name){ pickedCat=name; renderCatPicker(); }
+
+function openAdd(){ editingId=null; pickedCat=categories[0]?.name||''; $('modalTitle').textContent='일정 추가'; $('evDate').value=todayStr(); $('evTitle').value=''; $('evMemo').value=''; $('evRepeat').value='none'; $('delBtn').style.display='none'; renderCatPicker(); $('evModal').classList.add('show'); }
+function openAddFor(date){ openAdd(); $('evDate').value=date; }
+function openEdit(id){
+  const e=events.find(x=>x.id===id); if(!e)return;
+  editingId=id; pickedCat=e.cat; $('modalTitle').textContent='일정 수정';
+  $('evDate').value=e.date; $('evTitle').value=e.title; $('evMemo').value=e.memo||''; $('evRepeat').value=e.repeat||'none';
+  $('delBtn').style.display='block'; renderCatPicker(); $('evModal').classList.add('show');
+}
+function closeModal(){ $('evModal').classList.remove('show'); }
+function saveEvent(){
+  const date=$('evDate').value, title=$('evTitle').value.trim();
+  if(!date){ alert('날짜를 선택하세요.'); return; }
+  if(!title){ alert('제목을 입력하세요.'); return; }
+  const memo=$('evMemo').value.trim();
+  const repeat=$('evRepeat').value;
+  if(editingId){
+    const e=events.find(x=>x.id===editingId);
+    if(e){ e.date=date; e.title=title; e.cat=pickedCat; e.memo=memo; e.repeat=repeat; }
+  } else {
+    events.push({ id:'ev'+Date.now()+Math.random().toString(36).slice(2,6), date, title, cat:pickedCat, memo, repeat, done:false });
+  }
+  save(); closeModal(); render();
+}
+function deleteEvent(){ if(editingId && confirm('삭제할까요?')){ events=events.filter(x=>x.id!==editingId); save(); closeModal(); render(); } }
+
+// 카테고리 관리
+function manageCats(){ renderCatManage(); $('catModal').classList.add('show'); }
+function renderCatManage(){
+  $('catManageList').innerHTML = categories.map((c,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f0f0f0">
+    <span style="width:18px;height:18px;border-radius:5px;background:${c.color};flex-shrink:0"></span>
+    <span style="flex:1;font-size:13px;font-weight:600">${c.name}</span>
+    <button onclick="delCat(${i})" style="background:#fee2e2;color:#dc2626;border:none;border-radius:5px;padding:4px 9px;font-size:12px;cursor:pointer">삭제</button>
+  </div>`).join('');
+}
+function addCat(){
+  const name=$('newCatName').value.trim(), color=$('newCatColor').value;
+  if(!name){ alert('이름을 입력하세요.'); return; }
+  if(categories.some(c=>c.name===name)){ alert('이미 있어요.'); return; }
+  categories.push({name,color}); save(); $('newCatName').value=''; renderCatManage();
+}
+function delCat(i){ if(confirm(`"${categories[i].name}" 삭제? (일정은 남습니다)`)){ categories.splice(i,1); save(); renderCatManage(); render(); } }
+
+function saveJson(){ const blob=new Blob([JSON.stringify({events,categories},null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); const d=new Date(); a.href=url; a.download=`일정표_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`; a.click(); URL.revokeObjectURL(url); }
+function loadJson(e){ const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{ try{ const d=JSON.parse(ev.target.result); events=d.events||[]; categories=d.categories||DEFAULT_CATS; save(); render(); alert('✅ 불러왔어요.'); }catch(err){ alert('파일 오류: '+err.message); } }; r.readAsText(f); e.target.value=''; }
+
+$('evModal').addEventListener('click', e=>{ if(e.target===$('evModal')) closeModal(); });
+$('catModal').addEventListener('click', e=>{ if(e.target===$('catModal')) $('catModal').classList.remove('show'); });
+
+window.scGetState = ()=>({events, categories});
+window.scSetState = (d)=>{ events=d.events||[]; categories=d.categories||JSON.parse(JSON.stringify(DEFAULT_CATS)); save(); render(); };
+
+load();
+if($('econToggle')) $('econToggle').checked = showEcon;
+if($('taxToggle')){ $('taxToggle').checked = showTax; $('taxNote').style.display = showTax?'block':'none'; }
+render();
+</script>
+</body>
+</html>

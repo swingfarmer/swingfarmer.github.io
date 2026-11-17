@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>투자 메모·일지 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .cat-mgr{border-color:#2c333f!important}
+body.sf-dark .cat-mgr:hover{background-color:#1a1f29!important;color:#dedede!important}
+body.sf-dark .toolbar{border-bottom-color:#2c333f!important}
+body.sf-dark .ftab{border-color:#2c333f!important;background-color:#1e242e!important;color:#c2c2c2!important}
+body.sf-dark .list-cnt{color:#c2c2c2!important}
+body.sf-dark .note-item{border-bottom-color:#2c333f!important}
+body.sf-dark .note-item:hover{background-color:#1e242e!important}
+body.sf-dark .note-title{color:#dedede!important}
+body.sf-dark .note-title .cat-tag{background-color:#152237!important}
+body.sf-dark .note-title .pin-tag{background-color:#372a15!important}
+body.sf-dark .note-item.is-memo .note-title{color:#cccccc!important}
+body.sf-dark .pager button{border-color:#2c333f!important;background-color:#1e242e!important}
+body.sf-dark .v-box{background-color:#1e242e!important}
+body.sf-dark .v-header{border-bottom-color:#2c333f!important}
+body.sf-dark .v-title{color:#dedede!important}
+body.sf-dark .v-memo-title{color:#c2c2c2!important}
+body.sf-dark .v-body{color:#dedede!important}
+body.sf-dark .v-body hr{border-top-color:#2c333f!important}
+body.sf-dark .v-actions{border-top-color:#2c333f!important}
+body.sf-dark .v-btn{border-color:#2c333f!important;background-color:#1e242e!important;color:#cccccc!important}
+body.sf-dark .v-btn:hover{background-color:#1a1f29!important}
+body.sf-dark .v-btn.red{border-color:#732626!important}
+body.sf-dark .w-box{background-color:#1e242e!important}
+body.sf-dark .w-topbar{border-bottom-color:#2c333f!important}
+body.sf-dark .w-cancel{border-color:#2c333f!important;background-color:#1e242e!important;color:#cccccc!important}
+body.sf-dark .w-selectors{border-bottom-color:#2c333f!important}
+body.sf-dark .w-title-row{border-bottom-color:#2c333f!important}
+body.sf-dark .w-media-bar{border-bottom-color:#2c333f!important}
+body.sf-dark .w-media-btn{color:#cccccc!important}
+body.sf-dark .w-media-btn:hover{background-color:#1a1f29!important}
+body.sf-dark .w-content .wysiwyg{color:#dedede!important}
+body.sf-dark .w-content .wysiwyg hr{border-top-color:#2c333f!important}
+body.sf-dark .w-fmt.active{background-color:#1a2532!important;color:#85b5e0!important}
+body.sf-dark .w-pin-row{border-top-color:#2c333f!important}
+body.sf-dark .sm-modal{background-color:#1e242e!important}
+body.sf-dark .cat-item{border-bottom-color:#2c333f!important}
+body.sf-dark .sm-close button{border-color:#2c333f!important;background-color:#1e242e!important}
+body.sf-dark .cat-mgr{color:#888!important}
+body.sf-dark .ftab.active{background:#1F4E78!important;color:white!important;border-color:#1F4E78!important}
+body.sf-dark .pager button.current{background:#1F4E78!important;border-color:#1F4E78!important}
+body.sf-dark .v-btn.red{color:#e55!important}
+body.sf-dark .w-content .wysiwyg:empty::before{color:#bbb!important}
+</style>
+<style>
+:root { --sf-max-w: 860px; }
+*{box-sizing:border-box;margin:0;padding:0}
+a{color:#333;text-decoration:none}
+.board-header{border-bottom:2px solid #1F4E78;padding-bottom:12px;margin-bottom:14px}
+.cat-mgr{background:none;border:1px solid #ddd;border-radius:4px;padding:3px 8px;font-size:12px;color:#888;cursor:pointer;font-family:inherit}
+.cat-mgr:hover{background:#f5f5f5;color:#333}
+/* 빠른 메모 바 */
+.quick-bar{display:flex;gap:8px;margin-bottom:16px;align-items:stretch}
+.quick-bar select{padding:8px;font-size:13px;border:1px solid #ddd;border-radius:6px;font-family:inherit;background:#fff;max-width:120px}
+.quick-bar input{flex:1;padding:10px 14px;font-size:13px;border:1px solid #ddd;border-radius:6px;font-family:inherit}
+.quick-bar input:focus{outline:none;border-color:#1F4E78}
+.quick-bar input::placeholder{color:#bbb}
+.quick-bar button{padding:8px 18px;background:#1F4E78;color:white;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+.quick-bar button:hover{background:#2d6ba3}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 0;border-bottom:1px solid #e5e5e5}
+.filter-tabs{display:flex;gap:0;flex-wrap:wrap}
+.ftab{padding:6px 14px;border:1px solid #ddd;background:#fff;cursor:pointer;font-size:12px;font-weight:600;color:#666;font-family:inherit;margin-right:-1px}
+.ftab:first-child{border-radius:4px 0 0 4px}.ftab:last-child{border-radius:0 4px 4px 0}
+.ftab.active{background:#1F4E78;color:white;border-color:#1F4E78;z-index:1;position:relative}
+.search-box{display:flex;gap:0;flex:1;min-width:120px;margin-left:auto;max-width:260px}
+.search-box input{flex:1;padding:6px 10px;font-size:12px;border:1px solid #ddd;border-right:none;border-radius:4px 0 0 4px;font-family:inherit}
+.search-box input:focus{outline:none;border-color:#1F4E78}
+.search-box button{padding:6px 12px;background:#1F4E78;color:white;border:1px solid #1F4E78;border-radius:0 4px 4px 0;cursor:pointer;font-size:12px}
+.list-header{display:flex;align-items:center;padding:10px 0}
+.list-cnt{font-size:13px;color:#666}
+.btn-bulk-del{padding:6px 14px;background:#dc2626;color:white;border:none;border-radius:4px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-left:8px;display:none}
+.btn-write{margin-left:auto;padding:8px 20px;background:#03c75a;color:white;border:none;border-radius:4px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-write:hover{background:#02b350}
+/* 글 목록 */
+.note-list{display:flex;flex-direction:column;gap:0}
+.note-item{display:flex;align-items:flex-start;gap:10px;padding:14px 0;border-bottom:1px solid #f0f0f0;cursor:pointer}
+.note-item:hover{background:#f8fbff;margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:4px}
+.note-chk{flex:none;margin-top:4px}
+.note-chk input{width:15px;height:15px;cursor:pointer}
+.note-title{font-size:14px;font-weight:600;color:#333;margin-bottom:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.note-title .cat-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#e8f0fe;color:#1a73e8}
+.note-title .pin-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px;background:#fff3e0;color:#e65100}
+.note-title .t-new{display:inline-block;background:#ff3e3e;color:white;font-size:9px;font-weight:700;padding:1px 4px;border-radius:2px}
+.note-preview{font-size:13px;color:#888;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:100%}
+.note-meta{font-size:11px;color:#aaa;margin-top:4px;display:flex;gap:10px}
+.note-item.is-memo .note-title{font-weight:400;color:#555}
+.empty{text-align:center;color:#999;padding:60px 20px}
+.loading{text-align:center;color:#888;padding:40px}
+.pager{display:flex;gap:4px;justify-content:center;align-items:center;margin-top:16px}
+.pager button{padding:5px 12px;border:1px solid #ddd;border-radius:3px;background:#fff;cursor:pointer;font-size:12px;font-family:inherit}
+.pager button:disabled{opacity:.35}.pager button.current{background:#1F4E78;color:white;border-color:#1F4E78}
+/* 글 상세 모달 */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;overflow-y:auto}
+.modal-overlay.active{display:block}
+.modal-inner{max-width:720px;margin:100px auto 40px;padding:0 16px}
+.v-box{background:#fff;border-radius:6px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+.v-header{padding:24px 28px 16px;border-bottom:1px solid #eee}
+.v-title{font-size:20px;font-weight:800;color:#333;line-height:1.4;margin-bottom:10px}
+.v-memo-title{font-size:16px;font-weight:400;color:#666;margin-bottom:10px}
+.v-meta{display:flex;gap:12px;font-size:13px;color:#999;flex-wrap:wrap}
+.v-body{padding:20px 28px;line-height:1.8;font-size:15px;color:#333;word-break:break-word}
+.v-body img{max-width:100%;border-radius:4px;margin:10px 0;display:block}
+.v-body a{color:#1a73e8;text-decoration:underline}
+.v-body hr{border:none;border-top:1px solid #e5e5e5;margin:20px 0}
+.v-actions{padding:14px 28px;border-top:1px solid #eee;display:flex;gap:8px}
+.v-btn{padding:6px 16px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-size:13px;font-family:inherit;color:#555}
+.v-btn:hover{background:#f5f5f5}
+.v-btn.red{color:#e55;border-color:#fcc}.v-close{margin-left:auto}
+/* 글쓰기 모달 */
+.w-box{background:#fff;border-radius:6px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+.w-topbar{display:flex;align-items:center;padding:14px 24px;border-bottom:1px solid #e5e5e5}
+.w-topbar h2{font-size:17px;font-weight:800;color:#333;flex:1}
+.w-cancel{padding:6px 14px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-size:13px;font-family:inherit;color:#555;margin-right:8px}
+.w-submit{padding:6px 20px;border:none;border-radius:4px;background:#03c75a;color:white;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.w-submit:hover{background:#02b350}
+.w-selectors{display:flex;gap:10px;padding:14px 24px;border-bottom:1px solid #f0f0f0}
+.w-selectors select{padding:8px 12px;font-size:13px;border:1px solid #ddd;border-radius:6px;font-family:inherit}
+.w-title-row{padding:0 24px;border-bottom:1px solid #f0f0f0}
+.w-title-row input{width:100%;padding:14px 0;font-size:16px;border:none;font-family:inherit;color:#333;font-weight:500}
+.w-title-row input::placeholder{color:#bbb}.w-title-row input:focus{outline:none}
+.w-media-bar{display:flex;gap:0;padding:8px 24px;border-bottom:1px solid #f0f0f0;overflow-x:auto}
+.w-media-btn{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 12px;border:none;background:none;cursor:pointer;font-family:inherit;color:#555;border-radius:4px}
+.w-media-btn:hover{background:#f5f5f5}
+.w-media-btn.disabled{opacity:.3;cursor:not-allowed}.w-media-btn.disabled:hover{background:none}
+.w-media-btn .ico{font-size:20px}.w-media-btn .lbl{font-size:10px;color:#888;white-space:nowrap}
+.w-content .wysiwyg{width:100%;min-height:280px;border:none;padding:18px 24px;font-size:15px;line-height:1.8;font-family:inherit;color:#333;overflow-y:auto;outline:none}
+.w-content .wysiwyg:empty::before{content:attr(data-placeholder);color:#bbb;pointer-events:none}
+.w-content .wysiwyg img{max-width:100%;border-radius:4px;margin:10px 0;display:block}
+.w-content .wysiwyg a{color:#1a73e8;text-decoration:underline}
+.w-content .wysiwyg hr{border:none;border-top:1px solid #e5e5e5;margin:20px 0}
+.w-fmt.active{background:#e0e7ef;color:#1F4E78}
+.w-pin-row{display:flex;padding:8px 24px;align-items:center;gap:6px;border-top:1px solid #f0f0f0}
+/* 카테고리 관리 모달 */
+.sm-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1002;align-items:center;justify-content:center;padding:20px}
+.sm-modal-bg.active{display:flex}
+.sm-modal{background:white;border-radius:8px;max-width:400px;width:100%;padding:24px}
+.sm-modal h2{font-size:16px;font-weight:700;margin-bottom:14px}
+.cat-list{margin-bottom:14px}
+.cat-item{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0;gap:8px}
+.cat-item .cat-name{flex:1;font-size:14px}
+.cat-item .cat-del{background:none;border:none;color:#ccc;cursor:pointer;font-size:13px;padding:2px 6px}
+.cat-item .cat-del:hover{color:#e55}
+.cat-add-row{display:flex;gap:8px}
+.cat-add-row input{flex:1;padding:10px;font-size:13px;border:1px solid #ccc;border-radius:6px;font-family:inherit}
+.cat-add-row input:focus{outline:none;border-color:#1F4E78}
+.cat-add-row button{padding:7px 14px;background:#1F4E78;color:white;border:none;border-radius:4px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.sm-close{margin-top:14px;text-align:right}
+.sm-close button{padding:7px 16px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;font-size:13px;font-family:inherit}
+@media(max-width:600px){
+  .toolbar{flex-direction:column;align-items:stretch}.search-box{max-width:100%}
+  .modal-inner{margin:20px auto}
+  .quick-bar{flex-direction:column}.quick-bar select{max-width:100%}
+}
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body class="sf-narrow">
+<div class="board-header">
+  <h1>📝 투자 메모·일지 <button class="cat-mgr" id="btnCatMgr">⚙️ 카테고리</button></h1>
+</div>
+
+<!-- 빠른 메모 -->
+<div class="quick-bar">
+  <select id="qCat"></select>
+  <input type="text" id="qText" placeholder="빠른 메모... (Enter로 저장)" maxlength="500">
+  <button id="qSubmit">메모</button>
+</div>
+
+<div class="toolbar">
+  <div class="filter-tabs" id="filterTabs"><button class="ftab active" data-filter="">전체</button></div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="검색">
+    <button id="btnSearch">검색</button>
+  </div>
+</div>
+<div class="list-header">
+  <span class="list-cnt" id="cntInfo"></span>
+  <button class="btn-bulk-del" id="btnBulkDel">🗑️ 삭제</button>
+  <button class="btn-write" id="btnWrite">✏️ 글쓰기</button>
+</div>
+<div id="noteArea"><div class="loading">불러오는 중...</div></div>
+<div id="pager" class="pager" style="display:none"></div>
+
+<!-- 글 상세 -->
+<div class="modal-overlay" id="viewModal"><div class="modal-inner"><div class="v-box">
+  <div class="v-header"><div id="vBadge" style="margin-bottom:8px"></div><div id="vTitle"></div>
+    <div class="v-meta"><span id="vAuthor"></span><span style="color:#ddd">|</span><span id="vDate" style="color:#999"></span></div>
+  </div>
+  <div class="v-body" id="vBody"></div>
+  <div class="v-actions" id="vActions"></div>
+</div></div></div>
+
+<!-- 글쓰기 -->
+<div class="modal-overlay" id="writeModal"><div class="modal-inner"><div class="w-box">
+  <div class="w-topbar"><h2 id="wTitle">글쓰기</h2><button class="w-cancel" id="wCancel">취소</button><button class="w-submit" id="wSubmit">등록</button></div>
+  <div class="w-selectors"><select id="fCategory"></select></div>
+  <div class="w-title-row"><input type="text" id="fTitle" placeholder="제목 (빈칸이면 메모로 저장)" maxlength="200"></div>
+  <div class="w-media-bar">
+    <button class="w-media-btn" id="tbPhoto"><span class="ico">🖼️</span><span class="lbl">사진</span></button>
+    <button class="w-media-btn" id="tbHr"><span class="ico">—</span><span class="lbl">구분선</span></button>
+    <button class="w-media-btn disabled" disabled><span class="ico">📎</span><span class="lbl">파일</span></button>
+    <button class="w-media-btn" id="tbLink"><span class="ico">🔗</span><span class="lbl">링크</span></button>
+    <button class="w-media-btn" id="tbImg"><span class="ico">🌐</span><span class="lbl">이미지URL</span></button>
+  </div>
+  <input type="file" id="fileInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none">
+  <div class="w-format-bar" style="display:flex;gap:2px;padding:6px 24px;border-bottom:1px solid #f0f0f0;align-items:center">
+    <button class="w-fmt" id="tbBold" title="굵게" style="padding:4px 7px;border:none;background:none;cursor:pointer;font-size:14px;color:#555;border-radius:3px"><b>B</b></button>
+    <button class="w-fmt" id="tbItalic" title="기울임" style="padding:4px 7px;border:none;background:none;cursor:pointer;font-size:14px;color:#555;border-radius:3px"><i>I</i></button>
+    <button class="w-fmt" id="tbUnder" title="밑줄" style="padding:4px 7px;border:none;background:none;cursor:pointer;font-size:14px;color:#555;border-radius:3px"><u>U</u></button>
+    <button class="w-fmt" id="tbStrike" title="취소선" style="padding:4px 7px;border:none;background:none;cursor:pointer;font-size:14px;color:#555;border-radius:3px"><s>S</s></button>
+  </div>
+  <div class="w-content"><div id="fContent" class="wysiwyg" contenteditable="true" data-placeholder="내용을 입력하세요."></div></div>
+  <div class="w-pin-row"><label><input type="checkbox" id="fPinned" style="width:15px;height:15px"> 📌 상단 고정</label></div>
+</div></div></div>
+
+<!-- 카테고리 관리 -->
+<div class="sm-modal-bg" id="catModal"><div class="sm-modal">
+  <h2>⚙️ 카테고리 관리</h2>
+  <div class="cat-list" id="catList"></div>
+  <div class="cat-add-row">
+    <input type="text" id="catNewName" placeholder="새 카테고리명" maxlength="20">
+    <button id="btnCatAdd">추가</button>
+  </div>
+  <div class="sm-close"><button id="btnCatClose">닫기</button></div>
+</div></div>
+
+<script>
+(function(){
+'use strict';
+var API='https://swingfarmer.duckdns.org/api';
+var currentFilter='',currentPage=1,totalPages=1,searchQuery='',editingId=null,categories=[];
+var $=function(id){return document.getElementById(id);};
+var esc=function(s){return(s||'').replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
+function fmtDate(s){return sfDate(s,'dotm');}   // (106) 표기는 sf-fmt.js
+function fmtShort(s){return sfDate(s,'short');}
+function isNew(s){if(!s)return false;return(Date.now()-new Date(s.replace(' ','T')).getTime())<86400000;}
+function catName(id){var c=categories.find(function(x){return String(x.id)===String(id);});return c?c.name:'';}
+function apiFetch(url,opts){return sfApiFetch(url,opts);}
+// (109) 메모 읽기(GET)도 관리자 토큰 필요 — 로그인 확인될 때까지 기다렸다가 토큰을 붙여 요청
+function authGet(url){return _sfFirebaseReady.promise.then(function(a){return new Promise(function(res){if(a.currentUser)return res(a.currentUser);var un=a.onAuthStateChanged(function(u){if(u){un();res(u);}});});}).then(function(u){return u.getIdToken();}).then(function(t){return fetch(url,{headers:{Authorization:'Bearer '+t}});});}
+
+// ── 카테고리 ──
+function loadCategories(){
+  return fetch(API+'/note-categories').then(function(r){return r.json();}).then(function(data){
+    categories=data;renderFilterTabs();renderCategorySelects();renderCatList();
+  }).catch(function(){categories=[];renderFilterTabs();renderCategorySelects();});
+}
+function renderFilterTabs(){
+  var h='<button class="ftab'+(currentFilter===''?' active':'')+'" data-filter="">전체</button>';
+  categories.forEach(function(c){h+='<button class="ftab'+(currentFilter===String(c.id)?' active':'')+'" data-filter="'+c.id+'">'+esc(c.name)+'</button>';});
+  $('filterTabs').innerHTML=h;
+  $('filterTabs').querySelectorAll('.ftab').forEach(function(t){
+    t.addEventListener('click',function(){$('filterTabs').querySelectorAll('.ftab').forEach(function(x){x.classList.remove('active');});t.classList.add('active');currentFilter=t.dataset.filter;currentPage=1;loadNotes();});
+  });
+}
+function renderCategorySelects(){
+  var h='<option value="">카테고리</option>';
+  categories.forEach(function(c){h+='<option value="'+c.id+'">'+esc(c.name)+'</option>';});
+  $('fCategory').innerHTML=h;
+  // 빠른메모 카테고리
+  var qh='<option value="">분류</option>';
+  categories.forEach(function(c){qh+='<option value="'+c.id+'">'+esc(c.name)+'</option>';});
+  $('qCat').innerHTML=qh;
+  // 메모 기본값 찾기
+  var memo=categories.find(function(c){return c.name==='메모';});
+  if(memo) $('qCat').value=String(memo.id);
+}
+function renderCatList(){
+  if(!categories.length){$('catList').innerHTML='<div style="color:#999;font-size:13px;padding:8px 0">카테고리가 없습니다.</div>';return;}
+  $('catList').innerHTML=categories.map(function(c){return'<div class="cat-item"><span class="cat-name">'+esc(c.name)+'</span><button class="cat-del" data-cid="'+c.id+'">✕</button></div>';}).join('');
+  $('catList').querySelectorAll('.cat-del').forEach(function(b){b.addEventListener('click',function(){deleteCat(parseInt(b.dataset.cid));});});
+}
+$('btnCatMgr').addEventListener('click',function(){$('catModal').classList.add('active');});
+$('btnCatClose').addEventListener('click',function(){$('catModal').classList.remove('active');});
+$('catModal').addEventListener('click',function(e){if(e.target===$('catModal'))$('catModal').classList.remove('active');});
+$('btnCatAdd').addEventListener('click',function(){
+  var name=$('catNewName').value.trim();if(!name)return;
+  apiFetch(API+'/note-categories',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name})})
+  .then(function(r){if(!r.ok){alert(r.data.error);return;}$('catNewName').value='';loadCategories();}).catch(function(e){alert(e.message);});
+});
+$('catNewName').addEventListener('keydown',function(e){if(e.key==='Enter')$('btnCatAdd').click();});
+function deleteCat(cid){
+  if(!confirm('삭제할까요?'))return;
+  apiFetch(API+'/note-categories/'+cid,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({})})
+  .then(function(r){if(!r.ok){alert(r.data.error);return;}loadCategories();}).catch(function(e){alert(e.message);});
+}
+
+// ── 빠른 메모 ──
+function quickMemo(){
+  var text=$('qText').value.trim();if(!text)return;
+  var cat=$('qCat').value;
+  $('qSubmit').disabled=true;$('qSubmit').textContent='저장...';
+  apiFetch(API+'/notes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:text,category:cat,author:'스윙파머'})})
+  .then(function(r){if(!r.ok){alert(r.data.error);return;}$('qText').value='';loadNotes();})
+  .catch(function(e){alert(e.message);})
+  .finally(function(){$('qSubmit').disabled=false;$('qSubmit').textContent='메모';});
+}
+$('qSubmit').addEventListener('click',quickMemo);
+$('qText').addEventListener('keydown',function(e){if(e.key==='Enter')quickMemo();});
+
+// ── 목록 ──
+function loadNotes(){
+  var q='?page='+currentPage+'&per_page=30';
+  if(currentFilter)q+='&category='+currentFilter;
+  if(searchQuery)q+='&q='+encodeURIComponent(searchQuery);
+  $('noteArea').innerHTML='<div class="loading">불러오는 중...</div>';$('pager').style.display='none';$('cntInfo').textContent='';$('btnBulkDel').style.display='none';
+  authGet(API+'/notes'+q).then(function(r){return r.json();}).then(function(d){
+    totalPages=d.pages||1;$('cntInfo').textContent='총 '+(d.total||0)+'건';renderList(d.data||[]);renderPager();
+  }).catch(function(e){$('noteArea').innerHTML='<div class="empty">불러오기 실패: '+esc(e.message)+'</div>';});
+}
+$('btnSearch').addEventListener('click',function(){searchQuery=$('searchInput').value.trim();currentPage=1;loadNotes();});
+$('searchInput').addEventListener('keydown',function(e){if(e.key==='Enter')$('btnSearch').click();});
+
+function renderList(notes){
+  if(!notes.length){$('noteArea').innerHTML='<div class="empty">아직 기록이 없습니다. 메모를 남겨보세요!</div>';return;}
+  var h='<div class="note-list">';
+  notes.forEach(function(n){
+    var isMemo=!n.title;
+    var cn=catName(n.category);
+    var nw=isNew(n.created_at)?'<span class="t-new">N</span>':'';
+    var pin=n.is_pinned?'<span class="pin-tag">📌</span>':'';
+    var catTag=cn?'<span class="cat-tag">'+esc(cn)+'</span>':'';
+    h+='<div class="note-item'+(isMemo?' is-memo':'')+'" data-id="'+n.id+'">';
+    h+='<div class="note-chk"><input type="checkbox" class="note-chk-input" value="'+n.id+'"></div>';
+    h+='<div class="note-body">';
+    if(isMemo){
+      h+='<div class="note-preview">'+pin+catTag+' '+esc(n.title||'')+'</div>';
+    } else {
+      h+='<div class="note-title">'+pin+catTag+' '+esc(n.title)+nw+'</div>';
+    }
+    h+='<div class="note-meta"><span>'+fmtShort(n.created_at)+'</span><span>👁 '+(n.views||0)+'</span></div>';
+    h+='</div></div>';
+  });
+  h+='</div>';$('noteArea').innerHTML=h;
+  $('noteArea').querySelectorAll('.note-item').forEach(function(el){
+    el.querySelector('.note-body').addEventListener('click',function(){openNote(parseInt(el.dataset.id));});
+  });
+  document.querySelectorAll('.note-chk-input').forEach(function(c){c.addEventListener('change',updateBulkBtn);});
+}
+function updateBulkBtn(){
+  var cnt=document.querySelectorAll('.note-chk-input:checked').length;
+  $('btnBulkDel').style.display=cnt>0?'inline-block':'none';
+  $('btnBulkDel').textContent='🗑️ '+cnt+'건 삭제';
+}
+function renderPager(){
+  if(totalPages<=1){$('pager').style.display='none';return;}$('pager').style.display='flex';
+  var h='<button '+(currentPage<=1?'disabled':'')+' data-p="'+(currentPage-1)+'">◀</button>';
+  var s=Math.max(1,currentPage-4),e=Math.min(totalPages,s+9);if(e-s<9)s=Math.max(1,e-9);
+  for(var i=s;i<=e;i++)h+='<button data-p="'+i+'" class="'+(i===currentPage?'current':'')+'">'+i+'</button>';
+  h+='<button '+(currentPage>=totalPages?'disabled':'')+' data-p="'+(currentPage+1)+'">▶</button>';$('pager').innerHTML=h;
+}
+$('pager').addEventListener('click',function(e){var b=e.target.closest('button[data-p]');if(!b||b.disabled)return;currentPage=parseInt(b.dataset.p);loadNotes();window.scrollTo({top:0,behavior:'smooth'});});
+
+// ── 상세 ──
+function openNote(id){
+  authGet(API+'/notes/'+id).then(function(r){return r.json();}).then(function(n){
+    if(n.error){alert(n.error);return;}renderView(n);$('viewModal').classList.add('active');document.body.style.overflow='hidden';
+  }).catch(function(e){alert(e.message);});
+}
+function closeView(){$('viewModal').classList.remove('active');document.body.style.overflow='';}
+function renderView(n){
+  var cn=catName(n.category);
+  $('vBadge').innerHTML=(n.is_pinned?'<span class="pin-tag">📌</span> ':'')+(cn?'<span class="cat-tag">'+esc(cn)+'</span>':'');
+  var titleEl=$('vTitle');
+  if(n.title){titleEl.className='v-title';titleEl.textContent=n.title;}
+  else{titleEl.className='v-memo-title';titleEl.textContent='빠른 메모';}
+  $('vAuthor').textContent=n.author||'스윙파머';
+  $('vDate').textContent=fmtDate(n.created_at);
+  $('vBody').innerHTML=n.content||'';
+  $('vActions').innerHTML='<button class="v-btn" data-act="edit" data-id="'+n.id+'">수정</button><button class="v-btn red" data-act="del" data-id="'+n.id+'">삭제</button><button class="v-btn v-close">닫기</button>';
+  $('vActions').querySelector('.v-close').addEventListener('click',closeView);
+  $('vActions').querySelector('[data-act="edit"]').addEventListener('click',function(){closeView();editNote(parseInt(this.dataset.id));});
+  $('vActions').querySelector('[data-act="del"]').addEventListener('click',function(){deleteNote(parseInt(this.dataset.id));});
+}
+$('viewModal').addEventListener('click',function(e){if(e.target===$('viewModal'))closeView();});
+
+// ── 글쓰기 ──
+function openWrite(){
+  editingId=null;$('wTitle').textContent='글쓰기';
+  $('fCategory').value='';$('fTitle').value='';$('fContent').innerHTML='';$('fPinned').checked=false;
+  $('writeModal').classList.add('active');document.body.style.overflow='hidden';
+  setTimeout(function(){$('fTitle').focus();},100);
+}
+$('btnWrite').addEventListener('click',openWrite);
+function closeWrite(){$('writeModal').classList.remove('active');document.body.style.overflow='';}
+$('wCancel').addEventListener('click',closeWrite);
+$('writeModal').addEventListener('click',function(e){if(e.target===$('writeModal'))closeWrite();});
+
+// WYSIWYG 헬퍼
+function execFmt(cmd,val){$('fContent').focus();document.execCommand(cmd,false,val||null);}
+function insertHtml(html){$('fContent').focus();document.execCommand('insertHTML',false,html);}
+
+$('fContent').addEventListener('keyup',updateFmtBtns);
+$('fContent').addEventListener('mouseup',updateFmtBtns);
+function updateFmtBtns(){
+  $('tbBold').classList.toggle('active',document.queryCommandState('bold'));
+  $('tbItalic').classList.toggle('active',document.queryCommandState('italic'));
+  $('tbUnder').classList.toggle('active',document.queryCommandState('underline'));
+  $('tbStrike').classList.toggle('active',document.queryCommandState('strikeThrough'));
+}
+
+$('tbHr').addEventListener('click',function(){insertHtml('<hr>');});
+$('tbImg').addEventListener('click',function(){var u=prompt('이미지 URL');if(u&&u.trim())insertHtml('<img src="'+u.trim()+'" alt="">');});
+$('tbLink').addEventListener('click',function(){var u=prompt('링크 URL');if(!u)return;var l=prompt('표시 텍스트',u.trim());insertHtml('<a href="'+u.trim()+'" target="_blank" rel="noopener">'+(l||u.trim())+' ↗</a>');});
+$('tbBold').addEventListener('click',function(){execFmt('bold');});
+$('tbItalic').addEventListener('click',function(){execFmt('italic');});
+$('tbUnder').addEventListener('click',function(){execFmt('underline');});
+$('tbStrike').addEventListener('click',function(){execFmt('strikeThrough');});
+$('tbPhoto').addEventListener('click',function(){$('fileInput').click();});
+$('fileInput').addEventListener('change',function(){
+  var file=this.files[0];if(!file)return;
+  if(file.size>10*1024*1024){alert('10MB 이하만 가능합니다.');this.value='';return;}
+  var lbl=$('tbPhoto').querySelector('.lbl');lbl.textContent='업로드중...';
+  var fd=new FormData();fd.append('file',file);
+  apiFetch(API+'/upload',{method:'POST',body:fd})
+  .then(function(r){if(!r.ok){alert(r.data.error||'업로드 실패');return;}insertHtml('<img src="'+r.data.url+'" alt="">');})
+  .catch(function(e){alert('업로드 실패: '+e.message);})
+  .finally(function(){lbl.textContent='사진';$('fileInput').value='';});
+});
+
+$('wSubmit').addEventListener('click',function(){
+  var cat=$('fCategory').value,title=$('fTitle').value.trim(),content=$('fContent').innerHTML.trim(),pinned=$('fPinned').checked;
+  if(!content){alert('내용을 입력하세요.');return;}
+  $('wSubmit').disabled=true;$('wSubmit').textContent='저장...';
+  apiFetch(API+'/notes'+(editingId?'/'+editingId:''),{method:editingId?'PUT':'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({category:cat,title:title,content:content,author:'스윙파머',pinned:pinned})})
+  .then(function(r){if(!r.ok){alert(r.data.error);return;}closeWrite();loadNotes();})
+  .catch(function(e){alert(e.message);})
+  .finally(function(){$('wSubmit').disabled=false;$('wSubmit').textContent='등록';});
+});
+
+function editNote(id){
+  authGet(API+'/notes/'+id).then(function(r){return r.json();}).then(function(n){
+    if(n.error){alert(n.error);return;}
+    editingId=id;$('wTitle').textContent='수정';
+    $('fCategory').value=n.category||'';$('fTitle').value=n.title||'';$('fContent').innerHTML=n.content||'';$('fPinned').checked=!!n.is_pinned;
+    $('writeModal').classList.add('active');document.body.style.overflow='hidden';
+  }).catch(function(e){alert(e.message);});
+}
+function deleteNote(id){
+  if(!confirm('삭제할까요?'))return;
+  apiFetch(API+'/notes/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({})})
+  .then(function(r){if(!r.ok){alert(r.data.error);return;}closeView();loadNotes();}).catch(function(e){alert(e.message);});
+}
+
+// ── 일괄삭제 ──
+$('btnBulkDel').addEventListener('click',function(){
+  var ids=[];document.querySelectorAll('.note-chk-input:checked').forEach(function(c){ids.push(parseInt(c.value));});
+  if(!ids.length)return;
+  if(!confirm(ids.length+'건 삭제할까요?'))return;
+  var done=0,fail=0,total=ids.length;
+  ids.forEach(function(id){
+    apiFetch(API+'/notes/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({})})
+    .then(function(r){if(!r.ok)fail++;else done++;}).catch(function(){fail++;})
+    .finally(function(){if(done+fail===total){if(fail)alert(done+'건 삭제, '+fail+'건 실패');loadNotes();}});
+  });
+});
+
+loadCategories().then(function(){loadNotes();});
+})();
+</script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<meta name="robots" content="noindex, nofollow">
+<title>내 주식 평가 · 신용 담보비율 | 스윙파머</title>
+<meta name="description" content="여러 종목 신용거래 담보비율 자동 계산. 주식수·매수가·현재가 넣으면 자동. 마진콜까지 여유폭·필요 하락률 표시.">
+<link rel="stylesheet" href="/common.css?v=14">
+<style>
+:root { --sf-max-w: 820px; }
+h1 { color: #1F4E78; font-size: 22px; margin-bottom: 4px; border-bottom: none; padding-bottom: 0; }
+  .sub { color: #666; font-size: 13px; margin-bottom: 18px; }
+  .panel h2 { color: #1F4E78; font-size: 15px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e5e9f0; }
+  .row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .row > label { font-size: 13px; color: #333; min-width: 100px; font-weight: 600; }
+  .row .field { flex: 1; min-width: 120px; }
+  /* 입력칸 표준 (landtax와 동일한 흰 박스) */
+  input[type=text] {
+    width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px;
+    background: #fff; color: #1F4E78; font-weight: 600; font-size: 13px;
+    text-align: right; font-family: inherit;
+  }
+  input:focus { outline: 2px solid #1F4E78; }
+  input.auto { background: #f0f9ff; color: #0369a1; }
+  input.auto:focus { background: #fff; color: #1F4E78; }
+  .unit { font-size: 12px; color: #666; margin-left: 4px; flex-shrink: 0; }
+  .hint { background: #f0f7ff; padding: 10px 12px; border-radius: 6px; font-size: 12px; color: #1F4E78; margin-top: 8px; line-height: 1.7; }
+  .warn { background: #fef3c7; padding: 10px 12px; border-radius: 6px; font-size: 13px; color: #92400e; margin-top: 8px; line-height: 1.7; }
+  .warn.danger { background: #fee2e2; color: #991b1b; }
+  .out-row { display: flex; align-items: baseline; gap: 8px; padding: 9px 12px; background: #f5f7fa; border-radius: 8px; margin-bottom: 6px; }
+  .out-row .lbl { flex: 0 0 130px; font-size: 13px; color: #555; }
+  .out-row .v { flex: 1; text-align: right; font-weight: 700; color: #1F4E78; font-size: 15px; }
+  .out-row .v.big { font-size: 17px; }
+  .out-row .v.gain { color: var(--sf-up, #dc2626); }
+  .out-row .v.loss { color: var(--sf-down, #2563eb); }
+  .quote-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #f5f7fa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; font-size: 12px; color: #555; }
+  .quote-bar .q-status { flex: 1; min-width: 180px; line-height: 1.5; }
+  .quote-bar label { display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: 600; white-space: nowrap; }
+  .quote-bar input[type=checkbox] { width: auto; }
+  .quote-bar .btn { padding: 5px 10px; font-size: 12px; }
+  .stk-quote { font-size: 12px; margin: -4px 0 10px; min-height: 16px; color: #888; }
+  .stk-quote .ok { color: #1F4E78; font-weight: 600; }
+  .stk-quote .up { color: var(--sf-up, #dc2626); font-weight: 700; }
+  .stk-quote .down { color: var(--sf-down, #2563eb); font-weight: 700; }
+  /* ── 다크 모드 ── */
+  body.sf-dark .quote-bar { background: #1a1f29 !important; border-color: #2c333f !important; color: #aab3c0 !important; }
+  body.sf-dark .stk-quote { color: #8b95a5; }
+  body.sf-dark .stk-quote .ok { color: #6ba3e0; }
+  body.sf-dark .sub, body.sf-dark .unit, body.sf-dark .footer-note { color: #94a3b8 !important; }
+  body.sf-dark .row > label, body.sf-dark .grid3 label, body.sf-dark .grid2 label { color: #cbd5e1 !important; }
+  body.sf-dark .grid2 label .auto-tag { color: #7dd3fc !important; }
+  body.sf-dark .panel h2 { border-color: #334155 !important; }
+  body.sf-dark .stock-card { background: #1a1f29 !important; border-color: #2c333f !important; box-shadow: none; }
+  body.sf-dark input.auto { background: #132235 !important; color: #7dd3fc !important; }
+  body.sf-dark .section-title.ord { color: #7dd3fc; }
+  body.sf-dark .section-title.crd { color: #fbbf24; }
+  body.sf-dark .out-row { background: #1a1f29 !important; }
+  body.sf-dark .out-row[style*="background"] { background: #24304a !important; }
+  body.sf-dark .out-row .lbl { color: #aab3c0 !important; }
+  body.sf-dark .out-row .lbl small { color: #7b8698 !important; }
+  body.sf-dark .out-row .v { color: #e4e4e7; }
+  body.sf-dark .out-row .v.gain { color: var(--sf-up) !important; }
+  body.sf-dark .out-row .v.loss { color: var(--sf-down) !important; }
+  body.sf-dark .stock-out, body.sf-dark .divider { border-color: #334155 !important; }
+  body.sf-dark .divider { color: #6ba3e0 !important; }
+  body.sf-dark .stock-out > div { background: #232a35 !important; }
+  body.sf-dark .stock-out .l { color: #94a3b8; }
+  body.sf-dark .stock-out .v { color: #e4e4e7; }
+  body.sf-dark .kor-below { color: #34d399; }
+  body.sf-dark .kor-below.big { background: #12261f; color: #6ee7b7; }
+  body.sf-dark .hint { background: #172a3a !important; color: #7dd3fc !important; }
+  body.sf-dark .hint b { color: #bae6fd; }
+  body.sf-dark .warn { background: #2a2418 !important; color: #fbbf24 !important; }
+  body.sf-dark .warn.danger { background: #3f1d1d !important; color: #fecaca !important; }
+  body.sf-dark .btn { background: #2a313d !important; color: #e4e4e7 !important; border-color: #3a4250 !important; }
+  body.sf-dark #btnReset { background: #3f1d1d !important; color: #fca5a5 !important; border-color: #7f1d1d !important; }
+  body.sf-dark .btn-clear { background: #2a313d; color: #aab3c0; border-color: #3a4250; }
+  body.sf-dark .btn-icon { background: #3f1d1d; color: #fca5a5; }
+  .divider { padding: 8px 0 4px; font-size: 12px; color: #666; font-weight: 600; border-top: 1px dashed #e0e4eb; margin-top: 6px; }
+  .stock-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  .stock-name-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; margin-bottom: 10px; }
+  .stock-name-row input { padding: 9px 10px; font-size:13px; background: #fff; color: #1a1a1a; font-weight: 600; text-align: left; }
+  .section-title { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; margin: 10px 0 6px; padding-left: 2px; display: flex; align-items: center; gap: 6px; }
+  .section-title.ord { color: #0369a1; }
+  .section-title.crd { color: #b45309; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 6px; }
+  .grid3 label, .grid2 label { display: block; font-size: 11.5px; color: #555; font-weight: 600; margin-bottom: 3px; }
+  .grid3 input { padding: 8px; font-size: 13px; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .grid2 label .auto-tag { color: #0369a1; font-weight: 500; margin-left: 2px; }
+  .kor-mini { color: #059669; font-weight: 500; font-size: 10.5px; margin-left: 4px; }
+  .kor-below { font-size: 11px; color: #059669; text-align: right; margin-top: 3px; padding: 0 3px; font-weight: 600; min-height: 14px; }
+  .kor-below.big { font-size: 13px; color: #047857; background: #ecfdf5; padding: 3px 6px; border-radius: 4px; font-weight: 700; min-height: 20px; }
+  .grid2 input { padding: 8px; font-size: 13px; }
+  .stock-out { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 8px 0 0; font-size: 11px; margin-top: 8px; border-top: 1px dashed #e0e4eb; }
+  .stock-out > div { text-align: center; padding: 6px 4px; background: #f5f7fa; border-radius: 6px; }
+  .stock-out .l { color: #888; font-size: 10.5px; }
+  .stock-out .v { font-weight: 700; color: #1F4E78; margin-top: 2px; }
+  .btn-icon { background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; width: 32px; height: 32px; font-size: 14px; cursor: pointer; font-weight: 700; }
+  .btn { padding: 9px 14px; border: 1px solid #d0d5dd; background: #fff; border-radius: 6px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .btn.pri { background: #0ea5e9; color: #fff; border-color: #0ea5e9; }
+  .btn.pri:hover { background: #0284c7; }
+  .btn.gray { background: #9ca3af; color: #fff; border-color: #9ca3af; }
+  .btn-clear { background: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; padding: 5px 9px; font-size: 10.5px; border-radius: 5px; cursor: pointer; font-family: inherit; font-weight: 600; margin-left: auto; }
+  .btn-clear:hover { background: #e5e7eb; }
+  .ratio-hero { padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 8px; }
+  .ratio-hero.safe { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+  .ratio-hero.warn { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+  .ratio-hero.danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+  .ratio-hero.critical { background: linear-gradient(135deg, #7f1d1d, #991b1b); color: white; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.85; } }
+  .ratio-value { font-size: 40px; font-weight: 800; letter-spacing: -1px; }
+  .ratio-status { font-size: 13px; margin-top: 6px; opacity: 0.95; font-weight: 600; }
+  .footer-note { font-size: 11px; color: #888; text-align: center; margin-top: 20px; line-height: 1.6; }
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>⚖️ 내 주식 평가 · 신용 담보비율</h1>
+  <p class="sub">종목명·주식수·매수가 입력 → <b>현재가 자동</b> 반영, 평가금액·손익 자동 계산. 신용 매수분은 따로 넣으면 담보비율·마진콜 여유까지 계산.</p>
+
+  <!-- 계좌 공통 -->
+  <div class="panel">
+    <h2>🏦 계좌 설정</h2>
+    <div class="row">
+      <label>예수금</label>
+      <div class="field"><input type="text" inputmode="numeric" id="inCash" placeholder="0 (없으면 비움)"></div>
+      <span class="unit">원</span>
+    </div>
+    <div class="kor" id="korCash" style="font-size:11px;color:#059669;text-align:right;padding:2px 4px 0;font-weight:500;min-height:14px;margin-top:-6px;margin-bottom:8px"></div>
+    <div class="row">
+      <label>담보유지비율</label>
+      <div class="field"><input type="text" inputmode="decimal" id="inThreshold" value="140"></div>
+      <span class="unit">% (증권사 기준, 통상 140%)</span>
+    </div>
+    <div class="hint">
+      💡 <b>담보비율</b> = (일반평가 + 신용평가 + 예수금) ÷ 신용매수금액 × 100.<br>
+      💡 기준 미만 시 <b>반대매매(마진콜)</b> 발생. 증권사마다 130~140% 차이 있음.
+    </div>
+  </div>
+
+  <!-- 종목 리스트 -->
+  <div class="panel">
+    <h2 style="display:flex;align-items:center">📊 종목별 입력
+      
+    </h2>
+    <div class="quote-bar">
+      <span class="q-status" id="quoteStatus">시세 불러오는 중…</span>
+      <label><input type="checkbox" id="chkAutoPrice" checked> 현재가 자동 반영</label>
+      <button id="btnRefreshQuote" class="btn" type="button">🔄 시세 갱신</button>
+    </div>
+    <datalist id="stkNames"></datalist>
+    <div id="stockList"></div>
+    <button id="btnAddStock" class="btn" style="margin-top:6px">➕ 종목 추가</button>
+    <div class="hint" style="margin-top:10px">
+      💡 <b>종목명</b>을 수집 종목(코스피 시총 1조↑·코스닥 5천억↑, 약 380개)과 똑같이 넣으면 현재가가 자동으로 들어감. 장중에는 1분 간격으로 갱신. 목록에 없는 종목은 현재가를 직접 입력.<br>
+      💡 <b>파란색 필드</b>는 자동 계산됨 (주식수 × 단가). 미세 조정 필요하면 직접 수정 가능. 이후 주식수·단가를 다시 만지면 자동 값으로 덮어써짐.<br>
+      💡 신용 안 쓰는 종목은 신용 섹션 비워두면 됨.<br>
+      💡 입력값은 <b>브라우저에 자동 저장</b>됨. 나갔다 와도 마지막 입력 상태 유지. 처음 상태로 되돌리려면 저장 관리 창의 [↺ 화면 처음으로].
+    </div>
+  </div>
+
+  <!-- 평가 요약 (신용 없어도 표시) -->
+  <div class="panel" id="evalPanel" style="display:none">
+    <h2>💼 평가 요약</h2>
+    <div class="out-row"><span class="lbl">총 매수금액</span><span class="v" id="evBuy">-</span></div>
+    <div class="out-row" style="background:#eff6ff"><span class="lbl">📈 총 평가금액</span><span class="v big" id="evVal">-</span></div>
+    <div class="out-row"><span class="lbl">└ 일반 매수분</span><span class="v" id="evOrd">-</span></div>
+    <div class="out-row"><span class="lbl">└ 신용 매수분</span><span class="v" id="evCrd">-</span></div>
+    <div class="out-row"><span class="lbl">평가손익</span><span class="v" id="evPL">-</span></div>
+    <div class="out-row" id="evCashRow" style="display:none"><span class="lbl">예수금</span><span class="v" id="evCash">-</span></div>
+    <div class="out-row" id="evLoanRow" style="display:none"><span class="lbl">신용 융자 (차감)</span><span class="v" id="evLoan">-</span></div>
+    <div class="out-row" style="background:#f0fdf4"><span class="lbl">💰 순자산<br><small style="color:#888;font-weight:400">(평가+예수금−융자)</small></span><span class="v big" id="evNet">-</span></div>
+    <button id="btnSendPf" class="btn" type="button" style="margin-top:8px">📊 순자산·신용을 포트폴리오 빠른 입력으로 보내기</button>
+    <div class="hint" style="margin-top:8px">💡 버튼을 누르면 포트폴리오 대시보드의 빠른 입력에 오늘 날짜·순자산·신용(부채)이 채워짐. 수익률은 순자산 기준으로 계산됨. 확인 후 [추가]를 눌러야 기록됨.</div>
+  </div>
+
+  <!-- 담보비율 결과 -->
+  <div class="panel" id="ratioPanel" style="display:none">
+    <h2>⚖️ 담보비율 결과</h2>
+    <div id="ratioHero" class="ratio-hero safe">
+      <div class="ratio-label">현재 담보비율</div>
+      <div class="ratio-value" id="ratioVal">-</div>
+      <div class="ratio-status" id="ratioStatus">-</div>
+    </div>
+    <div class="warn" id="ratioWarn" style="display:none;margin-top:12px"></div>
+
+    <div class="divider" style="margin-top:14px;font-size:13px;color:#1F4E78">📋 계좌 합계</div>
+    <div class="out-row"><span class="lbl">총 일반 매수금액</span><span class="v" id="sumOrdBuy">-</span></div>
+    <div class="out-row"><span class="lbl">총 일반 평가금액</span><span class="v" id="sumOrdVal">-</span></div>
+    <div class="out-row"><span class="lbl">└ 일반 손익</span><span class="v" id="sumOrdPL">-</span></div>
+    <div class="out-row"><span class="lbl">총 신용 매수금액<br><small style="color:#888;font-weight:400">(= 융자원금)</small></span><span class="v" id="sumCrdBuy">-</span></div>
+    <div class="out-row"><span class="lbl">총 신용 평가금액</span><span class="v" id="sumCrdVal">-</span></div>
+    <div class="out-row"><span class="lbl">└ 신용 손익</span><span class="v" id="sumCrdPL">-</span></div>
+    <div class="out-row" id="cashRow" style="display:none"><span class="lbl">예수금</span><span class="v" id="cashVal">-</span></div>
+    <div class="out-row" style="background:#eff6ff"><span class="lbl">💰 총 담보</span><span class="v big" id="totalCollateral">-</span></div>
+    <div class="out-row" style="background:#fef2f2"><span class="lbl">💳 신용 융자</span><span class="v big" id="totalLoan">-</span></div>
+
+    <div class="divider" style="margin-top:14px;font-size:13px;color:#1F4E78">🛡️ 마진콜 여유 분석</div>
+    <div class="out-row"><span class="lbl">기준 담보금액<br><small style="color:#888;font-weight:400">(임계값 × 융자)</small></span><span class="v" id="marginNeeded">-</span></div>
+    <div class="out-row"><span class="lbl">여유 담보금액</span><span class="v" id="marginRoom">-</span></div>
+    <div class="out-row"><span class="lbl">필요 담보 하락률<br><small style="color:#888;font-weight:400">(현재→마진콜)</small></span><span class="v" id="dropPct">-</span></div>
+    <div class="out-row"><span class="lbl">└ 종목 평균 하락률<br><small style="color:#888;font-weight:400">(주식만 하락 시)</small></span><span class="v" id="stockDropPct">-</span></div>
+  </div>
+
+  <p class="footer-note">
+    ※ <b>신용 매수금액을 융자원금과 동일하게 가정</b>. 실제로는 자기자본(보증금) 비율에 따라 다를 수 있음.<br>
+    ※ 이자·수수료·연체료·평가일 종가 변동 등 미반영. 참고용, 실제 반대매매 판정은 증권사 HTS 확인 필수.<br>
+    ※ 통상 담보유지비율: 신용융자 140%, 미수 130% (증권사 별 상이).
+  </p>
+</div>
+
+<!-- 클라우드 모달 -->
+
+
+<script>
+window.CALC_KEY = 'margin-ratio';
+window.slGetState = function(){ return window.mGetState ? window.mGetState() : {}; };
+window.slSetState = function(d){ if(window.mSetState) window.mSetState(d); };
+</script>
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+function num(id) { const v = parseFloat(($(id).value || '').replace(/,/g,'')); return isNaN(v) ? 0 : v; }
+function toNum(v) { const n = parseFloat((v || '').toString().replace(/,/g,'')); return isNaN(n) ? 0 : n; }
+function fmt(n) { if (!isFinite(n) || n === 0) return '0원'; return sfNum(n) + '원'; }
+function setCell(id, n, addSign) {
+  const el = $(id);
+  const kor = Math.abs(n) >= 1e4 ? sfKor(n) : '';
+  const sign = addSign && n > 0 ? '+' : '';
+  const suffix = kor ? ` <small style="color:#059669;font-size:11px;font-weight:500">≈ ${sign}${kor}</small>` : '';
+  el.innerHTML = sign + fmt(n) + suffix;
+}
+
+// 상태: 종목 리스트
+// 각 종목: 종목명 + [일반: 주식수/매수가/현재가/매수금액/평가금액] + [신용: 동일]
+let stocks = [
+  { name: '', ordQty: 0, ordPrice: 0, ordCurr: 0, ordBuy: 0, ordVal: 0, crdQty: 0, crdPrice: 0, crdCurr: 0, crdBuy: 0, crdVal: 0 }
+];
+
+function renderStocks() {
+  const box = $('stockList');
+  box.innerHTML = '';
+  stocks.forEach((s, i) => {
+    const card = document.createElement('div');
+    card.className = 'stock-card';
+    const nameEsc = (s.name || '').replace(/"/g,'&quot;');
+    card.innerHTML = `
+      <div class="stock-name-row">
+        <input type="text" placeholder="종목명 (예: 삼성전자) → 현재가 자동" value="${nameEsc}" data-f="name" data-i="${i}" class="stk-in" list="stkNames" autocomplete="off">
+        <button class="btn-icon" data-del="${i}" title="삭제">✕</button>
+      </div>
+      <div class="stk-quote" id="stk-q-${i}"></div>
+      <div class="section-title ord">📗 일반 매수 <button class="btn-clear" data-clear-ord="${i}" type="button">비우기</button></div>
+      <div class="grid3">
+        <div>
+          <label>주식수</label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.ordQty || ''}" data-f="ordQty" data-i="${i}" class="stk-in">
+        </div>
+        <div>
+          <label>매수가 (평단)</label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.ordPrice || ''}" data-f="ordPrice" data-i="${i}" class="stk-in">
+          <div class="kor-below" id="kor-ordPrice-${i}"></div>
+        </div>
+        <div>
+          <label>현재가</label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.ordCurr || ''}" data-f="ordCurr" data-i="${i}" class="stk-in">
+          <div class="kor-below" id="kor-ordCurr-${i}"></div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div>
+          <label>매수금액 <span class="auto-tag">(자동)</span></label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.ordBuy || ''}" data-f="ordBuy" data-i="${i}" class="stk-in auto">
+          <div class="kor-below big" id="kor-ordBuy-${i}"></div>
+        </div>
+        <div>
+          <label>평가금액 <span class="auto-tag">(자동)</span></label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.ordVal || ''}" data-f="ordVal" data-i="${i}" class="stk-in auto">
+          <div class="kor-below big" id="kor-ordVal-${i}"></div>
+        </div>
+      </div>
+
+      <div class="section-title crd">📕 신용 매수 <button class="btn-clear" data-clear-crd="${i}" type="button">비우기</button></div>
+      <div class="grid3">
+        <div>
+          <label>주식수</label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.crdQty || ''}" data-f="crdQty" data-i="${i}" class="stk-in">
+        </div>
+        <div>
+          <label>매수가 (평단)</label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.crdPrice || ''}" data-f="crdPrice" data-i="${i}" class="stk-in">
+          <div class="kor-below" id="kor-crdPrice-${i}"></div>
+        </div>
+        <div>
+          <label>현재가</label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.crdCurr || ''}" data-f="crdCurr" data-i="${i}" class="stk-in">
+          <div class="kor-below" id="kor-crdCurr-${i}"></div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div>
+          <label>매수금액 <span class="auto-tag">(자동)</span></label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.crdBuy || ''}" data-f="crdBuy" data-i="${i}" class="stk-in auto">
+          <div class="kor-below big" id="kor-crdBuy-${i}"></div>
+        </div>
+        <div>
+          <label>평가금액 <span class="auto-tag">(자동)</span></label>
+          <input type="text" inputmode="numeric" placeholder="0" value="${s.crdVal || ''}" data-f="crdVal" data-i="${i}" class="stk-in auto">
+          <div class="kor-below big" id="kor-crdVal-${i}"></div>
+        </div>
+      </div>
+
+      <div class="stock-out" id="stk-out-${i}"></div>
+    `;
+    box.appendChild(card);
+  });
+
+  box.querySelectorAll('.stk-in').forEach(el => {
+    el.addEventListener('input', () => {
+      const i = parseInt(el.dataset.i);
+      const f = el.dataset.f;
+      if (f === 'name') stocks[i][f] = el.value;
+      else stocks[i][f] = toNum(el.value);
+
+      // 종목명·수량이 바뀌면 수집 시세로 현재가 자동 채움
+      if (f === 'name' || f === 'ordQty' || f === 'crdQty' || f === 'crdPrice') fillFromQuote(i);
+
+      // 자동 계산: 주식수/단가 변경 시 매수금액·평가금액 재계산
+      if (f === 'ordQty' || f === 'ordPrice') {
+        stocks[i].ordBuy = (stocks[i].ordQty || 0) * (stocks[i].ordPrice || 0);
+        updateFieldValue(i, 'ordBuy', stocks[i].ordBuy);
+      }
+      if (f === 'ordQty' || f === 'ordCurr') {
+        stocks[i].ordVal = (stocks[i].ordQty || 0) * (stocks[i].ordCurr || 0);
+        updateFieldValue(i, 'ordVal', stocks[i].ordVal);
+      }
+      if (f === 'crdQty' || f === 'crdPrice') {
+        stocks[i].crdBuy = (stocks[i].crdQty || 0) * (stocks[i].crdPrice || 0);
+        updateFieldValue(i, 'crdBuy', stocks[i].crdBuy);
+      }
+      if (f === 'crdQty' || f === 'crdCurr') {
+        stocks[i].crdVal = (stocks[i].crdQty || 0) * (stocks[i].crdCurr || 0);
+        updateFieldValue(i, 'crdVal', stocks[i].crdVal);
+      }
+      calc(); saveLocal();
+    });
+  });
+
+  box.querySelectorAll('[data-del]').forEach(el => {
+    el.addEventListener('click', () => {
+      const i = parseInt(el.dataset.del);
+      if (stocks.length <= 1) { alert('최소 1개 종목은 있어야 합니다.'); return; }
+      stocks.splice(i, 1);
+      renderStocks(); calc(); saveLocal();
+    });
+  });
+
+  box.querySelectorAll('[data-clear-ord]').forEach(el => {
+    el.addEventListener('click', () => {
+      const i = parseInt(el.dataset.clearOrd);
+      ['ordQty','ordPrice','ordCurr','ordBuy','ordVal'].forEach(k => stocks[i][k] = 0);
+      renderStocks(); calc(); saveLocal();
+    });
+  });
+  box.querySelectorAll('[data-clear-crd]').forEach(el => {
+    el.addEventListener('click', () => {
+      const i = parseInt(el.dataset.clearCrd);
+      ['crdQty','crdPrice','crdCurr','crdBuy','crdVal'].forEach(k => stocks[i][k] = 0);
+      renderStocks(); calc(); saveLocal();
+    });
+  });
+  stocks.forEach((_, i) => fillFromQuote(i));
+  calc();
+}
+
+// ───────── 시세 자동 반영 ─────────
+// 1순위: VM 준실시간 API (평일 장중 1분 간격 수집, 장 마감 후에는 마지막 값 유지)
+// 2순위: /data/kr/prices.json (평일 18:30 종가) + 종목명은 scripts/*.csv
+const LIVE_URL = 'https://swingfarmer.duckdns.org/api/prices/live';
+let quotes = {};        // code → { n:종목명, p:현재가, r:등락률(없으면 null) }
+let nameMap = {};       // 정규화한 종목명 → code
+let quoteInfo = null;   // { src:'live'|'close', date, time, open }
+let autoPrice = true;
+let quoteTimer = null;
+
+function normName(s) { return (s || '').toString().replace(/\s+/g, '').toUpperCase(); }
+function matchCode(name) {
+  const n = normName(name);
+  if (!n) return '';
+  if (/^\d{6}$/.test(n) && quotes[n]) return n;   // 종목코드 6자리로 넣어도 됨
+  return nameMap[n] || '';
+}
+
+function setCurr(i, kind, price) {
+  const s = stocks[i];
+  const cf = kind + 'Curr', vf = kind + 'Val', qf = kind + 'Qty';
+  const el = document.querySelector(`[data-i="${i}"][data-f="${cf}"]`);
+  if (el && el === document.activeElement) return;   // 직접 입력 중인 칸은 건드리지 않음
+  s[cf] = price;
+  if (el) el.value = price;
+  if (s[qf] > 0) { s[vf] = s[qf] * price; updateFieldValue(i, vf, s[vf]); }
+}
+
+function fillFromQuote(i) {
+  const s = stocks[i];
+  if (!s) return;
+  const code = matchCode(s.name);
+  const q = code ? quotes[code] : null;
+  if (q && autoPrice) {
+    setCurr(i, 'ord', q.p);
+    if (s.crdQty > 0 || s.crdPrice > 0 || s.crdBuy > 0) setCurr(i, 'crd', q.p);
+  }
+  const box = $(`stk-q-${i}`);
+  if (!box) return;
+  if (q) {
+    let chg = '';
+    if (typeof q.r === 'number') {
+      const cls = q.r > 0 ? 'up' : (q.r < 0 ? 'down' : '');
+      const arrow = q.r > 0 ? '▲' : (q.r < 0 ? '▼' : '');
+      chg = ` <span class="${cls}">${arrow}${Math.abs(q.r).toFixed(2)}%</span>`;
+    }
+    box.innerHTML = `<span class="ok">✓ ${q.n} (${code})</span> · ${q.p.toLocaleString('ko-KR')}원${chg}${autoPrice ? '' : ' · 자동 반영 꺼짐'}`;
+  } else if (normName(s.name) && Object.keys(quotes).length) {
+    box.textContent = '수집 종목에 없음 → 현재가 직접 입력';
+  } else {
+    box.textContent = '';
+  }
+}
+
+function applyQuotes() {
+  stocks.forEach((_, i) => fillFromQuote(i));
+  calc(); saveLocal();
+}
+
+function parseListCsv(text) {
+  const out = {};
+  (text || '').split(/\r?\n/).forEach(line => {
+    line = line.trim();
+    if (!line || line.charAt(0) === '#') return;
+    const p = line.split(',');
+    if (p.length >= 2 && /^\d{6}$/.test(p[0].trim())) out[p[0].trim()] = p[1].trim();
+  });
+  return out;
+}
+
+async function loadQuotes() {
+  let live = null, close = null;
+  const jobs = [
+    fetch(LIVE_URL, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(d => { if (d && d.stocks) live = d; }).catch(() => {}),
+    fetch('/data/kr/prices.json?v=' + Date.now()).then(r => r.ok ? r.json() : null).then(d => { if (d && d.prices) close = d; }).catch(() => {})
+  ];
+  await Promise.all(jobs);
+
+  const next = {};
+  let info = null;
+  // 날짜가 더 최신인 쪽 사용 (같으면 실시간 쪽)
+  if (live && (!close || (live.date || '') >= (close.updated || ''))) {
+    Object.keys(live.stocks).forEach(c => {
+      const q = live.stocks[c];
+      if (q && q.p > 0) next[c] = { n: q.n || c, p: q.p, r: typeof q.r === 'number' ? q.r : null };
+    });
+    info = { src: 'live', date: live.date || '', time: live.time || '', open: !!live.market_open };
+  } else if (close) {
+    let names = {};
+    try {
+      const [a, b] = await Promise.all([
+        fetch('/scripts/kospi200_list.csv').then(r => r.ok ? r.text() : ''),
+        fetch('/scripts/kosdaq_list.csv').then(r => r.ok ? r.text() : '')
+      ]);
+      names = Object.assign(parseListCsv(a), parseListCsv(b));
+    } catch (e) {}
+    Object.keys(close.prices).forEach(c => {
+      const q = close.prices[c];
+      if (q && q.price > 0) next[c] = { n: names[c] || c, p: q.price, r: null };
+    });
+    info = { src: 'close', date: close.updated || '', time: '', open: false };
+  }
+
+  const st = $('quoteStatus');
+  if (!info || !Object.keys(next).length) {
+    st.textContent = '⚠️ 시세를 불러오지 못함 → 현재가 직접 입력 (잠시 후 [시세 갱신])';
+  } else {
+    quotes = next; quoteInfo = info;
+    nameMap = {};
+    Object.keys(quotes).forEach(c => { nameMap[normName(quotes[c].n)] = c; });
+    $('stkNames').innerHTML = Object.keys(quotes).map(c => `<option value="${quotes[c].n.replace(/"/g, '&quot;')}">`).join('');
+    const md = info.date.slice(5).replace('-', '/');
+    const n = Object.keys(quotes).length;
+    if (info.src === 'live' && info.open) st.innerHTML = `🔴 <b>장중 준실시간</b> · ${md} ${info.time} 기준 · 1분 간격 자동 갱신 · ${n}종목`;
+    else if (info.src === 'live') st.innerHTML = `${md} ${info.time} 기준 (장 마감) · ${n}종목`;
+    else st.innerHTML = `${md} 종가 기준 (실시간 값 없음) · ${n}종목`;
+    applyQuotes();
+  }
+
+  clearTimeout(quoteTimer);
+  quoteTimer = setTimeout(() => { if (!document.hidden) loadQuotes(); }, (quoteInfo && quoteInfo.open) ? 60 * 1000 : 5 * 60 * 1000);
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && quoteInfo) loadQuotes(); });
+
+function updateFieldValue(i, field, value) {
+  const el = document.querySelector(`[data-i="${i}"][data-f="${field}"]`);
+  if (el) el.value = value > 0 ? Math.round(value) : '';
+}
+
+let lastNetAsset = 0;
+let lastLoan = 0;
+function calc() {
+  let sumOrdBuy = 0, sumOrdVal = 0, sumCrdBuy = 0, sumCrdVal = 0;
+  stocks.forEach((s, i) => {
+    const oB = s.ordBuy || 0, oV = s.ordVal || 0;
+    const cB = s.crdBuy || 0, cV = s.crdVal || 0;
+    sumOrdBuy += oB; sumOrdVal += oV; sumCrdBuy += cB; sumCrdVal += cV;
+
+    // 자동 필드 옆 한글 힌트
+    const kOB = $(`kor-ordBuy-${i}`); if (kOB) kOB.textContent = oB > 0 ? '≈ ' + sfKor(oB) : '';
+    const kOV = $(`kor-ordVal-${i}`); if (kOV) kOV.textContent = oV > 0 ? '≈ ' + sfKor(oV) : '';
+    const kCB = $(`kor-crdBuy-${i}`); if (kCB) kCB.textContent = cB > 0 ? '≈ ' + sfKor(cB) : '';
+    const kCV = $(`kor-crdVal-${i}`); if (kCV) kCV.textContent = cV > 0 ? '≈ ' + sfKor(cV) : '';
+    // 매수가/현재가는 10만원 이상일 때만 한글 표시
+    const kOP = $(`kor-ordPrice-${i}`); if (kOP) kOP.textContent = (s.ordPrice || 0) >= 100000 ? '≈ ' + sfKor(s.ordPrice) : '';
+    const kOC = $(`kor-ordCurr-${i}`); if (kOC) kOC.textContent = (s.ordCurr || 0) >= 100000 ? '≈ ' + sfKor(s.ordCurr) : '';
+    const kCP = $(`kor-crdPrice-${i}`); if (kCP) kCP.textContent = (s.crdPrice || 0) >= 100000 ? '≈ ' + sfKor(s.crdPrice) : '';
+    const kCC = $(`kor-crdCurr-${i}`); if (kCC) kCC.textContent = (s.crdCurr || 0) >= 100000 ? '≈ ' + sfKor(s.crdCurr) : '';
+
+    const out = $(`stk-out-${i}`);
+    if (out) {
+      const totalBuy = oB + cB;
+      const totalVal = oV + cV;
+      const pl = totalVal - totalBuy;
+      const plRate = totalBuy > 0 ? (pl / totalBuy * 100) : 0;
+      const plColor = pl > 0 ? 'var(--sf-up, #dc2626)' : (pl < 0 ? 'var(--sf-down, #2563eb)' : '#666');
+      const kBuy = totalBuy > 0 ? `<div style="font-size:10px;color:#059669;margin-top:1px">${sfKor(totalBuy)}</div>` : '';
+      const kVal = totalVal > 0 ? `<div style="font-size:10px;color:#059669;margin-top:1px">${sfKor(totalVal)}</div>` : '';
+      const kPl = totalBuy > 0 && Math.abs(pl) >= 10000 ? `<div style="font-size:10px;color:${plColor};margin-top:1px">${pl > 0 ? '+' : ''}${sfKor(pl)}</div>` : '';
+      out.innerHTML = `
+        <div><div class="l">총 매수</div><div class="v">${totalBuy > 0 ? totalBuy.toLocaleString() : '-'}</div>${kBuy}</div>
+        <div><div class="l">총 평가</div><div class="v">${totalVal > 0 ? totalVal.toLocaleString() : '-'}</div>${kVal}</div>
+        <div><div class="l">손익</div><div class="v" style="color:${plColor}">${totalBuy > 0 ? (pl > 0 ? '+' : '') + Math.round(pl).toLocaleString() + ' (' + (plRate >= 0 ? '+' : '') + plRate.toFixed(1) + '%)' : '-'}</div>${kPl}</div>
+      `;
+    }
+  });
+
+  const cash = num('inCash');
+  const threshold = num('inThreshold') || 140;
+  const collateral = sumOrdVal + sumCrdVal + cash;
+  const loan = sumCrdBuy;
+
+  // 예수금 한글 힌트
+  const kCash = $('korCash'); if (kCash) kCash.textContent = cash > 0 ? '≈ ' + sfKor(cash) : '';
+
+  // 평가 요약 (신용이 없어도 표시)
+  const evalTotal = sumOrdVal + sumCrdVal;
+  const buyTotal = sumOrdBuy + sumCrdBuy;
+  lastNetAsset = evalTotal + cash - loan;
+  lastLoan = loan;
+  if (evalTotal > 0) {
+    $('evalPanel').style.display = 'block';
+    setCell('evBuy', buyTotal);
+    setCell('evVal', evalTotal);
+    setCell('evOrd', sumOrdVal);
+    setCell('evCrd', sumCrdVal);
+    const pl = evalTotal - buyTotal;
+    if (buyTotal > 0) {
+      const rate = pl / buyTotal * 100;
+      const kor = Math.abs(pl) >= 1e4 ? sfKor(pl) : '';
+      $('evPL').innerHTML = (pl > 0 ? '+' : '') + fmt(pl) + ` (${rate >= 0 ? '+' : ''}${rate.toFixed(2)}%)` + (kor ? ` <small style="font-size:11px;font-weight:500">≈ ${pl > 0 ? '+' : ''}${kor}</small>` : '');
+    } else {
+      $('evPL').textContent = '-';
+    }
+    $('evPL').classList.toggle('gain', buyTotal > 0 && pl > 0);
+    $('evPL').classList.toggle('loss', buyTotal > 0 && pl < 0);
+    $('evCashRow').style.display = cash > 0 ? 'flex' : 'none';
+    setCell('evCash', cash);
+    $('evLoanRow').style.display = loan > 0 ? 'flex' : 'none';
+    $('evLoan').innerHTML = '-' + fmt(loan);
+    setCell('evNet', lastNetAsset);
+  } else {
+    $('evalPanel').style.display = 'none';
+  }
+
+  if (loan <= 0) {
+    $('ratioPanel').style.display = 'none';
+    return;
+  }
+  $('ratioPanel').style.display = 'block';
+
+  const ratio = (collateral / loan) * 100;
+  const marginNeeded = loan * (threshold / 100);
+  const marginRoom = collateral - marginNeeded;
+  const dropPct = collateral > 0 ? (marginRoom / collateral * 100) : 0;
+  const stockCollateral = sumOrdVal + sumCrdVal;
+  const stockDropPct = stockCollateral > 0 ? (marginRoom / stockCollateral * 100) : 0;
+
+  const hero = $('ratioHero');
+  const statusEl = $('ratioStatus');
+  $('ratioVal').textContent = ratio.toFixed(1) + '%';
+  hero.className = 'ratio-hero';
+  if (ratio >= threshold + 60) {
+    hero.classList.add('safe');
+    statusEl.textContent = '✅ 안전 (여유 충분)';
+  } else if (ratio >= threshold + 20) {
+    hero.classList.add('safe');
+    statusEl.textContent = '🟢 안전';
+  } else if (ratio >= threshold) {
+    hero.classList.add('warn');
+    statusEl.textContent = '⚠️ 주의 (기준 근접)';
+  } else if (ratio >= threshold - 10) {
+    hero.classList.add('danger');
+    statusEl.textContent = '🚨 위험 (반대매매 임박)';
+  } else {
+    hero.classList.add('critical');
+    statusEl.textContent = '🚨 반대매매 위험!';
+  }
+
+  setCell('sumOrdBuy', sumOrdBuy);
+  setCell('sumOrdVal', sumOrdVal);
+  const ordPL = sumOrdVal - sumOrdBuy;
+  setCell('sumOrdPL', ordPL, true);
+  $('sumOrdPL').classList.toggle('gain', ordPL > 0);
+  $('sumOrdPL').classList.toggle('loss', ordPL < 0);
+
+  setCell('sumCrdBuy', sumCrdBuy);
+  setCell('sumCrdVal', sumCrdVal);
+  const crdPL = sumCrdVal - sumCrdBuy;
+  setCell('sumCrdPL', crdPL, true);
+  $('sumCrdPL').classList.toggle('gain', crdPL > 0);
+  $('sumCrdPL').classList.toggle('loss', crdPL < 0);
+
+  $('cashRow').style.display = cash > 0 ? 'flex' : 'none';
+  setCell('cashVal', cash);
+  setCell('totalCollateral', collateral);
+  setCell('totalLoan', loan);
+  setCell('marginNeeded', marginNeeded);
+  setCell('marginRoom', marginRoom);
+
+  const dropEl = $('dropPct');
+  const stockDropEl = $('stockDropPct');
+  if (marginRoom < 0) {
+    dropEl.innerHTML = '<span style="color:#dc2626">이미 마진콜 상태 (' + Math.abs(marginRoom).toLocaleString() + '원 부족)</span>';
+    stockDropEl.textContent = '-';
+  } else {
+    dropEl.innerHTML = `<span style="color:${dropPct < 5 ? '#dc2626' : (dropPct < 15 ? '#d97706' : '#059669')}">-${dropPct.toFixed(2)}%까지 견딤</span>`;
+    stockDropEl.innerHTML = `<span style="color:${stockDropPct < 5 ? '#dc2626' : (stockDropPct < 15 ? '#d97706' : '#059669')}">-${stockDropPct.toFixed(2)}%까지 견딤</span>`;
+  }
+
+  const warns = [];
+  if (ratio < threshold) {
+    const additional = marginNeeded - collateral;
+    const payback = (collateral - marginNeeded) * -1 / (threshold/100 - 1);
+    warns.push(`🚨 <b>담보비율 ${ratio.toFixed(1)}% (기준 ${threshold}% 미달)</b> — 추가 담보 <b>${sfKor(additional)}</b> 필요 or 신용 <b>${sfKor(payback)}</b> 상환 필요.`);
+  } else if (ratio < threshold + 20) {
+    warns.push(`⚠️ <b>담보비율 ${ratio.toFixed(1)}%</b>, 기준(${threshold}%)까지 여유 ${(ratio - threshold).toFixed(1)}%p. 하락 주의.`);
+  }
+  const warnEl = $('ratioWarn');
+  warnEl.className = ratio < threshold ? 'warn danger' : 'warn';
+  warnEl.innerHTML = warns.join('<br>');
+  warnEl.style.display = warns.length ? 'block' : 'none';
+}
+
+$('btnAddStock').addEventListener('click', () => {
+  stocks.push({ name: '', ordQty: 0, ordPrice: 0, ordCurr: 0, ordBuy: 0, ordVal: 0, crdQty: 0, crdPrice: 0, crdCurr: 0, crdBuy: 0, crdVal: 0 });
+  renderStocks(); saveLocal();
+});
+
+window.slReset = () => {   // (085) 저장 관리 창 [↺ 화면 처음으로]
+  try { localStorage.removeItem('sf_mr_state_v2'); localStorage.removeItem('sf_mr_state_v1'); localStorage.removeItem('sf_mr_loaded_slot'); } catch(e){}
+  var lsEl = document.getElementById('loadedSlot'); if (lsEl) lsEl.style.display = 'none';
+  $('inCash').value = '';
+  $('inThreshold').value = '140';
+  autoPrice = true; $('chkAutoPrice').checked = true;
+  stocks = [{ name: '', ordQty: 0, ordPrice: 0, ordCurr: 0, ordBuy: 0, ordVal: 0, crdQty: 0, crdPrice: 0, crdCurr: 0, crdBuy: 0, crdVal: 0 }];
+  renderStocks();
+};
+
+['inCash', 'inThreshold'].forEach(id => {
+  $(id).addEventListener('input', () => { calc(); saveLocal(); });
+});
+
+// 저장/복원
+function mGetState() {
+  return { cash: $('inCash').value, threshold: $('inThreshold').value, autoPrice: autoPrice, stocks: JSON.parse(JSON.stringify(stocks)) };
+}
+function mSetState(d) {
+  if (!d) return;
+  $('inCash').value = d.cash || '';
+  $('inThreshold').value = d.threshold || '140';
+  autoPrice = d.autoPrice !== false;
+  $('chkAutoPrice').checked = autoPrice;
+  stocks = Array.isArray(d.stocks) && d.stocks.length > 0
+    ? d.stocks.map(s => ({
+        name: s.name || '',
+        ordQty: s.ordQty || 0, ordPrice: s.ordPrice || 0, ordCurr: s.ordCurr || 0,
+        ordBuy: s.ordBuy || 0, ordVal: s.ordVal || 0,
+        crdQty: s.crdQty || 0, crdPrice: s.crdPrice || 0, crdCurr: s.crdCurr || 0,
+        crdBuy: s.crdBuy || 0, crdVal: s.crdVal || 0
+      }))
+    : [{ name: '', ordQty: 0, ordPrice: 0, ordCurr: 0, ordBuy: 0, ordVal: 0, crdQty: 0, crdPrice: 0, crdCurr: 0, crdBuy: 0, crdVal: 0 }];
+  renderStocks();
+}
+function saveLocal() { try { localStorage.setItem('sf_mr_state_v2', JSON.stringify(mGetState())); } catch(e){} }
+function loadLocal() {
+  try {
+    const r = localStorage.getItem('sf_mr_state_v2');
+    if (r) { mSetState(JSON.parse(r)); return; }
+    // v1 마이그레이션 (구 스키마: ordBuy/ordVal만)
+    const old = localStorage.getItem('sf_mr_state_v1');
+    if (old) {
+      const d = JSON.parse(old);
+      if (d && Array.isArray(d.stocks)) {
+        d.stocks = d.stocks.map(s => ({ ...s, ordPrice: 0, ordCurr: 0, crdPrice: 0, crdCurr: 0 }));
+        mSetState(d);
+      }
+    }
+  } catch(e){}
+}
+window.mGetState = mGetState;
+window.mSetState = mSetState;
+
+$('chkAutoPrice').addEventListener('change', () => {
+  autoPrice = $('chkAutoPrice').checked;
+  applyQuotes();
+});
+$('btnRefreshQuote').addEventListener('click', () => {
+  $('quoteStatus').textContent = '시세 불러오는 중…';
+  loadQuotes();
+});
+$('btnSendPf').addEventListener('click', () => {
+  if (!(lastNetAsset > 0)) { alert('보낼 순자산 금액이 없습니다.'); return; }
+  const d = new Date();
+  const ymd = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  try {
+    localStorage.setItem('sf_pf_quick_prefill', JSON.stringify({ date: ymd, asset: Math.round(lastNetAsset), loan: Math.round(lastLoan || 0), ts: Date.now(), from: 'margin-ratio' }));
+  } catch (e) { alert('브라우저 저장소를 쓸 수 없어 보내지 못했습니다.'); return; }
+  location.href = '/portfolio/';
+});
+
+loadLocal();
+renderStocks();
+loadQuotes();
+</script>
+
+
+</body>
+</html>

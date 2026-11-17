@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>배당 캘린더 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .month-card{background-color:#1e242e!important}
+body.sf-dark .div-item{border-bottom-color:#2c333f!important}
+body.sf-dark .div-item .name{color:#dedede!important}
+body.sf-dark .type-badge.annual{background-color:#152437!important;color:#7c96e9!important}
+body.sf-dark .type-badge.interim{background-color:#373115!important;color:#f2a373!important}
+body.sf-dark .btn-more{color:#85b5e0!important}
+body.sf-dark .btn-more:hover{background-color:#152637!important}
+body.sf-dark .rank-table td{border-bottom-color:#2c333f!important}
+body.sf-dark .rank-table tr:hover td{background-color:#172636!important}
+body.sf-dark .market-badge.KOSPI{background-color:#152437!important;color:#7c96e9!important}
+body.sf-dark .market-badge.KOSDAQ{background-color:#261537!important;color:#a77de8!important}
+body.sf-dark .stock-card{background-color:#1e242e!important}
+body.sf-dark .stock-card h4{color:#85b5e0!important}
+body.sf-dark .div-history .year-row{border-bottom-color:#2c333f!important}
+body.sf-dark .div-history .yr{color:#d6d6d6!important}
+body.sf-dark .notice{background-color:#152437!important;color:#819be4!important}
+</style>
+<style>
+:root { --sf-max-w: 1200px; }
+.final { background: linear-gradient(135deg, #1F4E78, #2563eb); }
+*{box-sizing:border-box;margin:0;padding:0}
+.updated{color:#999;font-size:12px;margin-bottom:18px}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.summary-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px}
+.scard{padding:18px;border-radius:10px;color:white}
+.scard.blue{background:linear-gradient(135deg,#1F4E78,#2563eb)}
+.scard.green{background:linear-gradient(135deg,#059669,#10b981)}
+.scard.amber{background:linear-gradient(135deg,#d97706,#f59e0b)}
+.scard.purple{background:linear-gradient(135deg,#6d28d9,#8b5cf6)}
+.scard .lbl{font-size:13px;opacity:.9;margin-bottom:6px}
+.scard .val{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.scard .sub{font-size:12px;opacity:.85;margin-top:4px}
+.cal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.month-card{background:white;border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.month-card h3{color:#1F4E78;font-size:15px;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #e5e7eb}
+.month-card .count{float:right;background:#1F4E78;color:white;font-size:11px;padding:2px 8px;border-radius:10px}
+.month-card .empty{color:#aaa;font-size:13px;padding:10px 0}
+.div-item{padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+.div-item:last-child{border-bottom:none}
+.div-item .name{font-weight:600;color:#1a1a1a;flex:1}
+.div-item .dps{color:#059669;font-weight:700;white-space:nowrap;margin-left:8px}
+.type-badge{font-size:10px;padding:1px 6px;border-radius:6px;margin-left:6px;font-weight:600}
+.type-badge.annual{background:#dbeafe;color:#1e40af}
+.type-badge.interim{background:#fef3c7;color:#92400e}
+.btn-more{display:block;width:100%;padding:8px;border:1px dashed #aaa;background:transparent;color:#1F4E78;font-size:12px;font-weight:600;border-radius:6px;cursor:pointer;margin-top:6px;font-family:inherit}
+.btn-more:hover{background:#f0f5fa;border-color:#1F4E78}
+.rank-table th:nth-child(1),.rank-table td:nth-child(1){text-align:center;width:36px}
+.rank-table th:nth-child(2),.rank-table td:nth-child(2){text-align:left}
+.rank-table td{padding:9px 8px;text-align:right;border-bottom:1px solid #eee}
+.rank-table tr:hover td{background:#f8fafc}
+.market-badge{font-size:10px;padding:1px 5px;border-radius:6px;font-weight:600;margin-left:4px}
+.market-badge.KOSPI{background:#dbeafe;color:#1e40af}
+.market-badge.KOSDAQ{background:#f3e8ff;color:#6d28d9}
+.filter-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.filter-row input{padding:10px;font-size:13px;border:1px solid #ccc;border-radius:6px;flex:1;min-width:200px;font-family:inherit}
+.filter-row input:focus{outline:2px solid #1F4E78}
+.filter-row select{padding:10px;font-size:13px;border:1px solid #ccc;border-radius:6px;font-family:inherit}
+.result-count{font-size:12px;color:#888;margin-bottom:10px}
+.stock-dividends{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.stock-card{background:white;border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.stock-card h4{color:#1F4E78;font-size:14px;margin-bottom:8px}
+.stock-card .code{color:#888;font-size:12px;font-weight:400;margin-left:4px}
+.div-history{font-size:13px}
+.div-history .year-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f5f5f5}
+.div-history .year-row:last-child{border-bottom:none}
+.div-history .yr{font-weight:600;color:#444}
+.div-history .amt{color:#059669;font-weight:700}
+.div-history .yld{color:#888;font-size:12px;margin-left:6px}
+.growth-up{color:#dc2626;font-size:11px}
+.growth-down{color:#2563eb;font-size:11px}
+.growth-same{color:#888;font-size:11px}
+.loading{text-align:center;padding:60px 20px;color:#888}
+.notice{background:#dbeafe;border-left:4px solid #2563eb;padding:12px 16px;border-radius:6px;font-size:12.5px;color:#1e3a8a;line-height:1.7;margin-bottom:16px}
+@media(max-width:600px){
+  .summary-cards{grid-template-columns:repeat(2,1fr)}
+  .cal-grid,.stock-dividends{grid-template-columns:1fr}
+  .filter-row input{min-width:100%}
+}
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body class="sf-narrow">
+<h1>📅 배당 캘린더</h1>
+<p class="desc">KOSPI·KOSDAQ 상장사 배당 이력 + 예상 지급 일정. OpenDART 자동 수집.</p>
+<div class="updated" id="updatedAt"></div>
+<div class="notice">
+  ⏱ 지급일은 12월 결산 기준 예상치입니다 (연간: 익년 3~4월, 중간: 8~9월). 정확한 지급일은 각사 배당결정 공시를 확인하세요.<br>
+  📌 배당기준일: 연간 12/31, 중간 6/30 | 배당락일: 기준일 2영업일 전 (매수 마감)
+</div>
+<div class="summary-cards" id="summaryCards"></div>
+<div class="tabs">
+  <button class="tab active" data-tab="calendar">📅 월별 캘린더</button>
+  <button class="tab" data-tab="ranking">🏆 배당수익률 Top</button>
+  <button class="tab" data-tab="search">🔍 종목 검색</button>
+</div>
+
+<div class="tab-content active" id="tab-calendar">
+  <div class="filter-row">
+    <select id="calYear"></select>
+    <select id="calType">
+      <option value="all">전체</option>
+      <option value="annual">연간배당</option>
+      <option value="interim">중간배당</option>
+    </select>
+  </div>
+  <div class="cal-grid" id="calGrid"></div>
+</div>
+
+<div class="tab-content" id="tab-ranking">
+  <div class="filter-row">
+    <select id="rankYear"></select>
+    <select id="rankMarket">
+      <option value="all">전체 시장</option>
+      <option value="KOSPI">KOSPI</option>
+      <option value="KOSDAQ">KOSDAQ</option>
+    </select>
+  </div>
+  <div class="result-count" id="rankCount"></div>
+  <div class="table-wrap">
+    <div class="table-scroll"><table class="rank-table" id="rankTable">
+      <thead><tr><th>#</th><th>종목</th><th>시장</th><th>DPS(원)</th><th>수익률</th><th>성향</th></tr></thead>
+      <tbody id="rankBody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<div class="tab-content" id="tab-search">
+  <div class="filter-row">
+    <input type="text" id="searchInput" placeholder="종목명 또는 종목코드 검색...">
+    <select id="searchMarket">
+      <option value="all">전체 시장</option>
+      <option value="KOSPI">KOSPI</option>
+      <option value="KOSDAQ">KOSDAQ</option>
+    </select>
+    <select id="searchFilter">
+      <option value="all">전체</option>
+      <option value="growing">배당 증가</option>
+      <option value="new">신규 배당</option>
+    </select>
+  </div>
+  <div class="result-count" id="searchCount"></div>
+  <div class="stock-dividends" id="stockGrid"></div>
+</div>
+
+<script>
+var DATA = null;
+var CAL_EXPANDED = {};  // month → expanded state
+
+function fmt(n, dec) {
+  return sfNum(n, dec||0);   // (106) 표기는 sf-fmt.js
+}
+
+function load() {
+  document.getElementById('calGrid').innerHTML = '<div class="loading">📊 배당 데이터 로딩 중...</div>';
+  fetch('/data/dividends.json')
+    .then(function(r) { return r.json(); })
+    .then(function(d) { DATA = d; init(); })
+    .catch(function() {
+      document.getElementById('calGrid').innerHTML = '<div class="loading">❌ 데이터 로드 실패<br><small>scripts/fetch_dividends.py 실행 후 data/dividends.json 생성 필요</small></div>';
+    });
+}
+
+function init() {
+  document.getElementById('updatedAt').textContent = '마지막 업데이트: ' + (DATA.updated || '-');
+  var s = DATA.stats || {};
+  document.getElementById('summaryCards').innerHTML =
+    '<div class="scard blue"><div class="lbl">전체 종목</div><div class="val">' + fmt(s.total_stocks) + '</div></div>' +
+    '<div class="scard green"><div class="lbl">배당 종목</div><div class="val">' + fmt(s.dividend_stocks) + '</div><div class="sub">' + (s.total_stocks ? Math.round(s.dividend_stocks/s.total_stocks*100) : 0) + '%</div></div>' +
+    '<div class="scard amber"><div class="lbl">무배당</div><div class="val">' + fmt(s.no_dividend) + '</div></div>' +
+    '<div class="scard purple"><div class="lbl">최고 수익률</div><div class="val">' + (DATA.top_yield&&DATA.top_yield[0] ? DATA.top_yield[0].yield+'%' : '-') + '</div><div class="sub">' + (DATA.top_yield&&DATA.top_yield[0] ? DATA.top_yield[0].name : '') + '</div></div>';
+
+  var years = DATA.years || [];
+  var payYears = [];
+  years.forEach(function(y) { payYears.push(y); payYears.push(y+1); });
+  payYears = [...new Set(payYears)].sort();
+  ['calYear','rankYear'].forEach(function(id) {
+    var sel = document.getElementById(id);
+    payYears.forEach(function(y) {
+      var opt = document.createElement('option');
+      opt.value = y; opt.textContent = y+'년';
+      sel.appendChild(opt);
+    });
+    sel.value = payYears[payYears.length-1];
+  });
+  renderCalendar(); renderRanking(); renderSearch();
+}
+
+// ── 월별 캘린더 (펼치기 지원) ──
+function renderCalendar() {
+  var year = parseInt(document.getElementById('calYear').value);
+  var type = document.getElementById('calType').value;
+  var grid = document.getElementById('calGrid');
+  if (!DATA) return;
+  var months = {};
+  for (var m=1; m<=12; m++) months[m] = [];
+
+  (DATA.stocks||[]).forEach(function(stock) {
+    (stock.dividends||[]).forEach(function(d) {
+      var pm = d.payment_month || '';
+      if (!pm) return;
+      var parts = pm.split('-');
+      if (parseInt(parts[0]) !== year) return;
+      if (type !== 'all' && d.type !== type) return;
+      months[parseInt(parts[1])].push({
+        name: stock.name, code: stock.code, market: stock.market,
+        dps: d.dps||0, yield_pct: d.yield||0, type: d.type
+      });
+    });
+  });
+
+  var html = '';
+  for (var m=1; m<=12; m++) {
+    var items = months[m];
+    items.sort(function(a,b) { return (b.yield_pct||0) - (a.yield_pct||0); });
+    var key = year + '-' + m;
+    var expanded = CAL_EXPANDED[key];
+    var PREVIEW = 10;
+
+    html += '<div class="month-card">';
+    html += '<h3>' + m + '월 <span class="count">' + items.length + '종목</span></h3>';
+    if (items.length === 0) {
+      html += '<div class="empty">해당 월 배당 지급 없음</div>';
+    } else {
+      var show = expanded ? items : items.slice(0, PREVIEW);
+      show.forEach(function(it) {
+        var typeLabel = it.type === 'interim' ? '<span class="type-badge interim">중간</span>' : '';
+        html += '<div class="div-item"><span class="name">' + it.name + typeLabel + '</span><span class="dps">' + fmt(it.dps) + '원 (' + it.yield_pct + '%)</span></div>';
+      });
+      if (items.length > PREVIEW) {
+        if (expanded) {
+          html += '<button class="btn-more" onclick="toggleMonth(\'' + key + '\')">▲ 접기</button>';
+        } else {
+          html += '<button class="btn-more" onclick="toggleMonth(\'' + key + '\')">▼ 나머지 ' + (items.length - PREVIEW) + '종목 더보기</button>';
+        }
+      }
+    }
+    html += '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+function toggleMonth(key) {
+  CAL_EXPANDED[key] = !CAL_EXPANDED[key];
+  renderCalendar();
+}
+
+// ── 배당수익률 Top (전체) ──
+function renderRanking() {
+  var year = parseInt(document.getElementById('rankYear').value);
+  var market = document.getElementById('rankMarket').value;
+  var tbody = document.getElementById('rankBody');
+  if (!DATA) return;
+
+  var list = [];
+  (DATA.stocks||[]).forEach(function(stock) {
+    if (market !== 'all' && stock.market !== market) return;
+    var annual = (stock.dividends||[]).filter(function(d) { return d.type==='annual'; });
+    var match = annual.find(function(d) { return d.year === year-1; });
+    if (!match || !match.yield || match.yield <= 0) return;
+    list.push({
+      name: stock.name, code: stock.code, market: stock.market,
+      dps: match.dps||0, yield_pct: match.yield, payout: match.payout
+    });
+  });
+  list.sort(function(a,b) { return b.yield_pct - a.yield_pct; });
+
+  document.getElementById('rankCount').textContent = '총 ' + list.length + '종목';
+
+  var html = '';
+  list.forEach(function(it, i) {
+    html += '<tr><td>' + (i+1) + '</td>' +
+      '<td>' + it.name + ' <span class="market-badge ' + it.market + '">' + it.market + '</span></td>' +
+      '<td style="font-size:11px;color:#888">' + it.code + '</td>' +
+      '<td>' + fmt(it.dps) + '</td>' +
+      '<td style="color:#059669;font-weight:700">' + it.yield_pct + '%</td>' +
+      '<td>' + (it.payout ? it.payout+'%' : '-') + '</td></tr>';
+  });
+  tbody.innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:30px;color:#999">데이터 없음</td></tr>';
+}
+
+// ── 종목 검색 (전체 표시) ──
+function renderSearch() {
+  var query = (document.getElementById('searchInput').value||'').trim().toLowerCase();
+  var market = document.getElementById('searchMarket').value;
+  var filter = document.getElementById('searchFilter').value;
+  var grid = document.getElementById('stockGrid');
+  if (!DATA) return;
+
+  var stocks = (DATA.stocks||[]).filter(function(s) {
+    if (market !== 'all' && s.market !== market) return false;
+    if (query && s.name.toLowerCase().indexOf(query)===-1 && s.code.indexOf(query)===-1) return false;
+    if (filter === 'growing') {
+      var annuals = (s.dividends||[]).filter(function(d) { return d.type==='annual' && d.dps; });
+      if (annuals.length < 2) return false;
+      annuals.sort(function(a,b) { return a.year - b.year; });
+      return annuals[annuals.length-1].dps > annuals[annuals.length-2].dps;
+    }
+    if (filter === 'new') {
+      var divs = s.dividends||[];
+      if (divs.length===0) return false;
+      return divs.length===1;
+    }
+    return true;
+  });
+
+  stocks.sort(function(a,b) { return getLatestYield(b) - getLatestYield(a); });
+
+  document.getElementById('searchCount').textContent = '총 ' + stocks.length + '종목';
+
+  var html = '';
+  stocks.forEach(function(stock) {
+    html += '<div class="stock-card"><h4>' + stock.name + ' <span class="code">' + stock.code + '</span> <span class="market-badge ' + stock.market + '">' + stock.market + '</span></h4><div class="div-history">';
+    var annuals = (stock.dividends||[]).filter(function(d) { return d.type==='annual'; });
+    annuals.sort(function(a,b) { return b.year - a.year; });
+    annuals.forEach(function(d, i) {
+      var growth = '';
+      if (i < annuals.length-1 && d.dps && annuals[i+1].dps) {
+        var prev = annuals[i+1].dps;
+        var chg = ((d.dps - prev) / prev * 100).toFixed(0);
+        if (chg > 0) growth = '<span class="growth-up">▲' + chg + '%</span>';
+        else if (chg < 0) growth = '<span class="growth-down">▼' + Math.abs(chg) + '%</span>';
+        else growth = '<span class="growth-same">→</span>';
+      }
+      html += '<div class="year-row"><span class="yr">' + d.year + '</span><span><span class="amt">' + fmt(d.dps) + '원</span><span class="yld">' + (d.yield ? d.yield+'%' : '') + '</span> ' + growth + '</span></div>';
+    });
+    var interims = (stock.dividends||[]).filter(function(d) { return d.type==='interim'; });
+    if (interims.length > 0) {
+      html += '<div style="margin-top:6px;padding-top:6px;border-top:1px solid #eee;font-size:12px;color:#92400e">🔸 중간배당: ';
+      interims.forEach(function(d) { html += d.year + '년 ' + fmt(d.dps) + '원 '; });
+      html += '</div>';
+    }
+    html += '</div></div>';
+  });
+  grid.innerHTML = html || '<div class="loading">검색 결과 없음</div>';
+}
+
+function getLatestYield(stock) {
+  var annuals = (stock.dividends||[]).filter(function(d) { return d.type==='annual' && d.yield; });
+  if (annuals.length===0) return 0;
+  annuals.sort(function(a,b) { return b.year - a.year; });
+  return annuals[0].yield;
+}
+
+document.querySelectorAll('.tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+document.getElementById('calYear').addEventListener('change', function() { CAL_EXPANDED={}; renderCalendar(); });
+document.getElementById('calType').addEventListener('change', renderCalendar);
+document.getElementById('rankYear').addEventListener('change', renderRanking);
+document.getElementById('rankMarket').addEventListener('change', renderRanking);
+document.getElementById('searchInput').addEventListener('input', renderSearch);
+document.getElementById('searchMarket').addEventListener('change', renderSearch);
+document.getElementById('searchFilter').addEventListener('change', renderSearch);
+load();
+</script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

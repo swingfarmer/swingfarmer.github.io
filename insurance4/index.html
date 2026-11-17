@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>4대보험 계산기 (2026) | 스윙파머</title>
+<meta name="description" content="2026년 4대보험료 계산기. 근로자·사업주 부담분을 각각 계산. 직원 고용 시 회사가 부담하는 실제 인건비를 확인.">
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark header{background-color:#1e242e!important}
+body.sf-dark table.breakdown th{border-bottom-color:#2c333f!important}
+body.sf-dark .note{background-color:#373115!important;border-color:#736326!important;color:#f2a373!important}
+</style>
+<style>
+:root { --sf-max-w: 720px; }
+header { background: var(--sf-surface); border-bottom: 3px solid var(--sf-brand); padding: 18px 16px; }
+header .wrap { padding: 0; }
+header h1 { font-size: 20px; color: var(--sf-brand); margin: 0; border-bottom: none; }
+header .back-link { display: inline-block; margin-bottom: 6px; }
+.final { background: linear-gradient(135deg, #d97706, #ea580c); }
+  input:focus { outline: 2px solid #1F4E78; }
+  .result-row { display: flex; gap: 12px; margin-bottom: 16px; }
+  @media (max-width: 560px){ .result-row { flex-direction: column; } }
+  .result-card { flex: 1; border-radius: 14px; padding: 18px; text-align: center; color: white; }
+  .result-card.worker { background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+  .result-card.employer { background: linear-gradient(135deg, #d97706, #f59e0b); }
+  .result-card .rc-val { font-size: 26px; font-weight: 800; margin-top: 4px; }
+  .result-card .rc-sub { font-size: 11px; opacity: .9; margin-top: 3px; }
+  table.breakdown { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.breakdown th { background: #f8fafc; padding: 9px 6px; border-bottom: 2px solid #e5e7eb; font-size: 11.5px; color: #555; }
+  table.breakdown th.worker { color: #1F4E78; } table.breakdown th.employer { color: #d97706; }
+  table.breakdown td { padding: 9px 6px; border-bottom: 1px solid #f0f0f0; }
+  table.breakdown td.label { color: #555; font-weight: 500; }
+  table.breakdown td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  table.breakdown tr.total td { border-top: 2px solid #1F4E78; font-weight: 800; color: #1F4E78; }
+  .info-box { display: none; }  /* (096) i 버튼으로 펼침 — 전에는 처음부터 펼쳐져 있었음 */
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; line-height: 1.7; margin-top: 14px; }
+  footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+/* (098) 다크 글자색 — 라이트 색(빨강·파랑·갈색·초록·남색)이 어두운 배경에서 안 읽히던 것 */
+body.sf-dark table.breakdown tr.total td{color:#85b5e0}
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>🧾 4대보험 계산기</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc"><b>2026년 4대보험 요율</b>로 근로자·사업주 부담분을 각각 계산합니다. 직원을 고용할 때 <b>회사가 실제로 부담하는 인건비</b>(급여 + 사업주 보험료)를 확인하세요.</p>
+
+
+
+  <!-- 입력 -->
+  <div class="panel">
+    <div class="section-label">📥 입력</div>
+    <div class="input-row">
+      <label>월 급여 (세전, 원) <span class="stat-sub">비과세 제외 보수월액</span></label>
+      <input type="number" id="wage" data-won value="3000000" inputmode="numeric">
+    </div>
+    <div class="input-row">
+      <label>산재보험료율 (%) <span class="stat-sub">업종별, 사업주 전액 부담</span> <span class="info-btn" onclick="toggleInfo('injInfo')">i</span></label>
+      <input type="number" id="injuryRate" value="0.7" step="0.1" inputmode="decimal">
+      <div class="info-box" id="injInfo">산재보험은 업종별로 요율이 달라요(보통 0.6~3% 안팎). 사업주가 전액 부담하며, 정확한 율은 근로복지공단에서 업종 코드로 확인하세요. 사무직은 낮고, 건설·제조는 높아요.</div>
+    </div>
+    <div class="input-row">
+      <label>회사 규모 (고용보험 사업주 추가분) <span class="info-btn" onclick="toggleInfo('stabInfo')">i</span></label>
+      <select id="corpSize">
+        <option value="u150" selected data-tx="socialEmp.stab.u150" data-tx-t="상시근로자 150인 미만 (+{}%)">상시근로자 150인 미만 (+0.25%)</option>
+        <option value="prio" data-tx="socialEmp.stab.prio" data-tx-t="150인 이상 · 우선지원대상기업 (+{}%)">150인 이상 · 우선지원대상기업 (+0.45%)</option>
+        <option value="u1000" data-tx="socialEmp.stab.u1000" data-tx-t="150~1,000인 미만 (+{}%)">150~1,000인 미만 (+0.65%)</option>
+        <option value="o1000" data-tx="socialEmp.stab.o1000" data-tx-t="1,000인 이상 · 국가·지자체 (+{}%)">1,000인 이상 · 국가·지자체 (+0.85%)</option>
+      </select>
+      <div class="info-box" id="stabInfo">고용보험은 실업급여분(근로자 <span data-tx="socialRule.emp">0.9</span>% + 사업주 <span data-tx="socialEmp.emp">0.9</span>%) 외에 <b>고용안정·직업능력개발사업</b>분을 사업주만 더 냅니다. 이 추가분이 회사 규모로 갈려요: 150인 미만 <span data-tx="socialEmp.stab.u150">0.25</span>% · 150인 이상 우선지원대상기업 <span data-tx="socialEmp.stab.prio">0.45</span>% · 150~1,000인 미만 <span data-tx="socialEmp.stab.u1000">0.65</span>% · 1,000인 이상 <span data-tx="socialEmp.stab.o1000">0.85</span>%. 인원은 같은 사업주의 모든 사업장 상시근로자를 합쳐서 셉니다. 1인법인·소규모 회사는 맨 위.</div>
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="result-row">
+    <div class="result-card worker">
+      <div class="rc-label">근로자 부담 (월급에서 공제)</div>
+      <div class="rc-val" id="workerTotal">-</div>
+      <div class="rc-sub" id="workerPct"></div>
+    </div>
+    <div class="result-card employer">
+      <div class="rc-label">사업주 부담 (회사 추가 부담)</div>
+      <div class="rc-val" id="employerTotal">-</div>
+      <div class="rc-sub" id="employerPct"></div>
+    </div>
+  </div>
+
+  <!-- 상세 -->
+  <div class="panel">
+    <div class="section-label">📋 항목별 (2026 요율)</div>
+    <div style="overflow-x:auto">
+      <table class="breakdown">
+        <thead><tr><th style="text-align:left">보험</th><th class="worker">근로자</th><th class="employer">사업주</th></tr></thead>
+        <tbody id="detailBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 실인건비 -->
+  <div class="panel">
+    <div class="section-label">💼 회사 입장 실제 인건비</div>
+    <table class="breakdown">
+      <tr><td class="label">월 급여</td><td class="num" id="c_wage" colspan="2" style="text-align:right">-</td></tr>
+      <tr><td class="label">+ 사업주 4대보험</td><td class="num" id="c_emp" colspan="2" style="text-align:right">-</td></tr>
+      <tr class="total"><td class="label">실제 월 인건비</td><td class="num" id="c_total" colspan="2" style="text-align:right">-</td></tr>
+      <tr><td class="label">연 환산</td><td class="num" id="c_year" colspan="2" style="text-align:right;color:#888">-</td></tr>
+    </table>
+  </div>
+
+  <div class="note">
+    ⚠️ <b>참고용</b>입니다. <span data-tx="socialRule.year" data-tx-f="y">2026</span>년 요율(국민연금 <span data-tx="socialRule.nps" data-tx-f="x2">9.5</span>%·건강보험 <span data-tx="socialRule.hr">7.19</span>%·장기요양 <span data-tx="socialRule.ltc">13.14</span>%·고용보험 등) 기준이며, 고용보험 사업주분은 위 「회사 규모」에 따라 <span data-tx="socialEmp.stab.u150">0.25</span>~<span data-tx="socialEmp.stab.o1000">0.85</span>%p가 더 붙어요. 산재요율은 업종별로 다릅니다. 국민연금은 기준소득월액 <span data-tx="socialRule.npsMin" data-tx-f="man" data-tx-t="{}만">41만</span>~<span data-tx="socialRule.npsMax" data-tx-f="man" data-tx-t="{}만">659만</span>원으로 잘라서 계산합니다(매년 7월 바뀜). 세율 확인일 <span data-tx="checked">2026-11-17</span>.
+  </div>
+
+  <div class="manual">
+    <b>📘 2026 요율 (근로자 / 사업주)</b><br>
+    • 국민연금: <span data-tx="socialRule.nps">4.75</span>% / <span data-tx="socialRule.nps">4.75</span>% (기준소득월액 <span data-tx="socialRule.npsMin" data-tx-f="man" data-tx-t="{}만">41만</span>~<span data-tx="socialRule.npsMax" data-tx-f="man" data-tx-t="{}만">659만</span>원으로 자른 뒤)<br>
+    • 건강보험: <span data-tx="socialRule.hh">3.595</span>% / <span data-tx="socialRule.hh">3.595</span>%<br>
+    • 장기요양: 건강보험료의 <span data-tx="socialRule.ltc">13.14</span>% (절반씩)<br>
+    • 고용보험: <span data-tx="socialRule.emp">0.9</span>% / <span data-tx="socialEmp.emp">0.9</span>% + 회사 규모별 <span data-tx="socialEmp.stab.u150">0.25</span>~<span data-tx="socialEmp.stab.o1000">0.85</span>% (사업주가 더 부담)<br>
+    • 산재보험: 0 / 사업주 전액<br>
+    회사는 급여 외에 약 10~12%를 보험료로 더 부담해요.
+  </div>
+
+  <footer>© 스윙파머</footer>
+</div>
+
+<script>
+window.CALC_KEY = 'insurance4';
+window.slGetState = function(){ return window.i4GetState ? window.i4GetState() : {}; };
+window.slSetState = function(d){ if(window.i4SetState) window.i4SetState(d); };
+</script>
+<script>window.SF_RESET = ["sf_i4_state_v1"];</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+<script src="/tax-rates.js?v=24"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => sfNum(n);
+
+// (090) 요율은 /tax-rates.js(window.SF_TAX)에서 읽음. (101) 못 읽을 때 쓰던 기본값 사본은 지움 — 못 읽으면 common.js가 안내
+//   (089까지: 국민연금 4.5%·상한 637만·하한 40만 옛 값, 고용보험 사업주 1.15% 고정)
+const _T = window.SF_TAX;
+const SR = _T.socialRule();   // (092) 올해 4대보험 요율 — 국민연금 연도별 인상이 자동 반영됨
+const TX = {
+  nps: SR.nps, npsMin: SR.npsMin, npsMax: SR.npsMax,
+  hh: SR.hh, hr: SR.hr, ltc: SR.ltc,
+  emp: SR.emp, eEmp: _T.socialEmp.emp,
+  stab: _T.socialEmp.stab,
+  year: SR.year, checked: _T.checked
+};
+(function fillTax(){
+  const lab = {u150:'상시근로자 150인 미만', prio:'150인 이상 · 우선지원대상기업', u1000:'150~1,000인 미만', o1000:'1,000인 이상 · 국가·지자체'};
+  document.querySelectorAll('#corpSize option').forEach(o => { if (lab[o.value]) o.textContent = lab[o.value] + ' (+' + TX.stab[o.value] + '%)'; });
+})();
+
+function calculate(){
+  const wage=parseFloat($('wage').value)||0;
+  const injuryRate=(parseFloat($('injuryRate').value)||0)/100;
+
+  const stab=TX.stab[$('corpSize').value]; const stabRate=(stab===undefined?TX.stab.u150:stab);
+  // (090) 국민연금은 기준소득월액 상·하한으로 자름 (급여 0이면 0)
+  // 근로자 — (092) 공통 함수 SF_TAX.ins4 (/salary/, /tax/income/, /paygrowth/와 같은 식)
+  const I = _T.ins4(wage);
+  const w_pension=I.pension, w_health=I.health, w_care=I.care, w_employ=I.employ, w_total=I.total;
+  // 사업주 — 국민연금·건보·장기요양은 근로자와 같은 금액, 고용보험만 사업주 요율
+  const e_pension=w_pension;
+  const e_health=w_health;
+  const e_care=w_care;
+  const e_employ=wage*(TX.eEmp+stabRate)/100;
+  const e_injury=wage*injuryRate;
+  const e_total=e_pension+e_health+e_care+e_employ+e_injury;
+
+  $('workerTotal').textContent=fmt(w_total)+'원';
+  $('workerPct').textContent=wage>0?'급여의 '+(w_total/wage*100).toFixed(1)+'%':'';
+  $('employerTotal').textContent=fmt(e_total)+'원';
+  $('employerPct').textContent=wage>0?'급여의 '+(e_total/wage*100).toFixed(1)+'%':'';
+
+  $('detailBody').innerHTML=`
+    <tr><td class="label">국민연금</td><td class="num">${fmt(w_pension)}</td><td class="num">${fmt(e_pension)}</td></tr>
+    <tr><td class="label">건강보험</td><td class="num">${fmt(w_health)}</td><td class="num">${fmt(e_health)}</td></tr>
+    <tr><td class="label">장기요양</td><td class="num">${fmt(w_care)}</td><td class="num">${fmt(e_care)}</td></tr>
+    <tr><td class="label">고용보험</td><td class="num">${fmt(w_employ)}</td><td class="num">${fmt(e_employ)}</td></tr>
+    <tr><td class="label">산재보험</td><td class="num">-</td><td class="num">${fmt(e_injury)}</td></tr>
+    <tr class="total"><td class="label">합계</td><td class="num">${fmt(w_total)}</td><td class="num">${fmt(e_total)}</td></tr>
+  `;
+
+  $('c_wage').textContent=fmt(wage)+'원';
+  $('c_emp').textContent='+ '+fmt(e_total)+'원';
+  $('c_total').textContent=fmt(wage+e_total)+'원';
+  $('c_year').textContent=fmt((wage+e_total)*12)+'원';
+
+}
+
+document.querySelectorAll('input').forEach(el=>el.addEventListener('input', calculate));
+document.querySelectorAll('select').forEach(el=>el.addEventListener('change', calculate));
+// 상태 저장/복원 (input + select)
+function i4GetState(){
+  const s={};
+  document.querySelectorAll('input[id], select[id]').forEach(el=>{ s[el.id]=el.value; });
+  return s;
+}
+function i4SetState(d){
+  if(!d) return;
+  document.querySelectorAll('input[id], select[id]').forEach(el=>{ if(d[el.id]!==undefined) el.value=d[el.id]; });
+  calculate();
+}
+function i4SaveLocal(){ try{ localStorage.setItem('sf_i4_state_v1', JSON.stringify(i4GetState())); }catch(e){} }
+function i4LoadLocal(){ try{ const r=localStorage.getItem('sf_i4_state_v1'); if(r) i4SetState(JSON.parse(r)); }catch(e){} }
+document.querySelectorAll('input, select').forEach(el=>el.addEventListener('input', i4SaveLocal));
+document.querySelectorAll('select').forEach(el=>el.addEventListener('change', i4SaveLocal));
+window.i4GetState=i4GetState; window.i4SetState=i4SetState;
+i4LoadLocal();
+calculate();
+</script>
+
+
+
+
+</body>
+</html>

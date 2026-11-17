@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<meta name="robots" content="noindex, nofollow">
+<title>웹툰 트래커 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .btn-cancel{background-color:#232a35!important;color:#c2c2c2!important}
+body.sf-dark .btn-cancel:hover{background-color:#232a35!important}
+body.sf-dark .wt-memo{color:#cccccc!important}
+body.sf-dark .wt-actions button{border-color:#2c333f!important}
+body.sf-dark .wt-actions button:hover{background-color:#152637!important}
+body.sf-dark .wt-actions button.del:hover{background-color:#371515!important}
+body.sf-dark .wt-actions button:hover{border-color:#1F4E78!important}
+body.sf-dark .wt-actions button.del:hover{border-color:#dc2626!important}
+</style>
+<style>
+:root { --sf-max-w: 720px; }
+.st-reading  { --st: #2563eb; }
+.st-done     { --st: #10b981; }
+.st-wishlist { --st: #8b5cf6; }
+.st-dropped  { --st: #ef4444; }
+
+.stats-row { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-bottom:20px; }
+.stats-row .s-box { text-align:center; padding:10px 4px; border-radius:10px; background:var(--sf-surface); box-shadow:var(--sf-shadow); cursor:pointer; transition:all .15s; border:2px solid transparent; }
+.stats-row .s-box:hover { border-color:var(--sf-brand); }
+.stats-row .s-box.active { border-color:var(--st,var(--sf-brand)); background:color-mix(in srgb, var(--st,var(--sf-brand)) 8%, var(--sf-surface)); }
+.stats-row .s-num { font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; }
+.stats-row .s-label { font-size:10px; color:var(--sf-text-dim); margin-top:2px; }
+@media(max-width:500px){ .stats-row .s-num{font-size:18px} }
+
+.add-form { background:var(--sf-surface); border-radius:12px; padding:20px; box-shadow:var(--sf-shadow); margin-bottom:20px; border:2px solid var(--sf-border); }
+.add-form.editing { border-color:var(--sf-brand); }
+.add-form h3 { margin:0 0 14px; font-size:15px; color:var(--sf-brand); }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.form-grid .full { grid-column:1/-1; }
+@media(max-width:500px){ .form-grid{grid-template-columns:1fr} }
+.add-form label { display:block; font-size:12px; font-weight:600; margin-bottom:3px; color:#555; }
+.add-form input, .add-form select, .add-form textarea { width:100%; padding:9px 10px; border:1.5px solid var(--sf-border); border-radius:8px; font-size:13px; font-family:var(--sf-font); background:var(--sf-surface); }
+.add-form input:focus, .add-form select:focus, .add-form textarea:focus { outline:2px solid var(--sf-brand); }
+.add-form textarea { resize:vertical; min-height:40px; }
+.star-input { display:flex; gap:2px; font-size:24px; cursor:pointer; margin-top:2px; }
+.star-input span { color:#ddd; transition:color .1s; user-select:none; }
+.star-input span.on { color:#f59e0b; }
+.form-btns { display:flex; gap:8px; margin-top:14px; }
+.form-btns button { padding:10px 20px; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; font-family:var(--sf-font); transition:all .15s; }
+.btn-save { background:var(--sf-brand); color:#fff; }
+.btn-save:hover { opacity:.9; }
+.btn-cancel { background:var(--sf-border); color:#666; display:none; }
+.btn-cancel:hover { background:#d1d5db; }
+.add-form.editing .btn-cancel { display:inline-block; }
+
+.toolbar { display:flex; gap:8px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
+.toolbar .f-search { flex:1; min-width:140px; padding:8px 12px; border-radius:8px; border:1.5px solid var(--sf-border); font-size:13px; font-family:var(--sf-font); background:var(--sf-surface); }
+.toolbar .f-search:focus { outline:2px solid var(--sf-brand); }
+.toolbar select { padding:8px; border-radius:8px; border:1.5px solid var(--sf-border); font-size:12px; font-family:var(--sf-font); background:var(--sf-surface); }
+
+.wt-list { display:flex; flex-direction:column; gap:10px; }
+.wt-card { background:var(--sf-surface); border-radius:10px; padding:14px 16px; box-shadow:var(--sf-shadow); border-left:4px solid var(--st,#ccc); display:flex; align-items:center; gap:12px; transition:all .15s; }
+.wt-card:hover { box-shadow:var(--sf-shadow-hover); }
+.wt-info { flex:1; min-width:0; }
+.wt-top { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.wt-title { font-size:15px; font-weight:700; color:var(--sf-text); }
+.wt-platform { font-size:10px; font-weight:600; padding:2px 7px; border-radius:4px; background:#f0f0f0; color:#666; }
+.wt-platform.naver { background:#1ec800; color:#fff; }
+.wt-platform.kakao,.wt-platform.kakaopage { background:#fee500; color:#3c1e1e; }
+.wt-platform.ridi { background:#7b68ee; color:#fff; }
+.wt-platform.lezhin { background:#ed2e38; color:#fff; }
+.wt-meta { font-size:12px; color:var(--sf-text-dim); display:flex; gap:10px; flex-wrap:wrap; margin-top:3px; }
+.wt-stars { color:#f59e0b; letter-spacing:1px; }
+.wt-memo { font-size:12px; color:var(--sf-text-sub); margin-top:3px; font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.wt-status-badge { font-size:11px; font-weight:700; padding:3px 10px; border-radius:6px; background:color-mix(in srgb, var(--st) 15%, transparent); color:var(--st); white-space:nowrap; }
+/* 빠른 화수 수정 */
+.wt-ep-quick { display:inline-flex; align-items:center; gap:2px; background:#f0f5fa; border-radius:6px; padding:1px 2px; }
+.wt-ep-quick button { width:22px; height:22px; border:none; border-radius:4px; background:transparent; cursor:pointer; font-size:13px; font-weight:700; color:var(--sf-brand); display:flex; align-items:center; justify-content:center; transition:all .1s; padding:0; font-family:var(--sf-font); }
+.wt-ep-quick button:hover { background:var(--sf-brand); color:#fff; }
+.wt-ep-quick .ep-num { font-size:12px; font-weight:700; color:var(--sf-brand); min-width:20px; text-align:center; cursor:pointer; padding:2px 3px; border-radius:4px; font-variant-numeric:tabular-nums; }
+.wt-ep-quick .ep-num:hover { background:#dbeafe; }
+.wt-ep-input { width:48px; padding:2px 4px; border:1.5px solid var(--sf-brand); border-radius:4px; font-size:12px; font-weight:700; text-align:center; font-family:var(--sf-font); font-variant-numeric:tabular-nums; outline:none; }
+body.sf-dark .wt-ep-quick { background:#2a313d; }
+body.sf-dark .wt-ep-quick button { color:#6ba3e0; }
+body.sf-dark .wt-ep-quick button:hover { background:#6ba3e0; color:#fff; }
+body.sf-dark .wt-ep-quick .ep-num { color:#6ba3e0; }
+body.sf-dark .wt-ep-quick .ep-num:hover { background:#1e3a5f; }
+body.sf-dark .wt-ep-input { background:#2a313d; color:#d8dde5; border-color:#6ba3e0; }
+
+.wt-actions { display:flex; gap:4px; flex-shrink:0; }
+.wt-actions button { background:none; border:1px solid var(--sf-border); border-radius:6px; width:30px; height:30px; cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+.wt-actions button:hover { border-color:var(--sf-brand); background:#f0f5fa; }
+.wt-actions button.del:hover { border-color:var(--sf-red); background:#fef2f2; }
+
+.empty-state { text-align:center; padding:48px 20px; color:var(--sf-text-dim); }
+.empty-state .empty-icon { font-size:40px; margin-bottom:10px; }
+.empty-state p { font-size:13px; line-height:1.6; }
+
+body.sf-dark .wt-card { background:#1e242e; }
+body.sf-dark .wt-title { color:#d8dde5; }
+body.sf-dark .wt-platform { background:#2a313d; color:#aab3c0; }
+body.sf-dark .wt-platform.naver { background:#1ec800; color:#fff; }
+body.sf-dark .wt-platform.kakao,body.sf-dark .wt-platform.kakaopage { background:#fee500; color:#3c1e1e; }
+body.sf-dark .wt-platform.ridi { background:#7b68ee; color:#fff; }
+body.sf-dark .wt-platform.lezhin { background:#ed2e38; color:#fff; }
+body.sf-dark .add-form { background:#1e242e; border-color:#2c333f; }
+body.sf-dark .add-form input,body.sf-dark .add-form select,body.sf-dark .add-form textarea { background:#2a313d; color:#d8dde5; border-color:#3a4250; }
+body.sf-dark .s-box { background:#1e242e; }
+body.sf-dark .toolbar .f-search,body.sf-dark .toolbar select { background:#1e242e; color:#d8dde5; border-color:#2c333f; }
+/* (098) 다크 글자색 — 라이트 색(빨강·파랑·갈색·초록·남색)이 어두운 배경에서 안 읽히던 것 */
+body.sf-dark .s-num[style*="--sf-brand"]{color:#85b5e0!important}
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body class="sf-narrow">
+
+<h1>📚 웹툰 트래커</h1>
+<p class="desc">읽은 웹툰 기록 — 보는중·다봄·볼거·하차 관리</p>
+
+<div class="stats-row" id="stats"></div>
+
+<div class="add-form" id="addForm">
+  <h3 id="formTitle">✏️ 작품 추가</h3>
+  <div class="form-grid">
+    <div class="full"><label>작품명 *</label><input type="text" id="mTitle" placeholder="예: 검술명가 막내아들" autocomplete="off"></div>
+    <div><label>플랫폼</label><select id="mPlatform"><option value="">선택 안함</option><option value="naver">네이버웹툰</option><option value="kakao">카카오웹툰</option><option value="kakaopage">카카오페이지</option><option value="ridi">리디</option><option value="lezhin">레진코믹스</option><option value="etc">기타</option></select></div>
+    <div><label>상태</label><select id="mStatus"><option value="reading">📖 보는중</option><option value="done">✅ 다봄</option><option value="wishlist">💜 볼거</option><option value="dropped">🚫 하차</option></select></div>
+    <div><label>현재 화수</label><input type="number" id="mEpisode" min="0" placeholder="0"></div>
+    <div><label>별점</label><div class="star-input" id="starInput"><span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span><span data-v="0" style="font-size:14px;color:#aaa;margin-left:4px;cursor:pointer" title="초기화">✕</span></div></div>
+    <div class="full"><label>메모</label><textarea id="mMemo" placeholder="한줄평 / 하차 이유 등" rows="2"></textarea></div>
+  </div>
+  <div class="form-btns">
+    <button class="btn-save" id="btnSave">➕ 추가</button>
+    <button class="btn-cancel" id="btnCancel">취소</button>
+  </div>
+</div>
+
+<div class="toolbar">
+  <input class="f-search" type="text" placeholder="🔍 작품명 검색…" id="searchInput">
+  <select id="sortSelect">
+    <option value="updated">최근 수정순</option>
+    <option value="title">이름순</option>
+    <option value="rating">별점순</option>
+    <option value="episode">화수순</option>
+  </select>
+</div>
+
+<div class="wt-list" id="wtList"></div>
+
+<script>
+// ── sf-slots.js 연동 ──
+var CALC_KEY = 'webtoon';
+
+var STORAGE_KEY = 'sf_webtoon_data';
+var FILTER_KEY = 'sf_webtoon_filter';
+var STATUS = { reading:'📖 보는중', done:'✅ 다봄', wishlist:'💜 볼거', dropped:'🚫 하차' };
+var PLAT_LABEL = { naver:'네이버', kakao:'카카오', kakaopage:'카카오페이지', ridi:'리디', lezhin:'레진', etc:'기타' };
+
+var items = [];
+var editId = null;
+var starVal = 0;
+var activeFilter = 'all';
+
+// sf-slots.js 인터페이스
+window.slGetState = function(){ return { items: items }; };
+window.slSetState = function(data){
+  if(data && Array.isArray(data.items)){
+    items = data.items;
+    saveLocal();
+    render();
+  }
+};
+
+function saveLocal() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch(e){} }
+function loadLocal() { try { var r=localStorage.getItem(STORAGE_KEY); items=r?JSON.parse(r):[]; } catch(e){ items=[]; } }
+function saveFilter() { try { localStorage.setItem(FILTER_KEY, activeFilter); } catch(e){} }
+function loadFilter() { try { activeFilter=localStorage.getItem(FILTER_KEY)||'all'; } catch(e){ activeFilter='all'; } }
+function genId() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+function render() {
+  var cnt={all:items.length, reading:0, done:0, wishlist:0, dropped:0};
+  items.forEach(function(it){ cnt[it.status]=(cnt[it.status]||0)+1; });
+  var boxes=[
+    {key:'all',label:'전체',color:'var(--sf-brand)',num:cnt.all},
+    {key:'reading',label:'보는중',color:'#2563eb',num:cnt.reading},
+    {key:'done',label:'다봄',color:'#10b981',num:cnt.done},
+    {key:'wishlist',label:'볼거',color:'#8b5cf6',num:cnt.wishlist},
+    {key:'dropped',label:'하차',color:'#ef4444',num:cnt.dropped}
+  ];
+  document.getElementById('stats').innerHTML=boxes.map(function(b){
+    return '<div class="s-box'+(b.key!=='all'?' st-'+b.key:'')+(activeFilter===b.key?' active':'')+'" onclick="setFilter(\''+b.key+'\')" style="--st:'+b.color+'"><div class="s-num" style="color:'+b.color+'">'+b.num+'</div><div class="s-label">'+b.label+'</div></div>';
+  }).join('');
+
+  var q=document.getElementById('searchInput').value.trim().toLowerCase();
+  var list=items.filter(function(it){
+    if(activeFilter!=='all'&&it.status!==activeFilter) return false;
+    if(q&&it.title.toLowerCase().indexOf(q)===-1) return false;
+    return true;
+  });
+  var sort=document.getElementById('sortSelect').value;
+  list.sort(function(a,b){
+    if(sort==='title') return (a.title||'').localeCompare(b.title||'');
+    if(sort==='rating') return (b.rating||0)-(a.rating||0);
+    if(sort==='episode') return (b.episode||0)-(a.episode||0);
+    return (b.updatedAt||0)-(a.updatedAt||0);
+  });
+  var el=document.getElementById('wtList');
+  if(!list.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">📚</div><p>'+(items.length?'필터에 맞는 작품이 없습니다.':'등록된 작품이 없습니다.<br>위에서 작품을 추가해보세요.')+'</p></div>';
+    return;
+  }
+  el.innerHTML=list.map(function(it){
+    var stClass='st-'+(it.status||'reading'), platClass=it.platform||'';
+    var stars=it.rating?'★'.repeat(it.rating)+'☆'.repeat(5-it.rating):'';
+    return '<div class="wt-card '+stClass+'"><div class="wt-info"><div class="wt-top"><span class="wt-title">'+esc(it.title)+'</span>'+(it.platform?'<span class="wt-platform '+platClass+'">'+esc(PLAT_LABEL[it.platform]||it.platform)+'</span>':'')+'</div><div class="wt-meta"><span class="wt-status-badge">'+(STATUS[it.status]||it.status)+'</span>'+'<span class="wt-ep-quick"><button onclick="epDelta(\''+it.id+'\',-1)" title="-1">−</button><span class="ep-num" onclick="epEdit(\''+it.id+'\')" title="직접 입력">'+(it.episode||0)+'화</span><button onclick="epDelta(\''+it.id+'\',1)" title="+1">+</button></span>'+(stars?'<span class="wt-stars">'+stars+'</span>':'')+'</div>'+(it.memo?'<div class="wt-memo">"'+esc(it.memo)+'"</div>':'')+'</div><div class="wt-actions"><button title="수정" onclick="editItem(\''+it.id+'\')">✏️</button><button title="삭제" class="del" onclick="delItem(\''+it.id+'\')">🗑️</button></div></div>';
+  }).join('');
+}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+window.setFilter=function(f){ activeFilter=(activeFilter===f)?'all':f; saveFilter(); render(); };
+
+function updateStars(){
+  document.querySelectorAll('#starInput span[data-v]').forEach(function(s){
+    var v=parseInt(s.dataset.v); if(v>0) s.classList.toggle('on',v<=starVal);
+  });
+}
+document.querySelectorAll('#starInput span').forEach(function(s){
+  s.addEventListener('click',function(){ starVal=parseInt(s.dataset.v)||0; updateStars(); });
+});
+
+function resetForm(){
+  editId=null;
+  document.getElementById('formTitle').textContent='✏️ 작품 추가';
+  document.getElementById('mTitle').value='';
+  document.getElementById('mPlatform').value='';
+  document.getElementById('mStatus').value='reading';
+  document.getElementById('mEpisode').value='';
+  document.getElementById('mMemo').value='';
+  starVal=0; updateStars();
+  document.getElementById('btnSave').textContent='➕ 추가';
+  document.getElementById('addForm').classList.remove('editing');
+}
+
+document.getElementById('btnSave').addEventListener('click',function(){
+  var title=document.getElementById('mTitle').value.trim();
+  if(!title){ alert('작품명을 입력하세요.'); document.getElementById('mTitle').focus(); return; }
+  var obj={title:title,platform:document.getElementById('mPlatform').value,status:document.getElementById('mStatus').value,episode:parseInt(document.getElementById('mEpisode').value)||0,rating:starVal,memo:document.getElementById('mMemo').value.trim(),updatedAt:Date.now()};
+  if(editId){
+    var idx=items.findIndex(function(x){return x.id===editId;});
+    if(idx>=0){obj.id=editId;obj.createdAt=items[idx].createdAt;items[idx]=obj;}
+  } else { obj.id=genId();obj.createdAt=Date.now();items.unshift(obj); }
+  saveLocal(); resetForm(); render();
+});
+
+document.getElementById('btnCancel').addEventListener('click',resetForm);
+
+window.editItem=function(id){
+  var it=items.find(function(x){return x.id===id;});
+  if(!it) return;
+  editId=id;
+  document.getElementById('formTitle').textContent='✏️ 작품 수정';
+  document.getElementById('mTitle').value=it.title||'';
+  document.getElementById('mPlatform').value=it.platform||'';
+  document.getElementById('mStatus').value=it.status||'reading';
+  document.getElementById('mEpisode').value=it.episode||'';
+  document.getElementById('mMemo').value=it.memo||'';
+  starVal=it.rating||0; updateStars();
+  document.getElementById('btnSave').textContent='💾 수정 저장';
+  document.getElementById('addForm').classList.add('editing');
+  document.getElementById('addForm').scrollIntoView({behavior:'smooth',block:'start'});
+  document.getElementById('mTitle').focus();
+};
+
+window.delItem=function(id){
+  var it=items.find(function(x){return x.id===id;});
+  if(!it) return;
+  if(!confirm('"'+it.title+'" 삭제할까요?')) return;
+  items=items.filter(function(x){return x.id!==id;});
+  saveLocal(); render();
+};
+
+// ── 빠른 화수 수정 ──
+window.epDelta=function(id,delta){
+  var it=items.find(function(x){return x.id===id;});
+  if(!it) return;
+  it.episode=Math.max(0,(it.episode||0)+delta);
+  it.updatedAt=Date.now();
+  saveLocal(); render();
+};
+
+window.epEdit=function(id){
+  var it=items.find(function(x){return x.id===id;});
+  if(!it) return;
+  // 해당 ep-num을 input으로 교체
+  var cards=document.querySelectorAll('.wt-card');
+  cards.forEach(function(card){
+    var btns=card.querySelectorAll('.wt-ep-quick .ep-num');
+    btns.forEach(function(btn){
+      if(btn.onclick && btn.onclick.toString().indexOf(id)>=0) return;
+    });
+  });
+  var val=prompt('화수 입력',it.episode||0);
+  if(val===null) return;
+  var n=parseInt(val);
+  if(isNaN(n)||n<0) return;
+  it.episode=n;
+  it.updatedAt=Date.now();
+  saveLocal(); render();
+};
+
+document.getElementById('searchInput').addEventListener('input',render);
+document.getElementById('sortSelect').addEventListener('change',render);
+
+loadLocal();
+loadFilter();
+render();
+</script>
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

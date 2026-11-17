@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>수익률 계산기 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .subtitle{color:#c2c2c2!important}
+body.sf-dark .add-btn{background-color:#1a2433!important;border-color:#2c333f!important;color:#c2c2c2!important}
+body.sf-dark .add-btn:hover{color:#dedede!important}
+body.sf-dark .result-row{border-bottom-color:#344b65!important}
+body.sf-dark .result-row .rlabel{color:#c2c2c2!important}
+body.sf-dark .btn-outline{border-color:#2c333f!important;color:#dedede!important}
+body.sf-dark .compound-table th{border-bottom-color:#384761!important;color:#c2c2c2!important}
+body.sf-dark .compound-table td{border-bottom-color:#3d495c!important}
+body.sf-dark .add-btn:hover{border-color:#999!important}
+body.sf-dark .btn-outline:hover{border-color:#999!important}
+</style>
+<style>
+:root { --sf-max-w: 860px; }
+h1{color:#1F4E78;font-size:22px;font-weight:800;margin-bottom:4px;border-bottom:none;padding-bottom:0}
+.subtitle{color:#666;font-size:13px;margin-bottom:20px}
+
+
+.panel{display:none}
+.panel.active{display:block}
+.panel h2{color:#1F4E78;font-size:16px;font-weight:700;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #e5e9f0;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.panel h2 .desc{font-size:11px;font-weight:400;color:#999}
+
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;color:#666;margin-bottom:4px}
+.field input,.field select{background:#fff;border:1px solid #d1d5db;color:#333;
+  padding:8px 12px;border-radius:6px;font-size:13px;font-family:inherit;width:100%;box-sizing:border-box}
+.field input:focus{outline:none;border-color:#1F4E78}
+.field input[type=number]{-moz-appearance:textfield}
+.field input::-webkit-outer-spin-button,.field input::-webkit-inner-spin-button{-webkit-appearance:none}
+
+.row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.row .field{flex:1;min-width:80px}
+
+.dyn-rows{margin-bottom:12px}
+.dyn-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
+.dyn-row input{background:#fff;border:1px solid #d1d5db;color:#333;
+  padding:6px 10px;border-radius:6px;font-size:13px;font-family:inherit;width:100%;box-sizing:border-box}
+.dyn-row .idx{font-size:11px;color:#999;width:24px;text-align:center;flex-shrink:0}
+.dyn-row .w{flex:0 0 70px}
+.dyn-row .r{flex:1;min-width:80px}
+.dyn-row .del-btn{background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0}
+.add-btn{background:#f5f7fa;border:1px solid #d1d5db;color:#666;
+  padding:5px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit}
+.add-btn:hover{color:#333;border-color:#999}
+
+.result-box{background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;padding:16px;margin-top:16px}
+.result-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #e0e7ef}
+.result-row:last-child{border-bottom:none}
+.result-row .rlabel{font-size:13px;color:#666}
+.result-row .rval{font-size:18px;font-weight:800}
+.up{color:#dc2626}.down{color:#2563eb}.flat{color:#999}
+.result-sub{font-size:11px;color:#999;margin-top:4px}
+
+.btn-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.btn{background:#1F4E78;border:none;color:#fff;padding:8px 20px;border-radius:8px;
+  cursor:pointer;font-size:13px;font-weight:600;font-family:inherit}
+.btn:hover{opacity:.85}
+.btn-outline{background:transparent;border:1px solid #d1d5db;color:#333}
+.btn-outline:hover{border-color:#999}
+
+.compound-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}
+.compound-table th{text-align:left;padding:6px 8px;border-bottom:2px solid #e5e9f0;color:#666;font-weight:600}
+.compound-table td{padding:5px 8px;border-bottom:1px solid #f0f2f5}
+
+.note{font-size:11px;color:#999;text-align:center;margin-top:20px;line-height:1.8}
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body>
+<script src="/common.js?v=17"></script>
+
+<h1>📐 수익률 계산기</h1>
+<p class="subtitle">금액 없이 순수 %로 계산 · 저장 관리 버튼(우하단 💾)</p>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-tab="weighted">가중평균</button>
+  <button class="tab" data-tab="compound">복리</button>
+  <button class="tab" data-tab="breakeven">손익분기</button>
+  <button class="tab" data-tab="averaging">물타기</button>
+  <button class="tab" data-tab="cagr">CAGR</button>
+</div>
+
+<!-- ① 가중평균 -->
+<div class="panel active" id="p-weighted">
+  <h2>⚖️ 가중평균 수익률 <span class="desc">— 비중별 종목 수익률 → 포트폴리오 수익률</span></h2>
+  <div class="dyn-rows" id="wRows"></div>
+  <div class="btn-row">
+    <button class="add-btn" onclick="addWRow()">+ 종목 추가</button>
+    <button class="btn" onclick="calcWeighted()">계산</button>
+  </div>
+  <div class="result-box" id="wResult" style="display:none"></div>
+</div>
+
+<!-- ② 복리 -->
+<div class="panel" id="p-compound">
+  <h2>📈 복리 수익률 <span class="desc">— 기간 수익률 × N회 반복 = 누적</span></h2>
+  <div class="row">
+    <div class="field"><label>기간 수익률 (%)</label><input type="number" id="cRate" step="0.01" placeholder="예: 3"></div>
+    <div class="field"><label>반복 횟수</label><input type="number" id="cCount" placeholder="예: 12"></div>
+    <div class="field"><label>단위</label>
+      <select id="cUnit"><option value="월">월</option><option value="주">주</option><option value="일">일</option><option value="년">년</option></select>
+    </div>
+  </div>
+  <div class="btn-row"><button class="btn" onclick="calcCompound()">계산</button></div>
+  <div class="result-box" id="cResult" style="display:none"></div>
+</div>
+
+<!-- ③ 손익분기 -->
+<div class="panel" id="p-breakeven">
+  <h2>🎯 손익분기점 <span class="desc">— X% 하락 후 복구에 필요한 상승률</span></h2>
+  <div class="row">
+    <div class="field"><label>하락률 (%, 양수 입력)</label><input type="number" id="bLoss" step="0.01" placeholder="예: 30"></div>
+  </div>
+  <div class="btn-row"><button class="btn" onclick="calcBreakeven()">계산</button></div>
+  <div class="result-box" id="bResult" style="display:none"></div>
+  <div class="result-box" style="margin-top:12px">
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">주요 하락률별 손익분기</div>
+    <div class="table-scroll"><table class="compound-table">
+      <tr><th>하락</th><th>필요 상승</th><th>하락</th><th>필요 상승</th></tr>
+      <tr><td>-5%</td><td class="up">+5.3%</td><td>-30%</td><td class="up">+42.9%</td></tr>
+      <tr><td>-10%</td><td class="up">+11.1%</td><td>-40%</td><td class="up">+66.7%</td></tr>
+      <tr><td>-15%</td><td class="up">+17.6%</td><td>-50%</td><td class="up">+100.0%</td></tr>
+      <tr><td>-20%</td><td class="up">+25.0%</td><td>-60%</td><td class="up">+150.0%</td></tr>
+      <tr><td>-25%</td><td class="up">+33.3%</td><td>-70%</td><td class="up">+233.3%</td></tr>
+    </table></div>
+  </div>
+</div>
+
+<!-- ④ 물타기 -->
+<div class="panel" id="p-averaging">
+  <h2>💧 물타기 (평단 변화) <span class="desc">— 추가매수 시 평균단가·손익분기 변화 (%)</span></h2>
+  <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px">1차 매수가를 100 기준으로, 추가매수가와 비중만 입력하면 평균단가 변동을 %로 계산합니다.</p>
+  <div class="dyn-rows" id="aRows"></div>
+  <div class="btn-row">
+    <button class="add-btn" onclick="addARow()">+ 추가매수</button>
+    <button class="btn" onclick="calcAveraging()">계산</button>
+  </div>
+  <div class="result-box" id="aResult" style="display:none"></div>
+</div>
+
+<!-- ⑤ CAGR -->
+<div class="panel" id="p-cagr">
+  <h2>📊 연환산 수익률 (CAGR) <span class="desc">— 총 수익률 + 기간 → 연 몇%?</span></h2>
+  <div class="row">
+    <div class="field"><label>총 수익률 (%)</label><input type="number" id="cagrReturn" step="0.01" placeholder="예: 50"></div>
+    <div class="field"><label>투자 기간 (년)</label><input type="number" id="cagrYears" step="0.1" placeholder="예: 3"></div>
+  </div>
+  <p style="font-size:11px;color:var(--text-dim);margin:8px 0">또는 역산: CAGR → 총 수익률</p>
+  <div class="row">
+    <div class="field"><label>목표 연 수익률 (%)</label><input type="number" id="cagrTarget" step="0.01" placeholder="예: 15"></div>
+    <div class="field"><label>투자 기간 (년)</label><input type="number" id="cagrTargetYears" step="0.1" placeholder="예: 10"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="calcCAGR()">CAGR 계산</button>
+    <button class="btn btn-outline" onclick="calcCAGRReverse()">역산 (목표→총수익률)</button>
+  </div>
+  <div class="result-box" id="cagrResult" style="display:none"></div>
+</div>
+
+<div class="note">수익률 계산기 · 금액 없이 순수 % 계산 전용</div>
+
+<script>
+function fmt(v, d) { return sfPct(v, d ?? 2, 1); }   // (106) 표기는 sf-fmt.js
+function cls(v) { return v > 0 ? 'up' : v < 0 ? 'down' : 'flat'; }
+
+// ========== 탭 ==========
+document.getElementById('tabs').addEventListener('click', e => {
+  const tab = e.target.closest('.tab'); if (!tab) return;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  tab.classList.add('active');
+  document.getElementById('p-' + tab.dataset.tab).classList.add('active');
+});
+
+// ========== ① 가중평균 ==========
+function buildWRow(w, r, canDel) {
+  const rows = document.getElementById('wRows');
+  const n = rows.children.length + 1;
+  const div = document.createElement('div');
+  div.className = 'dyn-row';
+  const del = canDel ? `<button class="del-btn" onclick="delWRow(this)">✕</button>` : '';
+  div.innerHTML = `<span class="idx">${n}</span><input class="w" type="number" placeholder="비중" value="${w}"><input class="r" type="number" step="0.01" placeholder="수익률 %" value="${r}">${del}`;
+  rows.appendChild(div);
+}
+function addWRow(w, r) { buildWRow(w||'1', r||'', true); }
+function delWRow(btn) { btn.parentElement.remove(); reindexW(); }
+function reindexW() { document.querySelectorAll('#wRows .dyn-row').forEach((r, i) => r.querySelector('.idx').textContent = i + 1); }
+
+// 초기 3행
+buildWRow('4', '', false); // 첫 행은 삭제 불가
+addWRow('1', '');
+addWRow('3', '');
+
+function calcWeighted() {
+  const rows = document.querySelectorAll('#wRows .dyn-row');
+  let totalW = 0, totalWR = 0;
+  const items = [];
+  rows.forEach(r => {
+    const w = parseFloat(r.querySelector('.w').value) || 0;
+    const ret = parseFloat(r.querySelector('.r').value) || 0;
+    if (w > 0) { totalW += w; totalWR += w * ret; items.push({ w, ret }); }
+  });
+  if (!totalW) return;
+  const avg = totalWR / totalW;
+  let html = `<div class="result-row"><span class="rlabel">포트폴리오 수익률</span><span class="rval ${cls(avg)}">${fmt(avg)}</span></div>`;
+  html += `<div class="result-sub">비중 합계: ${totalW} · ${items.map((it, i) => `${i+1}번 ${(it.w/totalW*100).toFixed(1)}%`).join(' / ')}</div>`;
+  document.getElementById('wResult').innerHTML = html;
+  document.getElementById('wResult').style.display = 'block';
+}
+
+// ========== ② 복리 ==========
+function calcCompound() {
+  const rate = parseFloat(document.getElementById('cRate').value);
+  const count = parseInt(document.getElementById('cCount').value);
+  const unit = document.getElementById('cUnit').value;
+  if (isNaN(rate) || isNaN(count) || count <= 0) return;
+  const total = (Math.pow(1 + rate / 100, count) - 1) * 100;
+  const simple = rate * count;
+  let html = `<div class="result-row"><span class="rlabel">복리 누적 수익률 (${count}${unit})</span><span class="rval ${cls(total)}">${fmt(total)}</span></div>`;
+  html += `<div class="result-row"><span class="rlabel">단리 비교</span><span class="rval" style="font-size:14px;color:var(--text-dim)">${fmt(simple)}</span></div>`;
+  html += `<div class="result-row"><span class="rlabel">복리 효과</span><span class="rval ${cls(total-simple)}" style="font-size:14px">${fmt(total - simple)}</span></div>`;
+  const step = count <= 12 ? 1 : count <= 36 ? 3 : Math.ceil(count / 12);
+  const ms = []; for (let i = step; i <= count; i += step) ms.push(i);
+  if (ms[ms.length - 1] !== count) ms.push(count);
+  html += `<table class="compound-table"><tr><th>${unit}</th><th>누적</th><th>${unit}</th><th>누적</th></tr>`;
+  for (let i = 0; i < ms.length; i += 2) {
+    const m1 = ms[i], v1 = (Math.pow(1 + rate / 100, m1) - 1) * 100;
+    let c2 = '<td></td><td></td>';
+    if (i + 1 < ms.length) { const m2 = ms[i+1], v2 = (Math.pow(1 + rate / 100, m2) - 1) * 100; c2 = `<td>${m2}${unit}</td><td class="${cls(v2)}">${fmt(v2)}</td>`; }
+    html += `<tr><td>${m1}${unit}</td><td class="${cls(v1)}">${fmt(v1)}</td>${c2}</tr>`;
+  }
+  html += '</table>';
+  document.getElementById('cResult').innerHTML = html;
+  document.getElementById('cResult').style.display = 'block';
+}
+
+// ========== ③ 손익분기 ==========
+function calcBreakeven() {
+  const loss = parseFloat(document.getElementById('bLoss').value);
+  if (isNaN(loss) || loss <= 0 || loss >= 100) return;
+  const needed = (1 / (1 - loss / 100) - 1) * 100;
+  let html = `<div class="result-row"><span class="rlabel">하락률</span><span class="rval down">-${loss.toFixed(2)}%</span></div>`;
+  html += `<div class="result-row"><span class="rlabel">복구에 필요한 상승률</span><span class="rval up">${fmt(needed)}</span></div>`;
+  document.getElementById('bResult').innerHTML = html;
+  document.getElementById('bResult').style.display = 'block';
+}
+
+// ========== ④ 물타기 ==========
+function buildARow(idx, w, r, isFirst) {
+  const rows = document.getElementById('aRows');
+  const div = document.createElement('div');
+  div.className = 'dyn-row';
+  const label = idx + '차';
+  if (isFirst) {
+    div.innerHTML = `<span class="idx">${label}</span><input class="w" type="number" placeholder="비중" value="${w}"><input class="r" type="number" step="0.01" value="0" disabled style="opacity:.5" placeholder="기준(0%)">`;
+  } else {
+    div.innerHTML = `<span class="idx">${label}</span><input class="w" type="number" placeholder="비중" value="${w}"><input class="r" type="number" step="0.01" placeholder="1차 대비 변동률 %" value="${r}"><button class="del-btn" onclick="this.parentElement.remove();reindexA()">✕</button>`;
+  }
+  rows.appendChild(div);
+}
+function addARow(w, r) { const n = document.getElementById('aRows').children.length + 1; buildARow(n, w||'1', r||'', false); }
+function reindexA() { document.querySelectorAll('#aRows .dyn-row').forEach((r, i) => r.querySelector('.idx').textContent = (i+1)+'차'); }
+
+// 초기 2행
+buildARow(1, '1', '0', true);
+addARow('1', '-20');
+
+function calcAveraging() {
+  const rows = document.querySelectorAll('#aRows .dyn-row');
+  let totalW = 0, totalWP = 0;
+  const base = 100;
+  rows.forEach((r, i) => {
+    const w = parseFloat(r.querySelector('.w').value) || 0;
+    const chg = i === 0 ? 0 : (parseFloat(r.querySelector('.r').value) || 0);
+    const price = base * (1 + chg / 100);
+    if (w > 0) { totalW += w; totalWP += w * price; }
+  });
+  if (!totalW) return;
+  const avgPrice = totalWP / totalW;
+  const avgChg = (avgPrice / base - 1) * 100;
+  const lastRow = rows[rows.length - 1];
+  const lastChg = parseFloat(lastRow.querySelector('.r')?.value) || 0;
+  const lastPrice = base * (1 + lastChg / 100);
+  const breakeven = (avgPrice / lastPrice - 1) * 100;
+  let html = `<div class="result-row"><span class="rlabel">평균단가 (1차=100 기준)</span><span class="rval">${avgPrice.toFixed(2)}</span></div>`;
+  html += `<div class="result-row"><span class="rlabel">1차 대비 평균단가 변동</span><span class="rval ${cls(avgChg)}">${fmt(avgChg)}</span></div>`;
+  html += `<div class="result-row"><span class="rlabel">현재가(${lastPrice.toFixed(1)}) 대비 손익분기</span><span class="rval ${cls(breakeven)}">${fmt(breakeven)}</span></div>`;
+  html += `<div class="result-sub">현재가에서 ${fmt(breakeven)} 상승하면 본전</div>`;
+  document.getElementById('aResult').innerHTML = html;
+  document.getElementById('aResult').style.display = 'block';
+}
+
+// ========== ⑤ CAGR ==========
+function calcCAGR() {
+  const totalRet = parseFloat(document.getElementById('cagrReturn').value);
+  const years = parseFloat(document.getElementById('cagrYears').value);
+  if (isNaN(totalRet) || isNaN(years) || years <= 0) return;
+  const cagr = (Math.pow(1 + totalRet / 100, 1 / years) - 1) * 100;
+  let html = `<div class="result-row"><span class="rlabel">총 수익률</span><span class="rval ${cls(totalRet)}">${fmt(totalRet)}</span></div>`;
+  html += `<div class="result-row"><span class="rlabel">CAGR (연환산)</span><span class="rval ${cls(cagr)}">${fmt(cagr)}</span></div>`;
+  html += `<div class="result-sub">매년 ${fmt(cagr)}씩 복리로 성장하면 ${years}년 후 ${fmt(totalRet)}</div>`;
+  document.getElementById('cagrResult').innerHTML = html;
+  document.getElementById('cagrResult').style.display = 'block';
+}
+function calcCAGRReverse() {
+  const target = parseFloat(document.getElementById('cagrTarget').value);
+  const years = parseFloat(document.getElementById('cagrTargetYears').value);
+  if (isNaN(target) || isNaN(years) || years <= 0) return;
+  const total = (Math.pow(1 + target / 100, years) - 1) * 100;
+  let html = `<div class="result-row"><span class="rlabel">목표 연 수익률</span><span class="rval ${cls(target)}">${fmt(target)}</span></div>`;
+  html += `<div class="result-row"><span class="rlabel">${years}년 후 총 수익률</span><span class="rval ${cls(total)}">${fmt(total)}</span></div>`;
+  if (years >= 2) {
+    html += `<table class="compound-table"><tr><th>년차</th><th>누적</th><th>년차</th><th>누적</th></tr>`;
+    for (let i = 0; i < years; i += 2) {
+      const y1 = i+1, v1 = (Math.pow(1+target/100,y1)-1)*100;
+      let c2 = '<td></td><td></td>';
+      if (i+1 < years) { const y2=i+2, v2=(Math.pow(1+target/100,y2)-1)*100; c2=`<td>${y2}년</td><td class="${cls(v2)}">${fmt(v2)}</td>`; }
+      html += `<tr><td>${y1}년</td><td class="${cls(v1)}">${fmt(v1)}</td>${c2}</tr>`;
+    }
+    html += '</table>';
+  }
+  document.getElementById('cagrResult').innerHTML = html;
+  document.getElementById('cagrResult').style.display = 'block';
+}
+
+// ========== sf-slots.js 연동 ==========
+window.CALC_KEY = 'return_calc';
+
+window.slGetState = function() {
+  const activeTab = document.querySelector('.tab.active')?.dataset.tab || 'weighted';
+  const state = { activeTab };
+  // 가중평균
+  state.wItems = [];
+  document.querySelectorAll('#wRows .dyn-row').forEach(r => {
+    state.wItems.push({ w: r.querySelector('.w').value, r: r.querySelector('.r').value });
+  });
+  // 복리
+  state.cRate = document.getElementById('cRate').value;
+  state.cCount = document.getElementById('cCount').value;
+  state.cUnit = document.getElementById('cUnit').value;
+  // 손익분기
+  state.bLoss = document.getElementById('bLoss').value;
+  // 물타기
+  state.aItems = [];
+  document.querySelectorAll('#aRows .dyn-row').forEach((r, i) => {
+    state.aItems.push({ w: r.querySelector('.w').value, r: i===0 ? '0' : r.querySelector('.r').value });
+  });
+  // CAGR
+  state.cagrReturn = document.getElementById('cagrReturn').value;
+  state.cagrYears = document.getElementById('cagrYears').value;
+  state.cagrTarget = document.getElementById('cagrTarget').value;
+  state.cagrTargetYears = document.getElementById('cagrTargetYears').value;
+  return state;
+};
+
+window.slSetState = function(data) {
+  if (!data) return;
+  // 탭 전환
+  if (data.activeTab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab===data.activeTab));
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id==='p-'+data.activeTab));
+  }
+  // 가중평균
+  if (data.wItems && data.wItems.length) {
+    document.getElementById('wRows').innerHTML = '';
+    data.wItems.forEach((it, i) => { if(i===0) buildWRow(it.w, it.r, false); else addWRow(it.w, it.r); });
+  }
+  // 복리
+  if (data.cRate !== undefined) document.getElementById('cRate').value = data.cRate;
+  if (data.cCount !== undefined) document.getElementById('cCount').value = data.cCount;
+  if (data.cUnit) document.getElementById('cUnit').value = data.cUnit;
+  // 손익분기
+  if (data.bLoss !== undefined) document.getElementById('bLoss').value = data.bLoss;
+  // 물타기
+  if (data.aItems && data.aItems.length) {
+    document.getElementById('aRows').innerHTML = '';
+    data.aItems.forEach((it, i) => { if(i===0) buildARow(1, it.w, '0', true); else addARow(it.w, it.r); });
+  }
+  // CAGR
+  if (data.cagrReturn !== undefined) document.getElementById('cagrReturn').value = data.cagrReturn;
+  if (data.cagrYears !== undefined) document.getElementById('cagrYears').value = data.cagrYears;
+  if (data.cagrTarget !== undefined) document.getElementById('cagrTarget').value = data.cagrTarget;
+  if (data.cagrTargetYears !== undefined) document.getElementById('cagrTargetYears').value = data.cagrTargetYears;
+};
+
+window.calculate = function() {
+  const tab = document.querySelector('.tab.active')?.dataset.tab;
+  if (tab === 'weighted') calcWeighted();
+  else if (tab === 'compound') calcCompound();
+  else if (tab === 'breakeven') calcBreakeven();
+  else if (tab === 'averaging') calcAveraging();
+  else if (tab === 'cagr') calcCAGR();
+};
+</script>
+<script>window.SF_RESET = true;</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/sf-slots.js?v=9"></script>
+</body>
+</html>

@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>주식 지표 계산기 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .metric{background-color:#172636!important}
+body.sf-dark .metric.good{background-color:#153727!important}
+body.sf-dark .metric.warn{background-color:#373115!important}
+body.sf-dark .metric.bad{background-color:#371515!important}
+body.sf-dark .metric-label{color:#c2c2c2!important}
+body.sf-dark .metric-value{color:#85b5e0!important}
+body.sf-dark .metric.bad .metric-value{color:#eb7a7a!important}
+body.sf-dark .metric.good .metric-value{color:#059669!important}
+body.sf-dark .metric.warn .metric-value{color:#b45309!important}
+</style>
+<style>
+:root { --sf-max-w: 1100px; }
+input[type="number"],input[type="text"]{padding:10px;font-size:13px;border:1px solid #ccc;border-radius:6px;background:#fff;font-weight:600;color:#1F4E78}input:focus{outline:2px solid #1F4E78;background:#fff}input[type="text"]{background:#fff;color:#333}.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.metric{background:#f8fafc;border-left:4px solid #1F4E78;padding:14px;border-radius:6px}.metric.good{border-left-color:#10b981;background:#ecfdf5}.metric.warn{border-left-color:#f59e0b;background:#fffbeb}.metric.bad{border-left-color:#dc2626;background:#fef2f2}.metric-label{font-size:12px;color:#666;margin-bottom:4px}.metric-value{font-size:24px;font-weight:800;color:#1F4E78;font-variant-numeric:tabular-nums}.metric.good .metric-value{color:#059669}.metric.warn .metric-value{color:#b45309}.metric.bad .metric-value{color:#b91c1c}.metric-desc{font-size:11px;color:#888;margin-top:3px}
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body class="sf-narrow">
+
+
+<h1>📈 주식 지표 계산기</h1>
+<p class="desc">주가·EPS·BPS·배당 등을 입력하면 <b>PER · PBR · ROE · 배당수익률</b> 등 핵심 지표 자동 계산. 한 화면에서 종목 가치 한눈에.</p>
+
+<div class="source-box">
+  <h3>📡 데이터 조회 (네이버 증권 / 다트 / 컴퍼니가이드)</h3>
+  <ul>
+    <li><b>한 종목 빠른 조회:</b> <a href="https://finance.naver.com" target="_blank">네이버 증권</a> → 종목 검색 → "투자정보" 탭에서 EPS/BPS/PER/PBR/ROE 다 보임</li>
+    <li><b>재무제표 원본:</b> <a href="https://dart.fss.or.kr" target="_blank">전자공시 DART</a> → 종목 검색 → 사업보고서/분기보고서</li>
+    <li><b>상세 재무 분석:</b> <a href="https://comp.fnguide.com" target="_blank">컴퍼니가이드</a> → 종목 검색 (재무비율, 산업비교)</li>
+  </ul>
+</div>
+
+<div class="panel">
+  <h2>📥 입력값</h2>
+  <div class="inputs">
+    <div class="section-label">① 기본 정보 (메모용)</div>
+    <div class="input-row">
+      <label>종목명 (메모)</label>
+      <input type="text" id="memo" value="삼성전자">
+    </div>
+
+    <div class="section-label">② 주가 & 기본 재무 (1주 기준)</div>
+    <div class="input-row">
+      <label>현재 주가 (원)</label>
+      <input type="number" id="price" value="70000">
+    </div>
+    <div class="input-row">
+      <label>EPS — 주당순이익 (원)</label>
+      <input type="number" id="eps" value="5000">
+    </div>
+    <div class="input-row">
+      <label>BPS — 주당순자산 (원)</label>
+      <input type="number" id="bps" value="50000">
+    </div>
+    <div class="input-row">
+      <label>연 배당금 (1주, 원)</label>
+      <input type="number" id="dps" value="1500">
+    </div>
+
+    <div class="section-label">③ 추가 정보 (있을 때만)</div>
+    <div class="input-row">
+      <label>총 발행주식수 (만주)</label>
+      <input type="number" id="shares" value="59700">
+    </div>
+    <div class="input-row">
+      <label>당기순이익 (억원)</label>
+      <input type="number" id="netIncome" value="0">
+    </div>
+    <div class="input-row">
+      <label>자기자본 (억원)</label>
+      <input type="number" id="equity" value="0">
+    </div>
+    <div class="input-row">
+      <label>총자산 (억원)</label>
+      <input type="number" id="totalAssets" value="0">
+    </div>
+    <div class="input-row">
+      <label>매출액 (억원)</label>
+      <input type="number" id="revenue" value="0">
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>📊 가치평가 지표</h2>
+  <div class="metrics-grid">
+    <div class="metric" id="m_per">
+      <div class="metric-label">PER (주가/EPS)</div>
+      <div class="metric-value" id="v_per">-</div>
+      <div class="metric-desc">낮을수록 저평가 (한국 평균 10~15)</div>
+    </div>
+    <div class="metric" id="m_pbr">
+      <div class="metric-label">PBR (주가/BPS)</div>
+      <div class="metric-value" id="v_pbr">-</div>
+      <div class="metric-desc">1배 이하 = 청산가치 미만</div>
+    </div>
+    <div class="metric" id="m_psr">
+      <div class="metric-label">PSR (시총/매출)</div>
+      <div class="metric-value" id="v_psr">-</div>
+      <div class="metric-desc">매출액 대비 시가총액</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">시가총액 (억원)</div>
+      <div class="metric-value" id="v_marketCap">-</div>
+      <div class="metric-desc">주가 × 발행주식수</div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>💼 수익성/효율성 지표</h2>
+  <div class="metrics-grid">
+    <div class="metric" id="m_roe">
+      <div class="metric-label">ROE (EPS/BPS)</div>
+      <div class="metric-value" id="v_roe">-</div>
+      <div class="metric-desc">자기자본 수익률 (15%+ 우수)</div>
+    </div>
+    <div class="metric" id="m_roa">
+      <div class="metric-label">ROA (순이익/총자산)</div>
+      <div class="metric-value" id="v_roa">-</div>
+      <div class="metric-desc">총자산 수익률</div>
+    </div>
+    <div class="metric" id="m_npm">
+      <div class="metric-label">순이익률</div>
+      <div class="metric-value" id="v_npm">-</div>
+      <div class="metric-desc">매출 대비 순이익</div>
+    </div>
+    <div class="metric" id="m_eqRatio">
+      <div class="metric-label">자기자본비율</div>
+      <div class="metric-value" id="v_eqRatio">-</div>
+      <div class="metric-desc">자기자본/총자산 (50%+ 안정)</div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>💰 배당 지표</h2>
+  <div class="metrics-grid">
+    <div class="metric" id="m_divYield">
+      <div class="metric-label">시가배당률 (DPS/주가)</div>
+      <div class="metric-value" id="v_divYield">-</div>
+      <div class="metric-desc">현 주가 매수 시 배당수익률</div>
+    </div>
+    <div class="metric" id="m_payout">
+      <div class="metric-label">배당성향 (DPS/EPS)</div>
+      <div class="metric-value" id="v_payout">-</div>
+      <div class="metric-desc">순이익 중 배당 비율 (30~50% 적정)</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">총 배당금 (억원)</div>
+      <div class="metric-value" id="v_totalDiv">-</div>
+      <div class="metric-desc">DPS × 발행주식수</div>
+    </div>
+  </div>
+</div>
+
+<div class="manual">
+  <h3>📘 지표 설명</h3>
+
+  <h3>① 가치평가 지표 (싸냐/비싸냐)</h3>
+  <ul>
+    <li><span class="badge">PER</span> Price/Earnings Ratio. 주가가 EPS의 몇 배인가. <b>낮을수록 저평가.</b> 한국 평균 10~15배. 성장주는 높고 가치주는 낮음.</li>
+    <li><span class="badge">PBR</span> Price/Book-value Ratio. 주가가 BPS의 몇 배인가. <b>1배 이하면 청산가치 미만.</b> 금융·철강 같은 자산 많은 업종은 낮고, IT/플랫폼은 높음.</li>
+    <li><span class="badge">PSR</span> Price/Sales Ratio. 시총이 매출의 몇 배인가. 적자 기업 평가에 유용.</li>
+  </ul>
+
+  <h3>② 수익성 지표 (얼마나 잘 버나)</h3>
+  <ul>
+    <li><span class="badge">ROE</span> Return On Equity. 자기자본 1원으로 1년에 얼마 버나. <b>15%+ 우수, 10% 적정, 5% 미만 부진.</b> 워런 버핏 최애 지표.</li>
+    <li><span class="badge">ROA</span> Return On Assets. 총자산 1원으로 1년에 얼마 버나. 부채 많은 회사는 ROE는 좋아도 ROA는 낮을 수 있음.</li>
+    <li><span class="badge">순이익률</span> 매출의 몇 %가 최종 순이익으로 남나. 업종별 큰 차이.</li>
+    <li><span class="badge">자기자본비율</span> 총자산 중 자기자본 비율. <b>50%+ 안정, 30% 미만 위험.</b></li>
+  </ul>
+
+  <h3>③ 배당 지표</h3>
+  <ul>
+    <li><span class="badge">시가배당률</span> 현 주가에서 매수해서 1년 들고 있으면 받는 배당수익률. <b>한국 평균 2~3%, 4% 이상이면 고배당주.</b></li>
+    <li><span class="badge">배당성향</span> 순이익 중 몇 %를 배당으로 나눠주나. <b>30~50% 적정.</b> 너무 높으면 (80%+) 지속가능성 의문, 너무 낮으면 (10% 미만) 주주환원 부족.</li>
+  </ul>
+
+  <h3>④ 색상 의미</h3>
+  <ul>
+    <li>🟢 <b>녹색</b> = 우수 (좋은 신호)</li>
+    <li>🟡 <b>황색</b> = 보통 (중립)</li>
+    <li>🔴 <b>빨강</b> = 주의 (부정적 신호)</li>
+  </ul>
+</div>
+
+<script>
+const fmt = n => sfNum(n);
+const fmtNum = n => n.toFixed(2);
+const fmtPct = n => sfPct(n, 2);
+
+function setMetric(id, value, level, classList) {
+  document.getElementById('v_' + id).textContent = value;
+  if (level && classList) {
+    const el = document.getElementById('m_' + id);
+    if (el) el.className = 'metric ' + level;
+  }
+}
+
+function calculate() {
+  const price = parseFloat(document.getElementById('price').value) || 0;
+  const eps = parseFloat(document.getElementById('eps').value) || 0;
+  const bps = parseFloat(document.getElementById('bps').value) || 0;
+  const dps = parseFloat(document.getElementById('dps').value) || 0;
+  const shares = (parseFloat(document.getElementById('shares').value) || 0) * 10000; // 만주 → 주
+  const netIncome = (parseFloat(document.getElementById('netIncome').value) || 0) * 1e8; // 억원 → 원
+  const equity = (parseFloat(document.getElementById('equity').value) || 0) * 1e8;
+  const totalAssets = (parseFloat(document.getElementById('totalAssets').value) || 0) * 1e8;
+  const revenue = (parseFloat(document.getElementById('revenue').value) || 0) * 1e8;
+
+  const set = (id, v) => document.getElementById('v_' + id).textContent = v;
+  const setLevel = (id, level) => { const el = document.getElementById('m_' + id); if (el) el.className = 'metric ' + level; };
+
+  // PER
+  if (eps > 0) {
+    const per = price / eps;
+    set('per', fmtNum(per) + '배');
+    setLevel('per', per < 10 ? 'good' : per < 20 ? '' : per < 30 ? 'warn' : 'bad');
+  } else if (eps < 0) {
+    set('per', '적자'); setLevel('per', 'bad');
+  } else { set('per', '-'); setLevel('per', ''); }
+
+  // PBR
+  if (bps > 0) {
+    const pbr = price / bps;
+    set('pbr', fmtNum(pbr) + '배');
+    setLevel('pbr', pbr < 1 ? 'good' : pbr < 2 ? '' : pbr < 3 ? 'warn' : 'bad');
+  } else { set('pbr', '-'); setLevel('pbr', ''); }
+
+  // 시가총액
+  const marketCap = price * shares;
+  set('marketCap', shares > 0 ? fmt(marketCap / 1e8) : '-');
+
+  // PSR
+  if (revenue > 0 && marketCap > 0) {
+    const psr = marketCap / revenue;
+    set('psr', fmtNum(psr) + '배');
+    setLevel('psr', psr < 1 ? 'good' : psr < 3 ? '' : 'warn');
+  } else { set('psr', '-'); setLevel('psr', ''); }
+
+  // ROE (EPS/BPS 우선, 안 되면 순이익/자기자본)
+  let roe = 0;
+  if (eps > 0 && bps > 0) roe = eps / bps * 100;
+  else if (netIncome > 0 && equity > 0) roe = netIncome / equity * 100;
+  if (roe !== 0) {
+    set('roe', fmtPct(roe));
+    setLevel('roe', roe >= 15 ? 'good' : roe >= 8 ? '' : roe >= 0 ? 'warn' : 'bad');
+  } else { set('roe', '-'); setLevel('roe', ''); }
+
+  // ROA
+  if (netIncome !== 0 && totalAssets > 0) {
+    const roa = netIncome / totalAssets * 100;
+    set('roa', fmtPct(roa));
+    setLevel('roa', roa >= 5 ? 'good' : roa >= 2 ? '' : roa >= 0 ? 'warn' : 'bad');
+  } else { set('roa', '-'); setLevel('roa', ''); }
+
+  // 순이익률
+  if (netIncome !== 0 && revenue > 0) {
+    const npm = netIncome / revenue * 100;
+    set('npm', fmtPct(npm));
+    setLevel('npm', npm >= 10 ? 'good' : npm >= 3 ? '' : npm >= 0 ? 'warn' : 'bad');
+  } else { set('npm', '-'); setLevel('npm', ''); }
+
+  // 자기자본비율
+  if (equity > 0 && totalAssets > 0) {
+    const eqRatio = equity / totalAssets * 100;
+    set('eqRatio', fmtPct(eqRatio));
+    setLevel('eqRatio', eqRatio >= 50 ? 'good' : eqRatio >= 30 ? '' : 'bad');
+  } else { set('eqRatio', '-'); setLevel('eqRatio', ''); }
+
+  // 시가배당률
+  if (dps >= 0 && price > 0) {
+    const divYield = dps / price * 100;
+    set('divYield', fmtPct(divYield));
+    setLevel('divYield', divYield >= 4 ? 'good' : divYield >= 2 ? '' : divYield > 0 ? 'warn' : '');
+  } else { set('divYield', '-'); setLevel('divYield', ''); }
+
+  // 배당성향
+  if (dps >= 0 && eps > 0) {
+    const payout = dps / eps * 100;
+    set('payout', fmtPct(payout));
+    setLevel('payout', payout >= 30 && payout <= 60 ? 'good' : payout < 80 ? '' : 'warn');
+  } else { set('payout', '-'); setLevel('payout', ''); }
+
+  // 총 배당금
+  if (dps > 0 && shares > 0) {
+    set('totalDiv', fmt(dps * shares / 1e8));
+  } else { set('totalDiv', '-'); }
+}
+
+document.querySelectorAll('input').forEach(el => el.addEventListener('input', calculate));
+calculate();
+</script>
+<script>
+window.CALC_KEY = 'metrics';
+window.slGetState = function(){
+  return {
+    memo: document.getElementById('memo').value,
+    price: document.getElementById('price').value,
+    eps: document.getElementById('eps').value,
+    bps: document.getElementById('bps').value,
+    dps: document.getElementById('dps').value,
+    shares: document.getElementById('shares').value,
+    netIncome: document.getElementById('netIncome').value,
+    equity: document.getElementById('equity').value,
+    totalAssets: document.getElementById('totalAssets').value,
+    revenue: document.getElementById('revenue').value,
+  };
+};
+window.slSetState = function(d){
+  if(!d) return;
+  if(d.memo !== undefined) document.getElementById('memo').value = d.memo;
+  if(d.price !== undefined) document.getElementById('price').value = d.price;
+  if(d.eps !== undefined) document.getElementById('eps').value = d.eps;
+  if(d.bps !== undefined) document.getElementById('bps').value = d.bps;
+  if(d.dps !== undefined) document.getElementById('dps').value = d.dps;
+  if(d.shares !== undefined) document.getElementById('shares').value = d.shares;
+  if(d.netIncome !== undefined) document.getElementById('netIncome').value = d.netIncome;
+  if(d.equity !== undefined) document.getElementById('equity').value = d.equity;
+  if(d.totalAssets !== undefined) document.getElementById('totalAssets').value = d.totalAssets;
+  if(d.revenue !== undefined) document.getElementById('revenue').value = d.revenue;
+  if(typeof calculate === 'function') calculate();
+};
+</script>
+<script>window.SF_RESET = true;</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

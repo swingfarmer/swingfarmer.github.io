@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1F4E78">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="건강관리">
+<link rel="manifest" href="/health/manifest.json">
+<link rel="apple-touch-icon" href="/health/icon-192.png">
+<title>건강관리 체크리스트 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .install-bar{background-color:#373115!important;border-bottom-color:#736326!important;color:#f2a373!important}
+body.sf-dark .check-item{background-color:#172636!important}
+body.sf-dark .check-item.done{background-color:#153727!important}
+body.sf-dark .check-item .box{border-color:#384b61!important}
+body.sf-dark .check-item .txt .detail{color:#c2c2c2!important}
+body.sf-dark .cat-common{background-color:#152437!important;color:#7c96e9!important}
+body.sf-dark .cat-lipid{background-color:#373115!important;color:#f2a373!important}
+body.sf-dark .cat-bp{background-color:#371515!important;color:#e87d7d!important}
+body.sf-dark .cat-liver{background-color:#153726!important;color:#71f4cf!important}
+body.sf-dark .progress-box{background-color:#1e242e!important}
+body.sf-dark .progress-box .pb-count{color:#c2c2c2!important}
+body.sf-dark .bar{background-color:#1a1f29!important}
+body.sf-dark .date-nav button{background-color:#1e242e!important;border-color:#2c333f!important;color:#85b5e0!important}
+body.sf-dark .date-nav .cur{color:#85b5e0!important}
+body.sf-dark .reset-btn{background-color:#172636!important}
+body.sf-dark table.food th{border-bottom-color:#2c333f!important}
+body.sf-dark .tip{background-color:#152437!important;color:#7c96e9!important}
+body.sf-dark .warn{background-color:#373115!important;border-color:#736326!important;color:#f2a373!important}
+body.sf-dark ul.clean li{border-bottom-color:#2c333f!important}
+body.sf-dark ul.clean li:before{color:#85b5e0!important}
+body.sf-dark .weight-stat .ws{background-color:#172636!important}
+body.sf-dark .weight-stat .ws .v{color:#85b5e0!important}
+body.sf-dark .weight-row{border-bottom-color:#2c333f!important}
+body.sf-dark .weight-row .wdate{color:#c2c2c2!important}
+body.sf-dark .weight-row .wval{color:#85b5e0!important}
+body.sf-dark .weight-row .wdel{background-color:#371515!important}
+body.sf-dark .promise-item{background-color:#172636!important}
+body.sf-dark .promise-item .pcheck{border-color:#384b61!important}
+body.sf-dark .promise-add{background-color:#152437!important;color:#85b5e0!important}
+body.sf-dark .check-item.done .box{border-color:#16a34a!important}
+body.sf-dark .promise-item.kept .pcheck{border-color:#16a34a!important}
+</style>
+<style>
+:root { --sf-max-w: 600px; }
+.final, .result-hero { background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+  header p { font-size: 12.5px; opacity: .92; }
+  .status-bar { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+  .status-chip { background: rgba(255,255,255,.18); border-radius: 20px; padding: 5px 11px; font-size: 11.5px; font-weight: 600; }
+  .install-bar { background: #fef3c7; border-bottom: 1px solid #fde68a; padding: 10px 14px; font-size: 12.5px; color: #92400e; display: none; align-items: center; gap: 10px; }
+  .install-bar.show { display: flex; }
+  .install-bar button { margin-left: auto; background: #1F4E78; color: white; border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .panel h2 { font-size: 14.5px; color: #1F4E78; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #eef0f3; }
+  .panel h3 { font-size: 13px; color: #333; margin: 14px 0 8px; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .check-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border-radius: 10px; margin-bottom: 8px; background: #f8fafc; cursor: pointer; }
+  .check-item.done { background: #ecfdf5; }
+  .check-item .box { width: 24px; height: 24px; border-radius: 7px; border: 2px solid #cbd5e1; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; color: white; margin-top: 1px; }
+  .check-item.done .box { background: #16a34a; border-color: #16a34a; }
+  .check-item .txt { font-size: 13.5px; flex: 1; }
+  .check-item .txt .head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .check-item .txt .pri { font-size: 10px; font-weight: 800; padding: 1px 7px; border-radius: 8px; color: white; }
+  .pri-1 { background: #dc2626; }
+  .pri-2 { background: #ea580c; }
+  .pri-3 { background: #ca8a04; }
+  .check-item .txt .detail { font-size: 12px; color: #666; display: block; margin-top: 5px; line-height: 1.65; }
+  .check-item .txt .detail .ok { color: #16a34a; font-weight: 600; }
+  .check-item .txt .detail .no { color: #dc2626; font-weight: 600; }
+  .cat-common { background: #dbeafe; color: #1e40af; }
+  .cat-lipid { background: #fef3c7; color: #92400e; }
+  .cat-bp { background: #fee2e2; color: #991b1b; }
+  .cat-liver { background: #d1fae5; color: #065f46; }
+  .progress-box { background: white; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .progress-box .pb-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .progress-box .pb-count { font-size: 13px; color: #666; }
+  .bar { height: 12px; background: #eef0f3; border-radius: 6px; overflow: hidden; }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, #16a34a, #22c55e); border-radius: 6px; transition: width .3s; width: 0; }
+  .date-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 14px; }
+  .date-nav button { background: white; border: 1px solid #e5e7eb; border-radius: 8px; width: 38px; height: 38px; font-size: 16px; cursor: pointer; color: #1F4E78; }
+  .date-nav .cur { font-size: 14px; font-weight: 700; color: #1F4E78; min-width: 130px; text-align: center; }
+  .reset-btn { width: 100%; margin-top: 10px; background: #f1f5f9; color: #64748b; border: none; border-radius: 8px; padding: 9px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  table.food { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 6px; }
+  table.food th { background: #f8fafc; padding: 8px; font-size: 11.5px; color: #555; text-align: left; border-bottom: 2px solid #e5e7eb; }
+  table.food td { padding: 8px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+  table.food .good { color: #16a34a; font-weight: 600; }
+  table.food .bad { color: #dc2626; font-weight: 600; }
+  .tip { background: #eff6ff; border-left: 3px solid #1F4E78; border-radius: 6px; padding: 10px 13px; font-size: 12px; color: #1e40af; margin: 10px 0; line-height: 1.7; }
+  .warn { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 11.5px; color: #92400e; line-height: 1.7; margin-top: 14px; }
+  ul.clean { list-style: none; padding: 0; }
+  ul.clean li { padding: 6px 0 6px 20px; position: relative; font-size: 13px; border-bottom: 1px solid #f5f5f5; }
+  ul.clean li:before { content: "•"; position: absolute; left: 4px; color: #1F4E78; font-weight: 700; }
+  /* 몸무게 */
+  .weight-input-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 14px; }
+  .weight-input-row .fld { flex: 1; }
+  .weight-input-row input { width: 100%; padding: 11px; font-size:13px; border: 1px solid #ccc; border-radius: 8px; background: #fff; font-weight: 600; color: #1F4E78; }
+  .weight-input-row button { background: #1F4E78; color: white; border: none; border-radius: 8px; padding: 12px 18px; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .weight-stat { display: flex; gap: 10px; margin-bottom: 14px; }
+  .weight-stat .ws { flex: 1; background: #f8fafc; border-radius: 10px; padding: 12px; text-align: center; }
+  .weight-stat .ws .v { font-size: 18px; font-weight: 800; color: #1F4E78; }
+  .weight-stat .ws .l { font-size: 11px; color: #888; margin-top: 2px; }
+  .weight-list { margin-top: 10px; }
+  .weight-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .weight-row .wdate { color: #666; min-width: 92px; }
+  .weight-row .wval { font-weight: 700; color: #1F4E78; }
+  .weight-row .wdel { margin-left: auto; background: #fee2e2; color: #dc2626; border: none; border-radius: 5px; padding: 4px 9px; font-size: 11px; cursor: pointer; }
+  .promise-item { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 10px; margin-bottom: 8px; background: #f8fafc; }
+  .promise-item input[type=text] { flex: 1; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px; font-size: 13px; }
+  .promise-item .pcheck { width: 26px; height: 26px; border-radius: 7px; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 15px; color: white; cursor: pointer; flex-shrink: 0; }
+  .promise-item.kept .pcheck { background: #16a34a; border-color: #16a34a; }
+  .promise-add { width: 100%; background: #eff6ff; color: #1F4E78; border: 1px dashed #93c5fd; border-radius: 8px; padding: 10px; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 6px; }
+  footer { text-align: center; margin-top: 24px; color: #999; font-size: 11.5px; }
+</style>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body>
+<div class="install-bar" id="installBar">
+  📲 홈 화면에 추가하면 앱처럼 쓸 수 있어요
+  <button id="installBtn">설치</button>
+</div>
+<header>
+  <div class="wrap">
+    <h1>🩺 건강관리</h1>
+    <p>고지혈증·고혈압·간수치 통합 관리 · 40대 남성</p>
+    <div class="status-bar">
+      <span class="status-chip">🔴 고지혈증 높음</span>
+      <span class="status-chip">🟡 고혈압 경계</span>
+      <span class="status-chip">🟢 간수치 상단</span>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <!-- sf-slots.js 저장 관리 -->
+    </div>
+  </div>
+</header>
+<div class="wrap">
+  <div class="tabs">
+    <div class="tab active" data-tab="check" onclick="showTab('check')">✅ 데일리</div>
+    <div class="tab" data-tab="weight" onclick="showTab('weight')">⚖️ 몸무게</div>
+    <div class="tab" data-tab="myplan" onclick="showTab('myplan')">⭐ 내 식단</div>
+      <div class="tab" data-tab="diet" onclick="showTab('diet')">🍽️ 식단</div>
+    <div class="tab" data-tab="exercise" onclick="showTab('exercise')">🏃 운동</div>
+    <div class="tab" data-tab="avoid" onclick="showTab('avoid')">🚫 피할것</div>
+  </div>
+
+  <!-- 데일리 -->
+  <div class="tab-content active" id="tab-check">
+    <div class="date-nav">
+      <button onclick="changeDate(-1)">‹</button>
+      <span class="cur" id="curDate"></span>
+      <button onclick="changeDate(1)" id="nextBtn">›</button>
+    </div>
+    <div class="progress-box">
+      <div class="pb-top">
+        <span class="pb-label">실천 현황</span>
+        <span class="pb-count"><span id="doneCount">0</span> / <span id="totalCount">0</span></span>
+      </div>
+      <div class="bar"><div class="bar-fill" id="barFill"></div></div>
+      <button class="reset-btn" onclick="resetToday()">이 날짜 체크 초기화</button>
+    </div>
+    <div class="panel">
+      <h2>오늘의 실천 (우선순위 순)</h2>
+      <div id="checkList"></div>
+    </div>
+    <div class="panel">
+      <h2>🤝 오늘의 약속 지킴</h2>
+      <div id="promiseList"></div>
+      <button class="promise-add" onclick="addPromise()">+ 약속 추가</button>
+      <div class="tip" style="margin-top:12px">개인적인 다짐(예: "오늘 저녁 회식 술 안 마시기", "야식 안 먹기")을 적고 지켰는지 체크하세요. 날짜별로 저장됩니다.</div>
+    </div>
+  </div>
+
+  <!-- 몸무게 -->
+  <div class="tab-content" id="tab-weight">
+    <div class="panel">
+      <h2>⚖️ 몸무게 기록</h2>
+      <div class="weight-input-row">
+        <div class="fld">
+          <label>오늘 몸무게 (kg)</label>
+          <input type="number" id="weightInput" step="0.1" inputmode="decimal" placeholder="예: 78.5">
+        </div>
+        <button onclick="saveWeight()">기록</button>
+      </div>
+      <div class="weight-stat">
+        <div class="ws"><div class="v" id="wCur">-</div><div class="l">최근</div></div>
+        <div class="ws"><div class="v" id="wChange">-</div><div class="l">시작 대비</div></div>
+        <div class="ws"><div class="v" id="wTarget">-</div><div class="l">5% 감량 목표</div></div>
+      </div>
+      <canvas id="weightChart" height="200" style="width:100%;height:200px;margin-top:8px"></canvas>
+      <div class="weight-list" id="weightList"></div>
+    </div>
+    <div class="tip">💡 <b>체중 5~10% 감량</b>이 세 수치를 동시에 개선하는 가장 강력한 레버예요. 매일 같은 시간(아침 공복)에 재면 추세가 정확해요.</div>
+  </div>
+
+  <!-- 식단 -->
+  <div class="tab-content" id="tab-myplan">
+    <div class="panel">
+      <h2>⭐ 나의 최종 확정 식단 (LDL 최적화)</h2>
+      <div class="tip">16:8(11시~19시) · TG 정상 + LDL만 높은 상태 기준 <b>개인 확정본</b>. 확정 재료: 현미+보리밥 130g(통곡물 100%) · 두부 · 그릭요거트(무지방·플레인) · 블루베리(냉동) · 고등어·연어·참치캔 · 무가당두유 · 양파·오이·토마토·샐러드채소 · 미니사과 · 무염아몬드.</div>
+    </div>
+
+    <div class="panel">
+      <h2>🔍 영양소 빈틈 점검</h2>
+      <table class="food">
+        <tr><th>영양소</th><th>공급원</th><th>상태</th></tr>
+        <tr><td>단백질</td><td>두부(메인)+생선+그릭요거트+두유</td><td class="good">✅</td></tr>
+        <tr><td>탄수화물</td><td>현미+보리밥</td><td class="good">✅</td></tr>
+        <tr><td>수용성 섬유(베타글루칸)</td><td>보리밥+사과+양파+블루베리</td><td class="good">✅</td></tr>
+        <tr><td>좋은 지방</td><td>아몬드</td><td class="good">✅</td></tr>
+        <tr><td><b>오메가-3</b></td><td><b>생선(고등어·연어)</b></td><td class="bad">⚠️ 생선 꼭</td></tr>
+        <tr><td>비타민 B12</td><td>생선+그릭요거트</td><td class="good">✅</td></tr>
+        <tr><td>칼슘</td><td>그릭요거트+두부</td><td class="good">✅</td></tr>
+        <tr><td>항산화·비타민</td><td>블루베리·토마토·샐러드</td><td class="good">✅</td></tr>
+        <tr><td>장 건강</td><td>그릭요거트 유산균</td><td class="good">✅</td></tr>
+      </table>
+      <div class="tip"><b>유일한 핵심 빈틈은 오메가-3.</b> 생선(고등어·연어)을 실제로 챙기면 해결 — 아몬드엔 없음. 영양제로 대체 가능하나 식품 우선.</div>
+    </div>
+
+    <div class="panel">
+      <h2>🥩 단백질 전략 (핵심)</h2>
+      <div style="background:#eff6ff;border-left:4px solid #1F4E78;border-radius:8px;padding:12px 14px;margin-bottom:10px;font-size:13px;line-height:1.7"><b>두부 = 매일 메인 / 고등어·연어 = 오메가-3 / 참치캔 = 보조·비상 / 두유·그릭요거트 = 비상·간식·진짜배고픔</b></div>
+      <div style="font-size:13px;line-height:1.8;margin-bottom:10px">오메가-3 기준 순서: <b>고등어 ≈ 연어 &gt; 참치 &gt; 두부</b>. 생선=오메가-3, 두부=콩 수용성 섬유 → 한 종류만은 손해, 번갈아.</div>
+      <div style="background:#ecfdf5;border-left:4px solid #16a34a;border-radius:8px;padding:12px 14px;font-size:12.5px;line-height:1.9">
+        <b>두부</b> — 매일 베이스. 반 모 = 단백질 12~15g. 이두부야(즉석) 위주 + 빌 때 노브랜드. 생두부 냉동은 푸석 → 냉장 3~4일(매일 물갈이)<br>
+        <b>순살고등어구이</b>(비비고 등) — 1분 조리 + 오메가-3. 나트륨 350mg → <b>주 1~2팩</b>, 표면 양념 닦으면↓<br>
+        <b>생고등어</b> — 소금 약하게 구이. 냉동 OK(연어보다 냉동 내성↑)<br>
+        <b>연어</b> — 수은 낮아 주 2~3회. 필렛은 한 끼분 소분 냉동(2달). <b>회·샐러드는 냉동 X</b> → 당일~다음날<br>
+        <b>참치캔</b> — 85~100g = 한 끼(기름 빼면 60~70g). 고추·마요 ✗. 수은 → 주 1~2캔<br>
+        <b>그릭요거트(무지방)</b> — 단백질 9g/100g + 유산균 + 칼슘. 두부보단 적어 <b>보조</b><br>
+        <b>무가당 두유</b> — 9g/팩. 비상 단백질·간식. 두부 떨어졌을 때
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>💊 영양제·좋은 지방</h2>
+      <div class="tip"><b>오메가-3 영양제 — 필수 아님.</b> 생선 주 2~3회면 불필요. 오메가-3는 LDL보다 <b>중성지방·혈관 염증</b>에 작용 → LDL 핵심은 여전히 포화지방↓·보리밥·채소. ⚠️ 혈압약·항응고제 복용이면 의사 상의.</div>
+      <div style="background:#ecfdf5;border-left:4px solid #16a34a;border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.8"><b>좋은 지방 — 아몬드 메인.</b> 무염(생/구운 무관) 한 줌(20~23알)을 <b>2번에 나눠</b>(점심·간식). ≈140kcal, 그 이상 ✗. 올리브유는 보너스(채소 조리 시 조금).</div>
+    </div>
+
+    <div class="panel">
+      <h2>📏 재료별 1일 목표 분량</h2>
+      <table class="food">
+        <tr><th>재료</th><th>1일 분량</th><th>비고</th></tr>
+        <tr><td class="good">현미+보리밥</td><td>130g × 1~2끼</td><td>저녁 필수, 점심 선택</td></tr>
+        <tr><td class="good">두부</td><td>약 1모(300~400g) 분산</td><td>반 모 = 한 끼. 매일 메인</td></tr>
+        <tr><td class="good">생선(고등어/연어/참치)</td><td>60~80g (참치 85~100g캔)</td><td>오메가-3. 주 3~4회 분산</td></tr>
+        <tr><td class="good">그릭요거트</td><td>100~150g</td><td>종이컵 1/2~2/3. 점심·간식</td></tr>
+        <tr><td class="good">블루베리(냉동)</td><td>50~70g</td><td>한 줌. 씻어서</td></tr>
+        <tr><td>무가당 두유</td><td>1팩(필요시)</td><td>비상·간식</td></tr>
+        <tr><td>양파</td><td>1/2개</td><td>나눠서. 매우면 찬물 5~10분</td></tr>
+        <tr><td class="good">오이</td><td>제한 없음</td><td>마음껏</td></tr>
+        <tr><td>작은 토마토</td><td>1개</td><td>방울이면 6~8개</td></tr>
+        <tr><td class="good">샐러드채소</td><td>한 줌+</td><td>드레싱 금지, 그냥 or 올리브유+식초</td></tr>
+        <tr><td>미니사과</td><td>1개</td><td>껍질째</td></tr>
+        <tr><td>무염 아몬드</td><td>한 줌(20~23알), 2번 분산</td><td>그 이상 ✗</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2>🕗 하루 타임라인</h2>
+      <div style="background:#fef9e7;border-left:4px solid #f59e0b;border-radius:8px;padding:12px 14px;margin-bottom:10px;font-size:13px;line-height:1.8">
+        <b>☀️ 11시 — 첫 끼</b> <span style="color:#888">(순서: 채소→단백질→당)</span><br>
+        · <b>그릭요거트 100~150g + 블루베리 한 줌</b> ↔ 또는 <b>미니사과 1개</b> (번갈아, 과일당 안 몰리게)<br>
+        · <b>두부 반 모(약 150g)</b> ← 단백질 고정<br>
+        · 오이/토마토 + 양파 1/4개<br>
+        · (선택) 밥 130g
+      </div>
+      <div style="background:#ecfdf5;border-left:4px solid #16a34a;border-radius:8px;padding:12px 14px;margin-bottom:10px;font-size:13px;line-height:1.8">
+        <b>🥗 15시 — 끼니</b><br>
+        · 밥 130g<br>
+        · 단백질(번갈아): 두부 ↔ 순살고등어 ↔ 참치캔<br>
+        · 샐러드채소 + 양파 1/4개 + 토마토<br>
+        · 아몬드 반 줌(10~12알)
+      </div>
+      <div style="background:#eff6ff;border-left:4px solid #1F4E78;border-radius:8px;padding:12px 14px;margin-bottom:10px;font-size:13px;line-height:1.8">
+        <b>🌙 19시 — 마지막 끼(든든히)</b><br>
+        · 밥 130g<br>
+        · 단백질(아침·점심과 안 겹치게): 두부 ↔ 고등어 ↔ (주말 연어)<br>
+        · 샐러드채소 + 양파 1/4개 + 채소 듬뿍 + (선택) 올리브유 살짝<br>
+        · 아몬드 반 줌(나머지)
+      </div>
+      <div style="background:#f8fafc;border-left:4px solid #94a3b8;border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.8">
+        <b>🌃 19시 이후 공복 — 배고프면</b><br>
+        · 가짜(입 심심): 오이 + 물/차, 10분 대기<br>
+        · 진짜(기운 없음): 두부 1/4모 ↔ 그릭요거트 ↔ 무가당 두유<br>
+        <b>⏳ 8시간 텀 중간 출출:</b> 두부 조금 ↔ 두유 ↔ 그릭요거트
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>📅 일주일 단백질 배치 (예시)</h2>
+      <table class="food">
+        <tr><th>요일</th><th>점심</th><th>저녁</th></tr>
+        <tr><td>월</td><td>두부</td><td class="good">순살고등어</td></tr>
+        <tr><td>화</td><td>참치캔</td><td>두부</td></tr>
+        <tr><td>수</td><td>두부</td><td class="good">순살고등어</td></tr>
+        <tr><td>목</td><td>두부</td><td>두부</td></tr>
+        <tr><td>금</td><td>참치캔</td><td>두부</td></tr>
+        <tr><td>토</td><td class="good">연어(점심)</td><td class="good">연어(저녁)</td></tr>
+        <tr><td>일</td><td>두부</td><td>두부</td></tr>
+      </table>
+      <div class="tip">두부 매일 + 고등어 주2 + 참치 주2 + 연어 주말1 → 오메가-3 주 3~4회 분산.</div>
+    </div>
+
+    <div class="panel">
+      <h2>🍚 밥 한 끼 vs 두 끼</h2>
+      <div style="background:#ecfdf5;border-left:4px solid #16a34a;border-radius:8px;padding:12px 14px;margin-bottom:10px;font-size:13px;line-height:1.7"><b>두 끼(점심+저녁)</b> — 기운 유지·활동량 있을 때. 안정적 시작점.</div>
+      <div style="background:#fef9e7;border-left:4px solid #f59e0b;border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.7"><b>한 끼(저녁만)</b> — 감량 우선 + 기운 괜찮을 때. 점심 단백질·채소 충분히.</div>
+      <div style="font-size:12px;color:#666;margin-top:10px;line-height:1.7">LDL만 보면 밥 양은 큰 변수 아님 → 갈림길은 "감량 vs 기운". ※ 사과·요거트는 단백질 대체 아님 — 아침 두부는 별도.</div>
+    </div>
+
+    <div class="panel">
+      <h2>✅ 왜 LDL에 좋은가</h2>
+      <div style="font-size:13px;line-height:1.9">
+        ✅ <b>포화지방 거의 0</b> (육류·버터·튀김·가공육 없음) ← LDL 1순위<br>
+        ✅ <b>베타글루칸</b>(보리밥) + <b>수용성 섬유</b>(두부·양파·사과·블루베리) ← LDL 직접↓<br>
+        ✅ <b>오메가-3</b>(생선) ← 중성지방·혈관 염증<br>
+        ✅ 단백질 충분(두부+생선+요거트/두유+견과)<br>
+        ✅ 첨가당·나트륨 낮음 + 유산균·칼슘·항산화
+      </div>
+      <div class="tip" style="margin-top:12px">하루 약 <b>1,400~1,700kcal</b>(두 끼 밥) / 감량 버전(밥 한 끼) 1,200~1,400kcal. 기운 빠지면 밥·단백질·견과 늘릴 것.</div>
+    </div>
+
+    <div class="panel">
+      <h2>⚠️ 솔직한 경고 (꼭 읽기)</h2>
+      <div style="background:#fef2f2;border-left:4px solid #dc2626;border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.8;color:#7f1d1d">
+        · <b>적게 먹기보다 적당히.</b> 극단적으로 적게 먹으면 근육 손실→기초대사↓→요요. <b>배 계속 고프거나 기운 없으면 밥·단백질·견과 늘릴 것</b> — 적게가 목표가 아니라 적당히가 목표.<br>
+        · 느린 감량(주 0.5~1kg) 권장. 급격한 감량은 일시적으로 간수치를 올릴 수 있음.<br>
+        · 고지혈증은 유전 비중이 커서 식단만으로 부족한 경우 많음 — 약이 필요해도 실패 아님.<br>
+        · 콜레스테롤·혈압약 복용 중이면 간수치 해석은 <b>반드시 처방의와 함께</b>.<br>
+        · <b>2~3개월 뒤 재검사</b>(체중·간수치·콜레스테롤)로 검증. 잘 지켜도 안 떨어지면 약이 필요한 신호.
+      </div>
+      <div style="font-size:11.5px;color:#999;margin-top:10px;line-height:1.6">※ 일반 원칙 정리이며 의학적 진단·처방이 아님. 간수치 원인은 병원 확인이 우선.</div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-diet">
+    <div class="tip" style="margin-bottom:14px">💡 세 가지(고지혈증·고혈압·지방간)는 사실상 <b>대사증후군 한 묶음</b>이에요. 피할 것·먹을 것이 80% 이상 겹쳐서, 차이는 <b>고혈압의 소금</b> 정도예요. 이 식단은 근거가 가장 탄탄한 <b>지중해식</b>과 거의 같아요.</div>
+
+    <div class="panel">
+      <h2>🍱 하루 구성 (16:8 기준)</h2>
+      <div style="background:#fef9e7;border-left:4px solid #f59e0b;border-radius:8px;padding:12px 14px;margin-bottom:10px">
+        <div style="font-weight:700;color:#b45309;font-size:13.5px;margin-bottom:4px">🌅 아침 (첫 끼)</div>
+        <div style="font-size:13px;line-height:1.7">미니사과(껍질째) + 단백질 약간<br><span style="color:#16a34a;font-weight:600">단백질을 사과보다 먼저/같이</span> 먹어 혈당 완만하게. (삶은 달걀·두유·무가당 요거트)</div>
+      </div>
+      <div style="background:#ecfdf5;border-left:4px solid #16a34a;border-radius:8px;padding:12px 14px;margin-bottom:10px">
+        <div style="font-weight:700;color:#065f46;font-size:13.5px;margin-bottom:4px">🥗 간식 (중간)</div>
+        <div style="font-size:13px;line-height:1.7">오이·채소 마음껏 + 과일 조금 + 견과류 한 줌<br>당근만 적당히, 과일은 하루 총 2회분까지, 견과류 <span style="font-weight:600">7~10알</span></div>
+      </div>
+      <div style="background:#eff6ff;border-left:4px solid #1F4E78;border-radius:8px;padding:12px 14px">
+        <div style="font-weight:700;color:#1e40af;font-size:13.5px;margin-bottom:4px">🌙 저녁 (마지막 끼)</div>
+        <div style="font-size:13px;line-height:1.7">잡곡밥 100~120g + 생선/두부·콩 + 채소 + 올리브유 살짝<br>밥 200g은 한 공기라 과함. <span style="color:#dc2626;font-weight:600">소금·기름 최소</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>🚫 피해야 할 성분</h2>
+      <table class="food">
+        <tr><th>성분</th><th>주의</th></tr>
+        <tr><td class="bad">술</td><td>단일 최강 악재. 간수치 핵심이면 거의 끊기 (고지혈 ●●● 간 ●●● 혈압 ●●)</td></tr>
+        <tr><td class="bad">설탕·액상과당·정제탄수</td><td>음료·주스·빵·과자·흰쌀·흰밀가루. 과당이 지방간 직접 키움</td></tr>
+        <tr><td class="bad">포화지방</td><td>삼겹살·갈비·버터·가공육(햄·소시지·베이컨)·풀팻 유제품</td></tr>
+        <tr><td class="bad">트랜스지방</td><td>튀김·마가린·시판 과자·페이스트리. 0에 가깝게</td></tr>
+        <tr><td class="bad">소금(나트륨)</td><td>라면·찌개 국물·젓갈·장아찌·장류. 줄이되 0은 ✗ (고혈압 ●●●)</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2>✅ 적극 추천</h2>
+      <ul class="clean">
+        <li><b>수용성 식이섬유</b> — 귀리·보리·콩·채소. 담즙산 잡아 LDL 실제로 낮춤</li>
+        <li><b>등푸른생선(오메가-3)</b> — 고등어·연어·정어리. 중성지방↓</li>
+        <li><b>채소·통곡물</b> — 칼륨·마그네슘이 혈압↓ (DASH 핵심)</li>
+        <li><b>올리브유(EV)</b> — 포화지방 대체. 칼로리 높으니 적당히</li>
+        <li><b>블랙커피</b> — 지방간·간수치 보호. 설탕·크림 빼고</li>
+        <li><b>견과류</b> — 하루 한 줌(아몬드·호두 7~10알)</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h2>🤔 흔한 오해 (먹어도 OK)</h2>
+      <table class="food">
+        <tr><th>항목</th><th>판정</th></tr>
+        <tr><td>달걀</td><td><span class="good">하루 1개 OK</span> — 식이 콜레스테롤 영향은 대체로 작음</td></tr>
+        <tr><td>살코기·닭가슴살·생선</td><td><span class="good">OK</span> — 기름진/가공 고기가 문제지 단백질 자체는 아님</td></tr>
+        <tr><td>생과일(통째로)</td><td><span class="good">소량 OK</span> — 단 <span class="no">주스는 금지</span>(섬유질 없는 과당 폭탄)</td></tr>
+        <tr><td>저지방 유제품</td><td><span class="good">적당량 OK</span> — 풀팻보다 우선</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2>🧂 소금 vs 설탕 — 성격이 달라요</h2>
+      <div class="tip" style="margin:0">
+        <b>설탕은 끊는 것, 소금은 줄이는 것.</b><br>
+        • <b>설탕</b>: 필수 아님 → 적을수록 좋음, 0이어도 무해<br>
+        • <b>소금</b>: 필수 미네랄 → 너무 적으면 위험. 권장 상한 2,300mg, 이상 1,500mg. 한국인 평균 3,000~4,000mg이라 줄이는 방향.<br>
+        ⚠️ 땀 많이 흘리는 운동·이뇨제 복용 시엔 나트륨 과도하게 줄이면 안 돼요.
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>🥒 채소·과일 간식 가이드</h2>
+      <h3>채소</h3>
+      <ul class="clean">
+        <li><b>오이</b> — 거의 완벽(칼로리 0). 마음껏</li>
+        <li><b>셀러리·파프리카·방울토마토·무·콜라비</b> — 자유롭게 OK</li>
+        <li><b>당근</b> — 좋지만 당분 있음. 하루 1~2개까지</li>
+      </ul>
+      <div class="tip" style="margin-top:8px">⚠️ <span class="no" style="color:#dc2626">소금·쌈장·드레싱 찍는 순간 의미 반감.</span> 그냥 생으로. 설탕 뿌린 토마토 금지.</div>
+      <h3>과일</h3>
+      <ul class="clean">
+        <li><span class="good" style="color:#16a34a">좋은 과일(당 낮음)</span>: 베리류·키위·사과·미니사과</li>
+        <li><span class="no" style="color:#dc2626">주의 과일(당 높음)</span>: 참외·메론·포도·말린과일 → 하루 한두 조각</li>
+      </ul>
+      <div class="tip" style="margin-top:8px">조건: ①통째로(주스 ✗) ②단 과일은 소량 ③밥 대용 ✗, 간식으로. <b>미니사과 껍질째 아침 시작 — 좋음.</b></div>
+    </div>
+
+    <div class="panel">
+      <h2>🐟 고등어 조리</h2>
+      <ul class="clean">
+        <li>오메가-3 풍부 → 중성지방·심혈관·간에 다 좋은 최고급 식재료</li>
+        <li><b>기름 최소</b>(자체 기름 충분). 굳이 두르면 올리브유 살짝</li>
+        <li>⚠️ <span class="no" style="color:#dc2626">자반(염장) 대신 생고등어</span>, 새까맣게 태우지 말 것</li>
+        <li>굽기·찜 > 튀김. 프라이팬 굽기도 충분히 좋음</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h2>⏱️ 간헐적 단식 (16:8)</h2>
+      <div class="tip" style="margin:0">
+        <b>마법은 아님.</b> 효과는 "8시간 안에 뭘 먹느냐"가 거의 다 결정해요.<br>
+        • 먹는 창이 줄면 자연스럽게 총 칼로리 감소<br>
+        • <span class="no" style="color:#dc2626">"16시간 굶었으니 뭐든 OK"는 가장 위험한 착각</span><br>
+        • 지키기 편하면 시도할 만한 <b>보조 도구</b>(핵심 아님)<br>
+        ⚠️ 혈압약·당뇨약 복용 중이거나 공복에 어지러우면 주의
+      </div>
+    </div>
+
+    <div class="warn">
+      <b>🍚 밥 관련 정답</b>: "밥 빼기"가 아니라 <b>흰쌀 → 통곡물(현미·잡곡·보리)로 바꾸고 양 줄이기</b>. 반공기 = 익힌 밥 100~120g. 아예 빼면 그 자리를 고기로 채워 포화지방↑(역효과) + 식이섬유 손실.<br><br>
+      <b>🥩 단백질은 종류가 핵심</b>: 두부·생선·콩·닭가슴살(껍질✗)·달걀(하루1개)로 채우면 약, 삼겹살·소시지로 채우면 독.
+    </div>
+  </div>
+
+    <!-- 곡물 좋은 순서 -->
+    <div class="panel">
+      <h2>🌾 곡물 좋은 순서 (LDL 특화)</h2>
+      <div class="tip"><b>TG 정상 + LDL만 높으면</b> 밥 양 줄이기보다 <b>포화지방↓ + 수용성 식이섬유↑</b>가 훨씬 중요해요. 탄수(밥)는 LDL보다 중성지방에 더 영향을 줍니다.</div>
+      <table class="food">
+        <tr><th>순위</th><th>곡물</th><th>핵심</th></tr>
+        <tr><td>1</td><td class="good">귀리(오트밀)</td><td>베타글루칸 최강. LDL 낮추는 효과 가장 입증됨</td></tr>
+        <tr><td>2</td><td class="good">보리(찰보리)</td><td>베타글루칸 풍부. 밥에 섞기 좋음</td></tr>
+        <tr><td>3</td><td>흑미</td><td>식이섬유 + 안토시아닌(항산화)</td></tr>
+        <tr><td>4</td><td>현미</td><td>통곡물 기본, 무난한 최상위</td></tr>
+        <tr><td>5</td><td>잡곡(혼합)</td><td>구성에 따라 등락</td></tr>
+        <tr><td>6</td><td class="good">콩·렌틸</td><td>곡물은 아니지만 밥에 섞으면 단백질+수용성섬유 동시</td></tr>
+      </table>
+      <div style="background:#ecfdf5;border-left:4px solid #16a34a;border-radius:8px;padding:12px 14px;margin-top:10px;font-size:13px;line-height:1.7">
+        <b>맞춤 조합:</b> 현미·흑미 베이스 + 보리 한 줌 + 콩·렌틸 한 줌. 아침에 오트밀 추가하면 베타글루칸 보충.<br>
+        <b>흰쌀 섞기:</b> 100%가 낫지만 거칠어서 못 지킬 바엔 섞어서 꾸준히 — 7:3 → 5:5 → 3:7로 비율 점진적으로 올리기.
+      </div>
+    </div>
+
+    <!-- 즉석밥 비교 -->
+    <div class="panel">
+      <h2>🍚 즉석밥 비교 (오뚜기 130g)</h2>
+      <table class="food">
+        <tr><th>항목</th><th>보리밥(식이섬유+)</th><th>현미밥</th></tr>
+        <tr><td>통곡물 비율</td><td>낮음 (쌀 메인)</td><td class="good">높음 (사실상 현미 100%)</td></tr>
+        <tr><td>식이섬유</td><td class="good">6g</td><td>4.1g</td></tr>
+        <tr><td>단백질</td><td>3g</td><td class="good">4g</td></tr>
+        <tr><td>당류 / 나트륨</td><td>0g / 5mg</td><td>0g / 5mg</td></tr>
+        <tr><td>열량</td><td>175kcal</td><td>175kcal</td></tr>
+      </table>
+      <div class="tip"><b>결론: 둘 다 합격, 번갈아 먹기.</b> LDL 기준 현미밥이 살짝 우위지만 큰 차이 아님. 130g = 한 끼 충분(탄수 39~41g). <b>부족하면 210g으로 늘리지 말고 두부로 채우기</b> — 밥 늘리면 탄수만↑, 두부는 단백질+포만감.</div>
+    </div>
+
+    <!-- 16:8 3버전 -->
+    <div class="panel">
+      <h2>🍱 16:8 식단 — 3버전</h2>
+      <div class="tip">구조: <b>첫 끼(8시) → 중간 간식 절반(12시) → 마지막 끼(16시 종료)</b>. 세 버전은 서로 바꿔 먹어도 되고 끼니 순서도 바꿔도 됩니다. 공통: 단백질을 밥·과일보다 <b>먼저/같이</b>, 채소는 많이, 밥은 현미밥·보리밥 번갈아.</div>
+      <div style="background:#eff6ff;border-left:4px solid #1F4E78;border-radius:8px;padding:12px 14px;margin-bottom:10px;font-size:13px;line-height:1.8">
+        <b>🅰️ 생선 중심</b><br>
+        ① 삶은 달걀 1개 + 현미밥 130g + 오이·방울토마토 + 블랙커피<br>
+        ② 오이 + 미니사과 1개 + 무염 아몬드 한 줌<br>
+        ③ 보리밥 130g + 구운 고등어(생물·소금약) + 나물·쌈채소 + 올리브유 살짝
+      </div>
+      <div style="background:#ecfdf5;border-left:4px solid #16a34a;border-radius:8px;padding:12px 14px;margin-bottom:10px;font-size:13px;line-height:1.8">
+        <b>🅱️ 두부·콩 중심 (채식 가까움)</b><br>
+        ① 무가당 두유 1잔 + 보리밥 130g + 나물 한 접시<br>
+        ② 방울토마토 + 베리류 소량 + 호두 한 줌<br>
+        ③ 현미밥 130g + 두부 한 모(데침·구이) + 구운채소 + 올리브유 살짝
+      </div>
+      <div style="background:#fef9e7;border-left:4px solid #f59e0b;border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.8">
+        <b>🅲 오트밀 활용 (베타글루칸·LDL 특화)</b><br>
+        ① 오트밀(무가당, 두유·물에) + 베리류 약간 + 견과 한 줌<br>
+        ② 오이·당근(1~2개) + 무가당 요거트<br>
+        ③ 현미·보리밥 130g + 닭가슴살(껍질✗)·생선 + 채소 듬뿍
+      </div>
+      <div style="font-size:12px;color:#666;margin-top:10px;line-height:1.7">하루 밥 약 200~220g을 두 끼로 분산 → 한 번에 몰아먹는 것보다 혈당·중성지방에 유리. 단백질원(달걀·두유·두부·생선·닭가슴살·견과)을 매일 바꿔주면 질림 방지.</div>
+    </div>
+
+    <!-- 공복 대응 -->
+    <div class="panel">
+      <h2>🕓 공복 시간 배고플 때</h2>
+      <div class="tip">16시 마지막 끼 후 공복 시간. 배고프면 먼저 <b>가짜/진짜</b> 구분 — <b>물·차 한 잔 마시고 10분 대기</b>하면 가짜 배고픔은 대개 사라져요.</div>
+      <div style="background:#ecfdf5;border-left:4px solid #16a34a;border-radius:8px;padding:12px 14px;margin-bottom:10px;font-size:13px;line-height:1.8">
+        <b>🟢 가짜 배고픔 — 칼로리 자유</b><br>
+        오이(마음껏) · 방울토마토·토마토(생) · 셀러리·파프리카·무 · 옥수수수염차·현미차·물(무가당)<br>
+        <span style="color:#dc2626">❌ 쌈장·설탕·드레싱 찍는 순간 의미 없음 → 생으로</span>
+      </div>
+      <div style="background:#eff6ff;border-left:4px solid #1F4E78;border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.8">
+        <b>🟡 진짜 배고픔 — 단백질 위주</b><br>
+        두부 반 모(간장 아주 조금) ← 1순위 · 삶은 달걀 1개 · 무가당 두유 1잔 · 무염 견과 한 줌 · 무가당 요거트<br>
+        탄수(밥·빵·과일)보다 단백질로 — 공복이라 혈당 자극 적은 쪽이 나음.
+      </div>
+      <div style="font-size:12px;color:#666;margin-top:10px;line-height:1.7"><b>순서:</b> 오이·토마토 + 물로 위 채우고 10분 대기 → 그래도 진짜 고프면 두부·달걀. 가짜는 채소에서 끝, 진짜만 단백질로 채워 칼로리 최소화.</div>
+    </div>
+
+  <!-- 운동 -->
+  <div class="tab-content" id="tab-exercise">
+    <div class="panel">
+      <h2>🏃 운동 처방</h2>
+      <div class="tip">핵심은 <b>유산소</b>예요. 고지혈증·고혈압·지방간 모두 유산소가 직접 개선합니다. 근력은 보조(근육량·기초대사 유지).</div>
+      <table class="food">
+        <tr><th>구분</th><th>내용</th></tr>
+        <tr><td class="good">유산소 (핵심)</td><td>주 5회 이상, 1회 30분+<br>빠르게 걷기·조깅·자전거·계단. 대화 가능한 정도의 숨참(중강도)</td></tr>
+        <tr><td class="good">근력 (보조)</td><td>주 2~3회. 스쿼트·푸시업 등 큰 근육 위주</td></tr>
+      </table>
+      <div class="tip">💡 <b>유산소 30분과 7천 보는 달라요.</b> 유산소(호흡 차는 강도)는 HDL↑·중성지방↓ 같은 <b>질적 효과</b>, 걸음(일상 활동)은 앉아있는 시간을 줄이는 <b>양적 효과</b>예요. 둘 다 도움되니 <b>하나라도 하면 OK</b>, 둘 다면 가장 좋아요.</div>
+      <h3>40대 남성 팁</h3>
+      <ul class="clean">
+        <li><b>강도보다 시간</b>을 먼저 늘리기 (부상·심장 부담 ↓)</li>
+        <li>운동 전후 <b>준비·정리운동 5~10분</b></li>
+        <li>주말 몰아서보다 <b>주중 분산</b>이 효과적</li>
+      </ul>
+      <div class="warn">⚠️ 간수치 높을 땐 <b>갑작스러운 고강도 근력운동</b>이 일시적으로 AST를 올릴 수 있어요. 중강도 유산소로 시작하세요. 고혈압이 있으면 무거운 중량에서 호흡 참기(발살바)를 피하세요.</div>
+    </div>
+  </div>
+
+  <!-- 피할것 -->
+  <div class="tab-content" id="tab-avoid">
+    <div class="panel">
+      <h2>🚫 피하거나 줄일 것 (우선순위)</h2>
+      <h3>1순위 — 술 (세 가지 다 악화)</h3>
+      <ul class="clean">
+        <li>중성지방 급상승 + 간수치 직접 손상 + 혈압 상승 — <b>한 번에 다 나빠짐</b></li>
+        <li>회식 잦은 40대의 <b>가장 큰 변수.</b> 마셔도 1~2잔 이내</li>
+      </ul>
+      <h3>2순위 — 나트륨 (혈압)</h3>
+      <ul class="clean"><li>국물·찌개·라면·젓갈·가공육·인스턴트</li></ul>
+      <h3>3순위 — 포화·트랜스지방 (고지혈증)</h3>
+      <ul class="clean"><li>삼겹살·곱창·튀김·버터·마가린·페이스트리</li></ul>
+      <h3>4순위 — 과당·정제탄수 (간·중성지방)</h3>
+      <ul class="clean"><li>탄산·과일주스·과자·흰빵·떡·믹스커피</li></ul>
+      <div class="warn">⚠️ <b>약물·건기식 주의</b>: 진통소염제(NSAIDs)나 일부 간독성 건강기능식품의 장기 복용은 간에 부담. 복용 전 의료진과 상의하세요.</div>
+    </div>
+  </div>
+
+  <div class="warn">
+    ⚠️ <b>의학적 면책</b>: 일반적인 생활습관 정보로 진료·처방을 대체하지 않습니다. 고지혈증이 높은 수준이면 <b>스타틴 등 약물치료</b>가 필요할 수 있으니 반드시 의사와 상담하세요. 황달·심한 복통·가슴통증이 있으면 즉시 진료받으세요.
+  </div>
+  <footer>건강관리 · 모든 기록은 기기에 자동 저장됩니다</footer>
+</div>
+<script>
+// ===== 체크리스트 데이터 (우선순위·상세 포함) =====
+const ITEMS = [
+  {id:'noalcohol', cat:'common', pri:1, txt:'금주 / 절주', detail:'<b>세 수치 모두에 1순위.</b> 마셔도 <span class="ok">맥주 1잔·소주 1~2잔 이내.</span> <span class="no">폭음·매일 음주 금지.</span> 회식날이 가장 큰 고비.'},
+  {id:'cardio', cat:'common', pri:1, txt:'유산소 30분 (둘 중 하나 ①)', detail:'<span class="ok">호흡이 차는 강도</span> — 빠르게 걷기·조깅·자전거·등산. 대화는 되지만 노래는 힘든 정도. HDL↑·중성지방↓에 효과. <b>아래 걸음과 둘 중 하나만 해도 OK</b>, 둘 다면 더 좋음.'},
+  {id:'steps', cat:'common', pri:1, txt:'하루 7천 보 (둘 중 하나 ②)', detail:'<span class="ok">호흡 안 차도 OK</span> — 출퇴근·집안일·산책 등 일상 걸음. 앉아있는 시간을 줄이는 것 자체가 대사에 좋아요. <b>위 유산소와 둘 중 하나만 채워도 OK.</b>'},
+  {id:'notrans', cat:'lipid', pri:2, txt:'트랜스지방 차단 (LDL 핵심)', detail:'<span class="no">마가린·쇼트닝·도넛·페이스트리·크루아상·감자튀김·팝콘·가공 과자.</span> 트랜스지방은 포화지방만큼 LDL을 올려요. "부분경화유·경화유" 성분표시 확인.'},
+  {id:'fiber', cat:'lipid', pri:2, txt:'수용성 식이섬유 (LDL 흡착)', detail:'<span class="ok">귀리·보리·콩·사과·미역·다시마·채소.</span> 장에서 콜레스테롤을 흡착해 배출해요. 하루 5~15g 목표. 아침 오트밀이 쉬운 실천법.'},
+  {id:'veg', cat:'common', pri:2, txt:'채소 먼저 먹기 (매 끼)', detail:'<span class="ok">식사 시작을 채소·나물·샐러드로.</span> 식이섬유가 지질·혈당·콜레스테롤 흡수를 늦춰요. 매 끼 채소 한 줌 이상.'},
+  {id:'lowsalt', cat:'bp', pri:2, txt:'싱겁게 먹기 (국물 남기기)', detail:'<span class="ok">"덜 짜게" 요청, 국물 남기기.</span> <span class="no">라면 국물·찌개·젓갈·장아찌 줄이기.</span> 나트륨 하루 2,000mg(소금 5g) 목표.'},
+  {id:'nofry', cat:'lipid', pri:2, txt:'포화지방 피하기', detail:'<span class="no">삼겹살·곱창·튀김·버터·치즈 줄이기.</span> <span class="ok">대신 등푸른생선·견과·올리브유·기름기 적은 부위.</span> 삶기·찌기·굽기로 조리.'},
+  {id:'nosugar', cat:'liver', pri:2, txt:'과당·정제탄수 줄이기', detail:'<span class="no">탄산·과일주스·과자·흰빵·떡·믹스커피 줄이기.</span> 액상과당이 간 지방을 직접 늘려요. <span class="ok">물·블랙커피·잡곡으로 대체.</span>'},
+  {id:'protein', cat:'liver', pri:3, txt:'양질의 단백질', detail:'<span class="ok">닭가슴살·두부·달걀흰자·생선.</span> 근육량 유지로 기초대사 보전. <span class="no">가공육(햄·소시지)·튀긴 단백질은 제외.</span>'},
+  {id:'potassium', cat:'bp', pri:3, txt:'칼륨 채소·과일', detail:'<span class="ok">바나나·시금치·감자·토마토·아보카도.</span> 칼륨이 나트륨 배출을 도와 혈압을 낮춰요. (단 신장질환 있으면 의사와 상담)'},
+  {id:'water', cat:'common', pri:3, txt:'물 충분히 (단 음료 X)', detail:'<span class="ok">하루 1.5~2L 물·차.</span> <span class="no">탄산·주스·이온음료 대신.</span> 갈증을 단 음료로 풀면 과당이 쌓여요.'},
+  {id:'sleep', cat:'common', pri:3, txt:'7시간 이상 수면', detail:'수면 부족은 혈압·식욕호르몬·대사를 망가뜨려요. <span class="ok">규칙적인 취침·기상.</span> 자기 전 음주는 수면의 질을 떨어뜨립니다.'},
+];
+const CAT = {common:['공통','cat-common'], lipid:['고지혈증','cat-lipid'], bp:['고혈압','cat-bp'], liver:['간수치','cat-liver']};
+const PRI = {1:'1순위', 2:'2순위', 3:'3순위'};
+
+// ===== 날짜 관리 =====
+let viewDate = new Date();
+function dateStr(d){ return sfDate(d); }   // (106) 표기는 sf-fmt.js
+function checkKey(){ return 'sf_health_check_'+dateStr(viewDate); }
+function promiseKey(){ return 'sf_health_promise_'+dateStr(viewDate); }
+function isToday(){ return dateStr(viewDate)===dateStr(new Date()); }
+
+let checkState = {};
+let promiseState = [];
+function loadDay(){
+  try{ checkState = JSON.parse(localStorage.getItem(checkKey())) || {}; }catch(e){ checkState={}; }
+  try{ promiseState = JSON.parse(localStorage.getItem(promiseKey())) || []; }catch(e){ promiseState=[]; }
+}
+function saveCheck(){ try{ localStorage.setItem(checkKey(), JSON.stringify(checkState)); }catch(e){} }
+function savePromise(){ try{ localStorage.setItem(promiseKey(), JSON.stringify(promiseState)); }catch(e){} }
+
+function renderDate(){
+  const d=viewDate, days=['일','월','화','수','목','금','토'];
+  $('curDate').textContent = isToday() ? '오늘 ('+(d.getMonth()+1)+'/'+d.getDate()+' '+days[d.getDay()]+')' : (d.getMonth()+1)+'월 '+d.getDate()+'일 ('+days[d.getDay()]+')';
+  $('nextBtn').style.visibility = isToday() ? 'hidden' : 'visible';
+}
+function changeDate(n){ viewDate.setDate(viewDate.getDate()+n); if(viewDate>new Date()) viewDate=new Date(); loadDay(); renderAll(); }
+
+function $(id){ return document.getElementById(id); }
+
+function renderCheck(){
+  $('checkList').innerHTML = ITEMS.map(it=>{
+    const done = checkState[it.id]?'done':'';
+    const cat = CAT[it.cat];
+    return '<div class="check-item '+done+'" onclick="toggleCheck(\''+it.id+'\')">'
+      +'<div class="box">'+(checkState[it.id]?'✓':'')+'</div>'
+      +'<div class="txt"><div class="head"><span class="pri pri-'+it.pri+'">'+PRI[it.pri]+'</span><span class="cat-label '+cat[1]+'">'+cat[0]+'</span> <span class="label">'+it.txt+'</span></div>'
+      +'<span class="detail">'+it.detail+'</span></div></div>';
+  }).join('');
+  const done = ITEMS.filter(it=>checkState[it.id]).length;
+  $('doneCount').textContent=done;
+  $('totalCount').textContent=ITEMS.length;
+  $('barFill').style.width=(done/ITEMS.length*100)+'%';
+}
+function toggleCheck(id){ checkState[id]=!checkState[id]; saveCheck(); renderCheck(); }
+function resetToday(){ if(confirm('이 날짜 체크를 모두 초기화할까요?')){ checkState={}; saveCheck(); renderCheck(); } }
+
+function renderPromise(){
+  $('promiseList').innerHTML = promiseState.map((p,i)=>
+    '<div class="promise-item '+(p.kept?'kept':'')+'">'
+    +'<div class="pcheck" onclick="togglePromise('+i+')">'+(p.kept?'✓':'')+'</div>'
+    +'<input type="text" value="'+(p.text||'').replace(/"/g,'&quot;')+'" oninput="editPromise('+i+',this.value)" placeholder="약속 내용">'
+    +'<button class="wdel" onclick="delPromise('+i+')">삭제</button></div>'
+  ).join('');
+}
+function addPromise(){ promiseState.push({text:'',kept:false}); savePromise(); renderPromise(); }
+function togglePromise(i){ promiseState[i].kept=!promiseState[i].kept; savePromise(); renderPromise(); }
+function editPromise(i,v){ promiseState[i].text=v; savePromise(); }
+function delPromise(i){ promiseState.splice(i,1); savePromise(); renderPromise(); }
+
+// ===== 몸무게 =====
+function loadWeights(){ try{ return JSON.parse(localStorage.getItem('sf_health_weight'))||[]; }catch(e){ return []; } }
+function saveWeights(arr){ try{ localStorage.setItem('sf_health_weight', JSON.stringify(arr)); }catch(e){} }
+function saveWeight(){
+  const v=parseFloat($('weightInput').value);
+  if(!v||v<=0){ alert('몸무게를 입력하세요.'); return; }
+  const arr=loadWeights();
+  const today=dateStr(new Date());
+  const idx=arr.findIndex(w=>w.date===today);
+  if(idx>=0){ arr[idx].kg=v; } else { arr.push({date:today, kg:v}); }
+  arr.sort((a,b)=>a.date.localeCompare(b.date));
+  saveWeights(arr);
+  $('weightInput').value='';
+  renderWeight();
+}
+function delWeight(date){ if(!confirm(date+' 기록을 삭제할까요?'))return; let arr=loadWeights().filter(w=>w.date!==date); saveWeights(arr); renderWeight(); }
+function renderWeight(){
+  const arr=loadWeights();
+  if(arr.length===0){
+    $('wCur').textContent='-'; $('wChange').textContent='-'; $('wTarget').textContent='-';
+    $('weightList').innerHTML='<div style="text-align:center;color:#999;padding:16px;font-size:13px">아직 기록이 없어요. 위에서 몸무게를 기록해보세요.</div>';
+    drawChart([]); return;
+  }
+  const cur=arr[arr.length-1].kg, start=arr[0].kg;
+  $('wCur').textContent=cur+'kg';
+  const diff=(cur-start).toFixed(1);
+  $('wChange').textContent=(diff>0?'+':'')+diff+'kg';
+  $('wChange').style.color = diff>0?'#dc2626':(diff<0?'#16a34a':'#1F4E78');
+  $('wTarget').textContent=(start*0.95).toFixed(1)+'kg';
+  $('weightList').innerHTML=[...arr].reverse().map(w=>
+    '<div class="weight-row"><span class="wdate">'+w.date.slice(5)+'</span><span class="wval">'+w.kg+'kg</span><button class="wdel" onclick="delWeight(\''+w.date+'\')">삭제</button></div>'
+  ).join('');
+  drawChart(arr);
+}
+let _lastWeightArr=[];
+function drawChart(arr){
+  _lastWeightArr=arr;
+  const cv=$('weightChart'); const ctx=cv.getContext('2d');
+  // 다크모드 색 (직접 그리는 canvas라 Chart.js 자동 연동이 안 됨)
+  const dk=document.body.classList.contains('sf-dark');
+  const C=dk?{grid:'#2c333f',txt:'#9ca3af',line:'#60a5fa'}:{grid:'#eef0f3',txt:'#999',line:'#1F4E78'};
+  const dpr=window.devicePixelRatio||1;
+  // clientWidth가 0이면(숨겨진 탭 등) 부모 너비로 폴백, 그래도 0이면 잠시 후 재시도
+  let W=cv.clientWidth;
+  if(!W){ W=cv.parentElement?cv.parentElement.clientWidth-32:0; }
+  if(!W || W<10){ setTimeout(()=>drawChart(arr), 80); return; }
+  const H=200;
+  cv.width=W*dpr; cv.height=H*dpr;
+  cv.style.width=W+'px'; cv.style.height=H+'px';
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,W,H);
+  if(arr.length<1) return;
+  const pad={l:42,r:14,t:14,b:24};
+  const kgs=arr.map(w=>w.kg);
+  let min=Math.min(...kgs), max=Math.max(...kgs);
+  if(min===max){ min-=1; max+=1; } else { const m=(max-min)*0.2; min-=m; max+=m; }
+  const plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
+  const x=i=>arr.length===1?pad.l+plotW/2:pad.l+plotW*i/(arr.length-1);
+  const y=kg=>pad.t+plotH*(1-(kg-min)/(max-min));
+  // grid + y labels
+  ctx.strokeStyle=C.grid; ctx.fillStyle=C.txt; ctx.font='10px sans-serif'; ctx.textAlign='right'; ctx.lineWidth=1;
+  for(let i=0;i<=3;i++){ const kg=min+(max-min)*i/3, yy=y(kg);
+    ctx.beginPath(); ctx.moveTo(pad.l,yy); ctx.lineTo(W-pad.r,yy); ctx.stroke();
+    ctx.fillText(kg.toFixed(1), pad.l-5, yy+3);
+  }
+  // line
+  ctx.strokeStyle=C.line; ctx.lineWidth=2; ctx.beginPath();
+  arr.forEach((w,i)=>{ const xx=x(i),yy=y(w.kg); i===0?ctx.moveTo(xx,yy):ctx.lineTo(xx,yy); });
+  ctx.stroke();
+  // points
+  arr.forEach((w,i)=>{ const xx=x(i),yy=y(w.kg); ctx.fillStyle=C.line; ctx.beginPath(); ctx.arc(xx,yy,3.5,0,Math.PI*2); ctx.fill(); });
+  // x labels (first, last)
+  ctx.fillStyle=C.txt; ctx.textAlign='center'; ctx.font='10px sans-serif';
+  ctx.fillText(arr[0].date.slice(5), x(0), H-8);
+  if(arr.length>1) ctx.fillText(arr[arr.length-1].date.slice(5), x(arr.length-1), H-8);
+}
+
+// 다크/라이트 전환 시 몸무게 그래프 다시 그림
+new MutationObserver(()=>{ if(_lastWeightArr.length && $('weightChart').offsetParent) drawChart(_lastWeightArr); }).observe(document.body,{attributes:true,attributeFilter:['class']});
+
+// ===== 탭 =====
+function showTab(t){
+  document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active', el.dataset.tab===t));
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  $('tab-'+t).classList.add('active');
+  if(t==='weight') renderWeight();
+}
+function renderAll(){ renderDate(); renderCheck(); renderPromise(); }
+
+// ===== PWA 설치 =====
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; $('installBar').classList.add('show'); });
+$('installBtn').addEventListener('click', async()=>{
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt(); await deferredPrompt.userChoice;
+  deferredPrompt=null; $('installBar').classList.remove('show');
+});
+window.addEventListener('appinstalled', ()=>$('installBar').classList.remove('show'));
+
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('/health/sw.js').catch(()=>{}); }
+
+loadDay(); renderAll();
+</script>
+<script>
+window.CALC_KEY = 'health';
+window.slGetState = function(){
+  var out = { check:{}, promise:{}, weight:[] };
+  for(var i=0;i<localStorage.length;i++){
+    var k=localStorage.key(i);
+    if(!k) continue;
+    if(k.indexOf('sf_health_check_')===0){ try{ out.check[k.slice(16)]=JSON.parse(localStorage.getItem(k)); }catch(e){} }
+    else if(k.indexOf('sf_health_promise_')===0){ try{ out.promise[k.slice(18)]=JSON.parse(localStorage.getItem(k)); }catch(e){} }
+  }
+  try{ out.weight=JSON.parse(localStorage.getItem('sf_health_weight'))||[]; }catch(e){ out.weight=[]; }
+  return out;
+};
+window.slSetState = function(d){
+  if(!d) return;
+  if(d.check) for(var dd in d.check){ try{ localStorage.setItem('sf_health_check_'+dd, JSON.stringify(d.check[dd])); }catch(e){} }
+  if(d.promise) for(var dd2 in d.promise){ try{ localStorage.setItem('sf_health_promise_'+dd2, JSON.stringify(d.promise[dd2])); }catch(e){} }
+  if(d.weight){ try{ localStorage.setItem('sf_health_weight', JSON.stringify(d.weight)); }catch(e){} }
+  if(window.loadDay) window.loadDay();
+  if(window.renderAll) window.renderAll();
+};
+</script>
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

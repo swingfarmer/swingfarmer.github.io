@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<meta name="robots" content="noindex, nofollow">
+<title>매크로 비교 차트 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .info-box strong{color:#dedede!important}
+</style>
+<style>
+:root { --sf-max-w: 960px; }
+/* 탭 모양: common.css .tabs·.tab (105 통일) — .tab-bar는 JS용 이름으로만 남김 */
+
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+
+.chart-wrap {
+  background:var(--sf-surface); border-radius:12px; padding:20px;
+  box-shadow:var(--sf-shadow); margin-bottom:20px; position:relative;
+}
+.chart-wrap h3 { margin:0 0 4px; font-size:16px; color:var(--sf-text); }
+.chart-wrap .chart-sub { font-size:12px; color:var(--sf-text-dim); margin-bottom:16px; }
+.chart-wrap canvas { width:100%!important; height:360px!important; }
+@media(max-width:600px){ .chart-wrap canvas { height:280px!important; } }
+
+.zoom-bar { display:flex; gap:4px; margin-bottom:12px; }
+.zoom-bar button {
+  padding:5px 12px; border:1px solid var(--sf-border); border-radius:6px;
+  background:var(--sf-surface); font-size:11px; font-weight:600; cursor:pointer;
+  font-family:var(--sf-font); color:var(--sf-text-dim); transition:all .12s;
+}
+.zoom-bar button:hover { border-color:var(--sf-brand); color:var(--sf-brand); }
+.zoom-bar button.active { background:var(--sf-brand); color:#fff; border-color:var(--sf-brand); }
+
+.radio-bar { display:flex; gap:12px; margin-bottom:12px; }
+.radio-bar label {
+  display:flex; align-items:center; gap:4px; font-size:13px; font-weight:600;
+  color:var(--sf-text-dim); cursor:pointer;
+}
+.radio-bar input[type="radio"] { accent-color:var(--sf-brand); }
+
+.info-box {
+  background:color-mix(in srgb, var(--sf-brand) 6%, var(--sf-surface));
+  border:1px solid color-mix(in srgb, var(--sf-brand) 20%, var(--sf-border));
+  border-radius:8px; padding:14px 16px; margin-top:16px; font-size:12px;
+  line-height:1.7; color:var(--sf-text-sub);
+}
+.info-box strong { color:var(--sf-text); }
+
+.start-bar {
+  display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;
+}
+.start-label { font-size:12px; font-weight:600; color:var(--sf-text-dim); white-space:nowrap; }
+.start-bar select {
+  padding:5px 10px; border:1px solid var(--sf-border); border-radius:6px;
+  font-size:12px; font-family:var(--sf-font); background:var(--sf-surface);
+  color:var(--sf-text); cursor:pointer;
+}
+body.sf-dark .start-bar select { background:#1e242e; border-color:#2c333f; color:#ccc; }
+body.sf-dark #startCustom { background:#1e242e; border-color:#2c333f; color:#ccc; }
+
+.loading { text-align:center; padding:60px 20px; color:var(--sf-text-dim); font-size:14px; }
+.loading::before { content:'⏳ '; }
+.error-msg { text-align:center; padding:40px 20px; color:#ef4444; font-size:13px; }
+
+body.sf-dark .chart-wrap { background:#1e242e; }
+body.sf-dark .zoom-bar button { background:#1e242e; border-color:#2c333f; color:#8899aa; }
+body.sf-dark .zoom-bar button.active { background:var(--sf-brand); color:#fff; }
+body.sf-dark .info-box { background:#1a2030; border-color:#2c333f; }
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body class="sf-narrow">
+
+<h1>📊 매크로 비교 차트</h1>
+<p class="desc">반도체 랠리 · 3저 호황 · 3저 지표 · 섹터 ETF — 매일 업데이트</p>
+
+<div class="tabs tab-bar" id="tabBar">
+  <button class="tab active" data-tab="semi">📈 반도체 랠리</button>
+  <button class="tab" data-tab="triple">📉 3저 호황</button>
+  <button class="tab" data-tab="indicator">🌡️ 3저 지표</button>
+  <button class="tab" data-tab="sector">🏭 섹터 ETF</button>
+</div>
+
+<!-- 탭1: 반도체 랠리 -->
+<div class="tab-panel active" id="panel-semi">
+  <div class="chart-wrap">
+    <h3>나스닥100 vs 필라델피아 반도체지수</h3>
+    <div class="chart-sub">1996년 4월 = 100 기준 환산</div>
+    <div class="zoom-bar" data-chart="semi">
+      <button data-range="252">1년</button>
+      <button data-range="756">3년</button>
+      <button data-range="1260">5년</button>
+      <button class="active" data-range="all">전체</button>
+    </div>
+    <div id="loadSemi" class="loading">데이터 로딩 중…</div>
+    <canvas id="chartSemi" style="display:none"></canvas>
+  </div>
+  <div class="info-box">
+    <strong>주황색 선:</strong> 나스닥100 (^NDX)<br>
+    <strong>검은색 선:</strong> 필라델피아 반도체지수 (^SOX)<br>
+    기준점: 1996년 4월 첫 거래일을 100으로 환산하여 비교합니다.
+  </div>
+</div>
+
+<!-- 탭2: 3저 호황 -->
+<div class="tab-panel" id="panel-triple">
+  <div class="chart-wrap">
+    <h3>3저 호황 vs 현재 코스피 비교</h3>
+    <div class="chart-sub">주봉 기준 — 시작 시점 선택 가능</div>
+    <div class="start-bar">
+      <span class="start-label">비교 조합:</span>
+      <select id="comboSelect"></select>
+    </div>
+    <div class="start-bar" id="customBar" style="display:none;">
+      <span class="start-label">3저:</span>
+      <input type="date" id="customPast" style="font-size:12px; padding:4px 8px; border:1px solid var(--sf-border); border-radius:6px; font-family:var(--sf-font);">
+      <span class="start-label" style="margin-left:6px;">현재:</span>
+      <input type="date" id="customCurr" style="font-size:12px; padding:4px 8px; border:1px solid var(--sf-border); border-radius:6px; font-family:var(--sf-font);">
+    </div>
+    <div class="zoom-bar" data-chart="triple">
+      <button data-range="26">6개월</button>
+      <button data-range="52">1년</button>
+      <button data-range="104">2년</button>
+      <button class="active" data-range="all">전체</button>
+    </div>
+    <div id="loadTriple" class="loading">데이터 로딩 중…</div>
+    <canvas id="chartTriple" style="display:none"></canvas>
+  </div>
+  <div class="info-box">
+    <strong>주황색 선:</strong> 3저 호황 (현재 코스피 시작값 기준 환산)<br>
+    <strong>검은색 선:</strong> 현재 코스피<br>
+    주봉 기준. 과거↔현재 시작점 조합 6개 + 직접 입력.<br>
+    상관분석 조합은 데이터 누적에 따라 최적값이 변할 수 있음.<br>
+    <strong>현재 보정일: 2026.10.26</strong> — 재보정 시 기존 조합은 유지하고 신규 그룹 추가.<br>
+    자료: KRX(pykrx 1980~), Yahoo Finance(2023~) 주봉 종가.
+  </div>
+</div>
+
+<!-- 탭3: 3저 지표 -->
+<div class="tab-panel" id="panel-indicator">
+  <div class="chart-wrap">
+    <h3>3저 지표</h3>
+    <div class="chart-sub">환율 · 금리 · 유가 추이</div>
+    <div class="radio-bar" id="indRadio">
+      <label><input type="radio" name="ind" value="krw" checked> 환율</label>
+      <label><input type="radio" name="ind" value="tnx"> 금리</label>
+      <label><input type="radio" name="ind" value="clf"> 유가</label>
+    </div>
+    <div class="zoom-bar" data-chart="indicator">
+      <button data-range="126">6개월</button>
+      <button data-range="252">1년</button>
+      <button data-range="756">3년</button>
+      <button class="active" data-range="all">전체</button>
+    </div>
+    <div id="loadInd" class="loading">데이터 로딩 중…</div>
+    <canvas id="chartInd" style="display:none"></canvas>
+  </div>
+  <div class="info-box">
+    <strong>환율:</strong> Yahoo Finance KRW=X (원/달러)<br>
+    <strong>금리:</strong> Yahoo Finance ^TNX (미국 10년물 국채 수익률, %)<br>
+    <strong>유가:</strong> Yahoo Finance CL=F (WTI 원유, $/bbl)
+  </div>
+</div>
+
+<!-- 탭4: 섹터 ETF -->
+<div class="tab-panel" id="panel-sector">
+  <div class="chart-wrap">
+    <h3>미국 섹터 ETF 등락률</h3>
+    <div class="chart-sub">SPDR 11개 섹터 ETF 전일 대비 등락률 (%)</div>
+    <div id="sectorDate" style="font-size:11px; color:var(--sf-text-dim); margin-bottom:12px;"></div>
+    <div id="loadSector" class="loading">데이터 로딩 중…</div>
+    <canvas id="chartSector" style="display:none"></canvas>
+  </div>
+  <div class="info-box">
+    <strong>SPDR 섹터 ETF 11종:</strong><br>
+    XLE(에너지) · XLK(테크) · XLRE(부동산) · XLU(유틸리티) · XLB(소재) · XLV(헬스케어) · XLI(산업재) · XLF(금융) · XLY(경기소비재) · XLP(필수소비재) · XLC(커뮤니케이션)<br>
+    전일 대비 등락률 기준. 매일 업데이트.
+  </div>
+</div>
+
+<script src="/common.js?v=17"></script>
+<script>
+(function(){
+'use strict';
+
+var DATA_BASE = '/data/macro/';
+var charts = {};
+var rawData = {};
+
+// ── 탭 전환 + localStorage 기억 ──
+function switchTab(tabName) {
+  document.querySelectorAll('.tab-bar button').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+  var btn = document.querySelector('.tab-bar button[data-tab="'+tabName+'"]');
+  if (btn) btn.classList.add('active');
+  document.getElementById('panel-' + tabName).classList.add('active');
+  try { localStorage.setItem('sf_macro_tab', tabName); } catch(e){}
+  if (tabName === 'semi' && !rawData.semi) loadSemi();
+  if (tabName === 'triple' && !rawData.triple) loadTriple();
+  if (tabName === 'indicator' && !rawData.indicator) loadIndicator();
+  if (tabName === 'sector' && !rawData.sector) loadSector();
+}
+document.querySelectorAll('.tab-bar button').forEach(function(btn){
+  btn.addEventListener('click', function(){ switchTab(btn.dataset.tab); });
+});
+
+// ── fetch ──
+function fetchJSON(file, loadId, cb) {
+  fetch(DATA_BASE + file + '?t=' + Date.now())
+    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data){
+      document.getElementById(loadId).style.display = 'none';
+      cb(data);
+    })
+    .catch(function(e){
+      var el = document.getElementById(loadId);
+      el.className = 'error-msg';
+      el.textContent = '❌ 데이터 로드 실패: ' + e.message;
+    });
+}
+
+// ── 줌 (이벤트 위임) ──
+document.querySelectorAll('.zoom-bar').forEach(function(bar){
+  bar.addEventListener('click', function(e){
+    var btn = e.target.closest('button');
+    if (!btn) return;
+    bar.querySelectorAll('button').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    var chartName = bar.dataset.chart;
+    if (chartName === 'semi') renderSemi(btn.dataset.range);
+    if (chartName === 'triple') renderTriple(btn.dataset.range);
+    if (chartName === 'indicator') renderIndicator(btn.dataset.range);
+  });
+});
+
+// ── 차트 생성 (카테고리 축 — 어댑터 불필요) ──
+function makeChart(canvasId, labels, datasets, yOpts) {
+  var ctx = document.getElementById(canvasId);
+  ctx.style.display = '';
+  if (charts[canvasId]) charts[canvasId].destroy();
+
+  var isDark = document.body.classList.contains('sf-dark');
+  var gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)';
+  var textColor = isDark ? '#8899aa' : '#888';
+
+  // x축 라벨 솎아내기 (최대 12개)
+  var step = Math.max(1, Math.floor(labels.length / 12));
+
+  charts[canvasId] = new Chart(ctx, {
+    type: 'line',
+    data: { labels: labels, datasets: datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: datasets.length > 1, labels: { color: textColor, font: { size: 12 } } },
+        tooltip: {
+          backgroundColor: isDark ? '#1e293b' : '#fff',
+          titleColor: isDark ? '#ddd' : '#333',
+          bodyColor: isDark ? '#aaa' : '#666',
+          borderColor: isDark ? '#334155' : '#ddd',
+          borderWidth: 1, padding: 10
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: textColor, font: { size: 10 }, maxRotation: 0,
+            callback: function(val, i) { return i % step === 0 ? labels[i] : ''; }
+          }
+        },
+        y: Object.assign({
+          position: 'right',
+          grid: { color: gridColor },
+          ticks: { color: textColor, font: { size: 11 } }
+        }, yOpts || {})
+      },
+      elements: { point: { radius: 0 }, line: { borderWidth: 1.8 } }
+    }
+  });
+}
+
+// ══════════════════════
+// 탭1: 반도체 랠리
+// ══════════════════════
+function loadSemi() {
+  fetchJSON('semiconductor.json', 'loadSemi', function(data){
+    rawData.semi = data;
+    renderSemi('all');
+  });
+}
+
+function renderSemi(range) {
+  var data = rawData.semi;
+  if (!data || !data.length) return;
+
+  // 1996-04 기준점 찾기
+  var baseNdx = null, baseSox = null;
+  for (var i = 0; i < data.length; i++) {
+    if (data[i].date >= '1996-04-01') {
+      if (!baseNdx && data[i].ndx) baseNdx = data[i].ndx;
+      if (!baseSox && data[i].sox) baseSox = data[i].sox;
+      if (baseNdx && baseSox) break;
+    }
+  }
+  if (!baseNdx) baseNdx = data[0].ndx || 1;
+  if (!baseSox) baseSox = data[0].sox || 1;
+
+  var filtered = (range === 'all') ? data : data.slice(-parseInt(range));
+  var labels = [], ndxPts = [], soxPts = [];
+  filtered.forEach(function(r){
+    labels.push(r.date);
+    ndxPts.push(r.ndx ? +(r.ndx / baseNdx * 100).toFixed(1) : null);
+    soxPts.push(r.sox ? +(r.sox / baseSox * 100).toFixed(1) : null);
+  });
+
+  makeChart('chartSemi', labels, [
+    { label: '나스닥100', data: ndxPts, borderColor: '#e89a3c', backgroundColor: 'rgba(232,154,60,.08)' },
+    { label: '필라델피아 반도체', data: soxPts, borderColor: '#333', backgroundColor: 'rgba(51,51,51,.05)' }
+  ]);
+}
+
+// ══════════════════════
+// 탭2: 3저 호황
+// ══════════════════════
+var tPastStart = null, tCurrStart = null;
+
+// 상관분석 기준: 2026-10-26. 재보정 시 새 그룹 추가, 기존 유지.
+var COMBO_GROUPS = [
+  { label: '상관분석 (2026.10.26 기준)', combos: [
+    { past:'1983-07-01', curr:'2023-05-12', label:'83.07↔23.05 (상관 0.97, 181주)' },
+    { past:'1984-01-01', curr:'2023-11-10', label:'84.01↔23.11 (상관 0.97, 155주)' },
+    { past:'1984-07-01', curr:'2024-05-10', label:'84.07↔24.05 (상관 0.97, 129주)' },
+    { past:'1985-01-01', curr:'2024-11-08', label:'85.01↔24.11 (상관 0.96, 103주)' }
+  ]},
+  { label: '참고 기준', combos: [
+    { past:'1983-06-01', curr:'2023-01-02', label:'83.06↔23.01 (만스피 기준)' },
+    { past:'1985-01-01', curr:'2024-01-02', label:'85.01↔24.01 (KB 기준)' }
+  ]}
+  // ── 재보정 시 새 그룹 추가 예시 ──
+  // { label: '상관분석 (2027.04.01 기준)', combos: [ ... ] }
+];
+
+function loadTriple() {
+  fetchJSON('triple_low_compare.json', 'loadTriple', function(data){
+    rawData.triple = data;
+    initTripleCombo();
+  });
+}
+
+// 전체 콤보를 flat 배열로 (optgroup용 인덱스 매핑)
+var COMBOS_FLAT = [];
+COMBO_GROUPS.forEach(function(g){ g.combos.forEach(function(c){ COMBOS_FLAT.push(c); }); });
+
+function initTripleCombo() {
+  var sel = document.getElementById('comboSelect');
+  var customBar = document.getElementById('customBar');
+  var customPast = document.getElementById('customPast');
+  var customCurr = document.getElementById('customCurr');
+
+  sel.innerHTML = '';
+  var idx = 0;
+  COMBO_GROUPS.forEach(function(g){
+    var og = document.createElement('optgroup');
+    og.label = g.label;
+    g.combos.forEach(function(c){
+      var opt = document.createElement('option');
+      opt.value = String(idx); opt.textContent = c.label;
+      og.appendChild(opt);
+      idx++;
+    });
+    sel.appendChild(og);
+  });
+  var optC = document.createElement('option');
+  optC.value = '__custom__'; optC.textContent = '📅 직접 입력';
+  sel.appendChild(optC);
+
+  // 저장값 복원
+  try {
+    var sv = localStorage.getItem('sf_triple_combo');
+    if (sv === '__custom__') {
+      sel.value = '__custom__';
+      customBar.style.display = '';
+      customPast.value = localStorage.getItem('sf_triple_cp') || '';
+      customCurr.value = localStorage.getItem('sf_triple_cc') || '';
+    } else if (sv !== null && parseInt(sv) < COMBOS_FLAT.length) {
+      sel.value = sv;
+    }
+  } catch(e){}
+
+  function onUpdate() {
+    if (sel.value === '__custom__') {
+      customBar.style.display = '';
+      tPastStart = customPast.value || null;
+      tCurrStart = customCurr.value || null;
+      try {
+        localStorage.setItem('sf_triple_combo', '__custom__');
+        localStorage.setItem('sf_triple_cp', customPast.value);
+        localStorage.setItem('sf_triple_cc', customCurr.value);
+      } catch(e){}
+    } else {
+      customBar.style.display = 'none';
+      var c = COMBOS_FLAT[parseInt(sel.value)];
+      tPastStart = c.past;
+      tCurrStart = c.curr;
+      try { localStorage.setItem('sf_triple_combo', sel.value); } catch(e){}
+    }
+    if (tPastStart && tCurrStart) {
+      var activeBtn = document.querySelector('.zoom-bar[data-chart="triple"] button.active');
+      renderTriple(activeBtn ? activeBtn.dataset.range : 'all');
+    }
+  }
+
+  sel.addEventListener('change', function(){
+    if (sel.value === '__custom__') { customBar.style.display=''; customPast.focus(); }
+    else onUpdate();
+  });
+  customPast.addEventListener('change', onUpdate);
+  customCurr.addEventListener('change', onUpdate);
+
+  onUpdate();
+}
+
+function renderTriple(range) {
+  var d = rawData.triple;
+  if (!d || !tPastStart || !tCurrStart) return;
+
+  // 시작점 기준 슬라이스
+  var past = (d.past || []).filter(function(r){ return r.date >= tPastStart; });
+  var current = (d.current || []).filter(function(r){ return r.date >= tCurrStart; });
+  if (!past.length || !current.length) return;
+
+  var currBase = current[0].close;
+  var pastBase = past[0].close;
+  var scale = currBase / pastBase;
+
+  var maxLen = Math.max(past.length, current.length);
+  if (range !== 'all') maxLen = Math.min(maxLen, parseInt(range));
+
+  var labels = [], pastPts = [], currPts = [];
+  for (var i = 0; i < maxLen; i++) {
+    var lbl = (i < current.length) ? current[i].date : (i < past.length ? '('+past[i].date+')' : '');
+    labels.push(lbl);
+    pastPts.push(i < past.length ? +(past[i].close * scale).toFixed(0) : null);
+    currPts.push(i < current.length ? +current[i].close.toFixed(0) : null);
+  }
+
+  var canvasId = 'chartTriple';
+  var ctx = document.getElementById(canvasId);
+  ctx.style.display = '';
+  if (charts[canvasId]) charts[canvasId].destroy();
+
+  var isDark = document.body.classList.contains('sf-dark');
+  var gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)';
+  var textColor = isDark ? '#8899aa' : '#888';
+  var step = Math.max(1, Math.floor(labels.length / 12));
+
+  charts[canvasId] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: '3저 (' + tPastStart.substring(2,7) + '~)', data: pastPts, borderColor: '#e89a3c', backgroundColor: 'rgba(232,154,60,.08)' },
+        { label: '현재 (' + tCurrStart.substring(2,7) + '~)', data: currPts, borderColor: '#333', backgroundColor: 'rgba(51,51,51,.05)' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: true, labels: { color: textColor, font: { size: 12 } } },
+        tooltip: {
+          backgroundColor: isDark ? '#1e293b' : '#fff',
+          titleColor: isDark ? '#ddd' : '#333',
+          bodyColor: isDark ? '#aaa' : '#666',
+          borderColor: isDark ? '#334155' : '#ddd',
+          borderWidth: 1, padding: 10,
+          callbacks: {
+            title: function(items) {
+              var i = items[0].dataIndex;
+              var curr = (i < current.length) ? current[i].date : '-';
+              var pt = (i < past.length) ? past[i].date : '-';
+              return '현재: ' + curr + '  ↔  3저: ' + pt;
+            },
+            label: function(ctx2) {
+              if (ctx2.datasetIndex === 0 && ctx2.dataIndex < past.length) {
+                return '3저 환산: ' + ctx2.parsed.y.toLocaleString() + ' (원본 ' + past[ctx2.dataIndex].close.toFixed(0) + ')';
+              }
+              return '현재: ' + ctx2.parsed.y.toLocaleString();
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: textColor, font: { size: 10 }, maxRotation: 0,
+            callback: function(val, i) { return i % step === 0 ? labels[i] : ''; }
+          }
+        },
+        y: {
+          position: 'right', grid: { color: gridColor },
+          ticks: { color: textColor, font: { size: 11 }, callback: function(v) { return v.toLocaleString(); } }
+        }
+      },
+      elements: { point: { radius: 0 }, line: { borderWidth: 1.8 } }
+    }
+  });
+}
+
+// ══════════════════════
+// 탭3: 3저 지표
+// ══════════════════════
+var indType = 'krw';
+
+function loadIndicator() {
+  fetchJSON('triple_low_indicator.json', 'loadInd', function(data){
+    rawData.indicator = data;
+    renderIndicator('all');
+  });
+}
+
+document.querySelectorAll('#indRadio input').forEach(function(r){
+  r.addEventListener('change', function(){
+    indType = r.value;
+    var activeBtn = document.querySelector('.zoom-bar[data-chart="indicator"] button.active');
+    renderIndicator(activeBtn ? activeBtn.dataset.range : 'all');
+  });
+});
+
+var IND_META = {
+  krw: { label: '원/달러 환율', unit: '원', color: '#2563eb' },
+  tnx: { label: '미국 10년물 금리', unit: '%', color: '#e89a3c' },
+  clf: { label: 'WTI 유가', unit: '$/bbl', color: '#333' }
+};
+
+function renderIndicator(range) {
+  var data = rawData.indicator;
+  if (!data || !data.length) return;
+
+  var filtered = (range === 'all') ? data : data.slice(-parseInt(range));
+  var meta = IND_META[indType];
+  var labels = [], pts = [];
+  filtered.forEach(function(r){
+    if (r[indType] !== undefined && r[indType] !== null) {
+      labels.push(r.date);
+      pts.push(r[indType]);
+    }
+  });
+
+  makeChart('chartInd', labels, [
+    { label: meta.label, data: pts, borderColor: meta.color, backgroundColor: 'rgba(0,0,0,.03)', fill: true }
+  ], {
+    ticks: { callback: function(v) { return indType === 'krw' ? v.toFixed(0) : v.toFixed(2); } }
+  });
+}
+
+// ══════════════════════
+// 탭4: 섹터 ETF
+// ══════════════════════
+var SECTOR_NAMES = {
+  XLE:'에너지', XLK:'테크', XLRE:'부동산', XLU:'유틸리티',
+  XLB:'소재', XLV:'헬스케어', XLI:'산업재', XLF:'금융',
+  XLY:'경기소비재', XLP:'필수소비재', XLC:'커뮤니케이션'
+};
+
+function loadSector() {
+  fetchJSON('sector_etf.json', 'loadSector', function(data){
+    rawData.sector = data;
+    renderSector();
+  });
+}
+
+function renderSector() {
+  var data = rawData.sector;
+  if (!data || !data.etfs) return;
+
+  // 날짜 표시
+  var dateEl = document.getElementById('sectorDate');
+  dateEl.textContent = '기준일: ' + (data.date || '-');
+
+  // 등락률 순 정렬
+  var sorted = data.etfs.slice().sort(function(a, b){ return b.change - a.change; });
+
+  var labels = sorted.map(function(e){ return (SECTOR_NAMES[e.ticker] || e.ticker); });
+  var values = sorted.map(function(e){ return e.change; });
+  var colors = values.map(function(v){ return v >= 0 ? '#e89a3c' : '#555'; });
+
+  var canvasId = 'chartSector';
+  var ctx = document.getElementById(canvasId);
+  ctx.style.display = '';
+  if (charts[canvasId]) charts[canvasId].destroy();
+
+  var isDark = document.body.classList.contains('sf-dark');
+  var textColor = isDark ? '#8899aa' : '#888';
+  var gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)';
+
+  charts[canvasId] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderRadius: 4,
+        barPercentage: 0.7
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      indexAxis: 'x',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: function(items) {
+              var e = sorted[items[0].dataIndex];
+              return e.ticker + ' (' + (SECTOR_NAMES[e.ticker]||'') + ')';
+            },
+            label: function(ctx2) {
+              return '등락률: ' + ctx2.parsed.y.toFixed(2) + '%';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: textColor, font: { size: 11 } }
+        },
+        y: {
+          grid: { color: gridColor },
+          ticks: {
+            color: textColor, font: { size: 11 },
+            callback: function(v) { return v.toFixed(1) + '%'; }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── 초기 로드 (마지막 탭 기억) ──
+var savedTab = 'semi';
+try { savedTab = localStorage.getItem('sf_macro_tab') || 'semi'; } catch(e){}
+switchTab(savedTab);
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>환율/금시세 | 스윙파머</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Pretendard',-apple-system,'Malgun Gothic',sans-serif;background:#f5f5f5;padding:72px 20px 20px}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.1);max-width:600px;margin:20px auto;padding:24px}
+h1{font-size:20px;color:#1F4E78;margin-bottom:4px}
+.updated{font-size:12px;color:#888;margin-bottom:20px}
+.rate-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rate-item{background:#f8f9fa;border-radius:8px;padding:16px;text-align:center}
+.rate-item.gold{background:#FFF8E1}
+.rate-label{font-size:13px;color:#666;margin-bottom:4px}
+.rate-value{font-size:24px;font-weight:700;color:#1F4E78}
+.rate-unit{font-size:11px;color:#999}
+.rate-change{font-size:11px;margin-top:2px;font-weight:600}
+.rate-change.up{color:#dc2626}
+.rate-change.down{color:#2563eb}
+.rate-change.flat{color:#888}
+.copy-btn{display:block;margin:16px auto 0;padding:10px 24px;background:#1F4E78;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer}
+.copy-btn:hover{background:#163a5c}
+.back{display:block;text-align:center;margin-top:12px;font-size:13px;color:#1F4E78;text-decoration:none}
+.note{font-size:11px;color:#aaa;text-align:center;margin-top:12px}
+.hist-section{margin-top:20px}
+.hist-section h2{font-size:16px;color:#1F4E78;margin-bottom:12px}
+.hist-msg{font-size:12px;color:#888;text-align:center;padding:20px;background:#f8fafc;border-radius:8px}
+.period-tabs{display:flex;gap:4px;margin-bottom:14px}
+.period-tab{padding:6px 14px;border:1px solid #d0d5dd;border-radius:6px;background:#fff;font-size:12px;cursor:pointer;color:#555;font-weight:600}
+.period-tab.active{background:#1F4E78;color:#fff;border-color:#1F4E78}
+.mini-charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+@media(max-width:500px){.mini-charts{grid-template-columns:1fr}}
+.mini-chart-card{background:#fff;border-radius:8px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.mini-chart-title{font-size:13px;font-weight:700;color:#1F4E78;margin-bottom:2px;display:flex;justify-content:space-between;align-items:center}
+.mini-chart-value{font-size:11px;color:#888}
+.mini-chart-wrap{height:120px;margin-top:8px}
+.chart-wrap{background:#fff;border-radius:8px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.chart-wrap h3{font-size:14px;color:#1F4E78;margin-bottom:10px}
+canvas{width:100%!important}
+.hist-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:14px}
+.hist-table th{background:#f0f4f8;color:#1F4E78;padding:8px 6px;text-align:center;font-weight:700;position:sticky;top:0}
+.hist-table td{padding:6px;text-align:right;border-bottom:1px solid #f0f0f0}
+.hist-table td:first-child{text-align:center;color:#555;font-weight:600}
+.chg-up{color:#dc2626;font-weight:600}
+.chg-down{color:#2563eb;font-weight:600}
+.hist-scroll{max-height:300px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px}
+.toggle-table{display:block;text-align:center;margin-top:10px;font-size:12px;color:#1F4E78;cursor:pointer;background:none;border:none;font-weight:600}
+
+body.sf-dark{background:#14181f!important;color:#d8dde5!important}
+body.sf-dark .card{background:#222532!important;box-shadow:0 2px 8px rgba(0,0,0,0.3)!important}
+body.sf-dark h1{color:#60a5fa!important}
+body.sf-dark .updated{color:#71717a!important}
+body.sf-dark .rate-item{background:#1a1d27!important}
+body.sf-dark .rate-item.gold{background:#2a2518!important}
+body.sf-dark .rate-label{color:#a1a1aa!important}
+body.sf-dark .rate-value{color:#60a5fa!important}
+body.sf-dark .rate-unit{color:#71717a!important}
+body.sf-dark .rate-change.up{color:#f87171!important}
+body.sf-dark .rate-change.down{color:#60a5fa!important}
+body.sf-dark .rate-change.flat{color:#71717a!important}
+body.sf-dark .copy-btn{background:#1e3a5f!important}
+body.sf-dark .copy-btn:hover{background:#2a4a6e!important}
+body.sf-dark .back{color:#60a5fa!important}
+body.sf-dark .note{color:#71717a!important}
+body.sf-dark .hist-section h2{color:#60a5fa!important}
+body.sf-dark .hist-msg{background:#1a1d27!important;color:#71717a!important}
+body.sf-dark .period-tab{background:#222532!important;border-color:#2a2d3a!important;color:#a1a1aa!important}
+body.sf-dark .period-tab.active{background:#1e3a5f!important;color:#fff!important;border-color:#3b82f6!important}
+body.sf-dark .mini-chart-card{background:#222532!important;box-shadow:0 1px 3px rgba(0,0,0,0.3)!important}
+body.sf-dark .mini-chart-title{color:#60a5fa!important}
+body.sf-dark .mini-chart-value{color:#71717a!important}
+body.sf-dark .chart-wrap{background:#222532!important;box-shadow:0 1px 3px rgba(0,0,0,0.3)!important}
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body>
+<div class="card">
+  <h1>📊 환율 / 금시세</h1>
+  <div class="updated" id="updated">로딩 중...</div>
+  <div class="rate-grid">
+    <div class="rate-item"><div class="rate-label">USD/KRW</div><div class="rate-value" id="usd">-</div><div class="rate-unit">원/달러</div><div class="rate-change" id="usd-chg"></div></div>
+    <div class="rate-item"><div class="rate-label">JPY/KRW</div><div class="rate-value" id="jpy">-</div><div class="rate-unit">원/100엔</div><div class="rate-change" id="jpy-chg"></div></div>
+    <div class="rate-item"><div class="rate-label">CNY/KRW</div><div class="rate-value" id="cny">-</div><div class="rate-unit">원/위안</div><div class="rate-change" id="cny-chg"></div></div>
+    <div class="rate-item gold"><div class="rate-label">금 시세</div><div class="rate-value" id="gold">-</div><div class="rate-unit">원/g</div><div class="rate-change" id="gold-chg"></div></div>
+  </div>
+  <button class="copy-btn" onclick="copyAll()">📋 전체 복사</button>
+  <div class="note">매일 오전 9시(평일) 자동 갱신 · 최대 1년 히스토리</div>
+</div>
+
+<div class="card hist-section" id="histSection" style="display:none">
+  <h2>📈 시세 추이 <span id="histCount" style="font-size:12px;color:#888;font-weight:400"></span></h2>
+  <div id="histMsg" class="hist-msg" style="display:none"></div>
+
+  <div id="histCharts" style="display:none">
+    <div class="period-tabs" id="periodTabs">
+      <button class="period-tab active" data-days="30">1개월</button>
+      <button class="period-tab" data-days="90">3개월</button>
+      <button class="period-tab" data-days="180">6개월</button>
+      <button class="period-tab" data-days="365">1년</button>
+    </div>
+
+    <!-- 개별 통화 미니 차트 -->
+    <div class="mini-charts">
+      <div class="mini-chart-card">
+        <div class="mini-chart-title">🇺🇸 USD/KRW <span class="mini-chart-value" id="mc-usd-val"></span></div>
+        <div class="mini-chart-wrap"><canvas id="chartUSD"></canvas></div>
+      </div>
+      <div class="mini-chart-card">
+        <div class="mini-chart-title">🇯🇵 JPY/100 <span class="mini-chart-value" id="mc-jpy-val"></span></div>
+        <div class="mini-chart-wrap"><canvas id="chartJPY"></canvas></div>
+      </div>
+      <div class="mini-chart-card">
+        <div class="mini-chart-title">🇨🇳 CNY/KRW <span class="mini-chart-value" id="mc-cny-val"></span></div>
+        <div class="mini-chart-wrap"><canvas id="chartCNY"></canvas></div>
+      </div>
+      <div class="mini-chart-card">
+        <div class="mini-chart-title">🥇 금 (원/g) <span class="mini-chart-value" id="mc-gold-val"></span></div>
+        <div class="mini-chart-wrap"><canvas id="chartGold"></canvas></div>
+      </div>
+    </div>
+
+    <!-- 통합 비교 차트 -->
+    <div class="chart-wrap" style="margin-top:16px">
+      <h3>📊 전체 비교 (정규화)</h3>
+      <div style="height:260px"><canvas id="histChart"></canvas></div>
+    </div>
+  </div>
+
+  <button class="toggle-table" id="toggleTable">📋 표 보기 ▼</button>
+  <div id="tableWrap" style="display:none">
+    <div class="hist-scroll">
+      <table class="hist-table">
+        <thead><tr><th>날짜</th><th>USD/KRW</th><th>변동</th><th>JPY/100</th><th>변동</th><th>CNY</th><th>금(g)</th></tr></thead>
+        <tbody id="histBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+var chartLoaded=false;
+function onChartLoad(){chartLoaded=true;console.log("Chart.js OK");}
+function tryFallbackCDN(){console.warn("1차CDN실패");var s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js";s.onload=onChartLoad;s.onerror=function(){console.error("Chart.js 완전실패")};document.head.appendChild(s);}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" onload="onChartLoad()" onerror="tryFallbackCDN()"></script>
+<script>
+var ORACLE_API = 'https://swingfarmer.duckdns.org/api';
+var GOLD_URL = '/data/rates.json';
+var histData = [];
+var miniCharts = {};
+var mainChart = null;
+var currentDays = 30;
+
+async function load() {
+  try {
+    // 환율: Oracle API (수출입은행 매매기준율)
+    var r = await fetch(ORACLE_API + '/rates/exchange?latest=1');
+    var d = await r.json();
+    var byC = {};
+    (d.data||[]).forEach(function(row){ byC[row.cur_unit] = row; });
+    var usd = byC['USD'], jpy = byC['JPY(100)'], cny = byC['CNH'] || byC['CNY'];
+    if(usd) document.getElementById('usd').textContent = Number(usd.deal_bas_r).toLocaleString();
+    if(jpy) document.getElementById('jpy').textContent = Number(jpy.deal_bas_r).toLocaleString();
+    if(cny) document.getElementById('cny').textContent = Number(cny.deal_bas_r).toLocaleString();
+    if(d.data && d.data.length > 0) document.getElementById('updated').textContent = '업데이트: ' + d.data[0].rate_date + ' (수출입은행 매매기준율)';
+
+    // 금시세: yfinance (기존)
+    try {
+      var gr = await fetch(GOLD_URL + '?t=' + Date.now());
+      var gd = await gr.json();
+      if(gd.rates && gd.rates.GOLD_KRW_G) document.getElementById('gold').textContent = gd.rates.GOLD_KRW_G.toLocaleString();
+    } catch(e2) { console.log('금시세 로드 실패'); }
+  } catch(e) {
+    document.getElementById('updated').textContent = '데이터 로드 실패';
+  }
+}
+
+async function loadHistory() {
+  try {
+    // Oracle API에서 히스토리 로드
+    var r = await fetch(ORACLE_API + '/rates/exchange?days=365&cur=USD,JPY(100),CNH');
+    var d = await r.json();
+    var rows = d.data || [];
+    if (!rows.length) { console.log('히스토리 없음'); return; }
+
+    // 날짜별 그룹핑 → histData 형태로 변환
+    var byDate = {};
+    rows.forEach(function(row) {
+      if(!byDate[row.rate_date]) byDate[row.rate_date] = {};
+      var val = Number(row.deal_bas_r || row.kftc_deal_bas_r || 0);
+      if(row.cur_unit === 'USD') byDate[row.rate_date].USD_KRW = val;
+      if(row.cur_unit === 'JPY(100)') byDate[row.rate_date].JPY100_KRW = val;
+      if(row.cur_unit === 'CNH' || row.cur_unit === 'CNY') byDate[row.rate_date].CNY_KRW = val;
+    });
+
+    // 금시세 히스토리 (Oracle DB API)
+    var goldHist = {};
+    try {
+      var gr = await fetch(ORACLE_API + '/rates/gold?days=365');
+      if(gr.ok) {
+        var gd = await gr.json();
+        (gd.data||[]).forEach(function(h){ if(h.price_krw_g) goldHist[h.price_date] = Number(h.price_krw_g); });
+      }
+    } catch(e) {}
+
+    histData = Object.keys(byDate).sort().map(function(date) {
+      var o = byDate[date];
+      return {
+        date: date,
+        USD_KRW: o.USD_KRW || 0,
+        JPY100_KRW: o.JPY100_KRW || 0,
+        CNY_KRW: o.CNY_KRW || 0,
+        GOLD_KRW_G: goldHist[date] || null
+      };
+    });
+
+    if (histData.length === 0) return;
+
+    document.getElementById('histSection').style.display = 'block';
+    document.getElementById('histCount').textContent = '(' + histData.length + '일치)';
+
+    if (histData.length >= 2) showChange();
+    renderTable(histData.slice(-currentDays));
+
+    if (histData.length === 1) {
+      document.getElementById('histMsg').style.display = 'block';
+      document.getElementById('histMsg').textContent = '1일치 데이터. 내일부터 차트가 그려집니다.';
+      document.getElementById('histCharts').style.display = 'none';
+    } else {
+      document.getElementById('histMsg').style.display = 'none';
+      document.getElementById('histCharts').style.display = 'block';
+      setTimeout(function() { renderAllCharts(currentDays); }, 100);
+    }
+  } catch(e) { console.error('히스토리 로드 실패:', e); }
+}
+
+function showChange() {
+  var today = histData[histData.length - 1];
+  var prev = histData[histData.length - 2];
+  setChg('usd-chg', today.USD_KRW, prev.USD_KRW);
+  setChg('jpy-chg', today.JPY100_KRW, prev.JPY100_KRW);
+  setChg('cny-chg', today.CNY_KRW, prev.CNY_KRW);
+  // 금시세: histData에서 금 있는 최근 2일 찾아서 비교
+  var goldDays = histData.filter(function(d){ return d.GOLD_KRW_G && d.GOLD_KRW_G > 0; });
+  if (goldDays.length >= 2) {
+    setChg('gold-chg', goldDays[goldDays.length-1].GOLD_KRW_G, goldDays[goldDays.length-2].GOLD_KRW_G);
+  }
+}
+
+function setChg(id, cur, prev) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var diff = cur - prev;
+  var pct = ((diff / prev) * 100).toFixed(2);
+  if (diff > 0) { el.className = 'rate-change up'; el.textContent = '▲ ' + Math.abs(diff).toFixed(2) + ' (+' + pct + '%)'; }
+  else if (diff < 0) { el.className = 'rate-change down'; el.textContent = '▼ ' + Math.abs(diff).toFixed(2) + ' (' + pct + '%)'; }
+  else { el.className = 'rate-change flat'; el.textContent = '— 변동없음'; }
+}
+
+function renderAllCharts(days) {
+  if (typeof Chart === 'undefined') { console.warn('Chart.js 미로드'); return; }
+  var slice = histData.slice(-days);
+  var labels = slice.map(function(d) { return d.date.substring(5); });
+
+  // 미니 차트값 업데이트
+  var last = slice[slice.length - 1];
+  var valEl;
+  valEl = document.getElementById('mc-usd-val'); if (valEl) valEl.textContent = last.USD_KRW.toLocaleString() + '원';
+  valEl = document.getElementById('mc-jpy-val'); if (valEl) valEl.textContent = last.JPY100_KRW.toLocaleString() + '원';
+  valEl = document.getElementById('mc-cny-val'); if (valEl) valEl.textContent = last.CNY_KRW.toLocaleString() + '원';
+  valEl = document.getElementById('mc-gold-val'); if (valEl) valEl.textContent = last.GOLD_KRW_G ? last.GOLD_KRW_G.toLocaleString() + '원' : '-';
+
+  // 개별 미니 차트
+  renderMini('chartUSD', labels, slice.map(function(d){return d.USD_KRW}), '#1F4E78');
+  renderMini('chartJPY', labels, slice.map(function(d){return d.JPY100_KRW}), '#dc2626');
+  renderMini('chartCNY', labels, slice.map(function(d){return d.CNY_KRW}), '#059669');
+  renderMini('chartGold', labels, slice.map(function(d){return d.GOLD_KRW_G || null}), '#eab308');
+
+  // 통합 비교 차트 (정규화)
+  renderMainChart(labels, slice);
+}
+
+function renderMini(canvasId, labels, data, color) {
+  var canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  if (miniCharts[canvasId]) miniCharts[canvasId].destroy();
+
+  // null 제거 (금시세 없는 날)
+  var hasData = data.some(function(v){return v !== null && v !== undefined});
+  if (!hasData) return;
+
+  miniCharts[canvasId] = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        borderColor: color,
+        backgroundColor: color + '15',
+        fill: true,
+        borderWidth: 2,
+        pointRadius: data.length > 60 ? 0 : 2,
+        tension: 0.3,
+        spanGaps: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(ctx) { return ctx.parsed.y ? ctx.parsed.y.toLocaleString() + '원' : '-'; } } } },
+      scales: {
+        x: { display: false },
+        y: { ticks: { font: { size: 9 }, maxTicksLimit: 4 }, grid: { color: 'rgba(0,0,0,.04)' } }
+      }
+    }
+  });
+}
+
+function renderMainChart(labels, slice) {
+  var canvas = document.getElementById('histChart');
+  if (!canvas) return;
+  if (mainChart) mainChart.destroy();
+
+  // 정규화 (시작점 = 100)
+  var base = slice[0];
+  var norm = function(arr, key) {
+    return arr.map(function(d) {
+      var v = d[key];
+      var b = base[key];
+      return (v && b) ? Math.round((v / b) * 10000) / 100 : null;
+    });
+  };
+
+  mainChart = new Chart(canvas.getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'USD/KRW', data: norm(slice,'USD_KRW'), borderColor: '#1F4E78', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.3 },
+        { label: 'JPY/100', data: norm(slice,'JPY100_KRW'), borderColor: '#dc2626', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.3 },
+        { label: 'CNY', data: norm(slice,'CNY_KRW'), borderColor: '#059669', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.3 },
+        { label: '금(g)', data: norm(slice,'GOLD_KRW_G'), borderColor: '#eab308', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.3, spanGaps: true },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'top', labels: { font: { size: 11 } } }, tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ': ' + (ctx.parsed.y ? ctx.parsed.y.toFixed(1) + '%' : '-'); } } } },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxTicksLimit: 8 }, grid: { color: 'rgba(0,0,0,.04)' } },
+        y: { ticks: { font: { size: 10 }, callback: function(v){return v+'%'} }, grid: { color: 'rgba(0,0,0,.04)' } }
+      }
+    }
+  });
+}
+
+function renderTable(slice) {
+  var body = document.getElementById('histBody');
+  var html = '';
+  for (var i = slice.length - 1; i >= 0; i--) {
+    var d = slice[i];
+    var prev = i > 0 ? slice[i-1] : null;
+    var uChg = prev ? chgStr(d.USD_KRW, prev.USD_KRW) : '';
+    var jChg = prev ? chgStr(d.JPY100_KRW, prev.JPY100_KRW) : '';
+    html += '<tr><td>'+d.date.substring(5)+'</td><td>'+d.USD_KRW.toLocaleString()+'</td><td>'+uChg+'</td><td>'+d.JPY100_KRW.toLocaleString()+'</td><td>'+jChg+'</td><td>'+d.CNY_KRW.toLocaleString()+'</td><td>'+(d.GOLD_KRW_G?d.GOLD_KRW_G.toLocaleString():'-')+'</td></tr>';
+  }
+  body.innerHTML = html;
+}
+
+function chgStr(cur, prev) {
+  var diff = cur - prev;
+  if (Math.abs(diff) < 0.005) return '-';
+  var cls = diff > 0 ? 'chg-up' : 'chg-down';
+  var sign = diff > 0 ? '+' : '';
+  return '<span class="'+cls+'">'+sign+diff.toFixed(2)+'</span>';
+}
+
+function copyAll() {
+  var u=document.getElementById('usd').textContent, j=document.getElementById('jpy').textContent;
+  var c=document.getElementById('cny').textContent, g=document.getElementById('gold').textContent;
+  navigator.clipboard.writeText('달러: '+u+'\n엔(100): '+j+'\n위안: '+c+'\n금(g): '+g).then(function(){
+    var btn=document.querySelector('.copy-btn');btn.textContent='✅ 복사됨!';
+    setTimeout(function(){btn.textContent='📋 전체 복사'},1500);
+  });
+}
+
+// 기간 탭 이벤트
+document.querySelectorAll('.period-tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.period-tab').forEach(function(t){t.classList.remove('active')});
+    tab.classList.add('active');
+    currentDays = parseInt(tab.dataset.days);
+    renderTable(histData.slice(-currentDays));
+    setTimeout(function(){ renderAllCharts(currentDays); }, 50);
+  });
+});
+
+document.getElementById('toggleTable').addEventListener('click', function() {
+  var wrap = document.getElementById('tableWrap');
+  if (wrap.style.display === 'none') { wrap.style.display = 'block'; this.textContent = '📋 표 접기 ▲'; }
+  else { wrap.style.display = 'none'; this.textContent = '📋 표 보기 ▼'; }
+});
+
+load();
+loadHistory();
+</script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

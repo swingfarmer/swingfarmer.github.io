@@ -1,0 +1,273 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>연봉 실수령액 계산기 (2026) | 스윙파머</title>
+<meta name="description" content="2026년 4대보험·소득세 반영 연봉 실수령액 계산기. 국민연금 9.5%·건강보험 7.19%·장기요양 13.14%·고용보험 0.9% 최신 요율. 월 실수령액과 공제 내역을 한눈에.">
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark header{background-color:#1e242e!important}
+body.sf-dark .toggle-opt{background-color:#182534!important;color:#85b5e0!important}
+body.sf-dark table.breakdown tr.subtotal td{background-color:#172636!important}
+body.sf-dark .bar-legend{color:#c2c2c2!important}
+body.sf-dark .note{background-color:#373115!important;border-color:#736326!important;color:#f2a373!important}
+body.sf-dark .toggle-opt.active{background:#1F4E78!important;color:white!important}
+</style>
+<style>
+:root { --sf-max-w: 720px; }
+header { background: var(--sf-surface); border-bottom: 3px solid var(--sf-brand); padding: 18px 16px; }
+header .wrap { padding: 0; }
+header h1 { font-size: 20px; color: var(--sf-brand); margin: 0; border-bottom: none; }
+header .back-link { display: inline-block; margin-bottom: 6px; }
+.final, .result-hero { background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+  input:focus, select:focus { outline: 2px solid #1F4E78; }
+  .toggle-row { display: flex; gap: 8px; margin-bottom: 13px; }
+  .toggle-opt { flex: 1; padding: 9px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; background: #eef2f7; color: #1F4E78; border: 2px solid transparent; text-align: center; }
+  .toggle-opt.active { background: #1F4E78; color: white; }
+  /* 결과 hero */
+  .result-hero { border-radius: 14px; padding: 24px; text-align: center; margin-bottom: 16px; color: white; background: linear-gradient(135deg, #1F4E78, #2d6da3); }
+  .result-hero .rh-month { font-size: 34px; font-weight: 800; }
+  .result-hero .rh-year { font-size: 13px; opacity: .9; margin-top: 6px; }
+  table.breakdown { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.breakdown td { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; }
+  table.breakdown td.label { color: #555; font-weight: 500; }
+  table.breakdown td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  table.breakdown td.minus { color: #dc2626; }
+  table.breakdown tr.total td { border-top: 2px solid #1F4E78; font-weight: 800; font-size: 15px; color: #1F4E78; padding-top: 12px; }
+  table.breakdown tr.subtotal td { background: #f8fafc; font-weight: 700; }
+  .bar-wrap { margin-top: 16px; }
+  .bar { height: 28px; border-radius: 6px; overflow: hidden; display: flex; font-size: 11px; color: white; font-weight: 600; }
+  .bar-net { background: #16a34a; display: flex; align-items: center; justify-content: center; }
+  .bar-tax { background: #f59e0b; display: flex; align-items: center; justify-content: center; }
+  .bar-ins { background: #dc2626; display: flex; align-items: center; justify-content: center; }
+  .bar-legend { display: flex; gap: 14px; margin-top: 8px; font-size: 11.5px; color: #666; flex-wrap: wrap; }
+  .bar-legend span { display: flex; align-items: center; gap: 4px; }
+  .dot { width: 10px; height: 10px; border-radius: 2px; }
+  .info-box { display: none; }  /* (096) i 버튼으로 펼침 — 전에는 처음부터 펼쳐져 있었음 */
+  .note { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; line-height: 1.7; margin-top: 14px; }
+  footer { text-align: center; margin-top: 40px; color: #999; font-size: 12px; }
+/* (098) 다크 글자색 — 라이트 색(빨강·파랑·갈색·초록·남색)이 어두운 배경에서 안 읽히던 것 */
+body.sf-dark table.breakdown tr.total td{color:#85b5e0}
+body.sf-dark table.breakdown td.minus{color:#f87171}
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>💰 연봉 실수령액 계산기</h1>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="desc"><b>2026년 최신 4대보험·소득세</b>를 반영해 월 실수령액을 계산합니다. 국민연금 <span data-tx="social.nps" data-tx-f="x2">9.5</span>%·건강보험 <span data-tx="health.rate">7.19</span>%·장기요양 <span data-tx="health.ltc">13.14</span>%·고용보험 <span data-tx="social.emp">0.9</span>% 적용. 연봉 협상이나 급여명세서 확인에 쓰세요.</p>
+
+
+
+  <!-- 입력 -->
+  <div class="panel">
+    <div class="section-label">📥 입력</div>
+    <div class="toggle-row">
+      <div class="toggle-opt active" data-mode="year" onclick="setMode('year')">연봉으로</div>
+      <div class="toggle-opt" data-mode="month" onclick="setMode('month')">월급으로</div>
+    </div>
+    <div class="input-row" id="yearRow">
+      <label>연봉 (세전, 원)</label>
+      <input type="number" id="annualSalary" data-won value="50000000" inputmode="numeric">
+    </div>
+    <div class="input-row" id="monthRow" style="display:none">
+      <label>월급 (세전, 원)</label>
+      <input type="number" id="monthlySalary" data-won value="4166667" inputmode="numeric">
+    </div>
+    <div class="input-row">
+      <label>비과세액 (월, 원) <span class="stat-sub">식대 등, 보통 <span data-tx="nontaxMeal" data-tx-f="kor">20만</span>원</span> <span class="info-btn" onclick="toggleInfo('taxFreeInfo')">i</span></label>
+      <input type="number" id="taxFree" data-won value="200000" inputmode="numeric">
+      <div class="info-box" id="taxFreeInfo">식대(월 <span data-tx="nontaxMeal" data-tx-f="kor">20만</span>원까지), 자가운전보조금, 출산·보육수당 등은 비과세예요. 비과세액은 4대보험·소득세 계산에서 제외됩니다. 보통 식대 <span data-tx="nontaxMeal" data-tx-f="kor">20만</span>원이 기본이에요.</div>
+    </div>
+    <div class="input-row">
+      <label>부양가족 수 (본인 포함) <span class="stat-sub">소득세 간이세액표 기준</span></label>
+      <input type="number" id="dependents" value="1" inputmode="numeric" min="1">
+    </div>
+    <div class="input-row">
+      <label><span data-tx="childAge">9</span>~20세 자녀 수 <span class="stat-sub">자녀 공제</span> <span class="info-btn" onclick="toggleInfo('childInfo')">i</span></label>
+      <input type="number" id="children" value="0" inputmode="numeric" min="0">
+      <div class="info-box" id="childInfo">간이세액표 자녀 공제 — 1명 월 <span data-tx="childMonthly.one">20,830</span>원 · 2명 <span data-tx="childMonthly.two">45,830</span>원 · 3명부터 1명당 <span data-tx="childMonthly.extra">33,330</span>원 추가. 대상 나이는 해마다 1세씩 올라가요(아래 계산 방법 참고).</div>
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="result-hero">
+    <div class="rh-label">월 실수령액</div>
+    <div class="rh-month" id="netMonth">-</div>
+    <div class="rh-year" id="netYear"></div>
+  </div>
+
+  <!-- 막대 -->
+  <div class="panel">
+    <div class="section-label">📊 월급 구성</div>
+    <div class="bar-wrap">
+      <div class="bar" id="bar"></div>
+      <div class="bar-legend">
+        <span><span class="dot" style="background:#16a34a"></span>실수령</span>
+        <span><span class="dot" style="background:#dc2626"></span>4대보험</span>
+        <span><span class="dot" style="background:#f59e0b"></span>세금</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 상세 -->
+  <div class="panel">
+    <div class="section-label">📋 공제 내역 (월 기준)</div>
+    <table class="breakdown">
+      <tr class="subtotal"><td class="label">세전 월급</td><td class="num" id="grossM">-</td></tr>
+      <tr><td class="label">− 국민연금 (<span data-tx="socialRule.nps">4.75</span>%)</td><td class="num minus" id="pension">-</td></tr>
+      <tr><td class="label">− 건강보험 (<span data-tx="socialRule.hh">3.595</span>%)</td><td class="num minus" id="health">-</td></tr>
+      <tr><td class="label">− 장기요양 (건보의 <span data-tx="socialRule.ltc">13.14</span>%)</td><td class="num minus" id="care">-</td></tr>
+      <tr><td class="label">− 고용보험 (<span data-tx="socialRule.emp">0.9</span>%)</td><td class="num minus" id="employ">-</td></tr>
+      <tr class="subtotal"><td class="label">4대보험 합계</td><td class="num minus" id="insTotal">-</td></tr>
+      <tr><td class="label">− 소득세 (간이세액)</td><td class="num minus" id="incomeTax">-</td></tr>
+      <tr><td class="label">− 지방소득세 (소득세의 <span data-tx="local" data-tx-f="pct">10</span>%)</td><td class="num minus" id="localTax">-</td></tr>
+      <tr class="subtotal"><td class="label">세금 합계</td><td class="num minus" id="taxTotal">-</td></tr>
+      <tr class="total"><td class="label">월 실수령액</td><td class="num" id="netM2">-</td></tr>
+    </table>
+  </div>
+
+  <div class="note">
+    ⚠️ <b>참고용 추정치</b>입니다. 소득세는 국세청 간이세액표를 <b>근사식</b>으로 계산해 실제와 수만원 차이날 수 있어요. 회사·개인 상황(추가 공제, 상여 분리 등)에 따라 달라지며, 연말정산으로 정산됩니다. 4대보험 요율은 <span data-tx="socialRule.year" data-tx-f="y">2026</span>년 기준입니다 (세율 확인일 <span data-tx="checked">2026-11-17</span>). 같은 계산을 <a href="/tax/income/">근로소득세 계산기</a>에서 상여 비율까지 넣어 볼 수 있어요.
+  </div>
+
+  <div class="manual">
+    <b>📘 계산 방법</b><br>
+    • <b>4대보험</b>: (월급−비과세)에 요율 적용. 국민연금은 기준소득월액 <span data-tx="socialRule.npsMin" data-tx-f="man" data-tx-t="{}만">41만</span>~<span data-tx="socialRule.npsMax" data-tx-f="man" data-tx-t="{}만">659만</span>원으로 자른 뒤 곱함(본인 부담 최대 <span data-tx="=socialRule.npsMax*socialRule.nps/100" data-tx-f="r0">313,025</span>원). 요율은 매년 1월, 상·하한은 매년 7월 바뀜.<br>
+    • <b>소득세</b>: 간이세액표 근사 — 근로소득공제(한도 <span data-tx="earnedDed.cap" data-tx-f="korc">2천만</span>) → 인적공제 1인당 <span data-tx="personalDed" data-tx-f="kor">150만</span> → 누진세율 → 근로소득세액공제(총급여별 한도 <span data-tx="earnedCr.lim.0.1" data-tx-f="kor">74만</span>~<span data-tx="earnedCr.lim.-1.3" data-tx-f="kor">20만</span>, <span data-tx="earnedCr.lim.1.0" data-tx-f="korc">7천만</span> 넘으면 초과액의 1/2씩 줄어 바로 <span data-tx="earnedCr.lim.2.3" data-tx-f="kor">50만</span>) → <span data-tx="childAge">9</span>~20세 자녀 공제. <span class="age-note">ⓘ 대상 나이는 아동수당 확대로 매년 1세씩 올라감(2026.4.21 개정: 2025년 8세 → 2026년 9세 → 2030년 13세). 그보다 어린 자녀는 아동수당 대상이라 빼고 세세요. 회사 급여 프로그램이 아직 옛 나이로 셀 수도 있음.</span> <a href="/tax/income/">근로소득세 계산기</a>와 같은 식.<br>
+    • <b>지방소득세</b>: 소득세의 <span data-tx="local" data-tx-f="pct">10</span>%.<br>
+    • 실수령 = 세전 − 4대보험 − 소득세 − 지방세
+  </div>
+
+  <footer>© 스윙파머</footer>
+</div>
+
+<script>
+window.CALC_KEY = 'salary';
+window.slGetState = function(){ return window.slGetState ? window.slGetState() : {}; };
+window.slSetState = function(d){ if(window.slSetState) window.slSetState(d); };
+</script>
+<script>window.SF_RESET = true;</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+<script src="/tax-rates.js?v=24"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => sfNum(n);
+
+let inputMode='year';
+function setMode(m){
+  inputMode=m;
+  document.querySelectorAll('[data-mode]').forEach(el=>el.classList.toggle('active', el.dataset.mode===m));
+  $('yearRow').style.display = m==='year'?'block':'none';
+  $('monthRow').style.display = m==='month'?'block':'none';
+  // 동기화
+  if(m==='month'){ $('monthlySalary').value = Math.round((parseFloat($('annualSalary').value)||0)/12); }
+  else { $('annualSalary').value = Math.round((parseFloat($('monthlySalary').value)||0)*12); }
+  calculate();
+}
+
+// (090) 세율·4대보험 요율은 /tax-rates.js(window.SF_TAX)에서 읽음. (101) 못 읽을 때 쓰던 기본값 사본은 지움 — 못 읽으면 common.js가 안내
+//   (089까지: 국민연금 4.5%·상한 637만·하한 40만 옛 값, 근로소득세액공제 한도 74만 고정, 자녀 공제 옛 연 15만/35만)
+const _T = window.SF_TAX;
+const SR = _T.socialRule();   // (092) 올해 4대보험 요율 — 국민연금 연도별 인상이 자동 반영됨
+const TX = {
+  income: _T.income,
+  nps: SR.nps, npsMin: SR.npsMin, npsMax: SR.npsMax,
+  hh: SR.hh, ltc: SR.ltc, emp: SR.emp,
+  child: _T.childMonthly,
+  year: SR.year, checked: _T.checked
+};
+// 화면 문구 속 요율은 HTML data-tx 가 채움 (101, 예전 fillTax)
+
+// 간이세액표 근사 (090) — /tax/income/ 과 같은 식으로 맞춤
+function childMonthly(kids){
+  if (kids <= 0) return 0;
+  if (kids === 1) return TX.child.one;
+  return TX.child.two + (kids - 2) * TX.child.extra;
+}
+function approxIncomeTax(monthlyTaxable, dependents, children){
+  return _T.wageTax(monthlyTaxable * 12, dependents, children).tax / 12;   // (092) 공통 함수 — /tax/income/과 같은 식
+}
+
+function calculate(){
+  let grossMonth;
+  if(inputMode==='year') grossMonth = (parseFloat($('annualSalary').value)||0)/12;
+  else grossMonth = parseFloat($('monthlySalary').value)||0;
+  const taxFree = parseFloat($('taxFree').value)||0;
+  const dependents = Math.max(1, parseFloat($('dependents').value)||1);
+  const children = Math.max(0, Math.floor(parseFloat($('children').value)||0));
+
+  const taxableMonth = Math.max(0, grossMonth - taxFree); // 과세 대상
+
+  // 4대보험 (과세 기준)
+  // (090) 국민연금은 기준소득월액 상·하한으로 자름 (월급 0이면 0)
+  //   (092) 공통 함수 SF_TAX.ins4 — /tax/income/, /insurance4/, /paygrowth/와 같은 식
+  const I = _T.ins4(taxableMonth);
+  const pension = I.pension, health = I.health, care = I.care, employ = I.employ, insTotal = I.total;
+
+  // 소득세
+  const incomeTax = approxIncomeTax(taxableMonth, dependents, children);
+  const localTax = incomeTax * (_T.local);
+  const taxTotal = incomeTax+localTax;
+
+  const net = grossMonth - insTotal - taxTotal;
+
+  $('netMonth').textContent = fmt(net)+'원';
+  $('netYear').textContent = '연 환산 약 '+fmt(net*12)+'원 ('+sfKor(net*12, 'full', '')+')';
+  $('grossM').textContent = fmt(grossMonth)+'원';
+  $('pension').textContent = '−'+fmt(pension);
+  $('health').textContent = '−'+fmt(health);
+  $('care').textContent = '−'+fmt(care);
+  $('employ').textContent = '−'+fmt(employ);
+  $('insTotal').textContent = '−'+fmt(insTotal);
+  $('incomeTax').textContent = '−'+fmt(incomeTax);
+  $('localTax').textContent = '−'+fmt(localTax);
+  $('taxTotal').textContent = '−'+fmt(taxTotal);
+  $('netM2').textContent = fmt(net)+'원';
+
+  // 막대
+  const total = grossMonth>0?grossMonth:1;
+  const netPct = net/total*100, insPct = insTotal/total*100, taxPct = taxTotal/total*100;
+  $('bar').innerHTML =
+    `<div class="bar-net" style="width:${netPct}%">${netPct>12?Math.round(netPct)+'%':''}</div>`+
+    `<div class="bar-ins" style="width:${insPct}%">${insPct>10?Math.round(insPct)+'%':''}</div>`+
+    `<div class="bar-tax" style="width:${taxPct}%">${taxPct>8?Math.round(taxPct)+'%':''}</div>`;
+
+}
+
+document.querySelectorAll('input').forEach(el=>el.addEventListener('input', calculate));
+// 상태 저장/복원 (input + select + 토글)
+function slGetState(){
+  const s={};
+  s.__inputMode=inputMode;
+  document.querySelectorAll('input[id], select[id]').forEach(el=>{ s[el.id]=el.value; });
+  return s;
+}
+function slSetState(d){
+  if(!d) return;
+  if(d.__inputMode){ setMode(d.__inputMode); }
+  document.querySelectorAll('input[id], select[id]').forEach(el=>{ if(d[el.id]!==undefined) el.value=d[el.id]; });
+  calculate();
+}
+window.slGetState=slGetState; window.slSetState=slSetState;
+calculate();
+</script>
+
+
+
+
+</body>
+</html>

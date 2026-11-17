@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>카드풍차 관리 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .card-visual{background-color:#1e242e!important}
+body.sf-dark .spending-amount{color:#dedede!important}
+body.sf-dark .progress-label{color:#cccccc!important}
+body.sf-dark .progress-bar{background-color:#232a35!important}
+body.sf-dark .card-info{border-top-color:#2c333f!important}
+body.sf-dark .info-val{color:#dedede!important}
+body.sf-dark .alert-row{background-color:#371521!important}
+body.sf-dark .memo-text{border-top-color:#2c333f!important}
+body.sf-dark .dot{background-color:#232a35!important}
+body.sf-dark .sort-btn{border-color:#2c333f!important;background-color:#1e242e!important;color:#c2c2c2!important}
+body.sf-dark .summary-chip{background-color:#1e242e!important;border-color:#2c333f!important}
+body.sf-dark .modal{background-color:#1e242e!important}
+body.sf-dark .section-label{color:#85b5e0!important;border-bottom-color:#2c333f!important}
+body.sf-dark .btn-del{background-color:#1e242e!important}
+body.sf-dark .info-val.benefit{color:#1976d2!important}
+body.sf-dark .info-val.cancel-date{color:#e53935!important}
+body.sf-dark .info-val.dim{color:#aaa!important}
+body.sf-dark .info-val.done{color:#4caf50!important}
+body.sf-dark .dot.active{background:#1976d2!important}
+body.sf-dark .sort-btn.active{background:#1F4E78!important;color:white!important;border-color:#1F4E78!important}
+</style>
+<style>
+:root { --sf-max-w: 800px; }
+.issuer-롯데{--ic:#e53935}.issuer-삼성{--ic:#1565c0}.issuer-현대{--ic:#00695c}.issuer-국민{--ic:#f9a825}
+.issuer-신한{--ic:#0d47a1}.issuer-하나{--ic:#009688}.issuer-우리{--ic:#1976d2}.issuer-BC{--ic:#e91e63}
+.issuer-NH{--ic:#2e7d32}.issuer-씨티{--ic:#0277bd}.issuer-기타{--ic:#546e7a}
+.slider-wrap{position:relative;margin-bottom:24px}
+.slider{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:16px;padding:8px 4px 16px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.slider::-webkit-scrollbar{display:none}
+.card-item{flex:0 0 100%;max-width:400px;scroll-snap-align:center;margin:0 auto}
+@media(min-width:500px){.card-item{flex:0 0 calc(50% - 8px)}}
+.card-visual{border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.12);background:white;cursor:pointer;transition:transform .15s}
+.card-visual:hover{transform:translateY(-2px)}
+.card-visual.cancelled{opacity:0.55}
+.card-top{background:var(--ic,#546e7a);padding:20px 22px 16px;color:white;position:relative}
+.card-issuer{font-size:14px;font-weight:700;margin-bottom:12px}
+.card-chip{width:40px;height:28px;background:linear-gradient(135deg,#ffd54f,#ffb300);border-radius:6px;margin-bottom:14px}
+.card-name{font-size:20px;font-weight:800;letter-spacing:1px}
+.card-since{font-size:11px;opacity:0.7;margin-top:4px;letter-spacing:1px}
+.card-dday{position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.25);color:white;font-size:12px;font-weight:700;padding:4px 10px;border-radius:12px}
+.card-dday.urgent{background:rgba(229,57,53,0.8)}
+.cancel-badge{position:absolute;top:16px;right:16px;background:rgba(0,0,0,0.3);color:white;font-size:11px;font-weight:700;padding:4px 10px;border-radius:12px}
+.card-bottom{padding:20px 22px}
+.spending-label{font-size:12px;color:#888;margin-bottom:4px}
+.spending-amount{font-size:28px;font-weight:800;color:#1a1a1a;margin-bottom:12px}
+.progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.progress-label{font-size:13px;font-weight:700;color:#555}
+.progress-remain{font-size:13px;font-weight:700}
+.progress-remain.over{color:#e53935}
+.progress-remain.under{color:#1976d2}
+.progress-bar{height:8px;background:#e8e8e8;border-radius:4px;overflow:hidden;margin-bottom:16px}
+.progress-fill{height:100%;border-radius:4px;transition:width .3s;background:#1976d2}
+.progress-fill.full{background:#4caf50}
+.progress-fill.over{background:#e53935}
+.card-info{border-top:1px solid #eee;padding-top:14px}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px}
+.info-label{color:#888}
+.info-val{font-weight:700;color:#1a1a1a}
+.info-val.benefit{color:#1976d2;font-size:16px}
+.info-val.cancel-date{color:#e53935}
+.info-val.dim{color:#aaa;font-size:12px}
+.info-val.done{color:#4caf50}
+.alert-row{background:#fce4ec;border-radius:8px;padding:8px 12px;margin-top:6px}
+.alert-row .info-label{color:#e53935;font-weight:700}
+.memo-text{font-size:11px;color:#888;margin-top:10px;line-height:1.5;border-top:1px solid #eee;padding-top:8px}
+.dots{display:flex;justify-content:center;gap:6px;margin-top:8px}
+.dot{width:8px;height:8px;border-radius:50%;background:#ccc;transition:all .2s}
+.dot.active{background:#1976d2;width:20px;border-radius:4px}
+.btn-add-card{margin-left:auto;background:#1F4E78;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+.btn-add-card:hover{background:#17405f}
+.sort-bar{display:flex;gap:6px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
+.sort-btn{padding:6px 14px;border:1px solid #ddd;border-radius:8px;background:white;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:#666}
+.sort-btn.active{background:#1F4E78;color:white;border-color:#1F4E78}
+.summary{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.summary-chip{background:white;border:1px solid #e5e7eb;border-radius:10px;padding:10px 16px;font-size:12px;flex:1;min-width:100px;text-align:center}
+.summary-chip .sv{font-size:18px;font-weight:800;display:block;margin-top:2px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:20;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.show{display:flex}
+.modal{background:white;border-radius:16px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;position:relative}
+.modal h2{font-size:18px;font-weight:800;margin-bottom:20px}
+.modal .close{position:absolute;top:14px;right:18px;background:none;border:none;font-size:20px;cursor:pointer;color:#888}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:700;color:#555;margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box}
+.field textarea{height:60px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.section-label{font-size:12px;font-weight:700;color:#1F4E78;margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid #eee}
+.btn-save{width:100%;padding:12px;background:#1F4E78;color:white;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
+.btn-save:hover{opacity:0.9}
+.btn-del{width:100%;padding:10px;background:white;color:#e53935;border:1px solid #e53935;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
+.empty-msg{text-align:center;padding:60px 20px;color:#999;font-size:14px}
+.toggle-row{display:flex;align-items:center;gap:8px;padding:6px 0}
+.toggle-row label{font-size:13px;color:#555;margin:0}
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>💳 카드풍차 <span>관리</span></h1>
+    <div class="header-meta">
+      <div class="updated" id="cardCount">카드 0장 · 예상 혜택 0원</div>
+    </div>
+  </div>
+  <div class="summary" id="summary"></div>
+  <div class="sort-bar">
+    <span style="font-size:12px;color:#888;font-weight:700">정렬</span>
+    <button class="sort-btn active" data-sort="order" onclick="setSort('order')">등록순</button>
+    <button class="sort-btn" data-sort="spending" onclick="setSort('spending')">지출순</button>
+    <button class="sort-btn" data-sort="deadline" onclick="setSort('deadline')">마감 임박순</button>
+    <button class="sort-btn" data-sort="cancel" onclick="setSort('cancel')">탈회 임박순</button>
+    <button class="btn-add-card" onclick="openModal()">＋ 카드 추가</button>
+  </div>
+  <div class="slider-wrap">
+    <div class="slider" id="slider"></div>
+    <div class="dots" id="dots"></div>
+  </div>
+  <div id="emptyMsg" class="empty-msg" style="display:none">카드가 없습니다. 위의 [＋ 카드 추가]로 등록하세요.</div>
+  <div id="saveNote" style="font-size:12px;color:#888;text-align:center;margin-top:14px;line-height:1.6">이 기기에 자동 저장됨 · 다른 기기와 맞추려면 우측 하단 저장 버튼</div>
+</div>
+
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <button class="close" onclick="closeModal()">✕</button>
+    <h2 id="modalTitle">카드 등록</h2>
+    <input type="hidden" id="editId">
+
+    <div class="section-label">카드 정보</div>
+    <div class="row2">
+      <div class="field"><label>카드사</label>
+        <select id="fIssuer">
+          <option>롯데</option><option>삼성</option><option>현대</option><option>국민</option>
+          <option>신한</option><option>하나</option><option>우리</option><option>BC</option>
+          <option>NH</option><option>씨티</option><option>기타</option>
+        </select>
+      </div>
+      <div class="field"><label>카드명</label><input type="text" id="fName" placeholder="LOCA LIKIT 1.5"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>실적 조건 금액 (원)</label><input type="number" id="fTarget" placeholder="300000"></div>
+      <div class="field"><label>현재 사용 금액 (원)</label><input type="number" id="fSpending" placeholder="0"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>이벤트 혜택 금액 (원)</label><input type="number" id="fBenefit" placeholder="120000"></div>
+      <div class="field"><label>연회비 (원)</label><input type="number" id="fFee" placeholder="0"></div>
+    </div>
+
+    <div class="section-label">주요 일정</div>
+    <div class="row2">
+      <div class="field"><label>발급일</label><input type="date" id="fStart"></div>
+      <div class="field"><label>실적 마감일</label><input type="date" id="fDeadline"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>혜택 지급일</label><input type="date" id="fBenefitDate"></div>
+      <div class="field"><label>해지 가능일</label><input type="date" id="fCancelAvail"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>다음 신규 이벤트 가능일</label><input type="date" id="fNextEvent"></div>
+      <div class="field"></div>
+    </div>
+
+    <div class="section-label">상태</div>
+    <div class="toggle-row"><input type="checkbox" id="fBenefitDone"><label for="fBenefitDone">혜택 수령 완료</label></div>
+    <div class="toggle-row" id="cancelledField" style="display:none"><input type="checkbox" id="fCancelled"><label for="fCancelled">카드 해지 완료</label></div>
+
+    <div class="section-label">메모</div>
+    <div class="field"><textarea id="fMemo" placeholder="이벤트 조건이나 참고할 내용"></textarea></div>
+
+    <button class="btn-save" onclick="saveCard()">저장</button>
+    <button class="btn-del" id="btnDel" style="display:none" onclick="deleteCard()">카드 삭제</button>
+  </div>
+</div>
+
+<script type="module">
+/* 저장 구조 (078 단일화)
+   - 로컬 자동저장: localStorage sf_cardmanager_v2 (sf-slots와 같은 키, 형식 {cards:[...]})
+   - 클라우드: sf-slots.js 만 사용 (calc_data.cardmanager.slots) → 우측 하단 저장 버튼
+   - 구 저장소(Firestore users/{uid}/cards)는 읽기 전용으로 최초 1회만 가져옴. 쓰지도 지우지도 않음. */
+const LS_KEY='sf_cardmanager_v2';
+const MIG_FLAG='sf_cardmanager_legacy_done';
+let cards=[], currentSort='order';
+
+function persist(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({cards})); }catch(e){} }
+function readLocal(){
+  try{
+    const d=JSON.parse(localStorage.getItem(LS_KEY)||'null');
+    if(d && Array.isArray(d.cards)) return d.cards;
+  }catch(e){}
+  return null;
+}
+function setNote(msg){ const el=document.getElementById('saveNote'); if(el) el.textContent=msg; }
+
+// Firestore Timestamp → ISO 문자열 (로컬/슬롯에 그대로 넣을 수 있게)
+function plain(v){
+  if(v && typeof v.toDate==='function'){ try{ return v.toDate().toISOString(); }catch(e){ return ''; } }
+  return v;
+}
+
+async function migrateLegacy(){
+  try{ if(localStorage.getItem(MIG_FLAG)) return; }catch(e){ return; }
+  if(cards.length){ try{ localStorage.setItem(MIG_FLAG,'local'); }catch(e){} return; }
+  // 로그인 완료 대기 (최대 15초)
+  let user=null;
+  for(let i=0;i<30;i++){
+    user=window._sfAuth && window._sfAuth.currentUser;
+    if(user) break;
+    await new Promise(r=>setTimeout(r,500));
+  }
+  if(!user) return; // 다음 방문 때 다시 시도
+  try{
+    // 이미 클라우드 슬롯이 있으면(다른 기기에서 이전 완료) 옛 데이터를 다시 끌어오지 않음
+    if(window._sfSlots && window._sfSlots.getSlots){
+      const slots=await window._sfSlots.getSlots();
+      if(slots && slots.length){
+        localStorage.setItem(MIG_FLAG,'slots');
+        setNote('클라우드 저장분 '+slots.length+'개 있음 → 우측 하단 저장 버튼에서 불러오기');
+        return;
+      }
+    }
+    const [appMod, fsMod]=await Promise.all([
+      import('https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js')
+    ]);
+    const apps=appMod.getApps();
+    if(!apps.length) return;
+    const db=fsMod.getFirestore(apps[0]);
+    const snap=await fsMod.getDocs(fsMod.collection(db,'users',user.uid,'cards'));
+    const legacy=[];
+    snap.forEach(d=>{
+      const o={id:d.id}, src=d.data();
+      for(const k in src) o[k]=plain(src[k]);
+      legacy.push(o);
+    });
+    if(cards.length) { localStorage.setItem(MIG_FLAG,'local'); return; } // 기다리는 사이 직접 입력한 경우
+    if(legacy.length){
+      cards=legacy; persist(); renderAll();
+      setNote('기존 카드 '+legacy.length+'장 가져옴 → 우측 하단 저장 버튼으로 클라우드에 저장하세요');
+    }
+    localStorage.setItem(MIG_FLAG, legacy.length ? 'imported' : 'empty');
+  }catch(e){
+    console.error('[card-manager] 기존 카드 가져오기 실패:', e);
+    setNote('기존 카드 가져오기 실패 (새로고침하면 다시 시도)');
+  }
+}
+
+function dday(dateStr){
+  if(!dateStr) return null;
+  const d=new Date(dateStr), now=new Date();
+  now.setHours(0,0,0,0); d.setHours(0,0,0,0);
+  return Math.ceil((d-now)/(86400000));
+}
+
+function renderAll(){
+  sortCards(); renderSlider(); renderSummary();
+  const totalBenefit=cards.reduce((s,c)=>s+(c.benefitAmount||0),0);
+  document.getElementById('cardCount').textContent=`카드 ${cards.length}장 · 예상 혜택 ${totalBenefit.toLocaleString()}원`;
+  document.getElementById('emptyMsg').style.display=cards.length?'none':'';
+}
+
+function sortCards(){
+  if(currentSort==='spending') cards.sort((a,b)=>(b.currentSpending||0)-(a.currentSpending||0));
+  else if(currentSort==='deadline') cards.sort((a,b)=>{const da=a.deadline||'9999',db2=b.deadline||'9999';return da<db2?-1:da>db2?1:0;});
+  else if(currentSort==='cancel') cards.sort((a,b)=>{const da=a.cancelAvail||'9999',db2=b.cancelAvail||'9999';return da<db2?-1:da>db2?1:0;});
+  else cards.sort((a,b)=>(a.order||0)-(b.order||0));
+}
+
+function renderSlider(){
+  const sl=document.getElementById('slider'), dots=document.getElementById('dots');
+  sl.innerHTML=''; dots.innerHTML='';
+  cards.forEach((c,i)=>{
+    sl.innerHTML+=buildCard(c,i);
+    dots.innerHTML+=`<div class="dot${i===0?' active':''}" data-i="${i}"></div>`;
+  });
+  const items=sl.querySelectorAll('.card-item');
+  if(!items.length) return;
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{if(e.isIntersecting){
+      const idx=e.target.dataset.idx;
+      dots.querySelectorAll('.dot').forEach(d=>d.classList.toggle('active',d.dataset.i===idx));
+    }});
+  },{root:sl,threshold:0.6});
+  items.forEach(it=>obs.observe(it));
+}
+
+function buildCard(c,idx){
+  const ic=`issuer-${c.issuer||'기타'}`;
+  const pct=c.monthlyTarget>0?Math.round((c.currentSpending||0)/c.monthlyTarget*100):0;
+  const remain=(c.monthlyTarget||0)-(c.currentSpending||0);
+  const fillClass=pct>=100?(pct>100?'over':'full'):'';
+  const fillW=Math.min(pct,100);
+  const remainClass=remain>0?'under':'over';
+  const remainText=remain>0?`${remain.toLocaleString()}원 남음`:remain===0?'달성!':
+    `${Math.abs(remain).toLocaleString()}원 초과`;
+  const since=c.usageStart?c.usageStart.replace(/-/g,'').substring(0,6):'';
+  const cancelledCls=c.cancelled?' cancelled':'';
+
+  // D-day 배지
+  let badge='';
+  if(c.cancelled){
+    badge='<div class="cancel-badge">해지 완료</div>';
+  } else if(c.deadline){
+    const dd=dday(c.deadline);
+    if(dd!==null){
+      const urgent=dd<=7?'urgent':'';
+      badge=`<div class="card-dday ${urgent}">실적마감 ${dd>0?'D-'+dd:dd===0?'D-Day':'만료'}</div>`;
+    }
+  }
+
+  let info='';
+  if(c.usageStart) info+=row('발급일',fmtD(c.usageStart));
+  if(c.deadline){
+    const dd=dday(c.deadline);
+    const ddText=dd!==null?` · ${dd>0?'D-'+dd:dd===0?'D-Day':'만료'}`:'';
+    info+=row('실적 마감일',fmtD(c.deadline)+ddText);
+  }
+  if(c.benefitAmount){
+    const cls=c.benefitDone?'done':'benefit';
+    const mark=c.benefitDone?'✅ ':'';
+    info+=`<div class="info-row"><span class="info-label">이벤트 혜택</span><span class="info-val ${cls}">${mark}${c.benefitAmount.toLocaleString()}원</span></div>`;
+  }
+  if(c.benefitDate) info+=row('혜택 지급일',fmtD(c.benefitDate));
+  if(c.cancelAvail){
+    const dd=dday(c.cancelAvail);
+    const ddText=dd!==null&&dd>0?` · D-${dd}`:(dd!==null&&dd<=0?' · 가능':'');
+    info+=`<div class="info-row alert-row"><span class="info-label">해지 가능일</span><span class="info-val cancel-date">${fmtD(c.cancelAvail)}${ddText}</span></div>`;
+  }
+  if(c.nextEvent) info+=row('다음 이벤트 가능',fmtD(c.nextEvent),'dim');
+
+  const memoHTML=c.memo?`<div class="memo-text">📝 ${c.memo}</div>`:'';
+
+  return `<div class="card-item" data-idx="${idx}">
+  <div class="card-visual ${ic}${cancelledCls}" onclick="window._editCard('${c.id}')">
+    <div class="card-top">${badge}
+      <div class="card-issuer">${c.issuer||''}</div>
+      <div class="card-chip"></div>
+      <div class="card-name">${c.cardName||''}</div>
+      ${since?`<div class="card-since">MEMBER SINCE ${since}</div>`:''}
+    </div>
+    <div class="card-bottom">
+      <div class="spending-label">이번 달 지출</div>
+      <div class="spending-amount">${(c.currentSpending||0).toLocaleString()}원</div>
+      <div class="progress-row">
+        <span class="progress-label">실적 달성률</span>
+        <span class="progress-remain ${remainClass}">${remainText}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill ${fillClass}" style="width:${fillW}%"></div></div>
+      ${info?`<div class="card-info">${info}</div>`:''}
+      ${memoHTML}
+    </div>
+  </div>
+</div>`;
+}
+
+function row(l,v,cls){return `<div class="info-row"><span class="info-label">${l}</span><span class="info-val${cls?' '+cls:''}">${v}</span></div>`;}
+function fmtD(d){return d?d.replace(/-/g,'.'):''}
+
+function renderSummary(){
+  const total=cards.reduce((s,c)=>s+(c.currentSpending||0),0);
+  const totalB=cards.reduce((s,c)=>s+(c.benefitAmount||0),0);
+  const totalF=cards.reduce((s,c)=>s+(c.annualFee||0),0);
+  const active=cards.filter(c=>!c.cancelled).length;
+  document.getElementById('summary').innerHTML=`
+    <div class="summary-chip"><span style="color:#888">총 지출</span><span class="sv">${total.toLocaleString()}원</span></div>
+    <div class="summary-chip"><span style="color:#888">총 혜택</span><span class="sv" style="color:#1976d2">${totalB.toLocaleString()}원</span></div>
+    <div class="summary-chip"><span style="color:#888">연회비</span><span class="sv">${totalF.toLocaleString()}원</span></div>
+    <div class="summary-chip"><span style="color:#888">활성</span><span class="sv">${active}장</span></div>`;
+}
+
+const FIELDS=['fIssuer','fName','fTarget','fSpending','fBenefit','fFee','fStart','fDeadline','fBenefitDate','fCancelAvail','fNextEvent','fMemo','fBenefitDone','fCancelled'];
+window.openModal=function(){
+  document.getElementById('modal').classList.add('show');
+  document.getElementById('editId').value='';
+  document.getElementById('modalTitle').textContent='카드 등록';
+  document.getElementById('btnDel').style.display='none';
+  document.getElementById('cancelledField').style.display='none';
+  FIELDS.forEach(id=>{const el=document.getElementById(id);if(el.type==='checkbox')el.checked=false;else el.value='';});
+};
+
+window._editCard=function(id){
+  const c=cards.find(x=>x.id===id);if(!c) return;
+  document.getElementById('modal').classList.add('show');
+  document.getElementById('editId').value=id;
+  document.getElementById('modalTitle').textContent='카드 수정';
+  document.getElementById('btnDel').style.display='';
+  document.getElementById('cancelledField').style.display='';
+  document.getElementById('fIssuer').value=c.issuer||'기타';
+  document.getElementById('fName').value=c.cardName||'';
+  document.getElementById('fTarget').value=c.monthlyTarget||'';
+  document.getElementById('fSpending').value=c.currentSpending||'';
+  document.getElementById('fBenefit').value=c.benefitAmount||'';
+  document.getElementById('fFee').value=c.annualFee||'';
+  document.getElementById('fStart').value=c.usageStart||'';
+  document.getElementById('fDeadline').value=c.deadline||'';
+  document.getElementById('fBenefitDate').value=c.benefitDate||'';
+  document.getElementById('fCancelAvail').value=c.cancelAvail||'';
+  document.getElementById('fNextEvent').value=c.nextEvent||'';
+  document.getElementById('fMemo').value=c.memo||'';
+  document.getElementById('fBenefitDone').checked=!!c.benefitDone;
+  document.getElementById('fCancelled').checked=!!c.cancelled;
+};
+
+window.closeModal=function(){document.getElementById('modal').classList.remove('show');};
+
+window.saveCard=function(){
+  const editId=document.getElementById('editId').value;
+  const data={
+    issuer:document.getElementById('fIssuer').value,
+    cardName:document.getElementById('fName').value.trim(),
+    monthlyTarget:parseInt(document.getElementById('fTarget').value)||0,
+    currentSpending:parseInt(document.getElementById('fSpending').value)||0,
+    benefitAmount:parseInt(document.getElementById('fBenefit').value)||0,
+    annualFee:parseInt(document.getElementById('fFee').value)||0,
+    usageStart:document.getElementById('fStart').value,
+    deadline:document.getElementById('fDeadline').value,
+    benefitDate:document.getElementById('fBenefitDate').value,
+    cancelAvail:document.getElementById('fCancelAvail').value,
+    nextEvent:document.getElementById('fNextEvent').value,
+    memo:document.getElementById('fMemo').value.trim(),
+    benefitDone:document.getElementById('fBenefitDone').checked,
+    cancelled:document.getElementById('fCancelled').checked,
+    updatedAt:new Date().toISOString()
+  };
+  if(!data.cardName){alert('카드명을 입력하세요.');return;}
+  if(editId){
+    const i=cards.findIndex(x=>x.id===editId);
+    if(i<0){alert('수정할 카드를 찾지 못했습니다.');return;}
+    cards[i]={...cards[i],...data};
+  } else {
+    data.id='card_'+Date.now();
+    data.order=cards.reduce((m,c)=>Math.max(m,(c.order||0)+1),0);
+    data.createdAt=data.updatedAt;
+    cards.push(data);
+  }
+  persist(); closeModal(); renderAll();
+};
+
+window.deleteCard=function(){
+  const editId=document.getElementById('editId').value;
+  if(!editId||!confirm('이 카드를 삭제할까요?')) return;
+  cards=cards.filter(x=>x.id!==editId);
+  persist(); closeModal(); renderAll();
+};
+
+window.setSort=function(s){
+  currentSort=s;
+  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.toggle('active',b.dataset.sort===s));
+  renderAll();
+};
+
+document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+// ── sf-slots 연동 (실제 slGetState/slSetState는 아래 일반 script에 정의) ──
+window._cmGet=function(){ return {cards:JSON.parse(JSON.stringify(cards))}; };
+window._cmSet=function(d){
+  if(!d || !Array.isArray(d.cards)) return;
+  cards=JSON.parse(JSON.stringify(d.cards));
+  persist(); renderAll();
+};
+
+// ── 시작 ──
+cards=readLocal()||[];
+renderAll();
+migrateLegacy();
+</script>
+<script>
+window.CALC_KEY='cardmanager';
+window.slGetState=function(){
+  if(!window._cmGet) throw new Error('페이지 로딩 중입니다. 잠시 후 다시 시도하세요.');
+  return window._cmGet();
+};
+window.slSetState=function(d){ if(window._cmSet) window._cmSet(d); };
+</script>
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

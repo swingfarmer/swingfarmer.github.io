@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>업종·종목 모멘텀 — 주간/월간 강세 랭킹 | 스윙파머</title>
+<link rel="stylesheet" href="/common-dark.css?v=7">
+<style>
+:root { --sf-max-w: 1400px; }
+a{color:var(--accent);text-decoration:none}
+h1{font-size:22px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.subtitle{color:var(--text-dim);font-size:13px;margin-bottom:16px}
+/* 기간 탭 */
+.period-tabs{display:flex;gap:6px;margin-bottom:20px}
+.period-tab:hover{border-color:var(--text-dim)}
+.period-tab.disabled{opacity:.3;cursor:not-allowed}
+/* 서머리 */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:20px}
+.summary-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.summary-card .num{font-size:24px;font-weight:800}
+.summary-card .label{font-size:11px;color:var(--text-dim);margin-top:4px}
+/* 섹션 */
+/* 업종 그리드 */
+.sector-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px}
+.sector-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:border-color .12s}
+.sector-card:hover{border-color:var(--accent)}
+.sector-card.expanded{border-color:var(--accent)}
+.sector-name{font-weight:700;font-size:14px;margin-bottom:4px}
+.sector-return{font-size:22px;font-weight:800;margin-bottom:4px}
+.sector-meta{font-size:11px;color:var(--text-dim)}
+/* 업종 상세 (접기/펼치기) */
+.sector-detail{display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px}
+.sector-card.expanded .sector-detail{display:block}
+.sector-stock{display:flex;justify-content:space-between;padding:3px 0;font-size:12px}
+.sector-stock .sname{font-weight:600}
+/* 테이블 */
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px;background:var(--card);max-height:500px}
+th:nth-child(1),th:nth-child(2){text-align:left}
+td{padding:8px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap}
+td:nth-child(1){text-align:center;width:30px}
+td:nth-child(2){text-align:left}
+tr:hover{background:rgba(59,130,246,.06)}
+.stock-name{font-weight:700;font-size:13px}
+.stock-code{color:var(--text-dim);font-size:10px;margin-left:6px}
+.stock-sector{color:var(--text-dim);font-size:10px;margin-left:6px;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px}
+.note{font-size:11px;color:var(--text-dim);text-align:center;margin-top:20px;line-height:1.8}
+/* 탭 전환 */
+.tab-gainers{display:flex;gap:6px;margin-bottom:10px}
+.tab-gl{padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text-dim);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.tab-gl.active{background:var(--card);border-color:var(--accent);color:var(--accent)}
+
+/* ── 모바일 반응형 ── */
+@media (max-width: 600px) {
+  .wrap { padding: 10px; }
+  h1 { font-size: 18px; gap: 6px; }
+  .subtitle { font-size: 12px; margin-bottom: 10px; }
+  .period-tabs { gap: 4px; flex-wrap: wrap; }
+  .period-tab { padding: 6px 10px; font-size: 12px; }
+  .summary { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .summary-card { padding: 10px 6px; }
+  .summary-card .num { font-size: 18px; }
+  .summary-card .label { font-size: 9px; }
+  .sector-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .sector-card { padding: 10px; }
+  .sector-name { font-size: 12px; }
+  .sector-return { font-size: 18px; }
+  .sector-meta { font-size: 10px; }
+  .table-wrap { max-height: calc(100vh - 240px); border-radius: 8px; }
+  th, td { padding: 6px 5px; font-size: 12px; }
+  .stock-name { font-size: 12px; }
+  .stock-code { font-size: 9px; margin-left: 3px; }
+  .stock-sector { display: none; }
+  .tab-gainers { gap: 4px; flex-wrap: wrap; }
+  .tab-gl { padding: 5px 10px; font-size: 11px; }
+}
+
+/* 듀얼 테마: 라이트 모드 오버라이드 */
+body:not(.sf-dark){
+  --sf-bg:#f5f7fa;--sf-card:#fff;--sf-card-hover:#f0f5fa;--sf-border:#e5e7eb;
+  --sf-text:#1a1a1a;--sf-text-dim:#71717a;--sf-accent:#1F4E78;
+  --sf-green:#059669;--sf-red:#dc2626;--sf-gold:#d97706;--sf-warn:#d97706;--sf-orange:#ea580c;
+  --bg:#f5f7fa;--card:#fff;--card-hover:#f0f5fa;--surface:#fff;
+  --border:#e5e7eb;--text:#1a1a1a;--text-dim:#71717a;
+  --accent:#1F4E78;--green:#059669;--red:#dc2626;--gold:#d97706;--warn:#d97706;--orange:#ea580c;
+  color:#1a1a1a;background:#f5f7fa}
+body:not(.sf-dark) .card,body:not(.sf-dark) .kpi-card,body:not(.sf-dark) .sec-card,
+body:not(.sf-dark) .control-box,body:not(.sf-dark) .ctrl-box{
+  background:#fff;border-color:#e5e7eb;color:#1a1a1a}
+body:not(.sf-dark) input,body:not(.sf-dark) select,body:not(.sf-dark) textarea{
+  background:#fff;border-color:#ddd;color:#1a1a1a}
+body:not(.sf-dark) table th{background:#f0f5fa;color:#555}
+body:not(.sf-dark) table td{border-color:#f0f0f0;color:#333}
+body:not(.sf-dark) h1,body:not(.sf-dark) h2,body:not(.sf-dark) h3{color:#1F4E78}
+body:not(.sf-dark) .back-link{color:#1F4E78}
+body:not(.sf-dark) .subtitle{color:#666}
+body:not(.sf-dark) .btn{background:#1F4E78}
+body:not(.sf-dark) .badge-safe{background:rgba(5,150,105,.12);color:#059669}
+body:not(.sf-dark) .badge-warn{background:rgba(217,119,6,.12);color:#d97706}
+body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
+
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body>
+<div class="wrap">
+<h1>🔥 업종·종목 모멘텀</h1>
+<p class="subtitle" id="updated">주간/월간 강세 업종·종목 랭킹</p>
+
+<div class="period-tabs">
+  <button class="period-tab active" data-period="weekly">📅 주간</button>
+  <button class="period-tab" data-period="monthly">📆 월간</button>
+  <button class="period-tab" data-period="intraday">⏰ 장중</button>
+  <button class="period-tab" data-period="history">📈 추이</button>
+</div>
+
+<div id="content">
+  <div class="loading">로딩 중…</div>
+</div>
+
+<p class="note">
+  ※ KIS Open API 기준 · 수익률 = (현재가 − N거래일전 종가) ÷ N거래일전 종가<br>
+  ※ 업종 수익률 = 구성종목 수익률 산술평균
+</p>
+</div><!-- .wrap -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="/common.js?v=17"></script>
+<script>
+(function(){
+
+var cache = {};
+var currentPeriod = 'weekly';
+var histChart = null;
+
+// ── 기간 탭 ──
+document.querySelectorAll('.period-tab').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    if(btn.classList.contains('disabled')) return;
+    document.querySelectorAll('.period-tab').forEach(function(b){b.classList.remove('active');});
+    btn.classList.add('active');
+    currentPeriod = btn.getAttribute('data-period');
+    loadPeriod(currentPeriod);
+  });
+});
+
+function loadPeriod(period){
+  if(period === 'history'){
+    loadHistory();
+    return;
+  }
+  if(cache[period]){
+    render(cache[period]);
+    return;
+  }
+  document.getElementById('content').innerHTML='<div class="loading">로딩 중…</div>';
+  fetch('/data/kr/momentum/'+period+'.json')
+    .then(function(r){return r.json();})
+    .then(function(data){
+      cache[period]=data;
+      render(data);
+    })
+    .catch(function(){
+      document.getElementById('content').innerHTML='<div class="empty">데이터 없음</div>';
+    });
+}
+
+function loadHistory(){
+  document.getElementById('content').innerHTML='<div class="loading">히스토리 로딩 중…</div>';
+  document.getElementById('updated').textContent='모멘텀 추이 (일간/주간)';
+  fetch('/data/kr/momentum/momentum_history.json?t='+Date.now())
+    .then(function(r){if(!r.ok) throw new Error('히스토리 없음'); return r.json();})
+    .then(function(data){ renderHistory(data); })
+    .catch(function(e){
+      document.getElementById('content').innerHTML='<div class="empty">❌ '+e.message+' — 데이터가 2일 이상 쌓이면 표시됩니다</div>';
+    });
+}
+
+function renderHistory(data){
+  var html = '';
+  var isDark = document.body.classList.contains('dark') || window.matchMedia('(prefers-color-scheme:dark)').matches;
+  var gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.06)';
+  var textColor = isDark ? '#8899aa' : '#888';
+
+  var intraday = data.intraday || [];
+  var weekly = data.weekly || [];
+
+  // ── 일간 차트 (장중 모멘텀) ──
+  html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;">';
+  html += '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">⏰ 장중 모멘텀 추이 (매일 10시경)</div>';
+  html += '<div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">전일 종가 대비 등락률 · 코스피200 평균</div>';
+  if(intraday.length >= 2){
+    html += '<div style="position:relative;height:250px;"><canvas id="dailyChart"></canvas></div>';
+  } else {
+    html += '<div style="text-align:center;padding:40px 0;color:var(--text-dim);font-size:13px;">📊 데이터가 2일 이상 쌓이면 차트가 표시됩니다 ('+intraday.length+'건 수집됨)</div>';
+  }
+  html += '</div>';
+
+  // ── 주간 차트 ──
+  html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;">';
+  html += '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">📊 주간 모멘텀 추이 (매주 금요일)</div>';
+  html += '<div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">5거래일 수익률 · 코스피200 평균</div>';
+  if(weekly.length >= 2){
+    html += '<div style="position:relative;height:250px;"><canvas id="weeklyChart"></canvas></div>';
+  } else {
+    html += '<div style="text-align:center;padding:40px 0;color:var(--text-dim);font-size:13px;">📊 데이터가 2주 이상 쌓이면 차트가 표시됩니다 ('+weekly.length+'건 수집됨)</div>';
+  }
+  html += '</div>';
+
+  // ── 월간 차트 ──
+  var monthly = data.monthly || [];
+  html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;">';
+  html += '<div style="font-weight:700;font-size:14px;margin-bottom:4px;">📆 월간 모멘텀 추이</div>';
+  html += '<div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">22거래일 수익률 · 코스피200 평균</div>';
+  if(monthly.length >= 2){
+    html += '<div style="position:relative;height:250px;"><canvas id="monthlyChart"></canvas></div>';
+  } else {
+    html += '<div style="text-align:center;padding:40px 0;color:var(--text-dim);font-size:13px;">📊 데이터가 2일 이상 쌓이면 차트가 표시됩니다 ('+monthly.length+'건 수집됨)</div>';
+  }
+  html += '</div>';
+
+  // ── 히스토리 테이블 (일간 + 주간 + 월간) ──
+  [['intraday','일간 (장중)'],['weekly','주간'],['monthly','월간 (22거래일)']].forEach(function(pair){
+    var p = pair[0], label = pair[1];
+    var items = (data[p] || []).slice().reverse();
+    if(!items.length) return;
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;">';
+    html += '<div style="font-weight:700;font-size:14px;margin-bottom:12px;">📋 '+label+' 히스토리</div>';
+    html += '<div style="overflow:auto;max-height:400px;">';
+    html += '<table><thead><tr><th style="text-align:left">날짜</th><th>평균</th><th>상승</th><th>하락</th><th style="text-align:left">강세 Top 3</th><th style="text-align:left">약세 Top 3</th></tr></thead><tbody>';
+    items.forEach(function(d){
+      var avgCls = d.avg_return >= 0 ? 'up' : 'down';
+      var gainers = (d.top_gainers||[]).map(function(g){ return g.name+'('+(g.pct>=0?'+':'')+g.pct.toFixed(1)+'%)'; }).join(', ');
+      var losers = (d.top_losers||[]).map(function(g){ return g.name+'('+(g.pct>=0?'+':'')+g.pct.toFixed(1)+'%)'; }).join(', ');
+      html += '<tr>';
+      html += '<td style="text-align:left;font-weight:600">'+d.date+'</td>';
+      html += '<td class="'+avgCls+'">'+(d.avg_return>=0?'+':'')+d.avg_return.toFixed(1)+'%</td>';
+      html += '<td class="up">'+d.positive+'</td>';
+      html += '<td class="down">'+d.negative+'</td>';
+      html += '<td style="text-align:left;font-size:11px;color:var(--text-dim)">'+gainers+'</td>';
+      html += '<td style="text-align:left;font-size:11px;color:var(--text-dim)">'+losers+'</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div></div>';
+  });
+
+  document.getElementById('content').innerHTML = html;
+
+  // ── 차트 그리기 ──
+  function makeChart(canvasId, items, color, label){
+    var ctx = document.getElementById(canvasId);
+    if(!ctx || items.length < 1) return null;
+    var labels = items.map(function(d){ return d.date.slice(5); }); // MM-DD
+    var vals = items.map(function(d){ return d.avg_return; });
+    return new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: label,
+          data: vals,
+          borderColor: color,
+          backgroundColor: color + '18',
+          fill: true,
+          borderWidth: 2,
+          pointRadius: 4,
+          pointBackgroundColor: color,
+          tension: 0.2
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: isDark ? '#1e293b' : '#fff',
+            titleColor: isDark ? '#ddd' : '#333',
+            bodyColor: isDark ? '#aaa' : '#666',
+            borderColor: isDark ? '#334155' : '#ddd',
+            borderWidth: 1,
+            callbacks: { label: function(c){ return (c.parsed.y>=0?'+':'')+c.parsed.y.toFixed(1)+'%'; } }
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 }, maxRotation: 0 } },
+          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 }, callback: function(v){ return (v>=0?'+':'')+v+'%'; } } }
+        }
+      }
+    });
+  }
+
+  if(histChart) histChart.destroy();
+  if(window._weeklyChart) window._weeklyChart.destroy();
+  if(window._monthlyChart) window._monthlyChart.destroy();
+
+  histChart = makeChart('dailyChart', intraday, '#10b981', '일간');
+  window._weeklyChart = makeChart('weeklyChart', weekly, '#e89a3c', '주간');
+  window._monthlyChart = makeChart('monthlyChart', monthly, '#2563eb', '월간');
+}
+
+function render(data){
+  var html='';
+  var stats=data.stats;
+  var periodLabel = data.period==='weekly'?'주간 (5거래일)':data.period==='monthly'?'월간 (22거래일)':'장중 (전일 종가 대비)';
+
+  document.getElementById('updated').textContent=
+    periodLabel+' · 기준일: '+data.updated+' · '+data.total_stocks+'종목';
+
+  // 서머리 카드
+  html+='<div class="summary">';
+  html+='<div class="summary-card"><div class="num '+(stats.avg_return>=0?'up':'down')+'">'+
+    (stats.avg_return>=0?'+':'')+stats.avg_return.toFixed(1)+'%</div><div class="label">전체 평균</div></div>';
+  html+='<div class="summary-card"><div class="num up">'+stats.positive+'</div><div class="label">상승 종목</div></div>';
+  html+='<div class="summary-card"><div class="num down">'+stats.negative+'</div><div class="label">하락 종목</div></div>';
+  html+='<div class="summary-card"><div class="num" style="color:var(--accent)">'+data.sectors.length+'</div><div class="label">업종</div></div>';
+  html+='</div>';
+
+  // 업종 랭킹
+  html+='<div class="section"><div class="section-title">🏆 업종 랭킹</div>';
+  html+='<div class="sector-grid">';
+  data.sectors.forEach(function(sec, idx){
+    var cls = sec.return_pct>=0?'up':'down';
+    html+='<div class="sector-card" onclick="toggleSector(this)">';
+    html+='<div class="sector-name">'+(idx+1)+'. '+sec.sector+'</div>';
+    html+='<div class="sector-return '+cls+'">'+(sec.return_pct>=0?'+':'')+sec.return_pct.toFixed(1)+'%</div>';
+    html+='<div class="sector-meta">'+sec.stock_count+'종목</div>';
+    html+='<div class="sector-detail">';
+    sec.top_stocks.forEach(function(s){
+      var c2=s.return_pct>=0?'up':'down';
+      html+='<div class="sector-stock"><span class="sname">'+s.name+'</span><span class="'+c2+'">'+(s.return_pct>=0?'+':'')+s.return_pct.toFixed(1)+'%</span></div>';
+    });
+    html+='</div></div>';
+  });
+  html+='</div></div>';
+
+  // 강세/약세 종목 Top 15
+  html+='<div class="section"><div class="section-title">📊 종목 랭킹</div>';
+  html+='<div class="tab-gainers">';
+  html+='<button class="tab-gl active" onclick="showRank(this,\'gainers\')">📈 강세 Top 15</button>';
+  html+='<button class="tab-gl" onclick="showRank(this,\'losers\')">📉 약세 Top 15</button>';
+  html+='</div>';
+
+  html+='<div id="rank-gainers">'+buildTable(data.top_gainers, false)+'</div>';
+  html+='<div id="rank-losers" style="display:none">'+buildTable(data.top_losers, true)+'</div>';
+  html+='</div>';
+
+  document.getElementById('content').innerHTML=html;
+}
+
+function buildTable(items, isLoser){
+  var isIntra = items.length>0 && items[0].open_price !== undefined;
+  var h='<div class="table-wrap"><table><thead><tr>';
+  h+='<th style="text-align:center">#</th>';
+  h+='<th style="text-align:left">종목</th>';
+  h+='<th>현재가</th><th>'+(isIntra?'전일종가':'기준가')+'</th><th>수익률</th>';
+  if(isIntra){h+='<th>시가대비</th><th>거래량</th>';}
+  h+='<th style="text-align:left">업종</th>';
+  h+='</tr></thead><tbody>';
+  items.forEach(function(s, i){
+    var cls=s.return_pct>=0?'up':'down';
+    h+='<tr>';
+    h+='<td style="text-align:center">'+(i+1)+'</td>';
+    h+='<td style="text-align:left"><span class="stock-name">'+s.name+'</span><span class="stock-code">'+s.code+'</span></td>';
+    h+='<td>'+s.price.toLocaleString()+'</td>';
+    h+='<td>'+s.prev_price.toLocaleString()+'</td>';
+    h+='<td class="'+cls+'">'+(s.return_pct>=0?'+':'')+s.return_pct.toFixed(1)+'%</td>';
+    if(isIntra){
+      var oCls=(s.open_ret||0)>=0?'up':'down';
+      h+='<td class="'+oCls+'">'+(s.open_ret>=0?'+':'')+(s.open_ret||0).toFixed(1)+'%</td>';
+      h+='<td style="color:var(--text-dim);font-size:11px">'+(s.volume||0).toLocaleString()+'</td>';
+    }
+    h+='<td style="text-align:left"><span class="stock-sector">'+s.sector+'</span></td>';
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
+
+// 전역 함수
+window.toggleSector = function(el){
+  el.classList.toggle('expanded');
+};
+
+window.showRank = function(btn, which){
+  btn.parentElement.querySelectorAll('.tab-gl').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  document.getElementById('rank-gainers').style.display = which==='gainers'?'':'none';
+  document.getElementById('rank-losers').style.display  = which==='losers'?'':'none';
+};
+
+// 초기화
+loadPeriod('weekly');
+
+})();
+</script>
+</body>
+</html>

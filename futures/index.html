@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<meta name="robots" content="noindex, nofollow">
+<title>선물 외국인 포지션 | 스윙파머</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .help-btn{background-color:#1e242e!important;color:#85b5e0!important}
+body.sf-dark .modal-box{background-color:#1e242e!important}
+body.sf-dark .modal-box .sig-table th{border-color:#384761!important;background-color:#1c2331!important;color:#cccccc!important}
+body.sf-dark .modal-box .sig-table td{border-color:#384761!important}
+body.sf-dark .signal-card.neutral{border-color:#2c333f!important}
+body.sf-dark .signal-card.neutral .sig-label{color:#b8b8b8!important}
+body.sf-dark .signal-card .sig-desc{color:#cccccc!important}
+body.sf-dark .pnl-box{background-color:#152537!important;border-color:#264f73!important}
+body.sf-dark .pnl-box.profit{background-color:#371515!important}
+body.sf-dark .pnl-box.loss{background-color:#152437!important}
+body.sf-dark .pnl-box .pnl-title{color:#c2c2c2!important}
+body.sf-dark .kpi{background-color:#1e242e!important;border-color:#384761!important}
+body.sf-dark .kpi .val{color:#85b5e0!important}
+body.sf-dark .chart-wrap{background-color:#1e242e!important;border-color:#384761!important}
+body.sf-dark .expiry-tabs button{border-color:#2c333f!important;background-color:#1e242e!important}
+body.sf-dark table.inv-tbl th{border-bottom-color:#384761!important}
+body.sf-dark table.inv-tbl td:first-child{color:#cccccc!important}
+body.sf-dark .inv-card{background-color:#1c2331!important}
+body.sf-dark .report-card{background-color:#1e242e!important;border-color:#384761!important}
+body.sf-dark .report-summary{background-color:#1c2331!important}
+body.sf-dark .report-summary .big-stat{color:#85b5e0!important}
+body.sf-dark table.report-tbl th{border-bottom-color:#384761!important}
+body.sf-dark .badge-o{background-color:#153721!important}
+body.sf-dark .badge-x{background-color:#371515!important}
+body.sf-dark .help-btn:hover{background:#1F4E78!important;color:#fff!important}
+body.sf-dark .pnl-box.profit{border-color:#fca5a5!important}
+body.sf-dark .pnl-box.loss{border-color:#93c5fd!important}
+body.sf-dark .kpi .val.pos{color:#dc2626!important}
+body.sf-dark .kpi .val.neg{color:#2563eb!important}
+body.sf-dark .expiry-tabs button.active{background:#1F4E78!important;border-color:#1F4E78!important}
+body.sf-dark .expiry-tabs button.current-tag::after{background:#ef5350!important}
+body.sf-dark table.inv-tbl td.pos{color:#dc2626!important}
+body.sf-dark table.inv-tbl td.neg{color:#2563eb!important}
+</style>
+<style>
+:root{--sf-max-w:1100px}
+.title-row{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.title-row h1{margin-bottom:0}
+.help-btn{width:28px;height:28px;border-radius:50%;border:2px solid #1F4E78;background:#fff;color:#1F4E78;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.help-btn:hover{background:#1F4E78;color:#fff}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.open{display:flex}
+.modal-box{background:#fff;border-radius:14px;max-width:640px;width:100%;max-height:85vh;overflow-y:auto;padding:28px 24px}
+.modal-box h2{font-size:18px;margin-bottom:16px;color:#1F4E78}
+.modal-box .close-modal{float:right;background:none;border:none;font-size:22px;cursor:pointer;color:#888;padding:0 4px}
+.modal-box h3{font-size:14px;color:#333;margin:16px 0 6px;font-weight:700}
+.modal-box p{font-size:13px;color:#555;line-height:1.7;margin:0 0 8px}
+.modal-box .sig-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12px}
+.modal-box .sig-table th,.modal-box .sig-table td{padding:8px 10px;border:1px solid #e5e9f0;text-align:left}
+.modal-box .sig-table th{background:#f8f9fb;font-weight:600;color:#555}
+.modal-box .sig-table td.bull{color:#dc2626;font-weight:600}
+.modal-box .sig-table td.bear{color:#2563eb;font-weight:600}
+.dash-hero{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);color:white;border-radius:14px;padding:28px 24px;text-align:center;margin-bottom:20px}
+.dash-hero h2{font-size:14px;opacity:.7;margin-bottom:8px;font-weight:500}
+.dash-hero .big{font-size:42px;font-weight:800;letter-spacing:-1px}
+.dash-hero .sub{font-size:13px;opacity:.6;margin-top:6px}
+.dash-hero .big.short{color:#4fc3f7}.dash-hero .big.long{color:#ef5350}
+.signal-card{border-radius:12px;padding:20px;margin-bottom:20px;text-align:center}
+.signal-card.bullish{background:linear-gradient(135deg,#fef2f2,#fee2e2);border:1px solid #fca5a5}
+.signal-card.bearish{background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #93c5fd}
+.signal-card.neutral{background:linear-gradient(135deg,#f9fafb,#f3f4f6);border:1px solid #d1d5db}
+.signal-card .sig-emoji{font-size:32px;margin-bottom:6px}
+.signal-card .sig-label{font-size:18px;font-weight:800;margin-bottom:6px}
+.signal-card.bullish .sig-label{color:#dc2626}
+.signal-card.bearish .sig-label{color:#2563eb}
+.signal-card.neutral .sig-label{color:#6b7280}
+.signal-card .sig-desc{font-size:13px;color:#555;line-height:1.6}
+.pnl-box{background:#f0f7ff;border:1px solid #bdd7ee;border-radius:10px;padding:16px;margin-bottom:20px;text-align:center}
+.pnl-box.profit{background:#fef2f2;border-color:#fca5a5}
+.pnl-box.loss{background:#eff6ff;border-color:#93c5fd}
+.pnl-box .pnl-title{font-size:12px;color:#666;margin-bottom:6px;font-weight:600}
+.pnl-box .pnl-val{font-size:28px;font-weight:800;letter-spacing:-0.5px}
+.pnl-box .pnl-val.pos{color:#dc2626}.pnl-box .pnl-val.neg{color:#2563eb}
+.pnl-box .pnl-detail{font-size:12px;color:#888;margin-top:6px}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border:1px solid #e5e9f0;border-radius:10px;padding:14px 16px;text-align:center}
+.kpi .label{font-size:11px;color:#888;margin-bottom:4px;font-weight:600}
+.kpi .val{font-size:20px;font-weight:700;color:#1F4E78}
+.kpi .val.pos{color:#dc2626}.kpi .val.neg{color:#2563eb}
+.kpi .val-sub{font-size:11px;color:#999;margin-top:2px}
+.chart-wrap{background:#fff;border:1px solid #e5e9f0;border-radius:10px;padding:16px;margin-bottom:16px}
+.chart-wrap h3{font-size:14px;color:#333;margin-bottom:12px;font-weight:600}
+.chart-wrap canvas{max-height:300px}
+.expiry-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.expiry-tabs button{padding:7px 14px;border:1px solid #d0d5dd;background:#fff;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;transition:all .15s}
+.expiry-tabs button.active{background:#1F4E78;color:#fff;border-color:#1F4E78}
+.expiry-tabs button.current-tag{position:relative}
+.expiry-tabs button.current-tag::after{content:'NOW';position:absolute;top:-6px;right:-6px;background:#ef5350;color:#fff;font-size:8px;padding:1px 4px;border-radius:3px;font-weight:700}
+table.inv-tbl{width:100%;border-collapse:collapse;font-size:13px}
+table.inv-tbl th{background:#f8f9fb;padding:8px;text-align:right;font-weight:600;color:#555;border-bottom:2px solid #e5e9f0}
+table.inv-tbl th:first-child{text-align:left}
+table.inv-tbl td{padding:7px 8px;text-align:right;border-bottom:1px solid #f0f2f5}
+table.inv-tbl td:first-child{text-align:left;color:#555}
+table.inv-tbl td.pos{color:#dc2626;font-weight:600}
+table.inv-tbl td.neg{color:#2563eb;font-weight:600}
+.note{font-size:11px;color:#888;margin-top:12px;line-height:1.6}
+.inv-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:16px}
+.inv-card{background:#f8f9fb;border-radius:8px;padding:10px 12px;text-align:center}
+.inv-card .inv-name{font-size:11px;color:#888;font-weight:600;margin-bottom:4px}
+.inv-card .inv-val{font-size:16px;font-weight:700}
+.inv-card .inv-val.pos{color:#dc2626}.inv-card .inv-val.neg{color:#2563eb}
+/* 성적표 */
+.report-card{background:#fff;border:1px solid #e5e9f0;border-radius:10px;padding:16px;margin-bottom:16px}
+.report-card h3{font-size:14px;color:#333;margin-bottom:12px;font-weight:600}
+.report-summary{text-align:center;padding:12px;margin-bottom:12px;border-radius:8px;background:#f8f9fb}
+.report-summary .big-stat{font-size:28px;font-weight:800;color:#1F4E78}
+table.report-tbl{width:100%;border-collapse:collapse;font-size:12px}
+table.report-tbl th{background:#f8f9fb;padding:8px;text-align:center;font-weight:600;color:#555;border-bottom:2px solid #e5e9f0}
+table.report-tbl td{padding:8px;text-align:center;border-bottom:1px solid #f0f2f5}
+table.report-tbl td.pos{color:#dc2626;font-weight:600}
+table.report-tbl td.neg{color:#2563eb;font-weight:600}
+.badge-o{display:inline-block;background:#dcfce7;color:#16a34a;font-weight:700;padding:2px 8px;border-radius:4px;font-size:11px}
+.badge-x{display:inline-block;background:#fee2e2;color:#dc2626;font-weight:700;padding:2px 8px;border-radius:4px;font-size:11px}
+
+@media (max-width: 600px) {
+  .wrap{padding:10px;}
+  h1{font-size:18px;}
+  .tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{padding:7px 10px;font-size:12px;white-space:nowrap;flex-shrink:0;}
+  table.report-tbl{font-size:11px;}
+  table.report-tbl th,table.report-tbl td{padding:5px 4px;}
+  canvas{max-height:200px;}
+}
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body>
+<div class="wrap">
+  <div class="title-row">
+    <h1>선물 외국인 포지션 트래커</h1>
+    <button class="help-btn" onclick="document.getElementById('helpModal').classList.add('open')">?</button>
+  </div>
+  <p class="sub">KOSPI200 선물 — 투자자별 순매수 누적 & 환산지수 (만기별)</p>
+  <div id="loading" style="text-align:center;padding:40px;color:#888">데이터 로딩 중...</div>
+  <div id="main" style="display:none">
+    <div class="expiry-tabs" id="expiryTabs"></div>
+    <div class="dash-hero">
+      <h2 id="heroTitle">외국인 누적 순매수 포지션</h2>
+      <div class="big" id="heroQty">—</div>
+      <div class="sub" id="heroSub">—</div>
+    </div>
+    <div class="signal-card neutral" id="signalCard">
+      <div class="sig-emoji" id="sigEmoji">📊</div>
+      <div class="sig-label" id="sigLabel">—</div>
+      <div class="sig-desc" id="sigDesc">—</div>
+    </div>
+    <div class="pnl-box" id="pnlBox" style="display:none">
+      <div class="pnl-title">외국인 추정 평가손익 (KOSPI200 지수 기준)</div>
+      <div class="pnl-val" id="pnlVal">—</div>
+      <div class="pnl-detail" id="pnlDetail">—</div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi"><div class="label">환산지수 (K200)</div><div class="val" id="kpiEquiv">—</div><div class="val-sub" id="kpiEquivKospi"></div></div>
+      <div class="kpi"><div class="label">KOSPI200 종가</div><div class="val" id="kpiK200" style="color:#333">—</div></div>
+      <div class="kpi"><div class="label">KOSPI 종가</div><div class="val" id="kpiKospi" style="color:#333">—</div></div>
+      <div class="kpi"><div class="label">누적 순매수 금액</div><div class="val" id="kpiAmt">—</div></div>
+      <div class="kpi"><div class="label">최근 5일 순매수</div><div class="val" id="kpi5d">—</div></div>
+      <div class="kpi"><div class="label">데이터 기간</div><div class="val" id="kpiPeriod" style="font-size:14px;color:#555">—</div></div>
+    </div>
+    <div class="chart-wrap"><h3 id="chartCumTitle">외국인 누적 순매수 (계약)</h3><canvas id="chartCum"></canvas></div>
+    <div class="chart-wrap"><h3 id="chartEquivTitle">환산지수 vs KOSPI200 (pt)</h3><canvas id="chartEquiv"></canvas></div>
+    <div class="chart-wrap">
+      <h3>투자자별 당기 누적 순매수 (계약)</h3>
+      <div class="inv-summary" id="invSummary"></div>
+    </div>
+    <div class="chart-wrap"><h3>일별 순매수 (계약)</h3><canvas id="chartDaily"></canvas></div>
+
+    <!-- 만기별 성적표 -->
+    <div class="report-card" id="reportCard" style="display:none">
+      <h3>📋 만기별 성적표 — 외국인 포지션 방향 vs 시장 등락</h3>
+      <div class="report-summary" id="reportSummary"></div>
+      <div style="overflow-x:auto"><div class="table-scroll"><table class="report-tbl" id="reportTbl"></table></div></div>
+      <div class="note" style="margin-top:8px">※ 방향 일치 = 외국인 롱 + 시장 상승 or 외국인 숏 + 시장 하락. 4개 만기 샘플이라 통계적 의미는 제한적.</div>
+    </div>
+
+    <div class="chart-wrap">
+      <h3>투자자별 최근 20일 순매수 (계약)</h3>
+      <div style="overflow-x:auto"><div class="table-scroll"><table class="inv-tbl" id="tblRecent"></table></div></div>
+    </div>
+    <div class="note" id="footNote"></div>
+  </div>
+</div>
+
+<!-- 도움말 모달 -->
+<div class="modal-overlay" id="helpModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-box">
+    <button class="close-modal" onclick="document.getElementById('helpModal').classList.remove('open')">&times;</button>
+    <h2>📖 선물 포지션 트래커 사용법</h2>
+    <h3>만기별 탭</h3>
+    <p>KOSPI200 선물은 3/6/9/12월 둘째 목요일에 만기됩니다. 탭을 선택하면 해당 만기 기간만의 누적 순매수로 리셋됩니다. <strong>NOW</strong> 뱃지가 현재 진행 중인 만기입니다.</p>
+    <h3>외국인 누적 순매수</h3>
+    <p>해당 기간 동안 외국인이 선물을 순매수(+, 롱)했는지 순매도(−, 숏)했는지 누적치입니다.<br><strong>롱(매수)</strong> = 시장 상승에 베팅 / <strong>숏(매도)</strong> = 시장 하락에 베팅</p>
+    <h3>환산지수</h3>
+    <p>외국인 누적 포지션의 평균 진입 단가(pt)입니다.<br><code>누적순매수금액 ÷ (누적계약수 × 25만원)</code><br>KOSPI 환산값은 당일 KOSPI÷KOSPI200 비율로 곱한 참고치입니다.</p>
+    <h3>추정 평가손익</h3>
+    <p><code>(KOSPI200 종가 − 환산지수) × 누적계약 × 25만원</code></p>
+    <h3>포지션 해석 카드</h3>
+    <div class="table-scroll"><table class="sig-table">
+      <thead><tr><th>포지션</th><th>손익</th><th>해석</th></tr></thead>
+      <tbody>
+        <tr><td class="bull">롱</td><td class="bull">수익</td><td>상승 베팅 + 수익 → 포지션 유지 가능성 높음</td></tr>
+        <tr><td class="bull">롱</td><td class="bear">손실</td><td>상승 베팅 + 물림 → 추가매수 or 손절 분기점</td></tr>
+        <tr><td class="bear">숏</td><td class="bear">수익</td><td>하락 베팅 + 수익 → 하락 추세 지속 신호</td></tr>
+        <tr><td class="bear">숏</td><td class="bull">손실</td><td>하락 베팅 + 손실 → 숏커버 반등 가능성</td></tr>
+      </tbody>
+    </table></div>
+    <h3>만기별 성적표</h3>
+    <p>완료된 만기마다 외국인 포지션 방향(롱/숏)과 실제 시장 등락(KOSPI200 기준)이 일치했는지 보여줍니다.</p>
+    <h3>⚠ 유의사항</h3>
+    <p>• 투자 참고용이며, 외국인 포지션만으로 시장 방향을 예측할 수 없습니다.<br>• 환산지수는 추정치입니다.<br>• KOSPI200 현물지수 기준이며 선물가와 베이시스 차이가 있습니다.</p>
+  </div>
+</div>
+
+<script src="/common.js?v=17"></script>
+<script>
+var API='https://swingfarmer.duckdns.org/api';
+var allData=[],expiries=[],currentExpiry='',selectedExpiry='';
+var chartCum,chartEquiv,chartDaily;
+
+function fmt(n){return n==null?'—':sfKor(n,'eok')}   // (103) sf-fmt.js 공통 (1,234억 · 5,679만 · 계약 수)
+function fmtAmt(n){return n==null?'—':(n>0?'+':'')+sfKor(n,'eok')}   // (103) sf-fmt.js 공통 (+2,309억 · 추정치라 억 정수)
+function fmtSign(n){if(n==null)return'—';return(n>0?'+':'')+fmt(n)}
+function cls(n){return n>0?'pos':n<0?'neg':''}
+function filterData(ek){if(!ek)return allData.slice();return allData.filter(function(r){return r.expiry_key===ek})}
+
+function load(){
+  fetch(API+'/futures-investor?days=999').then(function(r){return r.json()}).then(function(d){
+    allData=d.data||[];expiries=d.expiries||[];currentExpiry=d.current_expiry||'';
+    if(!allData.length){document.getElementById('loading').textContent='데이터 없음';return}
+    document.getElementById('loading').style.display='none';
+    document.getElementById('main').style.display='block';
+    buildTabs();selectedExpiry=currentExpiry;activateTab(currentExpiry);
+    renderReport();
+  }).catch(function(e){document.getElementById('loading').textContent='로딩 실패: '+e});
+}
+
+function buildTabs(){
+  var w=document.getElementById('expiryTabs'),h='<button data-exp="">전체기간</button>';
+  expiries.slice().reverse().forEach(function(p){
+    h+='<button data-exp="'+p.key+'" class="'+(p.key===currentExpiry?'current-tag':'')+'">'+p.label+'</button>';
+  });
+  w.innerHTML=h;
+  w.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){selectedExpiry=b.dataset.exp;activateTab(selectedExpiry)})});
+}
+function activateTab(ek){
+  document.querySelectorAll('.expiry-tabs button').forEach(function(b){b.classList.toggle('active',b.dataset.exp===ek)});
+  render(ek);
+}
+
+function renderSignalCard(cumQ,eq,k200,kospi,k200close){
+  var card=document.getElementById('signalCard'),emoji=document.getElementById('sigEmoji'),
+      label=document.getElementById('sigLabel'),desc=document.getElementById('sigDesc');
+  if(!cumQ||cumQ===0){card.className='signal-card neutral';emoji.textContent='➖';label.textContent='중립 — 포지션 없음';desc.textContent='순매수/순매도 누적이 0입니다.';return}
+  var isLong=cumQ>0,posStr=isLong?'롱(매수)':'숏(매도)',posDir=isLong?'상승':'하락',qtyStr=Math.abs(cumQ).toLocaleString('ko-KR');
+  // KOSPI 환산
+  var kospiEquiv='';
+  if(eq&&k200close&&kospi&&k200close>0){kospiEquiv=' (KOSPI환산 약 '+(eq*kospi/k200close).toFixed(0)+')';}
+  if(!k200||!eq){card.className='signal-card '+(isLong?'bullish':'bearish');emoji.textContent=isLong?'🐂':'🐻';label.textContent=posStr+' '+qtyStr+'계약';desc.textContent='외국인이 시장 '+posDir+'에 베팅 중 (환산지수 '+eq.toFixed(1)+'pt'+kospiEquiv+')';return}
+  var pnlPt=k200-eq,isProfit=isLong?(pnlPt>0):(pnlPt<0),absPnl=Math.abs(pnlPt);
+  if(isLong&&isProfit){card.className='signal-card bullish';emoji.textContent='🐂💰';label.textContent=posStr+' · 수익 구간 (+'+absPnl.toFixed(1)+'pt)';desc.textContent='외국인이 상승에 베팅 중, 환산지수('+eq.toFixed(1)+kospiEquiv+')보다 현재가('+k200.toFixed(1)+')가 높아 수익 구간. 포지션 유지 가능성 높음.'}
+  else if(isLong&&!isProfit){card.className='signal-card bearish';emoji.textContent='🐂📉';label.textContent=posStr+' · 손실 구간 (−'+absPnl.toFixed(1)+'pt)';desc.textContent='외국인이 상승에 베팅했지만, 환산지수('+eq.toFixed(1)+kospiEquiv+')보다 현재가('+k200.toFixed(1)+')가 낮아 물린 상태. 추가매수 or 손절 분기점.'}
+  else if(!isLong&&isProfit){card.className='signal-card bearish';emoji.textContent='🐻💰';label.textContent=posStr+' · 수익 구간 (+'+absPnl.toFixed(1)+'pt)';desc.textContent='외국인이 하락에 베팅 중, 환산지수('+eq.toFixed(1)+kospiEquiv+')보다 현재가('+k200.toFixed(1)+')가 낮아 수익 구간. 하락 추세 지속 신호.'}
+  else{card.className='signal-card bullish';emoji.textContent='🐻📈';label.textContent=posStr+' · 손실 구간 (−'+absPnl.toFixed(1)+'pt)';desc.textContent='외국인이 하락에 베팅했지만 시장이 올라 손실 중. 숏커버 반등 가능성.'}
+}
+
+function render(expiryKey){
+  var data=filterData(expiryKey);if(!data.length)return;
+  var isExpiry=!!expiryKey,last=data[data.length-1];
+  var cumQ=isExpiry?last.exp_cum_qty:last.foreign_cum_qty;
+  var cumA=isExpiry?last.exp_cum_amt:last.foreign_cum_amt;
+  var eq=isExpiry?last.exp_equiv_idx:last.equiv_idx;
+  var k200=last.kospi200_close,kospi=last.kospi_close;
+  var expiryLabel='전체기간';
+  if(isExpiry){for(var i=0;i<expiries.length;i++){if(expiries[i].key===expiryKey){expiryLabel=expiries[i].label;break}}}
+
+  // Hero
+  document.getElementById('heroTitle').textContent='외국인 누적 순매수 포지션'+(isExpiry?' — '+expiryLabel:'');
+  var heroEl=document.getElementById('heroQty');heroEl.textContent=fmtSign(cumQ)+'계약';heroEl.className='big '+(cumQ>=0?'long':'short');
+  document.getElementById('heroSub').textContent=(cumQ>0?'롱(매수) 포지션':cumQ<0?'숏(매도) 포지션':'중립')+' | '+data[0].dt+' ~ '+last.dt+' ('+data.length+'일)';
+
+  renderSignalCard(cumQ,eq,k200,kospi,k200);
+
+  // P&L
+  var pnlBox=document.getElementById('pnlBox');
+  if(k200&&eq&&cumQ!==0){
+    var pnlTotal=(k200-eq)*cumQ*250000,pnlPt=k200-eq;
+    pnlBox.style.display='block';pnlBox.className='pnl-box '+(pnlTotal>=0?'profit':'loss');
+    var pEl=document.getElementById('pnlVal');pEl.textContent=fmtAmt(pnlTotal);pEl.className='pnl-val '+cls(pnlTotal);
+    document.getElementById('pnlDetail').textContent='K200 '+k200.toFixed(2)+' − 환산 '+eq.toFixed(1)+' = '+(pnlPt>=0?'+':'')+pnlPt.toFixed(1)+'pt × '+cumQ.toLocaleString('ko-KR')+'계약 × 25만원';
+  } else {pnlBox.style.display='none'}
+
+  // KPIs
+  document.getElementById('kpiEquiv').textContent=eq?eq.toFixed(1)+' pt':'—';
+  // KOSPI 환산 보조
+  var eqKospiEl=document.getElementById('kpiEquivKospi');
+  if(eq&&k200&&kospi&&k200>0){eqKospiEl.textContent='≈ KOSPI '+(eq*kospi/k200).toFixed(0)}else{eqKospiEl.textContent=''}
+  document.getElementById('kpiK200').textContent=k200?k200.toFixed(2)+' pt':'미수집';
+  document.getElementById('kpiKospi').textContent=kospi?kospi.toFixed(2):'미수집';
+  var kpiAmtEl=document.getElementById('kpiAmt');kpiAmtEl.textContent=fmt(cumA);kpiAmtEl.className='val '+cls(cumA);
+  var l5=data.slice(-5).reduce(function(s,r){return s+(r.foreign_qty||0)},0);
+  var k5=document.getElementById('kpi5d');k5.textContent=fmtSign(l5)+'계약';k5.className='val '+cls(l5);
+  document.getElementById('kpiPeriod').textContent=data[0].dt+' ~ '+last.dt+' ('+data.length+'일)';
+
+  // 투자자별 카드
+  var ic={institution:0,corp_other:0,individual:0,foreign:0};
+  data.forEach(function(r){ic.institution+=(r.institution_qty||0);ic.corp_other+=(r.corp_other_qty||0);ic.individual+=(r.individual_qty||0);ic.foreign+=(r.foreign_qty||0)});
+  var names={institution:'기관',corp_other:'기타법인',individual:'개인',foreign:'외국인'},ih='';
+  ['foreign','institution','individual','corp_other'].forEach(function(k){ih+='<div class="inv-card"><div class="inv-name">'+names[k]+'</div><div class="inv-val '+cls(ic[k])+'">'+fmtSign(ic[k])+'</div></div>'});
+  document.getElementById('invSummary').innerHTML=ih;
+
+  // Charts
+  var labels=data.map(function(r){return r.dt.slice(5)});
+  var cumData=data.map(function(r){return isExpiry?r.exp_cum_qty:r.foreign_cum_qty});
+  var equivData=data.map(function(r){return isExpiry?r.exp_equiv_idx:r.equiv_idx});
+  var k200Data=data.map(function(r){return r.kospi200_close||null});
+  var dailyData=data.map(function(r){return r.foreign_qty||0});
+  var dColors=dailyData.map(function(v){return v>=0?'rgba(220,38,38,.7)':'rgba(37,99,235,.7)'});
+
+  document.getElementById('chartCumTitle').textContent='외국인 누적 순매수 (계약)'+(isExpiry?' — '+expiryLabel:'');
+  document.getElementById('chartEquivTitle').textContent='환산지수 vs KOSPI200'+(isExpiry?' — '+expiryLabel:'');
+
+  if(chartCum)chartCum.destroy();
+  chartCum=new Chart(document.getElementById('chartCum'),{type:'line',data:{labels:labels,datasets:[{data:cumData,borderColor:'#1F4E78',backgroundColor:'rgba(31,78,120,.08)',fill:true,tension:.3,pointRadius:0,borderWidth:2}]},options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return fmtSign(c.raw)+'계약'}}}},scales:{y:{ticks:{callback:function(v){return fmt(v)}}}},interaction:{intersect:false,mode:'index'}}});
+
+  var hasK=k200Data.some(function(v){return v!==null});
+  var ds=[{label:'환산지수',data:equivData,borderColor:'#d97706',fill:false,tension:.3,pointRadius:0,borderWidth:2}];
+  if(hasK)ds.push({label:'KOSPI200',data:k200Data,borderColor:'#6366f1',fill:false,tension:.3,pointRadius:0,borderWidth:2,borderDash:[4,3]});
+  if(chartEquiv)chartEquiv.destroy();
+  chartEquiv=new Chart(document.getElementById('chartEquiv'),{type:'line',data:{labels:labels,datasets:ds},options:{plugins:{legend:{display:hasK,position:'top'},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+(c.raw?c.raw.toFixed(1)+'pt':'—')}}}},scales:{y:{ticks:{callback:function(v){return v.toFixed(0)+'pt'}}}},interaction:{intersect:false,mode:'index'}}});
+
+  if(chartDaily)chartDaily.destroy();
+  chartDaily=new Chart(document.getElementById('chartDaily'),{type:'bar',data:{labels:labels,datasets:[{data:dailyData,backgroundColor:dColors}]},options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return fmtSign(c.raw)+'계약'}}}},scales:{y:{ticks:{callback:function(v){return fmt(v)}}}}}});
+
+  // Table
+  var recent=data.slice(-20).reverse(),h='<thead><tr><th>날짜</th><th>기관</th><th>기타법인</th><th>개인</th><th>외국인</th><th>외국인 누적</th><th>환산지수</th><th>K200</th></tr></thead><tbody>';
+  recent.forEach(function(r){var ec=isExpiry?r.exp_cum_qty:r.foreign_cum_qty,ei=isExpiry?r.exp_equiv_idx:r.equiv_idx;h+='<tr><td>'+r.dt+'</td><td class="'+cls(r.institution_qty)+'">'+fmtSign(r.institution_qty)+'</td><td class="'+cls(r.corp_other_qty)+'">'+fmtSign(r.corp_other_qty)+'</td><td class="'+cls(r.individual_qty)+'">'+fmtSign(r.individual_qty)+'</td><td class="'+cls(r.foreign_qty)+'">'+fmtSign(r.foreign_qty)+'</td><td class="'+cls(ec)+'">'+fmtSign(ec)+'</td><td>'+(ei?ei.toFixed(1):'—')+'</td><td>'+(r.kospi200_close?r.kospi200_close.toFixed(2):'—')+'</td></tr>'});
+  h+='</tbody>';document.getElementById('tblRecent').innerHTML=h;
+
+  var noteHtml='※ 데이터: KRX — 코스피200 선물 투자자별 거래실적<br>※ 환산지수 = 누적순매수금액 ÷ (누적계약 × 25만원), KOSPI 환산 = 환산지수 × (KOSPI÷KOSPI200)<br>※ 평가손익: KOSPI200 현물지수 기준 (선물가 아님)<br>';
+  noteHtml+=(isExpiry?'※ '+expiryLabel+' 만기 누적 — 시작일부터 리셋':'※ 전체 기간 단순 누적');
+  document.getElementById('footNote').innerHTML=noteHtml;
+}
+
+function renderReport(){
+  // 완료된 만기 성적표
+  var today=sfDate();
+  var completed=expiries.filter(function(p){return p.key!==currentExpiry&&p.expiry_date<=today});
+  if(!completed.length){document.getElementById('reportCard').style.display='none';return}
+  document.getElementById('reportCard').style.display='block';
+  var wins=0,total=completed.length;
+  var rows='<thead><tr><th>만기</th><th>기간</th><th>외국인 방향</th><th>누적 계약</th><th>K200 시작</th><th>K200 종료</th><th>K200 등락</th><th>방향 일치</th></tr></thead><tbody>';
+  completed.forEach(function(p){
+    var d=filterData(p.key);if(!d.length)return;
+    var first=d[0],last=d[d.length-1];
+    var cumQ=last.exp_cum_qty;
+    var k200s=first.kospi200_close,k200e=last.kospi200_close;
+    var isLong=cumQ>0,posStr=isLong?'롱':'숏';
+    var mktUp=null,match='—',matchCls='';
+    if(k200s&&k200e){
+      var chg=k200e-k200s;mktUp=chg>0;
+      var matched=(isLong&&mktUp)||(!isLong&&!mktUp);
+      if(cumQ===0){match='중립';matchCls=''}
+      else if(matched){match='O';matchCls='badge-o';wins++}
+      else{match='X';matchCls='badge-x'}
+      rows+='<tr><td>'+p.label+'</td><td style="font-size:11px">'+p.start+'<br>~'+p.end+'</td>';
+      rows+='<td class="'+(isLong?'pos':'neg')+'">'+posStr+'</td>';
+      rows+='<td class="'+cls(cumQ)+'">'+fmtSign(cumQ)+'</td>';
+      rows+='<td>'+k200s.toFixed(2)+'</td><td>'+k200e.toFixed(2)+'</td>';
+      rows+='<td class="'+cls(chg)+'">'+(chg>0?'+':'')+chg.toFixed(2)+' ('+(chg/k200s*100>0?'+':'')+(chg/k200s*100).toFixed(1)+'%)</td>';
+      rows+='<td><span class="'+matchCls+'">'+match+'</span></td></tr>';
+    } else {
+      rows+='<tr><td>'+p.label+'</td><td style="font-size:11px">'+p.start+'~'+p.end+'</td>';
+      rows+='<td class="'+(isLong?'pos':'neg')+'">'+posStr+'</td>';
+      rows+='<td class="'+cls(cumQ)+'">'+fmtSign(cumQ)+'</td>';
+      rows+='<td colspan="3">K200 종가 미수집</td><td>—</td></tr>';
+    }
+  });
+  rows+='</tbody>';
+  document.getElementById('reportTbl').innerHTML=rows;
+  document.getElementById('reportSummary').innerHTML='<div class="big-stat">방향 일치 '+wins+' / '+total+'</div>';
+}
+
+load();
+</script>
+</body>
+</html>

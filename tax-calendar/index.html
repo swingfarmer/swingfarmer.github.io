@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<meta name="robots" content="noindex, nofollow">
+<title>세금·납부 캘린더 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .view-tab{color:#c2c2c2!important}
+body.sf-dark .view-tab.active{background-color:#1e242e!important;color:#85b5e0!important}
+body.sf-dark .month-card{background-color:#1e242e!important}
+body.sf-dark .month-title{color:#85b5e0!important}
+body.sf-dark .event{border-bottom-color:#2c333f!important}
+body.sf-dark .event .day{color:#85b5e0!important}
+body.sf-dark .event .txt{color:#dedede!important}
+body.sf-dark .event .who{background-color:#182534!important;color:#85b5e0!important}
+body.sf-dark .event .who.corp{background-color:#373115!important;color:#f2a373!important}
+body.sf-dark .event .who.both{background-color:#152437!important;color:#7c96e9!important}
+body.sf-dark .list-table th{background-color:#182634!important;color:#85b5e0!important}
+body.sf-dark .list-table td{border-bottom-color:#2c333f!important}
+body.sf-dark .list-table tr:hover{background-color:#172636!important}
+body.sf-dark .legend{color:#c2c2c2!important}
+body.sf-dark .month-card.current .month-title{color:#dc2626!important}
+</style>
+<style>
+:root { --sf-max-w: 900px; }
+/* 뷰 토글 */
+.view-tabs{display:flex;gap:4px;margin-bottom:18px;background:#e5e7eb;padding:3px;border-radius:8px;width:fit-content}
+.view-tab{padding:8px 16px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:600;color:#666;border-radius:6px}
+.view-tab.active{background:white;color:#1F4E78;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+/* 달력 뷰 */
+.cal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:700px){.cal-grid{grid-template-columns:repeat(2,1fr);gap:10px}}
+@media(max-width:400px){.cal-grid{grid-template-columns:1fr}}
+.month-card{background:white;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.06);border-top:3px solid #1F4E78}
+.month-card.current{border-top-color:#dc2626;box-shadow:0 2px 8px rgba(220,38,38,.15)}
+.month-title{font-size:15px;font-weight:800;color:#1F4E78;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.month-card.current .month-title{color:#dc2626}
+.event{padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:12px;display:flex;gap:6px;align-items:flex-start}
+.event:last-child{border-bottom:none}
+.event .day{flex:0 0 32px;font-weight:700;color:#1F4E78;font-size:11px}
+.event .icon{flex:0 0 16px;font-size:13px}
+.event .txt{flex:1;color:#333}
+.event .who{display:inline-block;background:#eef2f7;color:#1F4E78;font-size:10px;font-weight:600;padding:1px 5px;border-radius:4px;margin-right:3px}
+.event .who.corp{background:#fef3c7;color:#92400e}
+.event .who.both{background:#dbeafe;color:#1e40af}
+.no-event{font-size:12px;color:#ccc;text-align:center;padding:16px 0}
+/* 목록 뷰 */
+.list-view{display:none}
+.list-section{margin-bottom:18px}
+.list-section h3{font-size:14px;color:#1F4E78;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #e5e9f0;display:flex;align-items:center;gap:6px}
+.list-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.list-table th{background:#f0f4f8;color:#1F4E78;padding:8px;text-align:left;font-weight:700}
+.list-table td{padding:7px 8px;border-bottom:1px solid #f0f0f0}
+.list-table tr:hover{background:#f8fafc}
+/* 범례 */
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;font-size:12px;color:#666}
+.legend span{display:flex;align-items:center;gap:4px}
+footer{text-align:center;margin-top:40px;color:#999;font-size:12px}
+/* (098) 다크 — 라이트용 밝은 배경이 그대로 남던 것 */
+body.sf-dark .view-tabs{background:#2c333f}
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>🗓️ 세금 신고·납부 캘린더</h1>
+  </div>
+</header>
+<div class="wrap">
+  <p class="desc">개인 + 법인(1인법인) 기준 매년 반복되는 세금 신고·납부 일정 정리. 매월 고정 지출(보험료 등) 포함.</p>
+
+  <div class="legend">
+    <span><span class="who">개인</span> 개인사업자·근로자</span>
+    <span><span class="who corp">법인</span> 법인사업자</span>
+    <span><span class="who both">공통</span> 개인+법인 모두</span>
+  </div>
+
+  <div class="view-tabs">
+    <button class="view-tab active" data-view="calendar">🗓️ 달력</button>
+    <button class="view-tab" data-view="list">📋 목록</button>
+  </div>
+
+  <!-- 달력 뷰 -->
+  <div class="cal-view" id="calView">
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+
+  <!-- 목록 뷰 -->
+  <div class="list-view" id="listView"></div>
+
+  <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;font-size:12px;color:#92400e;line-height:1.8;margin-top:20px">
+    💡 <b>참고사항</b><br>
+    • 납부기한이 공휴일·토요일이면 다음 영업일로 자동 연장<br>
+    • 법인세 중간예납(8월)은 직전 사업연도 법인세의 절반 또는 상반기 가결산 중 선택 — 중소기업은 직전 기준 계산액이 <span data-tx="corpInt.exempt" data-tx-f="kor">50만</span>원 미만이면 면제 (계산: <a href="/corp-tax/">법인세 시뮬레이터</a> ⑤탭)<br>
+    • 4대보험료는 매월 10일 납부 (근로자 있는 경우)<br>
+    • 지방소득세는 별도 신고·납부 — 개인은 종합소득세와 같은 5월, 법인은 사업연도 종료 4개월 안(12월 결산 4월). 법인지방소득세는 중간예납 없음<br>
+    • 부가세 간이과세자는 1월(연 1회) 신고<br>
+    • 면세사업자는 2월 10일까지 사업장현황신고 필수
+  </div>
+
+  <footer>© 스윙파머 · 세금 캘린더 (매년 반복 일정 기준)</footer>
+</div>
+
+<script src="/tax-rates.js?v=24"></script>
+<script>
+var now = new Date();
+var curMonth = now.getMonth() + 1;
+// 095_01: 바뀌는 값은 공통 세율 파일 (/tax-rates.js)
+var _T = window.SF_TAX;
+var CAR_PRE = _T.carPre;
+
+// ── 데이터: 월별 세금·납부 이벤트 ──
+var events = {
+  1: [
+    { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부 (전월분, 반기납부자는 7~12월분)' },
+    { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부 (전월분)' },
+    { day: '16~31', icon: '🚗', who: 'both', txt: '자동차세 연납신청 (' + CAR_PRE + '% 공제, 남은 11개월분)' },
+    { day: '25일', icon: '📋', who: 'both', txt: '부가가치세 확정신고 (2기 — 개인 7~12월분, 법인 10~12월분)' },
+  ],
+  2: [
+    { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
+    { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부' },
+    { day: '10일', icon: '🏠', who: 'both', txt: '면세사업자 사업장현황신고 (전년도)' },
+  ],
+  3: [
+    { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
+    { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부' },
+    { day: '31일', icon: '🏢', who: 'corp', txt: '법인세 신고·납부 (12월 결산법인)' },
+  ],
+  4: [
+    { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
+    { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부' },
+    { day: '25일', icon: '📋', who: 'corp', txt: '부가가치세 예정신고 (법인 1기, 1~3월)' },
+    { day: '30일', icon: '🏢', who: 'corp', txt: '법인지방소득세 신고·납부 (12월 결산법인)' },
+  ],
+  5: [
+    { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
+    { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부' },
+    { day: '31일', icon: '💼', who: 'both', txt: '종합소득세 신고·납부 (개인, 전년도)' },
+    { day: '31일', icon: '💼', who: 'both', txt: '개인 지방소득세 신고·납부' },
+  ],
+  6: [
+    { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
+    { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부' },
+    { day: '16~30', icon: '🏠', who: 'both', txt: '자동차세 1기분 납부' },
+    { day: '30일', icon: '📋', who: 'both', txt: '원천세 반기납부 승인 신청 마감 (하반기부터, 상시 20명 이하)' },
+  ],
+  7: [
+    { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부 (반기납부자는 1~6월분)' },
+    { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부' },
+    { day: '16~31', icon: '🏠', who: 'both', txt: '재산세 1기분 납부 (주택 1/2 · 건축물)' },
+    { day: '25일', icon: '📋', who: 'both', txt: '부가가치세 확정신고 (1기 — 개인 1~6월분, 법인 4~6월분)' },
+  ],
+  8: [
+    { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
+    { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부' },
+    { day: '31일', icon: '🏢', who: 'corp', txt: '법인세 중간예납 신고·납부 (12월 결산법인, 지방소득세는 없음)' },
+  ],
+  9: [
+    { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
+    { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부' },
+    { day: '16~30', icon: '🏠', who: 'both', txt: '재산세 2기분 납부 (주택 1/2 · 토지)' },
+  ],
+  10: [
+    { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
+    { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부' },
+    { day: '25일', icon: '📋', who: 'corp', txt: '부가가치세 예정신고 (법인 2기, 7~9월)' },
+  ],
+  11: [
+    { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
+    { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부' },
+    { day: '30일', icon: '💼', who: 'both', txt: '종합소득세 중간예납 (전년도 50%)' },
+  ],
+  12: [
+    { day: '1~15', icon: '🏠', who: 'both', txt: '종합부동산세 납부' },
+    { day: '10일', icon: '💰', who: 'both', txt: '원천세 납부' },
+    { day: '10일', icon: '🏥', who: 'both', txt: '4대보험료 납부' },
+    { day: '16~31', icon: '🚗', who: 'both', txt: '자동차세 2기분 납부' },
+    { day: '31일', icon: '📋', who: 'both', txt: '원천세 반기납부 승인 신청 마감 (다음 해 상반기부터)' },
+  ],
+};
+
+// ── 달력 렌더 ──
+function renderCalendar() {
+  var grid = document.getElementById('calGrid');
+  var html = '';
+  for (var m = 1; m <= 12; m++) {
+    var isCurrent = (m === curMonth);
+    html += '<div class="month-card' + (isCurrent ? ' current' : '') + '">';
+    html += '<div class="month-title">' + m + '월' + (isCurrent ? ' <span class="badge">이번 달</span>' : '') + '</div>';
+    var evts = events[m] || [];
+    if (evts.length === 0) {
+      html += '<div class="no-event">일정 없음</div>';
+    } else {
+      evts.forEach(function(e) {
+        var whoClass = e.who === 'corp' ? 'who corp' : (e.who === 'both' ? 'who both' : 'who');
+        var whoLabel = e.who === 'corp' ? '법인' : (e.who === 'both' ? '공통' : '개인');
+        html += '<div class="event"><span class="day">' + e.day + '</span><span class="icon">' + e.icon + '</span><span class="txt"><span class="' + whoClass + '">' + whoLabel + '</span> ' + e.txt + '</span></div>';
+      });
+    }
+    html += '</div>';
+  }
+  grid.innerHTML = html;
+}
+
+// ── 목록 렌더 ──
+function renderList() {
+  var wrap = document.getElementById('listView');
+  // 카테고리별 그룹
+  var cats = {
+    '세금 신고': [],
+    '세금 납부': [],
+    '매월 고정': [],
+    '기타': []
+  };
+  for (var m = 1; m <= 12; m++) {
+    (events[m] || []).forEach(function(e) {
+      var item = { month: m, day: e.day, icon: e.icon, who: e.who, txt: e.txt };
+      if (e.txt.includes('신청')) cats['기타'].push(item);  // 095_01: 반기납부 신청이 '원천세' 글자로 매월 고정에 묻히던 것
+      else if (e.txt.includes('신고')) cats['세금 신고'].push(item);
+      else if (e.txt.includes('납부') && !e.txt.includes('보험') && !e.txt.includes('원천세')) cats['세금 납부'].push(item);
+      else if (e.txt.includes('원천세') || e.txt.includes('보험')) cats['매월 고정'].push(item);
+      else cats['기타'].push(item);
+    });
+  }
+  var html = '';
+  var icons = {'세금 신고':'📋','세금 납부':'💸','매월 고정':'🔄','기타':'📌'};
+  Object.keys(cats).forEach(function(cat) {
+    var items = cats[cat];
+    if (items.length === 0) return;
+    // 매월 고정은 축약
+    if (cat === '매월 고정') {
+      html += '<div class="list-section"><h3>' + icons[cat] + ' ' + cat + '</h3>';
+      html += '<div style="background:white;padding:14px;border-radius:8px;font-size:13px;color:#555;line-height:2">매월 10일: 원천세 납부 + 4대보험료 납부 (근로자 고용 시)</div></div>';
+      return;
+    }
+    html += '<div class="list-section"><h3>' + icons[cat] + ' ' + cat + '</h3>';
+    html += '<table class="list-table"><thead><tr><th>월</th><th>기한</th><th>내용</th><th>대상</th></tr></thead><tbody>';
+    items.forEach(function(it) {
+      var whoLabel = it.who === 'corp' ? '법인' : (it.who === 'both' ? '공통' : '개인');
+      var whoClass = it.who === 'corp' ? 'who corp' : (it.who === 'both' ? 'who both' : 'who');
+      html += '<tr><td style="text-align:center;font-weight:700;color:#1F4E78">' + it.month + '월</td><td style="white-space:nowrap">' + it.day + '</td><td>' + it.icon + ' ' + it.txt + '</td><td><span class="' + whoClass + '">' + whoLabel + '</span></td></tr>';
+    });
+    html += '</tbody></table></div>';
+  });
+  wrap.innerHTML = html;
+}
+
+// ── 뷰 전환 ──
+document.querySelectorAll('.view-tab').forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.view-tab').forEach(function(t){ t.classList.remove('active'); });
+    tab.classList.add('active');
+    var view = tab.dataset.view;
+    document.getElementById('calView').style.display = view === 'calendar' ? 'block' : 'none';
+    document.getElementById('listView').style.display = view === 'list' ? 'block' : 'none';
+  });
+});
+
+renderCalendar();
+renderList();
+</script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

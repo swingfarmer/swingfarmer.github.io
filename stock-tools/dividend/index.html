@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>배당 수익 계산기 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .stat.green .value{color:#71f4cf!important}
+body.sf-dark td{border-bottom-color:#2c333f!important}
+body.sf-dark tr:hover td{background-color:#152637!important}
+</style>
+<style>
+:root { --sf-max-w: 1100px; }
+.panel { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+.panel h2 { font-size: 15px; color: #1F4E78; margin-bottom: 12px; }
+input:focus, select:focus { outline: 2px solid #1F4E78; }
+input.money { background: #fff; color: #1F4E78; font-weight: 600; text-align: right; }
+.row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+.row label { color: #555; }
+.final { background: linear-gradient(135deg, #10b981, #059669); color: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
+.stat { background: rgba(255,255,255,.15); border-radius: 8px; padding: 10px; }
+.stat .label { font-size: 11px; opacity: .85; margin-bottom: 2px; }
+.stat .value { font-size: 18px; font-weight: 700; }
+.stat.green .value { color: #065f46; }
+.final-label { font-size: 14px; font-weight: 600; }
+.final-value { font-size: 28px; font-weight: 800; }
+.table-wrap { overflow-x: auto; margin-top: 10px; }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th { padding: 8px 6px; background: #1F4E78; color: white; font-size: 11px; font-weight: 600; text-align: right; position: sticky; top: 0; }
+th:first-child { text-align: center; }
+td { padding: 7px 6px; text-align: right; border-bottom: 1px solid #eee; }
+td:first-child { text-align: center; color: #888; }
+tr:hover td { background: #f0f5fa; }
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body class="sf-narrow">
+
+
+<h1>💰 배당 수익 계산기</h1>
+<p class="desc">배당주에 투자했을 때 시간이 지나면서 받는 배당과 자산 성장 시뮬레이션. 배당 재투자, 배당성장률, 세후 수익까지.</p>
+
+<div class="panel">
+  <h2>📥 입력값</h2>
+  <div class="inputs">
+
+    <div class="section-label">① 초기 투자</div>
+    <div class="input-row">
+      <label>투자 원금 (원)</label>
+      <input type="number" id="principal" value="10000000" data-won>
+    </div>
+    <div class="input-row">
+      <label>현재 시가배당률 (%)</label>
+      <input type="number" id="divYield" value="4.0" step="0.1">
+    </div>
+    <div class="input-row">
+      <label>예상 배당성장률 (연 %)</label>
+      <input type="number" id="divGrowth" value="5.0" step="0.1">
+    </div>
+    <div class="input-row">
+      <label>주가 성장률 (연 %)</label>
+      <input type="number" id="priceGrowth" value="3.0" step="0.1">
+    </div>
+
+    <div class="section-label">② 투자 기간 & 옵션</div>
+    <div class="input-row">
+      <label>투자 기간 (년)</label>
+      <input type="number" id="years" value="20" min="1" max="50">
+    </div>
+    <div class="input-row">
+      <label>월 추가 적립 (원)</label>
+      <input type="number" id="monthlyAdd" value="0" data-won>
+    </div>
+    <div class="input-row">
+      <label>배당 재투자</label>
+      <select id="reinvest">
+        <option value="Y" selected>Y (받은 배당으로 다시 매수)</option>
+        <option value="N">N (배당은 따로 받기)</option>
+      </select>
+    </div>
+
+    <div class="section-label">③ 세금</div>
+    <div class="input-row">
+      <label>배당소득세율 (%)</label>
+      <input type="number" id="taxRate" value="15.4" step="0.1">
+    </div>
+  </div>
+</div>
+
+<div class="final">
+  <div class="final-label" id="finalLabel">최종 자산 가치</div>
+  <div class="final-value" id="finalValue">-</div>
+  <div class="final-sub" id="finalSub"></div>
+</div>
+
+<div class="panel">
+  <h2>📊 요약</h2>
+  <div class="summary-grid">
+    <div class="stat">
+      <div class="stat-label">총 투입 원금 (초기+적립)</div>
+      <div class="stat-value" id="S_principal">-</div>
+    </div>
+    <div class="stat green">
+      <div class="stat-label">총 누적 배당 (세후)</div>
+      <div class="stat-value" id="S_totalDiv">-</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">주가 평가차익</div>
+      <div class="stat-value" id="S_priceGain">-</div>
+    </div>
+    <div class="stat green">
+      <div class="stat-label">총 수익 (배당+평가차익)</div>
+      <div class="stat-value" id="S_totalReturn">-</div>
+      <div class="stat-sub" id="S_yearlyAvg"></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">마지막 해 연 배당 (세후)</div>
+      <div class="stat-value" id="S_lastDiv">-</div>
+      <div class="stat-sub">월 평균: <b id="S_lastDivMonthly">-</b></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">YOC (원가 대비 배당률)</div>
+      <div class="stat-value" id="S_yoc">-</div>
+      <div class="stat-sub">처음 매수가 기준 마지막 해 배당률</div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>📅 연도별 시뮬레이션</h2>
+  <div class="table-wrap">
+    <div class="table-scroll"><table>
+      <thead>
+        <tr>
+          <th>연도</th>
+          <th>연초 자산</th>
+          <th>연 적립</th>
+          <th>주가 성장</th>
+          <th>세전 배당</th>
+          <th>세후 배당</th>
+          <th>연말 자산</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<div class="manual">
+  <h3>📘 사용 설명서</h3>
+
+  <h3>① 입력값 가이드</h3>
+  <ul>
+    <li><span class="badge">시가배당률</span> 현재 주가 기준 배당수익률. 한국 평균 2~3%, 고배당주 4~6%.</li>
+    <li><span class="badge">배당성장률</span> 매년 회사가 배당을 얼마씩 늘리는지. 보수적 3%, 평균 5%, 우수 기업 8%+.</li>
+    <li><span class="badge">주가 성장률</span> 주가 자체가 매년 얼마씩 오르는지 (배당과 별개). 한국 시장 평균 2~5%.</li>
+    <li><span class="badge">월 추가 적립</span> 매달 추가로 사들이는 금액. DRIP(배당재투자) + 추가 적립이 장기 복리 핵심.</li>
+    <li><span class="badge">배당소득세</span> 한국은 <span data-tx="interest">15.4</span>% (소득세 <span data-tx="interest" data-tx-f="nat r1">14</span>% + 지방세 <span data-tx="=interest - interest/(1+local)" data-tx-f="r1">1.4</span>%). 금융소득 종합과세 대상이면 더 높을 수 있음. 기본값은 공통 세율 파일에서 옴.</li>
+  </ul>
+
+  <h3>② 핵심 지표 해석</h3>
+  <ul>
+    <li><span class="badge">YOC (Yield On Cost)</span> 원가 대비 배당률. 10년 전 4%로 산 주식의 배당이 매년 5%씩 성장하면 → 10년 뒤 YOC는 약 6.2%. <b>장기 배당투자의 진짜 매력 지표.</b></li>
+    <li><span class="badge">배당 재투자 효과</span> 받은 배당으로 다시 주식 매수 → 다음 해 배당 더 많이. 30년 장기로 보면 비재투자 대비 자산 2~3배 차이.</li>
+    <li><span class="badge">총 수익률</span> 단순 배당이 아니라 (배당 + 주가 평가차익) 합산이 진짜 수익률.</li>
+  </ul>
+
+  <h3>③ 시뮬레이션 로직</h3>
+  <ul>
+    <li>매년 시작: 전년말 자산 + 그해 적립</li>
+    <li>그 자산에서 시가배당률 만큼 배당 발생 (배당성장률 매년 반영)</li>
+    <li>배당 = 세전 → 세후 (세율 적용)</li>
+    <li>재투자 Y: 세후 배당이 자산에 합산 → 다음 해 더 큰 배당</li>
+    <li>주가 성장률 → 자산 평가액 추가 증가</li>
+  </ul>
+
+  <h3>④ 주의사항</h3>
+  <ul>
+    <li>배당성장률·주가성장률 모두 <b>가정</b>. 실제 시장은 변동성 큼.</li>
+    <li>배당컷(배당 삭감) 가능성 미반영.</li>
+    <li>물가상승 미반영. 30년 뒤 자산의 구매력은 명목값보다 낮음 (인플레 3% 가정 시 30년 뒤 가치 약 41%).</li>
+    <li>금융소득 <span data-tx="finThreshold" data-tx-f="kor">2,000만</span> 초과 시 종합과세 대상 (한계세율 적용). 본 계산기는 <span data-tx="interest">15.4</span>% 분리과세 가정 — 넘는지는 <a href="/tax/financial-income/">금융소득 종합과세 계산기</a>로 확인.</li>
+  </ul>
+</div>
+
+<script src="/tax-rates.js?v=24"></script>
+<script>
+// (090) 세율은 /tax-rates.js(window.SF_TAX)에서 — 기본값 칸·설명 숫자를 채움 (저장 슬롯 복원이 뒤에 덮어씀)
+(function(){ var T = window.SF_TAX; if (!T) return;
+  var el = document.getElementById('taxRate'); if (el) el.value = T.interest;
+})();
+const fmt = n => sfNum(n);
+const fmtPct = n => sfPct(n, 2);
+
+function calculate() {
+  const principal = parseFloat(document.getElementById('principal').value) || 0;
+  const divYield = (parseFloat(document.getElementById('divYield').value) || 0) / 100;
+  const divGrowth = (parseFloat(document.getElementById('divGrowth').value) || 0) / 100;
+  const priceGrowth = (parseFloat(document.getElementById('priceGrowth').value) || 0) / 100;
+  const years = parseInt(document.getElementById('years').value) || 1;
+  const monthlyAdd = parseFloat(document.getElementById('monthlyAdd').value) || 0;
+  const reinvest = document.getElementById('reinvest').value === 'Y';
+  const taxRate = (parseFloat(document.getElementById('taxRate').value) || 0) / 100;
+
+  const annualAdd = monthlyAdd * 12;
+
+  let asset = principal;
+  let totalPrincipal = principal;
+  let totalDivAfterTax = 0;
+  let lastYearDivAfterTax = 0;
+
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+
+  for (let y = 1; y <= years; y++) {
+    const startAsset = asset;
+    // 그해 적립
+    asset += annualAdd;
+    totalPrincipal += annualAdd;
+
+    // 그해 배당 (배당성장률 반영)
+    // 첫 해 = 시가배당률, 이후 매년 (1+성장률)
+    const currentYield = divYield * Math.pow(1 + divGrowth, y - 1);
+    const divBefore = asset * currentYield;
+    const divAfter = divBefore * (1 - taxRate);
+
+    totalDivAfterTax += divAfter;
+    lastYearDivAfterTax = divAfter;
+
+    // 재투자
+    if (reinvest) asset += divAfter;
+
+    // 주가 성장 (배당 분배 후)
+    const priceGain = asset * priceGrowth;
+    asset += priceGain;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${y}년차</td>
+      <td>${fmt(startAsset)}</td>
+      <td>${annualAdd > 0 ? fmt(annualAdd) : '-'}</td>
+      <td style="color:#10b981">+${fmt(priceGain)}</td>
+      <td>${fmt(divBefore)}</td>
+      <td style="color:#059669;font-weight:600">${fmt(divAfter)}</td>
+      <td>${fmt(asset)}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  // 결과 계산
+  const finalAsset = asset;
+  const totalReturn = finalAsset - totalPrincipal;
+  const priceGainTotal = totalReturn - (reinvest ? 0 : totalDivAfterTax) - (reinvest ? totalDivAfterTax : 0);
+  // 단순화: priceGain = finalAsset - totalPrincipal - (재투자안할때 누적배당 X)
+  // 재투자O: priceGain은 finalAsset에서 (totalPrincipal + 누적배당재투자분 포함된 자산 - 누적배당) 차감해야 정확
+  // 그러나 간단히: 평가차익 = 총수익 - 누적배당
+  const evalGain = totalReturn - totalDivAfterTax;
+  const totalIncomeWithBank = reinvest ? finalAsset : finalAsset + totalDivAfterTax;
+  const yearlyAvg = totalPrincipal > 0 ? (Math.pow(totalIncomeWithBank / totalPrincipal, 1/years) - 1) * 100 : 0;
+
+  // YOC (원가 대비 배당률)
+  // 마지막해 배당 / 처음 매수 원금 (= 최초 자산 + 매년 적립 평균)
+  // 단순화: 마지막해 배당 / 총 원금
+  const yoc = totalPrincipal > 0 ? lastYearDivAfterTax / totalPrincipal * 100 : 0;
+
+  // UI
+  const set = (id, v) => document.getElementById(id).textContent = v;
+
+  if (reinvest) {
+    document.getElementById('finalLabel').textContent = `${years}년 후 최종 자산 (배당 재투자)`;
+    set('finalValue', fmt(finalAsset) + ' 원');
+    set('finalSub', `원금 ${fmt(totalPrincipal)} → 자산 ${fmt(finalAsset)} (${sfKor(totalReturn, 'short')} 증가)`);
+  } else {
+    document.getElementById('finalLabel').textContent = `${years}년 후 자산 + 누적 배당`;
+    set('finalValue', fmt(finalAsset + totalDivAfterTax) + ' 원');
+    set('finalSub', `자산 ${fmt(finalAsset)} + 누적배당 ${fmt(totalDivAfterTax)}`);
+  }
+
+  set('S_principal', fmt(totalPrincipal) + ' 원');
+  set('S_totalDiv', fmt(totalDivAfterTax) + ' 원');
+  set('S_priceGain', fmt(evalGain) + ' 원');
+  set('S_totalReturn', fmt(totalReturn) + ' 원');
+  set('S_yearlyAvg', `연 평균 수익률 ${yearlyAvg.toFixed(2)}%`);
+  set('S_lastDiv', fmt(lastYearDivAfterTax) + ' 원');
+  set('S_lastDivMonthly', fmt(lastYearDivAfterTax / 12) + ' 원');
+  set('S_yoc', fmtPct(yoc));
+}
+
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input', calculate);
+  el.addEventListener('change', calculate);
+});
+calculate();
+</script>
+<script>
+window.CALC_KEY = 'dividend_sim';
+window.slGetState = function(){
+  return {
+    principal: document.getElementById('principal').value,
+    divYield: document.getElementById('divYield').value,
+    divGrowth: document.getElementById('divGrowth').value,
+    priceGrowth: document.getElementById('priceGrowth').value,
+    years: document.getElementById('years').value,
+    monthlyAdd: document.getElementById('monthlyAdd').value,
+    reinvest: document.getElementById('reinvest').value,
+    taxRate: document.getElementById('taxRate').value,
+  };
+};
+window.slSetState = function(d){
+  if(!d) return;
+  if(d.principal !== undefined) document.getElementById('principal').value = d.principal;
+  if(d.divYield !== undefined) document.getElementById('divYield').value = d.divYield;
+  if(d.divGrowth !== undefined) document.getElementById('divGrowth').value = d.divGrowth;
+  if(d.priceGrowth !== undefined) document.getElementById('priceGrowth').value = d.priceGrowth;
+  if(d.years !== undefined) document.getElementById('years').value = d.years;
+  if(d.monthlyAdd !== undefined) document.getElementById('monthlyAdd').value = d.monthlyAdd;
+  if(d.reinvest !== undefined) document.getElementById('reinvest').value = d.reinvest;
+  if(d.taxRate !== undefined) document.getElementById('taxRate').value = d.taxRate;
+  if(typeof calculate === 'function') calculate();
+};
+</script>
+<script>window.SF_RESET = true;</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

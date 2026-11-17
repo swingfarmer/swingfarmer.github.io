@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>상가 수익률 분석기 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .text-input{background-color:#1e242e!important;color:#dedede!important}
+body.sf-dark .calc-table tr.highlight td{background-color:#372f15!important}
+body.sf-dark .yield-card{background-color:#172636!important}
+body.sf-dark .yield-card.star{background-color:#372d15!important}
+body.sf-dark .yield-card.star2{background-color:#153727!important}
+body.sf-dark .yield-card.warn{background-color:#371515!important}
+body.sf-dark .yield-value{color:#85b5e0!important}
+body.sf-dark .yield-card.warn .yield-value{color:#eb7a7a!important}
+body.sf-dark .scenario-table td{border-bottom-color:#2c333f!important}
+body.sf-dark .scenario-wrap{border-color:#2c333f!important}
+body.sf-dark .compare-box{background-color:#1e242e!important;border-color:#2c333f!important}
+body.sf-dark .compare-row{border-bottom-color:#2c333f!important}
+body.sf-dark .compare-row.total .v{color:#85b5e0!important}
+body.sf-dark .howto{border-color:#2c333f!important;background-color:#1e242e!important}
+body.sf-dark .howto summary{color:#85b5e0!important}
+body.sf-dark .howto .hb{color:#cccccc!important}
+body.sf-dark .yield-card.star2 .yield-value{color:#059669!important}
+body.sf-dark .compare-box.person{border-top-color:#3b82f6!important}
+body.sf-dark .compare-box.corp{border-top-color:#8b5cf6!important}
+body.sf-dark .compare-row.total{border-top-color:#1F4E78!important}
+</style>
+<style>
+:root { --sf-max-w: 1200px; }
+.final { background: linear-gradient(135deg, #1F4E78, #2563eb); }
+.panel h3{color:#1F4E78;font-size:15px;margin-top:18px;margin-bottom:8px}
+input[readonly]{background:#f0f0f0;color:#666}
+.text-input{padding:10px;font-size:14px;border:1px solid #ccc;border-radius:4px;background:#fff;color:#333}
+/* 탭 모양: common.css .tabs·.tab (105 통일) */
+.tab-content{display:none}
+.tab-content.active{display:block}
+/* 결과 테이블 */
+.calc-table tr.highlight td{background:#fff9e6;font-weight:700}
+.calc-table tr.subtotal td:nth-child(2){color:#1F4E78;font-size:15px}
+.calc-table tr.subtotal td{border-top:2px solid #1F4E78}
+/* 7가지 수익률 */
+.yield-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+@media(max-width:700px){.yield-grid{grid-template-columns:1fr}}
+.yield-card{background:#f8fafc;border-left:4px solid #1F4E78;padding:14px;border-radius:6px}
+.yield-card.star{background:#fff8e8;border-left-color:#d97706}
+.yield-card.star2{background:#ecfdf5;border-left-color:#10b981}
+.yield-card.warn{background:#fef2f2;border-left-color:#dc2626}
+.yield-name{font-size:13px;font-weight:600;margin-bottom:4px}
+.yield-value{font-size:22px;font-weight:800;color:#1F4E78;font-variant-numeric:tabular-nums}
+.yield-card.star .yield-value{color:#b45309}
+.yield-card.star2 .yield-value{color:#059669}
+.yield-card.warn .yield-value{color:#b91c1c}
+.yield-desc{font-size:11px;color:#888;margin-top:3px}
+/* 시나리오 테이블 */
+.scenario-table th:first-child{text-align:left}
+.scenario-table td{padding:6px;border-bottom:1px solid #eee;text-align:right;font-variant-numeric:tabular-nums}
+.scenario-table td:first-child{font-weight:600;text-align:left}
+.scenario-table tr.current{background:#fff8e8}
+.scenario-table tr.current td{font-weight:700}
+.scenario-wrap{overflow-x:auto;border:1px solid #ddd;border-radius:6px}
+/* 비교 */
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+@media(max-width:700px){.compare-grid{grid-template-columns:1fr}}
+.compare-box{background:white;border-radius:8px;padding:16px;border:2px solid #e5e7eb}
+.compare-box.person{border-top:4px solid #3b82f6}
+.compare-box.corp{border-top:4px solid #8b5cf6}
+.compare-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:13px}
+.compare-row .v{font-weight:600;font-variant-numeric:tabular-nums}
+.compare-row.total{border-top:2px solid #1F4E78;margin-top:6px;padding-top:8px;font-weight:700}
+.compare-row.total .v{color:#1F4E78;font-size:15px}
+.verdict{background:linear-gradient(135deg,#1F4E78,#2563eb);color:white;padding:18px;border-radius:8px;text-align:center;margin-top:14px}
+.verdict-text{font-size:16px;font-weight:700}
+/* 사용설명서 */
+.howto { border:1px solid var(--sf-border); border-radius:8px; margin:6px 0 4px; background:var(--sf-surface); grid-column:1/-1; }
+.howto summary { cursor:pointer; padding:8px 12px; font-size:13px; font-weight:700; color:var(--sf-brand); }
+.howto .hb { padding:0 14px 12px; font-size:12.5px; line-height:1.8; color:var(--sf-text-sub); }
+.howto .hb ol, .howto .hb ul { margin:2px 0 4px; padding-left:20px; }
+/* (098) 다크 글자색 — 라이트 색(빨강·파랑·갈색·초록·남색)이 어두운 배경에서 안 읽히던 것 */
+body.sf-dark .yield-card.star .yield-value{color:#f0b060}
+</style>
+<style>
+.sf-sibling-nav{display:flex;gap:4px;max-width:var(--sf-max-w,900px);margin:0 auto 12px;padding:0 16px}
+.sf-sibling-nav a{flex:1;text-align:center;padding:10px 8px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;transition:all .15s;border:2px solid #e5e7eb;color:#666;background:#fff}
+.sf-sibling-nav a:hover{border-color:#1F4E78;color:#1F4E78}
+.sf-sibling-nav a.active{background:#1F4E78;color:#fff;border-color:#1F4E78}
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body class="sf-narrow">
+<div class="sf-sibling-nav">
+<a href="#" class="active">🏢 상가 수익률</a>
+<a href="/realestate/commercial-yield/">🏢 적정 매수가</a>
+</div>
+
+<h1>🏢 상가 수익률 분석기</h1>
+<p class="desc">상가 매물의 진짜 수익률 계산. 부대비용·세금·대출이자 모두 차감 후 실제 수익률. 7가지 수익률 + 가격 시나리오 + 법인 비교까지. (법인세율 확인일 <span data-tx="checked">2026-11-17</span>)</p>
+
+<!-- ===== 매물 입력 (공통) ===== -->
+<div class="panel">
+  <h2>📥 매물 정보 입력</h2>
+  <div class="inputs">
+    <div class="section-label">① 필수 입력</div>
+    <div class="input-row">
+      <label>매매가 (원)</label>
+      <input type="number" id="salePrice" value="5000000000" data-won>
+    </div>
+    <div class="input-row">
+      <label>임대보증금 (원)</label>
+      <input type="number" id="deposit" value="500000000" data-won>
+    </div>
+    <div class="input-row">
+      <label>월 임대료 (원)</label>
+      <input type="number" id="monthly" value="17000000" data-won>
+    </div>
+
+    <div class="section-label">② 매물 정보 (메모용, 계산에 사용 X)</div>
+    <div class="input-row">
+      <label>매물명/주소</label>
+      <input type="text" class="text-input" id="memo" value="" placeholder="예: 강남역 인근 1층 상가">
+    </div>
+    <div class="input-row">
+      <label>전용면적 (㎡)</label>
+      <input type="number" id="area" value="333.33" step="0.01">
+    </div>
+
+    <div class="section-label">③ 자동 계산</div>
+    <div class="input-row">
+      <label>연 임대료</label>
+      <input type="number" id="annualRent" readonly>
+    </div>
+    <div class="input-row">
+      <label>평당가 (실평수 기준)</label>
+      <input type="number" id="pricePerPyung" readonly>
+    </div>
+
+    <div class="section-label">④ 광고에 표시된 수익률 (선택)</div>
+    <div class="input-row">
+      <label>광고 표시 수익률 (%) <span style="font-size:11px;color:#888;">(중개사가 알려준 값)</span></label>
+      <input type="number" id="displayYield" value="4.5" step="0.1">
+    </div>
+  </div>
+</div>
+
+<!-- ===== 탭 ===== -->
+<div class="tabs">
+  <button class="tab active" data-tab="analyzer">📊 기본 분석 (개인)</button>
+  <button class="tab" data-tab="assumptions">⚙️ 가정값 설정</button>
+  <button class="tab" data-tab="scenario">📈 가격 시나리오</button>
+  <button class="tab" data-tab="corp">🏢 개인 vs 법인 비교</button>
+  <button class="tab" data-tab="manual">📘 사용설명서</button>
+</div>
+
+<!-- ===== 탭 1: 기본 분석 ===== -->
+<div class="tab-content active" id="tab-analyzer">
+
+  <div class="panel">
+    <h2>💸 단계별 비용/수익 분해</h2>
+
+    <h3>① 취득 부대비용 (1회성)</h3>
+    <div class="table-scroll"><table class="calc-table">
+      <tbody>
+        <tr><td>취득세 (<span class="lv-acq">4.0</span>%)</td><td id="A_acqTax">-</td><td>매매가 × 취득세율</td></tr>
+        <tr><td>지방교육세 (<span class="lv-edu">0.4</span>%)</td><td id="A_eduTax">-</td><td></td></tr>
+        <tr><td>농어촌특별세 (<span class="lv-rural">0.2</span>%)</td><td id="A_ruralTax">-</td><td></td></tr>
+        <tr><td>중개보수 (0.9%)</td><td id="A_broker">-</td><td>상가 0.9% 상한</td></tr>
+        <tr><td>중개보수 VAT (10%)</td><td id="A_brokerVat">-</td><td></td></tr>
+        <tr><td>법무사/등기 등 (0.3%)</td><td id="A_legal">-</td><td></td></tr>
+        <tr><td>건물분 VAT</td><td id="A_bldgVat">-</td><td>일반과세 등록 시 0%</td></tr>
+        <tr class="subtotal"><td>→ 부대비용 합계</td><td id="A_totalAcq">-</td><td id="A_acqPct">매매가 대비</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>② 실투자금 (자기자본)</h3>
+    <div class="table-scroll"><table class="calc-table">
+      <tbody>
+        <tr><td>매매가</td><td id="A_sale">-</td><td></td></tr>
+        <tr><td>(-) 임대보증금</td><td id="A_depositOut">-</td><td>임차인 보증금</td></tr>
+        <tr><td>(+) 취득 부대비용</td><td id="A_acqIn">-</td><td></td></tr>
+        <tr class="subtotal"><td>→ 실투자금 (대출 X)</td><td id="A_realInvest">-</td><td>현금 들고 살 때</td></tr>
+        <tr><td>(-) 대출금액 (매매가×LTV)</td><td id="A_loanOut">-</td><td></td></tr>
+        <tr class="subtotal"><td>→ 실투자금 (대출 O)</td><td id="A_realInvestLoan">-</td><td>대출 활용 시</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>③ 연간 운영손익 (NOI 계산)</h3>
+    <div class="table-scroll"><table class="calc-table">
+      <tbody>
+        <tr><td>총 임대료 수입</td><td id="A_rentTotal">-</td><td>월세 × 12</td></tr>
+        <tr><td>(-) 공실손실</td><td id="A_vacancy">-</td><td>임대료 × 공실률</td></tr>
+        <tr><td>→ 유효 임대수입</td><td id="A_effectiveRent">-</td><td></td></tr>
+        <tr><td>(-) 재산세</td><td id="A_propTax">-</td><td>매매가 × 재산세율</td></tr>
+        <tr><td>(-) 종부세</td><td id="A_addTax">-</td><td>해당시만</td></tr>
+        <tr><td>(-) 관리/수선비</td><td id="A_mgmt">-</td><td>월세 대비 비율</td></tr>
+        <tr><td>(-) 보험/기타</td><td id="A_ins">-</td><td></td></tr>
+        <tr class="subtotal"><td>→ NOI (순영업소득)</td><td id="A_noi">-</td><td>이자전·세전</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>④ 대출 활용 시 현금흐름</h3>
+    <div class="table-scroll"><table class="calc-table">
+      <tbody>
+        <tr><td>NOI</td><td id="A_noi2">-</td><td></td></tr>
+        <tr><td>(-) 대출이자 (연)</td><td id="A_interest">-</td><td>대출금 × 금리</td></tr>
+        <tr class="subtotal"><td>→ 세전 현금흐름</td><td id="A_preTaxCF">-</td><td></td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>⑤ 임대소득세</h3>
+    <div class="table-scroll"><table class="calc-table">
+      <tbody>
+        <tr><td>총 임대수입</td><td id="A_rentTotal2">-</td><td></td></tr>
+        <tr><td>(-) 필요경비</td><td id="A_expense">-</td><td>단순경비율 적용</td></tr>
+        <tr><td>→ 과세표준</td><td id="A_taxBase">-</td><td></td></tr>
+        <tr><td>(-) 임대소득세</td><td id="A_incomeTax">-</td><td>한계세율 적용</td></tr>
+        <tr class="subtotal"><td>→ 세후 현금흐름 (대출 X)</td><td id="A_netCF_noLoan">-</td><td></td></tr>
+        <tr class="subtotal"><td>→ 세후 현금흐름 (대출 O)</td><td id="A_netCF_loan">-</td><td></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="panel">
+    <h2>⭐ 7가지 수익률 비교</h2>
+    <div class="yield-grid">
+      <div class="yield-card">
+        <div class="yield-name">① 중개사 표시 수익률 <span style="font-size:11px;color:#888">(광고)</span></div>
+        <div class="yield-value" id="Y1">-</div>
+        <div class="yield-desc" id="Y1desc">광고용. 비용·세금 모두 무시</div>
+      </div>
+      <div class="yield-card">
+        <div class="yield-name">② Gross (연임대료 / 매매가)</div>
+        <div class="yield-value" id="Y2">-</div>
+        <div class="yield-desc">단순 비교용</div>
+      </div>
+      <div class="yield-card star">
+        <div class="yield-name">③ Cap Rate (NOI / 매매가) ⭐</div>
+        <div class="yield-value" id="Y3">-</div>
+        <div class="yield-desc">부동산 평가 표준 지표</div>
+      </div>
+      <div class="yield-card">
+        <div class="yield-name">④ NOI / 실투자금 (대출 X)</div>
+        <div class="yield-value" id="Y4">-</div>
+        <div class="yield-desc">보증금 차감, 부대비용 반영</div>
+      </div>
+      <div class="yield-card star2">
+        <div class="yield-name">⑤ 세후 / 실투자금 (대출 X) ⭐⭐</div>
+        <div class="yield-value" id="Y5">-</div>
+        <div class="yield-desc">"현금 들고 살 때" 진짜 수익률</div>
+      </div>
+      <div class="yield-card">
+        <div class="yield-name">⑥ 세전 / 실투자금 (대출 O)</div>
+        <div class="yield-value" id="Y6">-</div>
+        <div class="yield-desc">Cash-on-Cash 수익률</div>
+      </div>
+      <div class="yield-card star2" id="Y7card">
+        <div class="yield-name">⑦ 세후 / 실투자금 (대출 O) ⭐⭐⭐</div>
+        <div class="yield-value" id="Y7">-</div>
+        <div class="yield-desc" id="Y7desc">대출+세금 모두 반영. 최종 수익률</div>
+      </div>
+    </div>
+    <div class="info-box" id="leverageInfo">레버리지 분석</div>
+  </div>
+
+</div>
+
+<!-- ===== 탭 2: 가정값 설정 ===== -->
+<div class="tab-content" id="tab-assumptions">
+  <div class="panel">
+    <h2>⚙️ 가정값 설정 (한 번 설정 후 재사용)</h2>
+    <p class="desc">본인 상황에 맞게 조정. 입력하면 다른 탭의 계산이 즉시 갱신됩니다.</p>
+
+    <div class="inputs">
+      <div class="section-label">취득 부대비용 (1회성, 매매가 대비 %)</div>
+      <div class="input-row">
+        <label>취득세율 (%) <span style="font-size:11px;color:#888;">상가·업무용 기본값 자동</span></label>
+        <input type="number" id="acqTaxRate" value="4.0" step="0.1">
+      </div>
+      <div class="input-row">
+        <label>지방교육세율 (%)</label>
+        <input type="number" id="eduTaxRate" value="0.4" step="0.1">
+      </div>
+      <div class="input-row">
+        <label>농어촌특별세율 (%)</label>
+        <input type="number" id="ruralTaxRate" value="0.2" step="0.1">
+      </div>
+      <div class="input-row">
+        <label>중개보수율 (%)</label>
+        <input type="number" id="brokerRate" value="0.9" step="0.1">
+      </div>
+      <div class="input-row">
+        <label>중개보수 VAT (%)</label>
+        <input type="number" id="brokerVatRate" value="10" step="1">
+      </div>
+      <div class="input-row">
+        <label>법무사/등기 (%)</label>
+        <input type="number" id="legalRate" value="0.3" step="0.1">
+      </div>
+      <div class="input-row">
+        <label>건물분 VAT (%)</label>
+        <input type="number" id="bldgVatRate" value="0" step="0.1">
+      </div>
+
+      <div class="section-label">연간 운영비용</div>
+      <div class="input-row">
+        <label>공실률 (%)</label>
+        <input type="number" id="vacancyRate" value="5" step="0.1">
+      </div>
+      <div class="input-row">
+        <label>재산세율 (매매가 대비 %, 연)</label>
+        <input type="number" id="propTaxRate" value="0.25" step="0.01">
+      </div>
+      <div class="input-row">
+        <label>종부세율 (매매가 대비 %)</label>
+        <input type="number" id="addTaxRate" value="0" step="0.01">
+      </div>
+      <div class="input-row">
+        <label>관리/수선비 (월세 대비 %)</label>
+        <input type="number" id="mgmtRate" value="5" step="0.1">
+      </div>
+      <div class="input-row">
+        <label>보험/기타 (매매가 대비 %)</label>
+        <input type="number" id="insRate" value="0.05" step="0.01">
+      </div>
+
+      <div class="section-label">임대소득세</div>
+      <div class="input-row">
+        <label>본인 한계세율 (지방세 포함 %)</label>
+        <input type="number" id="incomeTaxRate" value="38.5" step="0.1">
+      </div>
+      <div class="input-row">
+        <label>필요경비율 (%)</label>
+        <input type="number" id="expenseRatio" value="40" step="0.1">
+      </div>
+
+      <div class="section-label">대출 조건</div>
+      <div class="input-row">
+        <label>LTV (%)</label>
+        <input type="number" id="ltv" value="50" step="1">
+      </div>
+      <div class="input-row">
+        <label>대출금리 (연 %)</label>
+        <input type="number" id="loanRate" value="5.5" step="0.1">
+      </div>
+
+      <div class="section-label">법인 매수 가정</div>
+      <div class="input-row">
+        <label>과밀억제권역 중과 적용</label>
+        <select id="corpHeavy">
+          <option value="0" selected>0 (미적용)</option>
+          <option value="1">1 (적용: 취득세 +4.8%)</option>
+        </select>
+      </div>
+      <div class="input-row">
+        <label>법인 취득세 중과 가산율 (%)</label>
+        <input type="number" id="corpHeavyRate" value="4.8" step="0.1">
+      </div>
+      <div class="input-row">
+        <label>법인 유형 <span style="font-size:11px;color:#888;">(고르면 아래 세율 3칸이 채워짐)</span></label>
+        <select id="corpType">
+          <option value="gen" selected data-tx="corp.0.1" data-tx-f="wl" data-tx-t="일반법인 (2억까지 {}%)">일반법인 (2억까지 11%)</option>
+          <option value="small" data-tx="corpSmall.0.1" data-tx-f="wl" data-tx-t="성실신고 소규모법인 (200억까지 {}%)">성실신고 소규모법인 (200억까지 22%)</option>
+        </select>
+      </div>
+      <div class="input-row">
+        <label>법인세율 ~<span data-tx="corp.0.0" data-tx-f="kor">2억</span> (%)</label>
+        <input type="number" id="corpTax1" value="11" step="0.1">
+      </div>
+      <div class="input-row">
+        <label>법인세율 <span data-tx="corp.0.0" data-tx-f="eok">2</span>~<span data-tx="corp.1.0" data-tx-f="kor">200억</span> (%)</label>
+        <input type="number" id="corpTax2" value="22" step="0.1">
+      </div>
+      <div class="input-row">
+        <label>법인세율 <span data-tx="corp.1.0" data-tx-f="kor">200억</span>~<span data-tx="corp.2.0" data-tx-f="kor">3,000억</span> (%)</label>
+        <input type="number" id="corpTax3" value="24.2" step="0.1">
+      </div>
+      <div class="input-row">
+        <label>건물 감가상각률 (연 %)</label>
+        <input type="number" id="deprRate" value="2.5" step="0.1">
+      </div>
+      <div class="input-row">
+        <label>매매가 중 건물 비율 (%)</label>
+        <input type="number" id="bldgRatio" value="30" step="1">
+      </div>
+      <div class="input-row">
+        <label>배당소득세율 (%)</label>
+        <input type="number" id="divTaxRate" value="15.4" step="0.1">
+      </div>
+      <div class="input-row">
+        <label>법인 이익 인출 비율 (%)</label>
+        <input type="number" id="payoutRatio" value="0" step="1">
+      </div>
+      <details class="howto">
+        <summary>📖 법인 매수 가정 칸 채우는 법 (눌러서 펼치기)</summary>
+        <div class="hb"><ol>
+          <li><b>법인 유형부터 고른다.</b> 고르면 법인세율 3칸이 지방세 포함 값으로 채워진다(<span data-tx="year" data-tx-f="y">2026</span>년 1월 1일 이후 시작 사업연도 기준). 직접 고쳐도 된다.
+            <ul>
+              <li>일반법인: 과표 <span data-tx="corp.0.0" data-tx-f="kor">2억</span>까지 <b data-tx="corp.0.1" data-tx-f="wl">11</b>%, <span data-tx="corp.0.0" data-tx-f="kor">2억</span>~<span data-tx="corp.1.0" data-tx-f="kor">200억</span> <b data-tx="corp.1.1" data-tx-f="wl">22</b>%</li>
+              <li>성실신고 소규모법인: <span data-tx="corpSmall.0.0" data-tx-f="kor">200억</span>까지 <b data-tx="corpSmall.0.1" data-tx-f="wl">22</b>% (<span data-tx="corp.0.0" data-tx-f="kor">2억</span> 이하 구간 없음)</li>
+            </ul>
+          </li>
+          <li><b>상가를 사서 임대만 하는 1인·가족 법인은 대부분 「성실신고 소규모법인」이다.</b> 세 가지를 모두 충족하면 해당: ① 지배주주 등 지분 50% 초과 ② 상시근로자 5인 미만 ③ 부동산임대업이 주업이거나 임대·이자·배당 수입이 매출의 50% 이상. 이 화면의 시나리오(법인이 상가 매수 → 임대)는 ③에 바로 걸린다. 다른 사업 매출이 임대수입보다 큰 법인이면 일반법인일 수 있다. 소규모법인은 성실신고확인서(세무사 확인) 대상이라 세무 비용도 늘어난다.</li>
+          <li><b>과밀억제권역 중과</b>: 서울 전역·경기 일부 + 법인 설립(또는 지점 설치) 5년 이내에 그 권역 안 부동산을 사면 취득세가 무거워진다. 가산율 <span data-tx='=acqCalc({"kind":"other","type":"buy","price":1,"capHeavy":true}).totalRate - acqCalc({"kind":"other","type":"buy","price":1}).totalRate' data-tx-f="r2">4.8</span>%는 상가 기준 일반 <span data-tx="acqCalc.totalRate" data-tx-a='[{"kind":"other","type":"buy","price":1}]'>4.6</span>% → 중과 <span data-tx="acqCalc.totalRate" data-tx-a='[{"kind":"other","type":"buy","price":1,"capHeavy":true}]'>9.4</span>%의 차이(취득세 표준세율 × 3 − 4%, 지방교육세도 3배).</li>
+          <li><b>건물 비율·감가상각률</b>: 법인은 건물분만 감가상각해 비용처리한다(토지는 안 됨). 매매가 중 건물 비율은 감정평가나 기준시가 비율로 넣는다. 상가 건물 감가상각은 보통 연 2.5%(40년) 안팎.</li>
+          <li><b>배당소득세율·인출 비율</b>: 법인에 남긴 돈은 배당세가 없다. 생활비로 빼 쓸 비율을 넣으면 그만큼 배당세(<span data-tx="interest">15.4</span>%, 금융소득 연 <span data-tx="finThreshold" data-tx-f="korc">2천만</span> 초과면 종합과세로 더 높음)를 뺀 결과가 「인출 시」 수익률에 나온다.</li>
+        </ol></div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 탭 3: 가격 시나리오 ===== -->
+<div class="tab-content" id="tab-scenario">
+  <div class="panel">
+    <h2>📈 매매가별 수익률 시나리오</h2>
+    <p class="desc">원하는 범위에서 매매가별 수익률 비교. 표시 옵션 자유롭게 조정 가능.</p>
+
+    <div class="inputs" style="margin-bottom:14px">
+      <div class="section-label">범위 설정</div>
+      <div class="input-row">
+        <label>시작 매매가 (원)</label>
+        <input type="number" id="sc_start" value="100000000" data-won>
+      </div>
+      <div class="input-row">
+        <label>끝 매매가 (원)</label>
+        <input type="number" id="sc_end" value="10000000000" data-won>
+      </div>
+      <div class="input-row">
+        <label>단계 수 (5~50)</label>
+        <input type="number" id="sc_steps" value="18" min="5" max="50">
+      </div>
+      <div class="input-row">
+        <label>증가 방식</label>
+        <select id="sc_mode">
+          <option value="linear" selected>균등 (선형)</option>
+          <option value="log">기하급수 (배율)</option>
+          <option value="preset">기본 18단계 (1억~100억)</option>
+        </select>
+      </div>
+
+      <div class="section-label">임대료 추정 방식</div>
+      <div class="input-row">
+        <label>방식</label>
+        <select id="sc_rentMode">
+          <option value="ratio" selected>현재 매물 수익률 비례</option>
+          <option value="capRate">고정 Cap Rate 가정</option>
+          <option value="grossRate">고정 Gross 수익률 가정</option>
+        </select>
+      </div>
+      <div class="input-row" id="sc_capBox" style="display:none">
+        <label>가정 Cap Rate (%)</label>
+        <input type="number" id="sc_cap" value="4.0" step="0.1">
+      </div>
+      <div class="input-row" id="sc_grossBox" style="display:none">
+        <label>가정 Gross 수익률 (%)</label>
+        <input type="number" id="sc_gross" value="5.0" step="0.1">
+      </div>
+
+      <div class="section-label">표시 컬럼</div>
+      <div class="input-row">
+        <label>대출 적용</label>
+        <select id="sc_loanMode">
+          <option value="no" selected>대출 X만</option>
+          <option value="yes">대출 O만</option>
+          <option value="both">둘 다</option>
+        </select>
+      </div>
+      <div class="input-row">
+        <label>금액 표시</label>
+        <select id="sc_fmt">
+          <option value="short" selected>요약 (억/만 단위)</option>
+          <option value="full">전체 (원 단위)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="scenario-wrap">
+      <div class="table-scroll"><table class="scenario-table" id="scenarioTable">
+        <thead id="scenarioHead"></thead>
+        <tbody id="scenarioBody"></tbody>
+      </table></div>
+    </div>
+    <div class="info-box" style="margin-top:14px">
+      💡 임대료 추정: <b>비례</b>=현재 매물의 수익률을 가격에 비례 적용 / <b>고정 Cap Rate</b>=설정한 Cap Rate에 맞는 임대료 역산 / <b>고정 Gross</b>=Gross 수익률 기준. 노란색 행 = 현재 입력 매물 가격대.
+    </div>
+  </div>
+</div>
+
+<!-- ===== 탭 4: 개인 vs 법인 비교 ===== -->
+<div class="tab-content" id="tab-corp">
+  <div class="panel">
+    <h2>🏢 개인 vs 법인 매수 비교</h2>
+    <div class="compare-grid">
+      <div class="compare-box person">
+        <h3 style="margin-top:0">👤 개인 매수</h3>
+        <div class="compare-row"><span>취득 부대비용</span><span class="v" id="P_acq">-</span></div>
+        <div class="compare-row"><span>실투자금 (대출X)</span><span class="v" id="P_invest">-</span></div>
+        <div class="compare-row"><span>실투자금 (대출O)</span><span class="v" id="P_investL">-</span></div>
+        <div class="compare-row"><span>NOI (연)</span><span class="v" id="P_noi">-</span></div>
+        <div class="compare-row"><span>대출이자 (연)</span><span class="v" id="P_int">-</span></div>
+        <div class="compare-row"><span>임대소득세</span><span class="v" id="P_tax">-</span></div>
+        <div class="compare-row total"><span>세후 현금흐름 (대출O)</span><span class="v" id="P_cf">-</span></div>
+        <div class="compare-row" style="color:#3b82f6;font-weight:700"><span>세후 수익률 (대출O)</span><span class="v" id="P_yield">-</span></div>
+      </div>
+      <div class="compare-box corp">
+        <h3 style="margin-top:0">🏢 법인 매수</h3>
+        <div class="compare-row"><span>취득 부대비용 (중과 포함)</span><span class="v" id="C_acq">-</span></div>
+        <div class="compare-row"><span>실투자금 (대출X)</span><span class="v" id="C_invest">-</span></div>
+        <div class="compare-row"><span>실투자금 (대출O)</span><span class="v" id="C_investL">-</span></div>
+        <div class="compare-row"><span>NOI (연)</span><span class="v" id="C_noi">-</span></div>
+        <div class="compare-row"><span>(-) 이자 + 감가상각</span><span class="v" id="C_intDepr">-</span></div>
+        <div class="compare-row"><span>법인세</span><span class="v" id="C_tax">-</span></div>
+        <div class="compare-row total"><span>세후 현금흐름 (대출O, 유보)</span><span class="v" id="C_cf">-</span></div>
+        <div class="compare-row" style="color:#8b5cf6;font-weight:700"><span>세후 수익률 (대출O, 유보)</span><span class="v" id="C_yield">-</span></div>
+        <div class="compare-row" style="font-size:12px;color:#888"><span>인출 시 배당세 차감 후</span><span class="v" id="C_yieldPayout">-</span></div>
+      </div>
+    </div>
+
+    <div class="verdict" id="verdictBox">
+      <div class="verdict-label">종합 판정</div>
+      <div class="verdict-text" id="verdict">-</div>
+    </div>
+
+    <div class="info-box" style="margin-top:14px">
+      <b>핵심 차이:</b><br>
+      • 법인은 <b>대출이자 + 감가상각</b>이 비용처리 → 세금 감소<br>
+      • 단, 법인에서 개인 통장으로 가져오려면 <b>배당세 추가</b> (재투자 목적이면 유보 = 배당세 0)<br>
+      • 과밀억제권역(서울/경기 일부) + 법인설립 5년 이내는 <b>취득세 중과 (+<span data-tx='=acqCalc({"kind":"other","type":"buy","price":1,"capHeavy":true}).totalRate - acqCalc({"kind":"other","type":"buy","price":1}).totalRate' data-tx-f="r2">4.8</span>%)</b>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 탭 5: 사용설명서 ===== -->
+<div class="tab-content" id="tab-manual">
+  <div class="manual" style="margin-top:0">
+    <h3>📖 이 분석기의 목적</h3>
+    <p>상가 매물의 <b>진짜 수익률</b>을 계산합니다. 광고 수익률(예: 4.75%)이 아니라, 취득세·중개료·재산세·관리비·임대소득세·대출이자까지 다 차감한 후 손에 들어오는 실제 수익률을 계산합니다.</p>
+
+    <h3>⚡ 빠른 사용법 (4단계)</h3>
+    <ul>
+      <li><b>1단계:</b> 위의 [📥 매물 정보 입력]에서 매매가·보증금·월세 입력</li>
+      <li><b>2단계:</b> [④ 광고 표시 수익률]에 중개사가 광고에 적은 수익률 입력 (선택, 부풀린 광고 검증용)</li>
+      <li><b>3단계:</b> [📊 기본 분석] 탭에서 7가지 수익률 확인. ⑤번이 "진짜 수익률"에 가장 가까움</li>
+      <li><b>4단계:</b> [📈 가격 시나리오]·[🏢 법인 비교] 탭에서 추가 분석</li>
+    </ul>
+
+    <h3>🔢 7가지 수익률 — 무엇이 다른가</h3>
+    <ul>
+      <li><span class="badge">①</span> <b>광고 표시 수익률:</b> 중개사가 알려준 광고용 값. 사용자가 직접 입력. 비교용으로 자동계산값(연임대료/(매매가-보증금))과 차이도 표시. 부풀려진 광고를 잡아내는 용도.</li>
+      <li><span class="badge">②</span> <b>Gross:</b> 연임대료 ÷ 매매가. 단순 비교용.</li>
+      <li><span class="badge">③</span> <b>Cap Rate (NOI/매매가):</b> ⭐ 부동산 평가 국제 표준. 다른 매물과 비교할 때 이 숫자.</li>
+      <li><span class="badge">④</span> <b>NOI/실투자금 (대출X):</b> 보증금·부대비용 반영.</li>
+      <li><span class="badge">⑤</span> <b>세후/실투자금 (대출X):</b> ⭐⭐ 가장 현실적. 현금 들고 살 때 진짜 수익률.</li>
+      <li><span class="badge">⑥</span> <b>세전/실투자금 (대출O):</b> Cash-on-Cash. 대출 활용 시 자기자본 세전 수익률.</li>
+      <li><span class="badge">⑦</span> <b>세후/실투자금 (대출O):</b> ⭐⭐⭐ 최종 수익률. 마이너스면 역레버리지 상태.</li>
+    </ul>
+
+    <h3>⚖️ 핵심 판단 기준</h3>
+    <ul>
+      <li>Cap Rate(③) > 대출금리 → 대출 받을수록 수익률 ↑ (정상 레버리지)</li>
+      <li>Cap Rate(③) < 대출금리 → 대출 받을수록 수익률 ↓ (역레버리지) — 현재 시장 다수가 이 상태</li>
+      <li>⑤번이 정기예금 금리보다 낮으면, 부동산 위험을 떠안을 이유 약함</li>
+      <li>이 분석기는 <b>보유 중 현금흐름</b>만 계산. 매도 시 양도차익/양도세는 별도 검토</li>
+    </ul>
+
+    <h3>🛠️ 가정값 조정 가이드 ([⚙️ 가정값 설정] 탭)</h3>
+    <ul>
+      <li><b>임대소득세율:</b> 본인 종합소득 기준 한계세율(지방세 포함). <span data-tx="income.0.1" data-tx-f="wl">6.6</span>%~<span data-tx="income.-1.1" data-tx-f="wl">49.5</span>%.</li>
+      <li><b>LTV/대출금리:</b> 실제 대출 조건. 상가 통상 50~60%, 5~6%대.</li>
+      <li><b>공실률:</b> 보수적 5%. 안정적 입지 3%, 외곽 10%.</li>
+      <li><b>재산세율:</b> 매매가 대비 0.25% 보수적. 실제는 공시지가 기준이라 더 낮을 수 있음.</li>
+      <li><b>건물분 VAT:</b> 일반과세 사업자 등록 시 환급 가능 → 0%.</li>
+    </ul>
+
+    <h3>🏢 개인 vs 법인 매수 — 어떻게 다른가</h3>
+    <ul>
+      <li><b>법인 장점:</b> 이자·감가상각이 비용처리 → 세금 감소. 법인세율(일반 <span data-tx="corp.0.1" data-tx-f="wl">11</span>%~, 임대 주업 소규모법인 <span data-tx="corpSmall.0.1" data-tx-f="wl">22</span>%~)이 한계세율보다 낮을 수 있음.</li>
+      <li><b>법인 단점:</b> 과밀억제권역 + 설립 5년 이내면 취득세 중과(+<span data-tx='=acqCalc({"kind":"other","type":"buy","price":1,"capHeavy":true}).totalRate - acqCalc({"kind":"other","type":"buy","price":1}).totalRate' data-tx-f="r2">4.8</span>%). 개인 인출 시 배당세(<span data-tx="interest">15.4</span>% 또는 종합과세).</li>
+      <li><b>유보 vs 인출:</b> 재투자 목적이면 법인 유보 → 배당세 0. 생활비로 쓰려면 인출 → 한계세율과 비교.</li>
+    </ul>
+
+    <div class="warn-box">
+      <b>⚠ 한계와 주의사항</b><br>
+      • 1년 정태 분석 (DCF/IRR 아님). 임대료 인상 미반영.<br>
+      • 재건축·재개발 등 자본차익 시나리오 미반영.<br>
+      • 임대소득세 단순화 (종합과세 vs 분리과세, 간주임대료, 사업자등록 여부에 따라 실제 다름).<br>
+      • 양도소득세 미반영. 5년 이하 단기보유 시 양도세 부담 큼.<br>
+      • 공시지가/재산세 실제 부과액은 시청에 직접 조회 권장.
+    </div>
+  </div>
+</div>
+
+<script src="/tax-rates.js?v=24"></script>
+<script>
+// (087) 법인세율은 /tax-rates.js(SF_TAX)에서 읽어 입력칸에 채운다. (101) 못 읽을 때 쓰던 기본값 사본은 지움 — 못 읽으면 common.js가 안내
+(function(){
+  var T = window.SF_TAX;
+  var corp = T.corp;
+  var small = T.corpSmall;
+  var loc = T.local;
+  var wl = function(r){ return Math.round(r*(1+loc)*100)/100; };
+  window.PROP_CORP = {
+    gen:   [wl(corp[0][1]), wl(corp[1][1]), wl(corp[2][1])],
+    small: [wl(small[0][1]), wl(small[0][1]), wl(small[1][1])],
+    b1: corp[0][0], b2: corp[1][0],   // (100) 구간 경계도 공통 파일에서 (계산식에 2억·200억 박혀 있던 것)
+    old:   ['9.9','20.9','24.2']   // 2025년 기본값 — 이 값 그대로 저장된 슬롯은 새 세율로 바꿔 불러옴
+  };
+  window.propFillCorp = function(type){
+    var v = PROP_CORP[type] || PROP_CORP.gen;
+    document.getElementById('corpTax1').value = v[0];
+    document.getElementById('corpTax2').value = v[1];
+    document.getElementById('corpTax3').value = v[2];
+  };
+  var o = document.getElementById('corpType').options;
+  var eok = function(n){ return sfKor(n,'kor'); };   // (100) 구간 경계도 공통 파일
+  o[0].text = '일반법인 (' + eok(corp[0][0]) + '까지 ' + PROP_CORP.gen[0] + '%)';
+  o[1].text = '성실신고 소규모법인 (' + eok(small[0][0]) + '까지 ' + PROP_CORP.small[0] + '%)';
+  document.getElementById('divTaxRate').value = T.interest;
+  // (094_03) 취득세 3칸·과밀억제 중과 가산율 기본값도 공통 파일(acqCalc)에서 — 저장 슬롯을 불러오면 그 값이 우선
+  {
+    var an = T.acqCalc({kind:'other', type:'buy', price:1}), ah = T.acqCalc({kind:'other', type:'buy', price:1, capHeavy:true});
+    var capAdd = Math.round((ah.totalRate - an.totalRate) * 100) / 100;
+    document.getElementById('acqTaxRate').value = an.rate; document.getElementById('eduTaxRate').value = an.eduRate;
+    document.getElementById('ruralTaxRate').value = an.ruralRate; document.getElementById('corpHeavyRate').value = capAdd;
+    document.getElementById('corpHeavy').options[1].text = '1 (적용: 취득세 +' + capAdd + '%)';
+  }
+  propFillCorp('gen');
+  document.getElementById('corpType').addEventListener('change', function(){ propFillCorp(this.value); });
+})();
+</script>
+<script>
+const fmt = n => sfNum(n) + ' 원';
+const fmtPct = n => sfPct(n * 100, 2);
+const sign = n => (n>=0?'':'-') + fmt(Math.abs(n));
+
+// 탭 전환
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.tab;
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + target).classList.add('active');
+  });
+});
+
+// 입력값 읽기
+function num(id) { return parseFloat(document.getElementById(id).value) || 0; }
+function pct(id) { return num(id) / 100; }
+
+// 핵심 계산 함수
+function compute(salePrice, deposit, monthly, opts) {
+  const a = opts || {};
+  const annualRent = monthly * 12;
+
+  // 부대비용
+  const acqTax = salePrice * pct('acqTaxRate');
+  const eduTax = salePrice * pct('eduTaxRate');
+  const ruralTax = salePrice * pct('ruralTaxRate');
+  const broker = salePrice * pct('brokerRate');
+  const brokerVat = broker * pct('brokerVatRate');
+  const legal = salePrice * pct('legalRate');
+  const bldgVat = salePrice * pct('bldgVatRate');
+  const totalAcq = acqTax + eduTax + ruralTax + broker + brokerVat + legal + bldgVat;
+
+  // 실투자금
+  const realInvest = salePrice - deposit + totalAcq;
+  const loan = salePrice * pct('ltv');
+  const realInvestLoan = realInvest - loan;
+
+  // NOI
+  const vacancy = annualRent * pct('vacancyRate');
+  const effectiveRent = annualRent - vacancy;
+  const propTax = salePrice * pct('propTaxRate');
+  const addTax = salePrice * pct('addTaxRate');
+  const mgmt = annualRent * pct('mgmtRate');
+  const ins = salePrice * pct('insRate');
+  const noi = effectiveRent - propTax - addTax - mgmt - ins;
+
+  // 대출이자
+  const interest = loan * pct('loanRate');
+  const preTaxCF = noi - interest;
+
+  // 임대소득세
+  const expense = annualRent * pct('expenseRatio');
+  const taxBase = annualRent - expense;
+  const incomeTax = taxBase * pct('incomeTaxRate');
+  const netCF_noLoan = noi - incomeTax;
+  const netCF_loan = preTaxCF - incomeTax;
+
+  // 7가지 수익률
+  const y1 = annualRent / (salePrice - deposit);
+  const y2 = annualRent / salePrice;
+  const y3 = noi / salePrice;
+  const y4 = noi / realInvest;
+  const y5 = netCF_noLoan / realInvest;
+  const y6 = realInvestLoan > 0 ? preTaxCF / realInvestLoan : 0;
+  const y7 = realInvestLoan > 0 ? netCF_loan / realInvestLoan : 0;
+
+  return {
+    annualRent, acqTax, eduTax, ruralTax, broker, brokerVat, legal, bldgVat, totalAcq,
+    realInvest, loan, realInvestLoan,
+    vacancy, effectiveRent, propTax, addTax, mgmt, ins, noi,
+    interest, preTaxCF,
+    expense, taxBase, incomeTax, netCF_noLoan, netCF_loan,
+    y1, y2, y3, y4, y5, y6, y7
+  };
+}
+
+// 법인 계산
+function computeCorp(salePrice, deposit, monthly) {
+  const r = compute(salePrice, deposit, monthly);
+  const annualRent = monthly * 12;
+
+  // 법인 추가 비용 (중과)
+  const corpHeavy = num('corpHeavy');
+  const corpHeavyAmt = corpHeavy === 1 ? salePrice * pct('corpHeavyRate') : 0;
+  const totalAcqCorp = r.totalAcq + corpHeavyAmt;
+
+  const realInvestCorp = salePrice - deposit + totalAcqCorp;
+  const realInvestCorpLoan = realInvestCorp - r.loan;
+
+  // 감가상각
+  const depreciation = salePrice * pct('bldgRatio') * pct('deprRate');
+
+  // 법인세 과세표준
+  const corpBaseLoan = Math.max(0, r.noi - r.interest - depreciation);
+  const corpBaseNoLoan = Math.max(0, r.noi - depreciation);
+
+  // 법인세 (구간)
+  function corpTax(base) {
+    const b1 = PROP_CORP.b1, b2 = PROP_CORP.b2;
+    if (base <= b1) return base * pct('corpTax1');
+    if (base <= b2) return b1 * pct('corpTax1') + (base - b1) * pct('corpTax2');
+    return b1 * pct('corpTax1') + (b2 - b1) * pct('corpTax2') + (base - b2) * pct('corpTax3');
+  }
+  const corpTaxLoan = corpTax(corpBaseLoan);
+  const corpTaxNoLoan = corpTax(corpBaseNoLoan);
+
+  // 법인 현금흐름 (감가상각은 현금유출 아니므로 환입)
+  // 세후이익 = NOI - 이자 - 감가상각 - 법인세, 그 다음 감가상각 환입
+  const corpNetLoan = r.noi - r.interest - depreciation - corpTaxLoan + depreciation;
+  // = NOI - 이자 - 법인세
+  const corpNetNoLoan = r.noi - depreciation - corpTaxNoLoan + depreciation;
+  // = NOI - 법인세
+
+  // 배당 인출 시
+  const payout = pct('payoutRatio');
+  const divTax = pct('divTaxRate');
+  const corpNetLoanAfterDiv = corpNetLoan - Math.max(0, r.noi - r.interest - depreciation - corpTaxLoan) * payout * divTax;
+  const corpNetNoLoanAfterDiv = corpNetNoLoan - Math.max(0, r.noi - depreciation - corpTaxNoLoan) * payout * divTax;
+
+  return {
+    ...r,
+    corpHeavyAmt, totalAcqCorp, realInvestCorp, realInvestCorpLoan,
+    depreciation, corpBaseLoan, corpBaseNoLoan,
+    corpTaxLoan, corpTaxNoLoan,
+    corpNetLoan, corpNetNoLoan,
+    corpNetLoanAfterDiv, corpNetNoLoanAfterDiv,
+    yieldCorp_loan: realInvestCorpLoan > 0 ? corpNetLoan / realInvestCorpLoan : 0,
+    yieldCorp_loanPayout: realInvestCorpLoan > 0 ? corpNetLoanAfterDiv / realInvestCorpLoan : 0,
+  };
+}
+
+function calculate() {
+  const salePrice = num('salePrice');
+  const deposit = num('deposit');
+  const monthly = num('monthly');
+  const area = num('area');
+
+  if (salePrice <= 0 || monthly <= 0) return;
+
+  // 자동계산 필드
+  document.getElementById('annualRent').value = monthly * 12;
+  if (area > 0) {
+    document.getElementById('pricePerPyung').value = Math.round(salePrice / (area / 3.3058));
+  }
+  // 광고 표시 수익률은 사용자 직접 입력 (자동계산 X)
+
+  const r = compute(salePrice, deposit, monthly);
+
+  // 탭1 - 단계별 분해
+  const set = (id, val) => document.getElementById(id).textContent = val;
+  [['lv-acq','acqTaxRate'],['lv-edu','eduTaxRate'],['lv-rural','ruralTaxRate']].forEach(function(x){ document.querySelectorAll('.'+x[0]).forEach(function(e){ e.textContent = document.getElementById(x[1]).value; }); });
+  set('A_acqTax', fmt(r.acqTax));
+  set('A_eduTax', fmt(r.eduTax));
+  set('A_ruralTax', fmt(r.ruralTax));
+  set('A_broker', fmt(r.broker));
+  set('A_brokerVat', fmt(r.brokerVat));
+  set('A_legal', fmt(r.legal));
+  set('A_bldgVat', fmt(r.bldgVat));
+  set('A_totalAcq', fmt(r.totalAcq));
+  set('A_acqPct', `매매가 대비 ${(r.totalAcq/salePrice*100).toFixed(2)}%`);
+
+  set('A_sale', fmt(salePrice));
+  set('A_depositOut', '-' + fmt(deposit));
+  set('A_acqIn', '+' + fmt(r.totalAcq));
+  set('A_realInvest', fmt(r.realInvest));
+  set('A_loanOut', '-' + fmt(r.loan));
+  set('A_realInvestLoan', fmt(r.realInvestLoan));
+
+  set('A_rentTotal', fmt(r.annualRent));
+  set('A_vacancy', '-' + fmt(r.vacancy));
+  set('A_effectiveRent', fmt(r.effectiveRent));
+  set('A_propTax', '-' + fmt(r.propTax));
+  set('A_addTax', '-' + fmt(r.addTax));
+  set('A_mgmt', '-' + fmt(r.mgmt));
+  set('A_ins', '-' + fmt(r.ins));
+  set('A_noi', fmt(r.noi));
+
+  set('A_noi2', fmt(r.noi));
+  set('A_interest', '-' + fmt(r.interest));
+  set('A_preTaxCF', fmt(r.preTaxCF));
+
+  set('A_rentTotal2', fmt(r.annualRent));
+  set('A_expense', '-' + fmt(r.expense));
+  set('A_taxBase', fmt(r.taxBase));
+  set('A_incomeTax', '-' + fmt(r.incomeTax));
+  set('A_netCF_noLoan', fmt(r.netCF_noLoan));
+  set('A_netCF_loan', fmt(r.netCF_loan));
+
+  // 7가지 수익률
+  // ① 광고 표시 수익률 (사용자 입력값)
+  const adYield = num('displayYield') / 100;
+  const calcedY1 = r.y1; // 자동계산: 연임대료 / (매매가-보증금)
+  set('Y1', fmtPct(adYield));
+  const diff = adYield - calcedY1;
+  if (Math.abs(diff) < 0.001) {
+    document.getElementById('Y1desc').textContent = `광고값 = 계산값 (${fmtPct(calcedY1)})`;
+  } else if (diff > 0) {
+    document.getElementById('Y1desc').textContent = `⚠ 광고 > 실제 (계산값 ${fmtPct(calcedY1)}, ${(diff*100).toFixed(2)}%p 부풀림)`;
+  } else {
+    document.getElementById('Y1desc').textContent = `광고 < 실제 (계산값 ${fmtPct(calcedY1)})`;
+  }
+  set('Y2', fmtPct(r.y2));
+  set('Y3', fmtPct(r.y3));
+  set('Y4', fmtPct(r.y4));
+  set('Y5', fmtPct(r.y5));
+  set('Y6', fmtPct(r.y6));
+  set('Y7', fmtPct(r.y7));
+
+  // Y7 카드 색상 (마이너스면 빨강)
+  const y7card = document.getElementById('Y7card');
+  if (r.y7 < 0) {
+    y7card.classList.remove('star2');
+    y7card.classList.add('warn');
+    document.getElementById('Y7desc').textContent = '⚠ 역레버리지 상태 (대출이 수익을 갉아먹음)';
+  } else {
+    y7card.classList.add('star2');
+    y7card.classList.remove('warn');
+    document.getElementById('Y7desc').textContent = '대출+세금 모두 반영. 최종 수익률';
+  }
+
+  // 레버리지 분석
+  const capRate = r.y3;
+  const loanRate = pct('loanRate');
+  const lev = document.getElementById('leverageInfo');
+  if (capRate > loanRate) {
+    lev.innerHTML = `✅ <b>정상 레버리지:</b> Cap Rate ${fmtPct(capRate)} > 대출금리 ${fmtPct(loanRate)} → 대출 받을수록 수익률 증가`;
+  } else {
+    lev.innerHTML = `⚠ <b>역레버리지:</b> Cap Rate ${fmtPct(capRate)} < 대출금리 ${fmtPct(loanRate)} → 대출 받을수록 수익률 감소. 현재 시장 다수가 이 상태.`;
+  }
+
+  // ===== 탭 3: 시나리오 (옵션 지원) =====
+  renderScenario(salePrice, deposit, monthly);
+
+  // ===== 탭 4: 법인 비교 =====
+  const c = computeCorp(salePrice, deposit, monthly);
+
+  set('P_acq', fmt(c.totalAcq));
+  set('P_invest', fmt(c.realInvest));
+  set('P_investL', fmt(c.realInvestLoan));
+  set('P_noi', fmt(c.noi));
+  set('P_int', '-' + fmt(c.interest));
+  set('P_tax', '-' + fmt(c.incomeTax));
+  set('P_cf', fmt(c.netCF_loan));
+  set('P_yield', fmtPct(c.y7));
+
+  set('C_acq', fmt(c.totalAcqCorp));
+  set('C_invest', fmt(c.realInvestCorp));
+  set('C_investL', fmt(c.realInvestCorpLoan));
+  set('C_noi', fmt(c.noi));
+  set('C_intDepr', '-' + fmt(c.interest + c.depreciation));
+  set('C_tax', '-' + fmt(c.corpTaxLoan));
+  set('C_cf', fmt(c.corpNetLoan));
+  set('C_yield', fmtPct(c.yieldCorp_loan));
+  set('C_yieldPayout', '인출 후: ' + fmtPct(c.yieldCorp_loanPayout));
+
+  // 종합 판정
+  const personYield = c.y7;
+  const corpYield = c.yieldCorp_loan;
+  const corpPayoutYield = c.yieldCorp_loanPayout;
+  let verdict = '';
+  if (corpYield > personYield && corpPayoutYield > personYield) {
+    verdict = '✅ 법인이 유리 (유보·인출 모두). 재투자 목적이라면 법인 추천.';
+  } else if (corpYield > personYield) {
+    verdict = `🟡 유보 시 법인 유리 (${fmtPct(corpYield-personYield)} 차이), 인출 시 ${corpPayoutYield > personYield ? '법인' : '개인'} 유리. 재투자 목적이면 법인.`;
+  } else {
+    verdict = '👤 개인이 유리. 법인 중과 또는 한계세율이 낮은 경우.';
+  }
+  document.getElementById('verdict').textContent = verdict;
+}
+
+// ===== 시나리오 렌더링 (옵션 지원) =====
+function renderScenario(salePrice, deposit, monthly) {
+  const mode = document.getElementById('sc_mode').value;
+  const steps = Math.max(5, Math.min(50, num('sc_steps') || 18));
+  const rentMode = document.getElementById('sc_rentMode').value;
+  const loanMode = document.getElementById('sc_loanMode').value;
+  const fmtMode = document.getElementById('sc_fmt').value;
+  const fm = fmtMode === 'short' ? v => sfKor(v, 'short') : v => sfNum(v);
+
+  // 가격 배열 생성
+  let prices = [];
+  if (mode === 'preset') {
+    prices = [1e8, 3e8, 5e8, 7e8, 1e9, 1.5e9, 2e9, 2.5e9, 3e9, 3.5e9, 4e9, 4.5e9, 5e9, 6e9, 7e9, 8e9, 9e9, 1e10];
+  } else {
+    const start = Math.max(1e6, num('sc_start') || 1e8);
+    const end = Math.max(start * 1.1, num('sc_end') || 1e10);
+    if (mode === 'log') {
+      const ratio = Math.pow(end / start, 1 / (steps - 1));
+      for (let i = 0; i < steps; i++) prices.push(start * Math.pow(ratio, i));
+    } else { // linear
+      const step = (end - start) / (steps - 1);
+      for (let i = 0; i < steps; i++) prices.push(start + step * i);
+    }
+  }
+
+  // 입력 매물 가격 자동 삽입 (없으면)
+  if (!prices.some(p => Math.abs(p - salePrice) / salePrice < 0.02)) {
+    prices.push(salePrice);
+    prices.sort((a, b) => a - b);
+  }
+
+  // 임대료 추정 방식
+  const depositRatio = deposit / salePrice;
+  function estimateRent(p) {
+    if (rentMode === 'capRate') {
+      const targetCap = pct('sc_cap');
+      // NOI = price × cap → 역산해서 monthly 추정
+      // 단순화: 월세 = (price × cap + 비용) / 12
+      // 더 단순하게: gross로 근사 (cap + 운영비율로 보정)
+      const opRatio = pct('vacancyRate') + pct('propTaxRate') + pct('addTaxRate') + pct('insRate');
+      // 임대료 × (1 - vacancy) - 임대료 × mgmt - price × (propTax+addTax+ins) = price × cap
+      // 임대료 × (1 - vacancy - mgmt) = price × cap + price × (propTax+addTax+ins)
+      // 임대료 = price × (cap + propTax+addTax+ins) / (1 - vacancy - mgmt)
+      const annualRentEst = p * (targetCap + pct('propTaxRate') + pct('addTaxRate') + pct('insRate')) 
+                          / (1 - pct('vacancyRate') - pct('mgmtRate'));
+      return annualRentEst / 12;
+    } else if (rentMode === 'grossRate') {
+      const targetGross = pct('sc_gross');
+      return p * targetGross / 12;
+    } else {
+      // ratio
+      return p * (monthly / salePrice);
+    }
+  }
+
+  // 헤더 생성
+  const head = document.getElementById('scenarioHead');
+  let headHtml = '<tr><th>매매가</th><th>월세</th><th>보증금</th><th>부대비용</th>';
+  if (loanMode === 'no' || loanMode === 'both') {
+    headHtml += '<th>실투자금<br>(대출X)</th>';
+  }
+  if (loanMode === 'yes' || loanMode === 'both') {
+    headHtml += '<th>실투자금<br>(대출O)</th>';
+  }
+  headHtml += '<th>NOI</th>';
+  if (loanMode === 'no' || loanMode === 'both') {
+    headHtml += '<th>세후<br>(대출X)</th>';
+  }
+  if (loanMode === 'yes' || loanMode === 'both') {
+    headHtml += '<th>세후<br>(대출O)</th>';
+  }
+  headHtml += '<th>Gross</th><th>Cap</th>';
+  if (loanMode === 'no' || loanMode === 'both') {
+    headHtml += '<th>세후/실투<br>(대출X)</th>';
+  }
+  if (loanMode === 'yes' || loanMode === 'both') {
+    headHtml += '<th>세후/실투<br>(대출O)</th>';
+  }
+  headHtml += '</tr>';
+  head.innerHTML = headHtml;
+
+  // 본문
+  const tbody = document.getElementById('scenarioBody');
+  tbody.innerHTML = '';
+  prices.forEach(p => {
+    const scMonthly = estimateRent(p);
+    const scDeposit = p * depositRatio;
+    const sc = compute(p, scDeposit, scMonthly);
+    const tr = document.createElement('tr');
+    if (Math.abs(p - salePrice) / salePrice < 0.02) tr.classList.add('current');
+
+    let html = `<td>${fm(p)}</td><td>${fm(scMonthly)}</td><td>${fm(scDeposit)}</td><td>${fm(sc.totalAcq)}</td>`;
+    if (loanMode === 'no' || loanMode === 'both') html += `<td>${fm(sc.realInvest)}</td>`;
+    if (loanMode === 'yes' || loanMode === 'both') html += `<td>${fm(sc.realInvestLoan)}</td>`;
+    html += `<td>${fm(sc.noi)}</td>`;
+    if (loanMode === 'no' || loanMode === 'both') html += `<td>${fm(sc.netCF_noLoan)}</td>`;
+    if (loanMode === 'yes' || loanMode === 'both') {
+      const cls = sc.netCF_loan < 0 ? 'style="color:#dc2626;font-weight:700"' : '';
+      html += `<td ${cls}>${fm(sc.netCF_loan)}</td>`;
+    }
+    html += `<td>${(sc.y2*100).toFixed(2)}%</td><td>${(sc.y3*100).toFixed(2)}%</td>`;
+    if (loanMode === 'no' || loanMode === 'both') html += `<td>${(sc.y5*100).toFixed(2)}%</td>`;
+    if (loanMode === 'yes' || loanMode === 'both') {
+      const cls = sc.y7 < 0 ? 'style="color:#dc2626;font-weight:700"' : '';
+      html += `<td ${cls}>${(sc.y7*100).toFixed(2)}%</td>`;
+    }
+    tr.innerHTML = html;
+    tbody.appendChild(tr);
+  });
+}
+
+// 시나리오 옵션 UI 토글
+function toggleScenarioOptions() {
+  const rentMode = document.getElementById('sc_rentMode').value;
+  document.getElementById('sc_capBox').style.display = rentMode === 'capRate' ? '' : 'none';
+  document.getElementById('sc_grossBox').style.display = rentMode === 'grossRate' ? '' : 'none';
+
+  const mode = document.getElementById('sc_mode').value;
+  // preset 선택시 시작/끝/단계수 비활성화
+  const isPreset = mode === 'preset';
+  ['sc_start', 'sc_end', 'sc_steps'].forEach(id => {
+    document.getElementById(id).disabled = isPreset;
+  });
+}
+document.getElementById('sc_rentMode').addEventListener('change', toggleScenarioOptions);
+document.getElementById('sc_mode').addEventListener('change', toggleScenarioOptions);
+toggleScenarioOptions();
+
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input', calculate);
+  el.addEventListener('change', calculate);
+});
+calculate();
+
+// ── sf-slots 연동 ──
+var _$ = function(id){ return document.getElementById(id); };
+window.CALC_KEY = 'property_yield';
+window.slGetState = function(){ return {
+    'salePrice': document.getElementById('salePrice').value,
+    'deposit': document.getElementById('deposit').value,
+    'monthly': document.getElementById('monthly').value,
+    'memo': document.getElementById('memo').value,
+    'area': document.getElementById('area').value,
+    'displayYield': document.getElementById('displayYield').value,
+    'acqTaxRate': document.getElementById('acqTaxRate').value,
+    'eduTaxRate': document.getElementById('eduTaxRate').value,
+    'ruralTaxRate': document.getElementById('ruralTaxRate').value,
+    'brokerRate': document.getElementById('brokerRate').value,
+    'brokerVatRate': document.getElementById('brokerVatRate').value,
+    'legalRate': document.getElementById('legalRate').value,
+    'bldgRatio': document.getElementById('bldgRatio').value,
+    'bldgVatRate': document.getElementById('bldgVatRate').value,
+    'addTaxRate': document.getElementById('addTaxRate').value,
+    'ltv': document.getElementById('ltv').value,
+    'loanRate': document.getElementById('loanRate').value,
+    'expenseRatio': document.getElementById('expenseRatio').value,
+    'vacancyRate': document.getElementById('vacancyRate').value,
+    'propTaxRate': document.getElementById('propTaxRate').value,
+    'insRate': document.getElementById('insRate').value,
+    'mgmtRate': document.getElementById('mgmtRate').value,
+    'incomeTaxRate': document.getElementById('incomeTaxRate').value,
+    'deprRate': document.getElementById('deprRate').value,
+    'divTaxRate': document.getElementById('divTaxRate').value,
+    'payoutRatio': document.getElementById('payoutRatio').value,
+    'corpHeavyRate': document.getElementById('corpHeavyRate').value,
+    'corpTax1': document.getElementById('corpTax1').value,
+    'corpTax2': document.getElementById('corpTax2').value,
+    'corpTax3': document.getElementById('corpTax3').value,
+    'sc_cap': document.getElementById('sc_cap').value,
+    'sc_end': document.getElementById('sc_end').value,
+    'sc_gross': document.getElementById('sc_gross').value,
+    'sc_start': document.getElementById('sc_start').value,
+    'sc_steps': document.getElementById('sc_steps').value,
+    'corpHeavy': document.getElementById('corpHeavy').value,
+    'corpType': document.getElementById('corpType').value,
+    'sc_mode': document.getElementById('sc_mode').value,
+    'sc_rentMode': document.getElementById('sc_rentMode').value,
+    'sc_loanMode': document.getElementById('sc_loanMode').value,
+    'sc_fmt': document.getElementById('sc_fmt').value
+  }; };
+window.slSetState = function(d){ if(!d) return;
+    if(d['salePrice']!=null) document.getElementById('salePrice').value = d['salePrice'];
+    if(d['deposit']!=null) document.getElementById('deposit').value = d['deposit'];
+    if(d['monthly']!=null) document.getElementById('monthly').value = d['monthly'];
+    if(d['memo']!=null) document.getElementById('memo').value = d['memo'];
+    if(d['area']!=null) document.getElementById('area').value = d['area'];
+    if(d['displayYield']!=null) document.getElementById('displayYield').value = d['displayYield'];
+    if(d['acqTaxRate']!=null) document.getElementById('acqTaxRate').value = d['acqTaxRate'];
+    if(d['eduTaxRate']!=null) document.getElementById('eduTaxRate').value = d['eduTaxRate'];
+    if(d['ruralTaxRate']!=null) document.getElementById('ruralTaxRate').value = d['ruralTaxRate'];
+    if(d['brokerRate']!=null) document.getElementById('brokerRate').value = d['brokerRate'];
+    if(d['brokerVatRate']!=null) document.getElementById('brokerVatRate').value = d['brokerVatRate'];
+    if(d['legalRate']!=null) document.getElementById('legalRate').value = d['legalRate'];
+    if(d['bldgRatio']!=null) document.getElementById('bldgRatio').value = d['bldgRatio'];
+    if(d['bldgVatRate']!=null) document.getElementById('bldgVatRate').value = d['bldgVatRate'];
+    if(d['addTaxRate']!=null) document.getElementById('addTaxRate').value = d['addTaxRate'];
+    if(d['ltv']!=null) document.getElementById('ltv').value = d['ltv'];
+    if(d['loanRate']!=null) document.getElementById('loanRate').value = d['loanRate'];
+    if(d['expenseRatio']!=null) document.getElementById('expenseRatio').value = d['expenseRatio'];
+    if(d['vacancyRate']!=null) document.getElementById('vacancyRate').value = d['vacancyRate'];
+    if(d['propTaxRate']!=null) document.getElementById('propTaxRate').value = d['propTaxRate'];
+    if(d['insRate']!=null) document.getElementById('insRate').value = d['insRate'];
+    if(d['mgmtRate']!=null) document.getElementById('mgmtRate').value = d['mgmtRate'];
+    if(d['incomeTaxRate']!=null) document.getElementById('incomeTaxRate').value = d['incomeTaxRate'];
+    if(d['deprRate']!=null) document.getElementById('deprRate').value = d['deprRate'];
+    if(d['divTaxRate']!=null) document.getElementById('divTaxRate').value = d['divTaxRate'];
+    if(d['payoutRatio']!=null) document.getElementById('payoutRatio').value = d['payoutRatio'];
+    if(d['corpHeavyRate']!=null) document.getElementById('corpHeavyRate').value = d['corpHeavyRate'];
+    if(d['corpTax1']!=null) document.getElementById('corpTax1').value = d['corpTax1'];
+    if(d['corpTax2']!=null) document.getElementById('corpTax2').value = d['corpTax2'];
+    if(d['corpTax3']!=null) document.getElementById('corpTax3').value = d['corpTax3'];
+    if(d['sc_cap']!=null) document.getElementById('sc_cap').value = d['sc_cap'];
+    if(d['sc_end']!=null) document.getElementById('sc_end').value = d['sc_end'];
+    if(d['sc_gross']!=null) document.getElementById('sc_gross').value = d['sc_gross'];
+    if(d['sc_start']!=null) document.getElementById('sc_start').value = d['sc_start'];
+    if(d['sc_steps']!=null) document.getElementById('sc_steps').value = d['sc_steps'];
+    if(d['corpHeavy']!=null) document.getElementById('corpHeavy').value = d['corpHeavy'];
+    if(d['corpType']!=null) document.getElementById('corpType').value = d['corpType'];
+    // (087) 2025년 기본 세율(9.9/20.9/24.2)을 안 고치고 저장한 슬롯이면 지금 세율로 바꿔 채움. 직접 고친 값은 그대로 둠
+    if(String(d['corpTax1'])===PROP_CORP.old[0] && String(d['corpTax2'])===PROP_CORP.old[1]) propFillCorp(d['corpType']||'gen');
+    if(d['sc_mode']!=null) document.getElementById('sc_mode').value = d['sc_mode'];
+    if(d['sc_rentMode']!=null) document.getElementById('sc_rentMode').value = d['sc_rentMode'];
+    if(d['sc_loanMode']!=null) document.getElementById('sc_loanMode').value = d['sc_loanMode'];
+    if(d['sc_fmt']!=null) document.getElementById('sc_fmt').value = d['sc_fmt'];
+  if(typeof calculate === 'function') calculate();
+};
+</script>
+<script>window.SF_RESET = true;</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

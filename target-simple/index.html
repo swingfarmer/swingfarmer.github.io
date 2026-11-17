@@ -1,0 +1,281 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<meta name="robots" content="noindex, nofollow">
+<title>목표가 계산기 (심플) | 스윙파머</title>
+<meta name="description" content="여러 종목 함께 목표금액 계산. 종목별 매수가/수량/신용/목표가 입력하면 목표금액·수익·수익률·이자·실수령 자동. 합계까지.">
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .sub{color:#c2c2c2!important}
+body.sf-dark .unit{color:#c2c2c2!important}
+body.sf-dark .hint{background-color:#152537!important;color:#85b5e0!important}
+body.sf-dark .out-row{background-color:#1a2433!important}
+body.sf-dark .out-row .lbl{color:#cccccc!important}
+body.sf-dark .out-row .v{color:#85b5e0!important}
+body.sf-dark .divider{color:#c2c2c2!important;border-top-color:#3c485d!important}
+body.sf-dark .stock-card{background-color:#1e242e!important;border-color:#2c333f!important}
+body.sf-dark .stock-out > div{background-color:#1e242e!important}
+body.sf-dark .stock-out .v{color:#85b5e0!important}
+body.sf-dark .btn-icon{background-color:#371515!important}
+body.sf-dark .btn{border-color:#2c333f!important;background-color:#1e242e!important}
+body.sf-dark .out-row .v.big{color:#dc2626!important}
+body.sf-dark .out-row .v.loss{color:#059669!important}
+body.sf-dark .btn.pri{background:#0ea5e9!important;border-color:#0ea5e9!important}
+body.sf-dark .btn.pri:hover{background:#0284c7!important}
+body.sf-dark .btn.gray{background:#9ca3af!important;border-color:#9ca3af!important}
+</style>
+<style>
+:root { --sf-max-w: 760px; }
+h1 { color: #1F4E78; font-size: 22px; margin-bottom: 4px; border-bottom: none; padding-bottom: 0; }
+  .sub { color: #666; font-size: 13px; margin-bottom: 18px; }
+  .panel h2 { color: #1F4E78; font-size: 15px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e5e9f0; }
+  .row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .row > label { font-size: 13px; color: #333; min-width: 100px; font-weight: 600; }
+  .row .field { flex: 1; min-width: 120px; }
+  input:focus, select:focus { outline: none; border-color: #1F4E78; }
+  .unit { font-size: 12px; color: #666; margin-left: 4px; flex-shrink: 0; }
+  .kor { font-size: 11px; color: #059669; text-align: right; padding: 2px 4px 0; font-weight: 500; min-height: 14px; }
+  .hint { background: #f0f7ff; padding: 10px 12px; border-radius: 6px; font-size: 12px; color: #1F4E78; margin-top: 8px; line-height: 1.7; }
+  .out-row { display: flex; align-items: baseline; gap: 8px; padding: 8px 10px; background: #f5f7fa; border-radius: 6px; margin-bottom: 6px; }
+  .out-row .lbl { flex: 0 0 110px; font-size: 12.5px; color: #555; }
+  .out-row .v { flex: 1; text-align: right; font-weight: 700; color: #1F4E78; font-size: 15px; }
+  .out-row .v.big { font-size: 17px; color: #dc2626; }
+  .out-row .v .kor { display: block; font-size: 11px; color: #059669; margin-top: 2px; font-weight: 500; }
+  .out-row .v.big .kor { color: #dc2626; }
+  .out-row .v.loss { color: #059669; }
+  .divider { padding: 8px 0 4px; font-size: 12px; color: #666; font-weight: 600; border-top: 1px dashed #e0e4eb; margin-top: 6px; }
+  .stock-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+  .stock-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 6px; }
+  .stock-grid input { padding: 10px; font-size:13px; }
+  .stock-out { display: grid; gap: 4px; padding: 4px 0; font-size: 11px; }
+  .stock-out > div { text-align: center; padding: 5px 4px; background: #fff; border-radius: 4px; }
+  .stock-out .l { color: #888; font-size: 10.5px; }
+  .stock-out .v { font-weight: 700; color: #1F4E78; margin-top: 2px; }
+  .btn-icon { background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; width: 32px; height: 32px; font-size: 14px; cursor: pointer; font-weight: 700; }
+  .btn { padding: 9px 14px; border: 1px solid #d0d5dd; background: #fff; border-radius: 6px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .btn.pri { background: #0ea5e9; color: #fff; border-color: #0ea5e9; }
+  .btn.pri:hover { background: #0284c7; }
+  .btn.gray { background: #9ca3af; color: #fff; border-color: #9ca3af; }
+  .footer-note { font-size: 11px; color: #888; text-align: center; margin-top: 20px; line-height: 1.6; }
+/* (098) 다크 글자색 — 라이트 색(빨강·파랑·갈색·초록·남색)이 어두운 배경에서 안 읽히던 것 */
+body.sf-dark .btn{color:#e5e7eb}
+</style>
+
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body>
+<div class="sf-sibling-nav">
+<a href="#" class="active">🎯 목표가 심플</a>
+<a href="/target-price/">🎯 목표가 역산</a>
+</div>
+<div class="wrap">
+
+  <h1>🎯 목표가 계산기 (심플)</h1>
+  <p class="sub">여러 종목을 한 번에 입력해 <b>종목별 수익·수익률 + 전체 합계</b>까지 자동 계산. 신용 있으면 이자·실수령까지.</p>
+
+  <!-- 이자 설정 (신용 있을 때만) -->
+  <div class="panel" id="ratePanel" style="display:none">
+    <h2>💰 신용 이자 설정</h2>
+    <p style="font-size:12px;color:#666;margin-bottom:10px">신용 있는 종목이 하나라도 있으면 표시. 모든 종목에 <b>동일 이자율·사용일수</b> 적용.</p>
+    <div class="row">
+      <label>연 이자율</label>
+      <div class="field"><input type="text" inputmode="decimal" id="inRate" placeholder="8" value="8"></div>
+      <span class="unit">%</span>
+    </div>
+    <div class="row">
+      <label>사용일수</label>
+      <div class="field"><input type="text" inputmode="numeric" id="inDays" placeholder="30" value="30"></div>
+      <span class="unit">일 (매도까지 예상)</span>
+    </div>
+    <div class="hint">
+      💡 이자 = 신용 × 이자율 × 사용일수 ÷ 365. 실수령 = 목표금액 − 신용 − 이자.
+    </div>
+  </div>
+
+  <!-- 다종목 목표금액 계산 -->
+  <div class="panel">
+    <h2>📊 다종목 목표금액 계산</h2>
+    <div id="stockList"></div>
+    <button id="btnAddStock" class="btn" style="margin-top:6px">➕ 종목 추가</button>
+
+    <div class="divider" style="margin-top:16px;font-size:13px;color:#1F4E78">💵 합계</div>
+    <div class="out-row"><span class="lbl">총 매수금액</span><span class="v" id="sumBuy">- <span class="kor"></span></span></div>
+    <div class="out-row" id="sumCreditRow" style="display:none"><span class="lbl">총 신용</span><span class="v" id="sumCredit">- <span class="kor"></span></span></div>
+    <div class="out-row" id="sumInterestRow" style="display:none"><span class="lbl">총 이자</span><span class="v loss" id="sumInterest">- <span class="kor"></span></span></div>
+    <div class="out-row"><span class="lbl">총 목표금액</span><span class="v big" id="sumTarget">- <span class="kor"></span></span></div>
+    <div class="out-row"><span class="lbl">총 예상 수익</span><span class="v" id="sumGain">- <span class="kor"></span></span></div>
+    <div class="out-row"><span class="lbl">평균 수익률</span><span class="v" id="sumRate">-</span></div>
+    <div class="out-row" id="sumNetRow" style="display:none;background:#fef9e7"><span class="lbl">총 실수령</span><span class="v big" id="sumNet">- <span class="kor"></span></span></div>
+  </div>
+
+  <p class="footer-note">
+    ※ 상승률(%)로 목표가 잡고 싶으면 매수가 × (1 + 상승률/100) 계산해서 목표가에 입력.<br>
+    ※ 같은 종목의 여러 매도가 비교 원하면 같은 종목 여러 행으로 추가 (예: 목표가 6만/7만/8만 3행).
+  </p>
+</div>
+
+<!-- 클라우드 모달 -->
+
+
+<script>
+window.CALC_KEY = 'target-simple';
+window.slGetState = function(){ return window.tGetState ? window.tGetState() : {}; };
+window.slSetState = function(d){ if(window.tSetState) window.tSetState(d); };
+</script>
+<script>window.SF_RESET = ["sf_ts_state_v1"];</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+function num(id) { const v = parseFloat(($(id).value || '').replace(/,/g,'')); return isNaN(v) ? 0 : v; }
+function fmt(n) { if (!isFinite(n) || n === 0) return '0 원'; return sfNum(n) + ' 원'; }
+function setCell(id, n, addSign) {
+  const el = $(id);
+  const kor = Math.abs(n) >= 1e4 ? sfKor(n) : '';
+  const sign = addSign && n > 0 ? '+' : '';
+  el.innerHTML = sign + fmt(n) + (kor ? ' <span class="kor">(' + (n > 0 && addSign ? '+' : '') + kor + ')</span>' : ' <span class="kor"></span>');
+}
+
+let stocks = [{ name: '', buy: 50000, qty: 100, credit: 0, target: 75000 }];
+
+function calcInterest(credit) {
+  const rate = num('inRate');
+  const days = num('inDays');
+  if (!credit || rate <= 0 || days <= 0) return 0;
+  return credit * (rate / 100) * (days / 365);
+}
+
+function renderStocks() {
+  const box = $('stockList');
+  box.innerHTML = '';
+  const hasAnyCredit = stocks.some(s => (s.credit || 0) > 0);
+  $('ratePanel').style.display = hasAnyCredit ? 'block' : 'none';
+
+  stocks.forEach((s, i) => {
+    const card = document.createElement('div');
+    card.className = 'stock-card';
+    const nameEsc = (s.name || '').replace(/"/g,'&quot;');
+    const outCols = hasAnyCredit ? 5 : 3;
+    card.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr auto;gap:6px;margin-bottom:6px">
+        <input type="text" placeholder="종목명 (선택)" value="${nameEsc}" data-f="name" data-i="${i}" class="stk-in" style="width:100%;padding:7px 9px;border:1px solid #d0d5dd;border-radius:6px;background:#fff;color:#333;font-weight:600;font-size:13px;text-align:left">
+        <button class="btn-icon" data-del="${i}" title="삭제">✕</button>
+      </div>
+      <div class="stock-grid">
+        <div><label>매수가</label><input type="text" inputmode="numeric" placeholder="매수가" value="${s.buy || ''}" data-f="buy" data-i="${i}" class="stk-in" style="width:100%"></div>
+        <div><label>수량</label><input type="text" inputmode="numeric" placeholder="수량" value="${s.qty || ''}" data-f="qty" data-i="${i}" class="stk-in" style="width:100%"></div>
+        <div><label>신용 <span style="color:#999;font-weight:400">(없으면 비움)</span></label><input type="text" inputmode="numeric" placeholder="0" value="${s.credit || ''}" data-f="credit" data-i="${i}" class="stk-in" style="width:100%"></div>
+        <div><label>목표가</label><input type="text" inputmode="numeric" placeholder="목표가" value="${s.target || ''}" data-f="target" data-i="${i}" class="stk-in" style="width:100%"></div>
+      </div>
+      <div class="stock-out" id="stk-out-${i}" style="grid-template-columns:repeat(${outCols}, 1fr)"></div>
+    `;
+    box.appendChild(card);
+  });
+  box.querySelectorAll('.stk-in').forEach(el => {
+    el.addEventListener('input', () => {
+      const i = parseInt(el.dataset.i);
+      const f = el.dataset.f;
+      if (f === 'name') stocks[i][f] = el.value;
+      else stocks[i][f] = parseFloat(el.value.replace(/,/g,'')) || 0;
+      if (f === 'credit') { renderStocks(); saveLocal(); return; }
+      calcStocks(); saveLocal();
+    });
+  });
+  box.querySelectorAll('[data-del]').forEach(el => {
+    el.addEventListener('click', () => {
+      const i = parseInt(el.dataset.del);
+      if (stocks.length <= 1) { alert('최소 1개 종목은 있어야 합니다.'); return; }
+      stocks.splice(i, 1);
+      renderStocks(); saveLocal();
+    });
+  });
+  calcStocks();
+}
+
+function calcStocks() {
+  const hasAnyCredit = stocks.some(s => (s.credit || 0) > 0);
+  let sumBuy = 0, sumCredit = 0, sumInterest = 0, sumTarget = 0, sumGain = 0;
+  stocks.forEach((s, i) => {
+    const buyAmt = (s.buy || 0) * (s.qty || 0);
+    const tAmt = (s.target || 0) * (s.qty || 0);
+    const gain = tAmt - buyAmt;
+    const rate = (s.buy > 0 && s.target > 0) ? ((s.target / s.buy - 1) * 100) : 0;
+    const interest = calcInterest(s.credit || 0);
+    const net = tAmt - (s.credit || 0) - interest;
+    sumBuy += buyAmt; sumCredit += (s.credit || 0); sumInterest += interest;
+    sumTarget += tAmt; sumGain += gain;
+
+    const out = $(`stk-out-${i}`);
+    if (!out) return;
+    const gainColor = gain > 0 ? '#dc2626' : (gain < 0 ? '#059669' : '#666');
+    const cells = [
+      `<div><div class="l">목표금액</div><div class="v">${buyAmt > 0 ? Math.round(tAmt).toLocaleString() : '-'}</div></div>`,
+      `<div><div class="l">수익</div><div class="v" style="color:${gainColor}">${buyAmt > 0 ? (gain > 0 ? '+' : '') + Math.round(gain).toLocaleString() : '-'}</div></div>`,
+      `<div><div class="l">수익률</div><div class="v" style="color:${gainColor}">${(s.buy > 0 && s.target > 0) ? (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%' : '-'}</div></div>`
+    ];
+    if (hasAnyCredit) {
+      cells.push(`<div style="background:#fef2f2"><div class="l">이자</div><div class="v" style="color:#dc2626">${interest > 0 ? Math.round(interest).toLocaleString() : '-'}</div></div>`);
+      cells.push(`<div style="background:#fef9e7"><div class="l">실수령</div><div class="v" style="color:#92400e">${buyAmt > 0 ? Math.round(net).toLocaleString() : '-'}</div></div>`);
+    }
+    out.innerHTML = cells.join('');
+  });
+  const sumNet = sumTarget - sumCredit - sumInterest;
+  const sumRate = sumBuy > 0 ? ((sumTarget / sumBuy - 1) * 100) : 0;
+  setCell('sumBuy', sumBuy);
+  setCell('sumCredit', sumCredit);
+  setCell('sumInterest', sumInterest);
+  setCell('sumTarget', sumTarget);
+  setCell('sumGain', sumGain, true);
+  setCell('sumNet', sumNet);
+  $('sumRate').textContent = sumBuy > 0 ? (sumRate >= 0 ? '+' : '') + sumRate.toFixed(2) + '%' : '-';
+  $('sumRate').style.color = sumRate > 0 ? '#dc2626' : (sumRate < 0 ? '#059669' : '#1F4E78');
+  $('sumGain').style.color = sumGain > 0 ? '#dc2626' : (sumGain < 0 ? '#059669' : '#1F4E78');
+  $('sumCreditRow').style.display = sumCredit > 0 ? 'flex' : 'none';
+  $('sumInterestRow').style.display = sumInterest > 0 ? 'flex' : 'none';
+  $('sumNetRow').style.display = sumCredit > 0 ? 'flex' : 'none';
+}
+
+$('btnAddStock').addEventListener('click', () => {
+  const last = stocks[stocks.length - 1];
+  stocks.push({ name: '', buy: last?.buy || 0, qty: last?.qty || 0, credit: 0, target: last?.target || 0 });
+  renderStocks(); saveLocal();
+});
+
+['inRate', 'inDays'].forEach(id => {
+  $(id).addEventListener('input', () => { calcStocks(); saveLocal(); });
+});
+
+// 상태 저장/복원
+function tGetState() {
+  return { rate: $('inRate').value, days: $('inDays').value, stocks: JSON.parse(JSON.stringify(stocks)) };
+}
+function tSetState(d) {
+  if (!d) return;
+  $('inRate').value = d.rate || '8';
+  $('inDays').value = d.days || '30';
+  stocks = Array.isArray(d.stocks) && d.stocks.length > 0
+    ? JSON.parse(JSON.stringify(d.stocks))
+    : [{ name: '', buy: 50000, qty: 100, credit: 0, target: 75000 }];
+  renderStocks();
+}
+function saveLocal() { try { localStorage.setItem('sf_ts_state_v1', JSON.stringify(tGetState())); } catch(e){} }
+function loadLocal() { try { const r = localStorage.getItem('sf_ts_state_v1'); if (r) tSetState(JSON.parse(r)); } catch(e){} }
+window.tGetState = tGetState;
+window.tSetState = tSetState;
+
+loadLocal();
+renderStocks();
+</script>
+
+
+</body>
+</html>

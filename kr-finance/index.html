@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<meta name="robots" content="noindex, nofollow">
+<title>한국주식 재무 트래커 | 스윙파머</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/common-dark.css?v=7">
+<style>
+:root { --sf-max-w: 1400px; }
+/* 기간 선택 바 */
+.period-bar{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px}
+.period-btn{padding:7px 16px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text-dim);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .12s;font-family:inherit}
+.period-btn:hover{border-color:var(--accent);color:var(--text)}
+.period-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.controls{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.search-box{flex:1;min-width:200px;padding:9px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:13px;font-family:inherit}
+.search-box:focus{outline:none;border-color:var(--accent)}
+.search-box::placeholder{color:var(--text-dim)}
+.filter-btn{padding:7px 14px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text-dim);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .12s;font-family:inherit}
+.filter-btn:hover{border-color:var(--accent);color:var(--text)}
+.filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.stats-bar{display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+.stat-chip{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:12px}
+.stat-chip .label{color:var(--text-dim);margin-right:6px}
+.stat-chip .val{font-weight:700}
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px;background:var(--card);max-height:calc(100vh - 260px)}
+thead{position:sticky;top:0;z-index:2}
+th:hover{color:var(--accent)}
+th.sorted{color:var(--accent)}
+th .arrow{font-size:9px;margin-left:3px}
+th:first-child,th:nth-child(2){text-align:left;position:sticky;left:0;z-index:3;background:var(--card)}
+th:nth-child(2){left:42px}
+td{padding:8px 8px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}
+td:first-child{text-align:center;width:42px;position:sticky;left:0;background:var(--card);z-index:1}
+td:nth-child(2){text-align:left;position:sticky;left:42px;background:var(--card);z-index:1;min-width:110px}
+tr:hover td{background:var(--card-hover)}
+tr.selected td{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.3)}
+/* (108) 가로 스크롤 고정 칸: 선택 행 반투명 바탕이면 뒤 칸 글자가 비침 → 고정 칸만 불투명 바탕 위에 겹침.
+   체크 칸은 폭을 42px로 고정(패딩 포함) — 종목 칸 left:42px와 어긋나면 틈으로 뒤 글자가 보였음 */
+th:first-child,td:first-child{box-sizing:border-box;width:42px;min-width:42px;max-width:42px;padding-left:4px;padding-right:4px}
+tr.selected td:first-child,tr.selected td:nth-child(2){background:linear-gradient(rgba(59,130,246,.1),rgba(59,130,246,.1)),var(--card)}
+tr.selected:hover td:first-child,tr.selected:hover td:nth-child(2){background:var(--card-hover)}
+.stock-name{font-weight:700;font-size:13px;display:block}
+.stock-code{font-size:10px;color:var(--text-dim)}
+.stock-sector{font-size:10px;color:var(--text-dim);display:block;margin-top:1px}
+.gold{color:var(--gold)}.dim{color:var(--text-dim)}
+.chk{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+.compare-panel{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:2px solid var(--accent);padding:14px 20px;display:none;z-index:10;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap}
+.compare-panel.show{display:flex}
+.compare-panel .compare-count{font-weight:700;font-size:14px}
+.compare-panel button{padding:8px 20px;border-radius:8px;border:none;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+.btn-compare{background:var(--accent);color:#fff}
+.btn-clear{background:transparent;color:var(--text-dim);border:1px solid var(--border) !important}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:20;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal{background:var(--bg);border:1px solid var(--border);border-radius:16px;max-width:1100px;width:100%;max-height:85vh;overflow-y:auto;padding:24px;position:relative}
+.modal h2{font-size:18px;font-weight:800;margin-bottom:16px}
+.modal .close-btn{position:absolute;top:16px;right:20px;background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer}
+/* 그룹 헤더 */
+th.group-hdr{background:#161922;font-size:10px;color:var(--accent);border-bottom:1px solid var(--accent);padding:4px 8px}
+@media(max-width:768px){
+  .controls{gap:6px}.search-box{min-width:100%}
+  .stats-bar{gap:8px}.stat-chip{padding:6px 10px;font-size:11px}
+}
+.note{font-size:11px;color:var(--text-dim);text-align:center;margin-top:30px;line-height:1.8}
+.saved-bar{display:flex;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px}
+.saved-chip{padding:5px 12px;border:1px solid var(--border);border-radius:16px;background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .12s;font-family:inherit;display:inline-flex;align-items:center;gap:4px}
+.saved-chip:hover{border-color:var(--accent);background:rgba(59,130,246,.1)}
+.saved-chip .del{color:var(--text-dim);font-size:10px;margin-left:4px;padding:0 2px;border-radius:50%}
+.saved-chip .del:hover{color:var(--red)}
+
+/* 듀얼 테마: 라이트 모드 오버라이드 */
+body:not(.sf-dark){
+  --sf-bg:#f5f7fa;--sf-card:#fff;--sf-card-hover:#f0f5fa;--sf-border:#e5e7eb;
+  --sf-text:#1a1a1a;--sf-text-dim:#71717a;--sf-accent:#1F4E78;
+  --sf-green:#059669;--sf-red:#dc2626;--sf-gold:#d97706;--sf-warn:#d97706;--sf-orange:#ea580c;
+  --bg:#f5f7fa;--card:#fff;--card-hover:#f0f5fa;--surface:#fff;
+  --border:#e5e7eb;--text:#1a1a1a;--text-dim:#71717a;
+  --accent:#1F4E78;--green:#059669;--red:#dc2626;--gold:#d97706;--warn:#d97706;--orange:#ea580c;
+  color:#1a1a1a;background:#f5f7fa}
+body:not(.sf-dark) .card,body:not(.sf-dark) .kpi-card,body:not(.sf-dark) .sec-card,
+body:not(.sf-dark) .control-box,body:not(.sf-dark) .ctrl-box{
+  background:#fff;border-color:#e5e7eb;color:#1a1a1a}
+body:not(.sf-dark) input,body:not(.sf-dark) select,body:not(.sf-dark) textarea{
+  background:#fff;border-color:#ddd;color:#1a1a1a}
+body:not(.sf-dark) table th{background:#f0f5fa;color:#555}
+body:not(.sf-dark) table td{border-color:#f0f0f0;color:#333}
+body:not(.sf-dark) h1,body:not(.sf-dark) h2,body:not(.sf-dark) h3{color:#1F4E78}
+body:not(.sf-dark) .back-link{color:#1F4E78}
+body:not(.sf-dark) .subtitle{color:#666}
+body:not(.sf-dark) .btn{background:#1F4E78}
+body:not(.sf-dark) .badge-safe{background:rgba(5,150,105,.12);color:#059669}
+body:not(.sf-dark) .badge-warn{background:rgba(217,119,6,.12);color:#d97706}
+body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
+
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>한국주식 <span>재무 트래커</span></h1>
+    <div class="header-meta">
+      <div class="updated" id="updated">로딩 중...</div>
+    </div>
+  </div>
+
+  <!-- 기간 선택 -->
+  <div class="period-bar" id="periodBar">
+    <button class="period-btn active" data-file="kospi200.json">최신</button>
+  </div>
+
+  <div class="controls" id="controls">
+    <input type="text" class="search-box" id="search" placeholder="종목명 또는 코드 검색…">
+    <button class="filter-btn" id="sepTaxFilter" onclick="toggleSepTax()" style="display:none">💰 분리과세</button>
+  </div>
+  <div class="stats-bar" id="statsBar"></div>
+  <!-- 저장된 비교 세트 -->
+  <div class="saved-bar" id="savedBar" style="display:none">
+    <span style="font-size:12px;color:var(--text-dim);font-weight:700;margin-right:8px">📌 저장 비교</span>
+    <div id="savedChips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+  </div>
+  <div class="table-wrap">
+    <table><thead id="thead"></thead><tbody id="tbody"></tbody></table>
+  </div>
+
+  <details style="margin-top:24px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0">
+    <summary style="padding:14px 18px;cursor:pointer;font-weight:700;font-size:14px;color:var(--text);list-style:none;display:flex;align-items:center;gap:8px">
+      <span>📖</span> 사용법 · 지표 설명
+      <span style="margin-left:auto;font-size:11px;color:var(--text-dim)">클릭해서 펼치기</span>
+    </summary>
+    <div style="padding:4px 18px 18px;font-size:12px;line-height:2;color:var(--text-dim)">
+      <div style="margin-bottom:14px">
+        <div style="font-weight:700;color:var(--text);margin-bottom:6px">🔍 사용법</div>
+        <div>• <b>기간 선택</b> — 상단 탭으로 연간/분기 데이터 전환. 분기 탭은 그 분기 3개월 실적(ROE·ROA 연환산 안 함, D&A·EBITDA도 3개월치), 배당금은 연초부터 그 분기까지 누적, 배당 지표(배당률·배당성향·분리과세)와 EV/EBITDA는 연간 탭에만 나옴(최근 4분기 합 EV/EBITDA는 유사종목 찾기 페이지)</div>
+        <div>• <b>검색</b> — 종목명 또는 종목코드 입력</div>
+        <div>• <b>업종 필터</b> — 탭으로 업종별 보기</div>
+        <div>• <b>정렬</b> — 열 헤더 클릭 (한번 더 클릭하면 반전)</div>
+        <div>• <b>비교</b> — 체크박스로 2종목 이상 선택 → 하단 "비교하기" 클릭</div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-weight:700;color:var(--text);margin-bottom:6px">📊 지표 설명</div>
+        <div>• <b>OPM</b> — 영업이익률. 본업의 수익성</div>
+        <div>• <b>NIM</b> — 순이익률. 세후 최종 수익성</div>
+        <div>• <b>외화 재무</b> — 두산밥캣처럼 재무제표를 달러로 내는 회사는 종목명 아래 「USD 재무」, 금액 칸 앞에 USD가 붙음(예: USD 62억 = 62억 달러). 분리과세는 회사 공시 배당성향으로 판정, EV/EBITDA는 계산 안 함</div>
+        <div>• <b>순이익 / 지배순이익</b> — 연결 당기순이익(자회사 소수주주 몫 포함) / 그중 지배기업 주주 몫. 지주사는 차이가 큼. 연결이 없는 회사는 지배순이익이 비고 순이익과 같음</div>
+        <div>• <b>ROE</b> — 자기자본이익률. 주주 돈의 효율</div>
+        <div>• <b>ROA</b> — 총자산이익률</div>
+        <div>• <b>부채비율</b> — 부채÷자본. 금융업은 1000%↑ 정상</div>
+        <div>• <b>YoY</b> — 전년 동기 대비 증감률. "적전"=흑자→적자</div>
+        <div>• <b>EBITDA</b> — 영업이익+감가상각비. 현금 창출력</div>
+        <div>• <b>D&A</b> — 감가상각비+무형자산상각비. DART 현금흐름표에 따로 적은 회사만 나옴 — 삼성전자·SK하이닉스처럼 주석에만 두는 회사는 「-」(그래서 EBITDA·EV/EBITDA도 「-」). 현금흐름표는 연초부터 누적이라 분기 탭은 직전 분기 누적을 빼서 3개월치로 맞춤</div>
+        <div>• <b>EV/EBITDA</b> — 기업가치÷EBITDA. 낮을수록 저평가 (7 이하 관심)</div>
+        <div>• <b>PER</b> — 주가÷EPS. 낮을수록 저평가 (업종별 상대 비교)</div>
+        <div>• <b>PBR</b> — 주가÷BPS. 1 미만이면 자산 대비 저평가</div>
+        <div>• <b>52주고/저</b> — 최근 1년간 최고·최저가</div>
+        <div>• <b>배당률</b> — 주당배당 ÷ 현재가. <span style="color:var(--green)">5%↑</span> · <span style="color:var(--gold)">3~5%</span></div>
+        <div>• <b>배당성향</b> — 현금배당총액 ÷ 지배주주 순이익 (분리과세 판정과 같은 기준). 외화 재무(두산밥캣)·자료 없는 종목은 회사 공시 배당성향, 그것도 없으면 DPS÷EPS(EPS = 현재가÷PER)</div>
+        <div>• <b>조정성향</b> — (현금배당총액 + 자사주소각 추정액) ÷ 지배순이익. 참고용 — 분리과세 판정에는 안 씀(법은 현금배당만)</div>
+        <div style="margin-left:16px;font-size:11px">자사주 소각액 = DART 소각 수량 × 현재가 (추정치)</div>
+        <div>• <b>분리과세</b> — 고배당기업 분리과세(<span data-tx="highDiv.0.1">14</span>~<span data-tx="highDiv.-1.1">30</span>%) 요건 판정 (현금배당 배당성향 기준)</div>
+        <div style="margin-left:16px;font-size:11px">배당성향 = 현금배당총액 ÷ 지배순이익(연결, 연결 없으면 별도) · 공통: 전년보다 현금배당총액이 줄면 대상 아님<br>조건1: 배당성향 ≥ <span data-tx="highDivReq.payout">40</span>%<br>조건2: 배당성향 ≥ <span data-tx="highDivReq.payoutGrow">25</span>% AND 전년 대비 현금배당 <span data-tx="highDivReq.grow">10</span>%↑<br>적자특례: 지배순이익 0 이하면 배당성향 <span data-tx="highDivReq.lossPayout">25</span>%로 보고 조건2 판정, 부채비율 <span data-tx="highDivReq.lossDebt">200</span>% 초과면 0%로 봄(대상 아님)<br>리츠·인프라 투융자회사는 대상 아님 · 칸에 마우스를 올리면 판정 근거(배당성향·전년 대비)가 나옴<br>공식 해당 여부는 회사가 정기주총 뒤 「기업가치 제고계획」 공시로 밝힘 — 여기 판정은 DART 숫자로 미리 본 추정</div>
+        <div style="margin-left:16px;font-size:11px;color:#f59e0b">⚠️ 자사주 소각액은 소각수량×현재가 추정. 법적 기준(취득가액)과 차이 있을 수 있음</div>
+      </div>
+      <div>
+        <div style="font-weight:700;color:var(--text);margin-bottom:6px">🎨 색상</div>
+        <div>• <span style="color:var(--green)">■ 초록</span> — 양호 (이익률 10%↑, 증가)</div>
+        <div>• <span style="color:var(--red)">■ 빨강</span> — 주의 (적자, 감소, 적전)</div>
+        <div>• <span style="color:var(--gold)">■ 노랑</span> — 경고 (부채비율 100~200%)</div>
+      </div>
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:11px">
+        ※ 재무: OpenDART · 분기별 자동 업데이트 (4/5, 5/20, 8/20, 11/20)<br>
+        ※ 주가·PER·PBR: KIS Open API · 평일 장 마감 후 자동 업데이트
+      </div>
+    </div>
+  </details>
+  <div class="note">ⓘ 문의·오류: 메인 하단</div>
+</div>
+
+<div class="compare-panel" id="comparePanel">
+  <span class="compare-count" id="compareCount">0종목 선택</span>
+  <button class="btn-compare" onclick="openCompare()">📊 비교하기</button>
+  <button class="btn-compare" onclick="saveCompare()" style="background:var(--green)">💾 저장</button>
+  <button class="btn-clear" onclick="clearSelection()">초기화</button>
+</div>
+<div class="modal-overlay" id="compareModal">
+  <div class="modal">
+    <button class="close-btn" onclick="closeCompare()">✕</button>
+    <h2>📊 종목 비교</h2>
+    <div id="compareBody"></div>
+  </div>
+</div>
+
+<script src="/tax-rates.js?v=24"></script>
+<script>
+(function(){
+var stocks=[], filtered=[], selected=new Set();
+var sortKey='revenue', sortDir=-1, activeSector='', sepTaxOnly=false;
+var currentPeriodInfo=null; // {year, period} for prev year loading
+var periodData={};
+var hasYoY=false;
+var priceMap={}; // prices.json 데이터
+
+function getCols(){
+  var cols=[
+    {key:'_chk',label:'',nosort:true},
+    {key:'name',label:'종목',align:'left'},
+    {key:'_price',label:'현재가',unit:'원',price:true},
+    {key:'revenue',label:'매출액',unit:'억'},
+    {key:'op',label:'영업이익',unit:'억'},
+    {key:'ni',label:'순이익',unit:'억'},
+    {key:'ni_owner',label:'지배순이익',unit:'억'},
+    {key:'opm',label:'OPM',unit:'%'},
+    {key:'nim',label:'NIM',unit:'%'},
+    {key:'roe',label:'ROE',unit:'%'},
+    {key:'roa',label:'ROA',unit:'%'},
+    {key:'debt_ratio',label:'부채비율',unit:'%'},
+    {key:'dividend',label:isAnnual()?'배당금':'배당금(누적)',unit:'원'},   // (108) 분기 보고서 주당배당은 연초부터 누적
+  ];
+  // (104) 배당 지표는 연간 자료에서만 (분기 자료는 3개월 순이익 + 누적 배당이라 비율이 맞지 않음)
+  if(isAnnual()){
+    cols.push({key:'_div_yield',label:'배당률',unit:'%',price:true});
+    cols.push({key:'_payout',label:'배당성향',unit:'%',price:true});
+    cols.push({key:'_adj_payout',label:'조정성향',unit:'%',price:true});
+    cols.push({key:'_sep_tax',label:'분리과세',price:true});
+  }
+  cols.push(
+    {key:'ebitda',label:'EBITDA',unit:'억'},
+    {key:'da',label:'D&A',unit:'억'}
+  );
+  if(hasYoY){
+    cols.push({key:'revenue_yoy',label:'매출YoY',unit:'%'});
+    cols.push({key:'op_yoy',label:'OP YoY',unit:'%'});
+  }
+  // 주가 컬럼 (prices.json 있을 때만)
+  if(hasPrices){
+    cols.push({key:'_mcap',label:'시총',unit:'억',price:true});
+    if(isAnnual()) cols.push({key:'_ev_ebitda',label:'EV/EBITDA',unit:'배',price:true});   // (108) 분기 EBITDA는 3개월치라 연간 탭에서만 (최근 4분기 합은 /similar/)
+    cols.push({key:'_per',label:'PER',unit:'배',price:true});
+    cols.push({key:'_pbr',label:'PBR',unit:'배',price:true});
+    cols.push({key:'_high52',label:'52주고',unit:'원',price:true});
+    cols.push({key:'_low52',label:'52주저',unit:'원',price:true});
+  }
+  return cols;
+}
+var hasPrices=false;
+var prevDivMap={}; // code → 전년 {dps: 주당배당, total: 현금배당총액(억)}
+var prevLoaded=false; // 전년 연간 파일을 읽었는지
+function isAnnual(){ return !!(periodData && periodData.period==='annual'); }
+// (104) 배당성향 분모 = 연결 지배기업 소유주 귀속 순이익(ni_owner). 연결 없거나 옛 데이터면 ni
+function niOwner(s){ if(!s) return null; return (s.ni_owner!==undefined && s.ni_owner!==null) ? s.ni_owner : s.ni; }
+
+// (104) 고배당기업 분리과세 판정 — 조특법 104조의27, 시행령 104조의24. 요건 숫자는 tax-rates.js highDivReq
+//   c: 0 미충족 / 1 조건1 / 2 조건2 / 3 적자 특례(조건2) / -1 연간 아님.  why: 판정 근거(칸에 마우스 올리면 보임)
+//   배당성향 = 현금배당총액 ÷ 지배주주 순이익(연결, 없으면 별도). 적자면 lossPayout% 간주, 부채비율 lossDebt% 초과면 0%.
+//   전년 대비 비교는 현금배당총액(없으면 주당배당). 리츠·인프라 투융자회사(유동화전문회사 등)는 대상 아님.
+function isFx(s){ return !!(s && s.currency && s.currency!=='KRW'); }   // (104) 외화(USD 등) 재무제표 — 금액이 그 통화
+function sepTax(s){
+  if(!s) return {c:0,why:''};
+  if(!isAnnual()) return {c:-1,why:'연간 자료에서만 판정 (사업연도 기준)'};
+  var Q=window.SF_TAX.highDivReq;
+  if(/리츠|인프라/.test(s.name)) return {c:0,why:'리츠·인프라 투융자회사는 대상 아님'};
+  var own=niOwner(s), td=s.total_div_amt, dps=s.dividend||0, fx=isFx(s);
+  if(!(td>0) && !(dps>0)) return {c:0,why:'현금배당 없음'};
+  var loss=(!fx && own!==null && own!==undefined && own<=0), po=null, how='', direct=false;
+  if(fx){   // 순이익은 외화, 배당은 원화라 직접 나눌 수 없음 → 회사 공시 배당성향 (전년 비교는 원화 배당총액 그대로)
+    if(!(s.payout_rep>0)) return {c:0,why:s.currency+' 재무제표 + 회사 공시 배당성향 없음 → 판정 못 함'};
+    po=s.payout_rep; how='배당성향 '+po+'% (회사 공시값 — '+s.currency+' 재무제표라 직접 계산 안 함)';
+  } else if(loss){
+    if(s.debt_ratio!==null && s.debt_ratio!==undefined && s.debt_ratio>Q.lossDebt){ po=0; how='적자 + 부채비율 '+s.debt_ratio.toFixed(0)+'% (>'+Q.lossDebt+'%) → 배당성향 0% 간주'; }
+    else { po=Q.lossPayout; how='적자(지배주주 순이익 '+fmt(own,'억')+') → 배당성향 '+Q.lossPayout+'% 간주'; }
+  } else if(own>0 && td>0){
+    po=Math.round(td/own*1000)/10; how='배당성향 '+po+'% = 현금배당 '+fmt(td,'억')+' ÷ 지배주주 순이익 '+fmt(own,'억'); direct=true;
+  } else if(s.payout_rep>0){
+    po=s.payout_rep; how='배당성향 '+po+'% (회사 공시값 — 배당총액·순이익 자료 없음)';
+  } else {
+    var p0=pv(s.code,'_payout',s);   // 여기까지 오면 배당총액·공시값이 없어서 DPS÷EPS
+    if(p0!==null){ po=p0; how='배당성향 '+po+'% (DPS÷EPS — 배당총액 자료 없음)'; }
+  }
+  if(po===null) return {c:0,why:'배당성향 계산 불가'};
+  if(direct && s.payout_rep>0) how+=' (회사 공시 '+s.payout_rep+'% — 회사마다 분모를 연결 전체 순이익으로 쓰기도 함)';
+  var pr=prevDivMap[s.code], g=null, gt='';
+  if(pr){
+    if(td>0 && pr.total>0){
+      g=(td-pr.total)/pr.total*100; gt='현금배당 전년 대비 '+(g>=0?'+':'')+g.toFixed(1)+'%';
+      // 억 단위 반올림 오차(각 ±0.5억) 안에서 기준을 넘을 수 있으면 넘는 쪽으로 보고 「경계」 표시 (예: 정확히 10% 늘린 회사)
+      var gmax=((td+0.5)/(pr.total-0.5)-1)*100;
+      if(g<0 && gmax>=0){ g=0; gt+=' (억 단위 반올림 오차 안 — 경계)'; }
+      else if(g<Q.grow && gmax>=Q.grow){ g=Q.grow; gt+=' (억 단위 반올림 오차 안 — 경계)'; }
+    }
+    else if(dps>0 && pr.dps>0){ g=(dps-pr.dps)/pr.dps*100; gt='주당배당 전년 대비 '+(g>=0?'+':'')+g.toFixed(1)+'%'; }
+    else if(!(pr.total>0) && !(pr.dps>0)){ g=Infinity; gt='전년 배당 없음 → 증가로 봄'; }
+    else gt='전년 대비 비교 불가';
+  } else gt=prevLoaded?'전년 자료에 없는 종목 — 감소·증가 확인 못 함':'전년 연간 자료 없음 — 감소·증가 확인 못 함';
+  var why=how+' · '+gt;
+  if(g!==null && g<0) return {c:0,why:why+' → 배당 감소로 제외'};
+  if(!loss && po>=Q.payout) return {c:1,why:why};
+  if(po>=Q.payoutGrow && g!==null && g>=Q.grow) return {c:loss?3:2,why:why};
+  return {c:0,why:why};
+}
+
+function fmt(v,unit){
+  if(v===null||v===undefined) return '-';
+  if(unit==='억') return sfKor(v*1e8,'short','0억');   // (104) 공통 표기 — 1,234억 · 45.21조
+  if(unit==='%') return v.toFixed(1)+'%';
+  if(unit==='원') return v.toLocaleString()+'원';
+  if(unit==='배') return v.toFixed(1);
+  if(unit==='주') return v?v.toLocaleString()+'주':'-';
+  return v;
+}
+
+// 주가 데이터 getter (priceMap에서 꺼냄)
+function pv(code,key,stock){
+  if(key==='_sep_tax') return sepTax(stock).c;
+  if((key==='_payout'||key==='_adj_payout'||key==='_div_yield') && !isAnnual()) return null;
+  // (108) 배당성향 = 현금배당총액 ÷ 지배주주 순이익 (법·분리과세와 같은 기준). 외화 재무·자료 없으면 회사 공시값, 그것도 없으면 DPS÷EPS
+  if(key==='_payout'){
+    var own0=niOwner(stock), td0=stock?stock.total_div_amt:null;
+    if(stock && !isFx(stock) && own0>0 && td0>0) return Math.round(td0/own0*1000)/10;
+    if(stock && stock.payout_rep>0) return stock.payout_rep;
+  }
+  var p=priceMap[code];
+  if(!p) return null;
+  // (104) 배당률 = 주당배당 ÷ 현재가 (연간 DPS 기준)
+  if(key==='_div_yield'){
+    var d0=stock?stock.dividend:0;
+    if(!d0||d0<=0||!p.price) return null;
+    return Math.round(d0/p.price*1000)/10;
+  }
+  // EV/EBITDA 계산: EV = 시총 + 순차입금
+  if(key==='_ev_ebitda' && (isFx(stock) || !isAnnual())) return null;   // 시총(원)과 재무(외화) 통화가 달라 계산 안 함
+  if(key==='_ev_ebitda'){
+    var mcap=p.market_cap;
+    var ebitda=stock?stock.ebitda:null;
+    var nd=stock?stock.net_debt:null;
+    if(!mcap||!ebitda||ebitda<=0) return null;
+    var ev=mcap+(nd||0);
+    return Math.round(ev/ebitda*10)/10;
+  }
+  // 배당성향 대체: DPS * PER / price * 100 (배당총액·회사 공시값 없을 때만)
+  if(key==='_payout'){
+    var price=p.price, per=p.per, dps=stock?stock.dividend:null;
+    if(!price||!per||per<=0||!dps||dps<=0) return null;
+    return Math.round(dps*per/price*1000)/10;
+  }
+  // 조정 배당성향 = (현금배당총액 + 자사주소각금액) / 순이익 * 100
+  if(key==='_adj_payout'){
+    if(isFx(stock)) return null;   // 순이익 외화 vs 배당 원화
+    var ni=niOwner(stock);
+    if(!ni||ni<=0) return null;
+    var tdiv=stock?stock.total_div_amt:null;  // 억원
+    var bbqty=stock?(stock.buyback_cancel_qty||0):0;  // 소각 수량(주)
+    var bbamt=0;
+    if(bbqty>0 && p.price){
+      bbamt=Math.round(bbqty*p.price/100000000); // 주 × 원 → 억원
+    }
+    var cashDiv=tdiv;
+    if(!cashDiv){
+      // fallback: DPS 기반
+      var dps3=stock?stock.dividend:null;
+      if(!dps3||dps3<=0) return null;
+      var eps3=p.per>0?(p.price/p.per):0;
+      if(eps3<=0) return null;
+      return Math.round(dps3/eps3*1000)/10; // 소각 없으면 기본과 동일
+    }
+    var total=cashDiv+bbamt;
+    return Math.round(total/ni*1000)/10;
+  }
+  var map={'_price':'price','_mcap':'market_cap','_per':'per','_pbr':'pbr',
+           '_high52':'high_52w','_low52':'low_52w'};
+  var k=map[key];
+  return k?p[k]||null:null;
+}
+
+function colorClass(v,key){
+  if(v===null||v===undefined) return '';
+  if(key==='debt_ratio') return v>200?'down':v>100?'gold':'';
+  if(key==='_div_yield') return v>=5?'up':v>=3?'gold':'';
+  if(['opm','nim','roe','roa'].indexOf(key)>=0) return v>10?'up':v<0?'down':'';
+  if(key.indexOf('yoy')>=0){
+    if(v<=-999) return 'down';
+    return v>0?'up':v<0?'down':'';
+  }
+  if(key==='op'||key==='ni'||key==='ni_owner') return v<0?'down':'';
+  if(key==='_payout'||key==='_adj_payout'){ var Q2=window.SF_TAX.highDivReq; return v>=Q2.payout?'up':v>=Q2.payoutGrow?'gold':''; }
+  if(key==='_per') return v<10?'up':v>30?'down':'';
+  if(key==='_pbr') return v<1?'up':v>3?'down':'';
+  if(key==='_ev_ebitda') return v<7?'up':v>20?'down':'';
+  if(key==='ebitda') return v<0?'down':'';
+  return '';
+}
+
+function buildHead(){
+  var cols=getCols();
+  var tr=document.createElement('tr');
+  cols.forEach(function(c){
+    var th=document.createElement('th');
+    if(c.nosort){
+      th.innerHTML='<input type="checkbox" class="chk" id="chkAll">';
+      th.querySelector('#chkAll').addEventListener('change',function(e){
+        if(e.target.checked) filtered.forEach(function(s){selected.add(s.code);});
+        else selected.clear();
+        renderBody();
+      });
+    } else {
+      th.textContent=c.label;
+      if(c.key===sortKey) th.className='sorted';
+      th.innerHTML+=(c.key===sortKey?(sortDir>0?' <span class="arrow">▲</span>':' <span class="arrow">▼</span>'):'');
+      th.addEventListener('click',function(){
+        if(sortKey===c.key) sortDir*=-1;
+        else{sortKey=c.key;sortDir=-1;}
+        sort(); buildHead(); renderBody();
+      });
+    }
+    if(c.align==='left') th.style.textAlign='left';
+    tr.appendChild(th);
+  });
+  document.getElementById('thead').innerHTML='';
+  document.getElementById('thead').appendChild(tr);
+}
+
+function renderBody(){
+  var cols=getCols();
+  var tbody=document.getElementById('tbody');
+  tbody.innerHTML='';
+  filtered.forEach(function(s){
+    var tr=document.createElement('tr');
+    if(selected.has(s.code)) tr.className='selected';
+    cols.forEach(function(c){
+      var td=document.createElement('td');
+      if(c.key==='_chk'){
+        td.innerHTML='<input type="checkbox" class="chk" '+(selected.has(s.code)?'checked':'')+' data-code="'+s.code+'">';
+        td.querySelector('.chk').addEventListener('change',function(e){
+          if(e.target.checked) selected.add(s.code); else selected.delete(s.code);
+          tr.classList.toggle('selected',selected.has(s.code));
+          updateCompareBar();
+        });
+      } else if(c.key==='name'){
+        td.innerHTML='<span class="stock-name">'+s.name+'</span><span class="stock-code">'+s.code+'</span><span class="stock-sector">'+s.sector+(isFx(s)?' · '+s.currency+' 재무':'')+'</span>';
+        td.style.textAlign='left';
+      } else {
+        var v=c.price?pv(s.code,c.key,s):s[c.key];
+        if(c.key==='_sep_tax'){
+          var st=sepTax(s), lab={1:'조건1',2:'조건2',3:'적자특례'}[st.c];
+          td.style.textAlign='center'; td.title=st.why; td.style.cursor='help';
+          if(lab) td.innerHTML='✅ <span style="font-size:10px;color:var(--text-dim)">'+lab+'</span>';
+          else { td.textContent='-'; td.style.color='var(--text-dim)'; }
+        } else {
+        var display=(c.key.indexOf('yoy')>=0)&&v<=-999?'적전':fmt(v,c.unit);
+        if(c.unit==='억' && !c.price && isFx(s) && v!==null && v!==undefined) display=s.currency+' '+display;   // 외화 재무제표 금액
+        td.textContent=display;
+        var cc=colorClass(v,c.key);
+        if(cc) td.className=cc;
+        }
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  updateCompareBar();
+}
+
+function sort(){
+  var isPrice=sortKey.charAt(0)==='_';
+  filtered.sort(function(a,b){
+    var va,vb;
+    if(isPrice){va=pv(a.code,sortKey,a);vb=pv(b.code,sortKey,b);}
+    else{va=a[sortKey];vb=b[sortKey];}
+    if(sortKey==='name') return sortDir*(va<vb?-1:va>vb?1:0);
+    if(va===null||va===undefined) va=-Infinity;
+    if(vb===null||vb===undefined) vb=-Infinity;
+    return sortDir*(va-vb);
+  });
+}
+
+window.toggleSepTax=function(){
+  sepTaxOnly=!sepTaxOnly;
+  var btn=document.getElementById('sepTaxFilter');
+  btn.classList.toggle('active',sepTaxOnly);
+  applyFilters();
+};
+
+function applyFilters(){
+  var q=document.getElementById('search').value.trim().toLowerCase();
+  filtered=stocks.filter(function(s){
+    if(q && s.name.toLowerCase().indexOf(q)<0 && s.code.indexOf(q)<0) return false;
+    if(activeSector && s.sector!==activeSector) return false;
+    if(sepTaxOnly && isAnnual() && sepTax(s).c<=0) return false;
+    return true;
+  });
+  sort(); renderBody(); updateStats();
+}
+
+function updateStats(){
+  var cnt=filtered.length;
+  var prof=filtered.filter(function(s){return s.op>0;}).length;
+  var ar=0,nr=0,ad=0,nd=0,ns=0;
+  filtered.forEach(function(s){
+    if(s.roe!==null&&s.roe!==undefined){ar+=s.roe;nr++;}
+    var y=pv(s.code,'_div_yield',s); if(y!==null){ad+=y;nd++;}
+    if(isAnnual() && sepTax(s).c>0) ns++;
+  });
+  if(nr) ar/=nr; if(nd) ad/=nd;
+  var h='<div class="stat-chip"><span class="label">종목 수</span><span class="val">'+cnt+'</span></div>'+
+    '<div class="stat-chip"><span class="label">영업흑자</span><span class="val up">'+prof+'</span>/<span class="val down">'+(cnt-prof)+'</span></div>'+
+    '<div class="stat-chip"><span class="label">평균 ROE</span><span class="val">'+ar.toFixed(1)+'%</span></div>';
+  if(isAnnual()){
+    if(nd) h+='<div class="stat-chip"><span class="label">평균 배당률</span><span class="val gold">'+ad.toFixed(1)+'%</span></div>';
+    h+='<div class="stat-chip"><span class="label">분리과세 충족</span><span class="val up">'+ns+'</span></div>';
+  } else {
+    h+='<div class="stat-chip"><span class="label">분기 탭</span><span class="val" style="font-size:11px;font-weight:600">그 분기 3개월 실적 (ROE·ROA 연환산 안 함) · 배당금은 연초부터 누적 · 배당 지표·EV/EBITDA는 연간 탭</span></div>';
+  }
+  document.getElementById('statsBar').innerHTML=h;
+}
+
+function updateCompareBar(){
+  var p=document.getElementById('comparePanel');
+  document.getElementById('compareCount').textContent=selected.size+'종목 선택';
+  p.classList.toggle('show',selected.size>=2);
+}
+
+window.clearSelection=function(){selected.clear();render();};
+
+// ── 비교 세트 저장/로드 ──
+var SAVE_KEY='kr_finance_compare_sets';
+
+function loadSavedSets(){
+  try{return JSON.parse(localStorage.getItem(SAVE_KEY))||[];}catch(e){return[];}
+}
+function saveSavedSets(sets){
+  localStorage.setItem(SAVE_KEY, JSON.stringify(sets));
+}
+
+function renderSavedBar(){
+  var sets=loadSavedSets();
+  var bar=document.getElementById('savedBar');
+  var chips=document.getElementById('savedChips');
+  if(!sets.length){bar.style.display='none';return;}
+  bar.style.display='flex';
+  chips.innerHTML='';
+  sets.forEach(function(s,i){
+    var chip=document.createElement('button');
+    chip.className='saved-chip';
+    chip.innerHTML=s.name+'<span class="del" data-idx="'+i+'" title="삭제">✕</span>';
+    chip.addEventListener('click',function(e){
+      if(e.target.classList.contains('del')){
+        // 삭제
+        var idx=parseInt(e.target.getAttribute('data-idx'));
+        var sets2=loadSavedSets();
+        sets2.splice(idx,1);
+        saveSavedSets(sets2);
+        renderSavedBar();
+        return;
+      }
+      // 로드 → 체크 + 비교 모달 열기
+      selected.clear();
+      s.codes.forEach(function(c){selected.add(c);});
+      render();
+      openCompare();
+    });
+    chips.appendChild(chip);
+  });
+}
+
+window.saveCompare=function(){
+  if(selected.size<2) return;
+  // 선택된 종목 이름 조합으로 자동 이름 생성
+  var names=stocks.filter(function(s){return selected.has(s.code);}).map(function(s){return s.name;});
+  var autoName=names.join(' vs ');
+  var name=prompt('비교 세트 이름:',autoName);
+  if(!name) return;
+  var sets=loadSavedSets();
+  // 같은 이름 있으면 덮어쓰기
+  sets=sets.filter(function(s){return s.name!==name;});
+  sets.push({name:name, codes:Array.from(selected)});
+  saveSavedSets(sets);
+  renderSavedBar();
+};
+
+// 초기 렌더
+renderSavedBar();
+
+window.openCompare=function(){
+  var arr=stocks.filter(function(s){return selected.has(s.code);});
+  if(arr.length<2) return;
+  var labels=[['매출액','revenue','억'],['영업이익','op','억'],['순이익','ni','억'],['지배순이익','ni_owner','억'],
+    ['EBITDA','ebitda','억'],['D&A','da','억'],
+    ['OPM','opm','%'],['NIM','nim','%'],['ROE','roe','%'],['ROA','roa','%'],
+    ['부채비율','debt_ratio','%'],[isAnnual()?'배당금':'배당금(누적)','dividend','원'],
+    ['소각수량','buyback_cancel_qty','주']];
+  if(hasYoY) labels.push(['매출YoY','revenue_yoy','%'],['OP YoY','op_yoy','%']);
+  if(hasPrices) labels.push(['현재가','_price','원'],['시총','_mcap','억']);
+  if(hasPrices && isAnnual()) labels.push(['EV/EBITDA','_ev_ebitda','배']);
+  if(hasPrices) labels.push(['PER','_per','배'],['PBR','_pbr','배']);
+  if(isAnnual()&&hasPrices) labels.push(['배당률','_div_yield','%'],['배당성향','_payout','%'],['조정성향','_adj_payout','%']);
+
+  var html='<div style="overflow-x:auto"><table style="min-width:auto;font-size:13px"><thead><tr><th style="text-align:left;min-width:100px">항목</th>';
+  arr.forEach(function(s){html+='<th style="text-align:right;min-width:100px">'+s.name+'</th>';});
+  html+='</tr></thead><tbody>';
+  labels.forEach(function(l){
+    html+='<tr><td style="color:var(--text-dim);text-align:left">'+l[0]+'</td>';
+    var isP=l[1].charAt(0)==='_';
+    var vals=arr.map(function(s){return isP?pv(s.code,l[1],s):s[l[1]];});
+    var maxV=Math.max.apply(null,vals.filter(function(v){return v!==null&&v>-999;}));
+    arr.forEach(function(s){
+      var v=isP?pv(s.code,l[1],s):s[l[1]];
+      var display=(l[1].indexOf('yoy')>=0)&&v<=-999?'적전':fmt(v,l[2]);
+      if(l[2]==='억' && !isP && isFx(s) && v!==null && v!==undefined) display=s.currency+' '+display;
+      var cc=colorClass(v,l[1]);
+      var bold=(v===maxV&&vals.filter(function(x){return x===maxV;}).length===1)?'font-weight:800;':'';
+      html+='<td class="'+cc+'" style="text-align:right;'+bold+'">'+display+'</td>';
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  document.getElementById('compareBody').innerHTML=html;
+  document.getElementById('compareModal').classList.add('show');
+};
+
+window.closeCompare=function(){document.getElementById('compareModal').classList.remove('show');};
+document.getElementById('compareModal').addEventListener('click',function(e){if(e.target===this)closeCompare();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeCompare();});
+
+function buildSectorFilters(){
+  var ctrl=document.getElementById('controls');
+  // 기존 필터 버튼 제거 (검색 박스 빼고)
+  ctrl.querySelectorAll('.filter-btn:not(#sepTaxFilter)').forEach(function(b){b.remove();});
+
+  var sectors={};
+  stocks.forEach(function(s){sectors[s.sector]=(sectors[s.sector]||0)+1;});
+  var all=document.createElement('button');
+  all.className='filter-btn active';
+  all.textContent='전체 ('+stocks.length+')';
+  all.addEventListener('click',function(){
+    activeSector='';
+    ctrl.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});
+    all.classList.add('active');
+    applyFilters();
+  });
+  ctrl.appendChild(all);
+  Object.keys(sectors).sort().forEach(function(sec){
+    var btn=document.createElement('button');
+    btn.className='filter-btn';
+    btn.textContent=sec+' ('+sectors[sec]+')';
+    btn.addEventListener('click',function(){
+      activeSector=(activeSector===sec)?'':sec;
+      ctrl.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});
+      if(activeSector) btn.classList.add('active'); else all.classList.add('active');
+      applyFilters();
+    });
+    ctrl.appendChild(btn);
+  });
+}
+
+function render(){buildHead();applyFilters();}
+
+document.getElementById('search').addEventListener('input',function(){applyFilters();});
+
+function loadPrevYearDividends(year){
+  var prevFile='/data/kr/'+(parseInt(year)-1)+'-annual.json';
+  prevDivMap={}; prevLoaded=false;
+  fetch(prevFile)
+    .then(function(r){if(!r.ok) throw new Error('no prev');return r.json();})
+    .then(function(data){
+      (data.stocks||[]).forEach(function(s){
+        prevDivMap[s.code]={dps:s.dividend||0, total:(s.total_div_amt>0?s.total_div_amt:0)};
+      });
+      prevLoaded=true;
+      render();
+    })
+    .catch(function(){prevDivMap={}; prevLoaded=false; render();});
+}
+
+function loadData(url, label, periodInfo){
+  document.getElementById('tbody').innerHTML='<tr><td colspan="16" style="text-align:center;padding:40px">로딩 중...</td></tr>';
+  currentPeriodInfo=periodInfo||null;
+  prevDivMap={}; prevLoaded=false;
+  sepTaxOnly=false;
+  var stb=document.getElementById('sepTaxFilter');
+  if(stb) stb.classList.remove('active');
+  fetch(url)
+    .then(function(r){return r.json();})
+    .then(function(data){
+      stocks=data.stocks||[];
+      filtered=stocks.slice();
+      periodData=data;
+
+      // YoY 컬럼 존재 여부
+      hasYoY=stocks.length>0&&stocks[0].revenue_yoy!==undefined;
+
+      var info=data.period_label||data.period||'';
+      document.getElementById('updated').textContent=
+        '기준: '+(info)+' · 업데이트: '+(data.updated||'')+' · 출처: '+(data.source||'OpenDART');
+      if(data.compare_yoy) document.getElementById('updated').textContent+=' · YoY비교: '+data.compare_yoy;
+
+      // 분리과세 필터 버튼: 연간 자료에서만 (104: 주가 없어도 판정됨)
+      if(stb) stb.style.display=isAnnual()?'':'none';
+
+      buildSectorFilters();
+      render();
+
+      // 연간 데이터면 전년도 배당 로드 (감소 여부·조건2용)
+      if(isAnnual()) loadPrevYearDividends(data.year||(currentPeriodInfo&&currentPeriodInfo.year));
+    })
+    .catch(function(e){
+      document.getElementById('tbody').innerHTML=
+        '<tr><td colspan="16" style="text-align:center;padding:40px;color:var(--red)">로드 실패: '+e.message+'</td></tr>';
+    });
+}
+
+// 기간 정렬 키 (시간순: q1→q2→q3→annual)
+var PERIOD_ORDER={q1:1,q2:2,q3:3,annual:4};
+function periodSortKey(p){
+  return parseInt(p.year)*10+(PERIOD_ORDER[p.period]||0);
+}
+
+// prices.json 로드
+function loadPrices(){
+  fetch('/data/kr/prices.json')
+    .then(function(r){return r.json();})
+    .then(function(data){
+      priceMap=data.prices||{};
+      hasPrices=Object.keys(priceMap).length>0;
+      // 주가 기준일 표시
+      if(hasPrices){
+        var u=document.getElementById('updated');
+        u.textContent+=' · 주가: '+(data.updated||'');
+      }
+      render(); // 컬럼 추가 반영
+    })
+    .catch(function(){
+      hasPrices=false;
+    });
+}
+
+// 기간 목록 로드
+function loadPeriodIndex(){
+  fetch('/data/kr/index.json')
+    .then(function(r){return r.json();})
+    .then(function(idx){
+      var bar=document.getElementById('periodBar');
+      bar.innerHTML='';
+      var periods=(idx.periods||[]).filter(function(p){return p.count>0;});
+      // 시간순 정렬 (최신 먼저)
+      periods.sort(function(a,b){return periodSortKey(b)-periodSortKey(a);});
+
+      periods.forEach(function(p,i){
+        var btn=document.createElement('button');
+        btn.className='period-btn'+(i===0?' active':'');
+        btn.textContent=p.label+' ('+p.count+')';
+        btn.addEventListener('click',function(){
+          bar.querySelectorAll('.period-btn').forEach(function(b){b.classList.remove('active');});
+          btn.classList.add('active');
+          loadData('/data/kr/'+p.file, p.label, {year:p.year,period:p.period});
+        });
+        bar.appendChild(btn);
+      });
+
+      if(periods.length>0){
+        loadData('/data/kr/'+periods[0].file, periods[0].label, {year:periods[0].year,period:periods[0].period});
+      } else {
+        loadData('/data/kospi200.json','');
+      }
+
+      // 주가 데이터 병렬 로드
+      loadPrices();
+    })
+    .catch(function(){
+      loadData('/data/kospi200.json','');
+    });
+}
+
+loadPeriodIndex();
+})();
+</script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

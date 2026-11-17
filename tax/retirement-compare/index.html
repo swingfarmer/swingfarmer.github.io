@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>퇴직금 수령 방식 비교 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .option{background-color:#1e242e!important}
+body.sf-dark .option-title{color:#85b5e0!important}
+</style>
+<style>
+:root { --sf-max-w: 1100px; }
+.final { background: linear-gradient(135deg, #10b981, #059669); }
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}@media(max-width:700px){.compare-grid{grid-template-columns:1fr}}.option{background:white;border-radius:10px;padding:20px;box-shadow:0 2px 6px rgba(0,0,0,0.06)}.option.lump{border-top:4px solid #ef4444}.option.pension{border-top:4px solid #10b981}.option-title{font-size:16px;font-weight:700;margin-bottom:12px;color:#1F4E78}.option-title .tag{font-size:11px;background:#e0e7ef;color:#1F4E78;padding:2px 8px;border-radius:10px;margin-left:6px}.row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:14px}.row .v{font-weight:600;font-variant-numeric:tabular-nums}.row.total{border-top:2px solid #1F4E78;margin-top:8px;padding-top:10px;font-weight:700;font-size:16px}.row.total .v{color:#1F4E78}.row.net{font-size:15px;color:#10b981}.savings{background:linear-gradient(135deg,#10b981,#059669);color:white;padding:24px;border-radius:10px;text-align:center;margin-bottom:20px}.savings-label{font-size:14px;font-weight:600;margin-bottom:4px}.savings-value{font-size:32px;font-weight:800;font-variant-numeric:tabular-nums}.savings-sub{margin-top:10px;font-size:13px;opacity:0.95}
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body class="sf-narrow">
+
+
+<h1>📊 퇴직금 수령 방식 비교</h1>
+<p class="desc">일시금 vs IRP 연금 수령 시 세금 차이 비교. 연금수령 시 퇴직소득세 <span data-tx="pensionRetire.0.1" data-tx-f="inv">30</span>~<span data-tx="pensionRetire.-1.1" data-tx-f="inv">50</span>% 감면 (실제 수령 연차에 따라).</p>
+
+<div class="panel">
+  <h2>📥 입력값</h2>
+  <div class="inputs">
+
+    <div class="section-label">① 퇴직 정보</div>
+    <div class="input-row">
+      <label>퇴직금 (원)</label>
+      <input type="number" id="retirement" value="200000000" data-won>
+    </div>
+    <div class="input-row">
+      <label>근속연수 (년)</label>
+      <input type="number" id="years" value="20" step="0.1">
+    </div>
+
+    <div class="section-label">② IRP 연금 수령 조건</div>
+    <div class="input-row">
+      <label>연금 수령 기간 (년) <span style="font-size:11px;color:#888;">(10년 이상 권장)</span></label>
+      <input type="number" id="pensionYears" value="10">
+    </div>
+    <div class="input-row">
+      <label>IRP 운용수익률 (연 %)</label>
+      <input type="number" id="returnRate" value="4" step="0.1">
+    </div>
+  </div>
+</div>
+
+<div class="compare-grid">
+  <div class="option lump">
+    <div class="option-title">💸 일시금 수령<span class="tag">즉시</span></div>
+    <div class="row"><span>퇴직금</span><span class="v" id="L_retire">-</span></div>
+    <div class="row"><span>퇴직소득세 (산출)</span><span class="v" id="L_tax">-</span></div>
+    <div class="row"><span>지방소득세 (<span data-tx="local" data-tx-f="pct">10</span>%)</span><span class="v" id="L_local">-</span></div>
+    <div class="row total"><span>총 세금</span><span class="v" id="L_totalTax">-</span></div>
+    <div class="row net"><span>실수령액</span><span class="v" id="L_net">-</span></div>
+  </div>
+
+  <div class="option pension">
+    <div class="option-title">📈 IRP 연금 수령<span class="tag">10년+</span></div>
+    <div class="row"><span>퇴직금 (IRP 입금)</span><span class="v" id="P_retire">-</span></div>
+    <div class="row"><span>적용 세율</span><span class="v" id="P_rateLabel">-</span></div>
+    <div class="row"><span>연금소득세 (산출세액×<span data-tx="pensionRetire.0.1">70</span>~<span data-tx="pensionRetire.-1.1">50</span>%)</span><span class="v" id="P_tax">-</span></div>
+    <div class="row"><span>지방소득세 (<span data-tx="local" data-tx-f="pct">10</span>%)</span><span class="v" id="P_local">-</span></div>
+    <div class="row total"><span>총 세금</span><span class="v" id="P_totalTax">-</span></div>
+    <div class="row net"><span>실수령 합계</span><span class="v" id="P_net">-</span></div>
+    <div class="row" style="color:#888;font-size:12px;border-bottom:none;">+ 운용수익(세후): <span id="P_growth">-</span></div>
+  </div>
+</div>
+
+<div class="savings">
+  <div class="savings-label">💰 IRP 연금 수령 시 절세효과</div>
+  <div class="savings-value" id="savings">-</div>
+  <div class="savings-sub" id="savingsRate"></div>
+</div>
+
+<div class="manual">
+  <h3>📘 사용 설명서</h3>
+
+  <h3>① 두 방식의 차이</h3>
+  <ul>
+    <li><span class="badge">일시금</span> 회사가 원천징수 후 통장으로 지급. 즉시 사용 가능, 다만 세금 100%.</li>
+    <li><span class="badge">IRP 연금</span> 퇴직금을 IRP 계좌로 이체 → 만 55세 이후 10년 이상 분할 수령.
+      <ul>
+        <li>수령 <span data-tx="pensionRetire.0.0">10</span>년차까지: 산출 퇴직소득세의 <b><span data-tx="pensionRetire.0.1">70</span>%</b>만 부담 (<span data-tx="pensionRetire.0.1" data-tx-f="inv">30</span>% 감면)</li>
+        <li>수령 <span data-tx="=pensionRetire.0.0+1">11</span>~<span data-tx="pensionRetire.1.0">20</span>년차: <b><span data-tx="pensionRetire.1.1">60</span>%</b>만 부담 (<span data-tx="pensionRetire.1.1" data-tx-f="inv">40</span>% 감면)</li>
+        <li>수령 <span data-tx="=pensionRetire.1.0+1">21</span>년차부터: <b><span data-tx="pensionRetire.-1.1">50</span>%</b>만 부담 (<span data-tx="pensionRetire.-1.1" data-tx-f="inv">50</span>% 감면, 2026.1.1 수령분부터 신설)</li>
+        <li>연차는 "실제로 꺼낸 해" 기준 — 한 해 건너뛰면 그 해는 안 셈. 연금수령한도를 넘겨 꺼낸 금액은 감면 없음</li>
+        <li>그 사이 운용수익도 발생 (배당주·ETF 등)</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h3>② 입력값 설명</h3>
+  <ul>
+    <li><span class="badge">퇴직금</span> 세전 일시금.</li>
+    <li><span class="badge">근속연수</span> 입사일~퇴사일. 계산할 땐 1년 미만 끝수를 1년으로 올림(세법 규정).</li>
+    <li><span class="badge">연금 수령 기간</span> 10년 이상 권장 (그 미만이면 일반 퇴직소득세 적용).</li>
+    <li><span class="badge">IRP 운용수익률</span> 연금 받는 동안 IRP 잔액이 굴러가서 추가 수익 발생.</li>
+  </ul>
+
+  <h3>③ 계산 로직</h3>
+  <ul>
+    <li><b>일시금 세금:</b> 퇴직소득세 계산기와 동일.</li>
+    <li><b>IRP 연금 세금:</b> 일시금 기준 산출세액 × 연차별 부과율. 수령기간 동안 매년 같은 금액을 꺼낸다고 보고 연차별 부과율을 기간으로 가중평균함 (예: <span id="pnEx">25년 → (10×70 + 10×60 + 5×50) ÷ 25 = 62%</span>). 초반에 많이 꺼내면 실제 세금은 이보다 큼.</li>
+    <li><b>운용수익:</b> 매년 잔액의 운용수익률만큼 증가. 세후 수익은 추가 세금 없음 (연금소득세 통합).</li>
+  </ul>
+
+  <div class="warn-box">
+    <b>⚠ 주의:</b> 연금 수령 도중 중도해지 시 일반 퇴직소득세로 재산정 + 가산세. 의료비·주택구입 등 부득이한 사유는 예외. 본 계산기는 단순 비교용 (실제는 연도별 세율 조금씩 다름).
+  </div>
+</div>
+
+<script src="/tax-rates.js?v=24"></script>
+<script>
+// (089) 종소세 구간·퇴직소득 공제표는 /tax-rates.js(window.SF_TAX)에서 읽음. (101) 못 읽을 때 쓰던 기본값 사본은 지움 — 못 읽으면 common.js가 안내
+const _T = window.SF_TAX;
+const TX = {
+  income: _T.income,
+  year: _T.retireYear,
+  conv: _T.retireConv,
+  pension: _T.pensionRetire
+};
+function prog(b, br){ return _T.prog(b, br); }   // (101) 누진 계산은 공통 함수 (페이지 사본 지움)
+function yearDedOf(y){ let t = 0, lo = 0; for (const [hi, per] of TX.year){ if (y > lo) t += (Math.min(y, hi) - lo) * per; lo = hi; } return t; }
+// 근속연수: 1년 미만 끝수는 1년으로 (소득세법). 20.3년 → 21년
+function taxYearsOf(y){ return y > 0 ? Math.ceil(y - 1e-9) : 0; }
+const _lab = n => sfKor(n, 'kor');   // (103) 법 구간·공제 라벨 — sf-fmt.js 공통 (2억 · 1억 5,000만 · 100만)
+// 사용법 속 공제표를 SF_TAX에서 다시 씀
+function fillRetireRules(){
+  const yEl = document.getElementById('ruleYear'), cEl = document.getElementById('ruleConv');
+  if (yEl){
+    let lo = 0, base = 0, h = '';
+    TX.year.forEach(([hi, per]) => {
+      h += '<li>' + (hi === Infinity ? lo + '년 초과' : '~' + hi + '년') + ': ' + (base ? _lab(base) + ' + ' : '') + _lab(per) + ' × ' + (lo ? '(근속−' + lo + ')' : '근속') + '</li>';
+      if (hi !== Infinity) base += (hi - lo) * per; lo = hi;
+    });
+    yEl.innerHTML = h;
+  }
+  if (cEl){
+    let lo = 0, base = 0, h = '';
+    TX.conv.forEach(([hi, r]) => {
+      const lab = hi === Infinity ? _lab(lo) + ' 초과' : '~' + _lab(hi);
+      h += '<li>' + lab + ': ' + (r === 100 && !lo ? '전액' : (base ? _lab(base) + ' + ' : '') + '(' + (lo ? _lab(lo) + ' 초과분' : '금액') + ' × ' + r + '%)') + '</li>';
+      if (hi !== Infinity) base += (hi - lo) * r / 100; lo = hi;
+    });
+    cEl.innerHTML = h;
+  }
+  // 연금 수령 감면 문구(감면율·부과율·연차 경계)는 HTML data-tx 가 pensionRetire 로 채움 (101)
+  // (100) 가중평균 예시도 공통 파일 연차표로 — 마지막 구간 경계 + 5년
+  const ex = document.getElementById('pnEx');
+  if (ex){ const N = TX.pension[TX.pension.length - 2][0] + 5; let lo = 0, acc = 0; const parts = [];
+    for (const [hi, r] of TX.pension){ const y = Math.min(N, hi) - lo; if (y > 0){ parts.push(y + '×' + r); acc += y * r; } lo = hi; if (lo >= N) break; }
+    ex.textContent = N + '년 → (' + parts.join(' + ') + ') ÷ ' + N + ' = ' + Math.round(acc / N) + '%'; }
+}
+
+const fmt = n => sfNum(n);
+const fmtPct = n => sfPct(n * 100, 1);
+
+function calcProgressiveTax(taxBase) {
+  return prog(taxBase, TX.income);   // (089) SF_TAX.income
+}
+function calcYearDeduction(y){ return yearDedOf(y); }          // (089) SF_TAX.retireYear
+function calcConvDeduction(c){ return prog(c, TX.conv); }        // (089) SF_TAX.retireConv
+
+function calcRetirementTax(retirement, yearsIn) {
+  const years = taxYearsOf(yearsIn);   // (089) 1년 미만 끝수 올림
+  if (years <= 0 || retirement <= 0) return 0;
+  const yearDed = calcYearDeduction(years);
+  const converted = Math.max(0, (retirement - yearDed) / years * 12);
+  const convDed = calcConvDeduction(converted);
+  const taxBase = Math.max(0, converted - convDed);
+  const convTax = calcProgressiveTax(taxBase);
+  return convTax / 12 * years;
+}
+
+function calculate() {
+  const retirement = parseFloat(document.getElementById('retirement').value) || 0;
+  const years = parseFloat(document.getElementById('years').value) || 0;
+  const pensionYears = parseFloat(document.getElementById('pensionYears').value) || 0;
+  const returnRate = (parseFloat(document.getElementById('returnRate').value) || 0) / 100;
+
+  // 일시금
+  const lumpTax = calcRetirementTax(retirement, years);
+  const lumpLocal = lumpTax * 0.10;
+  const lumpTotal = lumpTax + lumpLocal;
+  const lumpNet = retirement - lumpTotal;
+
+  // 연금: 매년 같은 금액을 꺼낸다고 보고 연차별 부과율(SF_TAX.pensionRetire: 10년까지 70, 20년까지 60, 그 뒤 50)을 가중평균
+  //   (088까지는 70/60 두 구간뿐이라 20년 넘게 받으면 세금이 더 크게 나왔음 — 50%는 2026.1.1 수령분부터)
+  let pensionRate;
+  let pensionRateLabel;
+  const firstHi = TX.pension[0][0], firstR = TX.pension[0][1];
+  if (pensionYears <= firstHi) {
+    pensionRate = firstR / 100;
+    pensionRateLabel = pensionYears < firstHi ? `연금 ${firstHi}년 미만: ${firstR}%` : `연금 ${firstHi}년 이내: ${firstR}%`;
+  } else {
+    let acc = 0, lo = 0;
+    for (const [hi, r] of TX.pension){ if (pensionYears > lo) acc += (Math.min(pensionYears, hi) - lo) * r; lo = hi; }
+    const blended = acc / pensionYears / 100;
+    pensionRate = blended;
+    pensionRateLabel = `${pensionYears}년 가중평균: ${(blended*100).toFixed(1)}%`;
+  }
+
+  const pensionTax = lumpTax * pensionRate;
+  const pensionLocal = pensionTax * 0.10;
+  const pensionTotal = pensionTax + pensionLocal;
+
+  // 운용수익 (단순화: 연금 평균 잔액 × 수익률 × 기간)
+  // 매년 같은 금액 인출 가정, 평균 잔액 = 퇴직금/2
+  const avgBalance = retirement / 2;
+  const totalGrowth = avgBalance * returnRate * pensionYears;
+  // 운용수익에 대한 세금은 IRP 내에서 발생시 분리과세이지만 단순화: 운용수익은 세금 없이 가산
+  const pensionNet = retirement - pensionTotal + totalGrowth;
+
+  const savings = pensionNet - lumpNet;
+  const savingsRate = lumpNet > 0 ? savings / lumpNet : 0;
+
+  // UI
+  document.getElementById('L_retire').textContent = fmt(retirement) + ' 원';
+  document.getElementById('L_tax').textContent = fmt(lumpTax) + ' 원';
+  document.getElementById('L_local').textContent = fmt(lumpLocal) + ' 원';
+  document.getElementById('L_totalTax').textContent = fmt(lumpTotal) + ' 원';
+  document.getElementById('L_net').textContent = fmt(lumpNet) + ' 원';
+
+  document.getElementById('P_retire').textContent = fmt(retirement) + ' 원';
+  document.getElementById('P_rateLabel').textContent = pensionRateLabel;
+  document.getElementById('P_tax').textContent = fmt(pensionTax) + ' 원';
+  document.getElementById('P_local').textContent = fmt(pensionLocal) + ' 원';
+  document.getElementById('P_totalTax').textContent = fmt(pensionTotal) + ' 원';
+  document.getElementById('P_net').textContent = fmt(pensionNet) + ' 원';
+  document.getElementById('P_growth').textContent = '+' + fmt(totalGrowth) + ' 원';
+
+  document.getElementById('savings').textContent = '+' + fmt(savings) + ' 원';
+  document.getElementById('savingsRate').textContent =
+    `일시금 대비 ${fmtPct(savingsRate)} 더 받음 · 세금 절감 ${fmt(lumpTotal - pensionTotal)}원 + 운용수익 ${fmt(totalGrowth)}원`;
+}
+
+document.querySelectorAll('input').forEach(el => {
+  el.addEventListener('input', calculate);
+});
+fillRetireRules();
+calculate();
+</script>
+<script>
+window.CALC_KEY = 'retirement_compare';
+window.slGetState = function(){
+  return {
+    retirement: document.getElementById('retirement').value,
+    years: document.getElementById('years').value,
+    pensionYears: document.getElementById('pensionYears').value,
+    returnRate: document.getElementById('returnRate').value,
+  };
+};
+window.slSetState = function(d){
+  if(!d) return;
+  if(d.retirement !== undefined) document.getElementById('retirement').value = d.retirement;
+  if(d.years !== undefined) document.getElementById('years').value = d.years;
+  if(d.pensionYears !== undefined) document.getElementById('pensionYears').value = d.pensionYears;
+  if(d.returnRate !== undefined) document.getElementById('returnRate').value = d.returnRate;
+  if(typeof calculate === 'function') calculate();
+};
+</script>
+<script>window.SF_RESET = true;</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

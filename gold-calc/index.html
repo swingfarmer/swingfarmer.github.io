@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<meta name="robots" content="noindex, nofollow">
+<title>금값 계산기 | 스윙파머</title>
+<meta name="description" content="순금·18K·14K 시세 기반 금 제품 가격 계산기. g/돈 병행, 공임비·장식비·부가세 반영, 프리셋 저장.">
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .sub{color:#c2c2c2!important}
+body.sf-dark .hint{background-color:#152537!important;color:#85b5e0!important}
+body.sf-dark .divider{color:#c2c2c2!important;border-top-color:#3c485d!important}
+body.sf-dark .result-table td{border-bottom-color:#3d495c!important}
+body.sf-dark .result-table td:first-child{color:#cccccc!important}
+body.sf-dark .result-table td.v{color:#85b5e0!important}
+body.sf-dark .result-table tr.subtotal td{border-top-color:#2c333f!important}
+body.sf-dark .result-table tr.subtotal td:first-child{color:#dedede!important}
+body.sf-dark .result-table tr.total td{color:#85b5e0!important;background-color:#152537!important}
+body.sf-dark .meta-info{background-color:#373015!important;color:#d1c194!important}
+body.sf-dark .meta-info b{color:#f2a373!important}
+body.sf-dark .btn{border-color:#2c333f!important;background-color:#1e242e!important}
+body.sf-dark .btn:hover{background-color:#1a2433!important}
+body.sf-dark .btn.danger:hover{background-color:#371515!important}
+body.sf-dark .preset-list{border-color:#384761!important}
+body.sf-dark .preset-item{border-bottom-color:#3d495c!important}
+body.sf-dark .preset-name{color:#85b5e0!important}
+body.sf-dark .modal-box{background-color:#1e242e!important}
+body.sf-dark .result-table tr.total td{border-top-color:#1F4E78!important}
+body.sf-dark .result-table tr.total td.v{color:#dc2626!important}
+body.sf-dark .btn.primary{background:#1F4E78!important;border-color:#1F4E78!important}
+body.sf-dark .btn.primary:hover{background:#163a5f!important}
+</style>
+<style>
+:root { --sf-max-w: 780px; }
+h1 { color: #1F4E78; font-size: 26px; margin-bottom: 4px; border-bottom: none; padding-bottom: 0; }
+  .sub { color: #666; font-size: 14px; margin-bottom: 20px; }
+  .panel h2 { color: #1F4E78; font-size: 16px; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #e5e9f0; display: flex; align-items: center; gap: 6px; }
+  .row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .row > 
+  .field { flex: 1; min-width: 100px; position: relative; }
+  .field-inline { display: flex; align-items: center; gap: 4px; }
+  .field input[type=number], .field select, .field input[type=text] { background: #fff; color: #333; text-align: left; font-weight: 500; }
+  .field input:focus, .field select:focus { outline: none; border-color: #1F4E78; }
+  .field .sf-won-kor { font-size: 11px; color: #059669; text-align: right; padding: 2px 4px 0; font-weight: 500; min-height: 15px; }
+  .sync-arrow { align-self: center; padding: 6px 0 0; color: #999; font-size: 14px; }
+  .hint { background: #f0f7ff; padding: 10px 12px; border-radius: 6px; font-size: 12px; color: #1F4E78; margin-top: 8px; line-height: 1.6; }
+  .divider { padding: 10px 0 6px; font-size: 12px; color: #666; font-weight: 600; border-top: 1px dashed #e0e4eb; margin-top: 4px; }
+  .radio-group { display: flex; gap: 20px; padding: 4px 0 8px; flex-wrap: wrap; }
+  .result-table { width: 100%; border-collapse: collapse; }
+  .result-table td { padding: 8px 4px; font-size: 14px; border-bottom: 1px solid #f0f2f5; vertical-align: top; }
+  .result-table td:first-child { color: #555; }
+  .result-table td.v { text-align: right; font-family: 'SF Mono', Menlo, monospace; font-weight: 600; color: #1F4E78; white-space: nowrap; }
+  .result-table td.v .kor { display: block; font-size: 11px; color: #059669; font-weight: 500; font-family: inherit; margin-top: 2px; }
+  .result-table tr.subtotal td { border-top: 2px solid #d0d5dd; border-bottom: none; padding-top: 12px; font-weight: 600; }
+  .result-table tr.subtotal td:first-child { color: #333; }
+  .result-table tr.total td {
+    border-top: 2px solid #1F4E78; padding-top: 14px; padding-bottom: 14px;
+    font-size: 17px; font-weight: 700; color: #1F4E78; background: #f0f7ff;
+  }
+  .result-table tr.total td.v { color: #dc2626; font-size: 18px; }
+  .result-table tr.total td.v .kor { color: #dc2626; font-size: 12px; font-weight: 600; }
+  .meta-info { background: #fef9e7; padding: 10px 12px; border-radius: 6px; margin-top: 12px; font-size: 12px; color: #6b5b2e; line-height: 1.7; }
+  .meta-info b { color: #92400e; }
+  .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .btn { padding: 9px 14px; border: 1px solid #d0d5dd; background: #fff; border-radius: 6px; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .btn:hover { background: #f5f7fa; }
+  .btn.primary { background: #1F4E78; color: #fff; border-color: #1F4E78; }
+  .btn.primary:hover { background: #163a5f; }
+  .btn.danger { color: #dc2626; }
+  .btn.danger:hover { background: #fef2f2; }
+  .footer-note { font-size: 11px; color: #888; text-align: center; margin-top: 20px; line-height: 1.6; }
+  .preset-list { max-height: 180px; overflow-y: auto; border: 1px solid #e5e9f0; border-radius: 6px; }
+  .preset-item { display: flex; align-items: center; padding: 8px 12px; border-bottom: 1px solid #f0f2f5; gap: 8px; font-size: 13px; }
+  .preset-item:last-child { border-bottom: none; }
+  .preset-item.empty { color: #999; justify-content: center; padding: 20px; }
+  .preset-name { flex: 1; font-weight: 600; color: #1F4E78; }
+  .preset-meta { font-size: 11px; color: #888; margin-right: 8px; }
+  .preset-item .btn { padding: 4px 10px; font-size: 12px; }
+  @media (max-width: 520px) {
+    .row > 
+    .field { min-width: 90px; }
+  }
+  /* 클라우드 저장 모달 */
+  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
+  .modal.show { display: flex; }
+  .modal-box { background: #fff; border-radius: 12px; padding: 20px; max-width: 480px; width: 100%; max-height: 90vh; overflow-y: auto; }
+  .modal-box h3 { color: #1F4E78; font-size: 17px; margin: 0; }
+  .btn-blue { background: #0ea5e9; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .btn-gray { background: #9ca3af; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; }
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+<style>/* 081: 모바일 가로 넘침 방지 (PC 영향 없음) */
+@media screen and (max-width:599px){.field-inline input{width:100%;min-width:0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>💍 금값 계산기</h1>
+  <p class="sub">순금 시세와 공임·장식·부가세를 반영한 정밀 금 제품 가격 계산기 · g/돈 병행 입력 · 프리셋 저장</p>
+
+  <!-- 1. 금 시세 -->
+  <div class="panel">
+    <h2>📊 1. 금 시세 입력 (24K 순금)</h2>
+    <div class="row">
+      <label>24K 시세</label>
+      <div class="field field-inline">
+        <input type="number" id="price24kG" placeholder="60000" step="100">
+        <span class="unit-label">원/g</span>
+      </div>
+      <span class="sync-arrow">↔</span>
+      <div class="field field-inline">
+        <input type="number" id="price24kDon" step="100">
+        <span class="unit-label">원/돈</span>
+      </div>
+    </div>
+    <div style="margin-top:8px">
+      <button type="button" id="btnFetchGold" onclick="fetchGoldPrice()" style="background:#1F4E78;color:#fff;border:none;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">📡 DB 금시세 불러오기</button>
+      <span id="goldFetchStatus" style="font-size:12px;color:#888;margin-left:8px"></span>
+    </div>
+    <div class="hint">
+      💡 <b>1돈 = 3.75g</b> · <b>K별 자동 환산</b>: 18K = 24K × 75% · 14K = 24K × 58.3%<br>
+      <b>📊 직접 확인</b><br>
+      · <a href="https://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd?menuId=MDC0201060201" target="_blank" rel="noopener" style="color:#1F4E78;font-weight:600">🏛️ KRX 금시장 (도매·부가세 별도, 순수 원가)</a><br>
+      · <a href="https://www.koreagoldx.co.kr/price/gold" target="_blank" rel="noopener" style="color:#1F4E78;font-weight:600">🏪 한국금거래소 (소매·매장가 판매/매입 병기)</a>
+    </div>
+  </div>
+
+  <!-- 2. 본체 금 -->
+  <div class="panel">
+    <h2>💎 2. 본체 금</h2>
+    <div class="row">
+      <label>본체 K</label>
+      <div class="field">
+        <select id="karat">
+          <option value="24">24K (순금)</option>
+          <option value="18" selected>18K</option>
+          <option value="14">14K</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <label>본체 중량</label>
+      <div class="field field-inline">
+        <input type="number" id="goldWeightG" placeholder="0" step="0.01">
+        <span class="unit-label">g</span>
+      </div>
+      <span class="sync-arrow">↔</span>
+      <div class="field field-inline">
+        <input type="number" id="goldWeightDon" placeholder="0" step="0.01">
+        <span class="unit-label">돈</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 장식 -->
+  <div class="panel">
+    <h2>✨ 3. 장식 재료 (없으면 K "없음"·중량 0)</h2>
+    <div class="row">
+      <label>장식 K</label>
+      <div class="field">
+        <select id="decKarat">
+          <option value="24">24K (순금)</option>
+          <option value="18" selected>18K (연결고리·체인 기본)</option>
+          <option value="14">14K</option>
+          <option value="none">없음 (다이아·큐빅·은 등 비금속)</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <label>장식 중량</label>
+      <div class="field field-inline">
+        <input type="number" id="decWeightG" placeholder="0" step="0.01">
+        <span class="unit-label">g</span>
+      </div>
+      <span class="sync-arrow">↔</span>
+      <div class="field field-inline">
+        <input type="number" id="decWeightDon" placeholder="0" step="0.01">
+        <span class="unit-label">돈</span>
+      </div>
+    </div>
+    <div class="row" id="decCostRow">
+      <label>장식 재료비</label>
+      <div class="field">
+        <input type="number" id="decCost" placeholder="0" step="1000" data-won>
+      </div>
+      <span class="unit-label" style="padding-top:10px">원</span>
+    </div>
+    <div class="hint">
+      💡 장식 K가 <b>24/18/14K</b>면 재료비는 <b>중량 × K시세로 자동 계산</b> → 위 입력란 비활성.<br>
+      장식 K가 <b>없음</b>이면 재료비 직접 입력 (다이아·큐빅·은 등).
+    </div>
+  </div>
+
+  <!-- 4. 부대비용 -->
+  <div class="panel">
+    <h2>🔧 4. 부대비용</h2>
+    <div class="row">
+      <label>공임비</label>
+      <div class="field">
+        <input type="number" id="labor" placeholder="0" step="1000" data-won>
+      </div>
+      <span class="unit-label" style="padding-top:10px">원</span>
+    </div>
+    <div class="row">
+      <label>장식비(세공)</label>
+      <div class="field">
+        <input type="number" id="decFee" placeholder="0" step="1000" data-won>
+      </div>
+      <span class="unit-label" style="padding-top:10px">원</span>
+    </div>
+    <div class="row">
+      <label>기타비용</label>
+      <div class="field">
+        <input type="number" id="misc" placeholder="0" step="1000" data-won>
+      </div>
+      <span class="unit-label" style="padding-top:10px">원</span>
+    </div>
+    <div class="hint">
+      💡 <b>공임비</b>: 인건비 (일반 3~15만) · <b>장식비(세공)</b>: 컷팅·조각 특수공정 · <b>기타비용</b>: 배송·케이스·감정서
+    </div>
+  </div>
+
+  <!-- 5. 부가세 -->
+  <div class="panel">
+    <h2>🧾 5. 부가세 (VAT <span data-tx="vat">10</span>%)</h2>
+    <div class="radio-group">
+      <label><input type="radio" name="vat" value="excl" checked> 별도 (표시가 + <span data-tx="vat">10</span>%)</label>
+      <label><input type="radio" name="vat" value="incl"> 포함 (표시가 그대로)</label>
+    </div>
+    <div class="hint">
+      💡 <b>별도</b>: 금은방·공장 도매가는 대부분 별도 · <b>포함</b>: 백화점·브랜드 소매가는 포함 일반적
+    </div>
+  </div>
+
+  <!-- 6. 결과 -->
+  <div class="panel">
+    <h2>💰 6. 계산 결과</h2>
+    <table class="result-table">
+      <tr>
+        <td>본체 금 원가 <span id="rGoldDetail" style="font-size:11px;color:#888"></span></td>
+        <td class="v" id="rGold">- <span class="kor"></span></td>
+      </tr>
+      <tr>
+        <td>장식 재료비 <span id="rDecDetail" style="font-size:11px;color:#888"></span></td>
+        <td class="v" id="rDec">- <span class="kor"></span></td>
+      </tr>
+      <tr><td>공임비</td><td class="v" id="rLabor">- <span class="kor"></span></td></tr>
+      <tr><td>장식비 (세공)</td><td class="v" id="rDecFee">- <span class="kor"></span></td></tr>
+      <tr><td>기타비용</td><td class="v" id="rMisc">- <span class="kor"></span></td></tr>
+      <tr class="subtotal">
+        <td>소계 (공급가액)</td>
+        <td class="v" id="rSubtotal">- <span class="kor"></span></td>
+      </tr>
+      <tr>
+        <td>부가세 (<span data-tx="vat">10</span>%)</td>
+        <td class="v" id="rVat">- <span class="kor"></span></td>
+      </tr>
+      <tr class="total">
+        <td>💵 총 결제금액</td>
+        <td class="v" id="rTotal">- <span class="kor"></span></td>
+      </tr>
+    </table>
+    <div class="meta-info" id="metaInfo" style="display:none">
+      <div id="metaContent"></div>
+    </div>
+  </div>
+
+  <!-- 7. 저장/불러오기 (클라우드) -->
+  <div class="panel">
+    <h2>💾 7. 저장·불러오기</h2>
+    <div style="font-size:13px;color:#555;line-height:1.7">
+      💾 우측 하단 <b>저장 버튼</b>으로 여러 계산을 이름 붙여 저장하고 어느 기기에서든 불러올 수 있습니다.<br>
+      최근 입력값은 이 브라우저에 자동 저장됩니다.
+    </div>
+  </div>
+
+  <p class="footer-note">
+    ※ 시세는 실시간 변동. 실제 매장가와 차이 있을 수 있음.<br>
+    ※ 재판매 시 금은방 매입가는 순금 중량 기준 감정 (장식·공임비는 감가).<br>
+    ※ 로그인 없이 저장한 최근 값은 이 브라우저에만 저장됩니다.
+  </p>
+</div>
+
+<!-- 클라우드 저장 모달 -->
+
+
+<script src="/tax-rates.js?v=24"></script>
+<script>
+// (102) 부가세율은 /tax-rates.js (SF_TAX.vat)
+const VAT = window.SF_TAX.vat / 100;
+window.CALC_KEY = 'gold-calc';
+window.slGetState = function(){ return window.gcGetState ? window.gcGetState() : {}; };
+window.slSetState = function(d){ if(window.gcSetState) window.gcSetState(d); };
+</script>
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+<script>
+(function() {
+  'use strict';
+
+  const KARAT_FACTOR = { '24': 1.000, '18': 0.750, '14': 0.583 };
+  const G_PER_DON = 3.75;
+  const PRESETS_KEY = 'gold-calc-presets-v2';
+
+  const $ = id => document.getElementById(id);
+
+  function num(id) {
+    const el = $(id);
+    if (!el) return 0;
+    const v = parseFloat(el.value);
+    return isNaN(v) ? 0 : v;
+  }
+
+  function fmt(n) {
+    if (n === 0 || isNaN(n)) return '0 원';
+    return sfNum(n) + ' 원';   // (106) 표기는 sf-fmt.js
+  }
+
+
+  // ---------- g/돈 병행 입력 ----------
+  function bindWeightPair(gId, donId) {
+    const g = $(gId), don = $(donId);
+    if (!g || !don) return;
+    let syncing = false;
+    g.addEventListener('input', () => {
+      if (syncing) return;
+      syncing = true;
+      const v = parseFloat(g.value);
+      don.value = isNaN(v) ? '' : (v / G_PER_DON).toFixed(3);
+      syncing = false;
+      calc();
+    });
+    don.addEventListener('input', () => {
+      if (syncing) return;
+      syncing = true;
+      const v = parseFloat(don.value);
+      g.value = isNaN(v) ? '' : (v * G_PER_DON).toFixed(3);
+      syncing = false;
+      calc();
+    });
+  }
+
+  // 시세 g/돈 병행 (여기선 g/돈이 아니라 원/g <-> 원/돈)
+  function bindPricePair() {
+    const g = $('price24kG'), don = $('price24kDon');
+    let syncing = false;
+    g.addEventListener('input', () => {
+      if (syncing) return;
+      syncing = true;
+      const v = parseFloat(g.value);
+      don.value = isNaN(v) ? '' : Math.round(v * G_PER_DON);
+      syncing = false;
+      calc();
+    });
+    don.addEventListener('input', () => {
+      if (syncing) return;
+      syncing = true;
+      const v = parseFloat(don.value);
+      g.value = isNaN(v) ? '' : Math.round(v / G_PER_DON);
+      syncing = false;
+      calc();
+    });
+  }
+
+  // ---------- 계산 로직 ----------
+  function calc() {
+    const price24 = num('price24kG');
+    const karat = $('karat').value;
+    const goldW = num('goldWeightG');
+    const decKarat = $('decKarat').value;
+    const decW = num('decWeightG');
+    const decCostInput = num('decCost');
+    const labor = num('labor');
+    const decFee = num('decFee');
+    const misc = num('misc');
+    const vatMode = document.querySelector('input[name="vat"]:checked').value;
+
+    // 본체 금 원가
+    const factor = KARAT_FACTOR[karat] || 1;
+    const goldPricePerG = price24 * factor;
+    const goldCost = goldW * goldPricePerG;
+
+    // 장식 재료비 (K금이면 자동, 없음이면 수동)
+    let decCost, decAuto = false;
+    if (decKarat !== 'none') {
+      const decFactor = KARAT_FACTOR[decKarat] || 1;
+      const decPricePerG = price24 * decFactor;
+      decCost = decW * decPricePerG;
+      decAuto = true;
+      // 자동 계산 시 입력란 비활성 + 값 표시
+      $('decCost').value = decCost > 0 ? Math.round(decCost) : '';
+      $('decCost').disabled = true;
+      $('decCost').style.background = '#f5f7fa';
+      $('decCost').style.color = '#666';
+    } else {
+      decCost = decCostInput;
+      $('decCost').disabled = false;
+      $('decCost').style.background = '#fff';
+      $('decCost').style.color = '#1F4E78';
+    }
+
+    const subtotal = goldCost + decCost + labor + decFee + misc;
+
+    let vat, total;
+    if (vatMode === 'excl') {
+      vat = subtotal * VAT;
+      total = subtotal + vat;
+    } else {
+      total = subtotal;
+      vat = subtotal * VAT / (1 + VAT);
+    }
+
+    // 렌더 with 한글
+    function setCell(id, n) {
+      const el = $(id);
+      const kor = Math.abs(n) >= 1e4 ? sfKor(n) : '';
+      el.innerHTML = fmt(n) + (kor ? ' <span class="kor">(' + kor + ')</span>' : ' <span class="kor"></span>');
+    }
+    setCell('rGold', goldCost);
+    $('rGoldDetail').textContent = (goldW > 0 && price24 > 0)
+      ? `(${karat}K ${goldW}g × ${Math.round(goldPricePerG).toLocaleString()}원/g)` : '';
+    setCell('rDec', decCost);
+    $('rDecDetail').textContent = decAuto && decW > 0 && price24 > 0
+      ? `(${decKarat}K ${decW}g 자동)` : (decKarat === 'none' && decCost > 0 ? '(비금속 · 수동)' : '');
+    setCell('rLabor', labor);
+    setCell('rDecFee', decFee);
+    setCell('rMisc', misc);
+    setCell('rSubtotal', subtotal);
+    setCell('rVat', vat);
+    setCell('rTotal', total);
+
+    // 참고 정보
+    const totalW = goldW + decW;
+    let meta = '';
+    if (total > 0) {
+      if (totalW > 0) {
+        meta += `<b>⚖️ 총 중량:</b> 본체 ${goldW}g + 장식 ${decW}g = ${totalW.toFixed(2)}g (${(totalW/G_PER_DON).toFixed(2)}돈)`;
+        if (goldW > 0) meta += ` · 본체 함량 ${((goldW/totalW)*100).toFixed(1)}%`;
+      }
+      // 재판매: 순금 환산 (본체 K + 장식 K 각각 반영)
+      if (price24 > 0) {
+        const pureBody = goldW * factor;
+        let pureDec = 0;
+        if (decKarat !== 'none') pureDec = decW * (KARAT_FACTOR[decKarat] || 0);
+        const pureTotal = pureBody + pureDec;
+        if (pureTotal > 0) {
+          const resale = pureTotal * price24 * 0.90;
+          meta += `<br><b>♻️ 재판매 예상:</b> 약 ${fmt(resale)} (순금 환산 ${pureTotal.toFixed(2)}g × 24K시세 × 90%) · 감가율 <b>${(100 - (resale/total)*100).toFixed(1)}%</b>`;
+        }
+      }
+    }
+    if (meta) {
+      $('metaInfo').style.display = 'block';
+      $('metaContent').innerHTML = meta;
+    } else {
+      $('metaInfo').style.display = 'none';
+    }
+
+    // sf-slots.js 자동저장 트리거
+    try{ localStorage.setItem('sf_'+CALC_KEY+'_v2', JSON.stringify(window.gcGetState())); }catch(e){}
+
+    // data-won 힌트 갱신 (동적)
+    if (window.sfRefreshWon) window.sfRefreshWon();
+  }
+
+  // ---------- 최근 값 저장 (자동, localStorage 오프라인 폴백) ----------
+  function collectAll() {
+    return {
+      price24kG: $('price24kG').value,
+      karat: $('karat').value,
+      goldWeightG: $('goldWeightG').value,
+      decKarat: $('decKarat').value,
+      decWeightG: $('decWeightG').value,
+      decCost: $('decCost').value,
+      labor: $('labor').value,
+      decFee: $('decFee').value,
+      misc: $('misc').value,
+      vat: document.querySelector('input[name="vat"]:checked').value
+    };
+  }
+
+  function applyAll(d) {
+    if (!d) return;
+    ['price24kG','karat','goldWeightG','decKarat','decWeightG','decCost','labor','decFee','misc'].forEach(k => {
+      if (d[k] !== undefined && d[k] !== null) $(k).value = d[k];
+    });
+    if (d.vat) {
+      const r = document.querySelector(`input[name="vat"][value="${d.vat}"]`);
+      if (r) r.checked = true;
+    }
+    // g→돈 동기화
+    ['price24kG:price24kDon:price', 'goldWeightG:goldWeightDon:weight', 'decWeightG:decWeightDon:weight'].forEach(pair => {
+      const [gId, donId, kind] = pair.split(':');
+      const v = parseFloat($(gId).value);
+      if (!isNaN(v)) {
+        $(donId).value = kind === 'price' ? Math.round(v * G_PER_DON) : (v / G_PER_DON).toFixed(3);
+      } else {
+        $(donId).value = '';
+      }
+    });
+    calc();
+  }
+
+  // saveLast/loadLast 제거 — sf-slots.js가 자동저장/복원 담당
+
+  // ---------- Firestore 슬롯 시스템용 훅 ----------
+  // 저장 시: 계산 결과 요약(_total) 함께 첨부하여 슬롯 목록에서 미리보기 가능
+  window.gcGetState = function() {
+    const d = collectAll();
+    const price24 = parseFloat(d.price24kG) || 0;
+    const goldW = parseFloat(d.goldWeightG) || 0;
+    const decW = parseFloat(d.decWeightG) || 0;
+    const factor = KARAT_FACTOR[d.karat] || 1;
+    const decFactor = KARAT_FACTOR[d.decKarat] || 0;
+    const goldCost = goldW * price24 * factor;
+    const decCost = d.decKarat === 'none' ? (parseFloat(d.decCost) || 0) : (decW * price24 * decFactor);
+    const sub = goldCost + decCost + (parseFloat(d.labor)||0) + (parseFloat(d.decFee)||0) + (parseFloat(d.misc)||0);
+    d._total = d.vat === 'excl' ? sub * (1 + VAT) : sub;
+    return d;
+  };
+  window.gcSetState = function(d) { applyAll(d); };
+
+  function reset() {   // (085) 저장 관리 창 [↺ 화면 처음으로]에서 호출
+    ['price24kG','price24kDon','goldWeightG','goldWeightDon','decWeightG','decWeightDon','decCost','labor','decFee','misc'].forEach(id => $(id).value = '');
+    $('karat').value = '18';
+    $('decKarat').value = '18';
+    document.querySelector('input[name="vat"][value="excl"]').checked = true;
+    try { localStorage.removeItem('sf_'+CALC_KEY+'_v2'); } catch(e){}
+    calc();
+  }
+
+  // ---------- 이벤트 바인딩 ----------
+  bindPricePair();
+  bindWeightPair('goldWeightG', 'goldWeightDon');
+  bindWeightPair('decWeightG', 'decWeightDon');
+  ['karat','decKarat','decCost','labor','decFee','misc'].forEach(id => {
+    $(id).addEventListener('input', calc);
+    $(id).addEventListener('change', calc);
+  });
+  document.querySelectorAll('input[name="vat"]').forEach(r => r.addEventListener('change', calc));
+  window.slReset = reset;
+
+  // ── DB 금시세 불러오기 ──
+  window.fetchGoldPrice = async function() {
+    const btn = $('btnFetchGold');
+    const st = $('goldFetchStatus');
+    btn.disabled = true;
+    st.textContent = '불러오는 중...';
+    st.style.color = '#888';
+    try {
+      const res = await fetch('https://swingfarmer.duckdns.org/api/rates/gold?latest=1');
+      const json = await res.json();
+      const d = (json.data || [])[0];
+      if (!d || !d.price_krw_g) throw new Error('데이터 없음');
+      const priceG = Math.round(Number(d.price_krw_g));
+      $('price24kG').value = priceG;
+      $('price24kDon').value = Math.round(priceG * G_PER_DON);
+      calc();
+      st.textContent = '✅ ' + d.price_date + ' 기준 · ' + priceG.toLocaleString() + '원/g (국제시세 환산)';
+      st.style.color = '#059669';
+    } catch(e) {
+      st.textContent = '❌ 불러오기 실패 — 직접 입력해주세요';
+      st.style.color = '#dc2626';
+    }
+    btn.disabled = false;
+  };
+
+  // 초기 로드 (sf-slots.js autoLoad가 slSetState→applyAll→calc 호출)
+  calc();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>국민연금 수령 시뮬레이터 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark tr:hover{background-color:#172636!important}
+body.sf-dark .highlight-row{background-color:#153727!important}
+body.sf-dark .adjust-section{background-color:#373115!important;border-color:#736126!important}
+</style>
+<style>
+:root { --sf-max-w: 720px; }
+*{margin:0;padding:0;box-sizing:border-box}
+.input-row input,.input-row select{font-size:13px;border:1px solid #ccc;border-radius:6px;padding:10px;font-family:inherit;width:140px}
+.input-row input:focus,.input-row select:focus{outline:2px solid #1F4E78}
+.btn{border:none;border-radius:6px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-blue{background:#1F4E78;color:white}
+.btn-blue:hover{background:#163d5e}
+.stat.early{border-left-color:#f59e0b}
+.stat.late{border-left-color:#10b981}
+.stat.early .stat-value{color:#d97706}
+.stat.late .stat-value{color:#059669}
+tr:hover{background:#f8fafc}
+.highlight-row{background:#ecfdf5;font-weight:600}
+.negative{color:#dc2626}
+.adjust-section{margin-top:14px;padding:14px;background:#fffbeb;border-radius:8px;border:1px solid #fcd34d}
+.adjust-section h3{font-size:14px;color:#b45309;margin-bottom:8px}
+@media(max-width:600px){
+  .input-row input,.input-row select{width:100%}
+}
+</style>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body class="sf-narrow">
+<header><h1>🏛️ 국민연금 수령 시뮬레이터</h1></header>
+<p class="desc">국민연금공단에서 조회한 <b>예상 수령액</b>을 입력하면, 급여 변동에 따른 수령액 변화와 <b>조기수령·연기수령 비교</b>까지 한눈에 볼 수 있습니다.</p>
+
+<div class="panel">
+  <h2>① 기본 정보</h2>
+  <div class="input-row">
+    <label>출생연도</label>
+    <input type="number" id="birthYear" value="1980" min="1953" max="2005">
+  </div>
+  <div class="input-row">
+    <label>NPS 예상 월수령액 (원)</label>
+    <input type="number" id="npsExpected" value="1100000" step="10000" data-won>
+  </div>
+  <div class="input-row">
+    <label>현재 월소득 (원) <span class="stat-sub">세전</span></label>
+    <input type="number" id="currentSalary" value="3000000" step="100000" data-won>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>② 급여 변동 시뮬레이션 <span class="stat-sub">(선택)</span></h2>
+  <p style="font-size:12px;color:#888;margin-bottom:10px">NPS 예상액은 현재 급여가 유지된다고 가정한 값입니다. 급여가 변하면 수령액도 달라집니다.</p>
+  <div class="input-row">
+    <label>향후 예상 월소득 (원)</label>
+    <input type="number" id="futureSalary" value="" placeholder="미입력=현재유지" step="100000" data-won>
+  </div>
+  <div class="input-row">
+    <label>남은 납부 기간</label>
+    <select id="remainYears">
+      <option value="5">5년</option>
+      <option value="10" selected>10년</option>
+      <option value="15">15년</option>
+      <option value="20">20년</option>
+      <option value="25">25년</option>
+      <option value="30">30년</option>
+    </select>
+  </div>
+  <div class="input-row">
+    <label>현재까지 가입기간</label>
+    <select id="currentYears">
+      <option value="5">5년</option>
+      <option value="10">10년</option>
+      <option value="15" selected>15년</option>
+      <option value="20">20년</option>
+      <option value="25">25년</option>
+      <option value="30">30년</option>
+    </select>
+  </div>
+</div>
+
+<button class="btn btn-blue" id="calcBtn" style="width:100%;margin-bottom:14px" onclick="calculate()">📊 시뮬레이션</button>
+
+<div id="resultArea" style="display:none">
+  <div class="panel">
+    <h2>📋 수령 시기 및 예상 수령액</h2>
+    <div class="summary-grid" id="summaryGrid"></div>
+  </div>
+
+  <div class="panel">
+    <h2>📊 조기수령 vs 정상 vs 연기수령 비교</h2>
+    <p style="font-size:12px;color:#888;margin-bottom:8px">조기: 1년당 <span data-tx="npsRecv.early">6</span>% 감액(최대 <span data-tx="=npsRecv.early*npsRecv.maxYears" data-tx-f="r1">30</span>%), 연기: 1년당 <span data-tx="npsRecv.late">7.2</span>% 증액(최대 <span data-tx="=npsRecv.late*npsRecv.maxYears" data-tx-f="r1">36</span>%). 부분연기(50~90%) 가능.</p>
+    <div class="table-wrap">
+      <div class="table-scroll"><table id="compareTable">
+        <thead><tr><th>구분</th><th>수령 시작</th><th>월 수령액</th><th>연 수령액</th><th>vs 정상</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>📈 누적 수령액 손익분기</h2>
+    <p style="font-size:12px;color:#888;margin-bottom:8px">각 선택지를 유지했을 때, 나이별 누적 수령 총액. 조기수령은 일찍 시작하지만, 장수하면 정상·연기에 역전당함.</p>
+    <div class="table-wrap">
+      <div class="table-scroll"><table id="cumulTable">
+        <thead><tr><th>나이</th><th>조기5년<br><span style="font-weight:400;font-size:11px">-<span data-tx="=npsRecv.early*npsRecv.maxYears" data-tx-f="r1">30</span>%</span></th><th>조기3년<br><span style="font-weight:400;font-size:11px">-<span data-tx="=npsRecv.early*3" data-tx-f="r1">18</span>%</span></th><th>정상</th><th>연기3년<br><span style="font-weight:400;font-size:11px">+<span data-tx="=npsRecv.late*3" data-tx-f="r1">21.6</span>%</span></th><th>연기5년<br><span style="font-weight:400;font-size:11px">+<span data-tx="=npsRecv.late*npsRecv.maxYears" data-tx-f="r1">36</span>%</span></th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div id="adjustResult"></div>
+</div>
+
+<div class="manual">
+  <h3>사용법</h3>
+  <p><badge class="badge">NPS 예상 수령액</badge> 국민연금공단 홈페이지 또는 <b>'내 곁에 국민연금'</b> 앱에서 조회한 금액을 입력하세요. 이 금액은 현재 소득이 유지된다는 가정 하에 산출된 값입니다.</p>
+
+  <h3>급여 변동 반영 원리</h3>
+  <p>국민연금 수령액은 <b>전체 가입기간의 평균소득</b>에 비례합니다. 향후 급여가 바뀌면, 남은 기간 동안의 평균소득이 변하므로 최종 수령액도 달라집니다. 이 계산기는 (향후소득 × 남은기간 + 현재소득 × 기가입기간) / 전체기간의 비율로 조정합니다.</p>
+
+  <h3>조기·연기수령 기준 (2026년)</h3>
+  <p><badge class="badge">조기</badge> 수급개시연령보다 최대 <span data-tx="npsRecv.maxYears">5</span>년 일찍 수령. <b>1년당 <span data-tx="npsRecv.early">6</span>% 감액</b>(월 <span data-tx="=npsRecv.early/12" data-tx-f="r1">0.5</span>%), 최대 <span data-tx="=npsRecv.early*npsRecv.maxYears" data-tx-f="r1">30</span>%. 평생 고정.<br>
+  <badge class="badge">연기</badge> 수급개시연령보다 최대 <span data-tx="npsRecv.maxYears">5</span>년 늦게 수령. <b>1년당 <span data-tx="npsRecv.late">7.2</span>% 증액</b>(월 <span data-tx="=npsRecv.late/12" data-tx-f="r1">0.6</span>%), 최대 <span data-tx="=npsRecv.late*npsRecv.maxYears" data-tx-f="r1">36</span>%. 평생 고정. 부분연기(50~90%) 가능.</p>
+
+  <h3>출생연도별 수급개시연령</h3>
+  <p id="ageList">1953~56년: 61세 / 1957~60년: 62세 / 1961~64년: 63세 / 1965~68년: 64세 / <b>1969년 이후: 65세</b></p>
+</div>
+
+<script src="/tax-rates.js?v=24"></script>
+<script>
+// (094) 수급개시연령·조기/연기 비율은 공통 파일 /tax-rates.js (SF_TAX.npsRecv) — 법이 바뀌면 그 파일만 고침
+var NR = window.SF_TAX.npsRecv;
+function getStartAge(birthYear) { return window.SF_TAX.npsAge(birthYear); }
+function r1(n){ return Math.round(n * 10) / 10; }
+(function(){
+  var a = NR.age, parts = [];
+  for (var i = 1; i < a.length; i++){
+    var from = a[i - 1][0] + 1;
+    if (a[i][0] === Infinity) parts.push('<b>' + from + '년 이후: ' + a[i][1] + '세</b>');
+    else parts.push(from + '~' + String(a[i][0]).slice(2) + '년: ' + a[i][1] + '세');
+  }
+  document.getElementById('ageList').innerHTML = parts.join(' / ');
+})();
+
+
+// (098) 금액칸 아래 표시는 common.js data-won이 함
+
+function calculate() {
+  var birthYear = parseInt(document.getElementById('birthYear').value);
+  var npsExpected = parseInt(document.getElementById('npsExpected').value) || 0;
+  var currentSalary = parseInt(document.getElementById('currentSalary').value) || 0;
+  var futureSalary = parseInt(document.getElementById('futureSalary').value) || 0;
+  var remainYears = parseInt(document.getElementById('remainYears').value);
+  var currentYears = parseInt(document.getElementById('currentYears').value);
+  var startAge = getStartAge(birthYear);
+
+  // 급여 변동 조정
+  var adjustedMonthly = npsExpected;
+  var adjustNote = '';
+  if (futureSalary > 0 && futureSalary !== currentSalary && currentSalary > 0) {
+    var totalYears = currentYears + remainYears;
+    var currentAvg = currentSalary;
+    var futureAvg = futureSalary;
+    var blendedRatio = (currentAvg * currentYears + futureAvg * remainYears) / (currentAvg * totalYears);
+    adjustedMonthly = Math.round(npsExpected * blendedRatio);
+    var diff = adjustedMonthly - npsExpected;
+    adjustNote = futureSalary > currentSalary
+      ? '급여 인상 반영: +' + sfKor(diff)
+      : '급여 감소 반영: ' + sfKor(diff);
+  }
+
+  // 수급 시작 연도
+  var startYear = birthYear + startAge;
+
+  // 조기/연기 수령액 계산
+  var scenarios = [];
+  for (var y = -NR.maxYears; y <= NR.maxYears; y++) {
+    var age = startAge + y;
+    var label, rate, monthly;
+    if (y < 0) {
+      rate = 1 + y * NR.early / 100; // y가 음수라 감액
+      label = '조기 ' + Math.abs(y) + '년 (' + age + '세)';
+    } else if (y === 0) {
+      rate = 1;
+      label = '정상 (' + age + '세)';
+    } else {
+      rate = 1 + y * NR.late / 100;
+      label = '연기 ' + y + '년 (' + age + '세)';
+    }
+    monthly = Math.round(adjustedMonthly * rate);
+    scenarios.push({
+      years: y, age: age, label: label, rate: rate,
+      monthly: monthly, annual: monthly * 12,
+      diff: monthly - adjustedMonthly
+    });
+  }
+
+  // 요약 카드
+  var early5 = scenarios[0]; // -5
+  var normal = scenarios[NR.maxYears]; // 정상
+  var late5 = scenarios[NR.maxYears * 2]; // 최대 연기
+  document.getElementById('summaryGrid').innerHTML =
+    '<div class="stat early"><div class="stat-label">조기 ' + NR.maxYears + '년 (' + early5.age + '세~)</div><div class="stat-value">' + sfKor(early5.monthly) + '/월</div><div class="stat-sub">정상 대비 -' + r1(NR.early * NR.maxYears) + '%</div></div>' +
+    '<div class="stat"><div class="stat-label">정상 수령 (' + normal.age + '세~)</div><div class="stat-value">' + sfKor(normal.monthly) + '/월</div><div class="stat-sub">' + (adjustNote || 'NPS 예상액 그대로') + '</div></div>' +
+    '<div class="stat late"><div class="stat-label">연기 ' + NR.maxYears + '년 (' + late5.age + '세~)</div><div class="stat-value">' + sfKor(late5.monthly) + '/월</div><div class="stat-sub">정상 대비 +' + r1(NR.late * NR.maxYears) + '%</div></div>';
+
+  // 비교 테이블
+  var tbody = document.querySelector('#compareTable tbody');
+  tbody.innerHTML = scenarios.map(function(s) {
+    var cls = s.years === 0 ? ' class="highlight-row"' : '';
+    var diffStr = s.diff === 0 ? '-' : (s.diff > 0 ? '+' : '') + sfKor(s.diff);
+    return '<tr' + cls + '><td style="text-align:left">' + s.label + '</td><td>' + (birthYear + s.age) + '년</td><td>' + sfKor(s.monthly) + '</td><td>' + sfKor(s.annual) + '</td><td>' + diffStr + '</td></tr>';
+  }).join('');
+
+  // 누적 수령액 (65~95세)
+  var cumulKeys = [{y:-5,label:'조기5'},{y:-3,label:'조기3'},{y:0,label:'정상'},{y:3,label:'연기3'},{y:5,label:'연기5'}];
+  var cumulData = cumulKeys.map(function(k) {
+    var sc = scenarios[k.y + NR.maxYears];
+    return { startAge: sc.age, monthly: sc.monthly, label: k.label };
+  });
+
+  var ctbody = document.querySelector('#cumulTable tbody');
+  var rows = [];
+  var cumuls = [0, 0, 0, 0, 0];
+  var maxAge = 95;
+  var minStartAge = cumulData[0].startAge;
+
+  for (var age = minStartAge; age <= maxAge; age++) {
+    var cells = '<td>' + age + '세</td>';
+    for (var i = 0; i < 5; i++) {
+      if (age >= cumulData[i].startAge) {
+        cumuls[i] += cumulData[i].monthly * 12;
+      }
+      cells += '<td>' + (cumuls[i] > 0 ? sfKor(cumuls[i]) : '-') + '</td>';
+    }
+    // 정상 시작 연도 하이라이트
+    var cls = age === startAge ? ' class="highlight-row"' : '';
+    rows.push('<tr' + cls + '>' + cells + '</tr>');
+  }
+  ctbody.innerHTML = rows.join('');
+
+  // 급여 변동 결과
+  var adjustDiv = document.getElementById('adjustResult');
+  if (adjustNote) {
+    adjustDiv.innerHTML = '<div class="adjust-section"><h3>💡 급여 변동 효과</h3><p>현재 ' + sfKor(currentSalary) + ' → ' + sfKor(futureSalary) + '으로 변경 시, 남은 ' + remainYears + '년간 반영하면<br><b>정상 수령액: ' + sfKor(npsExpected) + ' → ' + sfKor(adjustedMonthly) + '</b> (차이: ' + sfKor(adjustedMonthly - npsExpected) + '/월)</p></div>';
+  } else {
+    adjustDiv.innerHTML = '';
+  }
+
+  document.getElementById('resultArea').style.display = 'block';
+  document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+<script>
+window.CALC_KEY = 'pension';
+window.slGetState = function(){
+  return {
+    birthYear: document.getElementById('birthYear').value,
+    npsExpected: document.getElementById('npsExpected').value,
+    currentSalary: document.getElementById('currentSalary').value,
+    futureSalary: document.getElementById('futureSalary').value,
+    remainYears: document.getElementById('remainYears').value,
+    currentYears: document.getElementById('currentYears').value,
+  };
+};
+window.slSetState = function(d){
+  if(!d) return;
+  if(d.birthYear !== undefined) document.getElementById('birthYear').value = d.birthYear;
+  if(d.npsExpected !== undefined) document.getElementById('npsExpected').value = d.npsExpected;
+  if(d.currentSalary !== undefined) document.getElementById('currentSalary').value = d.currentSalary;
+  if(d.futureSalary !== undefined) document.getElementById('futureSalary').value = d.futureSalary;
+  if(d.remainYears !== undefined) document.getElementById('remainYears').value = d.remainYears;
+  if(d.currentYears !== undefined) document.getElementById('currentYears').value = d.currentYears;
+  if(typeof calculate === 'function') calculate();
+};
+</script>
+<script>window.SF_RESET = true;</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

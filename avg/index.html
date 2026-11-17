@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>물타기·불타기 평단 계산기 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+@media(max-width:600px){body.sf-dark .buy-row{background-color:#172636!important;border-color:#2c333f!important}}
+body.sf-dark .cur-unit{color:#85b5e0!important}
+body.sf-dark .del-btn{background-color:#371515!important}
+body.sf-dark .del-btn:hover{background-color:#371515!important}
+</style>
+<style>
+:root { --sf-max-w: 1100px; }
+.final { background: linear-gradient(135deg, #1F4E78, #2563eb); }
+input:focus{outline:2px solid #1F4E78;background:#fff}
+/* 경고 박스 */
+.warn-box b{color:#dc2626}
+.warn-box .warn-title{font-size:15px;font-weight:700;color:#dc2626;margin-bottom:8px}
+/* 탭 모양: common.css .tabs·.tab (105 통일) */
+.tab-content{display:none}
+.tab-content.active{display:block}
+.stat.red{border-left-color:#dc2626;background:#fef2f2}
+.stat.green .stat-value{color:#059669}
+.stat.red .stat-value{color:#dc2626}
+.add-row-btn{background:#1F4E78;color:white;border:none;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;margin-top:10px}
+.add-row-btn:hover{background:#2d5a8c}
+.buy-row{display:grid;grid-template-columns:1fr 1fr 44px;gap:10px;margin-bottom:8px;align-items:end}
+.buy-row .del-btn{width:44px;height:42px}
+@media(max-width:600px){
+  .buy-row{grid-template-columns:1fr;gap:10px;position:relative;background:#f8fafc;padding:36px 12px 12px;border-radius:8px;border:1px solid #eee;margin-bottom:10px}
+  .buy-row .del-btn{position:absolute;top:6px;right:6px;width:28px;height:28px;font-size:13px}
+}
+.cur-unit{color:#1F4E78;font-weight:700}
+.del-btn{background:#fee2e2;color:#dc2626;border:none;width:38px;height:40px;border-radius:6px;cursor:pointer;font-size:16px;font-weight:700}
+.del-btn:hover{background:#fecaca}
+/* (098) 다크 글자색 — 라이트 색(빨강·파랑·갈색·초록·남색)이 어두운 배경에서 안 읽히던 것 */
+body.sf-dark .warn-box b, body.sf-dark .warn-box .warn-title{color:#f87171}
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body class="sf-narrow">
+
+
+<h1>📊 물타기·불타기 평단 계산기</h1>
+<p class="desc">추가 매수 후 평균 단가 계산, 목표 평단까지 필요한 수량 역산, 본전 회복에 필요한 상승률까지. 통화를 선택하면 단위가 맞춰집니다.</p>
+
+<div class="panel" style="padding:14px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+  <label style="font-size:13px;font-weight:600;color:#333;margin:0">💱 통화 선택</label>
+  <select id="currency" style="padding:8px 14px;font-size:13px;border:1px solid #ccc;border-radius:6px;background:#fff;font-weight:600;color:#1F4E78;cursor:pointer">
+    <option value="KRW" selected>원화 ₩ (한국주식)</option>
+    <option value="USD">달러 $ (해외주식)</option>
+  </select>
+  <span style="font-size:12px;color:#888" id="currencyHint">정수 단위 (예: 8,000원)</span>
+</div>
+
+<div class="warn-box">
+  <div class="warn-title">⚠️ 물타기 전에 꼭 읽으세요</div>
+  • <b>평단이 낮아져도 총 손실 금액은 늘어납니다.</b> 평단 하락 ≠ 손실 감소.<br>
+  • <b>"왜 떨어지는지" 모르고 물타면</b> 더 큰 손실로 이어지는 가장 흔한 실패 패턴입니다.<br>
+  • 개별 종목(특히 잡주)에 무계획 물타기는 도박에 가깝습니다. <b>기업 펀더멘털이 훼손됐는지</b> 먼저 확인하세요.<br>
+  • 이 계산기는 <b>단순 산수</b>일 뿐, 매수를 권유하지 않습니다. 투자 판단과 책임은 본인에게 있습니다.
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="avg">① 평단 계산</button>
+  <button class="tab" data-tab="target">② 목표 평단 역산</button>
+  <button class="tab" data-tab="breakeven">③ 본전 회복가</button>
+</div>
+
+<!-- ===== 탭 1: 평단 계산 ===== -->
+<div class="tab-content active" id="tab-avg">
+  <div class="panel">
+    <h2>📥 보유 현황 + 추가 매수</h2>
+    <div class="section-label">기존 보유 (현재 평단)</div>
+    <div class="inputs">
+      <div class="input-row">
+        <label>기존 평균 단가 (<span class="cur-unit">원</span>)</label>
+        <input type="number" id="avgPrice" value="10000">
+      </div>
+      <div class="input-row">
+        <label>기존 보유 수량 (주)</label>
+        <input type="number" id="avgQty" value="100">
+      </div>
+    </div>
+
+    <div class="section-label">추가 매수 (물타기/불타기) — 여러 번 가능</div>
+    <div id="buyRows"></div>
+    <button class="add-row-btn" id="addBuyRow" type="button">+ 추가 매수 줄 더하기</button>
+
+    <div class="section-label">현재 시세 (선택 — 손익 계산용)</div>
+    <div class="inputs">
+      <div class="input-row">
+        <label>현재 주가 (<span class="cur-unit">원</span>, 0이면 생략)</label>
+        <input type="number" id="curPrice" value="8000">
+      </div>
+    </div>
+  </div>
+
+  <div class="final">
+    <div class="final-label">추가 매수 후 새 평균 단가</div>
+    <div class="final-value" id="newAvg">-</div>
+    <div class="final-sub" id="newAvgSub"></div>
+  </div>
+
+  <div class="panel">
+    <h2>📊 요약</h2>
+    <div class="summary-grid">
+      <div class="stat">
+        <div class="stat-label">총 보유 수량</div>
+        <div class="stat-value" id="totalQty">-</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">총 투자 금액</div>
+        <div class="stat-value" id="totalCost">-</div>
+      </div>
+      <div class="stat" id="statEval">
+        <div class="stat-label">현재 평가 금액</div>
+        <div class="stat-value" id="evalAmount">-</div>
+      </div>
+      <div class="stat" id="statPnl">
+        <div class="stat-label">평가 손익</div>
+        <div class="stat-value" id="pnl">-</div>
+        <div class="stat-sub" id="pnlPct"></div>
+      </div>
+    </div>
+    <div class="summary-grid" style="margin-top:12px">
+      <div class="stat">
+        <div class="stat-label">기존 평단</div>
+        <div class="stat-value" id="oldAvgShow">-</div>
+      </div>
+      <div class="stat green">
+        <div class="stat-label">새 평단</div>
+        <div class="stat-value" id="newAvgShow">-</div>
+        <div class="stat-sub" id="avgChange"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 탭 2: 목표 평단 역산 ===== -->
+<div class="tab-content" id="tab-target">
+  <div class="panel">
+    <h2>🎯 목표 평단까지 몇 주 더 사야 하나?</h2>
+    <div class="inputs">
+      <div class="input-row">
+        <label>기존 평균 단가 (<span class="cur-unit">원</span>)</label>
+        <input type="number" id="t_avgPrice" value="10000">
+      </div>
+      <div class="input-row">
+        <label>기존 보유 수량 (주)</label>
+        <input type="number" id="t_avgQty" value="100">
+      </div>
+      <div class="input-row">
+        <label>추가 매수 가격 (<span class="cur-unit">원</span>)</label>
+        <input type="number" id="t_buyPrice" value="8000">
+      </div>
+      <div class="input-row">
+        <label>목표 평균 단가 (<span class="cur-unit">원</span>)</label>
+        <input type="number" id="t_targetAvg" value="9000">
+      </div>
+    </div>
+  </div>
+
+  <div class="final">
+    <div class="final-label">목표 평단 달성에 필요한 추가 매수</div>
+    <div class="final-value" id="t_needQty">-</div>
+    <div class="final-sub" id="t_needSub"></div>
+  </div>
+
+  <div class="panel">
+    <h2>📊 요약</h2>
+    <div class="summary-grid">
+      <div class="stat">
+        <div class="stat-label">추가 매수 필요 수량</div>
+        <div class="stat-value" id="t_qty">-</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">추가 매수 필요 금액</div>
+        <div class="stat-value" id="t_cost">-</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">최종 보유 수량</div>
+        <div class="stat-value" id="t_finalQty">-</div>
+      </div>
+      <div class="stat green">
+        <div class="stat-label">최종 평단</div>
+        <div class="stat-value" id="t_finalAvg">-</div>
+      </div>
+    </div>
+    <div id="t_warning" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<!-- ===== 탭 3: 본전 회복가 ===== -->
+<div class="tab-content" id="tab-breakeven">
+  <div class="panel">
+    <h2>📈 본전 회복에 필요한 상승률</h2>
+    <div class="inputs">
+      <div class="input-row">
+        <label>현재 평균 단가 (<span class="cur-unit">원</span>)</label>
+        <input type="number" id="b_avgPrice" value="10000">
+      </div>
+      <div class="input-row">
+        <label>현재 주가 (<span class="cur-unit">원</span>)</label>
+        <input type="number" id="b_curPrice" value="7000">
+      </div>
+    </div>
+  </div>
+
+  <div class="final">
+    <div class="final-label">본전(평단) 회복에 필요한 상승률</div>
+    <div class="final-value" id="b_needRise">-</div>
+    <div class="final-sub" id="b_needSub"></div>
+  </div>
+
+  <div class="panel">
+    <h2>📊 요약</h2>
+    <div class="summary-grid">
+      <div class="stat red">
+        <div class="stat-label">현재 손익률</div>
+        <div class="stat-value" id="b_curPnl">-</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">본전까지 필요 상승률</div>
+        <div class="stat-value" id="b_rise">-</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">목표 주가 (= 평단)</div>
+        <div class="stat-value" id="b_targetPrice">-</div>
+      </div>
+    </div>
+    <div style="margin-top:14px;padding:12px 14px;background:#fffbeb;border-radius:6px;font-size:12.5px;color:#92400e;line-height:1.6">
+      💡 <b>비대칭의 함정:</b> -50% 손실은 +100% 올라야 본전입니다. 손실이 깊을수록 회복에 필요한 상승률이 기하급수적으로 커집니다.
+    </div>
+  </div>
+</div>
+
+<div class="manual">
+  <h3>📖 사용 설명</h3>
+  <ul>
+    <li><b>💱 통화 선택:</b> 상단에서 원화(₩)/달러($) 선택. 달러는 소수점 가격·수량 가능 (해외주식).</li>
+    <li><b>① 평단 계산:</b> 기존 보유 + 추가 매수(여러 번 가능) → 새 평균 단가와 손익. 물타기·불타기 둘 다 같은 계산.</li>
+    <li><b>② 목표 평단 역산:</b> "평단을 X까지 낮추려면 이 가격에 몇 주 사야 하나?" 자동 계산.</li>
+    <li><b>③ 본전 회복가:</b> 손실 중일 때 평단까지 회복하려면 주가가 몇 % 올라야 하는지.</li>
+  </ul>
+  <h3>🧮 평단 공식</h3>
+  <ul>
+    <li>새 평단 = (기존 평단 × 기존 수량 + Σ 추가매수가 × 추가수량) ÷ (총 수량)</li>
+    <li>수수료·세금·환율은 미반영 (단순 계산). 원화·달러 각각 같은 통화 안에서만 계산.</li>
+  </ul>
+  <h3>⚠️ 물타기 주의</h3>
+  <ul>
+    <li>평단이 내려가도 <b>총 손실 금액은 늘어납니다.</b> (평단 하락 ≠ 손실 감소)</li>
+    <li>하락 이유(실적 악화·산업 침체)를 모르면 물타기는 손실 확대로 이어집니다.</li>
+    <li>본전 회복엔 <b>비대칭의 함정</b>이 있습니다 — 손실이 깊을수록 회복에 필요한 상승률이 급격히 커집니다 (-50% → +100% 필요).</li>
+    <li>이 도구는 산수일 뿐 투자 권유가 아닙니다. 모든 판단과 책임은 본인에게 있습니다.</li>
+  </ul>
+</div>
+
+<script>
+// === 통화 설정 ===
+var CUR = { code:'KRW', symbol:'원', isUSD:false };
+function setCurrency(code){
+  if (code === 'USD') CUR = { code:'USD', symbol:'$', isUSD:true };
+  else CUR = { code:'KRW', symbol:'원', isUSD:false };
+}
+// 금액 포맷 (통화 반영)
+function money(n){
+  if (CUR.isUSD) return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  return Math.round(n).toLocaleString('ko-KR') + '원';
+}
+// 단가 포맷 (소수점 더 정밀)
+function price(n){
+  if (CUR.isUSD) return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:4});
+  return n.toLocaleString('ko-KR', {maximumFractionDigits:2}) + '원';
+}
+// 수량 포맷
+function qtyFmt(n){
+  if (CUR.isUSD) return n.toLocaleString('en-US', {maximumFractionDigits:4}) + '주';
+  return Math.round(n).toLocaleString('ko-KR') + '주';
+}
+// 구버전 호환
+function fmt(n){ return CUR.isUSD ? sfNum(n, 2) : sfNum(n); }
+function fmt2(n){ return CUR.isUSD ? n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4}) : n.toLocaleString('ko-KR', {maximumFractionDigits:2}); }
+
+// 통화 변경 이벤트
+document.getElementById('currency').addEventListener('change', function(){
+  setCurrency(this.value);
+  document.getElementById('currencyHint').textContent = CUR.isUSD ? '소수점 가능 (예: $8.53, 0.5주)' : '정수 단위 (예: 8,000원)';
+  // 모든 입력 라벨의 단위 표기 변경
+  var unitText = CUR.isUSD ? '$' : '원';
+  document.querySelectorAll('.cur-unit').forEach(function(el){ el.textContent = unitText; });
+  calcAvg(); calcTarget(); calcBreakeven();
+});
+
+// === 탭 전환 ===
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click', function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active')});
+    document.querySelectorAll('.tab-content').forEach(function(x){x.classList.remove('active')});
+    t.classList.add('active');
+    document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+  });
+});
+
+// === 탭 1: 평단 계산 ===
+var buyRowsEl = document.getElementById('buyRows');
+function addBuyRow(price, qty){
+  var div = document.createElement('div');
+  div.className = 'buy-row';
+  div.innerHTML =
+    '<div class="input-row"><label>추가 매수가 (<span class="cur-unit">' + (CUR.isUSD?'$':'원') + '</span>)</label><input type="number" class="buyPrice" value="' + (price||'') + '"></div>' +
+    '<div class="input-row"><label>추가 수량 (주)</label><input type="number" class="buyQty" value="' + (qty||'') + '"></div>' +
+    '<button class="del-btn" type="button">✕</button>';
+  div.querySelector('.del-btn').addEventListener('click', function(){ div.remove(); calcAvg(); });
+  div.querySelectorAll('input').forEach(function(i){ i.addEventListener('input', calcAvg); });
+  buyRowsEl.appendChild(div);
+}
+document.getElementById('addBuyRow').addEventListener('click', function(){ addBuyRow(); });
+
+function calcAvg(){
+  var avgPrice = +document.getElementById('avgPrice').value || 0;
+  var avgQty = +document.getElementById('avgQty').value || 0;
+  var curPrice = +document.getElementById('curPrice').value || 0;
+
+  var totalCost = avgPrice * avgQty;
+  var totalQty = avgQty;
+
+  document.querySelectorAll('#buyRows .buy-row').forEach(function(row){
+    var p = +row.querySelector('.buyPrice').value || 0;
+    var q = +row.querySelector('.buyQty').value || 0;
+    totalCost += p * q;
+    totalQty += q;
+  });
+
+  var newAvg = totalQty > 0 ? totalCost / totalQty : 0;
+
+  document.getElementById('newAvg').textContent = price(newAvg);
+  document.getElementById('totalQty').textContent = qtyFmt(totalQty);
+  document.getElementById('totalCost').textContent = money(totalCost);
+  document.getElementById('oldAvgShow').textContent = price(avgPrice);
+  document.getElementById('newAvgShow').textContent = price(newAvg);
+
+  var avgDiff = newAvg - avgPrice;
+  var avgDiffPct = avgPrice > 0 ? (avgDiff/avgPrice*100) : 0;
+  var changeEl = document.getElementById('avgChange');
+  if (avgDiff < 0) changeEl.innerHTML = '<span style="color:#059669">▼ ' + price(Math.abs(avgDiff)) + ' (' + avgDiffPct.toFixed(2) + '%) 물타기</span>';
+  else if (avgDiff > 0) changeEl.innerHTML = '<span style="color:#dc2626">▲ ' + price(avgDiff) + ' (+' + avgDiffPct.toFixed(2) + '%) 불타기</span>';
+  else changeEl.textContent = '변동 없음';
+
+  document.getElementById('newAvgSub').textContent =
+    '총 ' + qtyFmt(totalQty) + ' · 총 투자 ' + money(totalCost);
+
+  // 손익 (현재가 입력 시)
+  if (curPrice > 0 && totalQty > 0) {
+    var evalAmount = curPrice * totalQty;
+    var pnl = evalAmount - totalCost;
+    var pnlPct = totalCost > 0 ? (pnl/totalCost*100) : 0;
+    document.getElementById('evalAmount').textContent = money(evalAmount);
+    document.getElementById('pnl').textContent = (pnl>=0?'+':'−') + money(Math.abs(pnl));
+    document.getElementById('pnlPct').textContent = (pnlPct>=0?'+':'') + pnlPct.toFixed(2) + '%';
+    var pnlStat = document.getElementById('statPnl');
+    pnlStat.className = 'stat ' + (pnl>=0 ? 'green' : 'red');
+    document.getElementById('statEval').style.display = '';
+    document.getElementById('statPnl').style.display = '';
+  } else {
+    document.getElementById('evalAmount').textContent = '-';
+    document.getElementById('pnl').textContent = '-';
+    document.getElementById('pnlPct').textContent = '';
+  }
+}
+
+// === 탭 2: 목표 평단 역산 ===
+function calcTarget(){
+  var avgPrice = +document.getElementById('t_avgPrice').value || 0;
+  var avgQty = +document.getElementById('t_avgQty').value || 0;
+  var buyPrice = +document.getElementById('t_buyPrice').value || 0;
+  var targetAvg = +document.getElementById('t_targetAvg').value || 0;
+
+  // (avgPrice*avgQty + buyPrice*x) / (avgQty + x) = targetAvg
+  // avgPrice*avgQty + buyPrice*x = targetAvg*avgQty + targetAvg*x
+  // x(buyPrice - targetAvg) = targetAvg*avgQty - avgPrice*avgQty
+  // x = avgQty*(targetAvg - avgPrice) / (buyPrice - targetAvg)
+  var denom = buyPrice - targetAvg;
+  var warnEl = document.getElementById('t_warning');
+  var needQty = denom !== 0 ? (avgQty * (targetAvg - avgPrice)) / denom : -1;
+
+  if (needQty <= 0 || denom === 0 || !isFinite(needQty)) {
+    document.getElementById('t_needQty').textContent = '계산 불가';
+    document.getElementById('t_needSub').textContent = '목표 평단이 매수가와 기존 평단 사이에 있어야 합니다';
+    document.getElementById('t_qty').textContent = '-';
+    document.getElementById('t_cost').textContent = '-';
+    document.getElementById('t_finalQty').textContent = '-';
+    document.getElementById('t_finalAvg').textContent = '-';
+    warnEl.innerHTML = '<div style="padding:12px 14px;background:#fef2f2;border-radius:6px;font-size:12.5px;color:#7f1d1d;line-height:1.6">⚠️ <b>목표 평단 도달 불가능.</b> 매수가(' + price(buyPrice) + ')가 목표 평단(' + price(targetAvg) + ')보다 낮아야 물타기로 목표 도달 가능. 예: 평단 10,000을 9,000으로 낮추려면 9,000보다 싸게 사야 함.</div>';
+    return;
+  }
+
+  // USD는 소수점 수량 허용, KRW는 정수(올림)
+  var needQtyR = CUR.isUSD ? needQty : Math.ceil(needQty);
+  var cost = needQtyR * buyPrice;
+  var finalQty = avgQty + needQtyR;
+  var finalAvg = (avgPrice*avgQty + buyPrice*needQtyR) / finalQty;
+
+  document.getElementById('t_needQty').textContent = qtyFmt(needQtyR);
+  document.getElementById('t_needSub').textContent = '@ ' + price(buyPrice) + ' × ' + qtyFmt(needQtyR) + ' = ' + money(cost) + ' 투입';
+  document.getElementById('t_qty').textContent = qtyFmt(needQtyR);
+  document.getElementById('t_cost').textContent = money(cost);
+  document.getElementById('t_finalQty').textContent = qtyFmt(finalQty);
+  document.getElementById('t_finalAvg').textContent = price(finalAvg);
+  warnEl.innerHTML = '';
+}
+
+// === 탭 3: 본전 회복가 ===
+function calcBreakeven(){
+  var avgPrice = +document.getElementById('b_avgPrice').value || 0;
+  var curPrice = +document.getElementById('b_curPrice').value || 0;
+
+  if (avgPrice <= 0 || curPrice <= 0) {
+    document.getElementById('b_needRise').textContent = '-';
+    return;
+  }
+  var curPnlPct = (curPrice - avgPrice) / avgPrice * 100;
+  var risePct = (avgPrice - curPrice) / curPrice * 100;
+
+  document.getElementById('b_needRise').textContent = (risePct>=0?'+':'') + risePct.toFixed(2) + '%';
+  document.getElementById('b_needSub').textContent = '현재 ' + price(curPrice) + ' → 평단 ' + price(avgPrice);
+  document.getElementById('b_curPnl').textContent = (curPnlPct>=0?'+':'') + curPnlPct.toFixed(2) + '%';
+  document.getElementById('b_rise').textContent = (risePct>=0?'+':'') + risePct.toFixed(2) + '%';
+  document.getElementById('b_targetPrice').textContent = price(avgPrice);
+}
+
+// 이벤트 바인딩
+['avgPrice','avgQty','curPrice'].forEach(function(id){ document.getElementById(id).addEventListener('input', calcAvg); });
+['t_avgPrice','t_avgQty','t_buyPrice','t_targetAvg'].forEach(function(id){ document.getElementById(id).addEventListener('input', calcTarget); });
+['b_avgPrice','b_curPrice'].forEach(function(id){ document.getElementById(id).addEventListener('input', calcBreakeven); });
+
+// 초기화
+buyRowsEl.innerHTML = '';
+addBuyRow(8000, 100);
+calcAvg();
+calcTarget();
+calcBreakeven();
+</script>
+
+<script>
+window.CALC_KEY = 'avg_calc';
+window.slGetState = function(){
+  return {
+    currency: document.getElementById('currency').value,
+    avgPrice: document.getElementById('avgPrice').value,
+    avgQty: document.getElementById('avgQty').value,
+    curPrice: document.getElementById('curPrice').value,
+    t_avgPrice: document.getElementById('t_avgPrice').value,
+    t_avgQty: document.getElementById('t_avgQty').value,
+    t_buyPrice: document.getElementById('t_buyPrice').value,
+    t_targetAvg: document.getElementById('t_targetAvg').value,
+    b_avgPrice: document.getElementById('b_avgPrice').value,
+    b_curPrice: document.getElementById('b_curPrice').value,
+  };
+};
+window.slSetState = function(d){
+  if(!d) return;
+  if(d.currency !== undefined) document.getElementById('currency').value = d.currency;
+  if(d.avgPrice !== undefined) document.getElementById('avgPrice').value = d.avgPrice;
+  if(d.avgQty !== undefined) document.getElementById('avgQty').value = d.avgQty;
+  if(d.curPrice !== undefined) document.getElementById('curPrice').value = d.curPrice;
+  if(d.t_avgPrice !== undefined) document.getElementById('t_avgPrice').value = d.t_avgPrice;
+  if(d.t_avgQty !== undefined) document.getElementById('t_avgQty').value = d.t_avgQty;
+  if(d.t_buyPrice !== undefined) document.getElementById('t_buyPrice').value = d.t_buyPrice;
+  if(d.t_targetAvg !== undefined) document.getElementById('t_targetAvg').value = d.t_targetAvg;
+  if(d.b_avgPrice !== undefined) document.getElementById('b_avgPrice').value = d.b_avgPrice;
+  if(d.b_curPrice !== undefined) document.getElementById('b_curPrice').value = d.b_curPrice;
+  if(typeof calcAvg === 'function') calcAvg();
+};
+</script>
+<script>window.SF_RESET = true;</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

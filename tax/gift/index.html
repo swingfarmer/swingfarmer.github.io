@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>증여세 계산기 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style>
+:root { --sf-max-w: 1100px; }
+.final { background: linear-gradient(135deg, #d97706, #ea580c); }
+  .inputs > .info-box { grid-column: 1 / -1; margin-top: -6px; }  /* (093) i 설명은 입력칸 사이에 끼지 않고 한 줄 전체로 펼침 */
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body class="sf-narrow">
+
+
+<h1>🎁 증여세 계산기</h1>
+<p class="desc">증여세 자동 계산. 관계별 공제, 누진세율, 세대생략 할증, 신고세액공제 적용. 2026.11 현행법 기준 (세율 확인일 <span data-tx="checked">2026-11-17</span>).</p>
+
+<div class="panel">
+  <h2>📥 입력값</h2>
+  <div class="inputs">
+
+    <div class="section-label">① 증여 정보</div>
+    <div class="input-row">
+      <label>증여 재산가액 (원)</label>
+      <input type="number" id="giftValue" data-won value="200000000">
+    </div>
+    <div class="input-row">
+      <label>증여자와의 관계</label>
+      <select id="relation">
+        <option value="배우자">배우자</option>
+        <option value="직계비속_성년" selected>직계비속(성년)</option>
+        <option value="직계비속_미성년">직계비속(미성년)</option>
+        <option value="직계존속">직계존속(부모·조부모)</option>
+        <option value="기타친족">기타 친족(6촌이내)</option>
+        <option value="비친족">비친족(타인)</option>
+      </select>
+    </div>
+    <div class="input-row">
+      <label>수증자 신혼·출산 여부</label>
+      <select id="newlywed">
+        <option value="N" selected>해당 없음</option>
+        <option value="Y" data-tx="giftDed.marriage" data-tx-f="kor" data-tx-t="혼인·출산 ({} 추가 공제)">혼인·출산 (1억 추가 공제)</option>
+      </select>
+    </div>
+    <div class="input-row">
+      <label>세대생략 (조부모 → 손자녀) <span class="info-btn" onclick="toggleInfo('genInfo')">i</span></label>
+      <select id="genSkip">
+        <option value="N" selected>아님 (부모 → 자녀 등)</option>
+        <option value="Y" data-tx="giftDed.genSkip" data-tx-t="조부모에게서 직접 받음 ({}% 할증)">조부모에게서 직접 받음 (30% 할증)</option>
+      </select>
+    </div>
+    <div class="info-box" id="genInfo" style="display:none">할아버지·할머니가 손자녀에게 바로 주면(부모를 건너뛰면) 산출세액에 <b><span data-tx="giftDed.genSkip">30</span>%</b>를 더 붙여요. 받는 손자녀가 <b>미성년이고 받은 재산이 <span data-tx="giftDed.genSkipBigOver" data-tx-f="eok" data-tx-t="{}억">20억</span>을 넘으면 <span data-tx="giftDed.genSkipBig">40</span>%</b>. 부모가 먼저 돌아가셔서 손자녀가 대신 받는 경우는 할증이 없으니 「아님」을 고르세요. 관계는 「직계비속(성년/미성년)」으로 두면 공제(<span data-tx="giftDed.adult" data-tx-f="korc">5천만</span>/<span data-tx="giftDed.minor" data-tx-f="korc">2천만</span>)가 맞게 들어가요.</div>
+
+    <div class="section-label">② 사전 증여 (10년 내 동일증여자)</div>
+    <div class="input-row">
+      <label>10년 내 받은 증여 누적액 (원)</label>
+      <input type="number" id="prevGift" data-won value="0">
+    </div>
+    <div class="input-row">
+      <label>10년 내 납부한 증여세 (원)</label>
+      <input type="number" id="prevTax" data-won value="0">
+    </div>
+
+    <div class="section-label">③ 신고 여부</div>
+    <div class="input-row">
+      <label>3개월 내 자진신고</label>
+      <select id="report">
+        <option value="Y" selected data-tx="inhGiftReport" data-tx-t="Y ({}% 세액공제)">Y (3% 세액공제)</option>
+        <option value="N">N</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>🧮 계산</h2>
+  <table class="calc-table">
+    <tbody>
+      <tr><td>증여재산 (사전증여 합산)</td><td id="totalGift">-</td><td>이번 증여 + 10년 내 누적</td></tr>
+      <tr><td>증여재산공제</td><td id="deduction">-</td><td id="dedDesc">관계별 한도</td></tr>
+      <tr><td>혼인·출산 추가공제</td><td id="newlywedDed">-</td><td>2024년 신설 1억</td></tr>
+      <tr><td>과세표준</td><td id="taxBase">-</td><td>증여재산 − 공제</td></tr>
+      <tr><td>산출세액 (누진세율)</td><td id="calcTax">-</td><td><span data-tx="inhGift.0.1">10</span>%~<span data-tx="inhGift.-1.1">50</span>% <span data-tx="inhGift" data-tx-f="len">5</span>단계 누진</td></tr>
+      <tr><td>세대생략 할증</td><td id="generation">-</td><td id="genDesc">조부모→손주 직접 증여시</td></tr>
+      <tr><td>기납부세액 공제</td><td id="prevTaxOut">-</td><td>10년 내 납부한 세액 차감</td></tr>
+      <tr><td>신고세액공제 (<span data-tx="inhGiftReport">3</span>%)</td><td id="reportDed">-</td><td>3개월 내 자진신고시</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="final">
+  <div class="final-label">💰 최종 납부세액</div>
+  <div class="final-value" id="finalTax">-</div>
+  <div class="final-sub">실효세율 (이번 증여 기준): <b id="effectiveRate">-</b></div>
+</div>
+
+<div class="manual">
+  <h3>📘 사용 설명서</h3>
+
+  <h3>① 입력값 설명</h3>
+  <ul>
+    <li><span class="badge">증여 재산가액</span> 이번에 받는 재산의 시가. 부동산은 시가 또는 기준시가.</li>
+    <li><span class="badge">관계</span> 증여자와 수증자(받는 사람)의 관계. 공제액이 천차만별.</li>
+    <li><span class="badge">혼인·출산 공제</span> 2024년부터 신설. 직계존속에서 받은 증여 중 <span data-tx="giftDed.marriage" data-tx-f="kor">1억</span>까지 추가 공제 (혼인일 전후 2년, 출산일로부터 2년 내).</li>
+    <li><span class="badge">10년 내 사전증여</span> 동일 증여자로부터 10년 내 받은 증여는 합산해서 누진세율 적용. 기납부세액은 공제.</li>
+    <li><span class="badge">자진신고</span> 증여일이 속한 달의 말일부터 3개월 내 신고하면 <span data-tx="inhGiftReport">3</span>% 세액공제.</li>
+  </ul>
+
+  <h3>② 증여재산공제 (10년간 누적 한도)</h3>
+  <ul>
+    <li>배우자: <span data-tx="giftDed.spouse" data-tx-f="eok" data-tx-t="{}억">6억</span>원</li>
+    <li>직계존속 → 직계비속 (성년): <span data-tx="giftDed.adult" data-tx-f="korc">5천만</span>원</li>
+    <li>직계존속 → 직계비속 (미성년): <span data-tx="giftDed.minor" data-tx-f="korc">2천만</span>원</li>
+    <li>직계비속 → 직계존속: <span data-tx="giftDed.parent" data-tx-f="korc">5천만</span>원</li>
+    <li>기타 친족 (6촌이내 혈족 / 4촌이내 인척): <span data-tx="giftDed.other" data-tx-f="korc">1천만</span>원</li>
+    <li>비친족: 공제 없음</li>
+    <li>혼인·출산: 직계존속 증여시 <span data-tx="giftDed.marriage" data-tx-f="eok" data-tx-t="{}억">1억</span> 추가</li>
+  </ul>
+
+  <h3>③ 증여세율 (누진)</h3>
+  <ul>
+    <li data-tx="inhGift" data-tx-f="brk">1억 이하: 10% / 5억 이하: 20% / 10억 이하: 30% / 30억 이하: 40% / 30억 초과: 50%</li>
+    <li>상속세와 같은 구간 (공통 파일 1벌)</li>
+    <li>세대생략 (조부모→손주): 산출세액에 <span data-tx="giftDed.genSkip">30</span>% 가산 (미성년 손자녀가 <span data-tx="giftDed.genSkipBigOver" data-tx-f="eok" data-tx-t="{}억">20억</span> 넘게 받으면 <span data-tx="giftDed.genSkipBig">40</span>%)</li>
+  </ul>
+
+  <div class="warn-box">
+    <b>⚠ 주의:</b> 부동산 증여는 증여세 외에 취득세(<span data-tx="acq.house.gift">3.5</span>%~<span data-tx="acq.house.giftHeavy">12</span>%)도 별도 부과. 차용증으로 위장 증여 시 가산세 폭탄. 사전증여 합산 누락하면 추징 위험.
+  </div>
+</div>
+
+<script src="/tax-rates.js?v=24"></script>
+<script>
+// (093) 세율·공제액은 /tax-rates.js(SF_TAX.inhGift·giftDed·inhGiftReport, inhGiftTax)에서 받음 — 상속세(/tax/inheritance/)와 같은 구간 1벌.
+//       (101: 못 읽을 때 쓰던 기본값 사본 지움). 093에 세대생략 할증(30%, 미성년 20억 초과 40%) 계산을 넣음 — 예전엔 0으로 고정
+const _T = window.SF_TAX;
+const fmt = n => sfNum(n);
+const fmtPct = n => sfPct(n * 100, 2);
+const G = _T.giftDed;
+const RPT = _T.inhGiftReport;
+function calcGiftTax(taxBase) { return _T.inhGiftTax(taxBase); }
+const man = v => sfKor(v, 'korc');   // (103) 공제 한도 라벨 — sf-fmt.js 공통 (5천만 · 6억 · 7억 3,333만)
+
+function calculate() {
+  const giftValue = parseFloat(document.getElementById('giftValue').value) || 0;
+  const relation = document.getElementById('relation').value;
+  const newlywed = document.getElementById('newlywed').value === 'Y';
+  const genSkip = document.getElementById('genSkip').value === 'Y';
+  const prevGift = parseFloat(document.getElementById('prevGift').value) || 0;
+  const prevTax = parseFloat(document.getElementById('prevTax').value) || 0;
+  const report = document.getElementById('report').value === 'Y';
+
+  const totalGift = giftValue + prevGift;
+
+  // 공제
+  let deduction = 0, dedDesc = '';
+  let isLineal = false; // 직계존속→비속
+  if (relation === '배우자') { deduction = G.spouse; dedDesc = '배우자 ' + man(G.spouse); }
+  else if (relation === '직계비속_성년') { deduction = G.adult; dedDesc = '직계비속 성년 ' + man(G.adult); isLineal = true; }
+  else if (relation === '직계비속_미성년') { deduction = G.minor; dedDesc = '직계비속 미성년 ' + man(G.minor); isLineal = true; }
+  else if (relation === '직계존속') { deduction = G.parent; dedDesc = '직계존속 ' + man(G.parent); }
+  else if (relation === '기타친족') { deduction = G.other; dedDesc = '기타 친족 ' + man(G.other); }
+  else { deduction = 0; dedDesc = '비친족 공제 없음'; }
+
+  // 혼인출산 공제 (직계존속→비속만)
+  const newlywedDed = (newlywed && isLineal) ? G.marriage : 0;
+
+  const taxBase = Math.max(0, totalGift - deduction - newlywedDed);
+  const calcTax = calcGiftTax(taxBase);
+
+  // 세대생략 할증 (상증세법 57조) — 조부모→손자녀(직계비속)일 때만. 미성년 + 증여재산 20억 초과면 40%
+  let generation = 0, genDesc = '해당 없음';
+  if (genSkip && isLineal) {
+    const big = relation === '직계비속_미성년' && totalGift > G.genSkipBigOver;
+    const r = big ? G.genSkipBig : G.genSkip;
+    generation = calcTax * r / 100;
+    genDesc = '산출세액 × ' + r + '%' + (big ? ' (미성년·' + man(G.genSkipBigOver) + ' 초과)' : '');
+  } else if (genSkip) genDesc = '관계를 직계비속으로 골라야 적용';
+
+  // 사전증여세 환산공제 (이번 증여분만 떼어내기 위한 단순화: 누적 세액 - 사전 세액)
+  // 정확하게는 누적기준 산출세액 × (이번증여/전체증여) 형태 등 다양하지만 일반계산기 표준:
+  // 산출세액에서 기납부증여세 공제
+  const prevTaxOut = Math.min(prevTax, calcTax + generation);
+
+  const beforeReport = Math.max(0, calcTax + generation - prevTaxOut);
+  const reportDed = report ? beforeReport * RPT / 100 : 0;
+  const finalTax = beforeReport - reportDed;
+  const effectiveRate = giftValue > 0 ? finalTax / giftValue : 0;
+
+  document.getElementById('totalGift').textContent = fmt(totalGift) + ' 원';
+  document.getElementById('deduction').textContent = fmt(deduction) + ' 원';
+  document.getElementById('dedDesc').textContent = dedDesc;
+  document.getElementById('newlywedDed').textContent = fmt(newlywedDed) + ' 원';
+  document.getElementById('taxBase').textContent = fmt(taxBase) + ' 원';
+  document.getElementById('calcTax').textContent = fmt(calcTax) + ' 원';
+  document.getElementById('generation').textContent = fmt(generation) + ' 원';
+  document.getElementById('genDesc').textContent = genDesc;
+  document.getElementById('prevTaxOut').textContent = fmt(prevTaxOut) + ' 원';
+  document.getElementById('reportDed').textContent = fmt(reportDed) + ' 원';
+  document.getElementById('finalTax').textContent = fmt(finalTax) + ' 원';
+  document.getElementById('effectiveRate').textContent = fmtPct(effectiveRate);
+}
+
+
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input', calculate);
+  el.addEventListener('change', calculate);
+});
+calculate();
+</script>
+<script>
+window.CALC_KEY = 'gift';
+window.slGetState = function(){
+  return {
+    giftValue: document.getElementById('giftValue').value,
+    relation: document.getElementById('relation').value,
+    newlywed: document.getElementById('newlywed').value,
+    genSkip: document.getElementById('genSkip').value,
+    prevGift: document.getElementById('prevGift').value,
+    prevTax: document.getElementById('prevTax').value,
+    report: document.getElementById('report').value,
+  };
+};
+window.slSetState = function(d){
+  if(!d) return;
+  if(d.giftValue !== undefined) document.getElementById('giftValue').value = d.giftValue;
+  if(d.relation !== undefined) document.getElementById('relation').value = d.relation;
+  if(d.newlywed !== undefined) document.getElementById('newlywed').value = d.newlywed;
+  document.getElementById('genSkip').value = d.genSkip === 'Y' ? 'Y' : 'N';  // (093) 옛 저장분엔 없음 → 아님
+  if(d.prevGift !== undefined) document.getElementById('prevGift').value = d.prevGift;
+  if(d.prevTax !== undefined) document.getElementById('prevTax').value = d.prevTax;
+  if(d.report !== undefined) document.getElementById('report').value = d.report;
+  if(typeof calculate === 'function') calculate();
+};
+</script>
+<script>window.SF_RESET = true;</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

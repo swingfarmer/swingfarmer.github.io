@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>양도소득세 계산기 (토지) | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style>
+:root { --sf-max-w: 1100px; }
+.final { background: linear-gradient(135deg, #d97706, #ea580c); }
+  .inputs > .info-box { grid-column: 1 / -1; margin-top: -6px; }  /* (093) i 설명은 한 줄 전체로 펼침 */
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body class="sf-narrow">
+
+
+<h1>🌳 양도소득세 계산기 (토지)</h1>
+<p class="desc">토지(농지·임야·대지 등) 매도 시 양도세. 사업용/비사업용 구분, 자경농지 감면 옵션. 2026.11 현행법 기준 (세율 확인일 <span data-tx="checked">2026-11-17</span>).</p>
+
+<div class="panel">
+  <h2>📥 입력값</h2>
+  <div class="inputs">
+
+    <div class="section-label">① 거래 정보</div>
+    <div class="input-row">
+      <label>양도가액 (원)</label>
+      <input type="number" id="salePrice" data-won value="500000000">
+    </div>
+    <div class="input-row">
+      <label>취득가액 (원)</label>
+      <input type="number" id="acquisitionPrice" data-won value="300000000">
+    </div>
+    <div class="input-row">
+      <label>필요경비 (원) <span class="info-btn" onclick="toggleInfo('expInfo')">i</span></label>
+      <input type="number" id="expenses" data-won value="10000000">
+    </div>
+    <div class="info-box" id="expInfo" style="display:none">취득세·중개수수료·법무사 비용, 개발부담금, 자본적 지출(토지 형질변경 등)처럼 취득·양도에 든 돈. 증빙이 있어야 인정돼요.</div>
+
+    <div class="section-label">② 보유 기간</div>
+    <div class="input-row">
+      <label>보유기간 (년)</label>
+      <input type="number" id="holdYears" value="8">
+    </div>
+
+    <div class="section-label">③ 토지 상태</div>
+    <div class="input-row">
+      <label>토지 유형</label>
+      <select id="landType">
+        <option value="비사업용" selected>비사업용</option>
+        <option value="사업용">사업용</option>
+      </select>
+    </div>
+    <div class="input-row">
+      <label>지목 구분</label>
+      <select id="landCategory">
+        <option value="농지외" selected>농지외 (대지·잡종지 등)</option>
+        <option value="농지">농지 (전·답·과수원)</option>
+      </select>
+    </div>
+    <div class="input-row">
+      <label>8년 이상 자경농지</label>
+      <select id="selfFarm">
+        <option value="N" selected>N</option>
+        <option value="Y" data-tx="cgtLand.farmCap" data-tx-f="kor" data-tx-t="Y ({} 한도 감면)">Y (1억 한도 감면)</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>🧮 계산 과정</h2>
+  <table class="calc-table">
+    <tbody>
+      <tr><td>양도차익</td><td id="gain">-</td><td>양도가액 − 취득가액 − 필요경비</td></tr>
+      <tr><td>장기보유특별공제율</td><td id="ltcRate">-</td><td id="ltcDesc">보유 3년+ 부터 <span data-tx="cgtLand.ltcRate">2</span>%/년, 최대 <span data-tx="cgtLand.ltcMax">30</span>%</td></tr>
+      <tr><td>장기보유특별공제액</td><td id="ltcAmount">-</td><td>양도차익 × 공제율</td></tr>
+      <tr><td>양도소득금액</td><td id="taxableGain">-</td><td>양도차익 − 장특공제</td></tr>
+      <tr><td>기본공제</td><td id="basicDeduction">-</td><td>연 <span data-tx="cgtLand.basicDed" data-tx-f="kor">250만</span>원</td></tr>
+      <tr><td>과세표준</td><td id="taxBase">-</td><td>양도소득금액 − 기본공제</td></tr>
+      <tr><td>기본 누진세율 적용</td><td id="baseTax">-</td><td><span data-tx="income.0.1">6</span>%~<span data-tx="income.-1.1">45</span>% 누진세율</td></tr>
+      <tr><td>비사업용 가산 / 단기세율</td><td id="surtax">-</td><td id="surtaxDesc">비사업용 토지 중과</td></tr>
+      <tr><td>산출세액 (국세)</td><td id="calcTax">-</td><td>보유기간·사업용 여부 최종 세액</td></tr>
+      <tr><td>자경농지 감면 (세액)</td><td id="farmExempt">-</td><td id="farmNote">산출세액에서 빼는 세액 감면, 1년 <span data-tx="cgtLand.farmCap" data-tx-f="kor">1억</span> 한도</td></tr>
+      <tr><td>지방소득세 (<span data-tx="local" data-tx-f="pct">10</span>%)</td><td id="localTax">-</td><td>(산출세액 − 감면) × <span data-tx="local" data-tx-f="pct">10</span>%</td></tr>
+      <tr id="planRow"><td id="planLabel">참고: 2028년 이후 양도 시 (정부안)</td><td id="planTax">-</td><td id="planDesc">비사업용 토지 장특공제 배제 + 가산 20%p (국회 심의 중)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="final">
+  <div class="final-label">💰 최종 납부세액</div>
+  <div class="final-value" id="finalTax">-</div>
+  <div class="final-sub">세후 실현차익: <b id="afterTaxGain">-</b> 원</div>
+</div>
+
+<div class="manual">
+  <h3>📘 사용 설명서</h3>
+
+  <h3>① 입력값 설명</h3>
+  <ul>
+    <li><span class="badge">양도/취득가액</span> 매도가·매입가 (실거래).</li>
+    <li><span class="badge">필요경비</span> 취득세·중개수수료·개발부담금·측량비 등.</li>
+    <li><span class="badge">보유기간</span> 취득일~양도일 (정수).</li>
+    <li><span class="badge">토지 유형</span>
+      <ul>
+        <li><b>사업용:</b> 농업·축산업·임업에 직접 사용 / 본인 사업장 / 별장 등 본인용</li>
+        <li><b>비사업용:</b> 지목과 실제 사용이 다른 토지 (투기 목적 등) → <span data-tx="cgtLand.nonBiz">10</span>%p 중과</li>
+      </ul>
+    </li>
+    <li><span class="badge">지목 구분</span> 농지(전·답·과수원) vs 농지외(대지·잡종지·임야 등). 자경농지 감면 판정용.</li>
+    <li><span class="badge">자경농지 8년+</span> 본인이 8년 이상 직접 경작한 농지 양도 시 양도세를 1년 <span data-tx="cgtLand.farmCap" data-tx-f="kor">1억</span>까지 감면(세액에서 뺌). 지목 구분이 「농지」일 때만 적용.</li>
+  </ul>
+
+  <h3>② 계산 로직</h3>
+  <ul>
+    <li><b>장기보유특별공제:</b> 보유 3년 이상부터 매년 <span data-tx="cgtRule.ltcRate" data-tx-a='["land"]'>2</span>%, 최대 <span data-tx="cgtRule.ltcMax" data-tx-a='["land"]'>30</span>% (사업용·비사업용 동일).</li>
+    <li><b>자경농지 감면:</b> 조특법 69조 세액감면 — 산출세액에서 1년 <span data-tx="cgtLand.farmCap" data-tx-f="kor">1억</span>까지 뺌(5년 누적 <span data-tx="cgtLand.farmCap5" data-tx-f="kor">2억</span> 한도는 미반영). 감면분은 농특세 비과세.</li>
+    <li><b>기본 누진세율:</b> <span data-tx="income.0.1">6</span>%~<span data-tx="income.-1.1">45</span>% 8단계.</li>
+    <li><b>비사업용 토지 중과:</b> 기본세율 + <span data-tx="cgtRule.nonBiz" data-tx-a='["land"]'>10</span>%p. <span id="planManual"></span></li>
+    <li><b>단기보유 세율:</b> 1년 미만 <span data-tx="cgtRule.short1" data-tx-a='["land"]'>50</span>% / 1~2년 <span data-tx="cgtRule.short2" data-tx-a='["land"]'>40</span>%. 누진+가산과 비교해서 큰 값 적용.</li>
+    <li><b>지방소득세:</b> 양도세의 <span data-tx="local" data-tx-f="pct">10</span>%.</li>
+  </ul>
+
+  <div class="warn-box">
+    <b>⚠ 주의:</b> 토지 양도세는 지목·실제용도·자경요건 판정이 까다로움. 농지 양도 시 자경 입증(농약·종자·농기계 영수증)이 필요. 비사업용 판정 분쟁 많음. 실제 신고는 세무사 상담 권장.
+  </div>
+</div>
+
+<script src="/tax-rates.js?v=24"></script>
+<script>
+const fmt = n => sfNum(n);
+const fmtPct = n => sfPct(n * 100, 1);
+
+// (090) 세율은 /tax-rates.js의 SF_TAX.cgtRule('land', 양도연도)에서 받음 — 현행(cgtLand)과 정부안(cgtPlan)이 한 곳에 있음
+const _T = window.SF_TAX;
+const rule = y => _T.cgtRule('land', y);
+const NOW_Y = new Date().getFullYear();
+const LT = rule(NOW_Y);                       // 지금 양도 규칙 (해가 바뀌면 자동으로 그해 규칙)
+// 비교 줄: 비사업용 규칙이 지금과 달라지는 첫 해 (정부안 2028)
+const PLAN_Y = (() => { const ys = Object.keys(_T.cgtPlan).filter(y => /^\d{4}$/.test(y)).map(Number).sort();
+  for (const y of ys) { if (y <= NOW_Y) continue; const r = rule(y); if (r.nonBiz !== LT.nonBiz || r.nonBizLtc !== LT.nonBizLtc) return y; } return null; })();
+const LP = PLAN_Y ? rule(PLAN_Y) : null;
+const CGT = _T;   // (099) 장특공제·산출세액은 tax-rates.js 공통 함수(ltcLand·cgtTax)
+
+// 세액 계산 — R = 그 해 규칙
+function landTax(R, gain, holdYears, isNonBusiness, farmOk) {
+  const noLtc = isNonBusiness && !R.nonBizLtc;
+  const ltcRate = CGT.ltcLand(R, holdYears, isNonBusiness);
+  const ltcAmount = Math.max(0, gain * ltcRate);
+  const taxableGain = gain - ltcAmount;
+  const basicDeduction = taxableGain > 0 ? R.basicDed : 0;
+  const taxBase = Math.max(0, taxableGain - basicDeduction);
+  const add = isNonBusiness ? R.nonBiz : 0;
+  let surtaxDesc = isNonBusiness ? `비사업용 토지 → +${add}%p` + (noLtc ? ' · 장특공제 배제' : '') : '해당 없음';
+  // 단기보유는 기본세율 대신 단기세율, 비사업용 가산과 겹치면 큰 세액 (소득세법 104조 1항) — 공통 함수 cgtTax
+  const CT = CGT.cgtTax(R, taxBase, holdYears, add);
+  const baseTax = CT.basic, calcTax = CT.tax;
+  if (CT.kind === 'short') surtaxDesc = `단기 ${holdYears < 1 ? '1년 미만' : '1~2년'} ${CT.short}% 적용` + (CT.tax < CT.basic ? ' (기본세율보다 낮아도 단기세율로 냄)' : '');
+  // 8년 자경농지 감면은 「세액」 감면 (조특법 69조, 1년 1억 한도)
+  const farmExempt = farmOk ? Math.min(calcTax, R.farmCap) : 0;
+  const afterFarm = calcTax - farmExempt;
+  const localTax = afterFarm * 0.10;
+  return {ltcRate, ltcAmount, taxableGain, basicDeduction, taxBase, baseTax, surtax: calcTax - baseTax, surtaxDesc, calcTax, farmExempt, afterFarm, localTax, finalTax: afterFarm + localTax};
+}
+
+function calculate() {
+  const salePrice = parseFloat(document.getElementById('salePrice').value) || 0;
+  const acquisitionPrice = parseFloat(document.getElementById('acquisitionPrice').value) || 0;
+  const expenses = parseFloat(document.getElementById('expenses').value) || 0;
+  const holdYears = Math.max(0, parseInt(document.getElementById('holdYears').value) || 0);
+  const landType = document.getElementById('landType').value;
+  const selfFarm = document.getElementById('selfFarm').value === 'Y';
+  const isBusiness = landType === '사업용';
+  const isNonBusiness = !isBusiness;
+
+  const gain = salePrice - acquisitionPrice - expenses;
+  const farmOk = selfFarm && document.getElementById('landCategory').value === '농지';
+  const R = landTax(LT, gain, holdYears, isNonBusiness, farmOk);
+  const { ltcRate, ltcAmount, taxableGain, farmExempt, basicDeduction, taxBase, baseTax, surtax, surtaxDesc, localTax, finalTax } = R;
+  const finalCalcTax = R.calcTax;
+  const afterTaxGain = gain - finalTax;
+  // 정부안 2028~ 비사업용 비교
+  const P = (isNonBusiness && LP) ? landTax(LP, gain, holdYears, true, false) : null;
+  document.getElementById('planRow').style.display = P ? '' : 'none';
+  if (P) document.getElementById('planTax').textContent = fmt(P.finalTax) + ' 원 (' + (P.finalTax >= finalTax ? '+' : '−') + fmt(Math.abs(P.finalTax - finalTax)) + ')';
+  document.getElementById('farmNote').textContent = selfFarm && !farmOk ? '지목이 농지가 아니라 감면 안 함' : '산출세액에서 빼는 세액 감면, 1년 ' + sfKor(LT.farmCap,'kor') + ' 한도';
+
+  document.getElementById('gain').textContent = fmt(gain) + ' 원';
+  document.getElementById('ltcRate').textContent = fmtPct(ltcRate);
+  document.getElementById('ltcAmount').textContent = fmt(ltcAmount) + ' 원';
+  document.getElementById('taxableGain').textContent = fmt(taxableGain) + ' 원';
+  document.getElementById('farmExempt').textContent = fmt(farmExempt) + ' 원';
+  document.getElementById('basicDeduction').textContent = fmt(basicDeduction) + ' 원';
+  document.getElementById('taxBase').textContent = fmt(taxBase) + ' 원';
+  document.getElementById('baseTax').textContent = fmt(baseTax) + ' 원';
+  document.getElementById('surtax').textContent = fmt(surtax) + ' 원';
+  document.getElementById('surtaxDesc').textContent = surtaxDesc;
+  document.getElementById('calcTax').textContent = fmt(finalCalcTax) + ' 원';
+  document.getElementById('localTax').textContent = fmt(localTax) + ' 원';
+  document.getElementById('finalTax').textContent = fmt(finalTax) + ' 원';
+  document.getElementById('afterTaxGain').textContent = fmt(afterTaxGain);
+}
+
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input', calculate);
+  el.addEventListener('change', calculate);
+});
+(function fillTax(){
+  const tag = _T.cgtPlan.status;
+  const desc = LP ? `비사업용 토지 +${LP.nonBiz}%p${LP.nonBizLtc ? '' : ' · 장특공제 배제'} (${_T.cgtPlan.note})` : '';
+  if (LP) { document.getElementById('planLabel').textContent = `참고: ${PLAN_Y}년 이후 양도 시 (${tag})`; document.getElementById('planDesc').textContent = desc;
+            document.getElementById('planManual').textContent = `${tag}: ${PLAN_Y}년 양도분부터 ${desc.replace(/ \(.*\)$/, '')} (표 맨 아래 참고 줄).`; }
+})();
+calculate();
+</script>
+<script>
+window.CALC_KEY = 'land_tax';
+window.slGetState = function(){
+  return {
+    salePrice: document.getElementById('salePrice').value,
+    acquisitionPrice: document.getElementById('acquisitionPrice').value,
+    expenses: document.getElementById('expenses').value,
+    holdYears: document.getElementById('holdYears').value,
+    landType: document.getElementById('landType').value,
+    landCategory: document.getElementById('landCategory').value,
+    selfFarm: document.getElementById('selfFarm').value,
+  };
+};
+window.slSetState = function(d){
+  if(!d) return;
+  if(d.salePrice !== undefined) document.getElementById('salePrice').value = d.salePrice;
+  if(d.acquisitionPrice !== undefined) document.getElementById('acquisitionPrice').value = d.acquisitionPrice;
+  if(d.expenses !== undefined) document.getElementById('expenses').value = d.expenses;
+  if(d.holdYears !== undefined) document.getElementById('holdYears').value = d.holdYears;
+  if(d.landType !== undefined) document.getElementById('landType').value = d.landType;
+  if(d.landCategory !== undefined) document.getElementById('landCategory').value = d.landCategory;
+  if(d.selfFarm !== undefined) document.getElementById('selfFarm').value = d.selfFarm;
+  if(typeof calculate === 'function') calculate();
+};
+</script>
+<script>
+</script>
+<script>window.SF_RESET = true;</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

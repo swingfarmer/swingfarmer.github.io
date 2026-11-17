@@ -1,0 +1,351 @@
+/* 세율 공통 (086) — 세법이 바뀌면 이 파일 하나만 고치면 됨
+ * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=21 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
+ * 구간 배열: [[상한(원), 세율%], ...] 누진. 세율은 국세 기준, 지방소득세(국세의 10%)는 별도 → SF_TAX.wl(세율)로 포함값.
+ * 바꾼 뒤: 이 파일 ?v= 를 쓰는 페이지 전부 올릴 것. 확인일(checked)도 고칠 것.
+ * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/, /realestate/commercial-yield/, /tax/income/, /tax/retirement/, /tax/retirement-compare/, /severance-exec/, /salary/, /insurance4/, /tax/corp-invest/, /tax/house/, /tax/land/, /realestate/home-swap/, /stock-tools/dividend/, /finance-tools/compound/, /fire/, /tax/financial-income/, /barbell/, /paygrowth/, /landtax/, /tax/inheritance/, /tax/gift/, /tax/acquisition/, /corp-tax/, /tax/pension-deduction/, /pension/, /realestate/office-buy-vs-rent/, /realestate/jeonse-vs-buy/, /gambuk/, /tax-calendar/, /realestate/jaechohwan/ 외 (나머지 세금 페이지는 순차 이전 예정)
+ */
+window.SF_TAX = Object.freeze({
+  year: 2026,
+  checked: '2026-11-17',  // 104: 고배당 적자 특례 highDivReq.lossPayout·lossDebt / 103: 재초환 부담금 rebuild, 고배당 요건 highDivReq·이월결손금 기간·장례비 한도, kor·korc 형식은 sf-fmt.js sfKor / 102: 부가세율 vat / 101: 화면 문구는 data-tx 하나로(옛 tx- 클래스 + put 방식 없앰) — 함수 경로·data-tx-a 인자·=계산식·배열(구간표) 형식 추가, wl 이 local 을 씀, cgtRule·childAge 연도 생략 = 올해 / 100: data-tx 차이 형식(-경로) / 099: 양도세 공통(fullYears·ltcHouse·ltcLand·cgtTax), 화면 문구 data-tx, personalDed·nontaxMeal / 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가 / 090: 고용보험 사업주분·고배당 분리과세·미국 배당 원천·주택·토지 양도세 추가, 양도세 정부안도 여기로(cgtPlan·cgtRule), ISA·연금 분리과세 / 092: 근로소득공제·근로소득세액공제·자녀세액공제(나이 연도별)·공익수용 감면(조특법 77) 추가, 토지 자경 5년 한도 / 092_03: 국민연금 연도별 인상(socialPlan·socialRule), 4대보험 근로자분 계산(ins4), 간이세액 근사(wageTax) 공통 함수 / 093: 상속·증여세 구간·공제(inhGift·inhDed·giftDed), 취득세(acq·acqHouseRate·acqCalc) / 094: 법인세 연도별(corpBr)·최저한세·이월결손금·기업업무추진비 한도, 연금계좌 세액공제·사적연금 분리과세, 국민연금 수급연령·조기/연기 / 094_03: 과밀억제권역 법인 취득세 중과(acqCalc capHeavy) / 094_04: 가족 간 금전대여 적정이자율(famLoan) / 095_01: 법인세 중간예납(corpInt·corpInterim·splitMax), 자동차세 연납 공제율(carPre)
+  // 이자·배당 원천징수 (소득세 14% + 지방소득세 1.4%)
+  interest: 15.4,
+  // 금융소득 종합과세 기준 (이자+배당, 연)
+  finThreshold: 20000000,
+  // 종합소득세 (소득세법 55조, 2023~)
+  income: [[14e6,6],[50e6,15],[88e6,24],[150e6,35],[300e6,38],[500e6,40],[1e9,42],[Infinity,45]],
+  // 법인세 일반법인 (법인세법 55조, 2026.1.1 이후 시작 사업연도)
+  corp: [[2e8,10],[2e10,20],[3e11,22],[Infinity,25]],
+  // 성실신고대상 소규모법인 (지배주주 50% 초과 + 상시근로자 5인 미만 + 임대·이자·배당 수입 50% 이상 등)
+  corpSmall: [[2e10,20],[3e11,22],[Infinity,25]],
+  // 2025.12.31 이전 시작 사업연도 (094) — 일반 9/19/21/24. 성실신고 소규모법인은 2025.1.1 이후 시작 사업연도부터 2억 이하 구간 없이 19
+  //   → 페이지는 SF_TAX.corpBr(사업연도 시작 연도, 소규모법인 여부)로 받는다. corpFrom 이후 = corp·corpSmall
+  corpOld: [[2e8,9],[2e10,19],[3e11,21],[Infinity,24]], corpSmallOld: [[2e10,19],[3e11,21],[Infinity,24]], corpSmallFrom: 2025, corpFrom: 2026,
+  // 최저한세 (조특법 132조, 094) — 중소기업 7 / 일반은 과세표준 구간 누진 100억 이하 10·1,000억 이하 12·초과 17 (중소기업 졸업 유예 구간은 단순화로 뺌)
+  corpMin: {sme: 7, gen: [[1e10,10],[1e11,12],[Infinity,17]]},
+  // 이월결손금 공제 한도 (법인세법 13조, 094) — 각사업연도소득의 중소기업 100 / 일반 80 %
+  corpLoss: {sme: 100, gen: 80, years: 15},   // (103) years: 이월 공제 기간(2020년 이후 발생분)
+  // 기업업무추진비(옛 접대비) 한도 (법인세법 25조, 094) — 기본 연 중소 3,600만·일반 1,200만(사업연도 개월 비례) + 수입금액 구간 누진 %(중소·일반 같음)
+  //   100억 이하 0.3 / 500억 이하 0.2 / 초과 0.03. 부동산임대업 주업 소규모법인(성실신고 요건)은 한도 smallRent% (= 50)
+  corpEnt: {sme: 36e6, gen: 12e6, br: [[1e10,0.3],[5e10,0.2],[Infinity,0.03]], smallRent: 50},
+  // 지방소득세 = 국세 × 10%
+  local: 0.1,
+  vat: 10,   // (102) 부가가치세율 % (부가가치세법 30조) — 페이지는 SF_TAX.vat / 100
+  // 해외주식 양도소득세 (지방세 포함 22%, 연 250만원 공제)
+  overseasStock: {rate: 22, deduct: 2500000},
+  // 증권거래세 (매도대금 대비 %, 2026.1.1 양도분부터) — 코스피는 거래세 0.05 + 농특세 0.15, 코스닥은 거래세 0.20 (087 확인)
+  stockTx: {kospi: 0.20, kosdaq: 0.20},
+  // 국내주식 대주주 양도소득세 (국세 %, 지방세 별도 → wl) — 과표 3억 이하 20, 초과 25 / 1년 미만 보유 30
+  majorCgt: [[3e8,20],[Infinity,25]],
+  majorCgtShort: 30,
+  // 국내주식 양도세 기본공제 (소득세법 103조, 주식 그룹 따로 연 250만) — 099
+  majorCgtDed: 2.5e6,
+  // 대주주 판정 (종목별) — 평가액 50억 이상, 또는 지분율 코스피 1%·코스닥 2% 이상 (2025.9 정부가 10억 하향안 철회, 087 확인)
+  majorHold: {amount: 5e9, kospiPct: 1, kosdaqPct: 2},
+  // 법인 수입배당금 익금불산입률 (법인세법 18조의2, 2023~) — 지분율 20% 미만 30, 20~50% 80, 50% 이상 100. 배당기준일 현재 3개월 이상 보유. ETF·리츠 분배금은 대상 아님 (087 확인)
+  divExcl: [[20,30],[50,80],[Infinity,100]],
+  // 고배당기업 배당소득 분리과세 (조특법 104조의27, 2026~2028 지급 배당 한시, 090 확인) — 국세 %, 지방세 별도.
+  //   2천만 이하 14 / 3억 이하 20 / 50억 이하 25 / 초과 30. 일반 금융소득 2천만 기준과 별도 계산. 선택제(종합과세가 유리하면 안 고름)
+  highDiv: [[2e7,14],[3e8,20],[5e9,25],[Infinity,30]],
+  //   (103) 고배당기업 요건 — 직전 연도 배당성향 payout% 이상, 또는 payoutGrow% 이상 + 이익배당금 grow% 이상 증가. 전년보다 현금배당이 줄면 안 됨.
+  //   배당성향 = 현금배당만(자사주 소각 제외) ÷ 연결 지배주주 순이익 (시행령 104조의24). 적자 배당은 25%로 간주(+10% 필요), 부채비율 200% 초과면 0%
+  //   (104) lossPayout: 지배주주 순이익 0 이하(적자 배당)면 배당성향을 이 값으로 간주 / lossDebt: 그때 부채비율(부채÷자본) 이 값 초과면 0%로 간주 — 시행령 104조의24
+  highDivReq: {payout: 40, payoutGrow: 25, grow: 10, lossPayout: 25, lossDebt: 200},
+  // ── 양도소득세 (090) ─────────────────────────────────────────────
+  // 페이지는 숫자를 직접 쓰지 말고 SF_TAX.cgtRule('house' 또는 'land', 양도연도)로 그 해 규칙을 받아 쓴다.
+  //   → 법이 바뀌면 아래 cgtHouse·cgtLand(현행) 또는 cgtPlan(예정)만 고치면 /tax/house/, /tax/land/, /realestate/home-swap/ 이 같이 바뀐다.
+  //   → 2027.1.1이 되면 「지금 매도」가 자동으로 2027 규칙을 쓴다(오늘 연도로 고름).
+  // 주택 현행 (2026.11, 소득세법 89·95·104조) — 1세대1주택 비과세 12억, 단기 1년 미만 70·1~2년 60(국세 %),
+  //   조정대상지역 다주택 중과 2주택 +20·3주택+ +30%p (2026.5.9 유예 종료 → 5.10 양도분부터, 장특공제 배제), 기본공제 250만.
+  //   ltcOne: 1세대1주택 장특공제 — 보유 3년 이상 + 거주 minLive년 이상일 때 보유 연 hold%(최대 holdMax) + 거주 연 live%(최대 liveMax), 합계 최대 max, 공제액 한도 cap
+  //   ltcGen: 일반 장특공제 — mode 'hold' 보유 연 hold% / 'max' 보유·거주 중 큰 쪽 / 'live' 거주만. 보유 3년 이상부터, 최대 max
+  //   basicLong: 장기거주 1주택 기본공제(0 = 없음), 조건 양도가액 longMaxPrice 이하·거주 longMinLive년 이상
+  cgtHouse: {nontax: 12e8, short1: 70, short2: 60, heavy2: 20, heavy3: 30, basicDed: 2.5e6,
+    basicLong: 0, longMaxPrice: 30e8, longMinLive: 10,
+    ltcOne: {hold: 4, holdMax: 40, live: 4, liveMax: 40, max: 80, minLive: 2, cap: Infinity},
+    ltcGen: {mode: 'hold', hold: 2, live: 0, max: 30, minLive: 0}},
+  // 토지 현행 — 비사업용 가산 +10%p(장특공제 됨), 단기 1년 미만 50·1~2년 40, 8년 자경농지 세액감면 1년 1억·5년 2억(farmCap5, 조특법 69·133조, 092), 기본공제 250만
+  cgtLand: {nonBiz: 10, nonBizLtc: true, short1: 50, short2: 40, farmCap: 1e8, farmCap5: 2e8, basicDed: 2.5e6, ltcRate: 2, ltcMax: 30},
+  // 예정 변경 — 2026 세제개편 「정부안」(2026.8.3 발표, 2026.11 현재 국회 심의 중). 해당 연도 이후 양도분에 현행 위로 덮어씀(누적).
+  //   국회에서 바뀌면 여기 숫자만 고칠 것. 확정되면 status를 '확정'으로 바꾸고, 시행된 해가 지나면 현행(cgtHouse·cgtLand)으로 옮겨도 됨.
+  cgtPlan: {
+    status: '정부안', note: '2026 세제개편 정부안 (2026.8.3 발표, 국회 심의 중)',
+    2027: {house: {heavy2: 5, heavy3: 10, basicLong: 25e6}},
+    2028: {house: {heavy2: 10, heavy3: 15,
+             ltcOne: {hold: 2, holdMax: 40, live: 6, liveMax: 60, max: 80, minLive: 0, cap: 20e8},
+             ltcGen: {mode: 'max', hold: 1, live: 2, max: 30, minLive: 0}},
+           land: {nonBiz: 20, nonBizLtc: false}},
+    2029: {house: {heavy2: 20, heavy3: 30,
+             ltcOne: {hold: 0, holdMax: 0, live: 8, liveMax: 80, max: 80, minLive: 0, cap: 10e8},
+             ltcGen: {mode: 'live', hold: 0, live: 2, max: 30, minLive: 2}}}
+  },
+  // cgtRule('house'|'land', 연도) → 그 해 양도분 규칙. 결과의 plan = 예정 변경이 섞였는지, planYears = 섞인 연도들
+  cgtRule: function(kind, year){
+    if (year == null) year = new Date().getFullYear();   // (101) 연도 생략 = 올해 (data-tx="cgtRule.heavy2" data-tx-a='["house"]')
+    var T = window.SF_TAX, base = kind === 'land' ? T.cgtLand : T.cgtHouse, r = {}, k, used = [];
+    for (k in base) r[k] = base[k];
+    var ys = Object.keys(T.cgtPlan).filter(function(y){ return /^\d{4}$/.test(y); }).map(Number).sort();
+    for (var i = 0; i < ys.length; i++){
+      var o = T.cgtPlan[ys[i]][kind];
+      if (ys[i] <= year && o){ for (k in o) r[k] = o[k]; used.push(ys[i]); }
+    }
+    r.plan = used.length > 0; r.planYears = used; r.year = year;
+    return r;
+  },
+  // 절세계좌 분리과세 (090) — ISA 비과세 한도 넘는 이익 9.9%(지방세 포함), 연금 수령 연금소득세(지방세 포함) 70세 미만 5.5 / 80세 미만 4.4 / 80세 이상 3.3
+  // 특수관계인 금전 무상·저리 대여 (상증세법 41조의4, 시행규칙 10조의5, 094_04) — 적정이자율 rate%, 이자 차액이 연 free원 미만이면 증여 안 봄
+  //   → 무이자 가능 원금 = free ÷ rate% (4.6% → 약 2억 1,739만). 2016.3 이후 4.6% 유지 (2026.6 기사까지 같은 기준 확인)
+  famLoan: {rate: 4.6, free: 1e7},
+  // 법인세 중간예납 (법인세법 63조·63조의2, 095_01) — 직전 기준 = (직전 산출세액 − 공제·감면 − 원천징수 − 수시부과) × 6/12
+  //   가결산 = 상반기 과표 × 12/6 에 세율 → × 6/12 (corpInterim). 중소기업이 직전 기준 계산액 exempt원 미만이면 의무 없음(2023 개정 30만 → 50만)
+  //   법인지방소득세는 중간예납 없음 — 확정신고(사업연도 종료 4개월 이내) 때 전액. 분납: split원 초과면 가능(splitMax)
+  corpInt: {exempt: 5e5, split: 1e7},
+  // 자동차세 1월 연납 공제율 % (지방세법 시행령, 2024까지 7 → 2025~ 5). 실제 공제는 남은 11개월분이라 연세액 대비 약 4.6%
+  carPre: 5,
+  isaSep: 9.9, pensionTax: [5.5, 4.4, 3.3],
+  // 연금계좌 세액공제 (소득세법 59조의3, 094) — 연금저축 cap 600만, IRP 합산 total 900만, 연금계좌 연 납입 한도 payMax 1,800만(099). 공제율(국세 %) 총급여 wage 이하(근로소득만) 또는 종합소득금액 inc 이하 hi, 초과 lo
+  //   → 지방세 포함은 SF_TAX.wl(). 페이지는 pensionCrPct(총급여)로 받음
+  pensionCr: {payMax: 1.8e7, cap: 6e6, total: 9e6, hi: 15, lo: 12, wage: 5.5e7, inc: 4.5e7},
+  // 사적연금 연 sepCap 넘게 받으면 종합과세 또는 sepRate% 분리과세 선택 (2024~) / 중도해지·연금외 수령 기타소득세 other% (지방세 포함, 094)
+  pensionSep: {sepCap: 1.5e7, sepRate: 16.5, other: 16.5},
+  // 국민연금 수령 (국민연금법 61·62·63조의2, 094) — 수급개시연령 [출생연도 상한, 나이]. 조기 1년당 early% 감액(최대 maxYears년), 연기 1년당 late% 가산(최대 maxYears년)
+  npsRecv: {age: [[1952,60],[1956,61],[1960,62],[1964,63],[1968,64],[Infinity,65]], early: 6, late: 7.2, maxYears: 5},
+  // 미국 배당 원천징수 (한미 조세조약, 090) — 개인은 2천만 이하면 이걸로 끝, 법인은 외국납부세액공제
+  usWithhold: 15,
+  // 건강보험료율 (세금은 아니지만 매년 바뀌어 같이 둠) — 2026년 7.19%, 장기요양 = 건보료의 13.14%. 직장가입자 보수 외 소득 연 2천만 초과분에 소득월액보험료(전액 본인) (087 확인)
+  health: {rate: 7.19, ltc: 13.14, otherIncomeFree: 20000000},
+  // 4대보험 근로자 부담 (089 확인) — 국민연금 2026년 9.5%(근로자 4.75, 매년 1월 0.5%p씩 2033년 13%까지),
+  //   기준소득월액 하한 41만·상한 659만 (2026.7~2027.6, 매년 7월 바뀜), 고용보험 근로자 0.9. 건보는 위 health(근로자 = rate/2)
+  social: {nps: 4.75, npsMin: 410000, npsMax: 6590000, emp: 0.9},
+  // 국민연금 근로자분 예정 인상 (092, 국민연금법 2025.3 개정 — 전체 9.5%에서 매년 1월 0.5%p씩 2033년 13%) — 그 해부터 social 위에 덮어씀(누적).
+  //   페이지는 SF_TAX.socialRule(연도)로 그 해 요율을 받는다 → 2027.1.1이 되면 자동으로 5.0. 상·하한(npsMin/npsMax)은 매년 7월 고시라 미리 못 넣음(그때 social만 고칠 것)
+  socialPlan: {2027: {nps: 5.0}, 2028: {nps: 5.25}, 2029: {nps: 5.5}, 2030: {nps: 5.75}, 2031: {nps: 6.0}, 2032: {nps: 6.25}, 2033: {nps: 6.5}},
+  // 4대보험 사업주 부담 (090 확인) — 국민연금·건보·장기요양은 근로자와 같은 비율. 고용보험은 실업급여 0.9 + 고용안정·직업능력개발(사업주만):
+  //   상시근로자 150인 미만 0.25 / 150인 이상 우선지원대상기업 0.45 / 150~1,000인 미만 0.65 / 1,000인 이상·국가·지자체 0.85. 산재는 업종별(페이지 입력)
+  socialEmp: {emp: 0.9, stab: {u150: 0.25, prio: 0.45, u1000: 0.65, o1000: 0.85}},
+  // 근로소득 간이세액표 8~20세 자녀 월 공제 (2026.3.1 지급분부터, 089 확인) — 1명 20,830 / 2명 45,830 / 3명 이상 2명 초과 1명당 33,330 추가
+  childMonthly: {one: 20830, two: 45830, extra: 33330},
+  // 근로소득 기본공제(인적공제) 1인당 연 personalDed (소득세법 50조) / 식대 비과세 월 nontaxMeal (소득세법 시행령 17조의2, 2023~ 20만) — 099
+  personalDed: 1.5e6, nontaxMeal: 2e5,
+  // 근로소득공제 (소득세법 47조, 092 확인) — 총급여 구간별 누적 공제율 %, 공제 한도 2천만 → earnedDedAmt(총급여)
+  earnedDed: {br: [[5e6,70],[15e6,40],[45e6,15],[1e8,5],[Infinity,2]], cap: 2e7},
+  // 근로소득세액공제 (소득세법 59조, 092 국세청 확인) — 산출세액 130만 이하 55%, 초과분 30%. → earnedCrAmt(산출세액, 총급여)
+  //   한도 lim: [총급여 상한, 시작액, (총급여 − 앞 구간 상한) × 비율 만큼 차감, 최소] — 3,300만↓ 74만 / 7천만↓ 74만−×0.008(최소 66만) / 1.2억↓ 66만−×1/2(최소 50만) / 초과 50만−×1/2(최소 20만)
+  earnedCr: {base: 1.3e6, r1: 55, r2: 30, lim: [[3.3e7,74e4,0,74e4],[7e7,74e4,0.008,66e4],[1.2e8,66e4,0.5,50e4],[Infinity,50e4,0.5,20e4]]},
+  // 자녀세액공제 (소득세법 59조의2, 092 확인) — 1명 25만 / 2명 55만 / 3명 이상 2명 초과 1명당 40만 (2025 귀속~). → childCrAmt(자녀 수)
+  //   대상 나이(그 해 귀속 기준 이상, 20세 이하): 2026.4.21 개정 — 아동수당과 겹치지 않게 매년 1세씩 올라감 → childAge(연도)
+  childCr: {one: 25e4, two: 55e4, extra: 4e5, minAge: {2025: 8, 2026: 9, 2027: 10, 2028: 11, 2029: 12, 2030: 13}},
+  // 공익사업 수용·협의매수 토지 양도세 감면 (조특법 77조, 2025.1.1 양도분~, 092 확인) — 감면율 % 현금 15 / 일반채권 20 / 3년 만기특약 35 / 5년 만기특약 45.
+  //   감면세액의 20% 농어촌특별세. until = 그 해 12.31 양도분까지(일몰, 연장되면 숫자만 고칠 것). 감면 종합한도(133조) 연 2억·5년 3억(다른 감면 합산)
+  landExprop: {cash: 15, bond: 20, bond3: 35, bond5: 45, rural: 20, until: 2026, capYear: 2e8, cap5: 3e8},
+  // 퇴직소득세 (소득세법 48·55조, 2023~ / 089 확인)
+  //   근속연수공제: [근속 상한(년), 1년당 공제(원)] — ~5년 100만, ~10년 200만, ~20년 250만, 20년 초과 300만 (누적)
+  retireYear: [[5,1e6],[10,2e6],[20,2.5e6],[Infinity,3e6]],
+  //   환산급여공제: [환산급여 상한(원), 공제율%] 누적 → prog(환산급여, retireConv)
+  retireConv: [[8e6,100],[7e7,60],[1e8,55],[3e8,45],[Infinity,35]],
+  //   퇴직금을 연금계좌로 받아 연금으로 수령 시 퇴직소득세 부과율% — 실제 수령연차 10년 이하 70, 20년 이하 60, 20년 초과 50 (50은 2026.1.1 수령분부터)
+  pensionRetire: [[10,70],[20,60],[Infinity,50]],
+  // ── 상속세·증여세 (093, 상증세법 26·56조 — 두 세금 구간 같음) ──────────────────
+  //   2026.11 현행. 자녀공제 5억·최고세율 40%·유산취득세 전환은 정부안·국회 계류일 뿐 시행 안 됨 → 확정되면 여기만 고치면 /tax/inheritance/·/tax/gift/ 같이 바뀜
+  inhGift: [[1e8,10],[5e8,20],[1e9,30],[3e9,40],[Infinity,50]],
+  //   신고세액공제 % (상속 6개월·증여 3개월 안 신고, 상증세법 69조)
+  inhGiftReport: 3,
+  //   상속공제 (상증세법 18~22조) — 일괄 5억 vs 기초 2억+인적공제 중 큰 쪽. 미성년: 19세까지 남은 해 × 1천만, 장애인: 기대여명 × 1천만, 65세 이상 동거가족 5천만
+  //   배우자: 실제 상속분(법정상속분·30억 한도), 최소 5억. 법정지분: 배우자 1.5 : 자녀 각 1
+  //   금융재산(순금융재산 = 금융재산 − 금융채무): 2천만 이하 전액 / 1억 이하 2천만 / 1억 초과 20% (한도 2억)
+  inhDed: {lump: 5e8, basic: 2e8, child: 5e7, minorYear: 1e7, minorAge: 19, elderly: 5e7, disabledYear: 1e7,
+           spouseMin: 5e8, spouseMax: 3e9, spouseShare: 1.5, finAll: 2e7, finFlatTo: 1e8, finRate: 20, finMax: 2e8,
+           funeral: 1e7},   // (103) 장례비 공제 한도(봉안시설·자연장지 500만 별도, 상증령 9조)
+  //   증여재산공제 (상증세법 53조·53조의2, 10년 합산) — 배우자 6억, 직계존속→성년 5천만·미성년 2천만, 직계비속→존속 5천만, 기타친족 1천만, 혼인·출산 1억(직계존속에게서, 2024~)
+  //   세대생략(조부모→손자녀) 산출세액 30% 할증, 미성년 손자녀가 20억 넘게 받으면 40% (57조)
+  giftDed: {spouse: 6e8, adult: 5e7, minor: 2e7, parent: 5e7, other: 1e7, marriage: 1e8, genSkip: 30, genSkipBig: 40, genSkipBigOver: 2e9},
+  // ── 취득세 (093, 지방세법 11·13조의2·15조, 지방교육세 151조, 농특세법 5조) ─────────────
+  //   취득세율 %. 주택 유상: 6억 이하 1, 9억 초과 3, 사이 (가액×2/3억 − 3)%. 중과: 조정 2주택 8 / 3주택 12, 비조정 3주택 8 / 4주택 12, 법인 12
+  //   증여 주택 중과 12: 조정지역 + 시가표준액 3억 이상 + 증여자 다주택(1세대 1주택자가 배우자·직계존비속에게 주면 제외)
+  //   오피스텔은 실제 주거용이어도 취득할 때는 주택이 아님 → 비주택 4% (주거용은 그 뒤 다른 주택 살 때 주택 수에만 들어감)
+  //   지방교육세 = (표준세율 − 2%) × 20% — 주택 유상 1~3%는 취득세 × 10%, 중과는 4% 기준(0.4%)
+  //   농특세 = 표준세율을 2%로 본 취득세 × 10% = 0.2%, 중과 주택은 (세율 − 2%) × 10% (8% → 0.6, 12% → 1.0). 주택은 전용 85㎡ 이하 비과세
+  acq: {house: {lo: 6e8, hi: 9e8, rLo: 1, rHi: 3, heavy2: 8, heavy3: 12, gift: 3.5, giftHeavy: 12, giftHeavyMin: 3e8, inherit: 2.8, build: 2.8},
+        farm: {buy: 3, gift: 3.5, inherit: 2.3, build: 2.8}, other: {buy: 4, gift: 3.5, inherit: 2.8, build: 2.8},
+        base: 2, eduHeavy: 4, eduR: 20, ruralR: 10, ruralArea: 85, capMul: 3},
+  //   과밀억제권역 법인 중과 (지방세법 13조2항, 094_03) — 설립·지점설치 5년 안에 권역(서울 전역·경기 일부) 부동산 취득: 취득세 = 표준세율 × capMul − 2% × 2,
+  //   지방교육세도 × capMul(151조), 농특세 그대로 → 상가 4.6% → 9.4%. acqCalc({..., capHeavy: true})
+  // (103) 재건축초과이익 환수 부담금 (재건축초과이익 환수법, 2024.3.27 시행) — /realestate/jaechohwan/
+  //   br: 조합원 1인당 초과이익 누진 [[상한(원), 부과율%]], 첫 구간 0% = 면제 → prog(초과이익, rebuild.br)
+  //   hold: 1세대 1주택 장기보유 감경 [[보유 연수 이상, 감경률%]] (준공 시점 기준 보유기간)
+  rebuild: {br: [[8e7,0],[1.3e8,10],[1.8e8,20],[2.3e8,30],[2.8e8,40],[Infinity,50]], hold: [[6,10],[7,20],[8,30],[9,40],[10,50],[15,60],[20,70]]},
+  // corpBr(사업연도 시작 연도, 소규모 성실신고법인) → 그 해 법인세 구간
+  corpBr: function(y, small){ var T=window.SF_TAX; y = y || new Date().getFullYear();
+    if (y >= T.corpFrom) return small ? T.corpSmall : T.corp;
+    return (small && y >= T.corpSmallFrom) ? T.corpSmallOld : T.corpOld; },
+  // 최저한세 (감면 전 과세표준 기준) / 이월결손금 공제 가능액 / 기업업무추진비 한도
+  corpMinTax: function(base, sme){ var m=window.SF_TAX.corpMin; if(!(base>0)) return 0; return sme ? base*m.sme/100 : window.SF_TAX.prog(base, m.gen); },
+  corpLossAmt: function(inc, loss, sme){ if(!(inc>0)||!(loss>0)) return 0; return Math.min(loss, inc*window.SF_TAX.corpLoss[sme?'sme':'gen']/100); },
+  corpEntLimit: function(rev, months, sme, smallRent){ var e=window.SF_TAX.corpEnt, m = months || 12;
+    var lim = (sme ? e.sme : e.gen) * m / 12 + window.SF_TAX.prog(rev, e.br);
+    return smallRent ? lim * e.smallRent / 100 : lim; },
+  // 연금계좌 세액공제율 % (지방세 포함) — 총급여 기준
+  pensionCrPct: function(wage){ var c=window.SF_TAX.pensionCr; return window.SF_TAX.wl(wage <= c.wage ? c.hi : c.lo); },
+  // 국민연금 수급개시연령
+  npsAge: function(birth){ var a=window.SF_TAX.npsRecv.age; for(var i=0;i<a.length;i++){ if(birth <= a[i][0]) return a[i][1]; } return 65; },
+  wl: function(r){ return Math.round(r*(1+window.SF_TAX.local)*100)/100; },   // (101) 1.1 박힘 → local
+  // 누진 구간 세금(국세) — prog(과표, SF_TAX.corp) 처럼 쓴다. 지방세 포함은 결과 × (1 + local)
+  // 근속연수공제 — 근속연수는 1년 미만 끝수를 1년으로 올려서 넣을 것 (페이지에서 Math.ceil)
+  retYearDed: function(y){ var br=window.SF_TAX.retireYear, t=0, lo=0; for(var i=0;i<br.length;i++){ var hi=br[i][0]; if(y>lo){ t += (Math.min(y,hi)-lo)*br[i][1]; } lo=hi; } return t; },
+  // socialRule(연도) → 그 해 4대보험 근로자 요율 {nps, npsMin, npsMax, emp, hh(건보 근로자분), hr(건보 전체), ltc}. 연도 생략 = 올해
+  socialRule: function(year){ var T=window.SF_TAX, r={}, k, y = year == null ? new Date().getFullYear() : year;
+    for (k in T.social) r[k] = T.social[k]; r.hh = Math.round(T.health.rate / 2 * 10000) / 10000; r.hr = T.health.rate; r.ltc = T.health.ltc;
+    var ys = Object.keys(T.socialPlan).map(Number).sort(function(a,b){return a-b;});
+    for (var i = 0; i < ys.length; i++){ if (ys[i] <= y){ var o = T.socialPlan[ys[i]]; for (k in o) r[k] = o[k]; } }
+    r.year = y; return r; },
+  // ins4(비과세 뺀 월급, 연도, 요율 덮어쓰기) → 4대보험 근로자분 월액 {base(국민연금 기준소득월액), pension, health, care, employ, total, rate}
+  //   국민연금은 상·하한으로 자른 뒤 요율, 급여 0이면 0. 사업주분 국민연금·건보·장기요양은 같은 금액(고용보험만 다름 → socialEmp)
+  ins4: function(wage, year, over){ var s = window.SF_TAX.socialRule(year), k; if (over) for (k in over) if (over[k] != null) s[k] = over[k];
+    var b = wage > 0 ? Math.min(s.npsMax, Math.max(s.npsMin, wage)) : 0, p = b * s.nps / 100, h = wage * s.hh / 100, c = h * s.ltc / 100, e = wage * s.emp / 100;
+    return {base: b, pension: p, health: h, care: c, employ: e, total: p + h + c + e, rate: s}; },
+  // 간이세액표 자녀 공제 월액 (childMonthly)
+  childMonAmt: function(n){ var c = window.SF_TAX.childMonthly; n = parseInt(n,10) || 0; if (n <= 0) return 0; if (n === 1) return c.one; return c.two + (n - 2) * c.extra; },
+  // wageTax(연 과세급여, 공제대상 가족수(본인 포함), 자녀 수) → 간이세액표 근사 연 소득세(국세) {calc 산출, credit 근로소득세액공제, child 자녀 공제(월×12), tax 결정}
+  //   근로소득공제 → 인적공제 1인당 150만 → 누진세율 → 근로소득세액공제 → 간이세액표 자녀 공제. 4대보험 소득공제는 안 뺌(간이세액표 방식). /salary/, /tax/income/
+  wageTax: function(gross, family, kids){ var T = window.SF_TAX, base = Math.max(0, gross - T.earnedDedAmt(gross) - (family || 1) * T.personalDed),
+    calc = T.prog(base, T.income), cr = T.earnedCrAmt(calc, gross), ch = T.childMonAmt(kids) * 12;
+    return {base: base, calc: calc, credit: cr, child: ch, tax: Math.max(0, calc - cr - ch)}; },
+  earnedDedAmt: function(g){ var T=window.SF_TAX; if(!(g>0)) return 0; return Math.min(T.prog(g, T.earnedDed.br), T.earnedDed.cap); },
+  earnedCrAmt: function(tax, g){ var c=window.SF_TAX.earnedCr, lo=0, cap=0, cr; if(!(tax>0)) return 0;
+    cr = tax <= c.base ? tax*c.r1/100 : c.base*c.r1/100 + (tax-c.base)*c.r2/100;
+    for(var i=0;i<c.lim.length;i++){ var L=c.lim[i]; if(g <= L[0]){ cap = Math.max(L[3], L[1] - (g-lo)*L[2]); break; } lo=L[0]; }
+    return Math.min(cr, cap); },
+  childCrAmt: function(n){ var c=window.SF_TAX.childCr; n=parseInt(n,10)||0; if(n<=0) return 0; if(n===1) return c.one; return c.two + (n-2)*c.extra; },
+  childAge: function(y){ if (y == null) y = new Date().getFullYear(); var m=window.SF_TAX.childCr.minAge, ks=Object.keys(m).map(Number).sort(function(a,b){return a-b;}), r=m[ks[0]]; for(var i=0;i<ks.length;i++){ if(ks[i]<=y) r=m[ks[i]]; } return r; },
+  // 상속세·증여세 산출세액(국세, 지방세 없음) — 과세표준 → 10~50% 누진
+  inhGiftTax: function(base){ var T=window.SF_TAX; return T.prog(base, T.inhGift); },
+  // 금융재산 상속공제 (순금융재산)
+  finDedAmt: function(net){ var d=window.SF_TAX.inhDed; if(!(net>0)) return 0; if(net<=d.finAll) return net; if(net<=d.finFlatTo) return d.finAll; return Math.min(net*d.finRate/100, d.finMax); },
+  // 배우자 상속공제 — actual 실제 상속분, base 법정상속분 계산 기준(상속재산 − 채무), kids 자녀 수(0이면 배우자 지분 100%로 봄)
+  spouseDedAmt: function(actual, base, kids){ var d=window.SF_TAX.inhDed, k=parseInt(kids,10)||0, legal = k>0 ? Math.max(0,base)*d.spouseShare/(d.spouseShare+k) : Math.max(0,base);
+    return Math.max(d.spouseMin, Math.min(Math.max(0,actual), legal, d.spouseMax)); },
+  // 주택 취득세율 % (매매) — price 취득가액, houses 취득 후 주택 수, reg 조정대상지역, corp 법인
+  acqHouseRate: function(price, houses, reg, corp){ var a=window.SF_TAX.acq.house, n=parseInt(houses,10)||1;
+    if (corp) return a.heavy3;
+    if (n >= 4 || (n === 3 && reg)) return a.heavy3;
+    if (n === 3 || (n === 2 && reg)) return a.heavy2;
+    if (price <= a.lo) return a.rLo; if (price > a.hi) return a.rHi;
+    return a.rLo + (price - a.lo) / (a.hi - a.lo) * (a.rHi - a.rLo); },
+  // acqCalc({kind:'house'|'farm'|'other', type:'buy'|'gift'|'inherit'|'build', price, area(㎡), houses, reg, corp, giftHeavy})
+  //   → {rate, eduRate, ruralRate(%), totalRate, acq, edu, rural, total, heavy}. capHeavy: 비주택 과밀억제권역 법인 중과. giftHeavy: 주택 증여 중과 요건(증여자 다주택·3억 이상·조정) 충족 여부를 페이지가 판정해서 넘김
+  acqCalc: function(o){ var A=window.SF_TAX.acq, kind=o.kind||'other', type=o.type||'buy', p=o.price||0, rate, heavy=false, edu, rural, std;
+    if (kind === 'house'){
+      if (type === 'buy'){ rate = window.SF_TAX.acqHouseRate(p, o.houses, o.reg, o.corp); heavy = rate >= A.house.heavy2; }
+      else if (type === 'gift'){ heavy = !!o.giftHeavy; rate = heavy ? A.house.giftHeavy : A.house.gift; }
+      else rate = A.house[type];
+      if (heavy) edu = (A.eduHeavy - A.base) * A.eduR / 100;
+      else if (type === 'buy') edu = rate / 10;
+      else edu = (rate - A.base) * A.eduR / 100;
+      rural = (o.area > A.ruralArea) ? (heavy ? (rate - A.base) * A.ruralR / 100 : A.base * A.ruralR / 100) : 0;
+    } else {
+      std = A[kind === 'farm' ? 'farm' : 'other'][type];
+      edu = (std - A.base) * A.eduR / 100; rural = A.base * A.ruralR / 100; rate = std;
+      if (o.capHeavy){ rate = std * A.capMul - A.base * 2; edu = edu * A.capMul; heavy = true; }
+    }
+    edu = Math.round(edu * 1e6) / 1e6; rural = Math.round(rural * 1e6) / 1e6;
+    var acq = p * rate / 100, e = p * edu / 100, r = p * rural / 100;
+    return {rate: rate, eduRate: edu, ruralRate: rural, totalRate: Math.round((rate + edu + rural) * 1e6) / 1e6, acq: acq, edu: e, rural: r, total: acq + e + r, heavy: heavy}; },
+  // corpInterim(상반기 과표, 구간) → 가결산 중간예납 산출세액(국세). 6개월 기준: 연환산 × 2 → 세율 → ÷ 2
+  corpInterim: function(half, br){ if(!(half>0)) return 0; return window.SF_TAX.prog(half*2, br)/2; },
+  // splitMax(납부세액) → 분납 가능한 최대 금액 (국세: split 초과 ~ 2×split 이하는 초과분, 그보다 크면 50% 이하)
+  splitMax: function(tax){ var k=window.SF_TAX.corpInt.split; if(!(tax>k)) return 0; return tax <= 2*k ? tax-k : Math.floor(tax/2); },
+  // ── 금융소득종합과세 (099) — /tax/corp-invest/, /dividend-manager/, /realestate/entity-choice/ 가 같이 씀 ──
+  // finNat() 금융소득 원천징수 국세율 % (15.4 → 14)
+  finNat: function(){ var T = window.SF_TAX; return Math.round(T.interest / (1 + T.local) * 1e6) / 1e6; },
+  // finCompTax(금융소득, 다른 종합소득 과세표준) → 금융소득 때문에 늘어나는 국세 (지방세는 × (1 + local))
+  //   기준(finThreshold) 이하: 금융소득 × 14% / 넘으면 비교과세(소득세법 62조) = max(다른 소득 + 초과분 누진 + 기준 × 14%, 다른 소득 누진 + 금융소득 전체 × 14%) − 다른 소득 누진
+  //   배당 Gross-up·배당세액공제는 뺀 단순화
+  finCompTax: function(F, other){ var T = window.SF_TAX, th = T.finThreshold, r = T.finNat() / 100, o = Math.max(0, other || 0);
+    if (!(F > 0)) return 0; if (F <= th) return F * r;
+    var base = T.prog(o, T.income); return Math.max(T.prog(o + F - th, T.income) + th * r, base + F * r) - base; },
+  // ── 양도세 공통 계산 (099) — /tax/house/, /tax/land/, /realestate/home-swap/, /landtax/ 가 같이 씀 ──
+  // fullYears(시작일, 끝날) 만 년수 (달력 기준, 끝수 버림) — 장특공제·단기세율·비과세 2년은 「몇 년 이상 보유」라서
+  fullYears: function(a, b){ if (!a || !b || b <= a) return 0; var y = b.getFullYear() - a.getFullYear();
+    if (b.getMonth() < a.getMonth() || (b.getMonth() === a.getMonth() && b.getDate() < a.getDate())) y--; return Math.max(0, y); },
+  // ltcHouse(규칙 R = cgtRule('house', 연도), 보유 만 년수, 거주 만 년수, 1주택 장특 대상(비과세 요건 충족), 중과 여부)
+  //   → {rate(0~1), cap(공제액 한도), kind: 'heavy'|'one'|'short'|'hold'|'max'|'live', h, l(1주택 보유·거주분 0~1)}
+  ltcHouse: function(R, holdY, liveY, isOne, heavy){ var O = R.ltcOne, G = R.ltcGen, r;
+    if (heavy) return {rate: 0, cap: Infinity, kind: 'heavy'};
+    if (isOne && holdY >= 3 && liveY >= O.minLive){ var h = Math.min(O.holdMax, holdY * O.hold) / 100, l = Math.min(O.liveMax, liveY * O.live) / 100;
+      return {rate: Math.min(O.max / 100, h + l), cap: O.cap, kind: 'one', h: h, l: l}; }
+    if (holdY < 3) return {rate: 0, cap: Infinity, kind: 'short'};
+    if (G.mode === 'hold') r = Math.min(G.max, holdY * G.hold) / 100;
+    else if (G.mode === 'max') r = Math.min(G.max, Math.max(holdY * G.hold, liveY * G.live)) / 100;
+    else r = liveY >= G.minLive ? Math.min(G.max, liveY * G.live) / 100 : 0;
+    return {rate: r, cap: Infinity, kind: G.mode}; },
+  // ltcLand(규칙 R = cgtRule('land', 연도), 보유 만 년수, 비사업용) → 공제율 0~1 (보유 3년부터 연 ltcRate%, 최대 ltcMax%, 비사업용은 nonBizLtc가 false면 0)
+  ltcLand: function(R, holdY, nonBiz){ if (nonBiz && !R.nonBizLtc) return 0; return holdY >= 3 ? Math.min(Math.floor(holdY) * R.ltcRate, R.ltcMax) / 100 : 0; },
+  // cgtTax(규칙 R, 과세표준, 보유 만 년수, 가산 %p(중과·비사업용, 없으면 0)) → 양도세 산출세액(국세) {tax, basic(기본세율 세액), kind: 'basic'|'short'|'add', short(단기세율 %)}
+  //   단기보유는 기본세율 대신 단기세율(소득세법 104조 1항 2·3호). 가산(중과·비사업용)과 겹치면 둘 중 큰 세액(같은 항 후단, 국세청 세율표 「경합」).
+  cgtTax: function(R, base, holdY, add){ var T = window.SF_TAX, b = T.prog(base, T.income), sr = holdY < 1 ? R.short1 : (holdY < 2 ? R.short2 : 0),
+      st = sr ? Math.max(0, base) * sr / 100 : b, at = add ? b + Math.max(0, base) * add / 100 : -1;
+    if (at > st) return {tax: at, basic: b, kind: 'add', short: sr};
+    return {tax: st, basic: b, kind: sr ? 'short' : 'basic', short: sr}; },
+  // ── 화면 문구 채우기 (099, 101 확장) — <span data-tx="경로" data-tx-f="형식">기본값</span> ──
+  //   페이지 JS로 글을 넣지 말고 이 속성만 쓴다 (101: 옛 class="tx-…" + put() 방식 전부 이걸로 바꿈). 공통 파일을 못 읽으면 span 안 기본값이 그대로 보인다.
+  //   경로: SF_TAX 안 점 경로, 숫자 칸은 배열 번호(음수 = 뒤에서, 객체도 키 순서). 예) income.0.1 → 6, income.-1.1 → 45, socialPlan.-1.nps → 6.5
+  //     경로 중간에 함수가 있으면 불러서 이어 감: data-tx="socialRule.hh" → socialRule() 결과의 hh(올해 규칙).
+  //     함수 인자는 data-tx-a='[{"kind":"other","type":"buy","price":1}]' (JSON 배열) → data-tx="acqCalc.totalRate"
+  //   계산식: data-tx="=usWithhold + corp.0.1*local" (앞에 =, 경로·숫자·+ - * / 괄호). 경로 안 함수는 인자 없이 불림,
+  //     인자가 필요하면 함수(JSON).경로: data-tx='=acqCalc({"kind":"other","type":"buy","price":1,"capHeavy":true}).totalRate - acqCalc({"kind":"other","type":"buy","price":1}).totalRate'
+  //   글자 값(checked 날짜 등)은 그대로 넣음
+  //   배열(구간표 등): 칸마다 형식을 적용해 data-tx-j(기본 '/')로 이음. 구간표 [[상한, 세율]]는 세율 칸(data-tx-c로 다른 칸)
+  //   형식(공백으로 여러 개, 앞에서부터): -경로 그 값을 뺌(차이 %p, 예 data-tx="usWithhold" data-tx-f="-corp.0.1" → 5, 100) / wl 지방세 포함 / nat 지방세 뺀 국세(15.4 → 14) / pct ×100 / x2 ×2 / inv 100−값
+  //     / r0 r1 r2 반올림 / f1 f2 소수 자리 고정(0.20) / kor 금액 「2,000만」「12억」「2억 1,739만」 / korc 「2천만」 식 / eok 억 단위 숫자 / man 만 단위 숫자 / y 쉼표 없이(연도) / 없으면 숫자 그대로(소수 넷째 자리까지)
+  //     배열 전용: len 개수 / brk 「1억 이하: 10% / … / 30억 초과: 50%」(금액은 korc)
+  //   <option>처럼 span을 못 넣는 곳은 data-tx-t="혼인·출산 ({} 추가 공제)" 틀을 주면 {} 자리에 값을 넣어 글 전체를 바꾼다.
+  //   페이지가 문구를 나중에 그리면 그린 뒤 SF_TAX.txFill(그 요소) 를 부른다.
+  txGet: function(path, args){ var T = window.SF_TAX, v = T, ps = String(path).split('.');
+    for (var i = 0; i < ps.length; i++){ if (typeof v === 'function'){ v = v.apply(T, args || []); args = null; } if (v == null) return undefined; var k = ps[i];
+      if (/^-?\d+$/.test(k) && !(k in v)){ var ks = Array.isArray(v) ? null : Object.keys(v).filter(function(x){ return typeof v[x] !== 'string'; }), n = parseInt(k, 10), len = ks ? ks.length : v.length; if (n < 0) n += len; v = ks ? v[ks[n]] : v[n]; }
+      else v = v[k]; }
+    if (typeof v === 'function') v = v.apply(T, args || []);
+    return v; },
+  // (101) data-tx="=…" 계산식 — 경로·숫자·+ - * / ( ) 만
+  txEval: function(src){ var T = window.SF_TAX, s = String(src), p = 0;
+    function sp(){ while (p < s.length && s.charAt(p) === ' ') p++; }
+    function factor(){ sp(); var c = s.charAt(p), m;
+      if (c === '('){ p++; var v = expr(); sp(); p++; return v; }
+      if (c === '-'){ p++; return -factor(); }
+      if ((m = /^\d+(\.\d+)?(e\d+)?/.exec(s.slice(p)))){ p += m[0].length; return parseFloat(m[0]); }
+      if ((m = /^[A-Za-z_]\w*(\.(-?\d+|[A-Za-z_]\w*))*/.exec(s.slice(p)))){ p += m[0].length; var path = m[0], args = null;
+        if (s.charAt(p) === '('){ var e = s.indexOf(')', p); args = JSON.parse('[' + s.slice(p + 1, e) + ']'); p = e + 1;   // 함수(JSON 인자).경로
+          if ((m = /^(\.(-?\d+|[A-Za-z_]\w*))+/.exec(s.slice(p)))){ p += m[0].length; path += m[0]; } }
+        return +T.txGet(path, args); }
+      throw new Error('txEval ' + s); }
+    function term(){ var v = factor(); for (;;){ sp(); var c = s.charAt(p); if (c === '*'){ p++; v *= factor(); } else if (c === '/'){ p++; v /= factor(); } else return v; } }
+    function expr(){ var v = term(); for (;;){ sp(); var c = s.charAt(p); if (c === '+'){ p++; v += term(); } else if (c === '-'){ p++; v -= term(); } else return v; } }
+    return expr(); },
+  txFmt: function(v, f){ var T = window.SF_TAX, fs = String(f || '').split(/\s+/), out = v;
+    function num(x){ return (Math.round(x * 1e4) / 1e4).toLocaleString('ko-KR', {maximumFractionDigits: 4}); }
+    for (var i = 0; i < fs.length; i++){ var k = fs[i]; if (!k) continue;
+      if (k.charAt(0) === '-' && k.length > 1) out = out - T.txGet(k.slice(1));   // (100) 차이
+      else if (k === 'wl') out = T.wl(out); else if (k === 'pct') out = Math.round(out * 1e6) / 1e4; else if (k === 'x2') out = out * 2; else if (k === 'inv') out = 100 - out; else if (k === 'nat') out = Math.round(out / (1 + T.local) * 1e6) / 1e6;
+      else if (k === 'r0' || k === 'r1' || k === 'r2'){ var d = Math.pow(10, +k.charAt(1)); out = Math.round(out * d) / d; }
+      else if (k === 'f1' || k === 'f2') return out.toFixed(+k.charAt(1));   // (101) 소수 자리 고정 (0.20)
+      else if (k === 'y') return String(out); else if (k === 'eok') return num(out / 1e8); else if (k === 'man') return num(out / 1e4);
+      else if (k === 'kor' || k === 'korc') return window.sfKor(out, k); }   // (103) 금액 라벨은 sf-fmt.js sfKor 하나로
+    return typeof out === 'number' ? num(out) : String(out); },
+  // (101) 한 요소의 글 만들기 — txFill 이 부름. 못 만들면 null (기본값 그대로 둠)
+  txText: function(el){ var T = window.SF_TAX, path = el.getAttribute('data-tx'), f = el.getAttribute('data-tx-f') || '', a = el.getAttribute('data-tx-a'), v;
+    v = path.charAt(0) === '=' ? T.txEval(path.slice(1)) : T.txGet(path, a ? JSON.parse(a) : null);
+    if (typeof v === 'string') return v;
+    if (Array.isArray(v)){ var col = el.getAttribute('data-tx-c'), j = el.getAttribute('data-tx-j');
+      if (/\b(len)\b/.test(f)) return String(v.length);
+      if (/\b(brk)\b/.test(f)){ var lo = 0; return v.map(function(b){ var s = b[0] === Infinity ? T.txFmt(lo, 'korc') + ' 초과: ' + T.txFmt(b[1], '') + '%' : T.txFmt(b[0], 'korc') + ' 이하: ' + T.txFmt(b[1], '') + '%'; lo = b[0]; return s; }).join(j == null ? ' / ' : j); }
+      return v.map(function(x){ var n = Array.isArray(x) ? x[col == null ? 1 : +col] : x; return T.txFmt(n, f); }).join(j == null ? '/' : j); }
+    if (typeof v !== 'number' || !isFinite(v)) return null;
+    return T.txFmt(v, f); },
+  txFill: function(root){ var T = window.SF_TAX; (root || document).querySelectorAll('[data-tx]').forEach(function(el){
+      var s; try { s = T.txText(el); } catch (e) { s = null; } if (s == null) return; var t = el.getAttribute('data-tx-t');
+      el.textContent = t ? t.split('{}').join(s) : s; }); },
+  prog: function(base, br){ var t=0, lo=0; if(!(base>0)) return 0; for(var i=0;i<br.length;i++){ var hi=br[i][0]; if(base>lo){ t += (Math.min(base,hi)-lo)*br[i][1]/100; } lo=hi; } return t; }
+});
+// (099) 화면 문구 자동 채우기 — data-tx 칸
+(function(){ function run(){ try { window.SF_TAX.txFill(document); } catch (e) {} }
+  if (typeof document === 'undefined') return;
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run(); })();

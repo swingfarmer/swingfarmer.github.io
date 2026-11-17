@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<meta name="robots" content="noindex, nofollow">
+<title>포트폴리오 리밸런싱 | 스윙파머</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .group-card{background-color:#1e242e!important;border-color:#2c333f!important}
+body.sf-dark .group-header{background-color:#152637!important}
+body.sf-dark .group-header:hover{background-color:#152937!important}
+body.sf-dark .group-name-input{color:#85b5e0!important}
+body.sf-dark .group-name-input:focus{background-color:#1e242e!important}
+body.sf-dark .group-current{color:#c2c2c2!important}
+body.sf-dark .group-eval{color:#85b5e0!important}
+body.sf-dark .btn-del-group{background-color:#371515!important}
+body.sf-dark .item-row{border-bottom-color:#2c333f!important}
+body.sf-dark .btn-del-item{background-color:#371515!important}
+body.sf-dark .item-header{border-bottom-color:#2c333f!important}
+body.sf-dark .add-item-btn{background-color:#152637!important;color:#85b5e0!important}
+body.sf-dark .add-item-btn:hover{background-color:#152437!important}
+body.sf-dark .result-table td{border-bottom-color:#2c333f!important}
+body.sf-dark .result-table td:first-child{color:#d6d6d6!important}
+body.sf-dark .result-table tr:hover td{background-color:#172636!important}
+body.sf-dark .result-table tr.group-row td{background-color:#152637!important;color:#85b5e0!important;border-top-color:#3c485d!important}
+body.sf-dark .sell{color:#71c5f4!important}
+body.sf-dark .modal-box{background-color:#1e242e!important}
+body.sf-dark .loaded-slot{background-color:#152437!important;color:#7c96e9!important}
+body.sf-dark .hist-slot{background-color:#1e242e!important;border-color:#2c333f!important}
+body.sf-dark .hist-slot:hover{background-color:#152637!important}
+body.sf-dark .hist-slot.checked{background-color:#152137!important}
+body.sf-dark .hist-slot-name{color:#dedede!important}
+body.sf-dark .hist-compare-btn:disabled{background-color:#232a35!important}
+body.sf-dark .cmp-table th{background-color:#152637!important;color:#85b5e0!important;border-bottom-color:#3c485d!important}
+body.sf-dark .cmp-table td{border-bottom-color:#2c333f!important}
+body.sf-dark .cmp-table td:first-child{color:#d6d6d6!important}
+body.sf-dark .cmp-table tr.cmp-group td{background-color:#152637!important;color:#85b5e0!important;border-top-color:#3c485d!important}
+body.sf-dark .cmp-diff-neg{color:#71c5f4!important}
+body.sf-dark .result-table tr.total-row td{background:#1F4E78!important;color:white!important;border-top-color:#1F4E78!important}
+body.sf-dark .hist-slot:hover{border-color:#93c5fd!important}
+body.sf-dark .hist-slot.checked{border-color:#007AFF!important}
+body.sf-dark .hist-compare-btn{background:#007AFF!important}
+body.sf-dark .hist-compare-btn:hover:not(:disabled){background:#0066D6!important}
+body.sf-dark .cmp-table tr.cmp-total td{color:#fff!important}
+</style>
+<style>
+:root { --sf-max-w: 1100px; }
+.final { background: linear-gradient(135deg, #1F4E78, #2563eb); }
+*{box-sizing:border-box;margin:0;padding:0}
+.cloud-bar .tag-cloud{background:#0ea5e9;color:white;font-size:12px;font-weight:600;padding:3px 10px;border-radius:6px;cursor:pointer;border:none;font-family:inherit}
+.summary-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:18px}
+.scard{padding:16px;border-radius:10px;color:white}
+.scard.blue{background:linear-gradient(135deg,#1F4E78,#2563eb)}
+.scard.green{background:linear-gradient(135deg,#059669,#10b981)}
+.scard.amber{background:linear-gradient(135deg,#d97706,#f59e0b)}
+.scard.red{background:linear-gradient(135deg,#dc2626,#ef4444)}
+.scard .lbl{font-size:12px;opacity:.9;margin-bottom:4px}
+.scard .val{font-size:18px;font-weight:800;letter-spacing:-.5px}
+.scard .sub{font-size:11px;opacity:.85;margin-top:4px}
+/* 추가투자금 */
+.extra-row{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.extra-row input{padding:10px;font-size:13px;border:1px solid #ccc;border-radius:6px;background:#fff;font-weight:700;color:#1F4E78;text-align:right;width:200px;font-family:inherit}
+.extra-row input:focus{outline:2px solid #1F4E78;background:#fff}
+/* 자산군 */
+.group-card{background:#fff;border:2px solid #e5e7eb;border-radius:10px;margin-bottom:14px;overflow:hidden}
+.group-header{display:flex;align-items:center;gap:8px;padding:14px 16px;background:#f0f5fa;cursor:pointer;user-select:none}
+.group-header:hover{background:#e0ecf5}
+.group-arrow{font-size:12px;color:#888;transition:transform .2s}
+.group-arrow.open{transform:rotate(90deg)}
+.group-name-input{flex:1;padding:6px 8px;font-size:15px;font-weight:700;border:1px solid transparent;border-radius:4px;background:transparent;color:#1F4E78;font-family:inherit}
+.group-name-input:focus{border-color:#1F4E78;background:white;outline:none}
+.group-target{display:flex;align-items:center;gap:4px}
+.group-target input{width:60px;padding:6px;font-size:13px;text-align:right;border:1px solid #ccc;border-radius:6px;background:#fff;font-weight:700;color:#1F4E78;font-family:inherit}
+.group-target input:focus{outline:2px solid #1F4E78}
+.group-current{font-size:13px;color:#666;min-width:80px;text-align:right;font-weight:600}
+.group-eval{font-size:13px;color:#1F4E78;min-width:100px;text-align:right;font-weight:700}
+.btn-del-group{background:#fee2e2;color:#dc2626;border:none;border-radius:6px;width:28px;height:28px;font-size:13px;cursor:pointer;font-weight:700}
+.group-body.open{display:block}
+/* 종목 */
+.item-row{display:grid;grid-template-columns:1fr 70px 140px 28px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0}
+.item-row:last-child{border-bottom:none}
+.item-row input{padding:7px 8px;font-size:13px;border:1px solid #ddd;border-radius:6px;font-family:inherit}
+.item-row input.name-input{background:#fff;color:#333;font-weight:600;text-align:left}
+.item-row input.num-input{background:#fff;color:#1F4E78;font-weight:700;text-align:right}
+.item-row input:focus{outline:2px solid #1F4E78}
+.btn-del-item{background:#fee2e2;color:#dc2626;border:none;border-radius:6px;width:26px;height:26px;font-size:12px;cursor:pointer}
+.item-header{display:grid;grid-template-columns:1fr 70px 140px 28px;gap:8px;padding:4px 0 6px;font-size:11px;font-weight:700;color:#888;border-bottom:2px solid #e5e7eb}
+.add-item-btn{background:#f0f5fa;color:#1F4E78;border:1px dashed #1F4E78;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;margin-top:8px;font-family:inherit}
+.add-item-btn:hover{background:#dbeafe}
+.add-group-btn{background:#1F4E78;color:white;border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:18px}
+.add-group-btn:hover{background:#2d6ba3}
+/* 결과 테이블 */
+.result-table{width:100%;border-collapse:collapse}
+.result-table th:first-child{text-align:left}
+.result-table td{padding:9px 10px;text-align:right;border-bottom:1px solid #eee}
+.result-table td:first-child{text-align:left;color:#444;font-weight:600}
+.result-table tr:hover td{background:#f8fafc}
+.result-table tr.group-row td{background:#f0f5fa;font-weight:700;color:#1F4E78;border-top:2px solid #e0e4eb}
+.result-table tr.total-row td{background:#1F4E78;color:white;font-weight:700;border-top:3px solid #1F4E78}
+.buy{color:#dc2626;font-weight:700}
+.sell{color:#0369a1;font-weight:700}
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:18px}
+@media(max-width:800px){.chart-row{grid-template-columns:1fr}}
+.chart-container{position:relative;height:280px;width:100%}
+/* 모달 */
+.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;justify-content:center;align-items:center}
+.modal.show{display:flex}
+.modal-box{background:white;border-radius:14px;padding:24px;width:90%;max-width:460px;max-height:80vh;overflow-y:auto}
+.loaded-slot{display:none;background:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:13px;color:#1e40af;font-weight:600}
+/* 히스토리 비교 */
+.hist-btn{background:#1F4E78;color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:18px}
+.hist-btn:hover{background:#2d6ba3}
+.hist-panel{display:none;margin-bottom:18px}
+.hist-panel.open{display:block}
+.hist-list{max-height:320px;overflow-y:auto;margin-bottom:12px}
+.hist-slot{display:flex;align-items:center;gap:10px;padding:10px 14px;margin:4px 0;border-radius:8px;background:#fafafa;border:1px solid #f0f0f0;cursor:pointer;transition:all .15s}
+.hist-slot:hover{background:#f0f5fa;border-color:#93c5fd}
+.hist-slot.checked{background:#eef4ff;border-color:#007AFF}
+.hist-slot input[type=checkbox]{width:18px;height:18px;accent-color:#007AFF;cursor:pointer}
+.hist-slot-info{flex:1;min-width:0}
+.hist-slot-name{font-size:14px;font-weight:600;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist-slot-meta{font-size:11px;color:#999;margin-top:2px}
+.hist-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hist-compare-btn{background:#007AFF;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.hist-compare-btn:disabled{background:#ccc;cursor:default}
+.hist-compare-btn:hover:not(:disabled){background:#0066D6}
+.hist-msg{font-size:12px;color:#888}
+.cmp-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
+.cmp-table th{background:#f0f5fa;padding:8px 10px;text-align:right;font-weight:700;color:#1F4E78;border-bottom:2px solid #e0e4eb;white-space:nowrap}
+.cmp-table th:first-child{text-align:left}
+.cmp-table td{padding:7px 10px;text-align:right;border-bottom:1px solid #eee}
+.cmp-table td:first-child{text-align:left;font-weight:600;color:#444}
+.cmp-table tr.cmp-group td{background:#f0f5fa;font-weight:700;color:#1F4E78;border-top:2px solid #e0e4eb}
+.cmp-table tr.cmp-total td{background:#1F4E78;color:#fff;font-weight:700}
+.cmp-diff-pos{color:#dc2626;font-weight:600}
+.cmp-diff-neg{color:#0369a1;font-weight:600}
+.cmp-chart-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:18px 0}
+@media(max-width:800px){.cmp-chart-row{grid-template-columns:1fr}}
+.cmp-chart-box{position:relative;height:280px;width:100%}
+@media(max-width:600px){
+  .summary-cards{grid-template-columns:repeat(2,1fr)}
+  .item-row{grid-template-columns:1fr 55px 110px 26px;gap:4px}
+  .group-header{flex-wrap:wrap;gap:6px}
+  .extra-row input{width:150px}
+}
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body class="sf-narrow">
+<h1>⚖️ 포트폴리오 리밸런싱</h1>
+<p class="desc">자산군별·종목별 목표 비중과 현재 평가액을 입력하면 매수/매도 금액을 자동 계산합니다.</p>
+
+<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+</div>
+<div id="loadedSlot" class="loaded-slot">📂 현재: <span id="loadedSlotLabel"></span>
+  <button onclick="clearLoadedSlot()" style="background:none;border:none;color:#93c5fd;cursor:pointer;font-size:14px;margin-left:6px" title="표시 해제">✕</button>
+</div>
+
+<!-- 추가 투자금 -->
+<div class="extra-row">
+  <label>💰 추가 투자금</label>
+  <input type="text" id="extraCash" placeholder="0" data-won oninput="formatNum(this);recalc()">
+  <span style="font-size:12px;color:#666">원 단위</span>
+</div>
+
+<!-- 자산군 영역 -->
+<div id="groupArea"></div>
+<button class="add-group-btn" onclick="addGroup()">➕ 자산군 추가</button>
+
+<!-- 요약 카드 -->
+<div class="summary-cards" id="summaryCards">
+  <div class="scard blue"><div class="lbl">총 평가액</div><div class="val" id="sTotalVal">0원</div><div class="sub" id="sTotalSub"></div></div>
+  <div class="scard green"><div class="lbl">추가투자금 포함</div><div class="val" id="sWithExtra">0원</div><div class="sub">리밸런싱 기준 총액</div></div>
+  <div class="scard amber"><div class="lbl">최대 괴리</div><div class="val" id="sMaxDev">0%p</div><div class="sub" id="sMaxDevName">-</div></div>
+  <div class="scard red"><div class="lbl">필요 거래 합계</div><div class="val" id="sTradeSum">0원</div><div class="sub">매수+매도 절대값 합</div></div>
+</div>
+
+<!-- 차트 -->
+<div class="chart-row">
+  <div class="panel">
+    <h2>📊 현재 vs 목표 비중</h2>
+    <div class="chart-container"><canvas id="chartCompare"></canvas></div>
+  </div>
+  <div class="panel">
+    <h2>🥧 현재 자산 배분</h2>
+    <div class="chart-container"><canvas id="chartPie"></canvas></div>
+  </div>
+</div>
+
+<!-- 리밸런싱 결과 테이블 -->
+<div class="panel">
+  <h2>📋 리밸런싱 액션</h2>
+  <div class="table-scroll"><table class="result-table" id="resultTable">
+    <thead><tr><th>자산/종목</th><th>현재 평가</th><th>현재 비중</th><th>목표 비중</th><th>괴리</th><th>액션</th><th>매매 금액</th></tr></thead>
+    <tbody id="resultBody"></tbody>
+  </table></div>
+</div>
+
+<!-- 클라우드 저장 모달 -->
+
+
+<script>
+var gid=function(id){return document.getElementById(id)};
+var groups=[];
+var nextGid=1;
+
+// ── 숫자 포맷 ──
+function formatNum(el){
+  var v=el.value.replace(/[^0-9]/g,'');
+  if(v)el.value=Number(v).toLocaleString('ko-KR');
+  else el.value='';
+}
+function parseNum(el){
+  if(!el)return 0;
+  var v=(typeof el==='string'?el:el.value||'').replace(/[^0-9.]/g,'');
+  return parseFloat(v)||0;
+}
+function fmtWon(n){ return sfKor(n,'short')+'원'; }   // (104) 표기는 sf-fmt.js
+function fmtWonFull(n){return sfNum(n)+'원';}
+
+// ── 자산군 관리 ──
+function addGroup(name,targetPct,items){
+  var g={id:nextGid++,name:name||'',targetPct:targetPct||0,items:items||[],open:true};
+  groups.push(g);
+  renderGroups();
+  recalc();
+  return g;
+}
+function removeGroup(gid){
+  groups=groups.filter(function(g){return g.id!==gid;});
+  renderGroups();recalc();
+}
+function addItem(gid,name,targetPct,currentVal){
+  var g=groups.find(function(x){return x.id===gid;});
+  if(!g)return;
+  g.items.push({name:name||'',targetPct:targetPct||0,currentVal:currentVal||0});
+  renderGroups();recalc();
+}
+function removeItem(gid,idx){
+  var g=groups.find(function(x){return x.id===gid;});
+  if(!g)return;
+  g.items.splice(idx,1);
+  renderGroups();recalc();
+}
+
+function renderGroups(){
+  var area=document.getElementById('groupArea');
+  var html='';
+  groups.forEach(function(g){
+    var totalVal=0;
+    g.items.forEach(function(it){totalVal+=it.currentVal;});
+    html+='<div class="group-card" data-gid="'+g.id+'">';
+    html+='<div class="group-header" onclick="toggleGroup('+g.id+')">';
+    html+='<span class="group-arrow '+(g.open?'open':'')+'">▶</span>';
+    html+='<input class="group-name-input" value="'+esc(g.name)+'" placeholder="자산군 이름" onclick="event.stopPropagation()" oninput="updGroupName('+g.id+',this.value)">';
+    html+='<div class="group-target" onclick="event.stopPropagation()"><input type="text" value="'+(g.targetPct||'')+'" placeholder="0" oninput="updGroupTarget('+g.id+',this.value);formatNum(this)"> <span style="font-size:13px;color:#666">%</span></div>';
+    html+='<div class="group-eval">'+fmtWon(totalVal)+'</div>';
+    html+='<button class="btn-del-group" onclick="event.stopPropagation();removeGroup('+g.id+')" title="삭제">✕</button>';
+    html+='</div>';
+    html+='<div class="group-body '+(g.open?'open':'')+'">';
+    html+='<div class="item-header"><div>종목명</div><div style="text-align:right">비중(%)</div><div style="text-align:right">현재 평가액(원)</div><div></div></div>';
+    g.items.forEach(function(it,idx){
+      html+='<div class="item-row">';
+      html+='<input class="name-input" value="'+esc(it.name)+'" placeholder="종목명" oninput="updItem('+g.id+','+idx+',\'name\',this.value)">';
+      html+='<input class="num-input" value="'+(it.targetPct||'')+'" placeholder="0" oninput="updItem('+g.id+','+idx+',\'targetPct\',this.value);formatNum(this)">';
+      html+='<input class="num-input" value="'+(it.currentVal?Number(it.currentVal).toLocaleString('ko-KR'):'')+'" placeholder="0" data-won oninput="updItemVal('+g.id+','+idx+',this);formatNum(this)">';
+      html+='<button class="btn-del-item" onclick="removeItem('+g.id+','+idx+')" title="삭제">✕</button>';
+      html+='</div>';
+    });
+    html+='<button class="add-item-btn" onclick="addItem('+g.id+')">＋ 종목 추가</button>';
+    html+='</div></div>';
+  });
+  area.innerHTML=html;
+  if(typeof sfRefreshWon==='function')sfRefreshWon();
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+function toggleGroup(gid){
+  var g=groups.find(function(x){return x.id===gid;});
+  if(g){g.open=!g.open;renderGroups();}
+}
+function updGroupName(gid,v){var g=groups.find(function(x){return x.id===gid;});if(g)g.name=v;autoSave();}
+function updGroupTarget(gid,v){var g=groups.find(function(x){return x.id===gid;});if(g){g.targetPct=parseNum(v);recalc();}}
+function updItem(gid,idx,key,v){
+  var g=groups.find(function(x){return x.id===gid;});
+  if(!g||!g.items[idx])return;
+  if(key==='targetPct')g.items[idx][key]=parseNum(v);
+  else g.items[idx][key]=v;
+  recalc();
+}
+function updItemVal(gid,idx,el){
+  var g=groups.find(function(x){return x.id===gid;});
+  if(!g||!g.items[idx])return;
+  g.items[idx].currentVal=parseNum(el);
+  recalc();
+}
+
+// ── 핵심 계산 ──
+function recalc(){
+  var extraCash=parseNum(gid('extraCash'));
+  var totalCurrent=0;
+  groups.forEach(function(g){
+    g.items.forEach(function(it){totalCurrent+=it.currentVal;});
+  });
+  var totalWithExtra=totalCurrent+extraCash;
+
+  gid('sTotalVal').textContent=fmtWon(totalCurrent);
+  gid('sTotalSub').textContent=fmtWonFull(totalCurrent);
+  gid('sWithExtra').textContent=fmtWon(totalWithExtra);
+
+  // 결과 테이블
+  var tbody=gid('resultBody');
+  var rows='';
+  var maxDev=0,maxDevName='-';
+  var totalTrade=0;
+  var chartLabels=[],chartCurrent=[],chartTarget=[],pieLabels=[],pieData=[],pieColors=['#1F4E78','#2563eb','#10b981','#f59e0b','#dc2626','#8b5cf6','#ec4899','#06b6d4'];
+
+  groups.forEach(function(g,gi){
+    var gVal=0;
+    g.items.forEach(function(it){gVal+=it.currentVal;});
+    var gCurPct=totalWithExtra>0?(gVal/totalWithExtra*100):0;
+    var gTargetAmt=totalWithExtra*g.targetPct/100;
+    var gDiff=gTargetAmt-gVal;
+    var gDev=gCurPct-g.targetPct;
+    if(Math.abs(gDev)>Math.abs(maxDev)){maxDev=gDev;maxDevName=g.name||'자산군'+(gi+1);}
+    totalTrade+=Math.abs(gDiff);
+
+    chartLabels.push(g.name||'자산군'+(gi+1));
+    chartCurrent.push(Math.round(gCurPct*10)/10);
+    chartTarget.push(g.targetPct);
+    pieLabels.push(g.name||'자산군'+(gi+1));
+    pieData.push(gVal);
+
+    rows+='<tr class="group-row"><td>'+(g.name||'자산군'+(gi+1))+'</td><td>'+fmtWon(gVal)+'</td><td>'+gCurPct.toFixed(1)+'%</td><td>'+g.targetPct+'%</td><td style="color:'+(Math.abs(gDev)>3?'#dc2626':'#666')+'">'+( gDev>0?'+':'')+gDev.toFixed(1)+'%p</td><td class="'+(gDiff>=0?'buy':'sell')+'">'+(gDiff>=0?'매수':'매도')+'</td><td class="'+(gDiff>=0?'buy':'sell')+'">'+fmtWon(Math.abs(gDiff))+'</td></tr>';
+
+    // 종목별
+    g.items.forEach(function(it){
+      var itCurPctInGroup=gVal>0?(it.currentVal/gVal*100):0;
+      var itTargetAmt=gTargetAmt*it.targetPct/100;
+      var itDiff=itTargetAmt-it.currentVal;
+      var itCurPctTotal=totalWithExtra>0?(it.currentVal/totalWithExtra*100):0;
+      var itTargetPctTotal=g.targetPct*it.targetPct/100;
+      rows+='<tr><td style="padding-left:24px;font-weight:500;color:#555">└ '+(it.name||'미입력')+'</td><td>'+fmtWon(it.currentVal)+'</td><td>'+itCurPctTotal.toFixed(1)+'% <span style="font-size:11px;color:#999">(군내 '+itCurPctInGroup.toFixed(0)+'%)</span></td><td>'+itTargetPctTotal.toFixed(1)+'% <span style="font-size:11px;color:#999">('+it.targetPct+'%)</span></td><td style="color:'+(Math.abs(itCurPctTotal-itTargetPctTotal)>2?'#dc2626':'#666')+'">'+(itCurPctTotal-itTargetPctTotal>0?'+':'')+(itCurPctTotal-itTargetPctTotal).toFixed(1)+'%p</td><td class="'+(itDiff>=0?'buy':'sell')+'">'+(itDiff>=0?'매수':'매도')+'</td><td class="'+(itDiff>=0?'buy':'sell')+'">'+fmtWon(Math.abs(itDiff))+'</td></tr>';
+    });
+  });
+
+  // 합계 행
+  var totalTargetPct=0;
+  groups.forEach(function(g){totalTargetPct+=g.targetPct;});
+  rows+='<tr class="total-row"><td>합계</td><td>'+fmtWon(totalCurrent)+'</td><td>100%</td><td>'+totalTargetPct+'%</td><td>'+(totalTargetPct!==100?'⚠️ '+totalTargetPct+'%':'-')+'</td><td colspan="2">거래합계 '+fmtWon(totalTrade/2)+'</td></tr>';
+  tbody.innerHTML=rows;
+
+  gid('sMaxDev').textContent=(maxDev>0?'+':'')+maxDev.toFixed(1)+'%p';
+  gid('sMaxDevName').textContent=maxDevName;
+  gid('sTradeSum').textContent=fmtWon(totalTrade/2);
+
+  // 차트 업데이트
+  renderCharts(chartLabels,chartCurrent,chartTarget,pieLabels,pieData,pieColors);
+  autoSave();
+}
+
+// ── 차트 ──
+var chartCompare=null,chartPie=null;
+function renderCharts(labels,cur,tgt,pLabels,pData,pColors){
+  if(chartCompare)chartCompare.destroy();
+  if(chartPie)chartPie.destroy();
+  if(!labels.length)return;
+
+  chartCompare=new Chart(gid('chartCompare'),{
+    type:'bar',
+    data:{labels:labels,datasets:[
+      {label:'현재 비중',data:cur,backgroundColor:'rgba(37,99,235,0.7)',borderRadius:4},
+      {label:'목표 비중',data:tgt,backgroundColor:'rgba(16,185,129,0.7)',borderRadius:4}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:12}}}},
+      scales:{y:{beginAtZero:true,ticks:{callback:function(v){return v+'%'}}}}}
+  });
+
+  chartPie=new Chart(gid('chartPie'),{
+    type:'doughnut',
+    data:{labels:pLabels,datasets:[{data:pData,backgroundColor:pColors.slice(0,pLabels.length),borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:12}}},
+      tooltip:{callbacks:{label:function(ctx){var t=ctx.dataset.data.reduce(function(a,b){return a+b;},0);return ctx.label+': '+fmtWon(ctx.parsed)+' ('+(t>0?(ctx.parsed/t*100).toFixed(1):0)+'%)'}}}}}
+  });
+}
+
+// ── 상태 저장/복원 ──
+window.rbGetState=function(){
+  return{
+    extraCash:gid('extraCash').value,
+    groups:JSON.parse(JSON.stringify(groups)),
+    nextGid:nextGid
+  };
+};
+window.rbSetState=function(d){
+  if(!d)return;
+  gid('extraCash').value=d.extraCash||'';
+  groups=d.groups||[];
+  nextGid=d.nextGid||groups.length+1;
+  renderGroups();
+  recalc();
+};
+
+// localStorage
+function autoSave(){try{localStorage.setItem('sf_rebalancing_v2',JSON.stringify(window.rbGetState()));}catch(e){}}
+function autoLoad(){try{var d=localStorage.getItem('sf_rebalancing_v2');if(d)window.rbSetState(JSON.parse(d));}catch(e){}}
+
+window._showLoadedSlot=function(name){var el=gid('loadedSlot'),nm=gid('loadedSlotLabel');if(el&&nm){nm.textContent=name;el.style.display='block';try{localStorage.setItem('sf_rb_loaded_slot',name);}catch(e){}}};
+window.clearLoadedSlot=function(){var el=gid('loadedSlot');if(el)el.style.display='none';try{localStorage.removeItem('sf_rb_loaded_slot');}catch(e){}};
+
+// 초기 데이터 — 빈 상태면 기본 자산군 세팅
+function initDefault(){
+  if(groups.length)return;
+  addGroup('한국 주식',40,[]);
+  addGroup('미국 주식',20,[]);
+  addGroup('현금·예금',25,[]);
+  addGroup('부동산',10,[]);
+  addGroup('기타 (코인·금)',5,[]);
+}
+
+// 초기화
+autoLoad();
+if(!groups.length)initDefault();
+renderGroups();
+recalc();
+try{var prev=localStorage.getItem('sf_rb_loaded_slot');if(prev)window._showLoadedSlot(prev);}catch(e){}
+
+// ── 히스토리 비교 ──
+var _histSlots = [];
+var _histChecked = new Set();
+var _histChartBar = null, _histChartPie = null;
+
+async function histLoad(){
+  var btn = gid('histLoadBtn');
+  btn.textContent = '불러오는 중…';
+  btn.disabled = true;
+  try {
+    if(!window._sfSlots || !window._sfSlots.getSlots){
+      alert('sf-slots.js가 로드되지 않았습니다.');
+      return;
+    }
+    _histSlots = await window._sfSlots.getSlots();
+    if(!_histSlots.length){
+      alert('저장된 슬롯이 없습니다.\n먼저 리밸런싱 결과를 저장하세요.');
+      return;
+    }
+    // 날짜순 정렬 (최신 먼저)
+    _histSlots.sort(function(a,b){ return (b.savedAt||'').localeCompare(a.savedAt||''); });
+    _histChecked.clear();
+    gid('histPanel').classList.add('open');
+    gid('histResult').innerHTML = '';
+    histRender();
+  } catch(e) {
+    alert('슬롯 불러오기 실패: ' + e.message);
+  }
+  btn.textContent = '슬롯 불러오기';
+  btn.disabled = false;
+}
+
+function histRender(){
+  var box = gid('histList');
+  if(!_histSlots.length){ box.innerHTML = '<div style="text-align:center;color:#999;padding:20px">저장된 슬롯이 없습니다.</div>'; return; }
+  box.innerHTML = _histSlots.map(function(s, i){
+    var checked = _histChecked.has(i);
+    var dt = s.savedAt ? histFmtDate(s.savedAt) : '날짜 없음';
+    // 간단 요약: 총 평가액
+    var totalVal = 0;
+    if(s.data && s.data.groups){
+      s.data.groups.forEach(function(g){ if(g.items) g.items.forEach(function(it){ totalVal += (it.currentVal||0); }); });
+    }
+    return '<label class="hist-slot' + (checked?' checked':'') + '" onclick="histToggle('+i+',event)">'
+      + '<input type="checkbox" ' + (checked?'checked':'') + ' data-idx="'+i+'">'
+      + '<div class="hist-slot-info">'
+      + '<div class="hist-slot-name">' + esc(s.name||'(이름없음)') + '</div>'
+      + '<div class="hist-slot-meta">' + dt + ' · 평가 ' + fmtWon(totalVal) + '</div>'
+      + '</div></label>';
+  }).join('');
+  histUpdateBtn();
+}
+
+function histToggle(idx, e){
+  if(e) e.preventDefault();
+  if(_histChecked.has(idx)){
+    _histChecked.delete(idx);
+  } else {
+    if(_histChecked.size >= 3){
+      gid('histMsg').textContent = '최대 3개까지 선택 가능';
+      return;
+    }
+    _histChecked.add(idx);
+  }
+  histRender();
+}
+
+function histUpdateBtn(){
+  var n = _histChecked.size;
+  var btn = gid('histCompareBtn');
+  var msg = gid('histMsg');
+  if(n < 2){ btn.disabled = true; msg.textContent = '2~3개를 선택하세요 (현재 '+n+'개)'; }
+  else { btn.disabled = false; msg.textContent = n + '개 선택됨'; }
+}
+
+function histFmtDate(iso){
+  var d = new Date(iso);
+  return d.getFullYear()+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
+function histCompare(){
+  var selected = [];
+  _histChecked.forEach(function(idx){ selected.push(_histSlots[idx]); });
+  // 시간순 정렬 (오래된→최신)
+  selected.sort(function(a,b){ return (a.savedAt||'').localeCompare(b.savedAt||''); });
+
+  // 모든 자산군 이름 수집 (순서 유지)
+  var allGroups = [];
+  var groupSet = {};
+  selected.forEach(function(s){
+    if(!s.data||!s.data.groups) return;
+    s.data.groups.forEach(function(g){
+      var nm = g.name||'(미입력)';
+      if(!groupSet[nm]){ groupSet[nm]=true; allGroups.push(nm); }
+    });
+  });
+
+  // 슬롯별 데이터 추출
+  var snapshots = selected.map(function(s){
+    var d = s.data || {};
+    var gs = d.groups || [];
+    var extra = parseNum(d.extraCash);
+    var totalVal = 0;
+    var byGroup = {};
+    gs.forEach(function(g){
+      var nm = g.name||'(미입력)';
+      var gVal = 0;
+      (g.items||[]).forEach(function(it){ gVal += (it.currentVal||0); });
+      totalVal += gVal;
+      byGroup[nm] = { val: gVal, targetPct: g.targetPct||0, items: g.items||[] };
+    });
+    return { name: s.name, savedAt: s.savedAt, extra: extra, totalVal: totalVal, totalWithExtra: totalVal+extra, byGroup: byGroup };
+  });
+
+  // 비교 테이블 생성
+  var cols = snapshots.length;
+  var html = '<h3 style="margin:18px 0 8px">📊 비교 결과</h3>';
+
+  // 차트 영역
+  html += '<div class="cmp-chart-row">';
+  html += '<div class="panel"><h3 style="font-size:14px;margin-bottom:8px">자산군 평가액 비교</h3><div class="cmp-chart-box"><canvas id="histChartBar"></canvas></div></div>';
+  html += '<div class="panel"><h3 style="font-size:14px;margin-bottom:8px">비중 변화</h3><div class="cmp-chart-box"><canvas id="histChartPie"></canvas></div></div>';
+  html += '</div>';
+
+  html += '<div style="overflow-x:auto"><table class="cmp-table"><thead><tr><th>구분</th>';
+  snapshots.forEach(function(sn){
+    var dt = sn.savedAt ? histFmtDate(sn.savedAt) : '';
+    html += '<th>' + esc(sn.name||'(이름없음)') + '<br><span style="font-weight:400;font-size:11px;color:#888">' + dt + '</span></th>';
+  });
+  // 차이 컬럼 (2개일 때만)
+  if(cols === 2){
+    html += '<th>변화</th>';
+  }
+  html += '</tr></thead><tbody>';
+
+  // 총 평가액
+  html += '<tr><td>총 평가액</td>';
+  snapshots.forEach(function(sn){ html += '<td>' + fmtWon(sn.totalVal) + '</td>'; });
+  if(cols===2){
+    var diff = snapshots[1].totalVal - snapshots[0].totalVal;
+    html += '<td class="'+(diff>=0?'cmp-diff-pos':'cmp-diff-neg')+'">'+(diff>=0?'+':'')+fmtWon(diff)+'</td>';
+  }
+  html += '</tr>';
+
+  // 추가투자금
+  html += '<tr><td>추가투자금</td>';
+  snapshots.forEach(function(sn){ html += '<td>' + (sn.extra?fmtWon(sn.extra):'-') + '</td>'; });
+  if(cols===2){
+    var diffE = snapshots[1].extra - snapshots[0].extra;
+    html += '<td>'+(diffE?((diffE>=0?'+':'')+fmtWon(diffE)):'-')+'</td>';
+  }
+  html += '</tr>';
+
+  // 기준 총액
+  html += '<tr><td>기준 총액 (포함)</td>';
+  snapshots.forEach(function(sn){ html += '<td>' + fmtWon(sn.totalWithExtra) + '</td>'; });
+  if(cols===2){
+    var diffT = snapshots[1].totalWithExtra - snapshots[0].totalWithExtra;
+    html += '<td class="'+(diffT>=0?'cmp-diff-pos':'cmp-diff-neg')+'">'+(diffT>=0?'+':'')+fmtWon(diffT)+'</td>';
+  }
+  html += '</tr>';
+
+  // 자산군별
+  allGroups.forEach(function(gName){
+    html += '<tr class="cmp-group"><td>' + esc(gName) + '</td>';
+    snapshots.forEach(function(sn){
+      var g = sn.byGroup[gName];
+      if(g){
+        var pct = sn.totalWithExtra>0 ? (g.val/sn.totalWithExtra*100).toFixed(1) : '0.0';
+        html += '<td>' + fmtWon(g.val) + ' <span style="font-size:11px;color:#888">(' + pct + '%)</span></td>';
+      } else {
+        html += '<td style="color:#ccc">-</td>';
+      }
+    });
+    if(cols===2){
+      var g0 = snapshots[0].byGroup[gName], g1 = snapshots[1].byGroup[gName];
+      var v0 = g0?g0.val:0, v1 = g1?g1.val:0;
+      var dv = v1 - v0;
+      html += '<td class="'+(dv>=0?'cmp-diff-pos':'cmp-diff-neg')+'">'+(dv>=0?'+':'')+fmtWon(dv)+'</td>';
+    }
+    html += '</tr>';
+
+    // 종목별 (all items across snapshots)
+    var allItems = {};
+    snapshots.forEach(function(sn){
+      var g = sn.byGroup[gName];
+      if(g && g.items) g.items.forEach(function(it){
+        var nm = it.name||'(미입력)';
+        if(!allItems[nm]) allItems[nm] = true;
+      });
+    });
+    Object.keys(allItems).forEach(function(itName){
+      html += '<tr><td style="padding-left:24px;color:#666">└ ' + esc(itName) + '</td>';
+      snapshots.forEach(function(sn){
+        var g = sn.byGroup[gName];
+        var found = null;
+        if(g && g.items) g.items.forEach(function(it){ if((it.name||'(미입력)')===itName) found=it; });
+        if(found){
+          html += '<td>' + fmtWon(found.currentVal||0) + '</td>';
+        } else {
+          html += '<td style="color:#ccc">-</td>';
+        }
+      });
+      if(cols===2){
+        var f0=null, f1=null;
+        var ga = snapshots[0].byGroup[gName], gb = snapshots[1].byGroup[gName];
+        if(ga&&ga.items) ga.items.forEach(function(it){ if((it.name||'(미입력)')===itName) f0=it; });
+        if(gb&&gb.items) gb.items.forEach(function(it){ if((it.name||'(미입력)')===itName) f1=it; });
+        var va = f0?(f0.currentVal||0):0, vb = f1?(f1.currentVal||0):0;
+        var dd = vb - va;
+        html += '<td class="'+(dd>=0?'cmp-diff-pos':'cmp-diff-neg')+'">'+(dd>=0?'+':'')+fmtWon(dd)+'</td>';
+      }
+      html += '</tr>';
+    });
+  });
+
+  html += '</tbody></table></div>';
+
+  gid('histResult').innerHTML = html;
+
+  // 차트 렌더
+  histRenderCharts(snapshots, allGroups);
+
+  // 스크롤
+  gid('histResult').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function histRenderCharts(snapshots, allGroups){
+  if(_histChartBar) _histChartBar.destroy();
+  if(_histChartPie) _histChartPie.destroy();
+  if(!allGroups.length) return;
+
+  var colors = ['#1F4E78','#2563eb','#10b981','#f59e0b','#dc2626','#8b5cf6','#ec4899','#06b6d4'];
+
+  // 바 차트: 자산군별 평가액 비교
+  var barDatasets = snapshots.map(function(sn, si){
+    return {
+      label: sn.name || '슬롯'+(si+1),
+      data: allGroups.map(function(gName){ var g=sn.byGroup[gName]; return g?g.val:0; }),
+      backgroundColor: colors[si % colors.length] + (si===0?'CC':'88'),
+      borderRadius: 4
+    };
+  });
+  var barEl = document.getElementById('histChartBar');
+  if(barEl){
+    _histChartBar = new Chart(barEl, {
+      type:'bar',
+      data:{ labels: allGroups, datasets: barDatasets },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ position:'top', labels:{ font:{ size:12 } } } },
+        scales:{ y:{ beginAtZero:true, ticks:{ callback:function(v){
+          return sfKor(v,'short');   // (104) 표기는 sf-fmt.js
+        }}}}
+      }
+    });
+  }
+
+  // 라인 차트 or 그룹 바: 비중 변화
+  var pctDatasets = allGroups.map(function(gName, gi){
+    return {
+      label: gName,
+      data: snapshots.map(function(sn){ var g=sn.byGroup[gName]; return g&&sn.totalWithExtra>0 ? Math.round(g.val/sn.totalWithExtra*1000)/10 : 0; }),
+      backgroundColor: colors[gi % colors.length],
+      borderColor: colors[gi % colors.length],
+      borderWidth: 2,
+      fill: false,
+      tension: 0.3
+    };
+  });
+  var pctLabels = snapshots.map(function(sn){ return sn.name||''; });
+  var pieEl = document.getElementById('histChartPie');
+  if(pieEl){
+    _histChartPie = new Chart(pieEl, {
+      type: snapshots.length === 2 ? 'bar' : 'bar',
+      data:{ labels: pctLabels, datasets: allGroups.map(function(gName, gi){
+        return {
+          label: gName,
+          data: snapshots.map(function(sn){ var g=sn.byGroup[gName]; return g&&sn.totalWithExtra>0 ? Math.round(g.val/sn.totalWithExtra*1000)/10 : 0; }),
+          backgroundColor: colors[gi % colors.length],
+          borderRadius: 3
+        };
+      })},
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ position:'top', labels:{ font:{ size:11 } } } },
+        scales:{ x:{ stacked:true }, y:{ stacked:true, max:100, ticks:{ callback:function(v){return v+'%';} } } }
+      }
+    });
+  }
+}
+</script>
+
+<!-- 히스토리 비교 -->
+<div class="panel">
+  <h2>📅 히스토리 비교</h2>
+  <p style="font-size:13px;color:#666;margin-bottom:12px">저장된 슬롯 중 2~3개를 선택해서 자산 배분·평가금액 변화를 비교합니다.</p>
+  <button class="hist-btn" id="histLoadBtn" onclick="histLoad()">슬롯 불러오기</button>
+  <div class="hist-panel" id="histPanel">
+    <div class="hist-list" id="histList"></div>
+    <div class="hist-actions">
+      <button class="hist-compare-btn" id="histCompareBtn" disabled onclick="histCompare()">비교하기</button>
+      <span class="hist-msg" id="histMsg">2~3개를 선택하세요</span>
+    </div>
+    <div id="histResult"></div>
+  </div>
+</div>
+
+<!-- Firebase 클라우드 저장 -->
+
+<script>
+window.CALC_KEY = 'rebalancing';
+window.slGetState = function(){ return window.rbGetState ? window.rbGetState() : {}; };
+window.slSetState = function(d){ if(window.rbSetState) window.rbSetState(d); };
+</script>
+<script>window.SF_RESET = ["sf_rb_loaded_slot"];</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>취득세 계산기 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style>
+:root { --sf-max-w: 1100px; }
+.final { background: linear-gradient(135deg, #d97706, #ea580c); }
+  .inputs > .info-box { grid-column: 1 / -1; margin-top: -6px; }  /* (093) i 설명은 입력칸 사이에 끼지 않고 한 줄 전체로 펼침 */
+</style>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body class="sf-narrow">
+
+
+<h1>🏘️ 취득세 계산기</h1>
+<p class="desc">부동산 매수 시 취득세 자동 계산. 주택/오피스텔/토지/상가 구분, 다주택 중과·증여·상속 자동 분기. 2026.11 현행법 기준 (세율 확인일 <span data-tx="checked">2026-11-17</span>).</p>
+
+<div class="panel">
+  <h2>📥 입력값</h2>
+  <div class="inputs">
+
+    <div class="section-label">① 부동산 정보</div>
+    <div class="input-row">
+      <label>부동산 구분</label>
+      <select id="propertyType">
+        <option value="주택" selected>주택</option>
+        <option value="오피스텔">오피스텔</option>
+        <option value="농지">토지 (농지)</option>
+        <option value="농지외">토지 (농지외)</option>
+        <option value="상가">상가·건물</option>
+      </select>
+    </div>
+    <div class="input-row" id="officetelUseRow" style="display:none">
+      <label>오피스텔 용도</label>
+      <select id="officetelUse">
+        <option value="업무용" selected data-tx="acqCalc.totalRate" data-tx-a='[{"kind":"other","type":"buy","price":1}]' data-tx-t="업무용 ({}% 단일)">업무용 (4.6% 단일)</option>
+        <option value="주거용">주거용 (취득세는 같음 · 이후 주택 수 포함)</option>
+      </select>
+    </div>
+    <div class="input-row">
+      <label>취득가액 (원)</label>
+      <input type="number" id="price" value="600000000" data-won>
+    </div>
+    <div class="input-row">
+      <label>전용면적 (㎡) <span class="info-btn" onclick="toggleInfo('areaInfo')">i</span></label>
+      <input type="number" id="area" value="84">
+    </div>
+    <div class="info-box" id="areaInfo" style="display:none">주택만 해당 — 등기부상 <b>전용면적</b>(공급면적 아님). <b>85㎡ 넘으면 농어촌특별세</b>가 붙어요(일반 <span data-tx="acqCalc.ruralRate" data-tx-a='[{"kind":"house","type":"buy","price":1e9,"area":100,"houses":1}]'>0.2</span>%, <span data-tx="acq.house.heavy2">8</span>% 중과 <span data-tx="acqCalc.ruralRate" data-tx-a='[{"kind":"house","type":"buy","price":1e9,"area":100,"houses":1,"houses":2,"reg":true}]'>0.6</span>%, <span data-tx="acq.house.heavy3">12</span>% 중과 <span data-tx="acqCalc.ruralRate" data-tx-a='[{"kind":"house","type":"buy","price":1e9,"area":100,"houses":1,"houses":3,"reg":true}]'>1</span>%). 토지·상가·오피스텔은 면적과 무관하게 <span data-tx="acqCalc.ruralRate" data-tx-a='[{"kind":"other","type":"buy","price":1}]'>0.2</span>%라 비워둬도 돼요.</div>
+
+    <div class="section-label">② 주택수·지역 (주택만 해당)</div>
+    <div class="input-row">
+      <label>취득 후 주택수 <span class="info-btn" onclick="toggleInfo('houseInfo')">i</span></label>
+      <input type="number" id="houseCount" value="1">
+    </div>
+    <div class="input-row">
+      <label>조정대상지역</label>
+      <select id="isRegulated">
+        <option value="N" selected>N</option>
+        <option value="Y">Y</option>
+      </select>
+    </div>
+    <div class="info-box" id="houseInfo" style="display:none"><b>매매</b>: 이번 집을 산 뒤 내 세대가 가진 주택 수(주거용 오피스텔·입주권·분양권 포함, 시가표준액 1억 이하 오피스텔·지방 저가주택 등은 제외). 2주택 조정 <span data-tx="acq.house.heavy2">8</span>% / 3주택 조정 <span data-tx="acq.house.heavy3">12</span>%·비조정 <span data-tx="acq.house.heavy2">8</span>% / 4주택 이상 <span data-tx="acq.house.heavy3">12</span>%. 일시적 2주택(기존 집 기한 안에 처분)은 1주택으로 넣으세요.<br><b>증여</b>: <b>주는 사람(증여자)</b>의 주택 수를 넣으세요. 조정지역 + 증여자 2주택 이상 + 시가표준액 <span data-tx="acq.house.giftHeavyMin" data-tx-f="eok" data-tx-t="{}억">3억</span> 이상이면 <span data-tx="acq.house.heavy3">12</span>% 중과 — 이 계산기는 취득가액 칸을 시가표준액으로 보고 판정해요. 1세대 1주택자가 배우자·자녀에게 주는 건 중과 안 됨(→ 1 입력).</div>
+
+    <div class="section-label">③ 취득 유형</div>
+    <div class="input-row">
+      <label>취득 유형</label>
+      <select id="acquireType">
+        <option value="매매" selected>매매</option>
+        <option value="증여">증여</option>
+        <option value="상속">상속</option>
+        <option value="신축">신축(원시취득)</option>
+      </select>
+    </div>
+    <div class="input-row">
+      <label>법인 여부</label>
+      <select id="isCorp">
+        <option value="N" selected>N</option>
+        <option value="Y" data-tx="acq.house.giftHeavy" data-tx-t="Y (주택 {}% 적용)">Y (주택 12% 적용)</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2>🧮 계산</h2>
+  <table class="calc-table">
+    <tbody>
+      <tr><td>적용 취득세율</td><td id="rate">-</td><td id="rateDesc">구분·유형·주택수·지역·법인 자동 적용</td></tr>
+      <tr><td>취득세</td><td id="acquireTax">-</td><td>취득가액 × 적용세율</td></tr>
+      <tr><td>지방교육세</td><td id="eduTax">-</td><td id="eduDesc">취득세의 일부</td></tr>
+      <tr><td>농어촌특별세</td><td id="ruralTax">-</td><td id="ruralDesc"><span data-tx="acq.ruralArea">85</span>㎡ 초과 / 농지외 / 상가</td></tr>
+    </tbody>
+  </table>
+  <div id="officetelNote" style="display:none;background:#eff6ff;border-left:4px solid #2563eb;padding:10px 14px;margin-top:12px;border-radius:4px;font-size:12.5px;color:#1e3a8a;line-height:1.6"></div>
+</div>
+
+<div class="final">
+  <div class="final-label">💰 최종 납부세액</div>
+  <div class="final-value" id="finalTax">-</div>
+  <div class="final-sub">실효세율: <b id="effectiveRate">-</b></div>
+</div>
+
+<div class="manual">
+  <h3>📘 사용 설명서</h3>
+
+  <h3>① 입력값 설명</h3>
+  <ul>
+    <li><span class="badge">부동산 구분</span> 주택/농지/농지외 토지/상가·건물 중 선택. 세율 구조가 완전히 다름.</li>
+    <li><span class="badge">취득가액</span> 매매가 또는 시가표준액. 증여·상속도 시가 기준.</li>
+    <li><span class="badge">전용면적</span> 주택 매수 시 <span data-tx="acq.ruralArea">85</span>㎡ 초과면 농어촌특별세 가산. 토지·상가는 무관.</li>
+    <li><span class="badge">주택수·조정지역</span> 다주택 중과 판정용. 1주택은 <span data-tx="acq.house.rLo">1</span>~<span data-tx="acq.house.rHi">3</span>% / 2주택 조정 <span data-tx="acq.house.heavy2">8</span>% / 3주택 조정 <span data-tx="acq.house.heavy3">12</span>%·비조정 <span data-tx="acq.house.heavy2">8</span>% / 4주택↑ 또는 법인 <span data-tx="acq.house.heavy3">12</span>%. 증여는 증여자 주택 수(ⓘ 참고).</li>
+    <li><span class="badge">취득 유형</span> 매매/증여(<span data-tx="acq.house.gift">3.5</span>%)/상속(<span data-tx="acq.house.inherit">2.8</span>%)/신축(원시취득). 증여·상속은 별도 세율표.</li>
+  </ul>
+
+  <h3>② 세율 (주택 매매)</h3>
+  <ul>
+    <li><span data-tx="acq.house.lo" data-tx-f="kor">6억</span> 이하: <span data-tx="acq.house.rLo">1</span>%</li>
+    <li><span data-tx="acq.house.lo" data-tx-f="eok">6</span>~<span data-tx="acq.house.hi" data-tx-f="kor">9억</span>: <span data-tx="acq.house.rLo">1</span>~<span data-tx="acq.house.rHi">3</span>% (선형 증가)</li>
+    <li><span data-tx="acq.house.hi" data-tx-f="kor">9억</span> 초과: <span data-tx="acq.house.rHi">3</span>%</li>
+    <li>다주택 중과: 2주택 조정 <span data-tx="acq.house.heavy2">8</span>% / 3주택 조정 <span data-tx="acq.house.heavy3">12</span>%·비조정 <span data-tx="acq.house.heavy2">8</span>% / 4주택 이상 또는 법인 <span data-tx="acq.house.heavy3">12</span>%</li>
+    <li><span data-tx="acq.house.lo" data-tx-f="eok">6</span>~<span data-tx="acq.house.hi" data-tx-f="kor">9억</span> 구간 세율 = (취득가액 × 2/3억 − 3)%</li>
+  </ul>
+
+  <h3>③ 오피스텔 (용도별)</h3>
+  <ul>
+    <li><b>업무용:</b> 일반건물 <span data-tx="acqCalc.totalRate" data-tx-a='[{"kind":"other","type":"buy","price":1}]'>4.6</span>%(취득세<span data-tx="acqCalc.rate" data-tx-a='[{"kind":"other","type":"buy","price":1}]'>4</span>%+교육세<span data-tx="acqCalc.eduRate" data-tx-a='[{"kind":"other","type":"buy","price":1}]'>0.4</span>%+농특세<span data-tx="acqCalc.ruralRate" data-tx-a='[{"kind":"other","type":"buy","price":1}]'>0.2</span>%) 단일. 서울 등 과밀억제권역에서 설립 5년 안 된 법인은 <span data-tx="acqCalc.totalRate" data-tx-a='[{"kind":"other","type":"buy","price":1,"capHeavy":true}]'>9.4</span>% 중과. <b>주택 수에 포함 안 됨.</b> 부가세 환급 가능(일반임대사업자).</li>
+    <li><b>주거용:</b> 오피스텔 자체를 살 때는 <b>업무용과 같은 <span data-tx="acqCalc.totalRate" data-tx-a='[{"kind":"other","type":"buy","price":1}]'>4.6</span>%</b> — 건축물대장상 업무시설이라 주택 세율·중과가 안 붙음(093에서 고침: 예전엔 주택 세율로 계산했음). 대신 <b>2020.8.12 이후 취득분은 그 뒤 다른 주택을 살 때 주택 수에 포함</b>(그 집이 중과될 수 있음). 시가표준액 1억 이하는 주택 수 제외.</li>
+    <li>주택 수 포함 여부는 실제 사용 용도(재산세 주택분 과세 여부)로 판정. 경계 사례는 세무 전문가 상담 권장.</li>
+  </ul>
+
+  <h3>④ 부가세금</h3>
+  <ul>
+    <li><b>지방교육세:</b> (표준세율 − <span data-tx="acq.base">2</span>%) × <span data-tx="acq.eduR">20</span>% → 매매 <span data-tx="acqCalc.rate" data-tx-a='[{"kind":"other","type":"buy","price":1}]'>4</span>%면 <span data-tx="acqCalc.eduRate" data-tx-a='[{"kind":"other","type":"buy","price":1}]'>0.4</span>% / 농지 매매 <span data-tx="acqCalc.rate" data-tx-a='[{"kind":"farm","type":"buy","price":1}]'>3</span>%면 <span data-tx="acqCalc.eduRate" data-tx-a='[{"kind":"farm","type":"buy","price":1}]'>0.2</span>% / 증여 <span data-tx="acqCalc.rate" data-tx-a='[{"kind":"other","type":"gift","price":1}]'>3.5</span>%면 <span data-tx="acqCalc.eduRate" data-tx-a='[{"kind":"other","type":"gift","price":1}]'>0.3</span>% / 상속·신축 <span data-tx="acqCalc.rate" data-tx-a='[{"kind":"other","type":"inherit","price":1}]'>2.8</span>%면 <span data-tx="acqCalc.eduRate" data-tx-a='[{"kind":"other","type":"inherit","price":1}]'>0.16</span>% / 농지 상속 <span data-tx="acqCalc.rate" data-tx-a='[{"kind":"farm","type":"inherit","price":1}]'>2.3</span>%면 <span data-tx="acqCalc.eduRate" data-tx-a='[{"kind":"farm","type":"inherit","price":1}]'>0.06</span>%. 주택 매매 <span data-tx="acq.house.rLo">1</span>~<span data-tx="acq.house.rHi">3</span>%는 취득세 × 10%, 중과(<span data-tx="acq.house.heavy2">8</span>·<span data-tx="acq.house.heavy3">12</span>%)는 <span data-tx="acqCalc.eduRate" data-tx-a='[{"kind":"house","type":"buy","price":1e9,"area":100,"houses":1,"houses":3,"reg":true}]'>0.4</span>%</li>
+    <li><b>농어촌특별세:</b> 기본 <span data-tx="acqCalc.ruralRate" data-tx-a='[{"kind":"other","type":"buy","price":1}]'>0.2</span>% (농지·농지외·상가·오피스텔 모두). 주택은 <span data-tx="acq.ruralArea">85</span>㎡ 초과만 — 일반 <span data-tx="acqCalc.ruralRate" data-tx-a='[{"kind":"house","type":"buy","price":1e9,"area":100,"houses":1}]'>0.2</span>% / <span data-tx="acq.house.heavy2">8</span>% 중과 <span data-tx="acqCalc.ruralRate" data-tx-a='[{"kind":"house","type":"buy","price":1e9,"area":100,"houses":1,"houses":2,"reg":true}]'>0.6</span>% / <span data-tx="acq.house.heavy3">12</span>% 중과 <span data-tx="acqCalc.ruralRate" data-tx-a='[{"kind":"house","type":"buy","price":1e9,"area":100,"houses":1,"houses":3,"reg":true}]'>1</span>% (<span data-tx="acq.ruralArea">85</span>㎡ 이하 면제). 2년 이상 자경농민 농지 감면은 미반영</li>
+  </ul>
+
+  <div class="warn-box">
+    <b>⚠ 주의:</b> 생애최초 감면, 신혼부부·출산 감면, 무주택자 1주택 상속 특례(0.8%), 자경농민 감면, 과밀억제권역 법인 중과 등 특례는 미반영. 일시적 2주택은 주택수 1로 넣으면 됨. 실제 신고시 확인 필요.
+  </div>
+</div>
+
+<script src="/tax-rates.js?v=24"></script>
+<script>
+// (093) 취득세율·지방교육세·농특세는 /tax-rates.js(SF_TAX.acq, 함수 acqHouseRate·acqCalc)에서 받음 — /realestate/home-swap/과 같은 식.
+//       (101: 못 읽을 때 쓰던 대체 사본 지움). 093에서 고친 것:
+//       ① 주거용 오피스텔도 취득할 땐 비주택 4.6%(주택세율 아님) ② 지방교육세 = (표준세율−2%)×20% — 증여·상속·신축이 0.4%·취득세×10%로 잘못 나오던 것
+//       ③ 농특세: 8% 중과 0.6%(1%로 나오던 것), 농지도 0.2%(면제로 나오던 것) ④ 비조정 4주택 이상 12%(8%로 나오던 것) ⑤ 주택 증여 중과는 3억 이상일 때만
+const _T = window.SF_TAX;
+const fmt = n => sfNum(n);
+const fmtPct = n => sfPct(n * 100, 2);
+const A = _T.acq;
+const acqCalc = o => _T.acqCalc(o);
+// (101) 설명 글의 취득세·농특세·지방교육세 % 는 HTML data-tx 가 acqCalc 로 채움 (data-tx-a 에 경우를 적어 둠)
+const _OA = acqCalc({kind:'other', type:'buy', price:1});   // 업무용 오피스텔 안내(noteEl)용
+const TYPE = {'매매': 'buy', '증여': 'gift', '상속': 'inherit', '신축': 'build'};
+const pc = v => (Math.round(v * 10000) / 10000) + '%';
+
+function calculate() {
+  const propertyType = document.getElementById('propertyType').value;
+  const officetelUse = document.getElementById('officetelUse').value;
+  const price = parseFloat(document.getElementById('price').value) || 0;
+  const area = parseFloat(document.getElementById('area').value) || 0;
+  const houseCount = parseInt(document.getElementById('houseCount').value) || 1;
+  const isRegulated = document.getElementById('isRegulated').value === 'Y';
+  const acquireType = document.getElementById('acquireType').value;
+  const isCorp = document.getElementById('isCorp').value === 'Y';
+
+  // 오피스텔 용도 선택칸 표시/숨김
+  document.getElementById('officetelUseRow').style.display = (propertyType === '오피스텔') ? 'flex' : 'none';
+  // 오피스텔 주택수 안내
+  const noteEl = document.getElementById('officetelNote');
+
+  // 오피스텔은 주거용이어도 취득할 때는 주택이 아님(건축물대장상 업무시설) → 비주택 세율
+  const kind = propertyType === '주택' ? 'house' : (propertyType === '농지' ? 'farm' : 'other');
+  const type = TYPE[acquireType] || 'buy';
+  // 주택 증여 중과: 조정지역 + 시가표준액 3억 이상 + 증여자 다주택 (주택수 칸을 증여자 기준으로 넣는 것으로 봄)
+  const giftHeavy = kind === 'house' && type === 'gift' && isRegulated && houseCount >= 2 && price >= A.house.giftHeavyMin;
+  const c = acqCalc({kind, type, price, area, houses: houseCount, reg: isRegulated, corp: isCorp && type === 'buy', giftHeavy});
+  const rate = c.rate / 100;
+
+  let rateDesc = '';
+  if (kind === 'house') {
+    if (type === 'gift') rateDesc = giftHeavy ? '주택 증여 중과 (조정·증여자 다주택·3억 이상) ' + pc(c.rate) : '주택 증여 ' + pc(c.rate);
+    else if (type === 'inherit') rateDesc = '주택 상속 ' + pc(c.rate);
+    else if (type === 'build') rateDesc = '주택 신축 ' + pc(c.rate);
+    else if (isCorp) rateDesc = '법인 → ' + pc(c.rate);
+    else if (c.heavy) rateDesc = houseCount + '주택 ' + (isRegulated ? '조정' : '비조정') + ' → ' + pc(c.rate);
+    else rateDesc = `주택 매매 ${(c.rate).toFixed(2)}% (일반세율)`;
+  } else if (kind === 'farm') {
+    rateDesc = `농지 ${acquireType} ${pc(c.rate)}`;
+  } else if (propertyType === '오피스텔') {
+    rateDesc = `[${officetelUse} 오피스텔] 일반건물 ${acquireType} ${pc(c.rate)}`;
+  } else if (propertyType === '상가') {
+    rateDesc = `상가·건물 ${acquireType} ${pc(c.rate)}`;
+  } else {
+    rateDesc = `농지외 토지 ${acquireType} ${pc(c.rate)}`;
+  }
+
+  let eduDesc;
+  if (kind === 'house' && c.heavy) eduDesc = '중과 ' + pc(c.eduRate) + ' (4% 기준)';
+  else if (kind === 'house' && type === 'buy') eduDesc = '취득세 × 10% (' + pc(c.eduRate) + ')';
+  else eduDesc = '(' + pc(c.rate) + ' − 2%) × 20% = ' + pc(c.eduRate);
+
+  let ruralDesc;
+  if (kind === 'house') ruralDesc = area > A.ruralArea ? (A.ruralArea + '㎡ 초과' + (c.heavy ? ' + 중과 ' : ' ') + pc(c.ruralRate)) : (A.ruralArea + '㎡ 이하 → 면제');
+  else ruralDesc = pc(c.ruralRate) + (kind === 'farm' ? ' (2년 이상 자경농민 감면은 미반영)' : '');
+
+  const finalTax = c.total;
+  const effectiveRate = price > 0 ? finalTax / price : 0;
+
+  document.getElementById('rate').textContent = fmtPct(rate);
+  document.getElementById('rateDesc').textContent = rateDesc;
+  document.getElementById('acquireTax').textContent = fmt(c.acq) + ' 원';
+  document.getElementById('eduTax').textContent = fmt(c.edu) + ' 원';
+  document.getElementById('eduDesc').textContent = eduDesc;
+  document.getElementById('ruralTax').textContent = fmt(c.rural) + ' 원';
+  document.getElementById('ruralDesc').textContent = ruralDesc;
+  document.getElementById('finalTax').textContent = fmt(finalTax) + ' 원';
+  document.getElementById('effectiveRate').textContent = fmtPct(effectiveRate);
+
+  // 오피스텔 안내
+  if (propertyType === '오피스텔') {
+    noteEl.style.display = 'block';
+    if (officetelUse === '업무용') {
+      noteEl.innerHTML = '💡 <b>업무용 오피스텔</b>: 주택 수와 무관하게 일반건물 ' + _OA.totalRate + '%(취득세' + _OA.rate + '%+교육세' + _OA.eduRate + '%+농특세' + _OA.ruralRate + '%) 단일 적용. <b>다른 주택 취득 시 주택 수에 포함되지 않음.</b> 부가가치세(건물분 ' + _T.vat + '%)는 일반임대사업자로 등록 시 환급 가능(이 계산기 미반영).';
+    } else {
+      noteEl.innerHTML = '💡 <b>주거용 오피스텔</b>: 오피스텔 <b>자체를 살 때는 업무용과 같은 4.6%</b>(건축물대장상 업무시설이라 주택 세율·중과가 안 붙음). 대신 <b>2020.8.12 이후 취득분은 그 뒤 다른 주택을 살 때 주택 수에 포함</b>돼 그 집이 중과될 수 있음(시가표준액 1억 이하는 제외). 아파트 등을 살 계획이면 「주택」으로 바꾸고 주택수에 이 오피스텔을 넣어 계산하세요.';
+    }
+  } else {
+    noteEl.style.display = 'none';
+  }
+}
+
+
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input', calculate);
+  el.addEventListener('change', calculate);
+});
+calculate();
+</script>
+<script>
+window.CALC_KEY = 'acquisition';
+window.slGetState = function(){
+  return {
+    propertyType: document.getElementById('propertyType').value,
+    officetelUse: document.getElementById('officetelUse').value,
+    price: document.getElementById('price').value,
+    area: document.getElementById('area').value,
+    houseCount: document.getElementById('houseCount').value,
+    isRegulated: document.getElementById('isRegulated').value,
+    acquireType: document.getElementById('acquireType').value,
+    isCorp: document.getElementById('isCorp').value,
+  };
+};
+window.slSetState = function(d){
+  if(!d) return;
+  if(d.propertyType !== undefined) document.getElementById('propertyType').value = d.propertyType;
+  if(d.officetelUse !== undefined) document.getElementById('officetelUse').value = d.officetelUse;
+  if(d.price !== undefined) document.getElementById('price').value = d.price;
+  if(d.area !== undefined) document.getElementById('area').value = d.area;
+  if(d.houseCount !== undefined) document.getElementById('houseCount').value = d.houseCount;
+  if(d.isRegulated !== undefined) document.getElementById('isRegulated').value = d.isRegulated;
+  if(d.acquireType !== undefined) document.getElementById('acquireType').value = d.acquireType;
+  if(d.isCorp !== undefined) document.getElementById('isCorp').value = d.isCorp;
+  if(typeof calculate === 'function') calculate();
+};
+</script>
+<script>window.SF_RESET = true;</script>  <!-- (085) 저장 관리 창 [↺ 화면 처음으로] -->
+<script src="/sf-slots.js?v=9"></script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>

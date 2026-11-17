@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<title>실거래가 트래커 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style id="sf-auto-dark">
+/* 자동 생성 (scripts/gen_auto_dark.py) — 직접 고치지 말 것. 페이지 CSS를 바꾼 뒤 스크립트를 다시 돌리면 갱신됨 */
+body.sf-dark .prop-tab.active{background-color:#1e242e!important;color:#85b5e0!important}
+body.sf-dark .badge-trade{background-color:#371515!important;color:#e87d7d!important}
+body.sf-dark .badge-jeonse{background-color:#152437!important;color:#7c96e9!important}
+body.sf-dark .badge-wolse{background-color:#153726!important;color:#71f4cf!important}
+body.sf-dark .chk-label{border-right-color:#2c333f!important}
+body.sf-dark .chk-label.on-trade{background-color:#371515!important;color:#e87d7d!important}
+body.sf-dark .chk-label.on-jeonse{background-color:#152437!important;color:#7c96e9!important}
+body.sf-dark .chk-label.on-wolse{background-color:#153726!important;color:#71f4cf!important}
+</style>
+<style>
+:root { --sf-max-w: 1200px; }
+.final { background: linear-gradient(135deg, #1F4E78, #2563eb); }
+*{box-sizing:border-box;margin:0;padding:0}
+.summary-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px}
+.scard{padding:14px;border-radius:10px;color:white}
+.scard.blue{background:linear-gradient(135deg,#1F4E78,#2563eb)}
+.scard.green{background:linear-gradient(135deg,#059669,#10b981)}
+.scard.amber{background:linear-gradient(135deg,#d97706,#f59e0b)}
+.scard.purple{background:linear-gradient(135deg,#6d28d9,#8b5cf6)}
+.scard.red{background:linear-gradient(135deg,#dc2626,#ef4444)}
+.scard .lbl{font-size:11px;opacity:.9;margin-bottom:3px}
+.scard .val{font-size:18px;font-weight:800}
+.scard .sub{font-size:11px;opacity:.85;margin-top:3px}
+.prop-tabs{display:flex;gap:4px;background:#1F4E78;padding:4px;border-radius:10px;margin-bottom:12px}
+.prop-tab{flex:1;padding:10px;border:none;background:transparent;cursor:pointer;font-size:14px;font-weight:700;color:rgba(255,255,255,.6);border-radius:8px;transition:all .15s;font-family:inherit}
+.prop-tab:hover{color:white;background:rgba(255,255,255,.1)}
+.prop-tab.active{background:white;color:#1F4E78}
+.tab-content{display:none}.tab-content.active{display:block}
+.filter-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.filter-row select,.filter-row input{padding:8px;font-size:13px;border:1px solid #ccc;border-radius:6px;font-family:inherit}
+.filter-row input{flex:1;min-width:160px}
+.cnt{font-size:12px;color:#888;margin-bottom:8px}
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{background:#1F4E78;color:white;padding:8px 6px;font-size:12px;font-weight:600;position:sticky;top:0}
+.tbl th:nth-child(1),.tbl th:nth-child(2),.tbl th:nth-child(3){text-align:left}
+.tbl td:nth-child(1),.tbl td:nth-child(2),.tbl td:nth-child(3){text-align:left}
+.tbl td{padding:7px 6px;text-align:right;border-bottom:1px solid #eee}
+.tbl tr:hover td{background:#e8f0fe;transition:background .1s}
+.tbl-wrap{max-height:600px;overflow-y:auto;border:1px solid #ddd;border-radius:8px}
+.price{color:#dc2626;font-weight:700}
+.jeonse{color:#2563eb;font-weight:700}
+.wolse{color:#059669;font-weight:700}
+.badge-trade{background:#fee2e2;color:#991b1b}
+.badge-jeonse{background:#dbeafe;color:#1e40af}
+.badge-wolse{background:#d1fae5;color:#065f46}
+.region-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.region-card{background:white;border-radius:10px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:pointer;transition:transform .1s}
+.region-card:hover{transform:translateY(-2px);box-shadow:0 3px 8px rgba(0,0,0,.12)}
+.region-card h4{color:#1F4E78;font-size:14px;margin-bottom:6px}
+.region-card .avg-price{font-size:18px;font-weight:800;color:#dc2626}
+.region-card .sub{font-size:12px;color:#888;margin-top:4px}
+.yearly-chart{background:white;border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:18px}
+.yearly-chart h3{color:#1F4E78;font-size:15px;margin-bottom:12px}
+.chart-container{position:relative;height:250px}
+.pager{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:14px}
+.pager button{padding:6px 14px;border:1px solid #ccc;border-radius:6px;background:white;cursor:pointer;font-size:13px;font-family:inherit}
+.pager button:disabled{opacity:.4;cursor:default}
+.pager span{font-size:13px;color:#666}
+.chk-group{display:inline-flex;gap:0;align-items:center;border:1px solid #ddd;border-radius:6px;overflow:hidden;flex:none}
+.chk-label{padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer;border-right:1px solid #ddd;transition:all .15s;font-family:inherit;user-select:none}
+.chk-label:last-child{border-right:none}
+.chk-label input{display:none}
+.chk-label.on-trade{background:#fee2e2;color:#991b1b}
+.chk-label.on-jeonse{background:#dbeafe;color:#1e40af}
+.chk-label.on-wolse{background:#d1fae5;color:#065f46}
+.chk-label.off{background:#e5e5e5;color:#aaa;text-decoration:line-through}
+.loading{text-align:center;padding:60px;color:#888}
+/* ⭐ 관심 (082) */
+.w-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.w-btn{font-size:12.5px;padding:7px 12px;border:1px solid #1F4E78;border-radius:6px;background:#fff;color:#1F4E78;cursor:pointer;font-family:inherit;font-weight:600}
+.w-btn.sub{border-color:#ccc;color:#666;font-weight:500}
+.w-status{font-size:12px;color:#888}
+.w-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-bottom:18px}
+.w-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px;cursor:pointer;position:relative;min-width:0}
+.w-card:hover{border-color:#1F4E78}
+.w-card.sel{border-color:#1F4E78;box-shadow:0 0 0 1px #1F4E78 inset}
+.w-card h4{font-size:15px;color:#1a1a1a;margin:0 46px 3px 0;line-height:1.35}
+.w-card .cond{font-size:11.5px;color:#888;margin-bottom:8px;line-height:1.5}
+.w-card .ptag{display:inline-block;font-size:10.5px;background:#e8f0fe;color:#1F4E78;border-radius:4px;padding:0 5px;margin-right:4px}
+.w-card .newb{display:inline-block;font-size:10.5px;background:#dc2626;color:#fff;border-radius:9px;padding:0 6px;margin-left:4px;vertical-align:2px}
+.w-card .last{font-size:17px;font-weight:800;color:#1a1a1a}
+.w-card .last small{font-size:11px;font-weight:400;color:#888;margin-left:4px}
+.w-card .meta{font-size:12px;color:#555;margin-top:3px}
+.w-card .up{color:#dc2626;font-weight:700}.w-card .dn{color:#2563eb;font-weight:700}
+.w-card svg{display:block;width:100%;height:38px;margin-top:8px}
+.w-card .acts{position:absolute;top:10px;right:10px;display:flex;gap:2px}
+.w-card .acts button{border:none;background:none;cursor:pointer;font-size:14px;padding:2px;opacity:.75}
+.w-card .acts button:hover{opacity:1}
+.w-card .acts .bell.off{filter:grayscale(1);opacity:.35}
+.w-empty{grid-column:1/-1;text-align:center;padding:30px;color:#888;font-size:13px;border:1px dashed #ccc;border-radius:10px;line-height:1.8}
+.w-form{background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:14px;margin-bottom:14px}
+.w-form .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.w-form label{font-size:12px;color:#555;display:flex;align-items:center;gap:4px}
+.w-form input,.w-form select{padding:6px 8px;font-size:13px;border:1px solid #ccc;border-radius:6px;font-family:inherit}
+.w-form input[type=number]{width:90px}
+.w-detail{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin-bottom:18px}
+.w-detail h3{font-size:15px;color:#1F4E78;margin-bottom:10px}
+.w-log{display:flex;flex-direction:column;gap:6px;margin-bottom:18px}
+.w-log div{font-size:12.5px;padding:7px 10px;background:#fff;border:1px solid #eee;border-radius:6px;line-height:1.5}
+.w-log b{color:#1F4E78}
+.w-help{font-size:12px;color:#888;line-height:1.7}
+.w-guide{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px 18px;margin-top:6px}
+.w-guide h3{font-size:15px;color:#1F4E78;margin:0 0 8px}
+.w-guide h4{font-size:13.5px;color:#1a1a1a;margin:12px 0 4px}
+.w-guide ul{padding-left:18px;margin:0}
+.w-guide li{font-size:12.5px;color:#444;line-height:1.75;margin-bottom:2px}
+.w-guide code{background:#f1f5f9;padding:0 4px;border-radius:3px;font-size:12px}
+.newb-s{display:inline-block;font-size:10.5px;background:#dc2626;color:#fff;border-radius:9px;padding:0 6px}
+body.sf-dark .w-guide{background:#1e242e;border-color:#2c333f}
+body.sf-dark .w-guide h3{color:#6ba3e0}
+body.sf-dark .w-guide h4{color:#e8ecf2}
+body.sf-dark .w-guide li{color:#c2c8d2}
+body.sf-dark .w-guide code{background:#2a313d;color:#e8ecf2}
+body.sf-dark .w-btn{background:#1e242e;color:#85b5e0;border-color:#2c4f75}
+body.sf-dark .w-btn.sub{color:#aab3c0;border-color:#3a4250}
+body.sf-dark .w-card,body.sf-dark .w-detail,body.sf-dark .w-log div{background:#1e242e;border-color:#2c333f}
+body.sf-dark .w-card.sel,body.sf-dark .w-card:hover{border-color:#6ba3e0}
+body.sf-dark .w-card h4,body.sf-dark .w-card .last{color:#e8ecf2}
+body.sf-dark .w-card .meta{color:#c2c8d2}
+body.sf-dark .w-card .ptag{background:#152237;color:#85b5e0}
+body.sf-dark .w-card .up{color:#f87171}body.sf-dark .w-card .dn{color:#60a5fa}
+body.sf-dark .w-form{background:#1a1f29;border-color:#2c333f}
+body.sf-dark .w-form label{color:#aab3c0}
+body.sf-dark .w-form input,body.sf-dark .w-form select{background:#2a313d;color:#e8ecf2;border-color:#3a4250}
+body.sf-dark .w-detail h3,body.sf-dark .w-log b{color:#6ba3e0}
+body.sf-dark .w-empty{border-color:#3a4250}
+/* 다크모드 대응 */
+body.sf-dark .tbl-wrap{border-color:#2c333f}
+body.sf-dark .tbl td{border-bottom-color:#2c333f;color:#d8dde5}
+body.sf-dark .tbl th{background:#2a4a6e;color:#d8dde5}
+body.sf-dark .tbl tr:hover td{background:#2a3a50!important;color:#fff}
+body.sf-dark .region-card{background:#1e242e;box-shadow:0 1px 3px rgba(0,0,0,.3);border:1px solid #2c333f}
+body.sf-dark .region-card:hover{box-shadow:0 3px 8px rgba(0,0,0,.4)}
+body.sf-dark .region-card h4{color:#6ba3e0}
+body.sf-dark .yearly-chart{background:#1e242e;box-shadow:0 1px 3px rgba(0,0,0,.3);border:1px solid #2c333f}
+body.sf-dark .yearly-chart h3{color:#6ba3e0}
+body.sf-dark .pager button{background:#2a313d;color:#d8dde5;border-color:#3a4250}
+body.sf-dark .pager span{color:#aab3c0}
+body.sf-dark .filter-row select,body.sf-dark .filter-row input{background:#2a313d;color:#e8ecf2;border-color:#3a4250}
+body.sf-dark .cnt{color:#aab3c0}
+body.sf-dark .chk-label.off{background:#2a313d;color:#666}
+body.sf-dark .chk-group{border-color:#3a4250}
+body.sf-dark .prop-tabs{background:#162d4a}
+@media(max-width:600px){.summary-cards{grid-template-columns:repeat(2,1fr)}.region-grid{grid-template-columns:1fr}.filter-row input{min-width:60px}}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=6"></script>
+</head>
+<body class="sf-narrow">
+<h1>🏠 실거래가 트래커</h1>
+<p class="desc">국토교통부 실거래 데이터 — 아파트·오피스텔·상업용. Oracle DB 기반 실시간 조회.</p>
+
+<!-- 부동산 유형 탭 -->
+<div class="prop-tabs">
+  <button class="prop-tab active" data-prop="APT">🏢 아파트</button>
+  <button class="prop-tab" data-prop="OFT">🏬 오피스텔</button>
+  <button class="prop-tab" data-prop="COM">🏪 상업·업무용</button>
+</div>
+
+<div class="summary-cards" id="topCards"><div class="loading">로딩...</div></div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="recent">📋 최근 거래</button>
+  <button class="tab" data-tab="stats">📊 지역 통계</button>
+  <button class="tab" data-tab="yearly">📈 연도별 추이</button>
+  <button class="tab" data-tab="watch">⭐ 관심</button>
+</div>
+
+<!-- 최근 거래 -->
+<div class="tab-content active" id="tab-recent">
+  <div class="filter-row">
+    <select id="fRegion"><option value="">전체 지역</option></select>
+    <select id="fDong"><option value="">전체 동</option></select>
+    <div class="chk-group" id="fTypeGroup">
+      <label class="chk-label on-trade" id="lblS">매매</label>
+      <label class="chk-label on-jeonse" id="lblJ">전세</label>
+      <label class="chk-label on-wolse" id="lblW">월세</label>
+    </div>
+    <select id="fYearFrom"></select>
+    <span style="font-size:13px;color:#888">~</span>
+    <select id="fYearTo"></select>
+    <input type="text" id="fSearch" placeholder="건물명 검색 (쉼표로 여러개: 콤비,홍우)" style="min-width:250px;flex:1;max-width:500px">
+  </div>
+  <div class="filter-row" style="margin-top:-6px">
+    <span style="font-size:12px;color:#666;font-weight:600">전용면적(㎡)</span>
+    <input type="number" id="fAreaMin" placeholder="최소" style="width:70px;min-width:70px;flex:none" min="0" step="1">
+    <span style="font-size:13px;color:#888">~</span>
+    <input type="number" id="fAreaMax" placeholder="최대" style="width:70px;min-width:70px;flex:none" min="0" step="1">
+    <span style="font-size:12px;color:#666;font-weight:600;margin-left:8px">금액(만원)</span>
+    <input type="number" id="fPriceMin" placeholder="최소" style="width:90px;min-width:90px;flex:none" min="0" step="1000">
+    <span style="font-size:13px;color:#888">~</span>
+    <input type="number" id="fPriceMax" placeholder="최대" style="width:90px;min-width:90px;flex:none" min="0" step="1000">
+    <span style="font-size:12px;color:#666;font-weight:600;margin-left:8px">준공</span>
+    <input type="number" id="fBuildFrom" placeholder="시작" style="width:64px;min-width:64px;flex:none" min="1970" max="2030">
+    <span style="font-size:13px;color:#888">~</span>
+    <input type="number" id="fBuildTo" placeholder="끝" style="width:64px;min-width:64px;flex:none" min="1970" max="2030">
+  </div>
+  <div class="filter-row" style="margin-top:-4px;gap:6px">
+    <span style="font-size:12px;color:#666;font-weight:600">🔖 즐겨찾기</span>
+    <select id="fBookmark" style="max-width:160px;font-size:12px"><option value="">저장된 검색 불러오기</option></select>
+    <button id="btnBmOverwrite" style="font-size:11px;padding:4px 10px;border:1px solid #1F4E78;border-radius:4px;background:#fff;color:#1F4E78;cursor:pointer;font-family:inherit;font-weight:600" title="선택된 항목에 덮어쓰기">💾 덮어쓰기</button>
+    <button id="btnBmSave" style="font-size:11px;padding:4px 10px;border:1px solid #03c75a;border-radius:4px;background:#fff;color:#03c75a;cursor:pointer;font-family:inherit;font-weight:600" title="새 이름으로 저장">📥 새로저장</button>
+    <button id="btnBmRename" style="font-size:11px;padding:4px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;color:#888;cursor:pointer;font-family:inherit" title="이름변경">✏️</button>
+    <button id="btnBmDel" style="font-size:11px;padding:4px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;color:#999;cursor:pointer;font-family:inherit" title="삭제">🗑️</button>
+  </div>
+  <div class="cnt" id="recentCnt"></div>
+  <div class="tbl-wrap"><div class="table-scroll"><table class="tbl"><thead><tr><th>지역</th><th>건물명</th><th>동</th><th>전용면적</th><th>층</th><th>금액</th><th>유형</th><th>준공</th><th>거래일</th></tr></thead><tbody id="recentBody"><tr><td colspan="9" class="loading">로딩...</td></tr></tbody></table></div></div>
+  <div class="pager" id="pager"></div>
+</div>
+
+<!-- 지역 통계 -->
+<div class="tab-content" id="tab-stats">
+  <div class="region-grid" id="regionGrid"><div class="loading">로딩...</div></div>
+</div>
+
+<!-- 연도별 추이 -->
+<div class="tab-content" id="tab-yearly">
+  <div class="filter-row">
+    <select id="yRegion"><option value="">전체 지역</option></select>
+  </div>
+  <div class="yearly-chart"><h3>연도별 평균 매매가 추이</h3><div class="chart-container"><canvas id="yearlyChart"></canvas></div></div>
+  <div id="yearlyTable"></div>
+</div>
+
+<!-- ⭐ 관심 (082) -->
+<div class="tab-content" id="tab-watch">
+  <div class="w-bar">
+    <button class="w-btn" id="wNew">＋ 새 관심 추가</button>
+    <button class="w-btn sub" id="wFromSearch" title="📋 최근 거래 탭에 지금 걸린 조건(유형·지역·동·건물명·면적·금액·거래유형)으로 추가">📋 지금 검색조건으로 추가</button>
+    <button class="w-btn sub" id="wImport" hidden>🔖 브라우저 즐겨찾기 가져오기</button>
+    <span class="w-status" id="wStatus"></span>
+  </div>
+  <div class="w-form" id="wForm" hidden></div>
+  <div class="w-grid" id="wCards"><div class="loading">불러오는 중…</div></div>
+  <div class="w-detail" id="wDetail" hidden></div>
+  <h3 style="font-size:15px;margin:4px 0 8px">🔔 최근 알림 <span class="w-status" id="wLogInfo"></span></h3>
+  <div class="w-log" id="wLog"></div>
+  <div class="w-guide">
+    <h3>📖 사용 설명</h3>
+    <h4>1. 관심 추가하는 법</h4>
+    <ul>
+      <li><b>＋ 새 관심 추가</b> — 직접 입력. 단지 하나를 볼 땐 <b>건물명</b>(일부만 써도 됨), 동네 전체를 볼 땐 <b>지역·동·면적·금액</b>으로.</li>
+      <li><b>📋 지금 검색조건으로 추가</b> — "최근 거래" 탭에서 검색해보고 마음에 드는 조건을 그대로 등록.</li>
+      <li><b>🔖 브라우저 즐겨찾기 가져오기</b> — 예전 "검색조건 저장"(이 브라우저에만 있던 것)을 관심 목록으로 옮김. 지역·건물명 없는 건 건너뜀.</li>
+    </ul>
+    <h4>2. 조건 칸 뜻</h4>
+    <ul>
+      <li><b>건물명</b>: 이름 일부. 쉼표로 여러 개 넣으면 그중 하나라도 맞으면 포함 (예: <code>브라이튼, 파인루체</code>). "아크로"처럼 짧게 쓰면 같은 지역의 아크로 단지가 다 잡힘.</li>
+      <li><b>전용</b>: 전용면적 ㎡ (3.3058㎡ = 1평). <b>금액</b>: 만원 단위, 매매는 매매가, 전월세는 보증금 기준.</li>
+      <li><b>지역이나 건물명 중 하나는 필수</b> (서울 전체 같은 조건은 너무 많아서 막아둠).</li>
+    </ul>
+    <h4>3. 카드 보는 법</h4>
+    <ul>
+      <li>큰 숫자 = <b>가장 최근 거래</b> (유형·면적·층·계약일). 그 아래 3개월·3년 거래 건수.</li>
+      <li><b>최근 6개월 평당가</b>와 <b>직전 6개월 대비 %</b> — 매매가 있으면 매매, 없으면 전세 보증금 기준. 평당가 = 금액 ÷ 전용면적(평).</li>
+      <li>아래 선 = 최근 3년 월별 평당가 추이. 3년 전보다 오르면 빨강, 내리면 파랑.</li>
+      <li><span class="newb-s">새 N</span> = 최근 14일 안에 알림이 간 거래 수.</li>
+      <li>카드를 누르면 아래에 <b>월별 평당가 차트 + 최근 거래 100건 표</b>. 다시 누르면 닫힘.</li>
+      <li>버튼: 🔔 알림 켜기/끄기 · ✏️ 조건 수정 · ⬆️ 순서 올리기 · 🗑️ 삭제</li>
+    </ul>
+    <h4>4. 텔레그램 알림</h4>
+    <ul>
+      <li>매일 새벽 실거래 수집이 끝나면 관심 항목마다 <b>새로 생긴 거래</b>를 찾아 텔레그램 봇2로 보냄. 메시지: 단지·면적(평)·층·금액·평당가·계약일, 같은 건물 비슷한 평형(±3㎡) <b>직전 거래 대비 %</b>.</li>
+      <li><b>처음 등록한 날은 알림 없음</b> — 그때까지의 거래를 "이미 본 것"으로 저장하고, 다음 수집부터 새 거래만 보냄.</li>
+      <li>국토부 신고는 <b>계약 후 30일 이내</b>라 알림은 계약보다 늦게 옴 (실시간 아님). 계약일이 최근 100일 안인 거래만 비교함.</li>
+      <li>🔔 꺼진 항목도 새 거래는 아래 "최근 알림" 이력에는 남음 (텔레그램만 안 감).</li>
+      <li>해제(취소)된 거래는 반영 안 됨.</li>
+    </ul>
+    <h4>5. 저장·데이터 범위</h4>
+    <ul>
+      <li>관심 목록은 <b>서버(DB)</b>에 저장 → PC·폰 어디서 열어도 같은 목록. 저장은 분당 10회 제한이라 버튼을 연달아 누르면 잠깐 "저장 실패"가 뜰 수 있음 (잠시 후 다시).</li>
+      <li>아파트: 강남·서초·송파·영등포 등 13곳은 20년치, 나머지 서울·분당·인천 일부 17곳은 3년치. 오피스텔: 서울 25개 구 (2023년 이후 전체). 상업업무용: <b>영등포구만</b>.</li>
+      <li>카드·차트 숫자는 최근 3년 거래 기준 (최대 최신 1,000건).</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+var API='https://swingfarmer.duckdns.org/api/realestate';
+var PROP='APT',PAGE=0,LIMIT=500,TOTAL=0;
+var yearlyChart=null;
+
+function fmt(n){return sfNum(n)}
+function fmtEok(n){return n?sfKor(n*1e4,'short'):'-'}   // (102) 값은 만원 단위, 표기는 sf-fmt.js
+function typeBadge(t){if(t==='S')return'<span class="badge badge-trade">매매</span>';if(t==='J')return'<span class="badge badge-jeonse">전세</span>';return'<span class="badge badge-wolse">월세</span>'}
+function typePrice(d){
+  if(d.deal_type==='S')return'<span class="price">'+fmtEok(d.price)+'</span>';
+  if(d.deal_type==='J')return'<span class="jeonse">'+fmtEok(d.deposit)+'</span>';
+  return'<span class="wolse">'+fmtEok(d.deposit)+'/'+fmt(d.monthly_rent||0)+'</span>';
+}
+
+// ── 지역 목록 로드 ──
+function loadRegions(){
+  fetch(API+'/regions?prop_type='+PROP).then(function(r){return r.json()}).then(function(data){
+    // fRegion: multi-select
+    var sel=document.getElementById('fRegion');
+    sel.innerHTML='<option value="">전체 지역</option>';
+    data.forEach(function(d){
+      var o=document.createElement('option');o.value=d.region;o.textContent=d.region+' ('+fmt(d.count)+')';sel.appendChild(o);
+    });
+    // yRegion: single select
+    var ysel=document.getElementById('yRegion');if(!ysel)return;
+    ysel.innerHTML='<option value="">전체 지역</option>';
+    data.forEach(function(d){
+      var o=document.createElement('option');o.value=d.region;o.textContent=d.region;ysel.appendChild(o);
+    });
+  });
+}
+
+// ── 동 목록 로드 ──
+function loadDongs(){
+  var region=document.getElementById('fRegion').value;
+  var sel=document.getElementById('fDong');
+  sel.innerHTML='<option value="">전체 동</option>';
+  if(!region)return;
+  fetch(API+'/dongs?region='+encodeURIComponent(region)+'&prop_type='+PROP).then(function(r){return r.json()}).then(function(data){
+    data.forEach(function(d){var o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});
+  });
+}
+
+// ── 요약 카드 ──
+function loadSummary(){
+  document.getElementById('topCards').innerHTML='<div class="loading">로딩...</div>';
+  fetch(API+'/stats?prop_type='+PROP).then(function(r){return r.json()}).then(function(d){
+    var s=d.summary;
+    var label={'APT':'아파트','OFT':'오피스텔','COM':'상업·업무용'}[PROP];
+    document.getElementById('topCards').innerHTML=
+      '<div class="scard blue"><div class="lbl">'+label+' 매매</div><div class="val">'+fmt(s.count)+'건</div></div>'
+      +'<div class="scard red"><div class="lbl">평균 매매가</div><div class="val">'+fmtEok(s.avg_price)+'</div></div>'
+      +'<div class="scard purple"><div class="lbl">최고가</div><div class="val">'+fmtEok(s.max_price)+'</div></div>'
+      +'<div class="scard green"><div class="lbl">최저가</div><div class="val">'+fmtEok(s.min_price)+'</div></div>'
+      +'<div class="scard amber"><div class="lbl">Top 단지</div><div class="val">'+(d.top_apts.length?d.top_apts[0].name:'-')+'</div><div class="sub">'+(d.top_apts.length?fmt(d.top_apts[0].count)+'건':'')+'</div></div>';
+  });
+}
+
+// ── 최근 거래 ──
+function loadRecent(){
+  var region=document.getElementById('fRegion').value;
+  var dong=document.getElementById('fDong').value;
+  var typeMap={'lblS':'S','lblJ':'J','lblW':'W'};
+  var types=[];
+  ['lblS','lblJ','lblW'].forEach(function(id){var el=document.getElementById(id);if(!el.classList.contains('off'))types.push(typeMap[id]);});
+  // 전부 끄면 0건
+  if(types.length===0){
+    TOTAL=0;
+    document.getElementById('recentCnt').textContent='0건';
+    document.getElementById('recentBody').innerHTML='<tr><td colspan="9" style="text-align:center;padding:30px;color:#999">거래 유형을 선택하세요.</td></tr>';
+    document.getElementById('pager').innerHTML='';
+    return;
+  }
+  var name=document.getElementById('fSearch').value.trim();
+  var yf=document.getElementById('fYearFrom').value;
+  var yt=document.getElementById('fYearTo').value;
+  var areaMin=document.getElementById('fAreaMin').value;
+  var areaMax=document.getElementById('fAreaMax').value;
+  var priceMin=document.getElementById('fPriceMin').value;
+  var priceMax=document.getElementById('fPriceMax').value;
+  var buildFrom=document.getElementById('fBuildFrom').value;
+  var buildTo=document.getElementById('fBuildTo').value;
+
+  var q='?prop_type='+PROP+'&limit='+LIMIT+'&offset='+(PAGE*LIMIT);
+  if(region)q+='&region='+encodeURIComponent(region);
+  if(dong)q+='&dong='+encodeURIComponent(dong);
+  if(types.length>0&&types.length<3)q+='&deal_type='+types.join(',');
+  if(name)q+='&name='+encodeURIComponent(name);
+  if(yf)q+='&year_from='+yf;
+  if(yt)q+='&year_to='+yt;
+  if(areaMin)q+='&area_min='+areaMin;
+  if(areaMax)q+='&area_max='+areaMax;
+  if(priceMin)q+='&price_min='+priceMin;
+  if(priceMax)q+='&price_max='+priceMax;
+  if(buildFrom)q+='&build_year_from='+buildFrom;
+  if(buildTo)q+='&build_year_to='+buildTo;
+
+  document.getElementById('recentBody').innerHTML='<tr><td colspan="9" class="loading">검색 중...</td></tr>';
+  fetch(API+'/search'+q).then(function(r){return r.json()}).then(function(d){
+    TOTAL=d.total;
+    document.getElementById('recentCnt').textContent=fmt(TOTAL)+'건'+(TOTAL>LIMIT?' (페이지 '+(PAGE+1)+'/'+Math.ceil(TOTAL/LIMIT)+')':'');
+    var html='';
+    d.data.forEach(function(t){
+      var yr=t.deal_year||t.year||'';
+      var mo=String(t.deal_month||t.month||'').padStart(2,'0');
+      var dy=String(t.deal_day||t.day||'').padStart(2,'0');
+      var areaM2=t.area||0;
+      var pyeong=(areaM2/3.3058).toFixed(1);
+      var areaStr=areaM2+'㎡<br><span style="font-size:11px;color:#888">('+pyeong+'평)</span>';
+      html+='<tr><td>'+t.region+'</td><td>'+(t.name||'')+'</td><td>'+(t.dong||'')+'</td><td>'+areaStr+'</td><td>'+(t.floor||'')+'층</td><td>'+typePrice(t)+'</td><td>'+typeBadge(t.deal_type)+'</td><td>'+(t.build_year||'-')+'</td><td>'+yr+'.'+mo+'.'+dy+'</td></tr>';
+    });
+    document.getElementById('recentBody').innerHTML=html||'<tr><td colspan="9" style="text-align:center;padding:30px;color:#999">결과 없음</td></tr>';
+    renderPager();
+  }).catch(function(e){
+    document.getElementById('recentBody').innerHTML='<tr><td colspan="9" style="text-align:center;padding:30px;color:#c00">오류: '+e.message+'</td></tr>';
+  });
+}
+
+function renderPager(){
+  var totalPages=Math.ceil(TOTAL/LIMIT);
+  if(totalPages<=1){document.getElementById('pager').innerHTML='';return}
+  document.getElementById('pager').innerHTML=
+    '<button onclick="PAGE=0;loadRecent()" '+(PAGE===0?'disabled':'')+'>⟪</button>'
+    +'<button onclick="PAGE--;loadRecent()" '+(PAGE===0?'disabled':'')+'>◀</button>'
+    +'<span>'+(PAGE+1)+' / '+totalPages+'</span>'
+    +'<button onclick="PAGE++;loadRecent()" '+(PAGE>=totalPages-1?'disabled':'')+'>▶</button>'
+    +'<button onclick="PAGE='+( totalPages-1)+';loadRecent()" '+(PAGE>=totalPages-1?'disabled':'')+'>⟫</button>';
+}
+
+// ── 지역 통계 ──
+function loadRegionStats(){
+  document.getElementById('regionGrid').innerHTML='<div class="loading">로딩...</div>';
+  fetch(API+'/regions?prop_type='+PROP).then(function(r){return r.json()}).then(function(data){
+    var html='';
+    data.forEach(function(d){
+      html+='<div class="region-card" data-region="'+d.region+'"><h4>'+d.region+'</h4><div class="stat">거래 '+fmt(d.count)+'건</div></div>';
+    });
+    document.getElementById('regionGrid').innerHTML=html||'<div class="loading">데이터 없음</div>';
+    document.querySelectorAll('.region-card').forEach(function(card){
+      card.addEventListener('click',function(){
+        document.getElementById('fRegion').value=card.dataset.region;
+        loadDongs();PAGE=0;loadRecent();document.querySelectorAll('.tab')[0].click();
+      });
+    });
+  });
+}
+
+// ── 연도별 추이 ──
+function loadYearly(){
+  var region=document.getElementById('yRegion').value;
+  var q='?prop_type='+PROP;
+  if(region)q+='&region='+encodeURIComponent(region);
+
+  fetch(API+'/stats'+q).then(function(r){return r.json()}).then(function(d){
+    var yearly=d.yearly||[];
+    if(!yearly.length)return;
+
+    var labels=yearly.map(function(y){return y.year||y.deal_year});
+    var prices=yearly.map(function(y){return y.avg_price});
+    var counts=yearly.map(function(y){return y.count||y.cnt});
+
+    if(yearlyChart)yearlyChart.destroy();
+    yearlyChart=new Chart(document.getElementById('yearlyChart'),{
+      type:'line',
+      data:{labels:labels,datasets:[
+        {label:'평균 매매가(만원)',data:prices,borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.1)',fill:true,tension:.3,yAxisID:'y'},
+        {label:'거래건수',data:counts,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.1)',fill:false,tension:.3,yAxisID:'y1'}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        scales:{y:{position:'left',ticks:{callback:function(v){return fmtEok(v)}}},y1:{position:'right',grid:{drawOnChartArea:false}}},
+        plugins:{tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+': '+(ctx.datasetIndex===0?fmtEok(ctx.parsed.y):fmt(ctx.parsed.y)+'건')}}}}}
+    });
+
+    var thtml='<table class="tbl" style="margin-top:14px"><thead><tr><th style="text-align:left">연도</th><th>거래건수</th><th>평균매매가</th></tr></thead><tbody>';
+    yearly.slice().reverse().forEach(function(y){
+      thtml+='<tr><td style="text-align:left">'+(y.year||y.deal_year)+'</td><td>'+fmt(y.count||y.cnt)+'건</td><td class="price">'+fmtEok(y.avg_price)+'</td></tr>';
+    });
+    thtml+='</tbody></table>';
+    document.getElementById('yearlyTable').innerHTML=thtml;
+  });
+}
+
+// ── 이벤트 ──
+document.querySelectorAll('.prop-tab').forEach(function(tab){
+  tab.addEventListener('click',function(){
+    document.querySelectorAll('.prop-tab').forEach(function(t){t.classList.remove('active')});
+    tab.classList.add('active');
+    PROP=tab.dataset.prop;PAGE=0;
+    loadRegions();loadSummary();loadRecent();loadRegionStats();loadYearly();
+  });
+});
+document.querySelectorAll('.tab').forEach(function(tab){
+  tab.addEventListener('click',function(){
+    document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
+    document.querySelectorAll('.tab-content').forEach(function(c){c.classList.remove('active')});
+    tab.classList.add('active');
+    document.getElementById('tab-'+tab.dataset.tab).classList.add('active');
+    if(tab.dataset.tab==='stats')loadRegionStats();
+    if(tab.dataset.tab==='yearly')loadYearly();
+    if(tab.dataset.tab==='watch')wInit();
+    try{localStorage.setItem('sf_re_tab',tab.dataset.tab);}catch(e){}
+  });
+});
+// ── 검색조건 즐겨찾기 ──
+var BM_KEY='sf_re_bookmarks';
+function loadBookmarks(){try{return JSON.parse(localStorage.getItem(BM_KEY))||{};}catch(e){return {};}}
+function saveBookmarks(bm){localStorage.setItem(BM_KEY,JSON.stringify(bm));}
+function renderBookmarks(){
+  var bm=loadBookmarks(),sel=document.getElementById('fBookmark');
+  sel.innerHTML='<option value="">저장된 검색 불러오기</option>';
+  Object.keys(bm).forEach(function(name){
+    var o=document.createElement('option');o.value=name;o.textContent=name;sel.appendChild(o);
+  });
+}
+function getCurrentFilters(){
+  var typeMap={'lblS':'S','lblJ':'J','lblW':'W'};var types=[];
+  ['lblS','lblJ','lblW'].forEach(function(id){if(!document.getElementById(id).classList.contains('off'))types.push(typeMap[id]);});
+  return {
+    region:document.getElementById('fRegion').value,
+    dong:document.getElementById('fDong').value,
+    types:types,
+    yearFrom:document.getElementById('fYearFrom').value,
+    yearTo:document.getElementById('fYearTo').value,
+    areaMin:document.getElementById('fAreaMin').value,
+    areaMax:document.getElementById('fAreaMax').value,
+    priceMin:document.getElementById('fPriceMin').value,
+    priceMax:document.getElementById('fPriceMax').value,
+    buildFrom:document.getElementById('fBuildFrom').value,
+    buildTo:document.getElementById('fBuildTo').value,
+    search:document.getElementById('fSearch').value,
+    prop:PROP
+  };
+}
+function applyFilters(f){
+  // 탭 전환
+  if(f.prop && f.prop!==PROP){
+    PROP=f.prop;
+    document.querySelectorAll('.prop-tab').forEach(function(t){t.classList.toggle('active',t.dataset.prop===PROP);});
+    loadRegions();
+  }
+  if(f.region){document.getElementById('fRegion').value=f.region;loadDongs();}
+  setTimeout(function(){
+    if(f.dong)document.getElementById('fDong').value=f.dong;
+    // types
+    var onMap={'S':'lblS','J':'lblJ','W':'lblW'};
+    var clsMap={'lblS':'on-trade','lblJ':'on-jeonse','lblW':'on-wolse'};
+    ['lblS','lblJ','lblW'].forEach(function(id){
+      var el=document.getElementById(id);
+      var t=id==='lblS'?'S':id==='lblJ'?'J':'W';
+      if(f.types && f.types.indexOf(t)>=0){el.classList.remove('off');el.classList.add(clsMap[id]);}
+      else{el.classList.add('off');el.classList.remove(clsMap[id]);}
+    });
+    document.getElementById('fYearFrom').value=f.yearFrom||'';
+    document.getElementById('fYearTo').value=f.yearTo||'';
+    document.getElementById('fAreaMin').value=f.areaMin||'';
+    document.getElementById('fAreaMax').value=f.areaMax||'';
+    document.getElementById('fPriceMin').value=f.priceMin||'';
+    document.getElementById('fPriceMax').value=f.priceMax||'';
+    document.getElementById('fBuildFrom').value=f.buildFrom||'';
+    document.getElementById('fBuildTo').value=f.buildTo||'';
+    document.getElementById('fSearch').value=f.search||'';
+    PAGE=0;loadRecent();
+  },300);
+}
+document.getElementById('btnBmOverwrite').addEventListener('click',function(){
+  var name=document.getElementById('fBookmark').value;
+  if(!name){alert('덮어쓸 즐겨찾기를 먼저 선택하세요.\n새로 만들려면 📥 새로저장을 누르세요.');return;}
+  var bm=loadBookmarks();
+  bm[name]=getCurrentFilters();
+  saveBookmarks(bm);
+});
+document.getElementById('btnBmSave').addEventListener('click',function(){
+  var name=prompt('새 즐겨찾기 이름:');
+  if(!name)return;
+  var bm=loadBookmarks();
+  if(bm[name]){if(!confirm('"'+name+'" 이미 있습니다. 덮어쓸까요?'))return;}
+  bm[name]=getCurrentFilters();
+  saveBookmarks(bm);
+  renderBookmarks();
+  document.getElementById('fBookmark').value=name;
+});
+document.getElementById('btnBmRename').addEventListener('click',function(){
+  var name=document.getElementById('fBookmark').value;
+  if(!name){alert('이름을 바꿀 즐겨찾기를 선택하세요.');return;}
+  var newName=prompt('새 이름:',name);
+  if(!newName||newName===name)return;
+  var bm=loadBookmarks();bm[newName]=bm[name];delete bm[name];
+  saveBookmarks(bm);renderBookmarks();
+  document.getElementById('fBookmark').value=newName;
+});
+document.getElementById('btnBmDel').addEventListener('click',function(){
+  var name=document.getElementById('fBookmark').value;
+  if(!name){alert('삭제할 즐겨찾기를 선택하세요.');return;}
+  if(!confirm('"'+name+'" 삭제할까요?'))return;
+  var bm=loadBookmarks();delete bm[name];saveBookmarks(bm);renderBookmarks();
+});
+document.getElementById('fBookmark').addEventListener('change',function(){
+  var name=this.value;if(!name)return;
+  var bm=loadBookmarks();if(bm[name])applyFilters(bm[name]);
+});
+renderBookmarks();
+
+document.getElementById('fRegion').addEventListener('change',function(){loadDongs();PAGE=0;loadRecent()});
+document.getElementById('fDong').addEventListener('change',function(){PAGE=0;loadRecent()});
+['lblS','lblJ','lblW'].forEach(function(id){
+  var el=document.getElementById(id);
+  var onCls=id==='lblS'?'on-trade':id==='lblJ'?'on-jeonse':'on-wolse';
+  el.addEventListener('click',function(){el.classList.toggle('off');el.classList.toggle(onCls);PAGE=0;loadRecent()});
+});
+document.getElementById('fSearch').addEventListener('input',function(){clearTimeout(this._t);this._t=setTimeout(function(){PAGE=0;loadRecent()},400)});
+document.getElementById('fYearFrom').addEventListener('change',function(){PAGE=0;loadRecent()});
+document.getElementById('fYearTo').addEventListener('change',function(){PAGE=0;loadRecent()});
+// 면적·금액 입력 (debounce)
+['fAreaMin','fAreaMax','fPriceMin','fPriceMax','fBuildFrom','fBuildTo'].forEach(function(id){
+  document.getElementById(id).addEventListener('input',function(){clearTimeout(this._t);this._t=setTimeout(function(){PAGE=0;loadRecent()},600)});
+});
+document.getElementById('yRegion').addEventListener('change',loadYearly);
+
+// ── 연도 셀렉트 초기화 ──
+(function(){
+  var now=new Date().getFullYear();
+  ['fYearFrom','fYearTo'].forEach(function(id){
+    var sel=document.getElementById(id);
+    sel.innerHTML='<option value="">'+(id==='fYearFrom'?'시작년도':'종료년도')+'</option>';
+    for(var y=now;y>=2006;y--){var o=document.createElement('option');o.value=y;o.textContent=y+'년';sel.appendChild(o);}
+  });
+})();
+
+// ══ ⭐ 관심 (082) ══
+var API_ROOT='https://swingfarmer.duckdns.org/api';
+var W=null, WLOG=null, WSTATS={}, WSEL=null, wChart=null, wEditId=null, wInited=false;
+var PROP_NAME={APT:'아파트',OFT:'오피스텔',COM:'상업용'};
+var DT_NAME={S:'매매',J:'전세',W:'월세'};
+function wEsc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function wStatus(t){document.getElementById('wStatus').textContent=t||'';}
+function wNum(v){return (v===''||v==null||isNaN(+v))?null:+v;}
+function wInit(){
+  if(wInited)return; wInited=true;
+  var bm=loadBookmarks(); if(Object.keys(bm).length){var b=document.getElementById('wImport');b.hidden=false;b.textContent='🔖 브라우저 즐겨찾기 가져오기 ('+Object.keys(bm).length+')';}
+  Promise.all([
+    fetch(API_ROOT+'/settings/re_watch').then(function(r){return r.json();}).catch(function(){return null;}),
+    fetch(API_ROOT+'/settings/re_watch_log').then(function(r){return r.json();}).catch(function(){return null;})
+  ]).then(function(res){
+    try{W=res[0]&&res[0].value?JSON.parse(res[0].value):null;}catch(e){W=null;}
+    if(!W||!W.items)W={v:1,items:[]};
+    try{WLOG=res[1]&&res[1].value?JSON.parse(res[1].value):null;}catch(e){WLOG=null;}
+    if(res[0]===null)wStatus('⚠️ 서버 연결 실패 — 목록을 못 불러옴');
+    wRenderCards(); wRenderLog(); W.items.forEach(wLoadStats);
+  });
+}
+function wSave(msg){
+  wStatus('저장 중…');
+  return sfApiFetch(API_ROOT+'/settings/re_watch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:JSON.stringify(W)})})
+    .then(function(r){wStatus(r.ok?(msg||'저장됨')+' · '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):'⚠️ 저장 실패: '+((r.data&&r.data.error)||r.status));return r.ok;});
+}
+function wCond(it){
+  var a=[];
+  a.push(it.region||'전체 지역'); if(it.dong)a.push(it.dong);
+  if(it.name)a.push('"'+it.name+'"');
+  if(it.area_min!=null||it.area_max!=null)a.push((it.area_min!=null?it.area_min:'')+'~'+(it.area_max!=null?it.area_max:'')+'㎡');
+  if(it.price_min!=null||it.price_max!=null)a.push((it.price_min!=null?fmtEok(it.price_min):'')+'~'+(it.price_max!=null?fmtEok(it.price_max):''));
+  a.push((it.types||[]).map(function(t){return DT_NAME[t];}).join('·')||'전체');
+  return a.join(' · ');
+}
+function wQuery(it,years){
+  var q='?prop_type='+(it.prop||'APT')+'&limit=1000&offset=0';
+  if(it.region)q+='&region='+encodeURIComponent(it.region);
+  if(it.dong)q+='&dong='+encodeURIComponent(it.dong);
+  if(it.name)q+='&name='+encodeURIComponent(it.name);
+  var t=it.types||[]; if(t.length&&t.length<3)q+='&deal_type='+t.join(',');
+  if(it.area_min!=null)q+='&area_min='+it.area_min; if(it.area_max!=null)q+='&area_max='+it.area_max;
+  if(it.price_min!=null)q+='&price_min='+it.price_min; if(it.price_max!=null)q+='&price_max='+it.price_max;
+  q+='&year_from='+(new Date().getFullYear()-(years||3));
+  return API+'/search'+q;
+}
+function wVal(d){return d.deal_type==='S'?d.price:d.deposit;}
+function wYmd(d){return (+d.deal_year)*10000+(+d.deal_month)*100+(+d.deal_day);}
+function wMonthly(deals){
+  // 주 거래유형(매매 우선) 월별 평균 평당가
+  var hasS=deals.some(function(d){return d.deal_type==='S';});
+  var T=hasS?'S':(deals.some(function(d){return d.deal_type==='J';})?'J':'W');
+  var m={};
+  deals.forEach(function(d){ if(d.deal_type!==T||!wVal(d)||!d.area)return;
+    var k=d.deal_year+'-'+String(d.deal_month).padStart(2,'0'); var py=d.area/3.3058;
+    (m[k]||(m[k]={s:0,n:0})); m[k].s+=wVal(d)/py; m[k].n++; });
+  return {T:T, keys:Object.keys(m).sort(), m:m};
+}
+function wLoadStats(it){
+  fetch(wQuery(it,3)).then(function(r){return r.json();}).then(function(d){
+    var deals=(d.data||[]).slice().sort(function(a,b){return wYmd(b)-wYmd(a);});
+    WSTATS[it.id]={deals:deals,total:d.total};
+    wRenderCard(it);
+    if(WSEL===it.id)wRenderDetail(it);
+  }).catch(function(){WSTATS[it.id]={err:1};wRenderCard(it);});
+}
+function wSpark(mon){
+  if(mon.keys.length<2)return '';
+  var v=mon.keys.map(function(k){return mon.m[k].s/mon.m[k].n;}), mn=Math.min.apply(0,v), mx=Math.max.apply(0,v), W2=260,H=36;
+  var pts=v.map(function(y,i){return (i/(v.length-1)*W2).toFixed(1)+','+(mx===mn?H/2:(H-2-(y-mn)/(mx-mn)*(H-4))).toFixed(1);}).join(' ');
+  var c=v[v.length-1]>=v[0]?'#dc2626':'#2563eb';
+  return '<svg viewBox="0 0 260 36" preserveAspectRatio="none"><polyline fill="none" stroke="'+c+'" stroke-width="1.6" points="'+pts+'"/></svg>';
+}
+function wNewCount(id){
+  if(!WLOG||!WLOG.entries)return 0;
+  var lim=Date.now()-14*864e5;
+  return WLOG.entries.filter(function(e){return e.id===id&&new Date(e.t.replace(' ','T')+':00+09:00').getTime()>=lim;}).length;
+}
+function wCardHtml(it){
+  var st=WSTATS[it.id], nn=wNewCount(it.id);
+  var h='<div class="acts"><button class="bell'+(it.notify===false?' off':'')+'" data-wact="bell" title="알림 켜기/끄기">🔔</button><button data-wact="edit" title="조건 수정">✏️</button><button data-wact="up" title="위로">⬆️</button><button data-wact="del" title="삭제">🗑️</button></div>';
+  h+='<h4>'+wEsc(it.label)+(nn?'<span class="newb">새 '+nn+'</span>':'')+'</h4><div class="cond"><span class="ptag">'+(PROP_NAME[it.prop]||it.prop)+'</span>'+wEsc(wCond(it))+'</div>';
+  if(!st){return h+'<div class="meta">불러오는 중…</div>';}
+  if(st.err){return h+'<div class="meta">⚠️ 조회 실패</div>';}
+  var ds=st.deals; if(!ds.length)return h+'<div class="meta">최근 3년 거래 없음</div>';
+  var L=ds[0], py=L.area/3.3058;
+  h+='<div class="last">'+(L.deal_type==='W'?fmtEok(L.deposit)+'/'+fmt(L.monthly_rent||0):fmtEok(wVal(L)))+'<small>'+DT_NAME[L.deal_type]+' · '+L.area+'㎡('+py.toFixed(1)+'평) '+(L.floor||'')+'층 · '+L.deal_year+'.'+String(L.deal_month).padStart(2,'0')+'.'+String(L.deal_day).padStart(2,'0')+'</small></div>';
+  if(ds.length>1)h+='<div class="meta" style="margin-top:0">'+wEsc(L.name||'')+'</div>';
+  var now=new Date(), c3=new Date(now.getFullYear(),now.getMonth()-3,now.getDate()), c3n=c3.getFullYear()*10000+(c3.getMonth()+1)*100+c3.getDate();
+  var n3=ds.filter(function(d){return wYmd(d)>=c3n;}).length;
+  var mon=wMonthly(ds), k=mon.keys, a6=[],b6=[];
+  var c6=new Date(now.getFullYear(),now.getMonth()-6,1), c12=new Date(now.getFullYear(),now.getMonth()-12,1);
+  function ym(d){return sfDate(d,'ym');}
+  k.forEach(function(x){ if(x>=ym(c6))a6.push(mon.m[x]); else if(x>=ym(c12))b6.push(mon.m[x]); });
+  function avg(arr){var s=0,n=0;arr.forEach(function(o){s+=o.s;n+=o.n;});return n?s/n:null;}
+  var A=avg(a6),B=avg(b6), ch='';
+  if(A&&B){var p=(A/B-1)*100; ch=' · 직전 6개월 대비 <span class="'+(p>=0?'up':'dn')+'">'+(p>=0?'+':'')+p.toFixed(1)+'%</span>';}
+  h+='<div class="meta">3개월 '+n3+'건 · 3년 '+ds.length+(st.total>ds.length?'+':'')+'건'+(A?'<br>최근 6개월 '+DT_NAME[mon.T]+' 평당 '+fmt(A)+'만'+ch:'')+'</div>';
+  return h+wSpark(mon);
+}
+function wRenderCard(it){var el=document.querySelector('.w-card[data-id="'+it.id+'"]'); if(el)el.innerHTML=wCardHtml(it);}
+function wRenderCards(){
+  var box=document.getElementById('wCards');
+  if(!W.items.length){box.innerHTML='<div class="w-empty">관심 부동산이 없음.<br>＋ 새 관심 추가 — 단지(건물명) 또는 조건(지역·동·면적·금액)으로 등록<br>📋 최근 거래 탭에서 검색해본 뒤 "지금 검색조건으로 추가"도 가능</div>';return;}
+  box.innerHTML=W.items.map(function(it){return '<div class="w-card'+(WSEL===it.id?' sel':'')+'" data-id="'+it.id+'">'+wCardHtml(it)+'</div>';}).join('');
+}
+function wRenderLog(){
+  var el=document.getElementById('wLog'), info=document.getElementById('wLogInfo');
+  if(!WLOG||!WLOG.entries||!WLOG.entries.length){el.innerHTML='<div>아직 알림 없음.</div>';info.textContent=WLOG&&WLOG.last_run?'마지막 확인 '+WLOG.last_run.at:'';return;}
+  info.textContent='마지막 확인 '+(WLOG.last_run?WLOG.last_run.at:WLOG.updated||'');
+  el.innerHTML=WLOG.entries.slice(-30).reverse().map(function(e){
+    var d=e.d||{}, py=d.area?d.area/3.3058:0, v=d.type==='S'?d.price:d.deposit;
+    var amt=d.type==='W'?fmtEok(d.deposit)+'/'+fmt(d.rent||0):fmtEok(v);
+    var ch=(e.prev&&v)?' <span style="color:'+(v>=e.prev?'#dc2626':'#2563eb')+'">('+(v>=e.prev?'+':'')+((v/e.prev-1)*100).toFixed(1)+'%)</span>':'';
+    return '<div><b>'+wEsc(e.label)+'</b> · '+wEsc(d.name)+' '+(d.area||'')+'㎡('+py.toFixed(1)+'평) '+(d.floor||'')+'층 · '+DT_NAME[d.type]+' '+amt+ch+' · 계약 '+d.y+'.'+String(d.m).padStart(2,'0')+'.'+String(d.d).padStart(2,'0')+' <span class="w-status">· 알림 '+wEsc(e.t)+'</span></div>';
+  }).join('');
+}
+function wRenderDetail(it){
+  var box=document.getElementById('wDetail'), st=WSTATS[it.id];
+  box.hidden=false;
+  if(!st||!st.deals){box.innerHTML='<div class="loading">불러오는 중…</div>';return;}
+  var ds=st.deals, mon=wMonthly(ds);
+  var h='<h3>'+wEsc(it.label)+' — 월별 '+DT_NAME[mon.T]+' 평당가 (최근 3년)</h3><div class="chart-container"><canvas id="wChartCv"></canvas></div>';
+  h+='<div class="cnt" style="margin-top:12px">최근 거래 '+Math.min(100,ds.length)+'건'+(st.total>1000?' (3년 '+fmt(st.total)+'건 중 최신 1,000건 기준)':'')+'</div>';
+  h+='<div class="tbl-wrap" style="max-height:420px"><div class="table-scroll"><table class="tbl"><thead><tr><th>건물명</th><th>동</th><th>전용</th><th>층</th><th>금액</th><th>유형</th><th>평당</th><th>거래일</th></tr></thead><tbody>';
+  ds.slice(0,100).forEach(function(d){var py=d.area/3.3058;
+    h+='<tr><td>'+wEsc(d.name||'')+'</td><td>'+wEsc(d.dong||'')+'</td><td>'+d.area+'㎡ ('+py.toFixed(1)+'평)</td><td>'+(d.floor||'')+'층</td><td>'+typePrice(d)+'</td><td>'+typeBadge(d.deal_type)+'</td><td>'+(wVal(d)?fmt(wVal(d)/py)+'만':'-')+'</td><td>'+d.deal_year+'.'+String(d.deal_month).padStart(2,'0')+'.'+String(d.deal_day).padStart(2,'0')+'</td></tr>';});
+  h+='</tbody></table></div></div>';
+  box.innerHTML=h;
+  if(wChart){wChart.destroy();wChart=null;}
+  if(!mon.keys.length||typeof Chart==='undefined')return;
+  var dark=document.body.classList.contains('sf-dark');
+  wChart=new Chart(document.getElementById('wChartCv'),{type:'bar',data:{labels:mon.keys,datasets:[
+    {type:'line',label:'평균 평당가(만원)',data:mon.keys.map(function(k){return Math.round(mon.m[k].s/mon.m[k].n);}),borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.1)',tension:.25,yAxisID:'y',spanGaps:true},
+    {type:'bar',label:'거래 건수',data:mon.keys.map(function(k){return mon.m[k].n;}),backgroundColor:dark?'rgba(96,165,250,.35)':'rgba(37,99,235,.25)',yAxisID:'y1'}]},
+    options:{responsive:true,maintainAspectRatio:false,scales:{y:{position:'left',ticks:{callback:function(v){return fmt(v)+'만';}}},y1:{position:'right',grid:{drawOnChartArea:false},ticks:{precision:0}}},
+      plugins:{tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+fmt(c.parsed.y)+(c.datasetIndex===0?'만/평':'건');}}}}}});
+}
+// 수정·추가 폼
+function wFormOpen(it,isNew){
+  wEditId=isNew?null:it.id;
+  var f=document.getElementById('wForm'); f.hidden=false;
+  var rs=document.getElementById('fRegion'), opts='<option value="">(지역 선택)</option>';
+  [].forEach.call(rs.options,function(o){if(o.value)opts+='<option'+(o.value===it.region?' selected':'')+'>'+wEsc(o.value)+'</option>';});
+  if(it.region&&opts.indexOf('>'+wEsc(it.region)+'<')<0)opts+='<option selected>'+wEsc(it.region)+'</option>';
+  f.innerHTML='<div class="row"><b style="font-size:13px">'+(isNew?'새 관심 추가':'조건 수정')+'</b></div>'+
+   '<div class="row"><label>이름 <input id="wfLabel" value="'+wEsc(it.label||'')+'" placeholder="예: 브라이튼 소형" style="width:180px"></label>'+
+   '<label>유형 <select id="wfProp">'+['APT','OFT','COM'].map(function(p){return '<option value="'+p+'"'+(p===(it.prop||PROP)?' selected':'')+'>'+PROP_NAME[p]+'</option>';}).join('')+'</select></label>'+
+   '<label>지역 <select id="wfRegion">'+opts+'</select></label>'+
+   '<label>동 <input id="wfDong" value="'+wEsc(it.dong||'')+'" placeholder="예: 여의도동" style="width:110px"></label>'+
+   '<label>건물명 <input id="wfName" value="'+wEsc(it.name||'')+'" placeholder="일부만, 쉼표로 여러 개" style="width:170px"></label></div>'+
+   '<div class="row"><label>전용 <input type="number" id="wfAmin" value="'+(it.area_min!=null?it.area_min:'')+'" placeholder="최소">~<input type="number" id="wfAmax" value="'+(it.area_max!=null?it.area_max:'')+'" placeholder="최대">㎡</label>'+
+   '<label>금액 <input type="number" id="wfPmin" value="'+(it.price_min!=null?it.price_min:'')+'" placeholder="최소" step="1000">~<input type="number" id="wfPmax" value="'+(it.price_max!=null?it.price_max:'')+'" placeholder="최대" step="1000">만원</label>'+
+   ['S','J','W'].map(function(t){return '<label><input type="checkbox" class="wfT" value="'+t+'"'+((it.types||['S']).indexOf(t)>=0?' checked':'')+'>'+DT_NAME[t]+'</label>';}).join('')+
+   '<label><input type="checkbox" id="wfNotify"'+(it.notify===false?'':' checked')+'>🔔 텔레그램 알림</label></div>'+
+   '<div class="row"><button class="w-btn" id="wfSave">저장</button><button class="w-btn sub" id="wfCancel">취소</button><span class="w-status">지역이나 건물명 중 하나는 필수. 금액은 매매가, 전월세는 보증금 기준.</span></div>';
+  f.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function wFormRead(){
+  var g=function(id){return document.getElementById(id);};
+  var it={label:g('wfLabel').value.trim(),prop:g('wfProp').value,region:g('wfRegion').value,dong:g('wfDong').value.trim(),name:g('wfName').value.trim(),
+    area_min:wNum(g('wfAmin').value),area_max:wNum(g('wfAmax').value),price_min:wNum(g('wfPmin').value),price_max:wNum(g('wfPmax').value),
+    types:[].filter.call(document.querySelectorAll('.wfT'),function(c){return c.checked;}).map(function(c){return c.value;}),notify:g('wfNotify').checked};
+  if(!it.region&&!it.name){alert('지역이나 건물명 중 하나는 넣어야 함 (전체 대상은 너무 많음).');return null;}
+  if(!it.types.length){alert('거래유형을 하나 이상 고르세요.');return null;}
+  if(!it.label)it.label=(it.name||it.dong||it.region)+(it.area_min!=null||it.area_max!=null?' '+(it.area_min||'')+'~'+(it.area_max||'')+'㎡':'');
+  return it;
+}
+function wNewId(){return 'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+function wFromFilters(f,label){
+  return {label:label||'',prop:f.prop||'APT',region:f.region||'',dong:f.dong||'',name:(f.search||'').trim(),
+    area_min:wNum(f.areaMin),area_max:wNum(f.areaMax),price_min:wNum(f.priceMin),price_max:wNum(f.priceMax),types:(f.types&&f.types.length?f.types:['S']),notify:true};
+}
+document.getElementById('wNew').addEventListener('click',function(){wFormOpen({prop:PROP,types:['S']},true);});
+document.getElementById('wFromSearch').addEventListener('click',function(){
+  var it=wFromFilters(getCurrentFilters());
+  if(!it.region&&!it.name){alert('📋 최근 거래 탭에서 지역이나 건물명을 먼저 정하세요.');return;}
+  wFormOpen(it,true);
+});
+document.getElementById('wImport').addEventListener('click',function(){
+  var bm=loadBookmarks(), n=0, skip=0;
+  Object.keys(bm).forEach(function(name){var it=wFromFilters(bm[name],name);
+    if(!it.region&&!it.name){skip++;return;}
+    if(W.items.some(function(x){return x.label===name;}))return;
+    it.id=wNewId(); W.items.push(it); n++; wLoadStats(it);});
+  if(!n){alert('가져올 것 없음'+(skip?' (지역·건물명 없는 '+skip+'개는 건너뜀)':''));return;}
+  wRenderCards(); wSave(n+'개 가져옴'+(skip?', '+skip+'개 건너뜀':''));
+});
+document.getElementById('wForm').addEventListener('click',function(e){
+  if(e.target.id==='wfCancel'){this.hidden=true;return;}
+  if(e.target.id!=='wfSave')return;
+  var it=wFormRead(); if(!it)return;
+  if(wEditId){var i=W.items.findIndex(function(x){return x.id===wEditId;}); it.id=wEditId; W.items[i]=it;}
+  else{it.id=wNewId(); W.items.push(it);}
+  delete WSTATS[it.id]; this.hidden=true; wRenderCards(); wLoadStats(it); wSave(wEditId?'수정됨':'추가됨');
+});
+document.getElementById('wCards').addEventListener('click',function(e){
+  var card=e.target.closest('.w-card'); if(!card)return;
+  var id=card.dataset.id, i=W.items.findIndex(function(x){return x.id===id;}), it=W.items[i];
+  var act=e.target.closest('[data-wact]');
+  if(act){
+    var a=act.dataset.wact;
+    if(a==='bell'){it.notify=(it.notify===false);wRenderCard(it);wSave(it.notify?'알림 켬':'알림 끔');}
+    else if(a==='edit'){wFormOpen(it,false);}
+    else if(a==='up'&&i>0){W.items.splice(i,1);W.items.splice(i-1,0,it);wRenderCards();wSave('순서 바꿈');}
+    else if(a==='del'){if(!confirm('"'+it.label+'" 삭제할까요?'))return;W.items.splice(i,1);if(WSEL===id){WSEL=null;document.getElementById('wDetail').hidden=true;}wRenderCards();wSave('삭제됨');}
+    return;
+  }
+  WSEL=(WSEL===id)?null:id; wRenderCards();
+  if(WSEL){wRenderDetail(it);document.getElementById('wDetail').scrollIntoView({behavior:'smooth',block:'start'});}
+  else document.getElementById('wDetail').hidden=true;
+});
+
+// ── 초기 로드 ──
+loadRegions();loadSummary();loadRecent();
+try{var _lt=localStorage.getItem('sf_re_tab');if(_lt&&_lt!=='recent'){var _tb=document.querySelector('.tab[data-tab="'+_lt+'"]');if(_tb)_tb.click();}}catch(e){}
+</script>
+<script src="/common.js?v=17"></script>
+</body>
+</html>
