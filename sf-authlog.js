@@ -1,5 +1,5 @@
 /**
- * sf-authlog.js v2 (110) — 로그인 풀림 원인 기록
+ * sf-authlog.js v3 (110) — 로그인 풀림 원인 기록
  * 108·109에서 내장 브라우저(aichatetc)가 몇 초~수십 분 만에 로그아웃됨. 사이트 코드의 signOut은
  * auth-guard 2곳(🔓 버튼, 관리자 아닌 계정)뿐이라, 그 밖의 이유로 풀리면 'lost'로 남긴다.
  *
@@ -12,6 +12,9 @@
  *  - log-start    기록이 처음 생김. 'in' 기록이 있었는데 이게 또 보이면 = 브라우저 저장소가 통째로 지워진 것
  *  - lost의 tabs = 그 순간 살아 있던 다른 탭·창(같은 사이트). 다른 곳에서 로그아웃시키면 Firebase가 저장소를 통해 이 탭도 같이 풀어 버림
  *    (110 첫 기록: 네트워크 요청 없이 풀림 → 토큰 만료가 아니라 저장소 쪽). tabs가 비어 있으면 = 새 코드 안 도는 곳(옛 탭·브라우저 자체)
+ *  - idb-del      (v3) 이 탭의 코드가 Firebase 저장소에서 로그인 정보를 지운 순간 + 누가 불렀는지(stack)
+ *                 lost 바로 앞에 idb-del이 없으면 = 이 탭이 지운 게 아니라 밖(다른 창·앱)에서 지워진 걸 따라간 것
+ *  - popup        (v3) 로그인 팝업이 열린 때
  * 저장: localStorage 'sf-auth-log'(최근 50개), 'sf-auth-state'(마지막 상태). 개인정보 없음(이메일 안 남김).
  */
 const LOG = 'sf-auth-log', ST = 'sf-auth-state', MAX = 50;
@@ -20,6 +23,33 @@ function read(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } c
 function write(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 
 if (read(LOG, null) === null) write(LOG, [{ t: Date.now(), type: 'log-start', page: location.pathname }]);
+
+/* (v3) Firebase 저장소 지우기 감시 — Firebase보다 먼저 실행되지 않아도 됨(지울 때 prototype을 거침) */
+function shortStack() {
+  return (new Error().stack || '').split('\n').slice(3, 10)
+    .map(l => l.trim().replace(/^at /, '').replace(/https?:\/\/[^/]+\//g, '').replace(/\?[^:)]*/g, '')).join(' < ');
+}
+try {
+  const P = IDBObjectStore.prototype, del0 = P.delete, clr0 = P.clear;
+  P.delete = function (key) {
+    try { if (this.name === 'firebaseLocalStorage' && String(key).includes('authUser')) authLog('idb-del', { stack: shortStack() }); } catch (e) {}
+    return del0.apply(this, arguments);
+  };
+  P.clear = function () {
+    try { if (this.name === 'firebaseLocalStorage') authLog('idb-del', { how: 'clear', stack: shortStack() }); } catch (e) {}
+    return clr0.apply(this, arguments);
+  };
+  const LS = Storage.prototype, rm0 = LS.removeItem;
+  LS.removeItem = function (k) {
+    try { if (String(k).startsWith('firebase:authUser')) authLog('idb-del', { how: 'localStorage', stack: shortStack() }); } catch (e) {}
+    return rm0.apply(this, arguments);
+  };
+  const open0 = window.open;
+  window.open = function (u) {
+    try { if (String(u).includes('/__/auth/')) authLog('popup'); } catch (e) {}
+    return open0.apply(this, arguments);
+  };
+} catch (e) {}
 
 /* 탭 생존 신호 — 5초마다. lost 때 다른 탭이 있었는지 본다 */
 const TABS = 'sf-auth-tabs', TAB_ID = Math.random().toString(36).slice(2, 8), T0 = Date.now();
