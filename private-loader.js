@@ -1,5 +1,5 @@
 /**
- * private-loader.js v1 (109) — 🔒 개인 문서(자산·리서치 노트, 종목 시뮬레이터, 포트폴리오)는
+ * private-loader.js v2 (109, 110: 로그인 풀림 기록 sf-authlog.js) — 🔒 개인 문서(자산·리서치 노트, 종목 시뮬레이터, 포트폴리오)는
  * 공개 레포에 원본이 없다. 원본은 비공개 레포 swingfarmer/sf-private → VM이 받아 둠 →
  * /api/private?path=… 가 관리자 토큰이 있을 때만 내준다.
  * 공개 레포의 같은 주소에는 이 파일을 부르는 껍데기만 둔다(주소·링크는 그대로).
@@ -7,6 +7,8 @@
  */
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+
+import { onAuthChange } from "/sf-authlog.js?v=1";
 
 const API = 'https://swingfarmer.duckdns.org/api/private?path=';
 const app = getApps().length ? getApps()[0] : initializeApp({
@@ -41,7 +43,7 @@ function msg(html, btn) {
 let done = false;
 onAuthStateChanged(auth, async (user) => {
   if (done) return;
-  if (!user) { msg('🔒 개인 전용 문서입니다.<br>관리자 로그인이 필요합니다.', true); return; }
+  if (!user) { onAuthChange('none'); msg('🔒 개인 전용 문서입니다.<br>관리자 로그인이 필요합니다.', true); return; }
   msg('불러오는 중…');
   try {
     const r = await window.sfPrivateFetch(pagePath());

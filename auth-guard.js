@@ -1,8 +1,10 @@
 /**
- * auth-guard.js v8 — display:none 차단 + UID 에러텍스트 직접 삽입
+ * auth-guard.js v9 — display:none 차단 + UID 에러텍스트 직접 삽입
+ * (110) 로그인 풀림 기록: /sf-authlog.js — 콘솔에서 sfAuthLog()
  */
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js";
+import { authLog, setState, onAuthChange } from "/sf-authlog.js?v=1";
 
 /* 관리자 UID는 common.js 의 window.SF_ADMIN_UIDS 한 곳에서 관리.
    이 파일은 module이라 일반 script인 common.js가 실행된 뒤에 돈다. 없으면 아무도 통과 못 함(잠금 쪽으로 실패). */
@@ -89,7 +91,7 @@ function createLogoutBtn(user) {
   btn.id = "sf-logout-btn";
   btn.title = user.email || "로그아웃";
   btn.textContent = "🔓";
-  btn.addEventListener("click", () => { _rejected = null; signOut(auth); });
+  btn.addEventListener("click", () => { _rejected = null; authLog("out-btn"); setState("out"); signOut(auth); });
   document.body.appendChild(btn);
 }
 
@@ -107,14 +109,17 @@ onAuthStateChanged(auth, (user) => {
     removeCover();
     document.body.classList.add("sf-authed");
     createLogoutBtn(user);
+    onAuthChange("admin");
   } else {
     document.body.classList.remove("sf-authed");
     removeLogoutBtn();
     if (user && !isAdmin(user.uid)) {
       _rejected = { email: user.email, uid: user.uid };
+      authLog("out-nonadmin"); setState("out");
       signOut(auth);
       return;
     }
+    onAuthChange("none");
     if (_rejected) {
       createWall(_rejected.email, _rejected.uid);
     } else {
