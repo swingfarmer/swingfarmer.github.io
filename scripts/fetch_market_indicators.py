@@ -61,6 +61,23 @@ INDICATORS = {
 }
 
 
+def prev_close_from_hist(hist, market_time):
+    """일봉에서 '마지막 거래일(market_time 날짜)보다 앞선 날'의 종가.
+    (111) 야후 info의 previousClose가 하루 늦게 갱신되는 일이 있음 — 11/17 ^KQ11이
+    11/16 종가(665.65) 대신 11/13 종가(699.66)를 줘서 등락률이 -2.34% → -7.09%(2일치)로 나옴.
+    """
+    if hist is None or len(hist) == 0 or not market_time:
+        return None
+    try:
+        tz = hist.index.tz
+        mdate = (datetime.fromtimestamp(int(market_time), tz) if tz is not None
+                 else datetime.fromtimestamp(int(market_time), KST)).date()
+        before = [c for d, c in zip(hist.index, hist["Close"]) if d.date() < mdate and c == c]
+        return round(float(before[-1]), 4) if before else None
+    except Exception:
+        return None
+
+
 def fetch_indicator(ticker_str, meta):
     """yfinance로 단일 지표 수집."""
     try:
@@ -69,6 +86,17 @@ def fetch_indicator(ticker_str, meta):
 
         price = info.get("regularMarketPrice") or info.get("previousClose")
         prev_close = info.get("previousClose")
+
+        # (111) 전일 종가 검산: 일봉 기준 값과 0.3% 넘게 다르면 일봉 값을 씀
+        # 한국 지수·종목만 (WTI 선물처럼 거의 24시간 거래는 일봉 날짜 기준이 애매해서 제외)
+        if info.get("regularMarketPrice") and meta["cat"].startswith("kr_"):
+            try:
+                hp = prev_close_from_hist(tk.history(period="10d"), info.get("regularMarketTime"))
+            except Exception:
+                hp = None
+            if hp and (not prev_close or abs(hp - float(prev_close)) / hp > 0.003):
+                print(f"  ⚠ {ticker_str} 전일종가 info {prev_close} → 일봉 {hp} 로 바꿈")
+                prev_close = hp
 
         if price is None or price == 0:
             # info 실패 시 history fallback
