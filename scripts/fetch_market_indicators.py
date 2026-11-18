@@ -61,21 +61,32 @@ INDICATORS = {
 }
 
 
-def prev_close_from_hist(hist, market_time):
-    """일봉에서 '마지막 거래일(market_time 날짜)보다 앞선 날'의 종가.
-    (111) 야후 info의 previousClose가 하루 늦게 갱신되는 일이 있음 — 11/17 ^KQ11이
-    11/16 종가(665.65) 대신 11/13 종가(699.66)를 줘서 등락률이 -2.34% → -7.09%(2일치)로 나옴.
+_HIST_CACHE = None
+
+
+def own_prev_close(ticker_str, market_time):
+    """(111) 우리 기록(market_history.json)에서 '마지막 거래일 바로 앞 평일' 값.
+    야후 ^KQ11 info.previousClose가 하루 늦게 오는 일이 있음(11/17: 11/16 종가 665.65 대신
+    11/13 종가 699.66 → 등락률 -2.34%가 -7.09%로). 야후 일봉도 날짜가 빠짐(11/18 조회 때 11/17 없음)
+    → 둘 다 못 믿어서 우리 기록과 대조. 앞 평일 기록이 없으면(VM이 안 돈 날 등) None = 검산 안 함.
+    한국 장 마감 뒤(18:45)·장 전(07:52)에만 도니 한국 종목 기록값은 그날(또는 전날) 종가.
     """
-    if hist is None or len(hist) == 0 or not market_time:
+    global _HIST_CACHE
+    if not market_time:
         return None
-    try:
-        tz = hist.index.tz
-        mdate = (datetime.fromtimestamp(int(market_time), tz) if tz is not None
-                 else datetime.fromtimestamp(int(market_time), KST)).date()
-        before = [c for d, c in zip(hist.index, hist["Close"]) if d.date() < mdate and c == c]
-        return round(float(before[-1]), 4) if before else None
-    except Exception:
-        return None
+    if _HIST_CACHE is None:
+        try:
+            with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+                _HIST_CACHE = {h.get("date"): h for h in json.load(f)}
+        except Exception:
+            _HIST_CACHE = {}
+    mdate = datetime.fromtimestamp(int(market_time), KST).date()
+    p = mdate - timedelta(days=1)
+    while p.weekday() >= 5:          # 토·일 건너뜀 (한국 공휴일도 크론이 돌아 기록이 있음)
+        p -= timedelta(days=1)
+    h = _HIST_CACHE.get(p.strftime("%Y-%m-%d")) or {}
+    v = h.get(ticker_str.replace("^", "").replace("=", "").replace(".KS", ""))
+    return float(v) if v else None
 
 
 def fetch_indicator(ticker_str, meta):
@@ -87,16 +98,13 @@ def fetch_indicator(ticker_str, meta):
         price = info.get("regularMarketPrice") or info.get("previousClose")
         prev_close = info.get("previousClose")
 
-        # (111) 전일 종가 검산: 일봉 기준 값과 0.3% 넘게 다르면 일봉 값을 씀
-        # 한국 지수·종목만 (WTI 선물처럼 거의 24시간 거래는 일봉 날짜 기준이 애매해서 제외)
-        if info.get("regularMarketPrice") and meta["cat"].startswith("kr_"):
-            try:
-                hp = prev_close_from_hist(tk.history(period="10d"), info.get("regularMarketTime"))
-            except Exception:
-                hp = None
-            if hp and (not prev_close or abs(hp - float(prev_close)) / hp > 0.003):
-                print(f"  ⚠ {ticker_str} 전일종가 info {prev_close} → 일봉 {hp} 로 바꿈")
-                prev_close = hp
+        # (111) 전일 종가 검산 — 한국 지수·종목만(kr_index·kr_stock).
+        # 미국 쪽은 기록 시각(KST 저녁)과 미국 장 날짜가 어긋나서 이 방식으로 못 봄
+        if info.get("regularMarketPrice") and meta["cat"] in ("kr_index", "kr_stock"):
+            op = own_prev_close(ticker_str, info.get("regularMarketTime"))
+            if op and prev_close and abs(op - float(prev_close)) / op > 0.003:
+                print(f"  ⚠ {ticker_str} 전일종가 야후 {prev_close} → 우리 기록 {op} 로 바꿈")
+                prev_close = op
 
         if price is None or price == 0:
             # info 실패 시 history fallback
