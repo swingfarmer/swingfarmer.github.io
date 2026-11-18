@@ -230,15 +230,17 @@ def fetch_sector_change(date):
         # KOSPI 업종지수
         tickers = stock.get_index_ticker_list(date, market="KOSPI")
         items = []
+        # (111) 하루치만 조회하면 등락률 칸이 0으로 와서 10/27부터 전 업종 0.0%로 저장됐음
+        #       → 2주치를 받아 전 거래일 종가로 직접 계산
+        start = (datetime.strptime(date, "%Y%m%d") - timedelta(days=14)).strftime("%Y%m%d")
         for ticker in tickers:
             name = stock.get_index_ticker_name(ticker)
-            # 단일일 OHLCV
-            df = stock.get_index_ohlcv(date, date, ticker)
-            if df.empty:
-                continue
-            row = df.iloc[-1]
-            close = float(row["종가"]) if "종가" in row else 0
-            chg = float(row["등락률"]) if "등락률" in row else 0.0
+            df = stock.get_index_ohlcv(start, date, ticker)
+            if df.empty or df.index[-1].strftime("%Y%m%d") != date:
+                continue   # 그날 데이터 없음(휴장 등) — 예전처럼 건너뜀
+            close = float(df["종가"].iloc[-1])
+            prev = float(df["종가"].iloc[-2]) if len(df) > 1 else 0
+            chg = (close / prev - 1) * 100 if prev else 0.0
             items.append({
                 "ticker": ticker,
                 "name": name,
