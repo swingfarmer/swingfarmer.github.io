@@ -175,7 +175,8 @@ def dt_str(val):
 
 # ── (109) 개인 문서: 비공개 레포 sf-private(VM ~/sf-private, 크론 git pull) → 관리자만 ──
 PRIVATE_DIR = os.path.realpath(os.path.expanduser('~/sf-private'))
-PRIVATE_EXT = {'.html': 'text/html; charset=utf-8', '.json': 'application/json; charset=utf-8'}
+PRIVATE_EXT = {'.html': 'text/html; charset=utf-8', '.json': 'application/json; charset=utf-8',
+               '.js': 'text/javascript; charset=utf-8'}   # (112) 비공개 공통 스크립트(asset-notes/alloc-rule.js)
 
 @app.route('/api/private')
 @require_admin_read
