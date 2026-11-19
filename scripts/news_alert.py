@@ -239,7 +239,10 @@ _GENERIC = {"코스피", "코스닥", "증시", "주식", "시장", "투자", "�
             "수출", "수입", "무역", "무역수지", "물가", "소비", "고용", "경기", "성장", "실적", "공시", "상장", "첫날",
             "나스닥", "다우", "뉴욕", "뉴욕증시", "월가", "etf", "지수", "선물", "매수", "매도", "순매수", "순매도",
             "개미", "주주", "배당", "자사주", "기준금리", "인상", "인하", "동결", "국채", "채권", "유가", "원유",
-            "반도체", "부동산", "아파트", "가상자산", "코인", "국회", "대통령", "정당", "여야", "자금", "가치"}
+            "반도체", "부동산", "아파트", "가상자산", "코인", "국회", "대통령", "정당", "여야", "자금", "가치",
+            # 자주 나오는 기관·인물 — 주제가 아니라 주어(「한은 금리 전망」과 「한은 생활비 보고서」는 다른 소식)
+            "한국은행", "연준", "fed", "금통위", "파월", "일본은행", "boj", "ecb", "트럼프", "정부", "기재부",
+            "금융위", "금감원", "국세청", "총재", "장관"}
 TOPIC_MAX_MSG = 2     # (113) 한 메시지에 같은 주제(같은 고유명사·핵심 숫자) 기사는 2개까지
 TOPIC_MAX_RUN = 3     #        한 회차(증권+해외증시+경제) 전체로는 3개까지
 
@@ -252,7 +255,41 @@ def _fold(title):
 
 
 _UNIT = "조억만천"
-_NUM_RE = re.compile(r'\d+(?:\.\d+)?(?:\s*[조억만천])*(?:\s*(?:달러|원|%|배|bp|p))?')
+_NUM_RE = re.compile(r'\d+(?:\.\d+)?(?:\s*[조억만천](?:\d+(?:\.\d+)?)?)*(?:\s*(?:달러|원|%|배|bp|p))?')   # 16만5000원·9조3000억원을 한 덩어리로
+
+
+_UVAL = {"조": 1e12, "억": 1e8, "만": 1e4, "천": 1e3}
+
+
+def _num_value(raw):
+    """「16만5000원」·「16.5만원」→ 같은 값(유효숫자 2자리) + 통화. 「9조3000억원」≈「9조2825억원」.
+    조·억·만이 있고 통화가 없으면 원으로 봄(「9조 넘었다」)"""
+    cur = ""
+    for u in ("달러", "원", "%", "배", "bp", "p"):
+        if raw.endswith(u):
+            cur, raw = u, raw[:-len(u)]
+            break
+    parts = re.findall(r'(\d+(?:\.\d+)?)([조억만천]?)', raw)
+    if not parts:
+        return raw + cur
+    if any(u for _, u in parts) and not cur:
+        cur = "원"
+    val = sum(float(n) * _UVAL.get(u, 1) for n, u in parts)
+    if not any(u for _, u in parts) and cur in ("", "%", "p", "bp"):
+        return f"{float(parts[0][0]):g}{cur}"          # 단위 없는 숫자·퍼센트는 그대로(5000·2.50%)
+    return f"{float('%.2g' % val):g}{cur}"
+
+
+def _num_close(a, b):
+    """강한 숫자 두 개가 같은 통화이고 값 차이 10% 이내면 같은 숫자(84조원≈85조원, 9조≈9조3000억)"""
+    ma, mb = re.match(r'([\d.e+]+)(.*)', a), re.match(r'([\d.e+]+)(.*)', b)
+    if not ma or not mb or ma.group(2) != mb.group(2):
+        return a == b
+    try:
+        x, y = float(ma.group(1)), float(mb.group(1))
+    except ValueError:
+        return a == b
+    return max(x, y) > 0 and abs(x - y) / max(x, y) <= 0.10
 
 
 def num_tokens(title):
@@ -262,13 +299,14 @@ def num_tokens(title):
     t = re.sub(r'(?<=[\d조억만천])\s+(?=[\d]|달러|원)', '', t)
     toks, strong = set(), set()
     for m in _NUM_RE.finditer(t):
-        k = re.sub(r'\s+', '', m.group(0)).lower()
-        digits = re.sub(r'\D', '', k)
-        unit = any(c in k for c in _UNIT) or any(u in k for u in ("달러", "원", "%", "배"))
+        raw = re.sub(r'\s+', '', m.group(0)).lower()
+        k = _num_value(raw)
+        digits = re.sub(r'\D', '', raw)
+        unit = any(c in raw for c in _UNIT) or any(u in raw for u in ("달러", "원", "%", "배"))
         if len(digits) >= 2 or unit:
             toks.add(k)
-            money = any(c in k for c in _UNIT) or any(u in k for u in ("달러", "원"))   # %·배는 흔해서 강한 숫자 아님(「20%」끼리 엉뚱하게 묶였음)
-            if money or (len(digits) >= 3 and not re.fullmatch(r'(19|20)\d\d', k)):
+            money = any(c in raw for c in _UNIT) or any(u in raw for u in ("달러", "원"))   # %·배는 흔해서 강한 숫자 아님(「20%」끼리 엉뚱하게 묶였음)
+            if money or (len(digits) >= 3 and not re.fullmatch(r'(19|20)\d\d', raw)):
                 strong.add(k)
     return toks, strong
 
@@ -277,11 +315,13 @@ def _match_count(ta, tb):
     """작은 쪽 단어 중 다른 쪽에 같은 단어가 있거나, 두 글자 이상이 서로 들어 있는(미래↔미래에셋운용) 것의 수"""
     if len(ta) > len(tb):
         ta, tb = tb, ta
-    n = 0
+    n = 0.0
     for a in ta:
-        if a in tb or any(len(a) >= 2 and len(b) >= 2 and (a in b or b in a) and not a.isdigit() and not b.isdigit()
-                          for b in tb):
+        if a in tb or any(a == x + y for x in tb for y in tb if x != y):   # 「연중최저」=「연중」+「최저」(띄어쓰기만 다름)
             n += 1
+        elif any(len(a) >= 2 and len(b) >= 2 and (a in b or b in a) and not a[0].isdigit() and not b[0].isdigit()
+                 for b in tb):
+            n += 0.6     # 「상장」↔「상장인데」처럼 어미만 붙은 것까지 1로 세면 다른 기사가 묶임(113 앤트로픽)
     return n
 
 
@@ -324,7 +364,7 @@ def same_story(a, b):
         return True
     # 핵심 숫자(1조달러·9조·16만5000원)가 같고 다른 단어도 2개 이상 겹치면 같은 사건
     sa, sb = num_tokens(_fold(a))[1], num_tokens(_fold(b))[1]
-    return bool(sa & sb) and shared >= 3
+    return any(_num_close(x, y) for x in sa for y in sb) and shared >= 3
 
 
 def topic_words(title):
