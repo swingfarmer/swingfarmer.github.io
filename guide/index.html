@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<meta name="robots" content="noindex, nofollow">
+<title>사이트 사용 지도 | 스윙파머</title>
+<link rel="stylesheet" href="/common.css?v=14">
+<style>
+:root { --sf-max-w: 900px; }
+h1 { margin-bottom: 4px; }
+.g-sub { color: #666; font-size: 13px; margin: 0 0 14px; }
+.info-box { display: none; }
+.g-now { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: 14px; }
+.g-now b { color: #1F4E78; }
+.g-now a { font-size: 13px; color: #1F4E78; font-weight: 600; text-decoration: none; }
+.g-now a:hover { text-decoration: underline; }
+.g-now .g-score { color: #666; font-size: 13px; }
+.g-tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: -8px 0 14px; font-size: 13px; }
+.g-tools button { padding: 6px 12px; border: 1px solid #d1d5db; background: #fff; border-radius: 8px; cursor: pointer; font-size: 13px; color: #333; font-family: var(--sf-font); }
+.g-tools button:hover { border-color: #1F4E78; color: #1F4E78; }
+.g-tools button.on { background: #1F4E78; color: #fff; border-color: #1F4E78; }
+.g-tools .g-save-st { color: #888; font-size: 12px; }
+.g-pane { display: none; }
+.g-pane.on { display: block; }
+.g-grp { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+.g-grp > h3 { margin: 0; padding: 10px 14px; font-size: 15px; color: #1F4E78; background: #f0f5fa; border-bottom: 1px solid #e5e7eb; display: flex; align-items: baseline; gap: 8px; }
+.g-grp > h3 small { font-weight: 400; color: #777; font-size: 12px; }
+.g-grp > h3 .g-cnt { margin-left: auto; font-weight: 400; font-size: 12px; color: #888; }
+.g-row { padding: 8px 14px; border-top: 1px solid #f0f0f0; }
+.g-grp > h3 + .g-row { border-top: none; }
+.g-line { display: flex; align-items: baseline; gap: 6px 10px; flex-wrap: wrap; }
+.g-line a.g-t { font-weight: 600; color: #1F4E78; text-decoration: none; font-size: 14px; }
+.g-line a.g-t:hover { text-decoration: underline; }
+.g-line .g-w { color: #555; font-size: 13px; flex: 1; min-width: 200px; }
+.g-line .g-last { font-size: 11px; color: #999; white-space: nowrap; }
+.g-line .g-last.old { color: #dc2626; font-weight: 600; }
+.g-line .g-ed { display: none; border: 1px solid #d1d5db; background: #fff; border-radius: 6px; font-size: 12px; padding: 1px 7px; cursor: pointer; color: #555; }
+body.g-editing .g-line .g-ed { display: inline-block; }
+.g-tag { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: #fef3c7; color: #92400e; }
+.g-memo { margin-top: 4px; font-size: 12px; color: #7c3aed; }
+.g-memo::before { content: '📝 '; }
+.g-edit { display: none; margin-top: 8px; padding: 10px 12px; background: #f8fafc; border: 1px dashed #94a3b8; border-radius: 8px; font-size: 13px; }
+.g-edit.on { display: block; }
+.g-edit .g-f { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-bottom: 6px; }
+.g-edit .g-f > b { width: 44px; color: #444; font-size: 12px; }
+.g-edit label { font-size: 13px; color: #333; display: inline-flex; align-items: center; gap: 3px; cursor: pointer; }
+.g-edit select, .g-edit input[type=text] { padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; font-family: var(--sf-font); }
+.g-edit input[type=text] { flex: 1; min-width: 200px; }
+.g-edit .g-btns { display: flex; gap: 6px; margin-top: 8px; }
+.g-edit .g-btns button { padding: 5px 12px; border-radius: 6px; border: 1px solid #d1d5db; background: #fff; cursor: pointer; font-size: 12px; font-family: var(--sf-font); }
+.g-edit .g-btns button.g-ok { background: #1F4E78; color: #fff; border-color: #1F4E78; }
+.g-ph-tabs { margin-bottom: 12px; }
+.g-ph-tabs .tab .g-auto { font-size: 11px; color: #dc2626; margin-left: 4px; }
+.g-empty { padding: 10px 14px; color: #999; font-size: 13px; }
+.g-hidden-sum { cursor: pointer; padding: 10px 14px; font-size: 13px; color: #666; }
+.g-note { font-size: 12px; color: #777; margin: 6px 0 12px; line-height: 1.6; }
+table.g-last-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.g-last-tbl th, table.g-last-tbl td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; text-align: left; }
+table.g-last-tbl th { background: #f0f5fa; color: #555; font-weight: 600; font-size: 12px; }
+table.g-last-tbl td.old { color: #dc2626; font-weight: 600; }
+table.g-last-tbl td.none { color: #aaa; }
+table.g-last-tbl a { color: #1F4E78; text-decoration: none; font-weight: 600; }
+.g-copy-box { display: none; margin: 0 0 14px; }
+.g-copy-box.on { display: block; }
+.g-copy-box textarea { width: 100%; min-height: 110px; font-size: 12px; font-family: ui-monospace, Consolas, monospace; padding: 8px; border: 1px solid #d1d5db; border-radius: 8px; }
+
+.g-fold > h3 { cursor: pointer; }
+.g-fold .g-fold-body { display: none; }
+.g-fold.open .g-fold-body { display: block; }
+.g-fold:not(.open) > h3 { border-bottom: none; }
+
+/* 다크 */
+body.sf-dark .g-sub, body.sf-dark .g-note, body.sf-dark .g-now .g-score { color: #a1a1aa; }
+body.sf-dark .g-now, body.sf-dark .g-grp { background: #1a1d27; border-color: #2a2d3a; }
+body.sf-dark .g-now b, body.sf-dark .g-now a, body.sf-dark .g-line a.g-t, body.sf-dark table.g-last-tbl a { color: #85b5e0; }
+body.sf-dark .g-grp > h3 { background: #222532; color: #85b5e0; border-bottom-color: #2a2d3a; }
+body.sf-dark .g-grp > h3 small, body.sf-dark .g-grp > h3 .g-cnt { color: #a1a1aa; }
+body.sf-dark .g-row { border-top-color: #2a2d3a; }
+body.sf-dark .g-line .g-w { color: #c2c2c2; }
+body.sf-dark .g-line .g-last { color: #71717a; }
+body.sf-dark .g-line .g-last.old, body.sf-dark table.g-last-tbl td.old, body.sf-dark .g-ph-tabs .tab .g-auto { color: #f87171; }
+body.sf-dark .g-tools button, body.sf-dark .g-line .g-ed, body.sf-dark .g-edit .g-btns button { background: #222532; border-color: #2a2d3a; color: #c2c2c2; }
+body.sf-dark .g-tools button.on, body.sf-dark .g-edit .g-btns button.g-ok { background: #26364d; color: #85b5e0; border-color: #3b5373; }
+body.sf-dark .g-tag { background: #373115; color: #f0b060; }
+body.sf-dark .g-memo { color: #c4b5fd; }
+body.sf-dark .g-edit { background: #151821; border-color: #475569; }
+body.sf-dark .g-edit .g-f > b, body.sf-dark .g-edit label { color: #c2c2c2; }
+body.sf-dark .g-hidden-sum, body.sf-dark .g-empty, body.sf-dark table.g-last-tbl td.none { color: #71717a; }
+body.sf-dark table.g-last-tbl th { background: #222532 !important; color: #a1a1aa !important; }
+body.sf-dark table.g-last-tbl td { border-color: #2a2d3a !important; color: #dedede; }
+body.sf-dark .g-copy-box textarea { background: #0f1117; color: #e4e4e7; border-color: #475569; }
+@media (max-width: 600px) { .g-line .g-w { min-width: 100%; } }
+</style>
+<script src="/sf-fmt.js?v=4"></script>
+<link rel="stylesheet" href="/auth-guard.css?v=4">
+<script type="module" src="/auth-guard.js?v=7"></script>
+</head>
+<body class="sf-narrow">
+
+<h1>🧭 사이트 사용 지도 <span class="info-btn" onclick="toggleInfo('gInfo')">i</span></h1>
+<p class="g-sub">메뉴가 많아 헷갈릴 때 — 언제(주기)·어떤 장(국면)·어떤 질문(상황)에 무엇을 볼지</p>
+<div class="info-box" id="gInfo">
+  <b>보는 법</b> — 줄마다 메뉴 이름(누르면 이동) · 거기서 볼 것 · 마지막으로 연 날. ⓘ가 있는 줄은 눌러서 판단 기준을 펼친다.<br>
+  <b>국면별</b> — /today/ 「🧭 시장 국면」과 같은 점수(/sf-regime.js)로 지금 국면을 정해 그 칸을 먼저 연다.<br>
+  <b>분류 고치기</b> — 「✎ 분류 고치기」를 켜고 줄 옆 ✎ → 주기·국면·상황을 옮기거나, 숨기거나, 내 메모를 단다. 관리자 로그인 상태면 PC·폰이 같이 쓰는 저장소(Firestore)에, 아니면 이 브라우저에만 저장된다.
+  바꾼 것은 「📋 바꾼 것 복사」로 글로 뽑아 Claude에게 주면 목록 파일(/sf-guide.js)에 정식으로 옮긴다.<br>
+  <b>마지막으로 본 날</b> — 페이지를 열 때마다 이 브라우저에 날짜가 남는다(PC·폰 따로). 주기보다 오래 안 연 메뉴는 빨강, 90일 넘게 안 연 메뉴는 숨기기·합치기 후보.
+</div>
+
+<div class="g-now" id="gNow">국면 계산 중…</div>
+
+<div class="tabs" id="gTabs">
+  <button class="tab" data-t="cycle">📅 주기별</button>
+  <button class="tab" data-t="regime">🧭 국면별</button>
+  <button class="tab" data-t="ask">❓ 상황별</button>
+  <button class="tab" data-t="last">🕒 마지막으로 본 날</button>
+</div>
+
+<div class="g-tools">
+  <button id="gEditBtn" onclick="gToggleEdit()">✎ 분류 고치기</button>
+  <button id="gCopyBtn" onclick="gShowCopy()">📋 바꾼 것 <span id="gEditCnt">0</span>개</button>
+  <span class="g-save-st" id="gSaveSt"></span>
+</div>
+<div class="g-copy-box" id="gCopyBox">
+  <textarea id="gCopyTxt" readonly></textarea>
+  <div class="g-tools" style="margin:6px 0 0">
+    <button onclick="gCopy()">복사</button>
+    <button onclick="gResetAll()">모두 원래대로 (sf-guide.js 기준)</button>
+    <span class="g-save-st">인계 때 이 글을 Claude에게 붙이면 목록 파일에 반영 → 반영 뒤 「모두 원래대로」</span>
+  </div>
+</div>
+
+<div class="g-pane" data-t="cycle" id="pCycle"></div>
+<div class="g-pane" data-t="regime" id="pRegime">
+  <div class="tabs g-ph-tabs" id="gPhTabs"></div>
+  <div id="pRegimeBody"></div>
+</div>
+<div class="g-pane" data-t="ask" id="pAsk"></div>
+<div class="g-pane" data-t="last" id="pLast"></div>
+
+<script src="/sf-guide.js?v=1"></script>
+<script src="/sf-regime.js?v=1"></script>
+<script src="/common.js?v=18"></script>
+<script>
+(function(){
+  const G = window.SF_GUIDE, $ = id => document.getElementById(id);
+  const PH = G.phases.map(x => x.id), CYC = {}; G.cycles.forEach(c => CYC[c.id] = c);
+  const ASK = {}; G.asks.forEach(a => ASK[a.id] = a);
+  const LS_EDITS = 'sf-guide-edits', FIELD = 'guide_edits';
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const pageOf = p => p.split('#')[0].replace(/index\.html$/, '');
+  const BASE = {}; G.items.forEach(it => BASE[it.p] = it);
+  let edits = {}, regimeAuto = null, mainCards = null;
+
+  /* ── 바꾼 것(edits) = 원래 목록과 다른 칸만: {p:{c, ph:[], ask:[], memo, hide}} ── */
+  try { edits = JSON.parse(localStorage.getItem(LS_EDITS)) || {}; } catch (e) { edits = {}; }
+  const basePh = it => PH.filter(k => it[k]);
+  function eff(it){
+    const e = edits[it.p] || {};
+    return { it, p: it.p, t: it.t, w: it.w, k: it.k, lock: it.lock,
+      c: e.c !== undefined ? e.c : (it.c || ''),
+      ph: e.ph || basePh(it), ask: e.ask || (it.ask || []),
+      memo: e.memo || '', hide: !!e.hide, edited: !!edits[it.p] };
+  }
+  const items = () => G.items.map(eff);
+  const sameArr = (a, b) => a.length === b.length && a.every(x => b.includes(x));
+
+  /* ── 저장: 관리자 로그인 = Firestore calc_data/{관리자}.guide_edits (PC·폰 공유), 아니면 이 브라우저만 ── */
+  let fs = null, fsRef = null, canFs = false;
+  function waitUser(){
+    return new Promise(res => {
+      if (typeof _sfFirebaseReady === 'undefined') return res(null);
+      _sfFirebaseReady.promise.then(a => {
+        if (a.currentUser) return res(a.currentUser);
+        let done = false; const un = a.onAuthStateChanged(u => { if (!done) { done = true; un(); res(u); } });
+        setTimeout(() => { if (!done) { done = true; res(a.currentUser); } }, 8000);
+      });
+    });
+  }
+  async function fsInit(){
+    const u = await waitUser();
+    if (!u || !(window.SF_ADMIN_UIDS || []).includes(u.uid)) { st('로그인 안 됨 — 고친 것은 이 브라우저에만 저장'); return; }
+    try {
+      const [appMod, fsMod] = await Promise.all([import('https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js'), import('https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js')]);
+      fs = fsMod; fsRef = fs.doc(fs.getFirestore(appMod.getApps()[0]), 'calc_data', window.SF_ADMIN_UIDS[0]);
+      const s = await fs.getDoc(fsRef);
+      const d = s.exists() && s.data()[FIELD];
+      if (d && d.edits) { edits = d.edits; localStorage.setItem(LS_EDITS, JSON.stringify(edits)); renderAll(); }
+      canFs = true; st('저장 위치: 계정(PC·폰 공유)' + (d && d.updatedAt ? ' · 마지막 고침 ' + sfDate(new Date(d.updatedAt), 'dot') : ''));
+    } catch (e) { console.error('[guide] firestore', e); st('계정 저장소를 못 읽음 — 이 브라우저에만 저장'); }
+  }
+  async function save(){
+    localStorage.setItem(LS_EDITS, JSON.stringify(edits));
+    if (!canFs) { st('이 브라우저에 저장함 (로그인하면 계정에 저장)'); return; }
+    try {
+      const v = { edits: edits, updatedAt: new Date().toISOString() };
+      try { await fs.updateDoc(fsRef, { [FIELD]: v }); } catch (e) { await fs.setDoc(fsRef, { [FIELD]: v }, { merge: true }); }
+      st('계정에 저장함 (PC·폰 공유) · ' + sfDate(new Date(), 'hm'));
+    } catch (e) { console.error(e); st('⚠ 계정 저장 실패 — 이 브라우저에만 저장됨'); }
+  }
+  function st(t){ $('gSaveSt').textContent = t; }
+
+  /* ── 마지막으로 연 날 (common.js가 페이지 열 때 기록: sf-visit:경로) ── */
+  const today = sfDate();
+  const dayDiff = d => Math.round((new Date(today) - new Date(d)) / 864e5);
+  const visit = p => { try { return localStorage.getItem('sf-visit:' + pageOf(p)); } catch (e) { return null; } };
+  function lastTxt(x){
+    if (x.p.startsWith('http')) return '';
+    const v = visit(x.p);
+    if (!v) return '<span class="g-last">기록 없음</span>';
+    const n = dayDiff(v), s = CYC[x.c] && CYC[x.c].stale;
+    return '<span class="g-last' + (s && n > s ? ' old' : '') + '" title="' + v + '">' + (n <= 0 ? '오늘 봄' : n + '일 전') + '</span>';
+  }
+
+  /* ── 줄 하나 ── */
+  let rowSeq = 0;
+  function row(x, what){
+    const id = 'gr' + (++rowSeq), ext = x.p.startsWith('http');
+    return '<div class="g-row" data-p="' + esc(x.p) + '"><div class="g-line">' +
+      '<a class="g-t" href="' + esc(x.p) + '"' + (ext ? ' target="_blank" rel="noopener"' : '') + '>' + (x.lock ? '🔒 ' : '') + esc(x.t) + '</a>' +
+      '<span class="g-w">' + esc(what || x.w) + (x.k ? ' <span class="info-btn" onclick="toggleInfo(\'' + id + 'k\')">i</span>' : '') + '</span>' +
+      (x.edited ? '<span class="g-tag">바꿈</span>' : '') + lastTxt(x) +
+      '<button class="g-ed" onclick="gOpenEdit(this)">✎</button></div>' +
+      (x.k ? '<div class="info-box" id="' + id + 'k">' + esc(x.k) + '</div>' : '') +
+      (x.memo ? '<div class="g-memo">' + esc(x.memo) + '</div>' : '') + '</div>';
+  }
+  const grp = (title, sub, rows, cnt) => '<div class="g-grp"><h3>' + title + (sub ? ' <small>' + sub + '</small>' : '') + '<span class="g-cnt">' + cnt + '개</span></h3>' + (rows || '<div class="g-empty">없음</div>') + '</div>';
+
+  function renderCycle(){
+    const L = items();
+    let h = G.cycles.map(c => { const r = L.filter(x => !x.hide && x.c === c.id);
+      if (c.id) return grp(c.icon + ' ' + c.name, '', r.map(x => row(x)).join(''), r.length);
+      // 「필요할 때」는 많아서 접힌 채 시작 (펼침 상태는 이 브라우저에 기억)
+      const open = localStorage.getItem('sf-guide-need-open') === '1';
+      return '<div class="g-grp g-fold' + (open ? ' open' : '') + '"><h3 onclick="gFoldNeed(this)">' + c.icon + ' ' + c.name + ' <small>주기 없이 그때그때 · 눌러서 ' + (open ? '접기' : '펼치기') + '</small><span class="g-cnt">' + r.length + '개 ' + (open ? '▲' : '▼') + '</span></h3><div class="g-fold-body">' + r.map(x => row(x)).join('') + '</div></div>'; }).join('');
+    const hid = L.filter(x => x.hide);
+    if (hid.length) h += '<div class="g-grp"><div class="g-hidden-sum" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'block\'?\'none\':\'block\'">🙈 숨긴 메뉴 ' + hid.length + '개 (눌러서 펼침 — ✎에서 숨기기를 끄면 돌아옴)</div><div style="display:none">' + hid.map(x => row(x)).join('') + '</div></div>';
+    $('pCycle').innerHTML = h;
+  }
+  let curPh = null;
+  function renderRegime(){
+    const L = items();
+    $('gPhTabs').innerHTML = G.phases.map(f => '<button class="tab" data-ph="' + f.id + '">' + f.name + ' <small style="font-weight:400">' + f.sub + '</small>' + (f.id === regimeAuto ? '<span class="g-auto">← 지금</span>' : '') + '</button>').join('');
+    const ph = curPh || regimeAuto || 'mix';
+    $('gPhTabs').querySelectorAll('.tab').forEach(b => { b.classList.toggle('active', b.dataset.ph === ph); b.onclick = () => { curPh = b.dataset.ph; setHash(curPh); renderRegime(); }; });
+    const f = G.phases.find(x => x.id === ph), r = L.filter(x => !x.hide && x.ph.includes(ph));
+    $('pRegimeBody').innerHTML = grp(f.name, f.sub, r.map(x => row(x, x.it[ph] || x.w)).join(''), r.length) +
+      '<div class="g-note">국면 점수와 지표별 칩·체크리스트·읽을 글은 <a href="/today/#secRegime">/today/ 「🧭 시장 국면」</a>.</div>';
+  }
+  function renderAsk(){
+    const L = items();
+    $('pAsk').innerHTML = G.asks.map(a => { const r = L.filter(x => !x.hide && x.ask.includes(a.id)); return grp('❓ ' + esc(a.q), '', r.map(x => row(x)).join(''), r.length); }).join('') +
+      '<div class="g-note">여기 없는 메뉴는 「📅 주기별」 맨 아래 「🧰 필요할 때」.</div>';
+  }
+  function renderLast(){
+    const seen = {}, L = [];
+    items().forEach(x => { if (x.p.startsWith('http')) return; const pg = pageOf(x.p); if (seen[pg]) return; seen[pg] = 1; L.push(x); });
+    const start = localStorage.getItem('sf-visit-start');
+    const rows = L.map(x => { const v = visit(x.p), n = v ? dayDiff(v) : null, s = CYC[x.c] ? CYC[x.c].stale : 0;
+      return { x, v, n, over: (v && s) ? n - s : (s && !v ? 0.5 : -1e9) }; });
+    rows.sort((a, b) => b.over - a.over || (b.n || 0) - (a.n || 0));
+    const tr = r => '<tr><td><a href="' + esc(r.x.p) + '">' + (r.x.lock ? '🔒 ' : '') + esc(r.x.t) + '</a>' + (r.x.hide ? ' <span class="g-tag">숨김</span>' : '') + '</td><td>' + (CYC[r.x.c] ? CYC[r.x.c].name : '-') + '</td>' +
+      (r.v ? '<td>' + r.v + '</td><td class="' + (r.over > 0 ? 'old' : '') + '">' + (r.n <= 0 ? '오늘' : r.n + '일 전') + '</td>' : '<td class="none">기록 없음</td><td class="none">-</td>') + '</tr>';
+    const head = '<tr><th>메뉴</th><th>주기</th><th>마지막으로 연 날</th><th>지난 날</th></tr>';
+    const startN = start ? dayDiff(start) : 0;
+    const old = rows.filter(r => r.v ? r.n > G.oldDays : startN > G.oldDays);
+    let h = '<div class="g-note">기록 시작: ' + (start || today) + ' (이 브라우저 — PC·폰 따로 기록). 주기보다 오래 안 연 것은 빨강, 맨 위로.</div>';
+    h += '<div class="g-grp"><h3>💤 ' + G.oldDays + '일 넘게 안 연 메뉴 <small>숨기기·합치기 후보</small><span class="g-cnt">' + old.length + '개</span></h3>' +
+      (startN > G.oldDays ? (old.length ? '<table class="g-last-tbl">' + head + old.map(tr).join('') + '</table>' : '<div class="g-empty">없음</div>')
+        : '<div class="g-empty">기록이 ' + G.oldDays + '일 쌓여야 나온다 — ' + sfDate(new Date(new Date(start || today).getTime() + (G.oldDays + 1) * 864e5)) + '부터</div>') + '</div>';
+    h += '<div class="g-grp"><h3>🕒 메뉴별 마지막으로 연 날<span class="g-cnt">' + rows.length + '개</span></h3><table class="g-last-tbl">' + head + rows.map(tr).join('') + '</table></div>';
+    h += '<div id="gMissing"></div>';
+    $('pLast').innerHTML = h;
+    renderMissing();
+  }
+  /* 메인 카드인데 지도 목록(sf-guide.js)에 없는 것 — 새 메뉴를 만들고 목록에 안 넣었을 때 여기 뜸 */
+  function renderMissing(){
+    const box = $('gMissing'); if (!box || !mainCards) return;
+    const have = new Set(G.items.map(x => pageOf(x.p)));
+    const miss = mainCards.filter(c => !have.has(pageOf(c.p)));
+    box.innerHTML = miss.length ? '<div class="g-grp"><h3>⚠ 지도에 없는 메뉴 <small>메인 카드에는 있음 — /sf-guide.js에 한 줄 넣을 것</small><span class="g-cnt">' + miss.length + '개</span></h3>' +
+      miss.map(c => '<div class="g-row"><div class="g-line"><a class="g-t" href="' + esc(c.p) + '">' + esc(c.t) + '</a><span class="g-w">' + esc(c.cat) + '</span></div></div>').join('') + '</div>'
+      : '<div class="g-note">메인 카드는 전부 지도에 들어가 있음.</div>';
+  }
+  fetch('/', { cache: 'no-cache' }).then(r => r.ok ? r.text() : '').then(t => {
+    if (!t) return;
+    const d = new DOMParser().parseFromString(t, 'text/html'), out = [];
+    d.querySelectorAll('.tool-panel').forEach(pn => { const cat = (pn.querySelector('.panel-header h2') || {}).textContent || '';
+      pn.querySelectorAll('.tool-grid > a.card').forEach(a => { const ti = a.querySelector('.card-title'); out.push({ p: a.getAttribute('href'), t: ti ? ti.textContent.trim() : a.getAttribute('href'), cat: cat.trim() }); }); });
+    mainCards = out.filter(c => c.p !== '/1808/'); renderMissing();
+  }).catch(() => {});
+
+  function renderAll(){
+    rowSeq = 0; renderCycle(); renderRegime(); renderAsk(); renderLast();
+    $('gEditCnt').textContent = Object.keys(edits).length;
+    if ($('gCopyBox').classList.contains('on')) $('gCopyTxt').value = copyText();
+  }
+
+  /* ── 고치기 ── */
+  window.gFoldNeed = function(){ localStorage.setItem('sf-guide-need-open', localStorage.getItem('sf-guide-need-open') === '1' ? '0' : '1'); renderCycle(); };
+  window.gToggleEdit = function(){ document.body.classList.toggle('g-editing'); $('gEditBtn').classList.toggle('on'); };
+  window.gOpenEdit = function(btn){
+    const rowEl = btn.closest('.g-row'), p = rowEl.dataset.p, x = eff(BASE[p]);
+    const ex = rowEl.querySelector('.g-edit'); if (ex) { ex.remove(); return; }
+    document.querySelectorAll('.g-edit').forEach(e => e.remove());
+    const ck = (name, v, on, lab) => '<label><input type="checkbox" name="' + name + '" value="' + v + '"' + (on ? ' checked' : '') + '>' + lab + '</label>';
+    const div = document.createElement('div'); div.className = 'g-edit on';
+    div.innerHTML =
+      '<div class="g-f"><b>주기</b><select name="c">' + G.cycles.map(c => '<option value="' + c.id + '"' + (c.id === x.c ? ' selected' : '') + '>' + c.name + '</option>').join('') + '</select></div>' +
+      '<div class="g-f"><b>국면</b>' + G.phases.map(f => ck('ph', f.id, x.ph.includes(f.id), f.name)).join('') + '</div>' +
+      '<div class="g-f"><b>상황</b>' + G.asks.map(a => ck('ask', a.id, x.ask.includes(a.id), a.q)).join('') + '</div>' +
+      '<div class="g-f"><b>메모</b><input type="text" name="memo" value="' + esc(x.memo) + '" placeholder="내 기준·쓰면서 느낀 점 (줄 아래 보라색으로 보임)"></div>' +
+      '<div class="g-f"><b></b>' + ck('hide', '1', x.hide, ' 지도에서 숨기기 (안 쓰는 메뉴)') + '</div>' +
+      '<div class="g-btns"><button class="g-ok">저장</button><button class="g-rs">이 메뉴 원래대로</button><button class="g-cl">닫기</button></div>';
+    rowEl.appendChild(div);
+    div.querySelector('.g-cl').onclick = () => div.remove();
+    div.querySelector('.g-rs').onclick = () => { delete edits[p]; save(); renderAll(); };
+    div.querySelector('.g-ok').onclick = () => {
+      const b = BASE[p], v = n => [...div.querySelectorAll('input[name="' + n + '"]:checked')].map(i => i.value);
+      const e = {}, c = div.querySelector('select[name=c]').value, ph = v('ph'), ask = v('ask'), memo = div.querySelector('input[name=memo]').value.trim(), hide = v('hide').length > 0;
+      if (c !== (b.c || '')) e.c = c;
+      if (!sameArr(ph, basePh(b))) e.ph = ph;
+      if (!sameArr(ask, b.ask || [])) e.ask = ask;
+      if (memo) e.memo = memo;
+      if (hide) e.hide = true;
+      if (Object.keys(e).length) edits[p] = e; else delete edits[p];
+      save(); renderAll();
+    };
+  };
+  function copyText(){
+    const ks = Object.keys(edits); if (!ks.length) return '(바꾼 것 없음)';
+    const nm = id => (CYC[id] || {}).name || id, pn = id => (G.phases.find(f => f.id === id) || {}).name || id, an = id => (ASK[id] || {}).q || id;
+    const diff = (a, b, f) => [...a.filter(x => !b.includes(x)).map(x => '+' + f(x)), ...b.filter(x => !a.includes(x)).map(x => '−' + f(x))].join(' ');
+    return '[사이트 사용 지도 — 화면에서 바꾼 것 ' + ks.length + '개] (' + today + ')\n' + ks.map(p => {
+      const b = BASE[p], e = edits[p]; if (!b) return p + ': (목록에 없는 주소 — 지워진 메뉴)';
+      const out = [];
+      if (e.c !== undefined) out.push('주기 ' + nm(b.c || '') + ' → ' + nm(e.c));
+      if (e.ph) out.push('국면 ' + diff(e.ph, basePh(b), pn));
+      if (e.ask) out.push('상황 ' + diff(e.ask, b.ask || [], an));
+      if (e.hide) out.push('숨김');
+      if (e.memo) out.push('메모 「' + e.memo + '」');
+      return p + ' ' + b.t + ': ' + out.join(' · ');
+    }).join('\n');
+  }
+  window.gShowCopy = function(){ const b = $('gCopyBox'); b.classList.toggle('on'); $('gCopyTxt').value = copyText(); };
+  window.gCopy = function(){ const t = $('gCopyTxt'); t.select(); (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).then(() => st('복사함'), () => { document.execCommand('copy'); st('복사함'); }); };
+  window.gResetAll = function(){ if (!Object.keys(edits).length) return; if (!confirm('화면에서 바꾼 ' + Object.keys(edits).length + '개를 지우고 목록 파일(sf-guide.js) 기준으로 되돌릴까요?\n(Claude가 sf-guide.js에 반영한 뒤 누르세요)')) return; edits = {}; save(); renderAll(); };
+
+  /* ── 탭·주소 # (#cycle #regime #fear #mix #hot #ask #last) — 로드 때 + hashchange ── */
+  function showTab(t){
+    document.querySelectorAll('#gTabs .tab').forEach(b => b.classList.toggle('active', b.dataset.t === t));
+    document.querySelectorAll('.g-pane').forEach(p => p.classList.toggle('on', p.dataset.t === t));
+  }
+  function setHash(h){ try { history.replaceState(null, '', h === 'cycle' ? location.pathname : '#' + h); } catch (e) {} }
+  function fromHash(){
+    const h = location.hash.slice(1);
+    if (PH.includes(h)) { curPh = h; showTab('regime'); renderRegime(); }
+    else if (h === 'regime') { curPh = null; showTab('regime'); renderRegime(); }
+    else showTab(['ask', 'last'].includes(h) ? h : 'cycle');
+  }
+  document.querySelectorAll('#gTabs .tab').forEach(b => b.onclick = () => { showTab(b.dataset.t); if (b.dataset.t === 'regime') renderRegime(); setHash(b.dataset.t === 'regime' ? (curPh || 'regime') : b.dataset.t); });
+  window.addEventListener('hashchange', fromHash);
+
+  renderAll(); fromHash(); fsInit();
+
+  sfRegime().then(R => {
+    regimeAuto = R.auto;
+    $('gNow').innerHTML = '지금 국면: <b>' + R.NAME[R.auto] + '</b><span class="g-score">평균 ' + (R.avg > 0 ? '+' : '') + sfNum(R.avg, 2) + ' · 지표 ' + R.S.length + '개 (/today/와 같은 점수)</span>' +
+      '<a href="#' + R.auto + '">→ 이 국면에 볼 메뉴</a><a href="/today/#secRegime">점수 자세히</a>';
+    renderRegime();
+  }).catch(() => { $('gNow').textContent = '국면 점수를 못 읽음 (데이터 파일 확인)'; });
+})();
+</script>
+</body>

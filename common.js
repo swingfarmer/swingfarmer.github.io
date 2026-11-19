@@ -1,5 +1,5 @@
 /* ============================================
-   스윙파머 공통 스크립트 (common.js) v7
+   스윙파머 공통 스크립트 (common.js) v7 (115: v18 — 방문 날짜 기록·🧭 지도 버튼)
    - 인증 게이트 (Firebase Auth, 관리자 전용)
    - 상단 고정 헤더 (메인 링크 + 글자크기 + 다크모드)
    - 다크모드 (localStorage 저장)
@@ -142,6 +142,17 @@ window.sfApiFetch = function(url, opts) {
   'use strict';
 
   var MAIN_URL = '/';
+
+  // ---------- 0. (115) 마지막으로 연 날 기록 — /guide/ 「🕒 마지막으로 본 날」이 읽음 ----------
+  // localStorage sf-visit:경로 = 'YYYY-MM-DD'(한국 날짜). 이 브라우저에만 남음(PC·폰 따로). 첫 기록일 = sf-visit-start
+  try {
+    var vp = location.pathname.replace(/index\.html$/, '');
+    var vd = (typeof sfDate === 'function') ? sfDate() : new Date(Date.now() + 9 * 36e5).toISOString().slice(0, 10);
+    if (vp && vp !== '/404.html') {
+      localStorage.setItem('sf-visit:' + vp, vd);
+      if (!localStorage.getItem('sf-visit-start')) localStorage.setItem('sf-visit-start', vd);
+    }
+  } catch (e) {}
 
   // ---------- 1. 공통 스타일 주입 ----------
   var css = `
@@ -307,6 +318,7 @@ window.sfApiFetch = function(url, opts) {
           '<button class="sf-a-lg" data-size="1.2" title="크게">A</button>' +
           '<button class="sf-a-xl" data-size="1.4" title="더 크게">A</button>' +
         '</div>' +
+        '<a class="sf-btn" href="/guide/" title="사이트 사용 지도 — 언제·어떤 장에 무엇을 볼지">🧭</a>' +   // (115)
         '<button class="sf-btn" id="sf-dark-toggle" title="다크모드">🌙</button>' +
       '</div>';
     document.body.insertBefore(header, document.body.firstChild);
@@ -720,7 +732,7 @@ window.sfApiFetch = function(url, opts) {
   };
   function buildBreadcrumb() {
     var path = location.pathname.replace(/\/$/,'') || '/';
-    if (path === '/' || path === '/1808') return; // 메인·전체메뉴는 생략
+    if (path === '/') return; // 메인은 생략
     var parts = path.split('/').filter(Boolean);
     var sec = SF_SECTIONS[parts[0]];
     if (!sec) return;
