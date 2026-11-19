@@ -20,6 +20,8 @@
   ① 보낸 기록 ~/news_data/news_sent.json — 주소·제목이 같으면 48시간, 같은 사건이면 12시간 안에 다시 안 보냄
   ② 같은 회차 다른 분야(증권→해외증시→경제 순서)에 이미 넣은 기사는 뺌
   ③ 같은 사건 판정: 제목 글자 조각(트라이그램) 유사도 + 핵심 단어 겹침(언론사마다 제목을 바꿔 쓴 기사)
+     + 핵심 숫자(1조달러·9조) 같음. 방향(상승↔하락)·단계(장중↔마감)가 다르면 다른 소식
+  ⑤ 같은 주제(같은 고유명사)는 메시지당 2개, 회차 전체 3개까지
   ④ 주소 정리(http·www·utm 꼬리 뺌) + 네이버 주소·원문 주소 둘 다 비교
   기록은 텔레그램 보내기에 성공한 것만 남김(실패하면 다음 회차에 다시 시도)
 
@@ -219,14 +221,27 @@ _STOP = {"속보", "단독", "종합", "오늘", "이번", "관련", "기자", "
 
 
 _ALIAS = {"한은": "한국은행", "美": "미국 ", "中": "중국 ", "日": "일본 ", "韓": "한국 ", "北": "북한 ",
-          "與": "여당 ", "野": "야당 ", "靑": "청와대 ", "銀": "은행 ", "株": "주식 ", "↑": " 상승 ", "↓": " 하락 "}
+          "與": "여당 ", "野": "야당 ", "靑": "청와대 ", "銀": "은행 ", "株": "주식 ", "↑": " 상승 ", "↓": " 하락 ", "IPO": " 상장 ", "ipo": " 상장 "}
 # 방향·단계가 다르면 제목 단어가 많이 겹쳐도 다른 소식 (「코스피 상승 출발」 vs 「코스피 하락 출발」, 「~출발」 vs 「~마감」)
 _SIDES = [
     ({"상승", "급등", "강세", "반등", "오름", "올라", "랠리", "최고"}, {"하락", "급락", "약세", "내림", "내려", "떨어", "추락", "최저"}),
     ({"순매수", "매수"}, {"순매도", "매도"}),
     ({"출발", "개장", "장중", "장초반", "오전"}, {"마감", "장마감", "종가"}),
     ({"인상", "올려", "올린"}, {"인하", "내려", "내린"}),
+    ({"회복", "탈환", "넘어", "넘었", "넘겨"}, {"붕괴", "밑돌", "이탈", "무너", "털렸", "깨졌"}),
 ]
+# 주제 세기에서 빼는 흔한 말 (어디에나 나와서 주제가 아님)
+_GENERIC = {"코스피", "코스닥", "증시", "주식", "시장", "투자", "투자자", "외국인", "개인", "기관", "미국", "한국",
+            "중국", "일본", "글로벌", "세계", "국내", "해외", "상승", "하락", "급등", "급락", "마감", "출발", "전망",
+            "기대", "우려", "달러", "금리", "환율", "경제", "정부", "기업", "종목", "주가", "증권", "올해", "역대",
+            "최대", "사상", "돌파", "발표", "결정", "추진", "확대", "만에", "이유", "시대", "오늘", "내일", "nbsp",
+            # 검색어·분야 단어 — 그 분야 기사 대부분에 들어가서 주제가 아님 (회사·인물 이름은 넣지 않음 → 주제로 셈)
+            "수출", "수입", "무역", "무역수지", "물가", "소비", "고용", "경기", "성장", "실적", "공시", "상장", "첫날",
+            "나스닥", "다우", "뉴욕", "뉴욕증시", "월가", "etf", "지수", "선물", "매수", "매도", "순매수", "순매도",
+            "개미", "주주", "배당", "자사주", "기준금리", "인상", "인하", "동결", "국채", "채권", "유가", "원유",
+            "반도체", "부동산", "아파트", "가상자산", "코인", "국회", "대통령", "정당", "여야", "자금", "가치"}
+TOPIC_MAX_MSG = 2     # (113) 한 메시지에 같은 주제(같은 고유명사·핵심 숫자) 기사는 2개까지
+TOPIC_MAX_RUN = 3     #        한 회차(증권+해외증시+경제) 전체로는 3개까지
 
 
 def _fold(title):
@@ -236,13 +251,48 @@ def _fold(title):
     return t
 
 
+_UNIT = "조억만천"
+_NUM_RE = re.compile(r'\d+(?:\.\d+)?(?:\s*[조억만천])*(?:\s*(?:달러|원|%|배|bp|p))?')
+
+
+def num_tokens(title):
+    """숫자+단위 덩어리: 「1조 달러」→1조달러, 「5,000선」→5000, 「16만5000원」→16만5000원.
+    (핵심 숫자, 강한 숫자) — 강한 숫자 = 금액 단위(조억만천·달러·원)가 붙었거나 세 자리 이상(연도 19xx·20xx 제외)"""
+    t = re.sub(r'(?<=\d),(?=\d{3})', '', title)
+    t = re.sub(r'(?<=[\d조억만천])\s+(?=[\d]|달러|원)', '', t)
+    toks, strong = set(), set()
+    for m in _NUM_RE.finditer(t):
+        k = re.sub(r'\s+', '', m.group(0)).lower()
+        digits = re.sub(r'\D', '', k)
+        unit = any(c in k for c in _UNIT) or any(u in k for u in ("달러", "원", "%", "배"))
+        if len(digits) >= 2 or unit:
+            toks.add(k)
+            money = any(c in k for c in _UNIT) or any(u in k for u in ("달러", "원"))   # %·배는 흔해서 강한 숫자 아님(「20%」끼리 엉뚱하게 묶였음)
+            if money or (len(digits) >= 3 and not re.fullmatch(r'(19|20)\d\d', k)):
+                strong.add(k)
+    return toks, strong
+
+
+def _match_count(ta, tb):
+    """작은 쪽 단어 중 다른 쪽에 같은 단어가 있거나, 두 글자 이상이 서로 들어 있는(미래↔미래에셋운용) 것의 수"""
+    if len(ta) > len(tb):
+        ta, tb = tb, ta
+    n = 0
+    for a in ta:
+        if a in tb or any(len(a) >= 2 and len(b) >= 2 and (a in b or b in a) and not a.isdigit() and not b.isdigit()
+                          for b in tb):
+            n += 1
+    return n
+
+
 def _side(words, side_set):
     return any(any(x in w for x in side_set) for w in words)
 
 
 def story_tokens(title):
     t = _fold(title)
-    out = set(n for n in re.findall(r'\d+(?:\.\d+)?', t) if len(n.replace('.', '')) >= 2)
+    out = set(num_tokens(t)[0])
+    t = _NUM_RE.sub(' ', re.sub(r'(?<=\d),(?=\d{3})', '', t))
     for w in re.findall(r'[가-힣A-Za-z]{2,}', t):
         w = w.lower()
         for j in _JOSA:
@@ -269,8 +319,40 @@ def same_story(a, b):
     ta, tb = story_tokens(a), story_tokens(b)
     if not ta or not tb:
         return False
-    shared = len(ta & tb)
-    return shared >= 3 and shared / min(len(ta), len(tb)) >= 0.6
+    shared = _match_count(ta, tb)
+    if shared >= 3 and shared / min(len(ta), len(tb)) >= 0.6:
+        return True
+    # 핵심 숫자(1조달러·9조·16만5000원)가 같고 다른 단어도 2개 이상 겹치면 같은 사건
+    sa, sb = num_tokens(_fold(a))[1], num_tokens(_fold(b))[1]
+    return bool(sa & sb) and shared >= 3
+
+
+def topic_words(title):
+    """주제 세기용 — 흔한 말 뺀 단어 + 핵심 숫자(1조달러 등)"""
+    ws = {w for w in story_tokens(title) if w not in _GENERIC and not re.match(r'\d', w) and len(w) >= 2}
+    return ws | num_tokens(_fold(title))[1]
+
+
+def topic_cap(items, run_kept, dropped=None):
+    """같은 주제(같은 고유명사·핵심 숫자)가 메시지에 TOPIC_MAX_MSG개, 회차 전체에 TOPIC_MAX_RUN개를 넘으면 뺌
+    (점수 높은 순으로 남기고 빈자리는 아래 순위 기사로 채움). 흔한 말은 _GENERIC에서 빼고 셈"""
+    run_cnt = {}
+    for k in run_kept:
+        for w in topic_words(k["title"]):
+            run_cnt[w] = run_cnt.get(w, 0) + 1
+    msg_cnt, out = {}, []
+    for it in items:
+        ws = topic_words(it["title"])
+        over = [w for w in ws if msg_cnt.get(w, 0) >= TOPIC_MAX_MSG or run_cnt.get(w, 0) >= TOPIC_MAX_RUN]
+        if over:
+            if dropped is not None:
+                dropped.append(("같은주제", it["title"], over[0]))
+            continue
+        for w in ws:
+            msg_cnt[w] = msg_cnt.get(w, 0) + 1
+            run_cnt[w] = run_cnt.get(w, 0) + 1
+        out.append(it)
+    return out
 
 
 def norm_url(u):
@@ -442,9 +524,10 @@ def quality_filter(all_items, category, n=TOP_N, sent=None, run_kept=None, dropp
     # 최소 점수 컷오프
     filtered = [it for it in unique if it.get("_score", 0) >= MIN_SCORE]
 
-    # 스코어 내림차순 → 상위 N개
+    # 스코어 내림차순 → 같은 주제 제한 → 상위 N개
     filtered.sort(key=lambda x: (-x.get("_score", 0), x.get("pubDate", "")), reverse=False)
     filtered.sort(key=lambda x: x.get("_score", 0), reverse=True)
+    filtered = topic_cap(filtered, run_kept or [], dropped)
 
     return filtered[:n]
 
