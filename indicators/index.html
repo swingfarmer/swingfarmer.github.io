@@ -35,6 +35,22 @@
 .news-time{font-size:11px;color:var(--text-dim);white-space:nowrap}
 .error-msg{background:#2d1b1b;border:1px solid #7f1d1d;color:#fca5a5;padding:16px;border-radius:8px;font-size:13px}
 .note{font-size:11px;color:var(--text-dim);text-align:center;margin-top:30px;line-height:1.8}
+/* 113: 국제유가·석유제품 (오피넷, 관리자 로그인만) */
+.oil-date{font-size:11px;color:var(--text-dim);font-weight:400;margin-left:6px}
+.oil-lock{background:var(--card);border:1px dashed var(--border);border-radius:10px;padding:14px;font-size:12px;color:var(--text-dim)}
+.oil-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:14px 0 8px}
+.oil-bar .sp{flex:1}
+.oil-copy{padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text);font-size:11px;cursor:pointer}
+.oil-tbl-wrap{overflow-x:auto;max-height:440px;overflow-y:auto;border:1px solid var(--border);border-radius:8px}
+.oil-tbl{width:100%;border-collapse:collapse;font-size:12px;white-space:nowrap}
+.oil-tbl th{position:sticky;top:0;background:var(--card);color:var(--text-dim);font-weight:600;padding:7px 9px;text-align:right;border-bottom:1px solid var(--border)}
+.oil-tbl th:first-child,.oil-tbl td:first-child{text-align:left}
+.oil-tbl td{padding:6px 9px;text-align:right;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums}
+.oil-tbl tr:nth-child(even) td{background:rgba(255,255,255,.02)}
+.oil-tbl td.hl{color:#b45309;font-weight:700}
+body.sf-dark .oil-tbl td.hl{color:#f0b060}
+.oil-tbl .ong{font-size:10px;color:var(--text-dim);margin-left:4px}
+.oil-note{font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.7}
 /* 096: 외부 링크 칸 (GPU 임대료 등 — 약관상 수집 불가라 링크만) */
 .link-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
 .link-card{display:block;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-decoration:none;color:var(--text);transition:border-color .15s}
@@ -76,6 +92,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
 </style>
 
 <script src="/sf-fmt.js?v=4"></script>
+<script src="/sf-oil.js?v=1"></script>
 <link rel="stylesheet" href="/auth-guard.css?v=4">
 <script type="module" src="/auth-guard.js?v=7"></script>
 </head>
@@ -194,6 +211,10 @@ function renderIndicators(data) {
     }
     html += '</div></div>';
   }
+
+  // (113) 국제유가·석유제품 — 오피넷 자료는 관리자 로그인 API로만 읽어서 렌더 뒤 initOil()이 채움
+  html += '<div class="section" id="oilSec"><div class="section-title">⛽ 국제유가 · 석유제품 <span style="font-size:11px;color:var(--text-dim);font-weight:400">오피넷 · $/bbl</span><span class="oil-date" id="oilDate"></span></div>' +
+    '<div class="oil-lock" id="oilMsg">불러오는 중…</div><div id="oilBody" style="display:none"></div></div>';
 
   // 096: GPU 임대료·데이터센터 — 외부 링크만 (Ornn 약관이 자동 수집·저장 금지 → 들어가서 보기만)
   html += '<div class="section"><div class="section-title">🖥️ GPU 임대료 · 데이터센터 <span style="font-size:11px;color:var(--text-dim);font-weight:400">외부 링크</span></div>';
@@ -368,10 +389,108 @@ async function loadAll() {
     html += '<div class="note">데이터: yfinance + exchangerate-api · 평일 07:10 / 18:45 갱신<br>뉴스: 네이버 API · 1시간 간격 수집</div>';
 
     document.getElementById('content').innerHTML = html;
+    initOil();
 
   } catch(e) {
     document.getElementById('content').innerHTML = '<div class="error-msg">⚠ ' + e.message + '<br>fetch_market_indicators.py 가 먼저 실행되어야 합니다.</div>';
   }
+}
+
+// ── (113) 국제유가·석유제품 (오피넷) — 카드 + 추이 그래프 + 일별/월/분기 표. 계산·읽기는 /sf-oil.js 공통 ──
+var OIL_COLS = [
+  {k:'dubai', n:'두바이', c:'#3b82f6'}, {k:'brent', n:'브렌트', c:'#22c55e'}, {k:'wti', n:'WTI', c:'#a1a1aa'},
+  {k:'kero', n:'항공유', c:'#f97316', d:'싱가포르 등유(Jet/Kero) — 항공유 시세로 씀'},
+  {k:'spread', n:'스프레드', c:'#a855f7', d:'항공유 − 두바이 (정제 마진 성격). 클수록 원유보다 항공유가 비쌈'},
+  {k:'gas92', n:'휘발유92', c:'#eab308'}, {k:'diesel001', n:'경유', c:'#ef4444', d:'싱가포르 경유 황 0.001%'},
+  {k:'naphtha', n:'나프타', c:'#14b8a6', d:'석유화학 원료'}
+];
+var OIL_ROWS = null, oilChart = null, oilDays = 365, oilMode = 'd';
+function oilFmt(v, d){ return v == null ? '-' : sfNum(v, d == null ? 2 : d); }
+function initOil(){
+  sfOilLoad(function(rows, why){
+    var msg = document.getElementById('oilMsg');
+    if (!msg) return;
+    if (!rows){
+      msg.innerHTML = why === 'login' ? '🔒 로그인하면 보입니다 — 오피넷 약관(복제·유통 금지) 때문에 공개 파일로 두지 않고 관리자 로그인일 때만 읽음'
+        : why === 'empty' ? '자료 없음' : '⚠ 유가 자료를 못 읽음 (VM API 확인 — /api/oil-intl)';
+      return;
+    }
+    OIL_ROWS = rows; msg.style.display = 'none';
+    var L = rows[rows.length - 1], P = rows.length > 1 ? rows[rows.length - 2] : null;
+    document.getElementById('oilDate').textContent = sfDate(L.price_date, 'dot') + ' 기준 (하루 늦게 올라옴)';
+    var cards = OIL_COLS.map(function(c){
+      var v = L[c.k], pv = P ? P[c.k] : null, ch = '';
+      if (v != null && pv != null){
+        var dlt = v - pv, pc = c.k === 'spread' ? null : dlt / pv * 100;
+        ch = '<div class="ind-change ' + (dlt > 0 ? 'up' : dlt < 0 ? 'down' : '') + '">' + (dlt > 0 ? '▲ ' : dlt < 0 ? '▼ ' : '') +
+          sfNum(Math.abs(dlt), 2) + (pc != null ? ' (' + sfPct(pc, 2, true) + ')' : '') + '</div>';
+      }
+      return '<div class="ind-card"' + (c.d ? ' title="' + c.d + '"' : '') + '><div class="ind-name">' + c.n + '</div><div class="ind-price">' + (v == null ? '-' : '$' + oilFmt(v)) + '</div>' + ch + '</div>';
+    }).join('');
+    document.getElementById('oilBody').innerHTML =
+      '<div class="indicator-grid">' + cards + '</div>' +
+      '<div class="chart-box" style="margin-top:12px"><h3>📈 추이</h3><div class="chart-tabs" id="oilRange">' +
+        [[92,'3개월'],[365,'1년'],[1100,'3년']].map(function(x){ return '<button class="chart-tab' + (x[0] === oilDays ? ' active' : '') + '" data-d="' + x[0] + '">' + x[1] + '</button>'; }).join('') +
+      '</div><div class="chart-wrap"><canvas id="oilCanvas"></canvas></div></div>' +
+      '<div class="oil-bar"><div class="chart-tabs" id="oilMode" style="margin:0">' +
+        [['d','일별'],['m','월평균'],['q','분기평균']].map(function(x){ return '<button class="chart-tab' + (x[0] === oilMode ? ' active' : '') + '" data-m="' + x[0] + '">' + x[1] + '</button>'; }).join('') +
+      '</div><span class="sp"></span><button class="oil-copy" id="oilCopy">📋 표 복사</button></div>' +
+      '<div class="oil-tbl-wrap"><table class="oil-tbl" id="oilTbl"></table></div>' +
+      '<div class="oil-note">출처: 오피넷(한국석유공사) 국제유가 · 국제석유제품가격(싱가포르), $/bbl. VM이 화~토 밤에 받음(하루 늦게 올라옴). 휴장일은 빈 칸(-). ' +
+        '항공유 = 싱가포르 등유, 스프레드 = 항공유 − 두바이. 일별 표는 최근 120일(위가 최근), 월·분기 평균은 값 있는 날만의 단순 평균. 카드 아래 숫자는 전날 대비. ' +
+        sfNum(rows.length) + '일치 (' + rows[0].price_date + ' ~ ' + L.price_date + '). 대한항공 실적 추정에 쓰는 같은 자료가 🔒 대한항공 실적 시뮬레이터에도 있음</div>';
+    document.getElementById('oilBody').style.display = '';
+    document.querySelectorAll('#oilRange .chart-tab').forEach(function(b){ b.addEventListener('click', function(){
+      document.querySelectorAll('#oilRange .chart-tab').forEach(function(x){ x.classList.toggle('active', x === b); });
+      oilDays = +b.getAttribute('data-d'); drawOilChart(); }); });
+    document.querySelectorAll('#oilMode .chart-tab').forEach(function(b){ b.addEventListener('click', function(){
+      document.querySelectorAll('#oilMode .chart-tab').forEach(function(x){ x.classList.toggle('active', x === b); });
+      oilMode = b.getAttribute('data-m'); drawOilTable(); }); });
+    document.getElementById('oilCopy').addEventListener('click', copyOilTable);
+    drawOilTable(); drawOilChart();
+  });
+}
+function oilTableRows(){
+  if (oilMode === 'd') return OIL_ROWS.slice(-120).reverse().map(function(r){ var o = {k: r.price_date}; OIL_COLS.forEach(function(c){ o[c.k] = r[c.k]; }); return o; });
+  return sfOilAvg(OIL_ROWS, oilMode, OIL_COLS.map(function(c){ return c.k; })).slice(0, oilMode === 'm' ? 25 : 12);
+}
+function drawOilTable(){
+  var rows = oilTableRows(), avg = oilMode !== 'd';
+  var head = '<tr><th>' + (oilMode === 'd' ? '날짜' : oilMode === 'm' ? '월' : '분기') + '</th>' + OIL_COLS.map(function(c){ return '<th>' + c.n + '</th>'; }).join('') + (avg ? '<th>일수</th>' : '') + '</tr>';
+  document.getElementById('oilTbl').innerHTML = head + rows.map(function(r){
+    return '<tr><td>' + r.k + (r.ongoing ? '<span class="ong">진행 중</span>' : '') + '</td>' + OIL_COLS.map(function(c){
+      return '<td' + (c.k === 'kero' || c.k === 'spread' ? ' class="hl"' : '') + '>' + oilFmt(r[c.k], avg ? 1 : 2) + '</td>'; }).join('') + (avg ? '<td>' + r.n + '</td>' : '') + '</tr>';
+  }).join('');
+}
+function copyOilTable(){
+  var rows = oilTableRows(), avg = oilMode !== 'd', lab = oilMode === 'd' ? '날짜' : oilMode === 'm' ? '월' : '분기';
+  var t = ['오피넷 국제유가·석유제품 ' + (oilMode === 'd' ? '일별' : lab + '평균') + ' ($/bbl, 항공유=싱가포르 등유, 스프레드=항공유−두바이, 자료 ~' + OIL_ROWS[OIL_ROWS.length - 1].price_date + ')',
+    '| ' + lab + ' | ' + OIL_COLS.map(function(c){ return c.n; }).join(' | ') + (avg ? ' | 일수' : '') + ' |',
+    '|' + new Array(OIL_COLS.length + (avg ? 3 : 2)).join('---|')]
+    .concat(rows.map(function(r){ return '| ' + r.k + (r.ongoing ? ' (진행 중)' : '') + ' | ' + OIL_COLS.map(function(c){ return oilFmt(r[c.k], avg ? 1 : 2); }).join(' | ') + (avg ? ' | ' + r.n : '') + ' |'; })).join('\n');
+  var b = document.getElementById('oilCopy'), done = function(){ var o = b.textContent; b.textContent = '✅ 복사됨'; setTimeout(function(){ b.textContent = o; }, 1500); };
+  (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(t) : Promise.reject()).then(done).catch(function(){
+    var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch(e) {} ta.remove(); });
+}
+function drawOilChart(){
+  if (!OIL_ROWS || !window.Chart) return;
+  var last = new Date(OIL_ROWS[OIL_ROWS.length - 1].price_date), from = new Date(last - oilDays * 864e5);
+  var R = OIL_ROWS.filter(function(r){ return new Date(r.price_date) >= from; });
+  var show = ['kero', 'dubai', 'brent', 'wti', 'spread'];
+  var ds = OIL_COLS.filter(function(c){ return show.indexOf(c.k) >= 0; }).map(function(c){
+    var dash = c.k === 'spread' || c.k === 'wti';
+    return {label: c.n + (c.k === 'kero' ? '(싱가포르 등유)' : c.k === 'spread' ? '(항공유−두바이)' : ''), data: R.map(function(r){ return r[c.k]; }),
+      borderColor: c.c, backgroundColor: c.c, borderWidth: dash ? 1.3 : 2, borderDash: dash ? [4, 3] : [], pointRadius: 0, spanGaps: true, tension: .15};
+  });
+  var data = {labels: R.map(function(r){ return r.price_date; }), datasets: ds};
+  if (oilChart){ oilChart.data = data; oilChart.update(); return; }
+  oilChart = new Chart(document.getElementById('oilCanvas'), {type: 'line', data: data, options: {responsive: true, maintainAspectRatio: false,
+    interaction: {mode: 'index', intersect: false},
+    plugins: {legend: {labels: {color: '#e4e4e7', font: {size: 11}, boxWidth: 12}, position: 'top'},
+      tooltip: {backgroundColor: '#1a1d27', titleColor: '#e4e4e7', bodyColor: '#e4e4e7', borderColor: '#2a2d3a', borderWidth: 1,
+        callbacks: {label: function(c){ return c.dataset.label + ' $' + sfNum(c.parsed.y, '~2'); }}}},
+    scales: {x: {grid: {display: false}, ticks: {color: '#71717a', font: {size: 10}, maxTicksLimit: 10}},
+      y: {grid: {color: '#2a2d3a'}, ticks: {color: '#71717a', font: {size: 10}, callback: function(v){ return '$' + v; }}}}}});
 }
 
 loadAll();
