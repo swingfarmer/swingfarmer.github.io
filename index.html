@@ -125,8 +125,6 @@ header{text-align:center;margin-bottom:30px}
 .fav-toolbar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
 .fav-toolbar button{font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid #d1d5db;background:white;cursor:pointer;font-family:inherit}
 .fav-toolbar button:hover{background:#f3f4f6}
-.all-link{text-align:center;margin-top:30px}
-.all-link a{display:inline-block;background:#1F4E78;color:white;text-decoration:none;font-size:13px;font-weight:600;padding:10px 24px;border-radius:8px}
 footer{text-align:center;margin-top:60px;color:#999;font-size:12px}
 
 body.sf-dark .cat-card{background:#222532;border-color:transparent;box-shadow:0 2px 6px rgba(0,0,0,0.3)}
@@ -154,8 +152,34 @@ body.sf-dark .star-btn.active{color:#f59e0b}
 body.sf-dark .tag.live{background:rgba(239,68,68,.15)!important;color:#f87171!important}
 body.sf-dark .tag.ext{background:rgba(99,102,241,.15)!important;color:#818cf8!important}
 body.sf-dark .tag.new{background:rgba(34,197,94,.15)!important;color:#4ade80!important}
-body.sf-dark .all-link a{background:#1e3a5f}
 body.sf-dark footer{color:#71717a}
+/* (115) 카드 / 목록 보기 */
+.view-bar{display:flex;justify-content:flex-end;gap:4px;margin:0 0 8px}
+.view-bar button{padding:5px 12px;border:1px solid #d1d5db;background:#fff;color:#555;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.view-bar button.on{background:#1F4E78;color:#fff;border-color:#1F4E78}
+.lv-tools{display:flex;gap:6px;margin-right:auto}
+.lv-tools button{background:none;border:1px solid #d1d5db;color:#1F4E78;font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit}
+.lv-sec{background:#fff;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.06);margin-bottom:10px;overflow:hidden}
+.lv-title{display:flex;align-items:center;gap:8px;padding:11px 14px;font-weight:700;color:#1F4E78;font-size:15px;cursor:pointer;user-select:none;background:#f0f5fa}
+.lv-cnt{margin-left:auto;font-size:12px;color:#888;font-weight:400}
+.lv-arrow{font-size:11px;color:#aaa;transition:transform .2s}
+.lv-sec.collapsed .lv-arrow{transform:rotate(-90deg)}
+.lv-sec.collapsed .lv-list{display:none}
+.lv-row{display:flex;align-items:baseline;gap:8px;padding:7px 14px;border-top:1px solid #f0f0f0;text-decoration:none;color:inherit;font-size:14px}
+.lv-row:hover{background:#f8fafc}
+.lv-row b{color:#1F4E78;font-weight:600;white-space:nowrap}
+.lv-ic{width:20px;text-align:center;flex-shrink:0}
+.lv-d{color:#777;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.lv-d a{color:#1F4E78;font-weight:600;margin-right:10px;text-decoration:none}
+@media(max-width:600px){.lv-row{flex-wrap:wrap}.lv-d{white-space:normal;width:100%;padding-left:28px}}
+body.sf-dark .view-bar button,body.sf-dark .lv-tools button{background:#1a1d27;border-color:#2a2d3a;color:#a1a1aa}
+body.sf-dark .view-bar button.on{background:#26364d;color:#85b5e0;border-color:#3b5373}
+body.sf-dark .lv-sec{background:#1a1d27;box-shadow:none;border:1px solid #2a2d3a}
+body.sf-dark .lv-title{background:#222532;color:#85b5e0}
+body.sf-dark .lv-row{border-top-color:#2a2d3a}
+body.sf-dark .lv-row:hover{background:#222532}
+body.sf-dark .lv-row b,body.sf-dark .lv-d a{color:#85b5e0}
+body.sf-dark .lv-d,body.sf-dark .lv-cnt{color:#a1a1aa}
 .guide-strip{display:flex;align-items:center;gap:8px;margin:0 0 14px;padding:10px 14px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;text-decoration:none;color:#1F4E78;font-size:14px}
 .guide-strip span{color:#666;font-size:12px;flex:1}
 .guide-strip i{font-style:normal;color:#999;margin-left:auto}
@@ -200,6 +224,10 @@ body.sf-dark .guide-strip span{color:#a1a1aa}
     <div id="favEmpty" class="fav-empty">각 도구 카드의 ☆을 눌러 즐겨찾기에 등록하세요</div>
   </div>
 </div>
+
+<!-- ═══ (115) 보기 전환: 카드 / 목록 (옛 /1808/ 전체 메뉴를 메인 안으로) — 목록은 아래 패널 카드를 읽어 그림, 선택은 이 브라우저에 기억 ═══ -->
+<div class="view-bar"><span class="lv-tools" id="lvTools" style="display:none"><button type="button" id="lvOpenAll">모두 펼치기</button><button type="button" id="lvCloseAll">모두 접기</button></span><button type="button" data-view="card">🗂 카드</button><button type="button" data-view="list">📋 목록</button></div>
+<div id="listView" style="display:none"><div id="lvBody"></div></div>
 
 <!-- ═══ 카테고리 카드 ═══ -->
 <div class="cat-grid">
@@ -394,7 +422,6 @@ body.sf-dark .guide-strip span{color:#a1a1aa}
 </div>
 </div>
 
-<div class="all-link"><a href="/1808/">📋 전체 메뉴 (한 페이지)</a></div>
 
 <footer>© 스윙파머 금융도구<br><small style="color:#888;">본 사이트는 개인 참고용이며 투자 권유가 아닙니다. 투자 판단의 책임은 이용자 본인에게 있습니다.</small></footer>
 
@@ -429,6 +456,52 @@ body.sf-dark .guide-strip span{color:#a1a1aa}
     active = null;
   };
 
+  /* ─── (115) 카드 / 목록 보기 — 목록은 패널(.tool-panel) 카드를 읽어 카테고리별 한 줄씩. 새 메뉴는 패널에 카드만 넣으면 목록에도 나옴 ─── */
+  (function(){
+    var VKEY = 'sf_main_view', CKEY = 'sf_hidden_collapsed';   // 접힘 상태 키는 옛 /1808/과 같은 것
+    var col = {}; try{ col = JSON.parse(localStorage.getItem(CKEY)) || {}; }catch(e){}
+    var lv = document.getElementById('listView'), body = document.getElementById('lvBody'), grid = document.querySelector('.cat-grid');
+    var esc = function(t){ var d = document.createElement('div'); d.textContent = t; return d.innerHTML; };
+    function build(){
+      var h = '';
+      document.querySelectorAll('.tool-panel[id^="panel-"]').forEach(function(p){
+        var key = p.id.replace(/^panel-/, ''), t = p.querySelector('.panel-header h2'), cards = p.querySelectorAll('.tool-grid > .card');
+        var rows = '';
+        cards.forEach(function(c){
+          var q = function(s){ var e = c.querySelector(s); return e ? e.textContent.trim() : ''; };
+          if(c.tagName === 'A'){
+            var ext = /^https?:/.test(c.getAttribute('href'));
+            rows += '<a class="lv-row" href="' + esc(c.getAttribute('href')) + '"' + (ext ? ' target="_blank" rel="noopener"' : '') + '><span class="lv-ic">' + esc(q('.icon')) + '</span><b>' + esc(q('.card-title').replace(/☆|★/g, '').trim()) + '</b><span class="lv-d">' + esc(q('.card-desc')) + '</span></a>';
+          } else {   // 링크 여러 개 든 카드(접속 통계 · 관리)
+            var links = ''; c.querySelectorAll('a[href]').forEach(function(a){ links += '<a href="' + esc(a.getAttribute('href')) + '" target="_blank" rel="noopener">' + esc(a.textContent.trim()) + '</a>'; });
+            rows += '<div class="lv-row"><span class="lv-ic">' + esc(q('.icon')) + '</span><b>' + esc(q('.card-title')) + '</b><span class="lv-d">' + links + '</span></div>';
+          }
+        });
+        h += '<div class="lv-sec' + (col[key] ? ' collapsed' : '') + '" data-k="' + key + '"><div class="lv-title">' + esc(t ? t.textContent.trim() : key) + '<span class="lv-cnt">' + cards.length + '</span><span class="lv-arrow">▼</span></div><div class="lv-list">' + rows + '</div></div>';
+      });
+      body.innerHTML = h;
+      body.querySelectorAll('.lv-title').forEach(function(t){ t.addEventListener('click', function(){ var s = t.parentNode; s.classList.toggle('collapsed'); col[s.getAttribute('data-k')] = s.classList.contains('collapsed'); save(); }); });
+    }
+    function save(){ try{ localStorage.setItem(CKEY, JSON.stringify(col)); }catch(e){} }
+    function all(c){ body.querySelectorAll('.lv-sec').forEach(function(s){ s.classList.toggle('collapsed', c); col[s.getAttribute('data-k')] = c; }); save(); }
+    document.getElementById('lvOpenAll').onclick = function(){ all(false); };
+    document.getElementById('lvCloseAll').onclick = function(){ all(true); };
+    function setView(v, keep){
+      var list = v === 'list';
+      if(list && !body.innerHTML) build();
+      lv.style.display = list ? '' : 'none';
+      document.getElementById('lvTools').style.display = list ? '' : 'none';
+      grid.style.display = list ? 'none' : '';
+      if(list) closePanel();
+      document.querySelectorAll('.view-bar button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-view') === v); });
+      if(keep !== false){ try{ localStorage.setItem(VKEY, v); }catch(e){} }
+    }
+    document.querySelectorAll('.view-bar button').forEach(function(b){ b.addEventListener('click', function(){ setView(b.getAttribute('data-view')); }); });
+    var qv = /[?&]view=(list|card)\b/.exec(location.search);   // 옛 /1808/ → 404가 /?view=list 로 보냄
+    var v0 = qv ? qv[1] : null; if(!v0){ try{ v0 = localStorage.getItem(VKEY); }catch(e){} }
+    setView(v0 === 'list' ? 'list' : 'card', !!qv);
+  })();
+
   /* ─── 즐겨찾기 시스템 ─── */
   var FAV_KEY = 'sf_favorites';
   var favs = []; // [{href, icon, title, desc, pinned}]
@@ -443,7 +516,7 @@ body.sf-dark .guide-strip span{color:#a1a1aa}
   loadFavs();
   // (113) 합치거나 옮긴 페이지 즐겨찾기를 새 주소로 바꿈 — 새 주소가 이미 있으면 옛것만 지움. 이름·설명은 지금 카드 것으로.
   //   페이지를 합칠 때마다 여기 한 줄 추가 (404.html의 SF_MOVED와 같이)
-  var MOVED = {'/indicators/': '/dashboard/', '/data/': '/rates/', '/tax/retirement-compare/': '/tax/retirement/#compare'};
+  var MOVED = {'/indicators/': '/dashboard/', '/data/': '/rates/', '/tax/retirement-compare/': '/tax/retirement/#compare', '/1808/': '/?view=list'};
   (function(){
     var ch = false, out = [];
     favs.forEach(function(f){
