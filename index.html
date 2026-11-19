@@ -193,7 +193,7 @@ body.sf-dark footer{color:#71717a}
 
 <!-- ═══ 카테고리 카드 ═══ -->
 <div class="cat-grid">
-  <div class="cat-card" data-cat="info"><div class="cat-icon">📰</div><div class="cat-name">정보·시장</div><div class="cat-cnt">18개</div></div>
+  <div class="cat-card" data-cat="info"><div class="cat-icon">📰</div><div class="cat-name">정보·시장</div><div class="cat-cnt">17개</div></div>
   <div class="cat-card" data-cat="asset"><div class="cat-icon">💰</div><div class="cat-name">자산·연금·파이어</div><div class="cat-cnt">10개</div></div>
   <div class="cat-card" data-cat="stock"><div class="cat-icon">📈</div><div class="cat-name">주식·투자</div><div class="cat-cnt">35개</div></div>
   <div class="cat-card" data-cat="estate"><div class="cat-icon">🏠</div><div class="cat-name">부동산</div><div class="cat-cnt">15개</div></div>
@@ -211,9 +211,8 @@ body.sf-dark footer{color:#71717a}
 <div class="tool-grid">
   <a href="/news/" class="card"><div class="icon">📰</div><div class="card-title">뉴스 헤드라인</div><div class="card-desc">주요 언론사 실시간 헤드라인. 8개 카테고리.</div><div class="tag live">LIVE</div></a>
   <a href="/correlation/" class="card"><div class="icon">🔗</div><div class="card-title">상관관계 분석기</div><div class="card-desc">DXY·KOSPI·S&P500 상관계수·산점도.</div></a>
-  <a href="/indicators/" class="card"><div class="icon">📉</div><div class="card-title">시장 지표 대시보드</div><div class="card-desc">S&P·나스닥·VIX·금리·환율·유가 히스토리.</div></a>
   <a href="/today/" class="card"><div class="icon">📋</div><div class="card-title">오늘 증시 한눈에</div><div class="card-desc">지수·환율·수급·업종·시그널 이상 감지 요약.</div><div class="tag new">NEW</div></a>
-  <a href="/dashboard/" class="card"><div class="icon">📊</div><div class="card-title">시장 종합 대시보드</div><div class="card-desc">종합진단·외국인수급·풋콜레이쇼·S&amp;P500.</div><div class="tag new">NEW</div></a>
+  <a href="/dashboard/" class="card"><div class="icon">📊</div><div class="card-title">시장 대시보드</div><div class="card-desc">종합진단·지표 추이·국제유가(🔒오피넷)·외국인수급·S&amp;P·풋콜.</div><div class="tag new">NEW</div></a>
   <a href="/market/" class="card"><div class="icon">📊</div><div class="card-title">실시간 시장 대시보드</div><div class="card-desc">코스피·다우·나스닥·환율·금리·유가·금.</div><div class="tag live">LIVE</div></a>
   <a href="https://longnshort.kr/" target="_blank" rel="noopener" class="card"><div class="icon">🌙</div><div class="card-title">야간선물 대시보드 ↗</div><div class="card-desc">야간선물·달러원·원유·비트코인·나스닥.</div><div class="tag ext">외부</div></a>
   <a href="/crash-history/" class="card"><div class="icon">🚨</div><div class="card-title">역대 폭락장 비교</div><div class="card-desc">IMF·닷컴·금융위기·코로나·긴축장.</div></a>
@@ -434,6 +433,29 @@ body.sf-dark footer{color:#71717a}
 
   // localStorage에서 즐겨찾기 복원 (★ 버튼 생성 전에 로드해야 active 상태 반영됨)
   loadFavs();
+  // (113) 합치거나 옮긴 페이지 즐겨찾기를 새 주소로 바꿈 — 새 주소가 이미 있으면 옛것만 지움. 이름·설명은 지금 카드 것으로.
+  //   페이지를 합칠 때마다 여기 한 줄 추가 (404.html의 SF_MOVED와 같이)
+  var MOVED = {'/indicators/': '/dashboard/'};
+  (function(){
+    var ch = false, out = [];
+    favs.forEach(function(f){
+      var to = MOVED[f.href];
+      if(!to){ out.push(f); return; }
+      ch = true;
+      if(favs.some(function(g){ return g.href === to; }) || out.some(function(g){ return g.href === to; })) return;
+      var card = document.querySelector('.tool-grid .card[href="' + to + '"]');
+      var q = function(c){ var e = card && card.querySelector(c); return e ? e.textContent.trim() : ''; };
+      out.push({href: to, icon: q('.icon') || f.icon, title: q('.card-title') || f.title, desc: q('.card-desc') || f.desc, pinned: f.pinned});
+    });
+    // 카드 이름·설명이 바뀐 즐겨찾기도 지금 카드 것으로 맞춤(113: 「시장 종합 대시보드」→「시장 대시보드」)
+    out.forEach(function(f){
+      var card = document.querySelector('.tool-grid .card[href="' + f.href + '"]'); if(!card) return;
+      var t = card.querySelector('.card-title'), d = card.querySelector('.card-desc');
+      if(t && t.textContent.trim() !== f.title){ f.title = t.textContent.trim(); ch = true; }
+      if(d && d.textContent.trim() !== f.desc){ f.desc = d.textContent.trim(); ch = true; }
+    });
+    if(ch){ favs = out; saveFavs(); }
+  })();
 
   // 모든 도구 카드에 ☆ 버튼 삽입
   document.querySelectorAll('.tool-grid .card[href], .tool-grid .card a[href]').forEach(function(card){

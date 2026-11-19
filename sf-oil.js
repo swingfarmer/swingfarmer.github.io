@@ -1,7 +1,7 @@
 /* sf-oil.js — 오피넷 국제유가·석유제품 공통 (113)
  * 데이터: VM이 화~토 21:20 오피넷에서 받아 Oracle OIL_INTL_PRICES에 쌓음(하루 늦게 올라옴, fetch_opinet_oil.py).
  *   오피넷 약관(복제·유통·제3자 이용 금지) 때문에 공개 JSON 없음 → 관리자 로그인 API /api/oil-intl 로만 읽음.
- * 쓰는 곳: /indicators/ (⛽ 국제유가·석유제품 칸), 🔒 /stock-tools/kal/ (항공유·두바이 추세)
+ * 쓰는 곳: /dashboard/ ⛽ 국제유가 탭(#oil, 113에서 옛 /indicators/를 합침), 🔒 /stock-tools/kal/ (항공유·두바이 추세)
  *
  *   sfOilLoad(cb, days)  로그인을 최대 15초 기다린 뒤 일별 자료를 읽어 cb(rows) / 못 읽으면 cb(null, 이유)
  *                        이유: 'login'(로그인 안 함) · 'http'(API 오류) · 'empty'(자료 없음)
