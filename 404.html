@@ -9,15 +9,18 @@
 <script>
 /* (113) GitHub Pages는 없는 주소에 이 파일을 보여줌.
    합치거나 옮긴 페이지는 여기서 새 주소로 넘김 → 브라우저 북마크·옛 링크가 안 깨짐.
-   페이지를 합칠 때마다 한 줄 추가 (메인 index.html 즐겨찾기 MOVED와 같이). 옛 주소#탭 은 새 주소 기본 탭으로 감 */
+   페이지를 합칠 때마다 한 줄 추가 (메인 index.html 즐겨찾기 MOVED와 같이). 새 주소에 #탭을 붙이면 그 탭으로 열림 */
 var SF_MOVED = {
-  '/indicators/': '/dashboard/'          // 113: 시장 지표 대시보드 → 시장 대시보드(📈 지표 추이·⛽ 국제유가 탭)
+  '/indicators/': '/dashboard/',         // 113: 시장 지표 대시보드 → 시장 대시보드(📈 지표 추이·⛽ 국제유가 탭)
+  '/data/': '/rates/',                   // 114: 환율/금시세 → 환율·금리·금시세 (/data/ 폴더의 json은 그대로)
+  '/tax/retirement-compare/': '/tax/retirement/#compare'   // 114: 퇴직금 수령 방식 비교 → 퇴직소득세 페이지 탭
 };
 (function(){
   var p = location.pathname.replace(/index\.html$/, '');
   if (p.slice(-1) !== '/') p += '/';
   var to = SF_MOVED[p];
-  if (to) location.replace(to + location.search);
+  // (114) 새 주소에 #탭이 붙어 있으면 ?검색어 뒤로 (주소#탭?x 가 되지 않게). 옛 주소에 #가 있으면 그걸 우선
+  if (to){ var h = to.indexOf('#'); var path = h < 0 ? to : to.slice(0, h), hash = location.hash || (h < 0 ? '' : to.slice(h)); location.replace(path + location.search + hash); }
 })();
 </script>
 <style>

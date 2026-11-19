@@ -62,7 +62,8 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
   <!-- ══ 환율 탭 ══ -->
   <div id="tab-exchange">
     <div class="section">
-      <div class="section-title">📊 주요 환율 (매매기준율)</div>
+      <div class="section-title">📊 주요 환율 (매매기준율) <button class="btn-sm" id="copyBtn" onclick="copyAll()" style="margin-left:8px">📋 주요 시세 복사</button></div>
+      <div style="font-size:11px;color:var(--text-dim);margin:-4px 0 8px">카드를 누르면 아래 그래프에 넣고 뺌 · 복사 = 달러·엔(100)·위안·금(g) 4줄을 엑셀·메모에 붙여넣기용으로</div>
       <div class="card-grid" id="fxCards"></div>
     </div>
     <div class="chart-box">
@@ -77,6 +78,12 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
         <span class="chart-hint">🖱️ 휠=줌 / 드래그=이동</span>
       </div>
       <div class="chart-wrap"><canvas id="fxChart"></canvas></div>
+    </div>
+    <!-- (114) 옛 /data/(환율/금시세)에서 옮김 — 통화·금 정규화 비교 -->
+    <div class="chart-box">
+      <h3>📊 USD·JPY·CNH·금 비교 <span style="font-size:11px;font-weight:400;color:var(--text-dim)">(기간 첫날 = 100)</span> <span class="info-btn" onclick="toggleInfo('normInfo')">i</span></h3>
+      <div class="info-box" id="normInfo" style="display:none;font-size:12px;line-height:1.7;margin-bottom:8px">위 「환율 추이」와 같은 기간(기간 버튼·날짜 조회)을 씀. 각 값을 기간 첫날 값으로 나눠 100을 곱한 것 — 105면 그 기간에 5% 올랐다는 뜻. 원화 기준이라 넷이 같이 오르면 원화가 약해진 것, 금만 따로 오르면 금 자체가 오른 것.</div>
+      <div class="chart-wrap"><canvas id="normChart"></canvas></div>
     </div>
     <div class="chart-box">
       <h3>환율 데이터 테이블</h3>
@@ -151,19 +158,24 @@ let selectedFx=['USD','JPY(100)','EUR'], selectedInt=[];
 let fxPeriod=90, intPeriod=365;
 
 // ── 탭 전환 ──
+function showTab(t){
+  document.querySelectorAll('.tabs .tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  document.getElementById('tab-exchange').style.display=t==='exchange'?'':'none';
+  document.getElementById('tab-interest').style.display=t==='interest'?'':'none';
+  document.getElementById('tab-gold').style.display=t==='gold'?'':'none';
+}
 document.querySelectorAll('.tabs .tab').forEach(btn=>{
-  btn.onclick=()=>{
-    document.querySelectorAll('.tabs .tab').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    const t=btn.dataset.tab;
-    document.getElementById('tab-exchange').style.display=t==='exchange'?'':'none';
-    document.getElementById('tab-interest').style.display=t==='interest'?'':'none';
-    document.getElementById('tab-gold').style.display=t==='gold'?'':'none';
-  };
+  btn.onclick=()=>{ showTab(btn.dataset.tab); history.replaceState(null,'','#'+btn.dataset.tab); };
 });
+// (114) 주소 #interest · #gold 로 탭 바로 열림
+function tabFromHash(){ const h=location.hash.slice(1); if(['exchange','interest','gold'].includes(h)) showTab(h); }
+tabFromHash(); window.addEventListener('hashchange',tabFromHash);
 
 // ── 유틸 ──
 function fmt(v,d=2){return sfNum(v,d);}
+// (114) 그래프 범례·격자 색 = 지금 모드 (예전엔 다크용 고정이라 라이트에서 범례가 안 보였음)
+function LEG(){ return document.body.classList.contains('sf-dark') ? '#e4e4e7' : '#334155'; }
+function GRID(){ return document.body.classList.contains('sf-dark') ? '#2a2d3a' : 'rgba(0,0,0,.06)'; }
 function chgClass(v){if(v>0)return'up';if(v<0)return'down';return'flat';}
 function chgSign(v){return v>0?'+'+fmt(v):fmt(v);}
 function filterByPeriod(data, days){
@@ -291,6 +303,7 @@ function renderFxChart(dateFrom,dateTo){
   });
   document.getElementById('fxChartTitle').textContent=
     selectedFx.length>0?selectedFx.join(', ')+' 환율 추이':'통화를 선택하세요';
+  renderNormChart(dateFrom,dateTo);
 
   if(fxChart)fxChart.destroy();
   fxChart=new Chart(document.getElementById('fxChart'),{
@@ -300,16 +313,52 @@ function renderFxChart(dateFrom,dateTo){
       responsive:true,maintainAspectRatio:false,
       interaction:{mode:'index',intersect:false},
       plugins:{
-        legend:{labels:{color:'#e4e4e7',font:{size:11}}},
+        legend:{labels:{color:LEG(),font:{size:11}}},
         tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+fmt(ctx.parsed.y)}},
         zoom:zoomOptions
       },
       scales:{
-        x:{ticks:{color:'#71717a',font:{size:10},maxTicksLimit:12},grid:{color:'#2a2d3a'}},
-        y:{ticks:{color:'#71717a',font:{size:10},callback:v=>fmt(v,0)},grid:{color:'#2a2d3a'}}
+        x:{ticks:{color:'#71717a',font:{size:10},maxTicksLimit:12},grid:{color:GRID()}},
+        y:{ticks:{color:'#71717a',font:{size:10},callback:v=>fmt(v,0)},grid:{color:GRID()}}
       }
     }
   });
+}
+
+// ══ (114) 옛 /data/ 정규화 비교 + 전체 복사 ══
+let normChart=null;
+function renderNormChart(dateFrom,dateTo){
+  const f=dateFrom, t=dateTo;   // 환율 추이 그래프와 같은 기간
+  const pick=d=>(f||t)?filterByRange(d,f,t):filterByPeriod(d,fxPeriod);
+  const fx=pick(fxData), gd=pick(goldData);
+  const dates=[...new Set(fx.map(r=>r.rate_date))].sort();
+  if(!dates.length) return;
+  const val=r=>Number(r.deal_bas_r||r.kftc_deal_bas_r||0);
+  const series=(cur)=>{const m={};fx.filter(r=>r.cur_unit===cur||(cur==='CNH'&&r.cur_unit==='CNY')).forEach(r=>{m[r.rate_date]=val(r);});return dates.map(d=>m[d]||null);};
+  const gm={}; gd.forEach(r=>{if(r.price_krw_g)gm[r.price_date]=Number(r.price_krw_g);});
+  const norm=a=>{const b=a.find(v=>v);return a.map(v=>(v&&b)?Math.round(v/b*10000)/100:null);};
+  const sets=[['USD/KRW',series('USD'),'#3b82f6'],['JPY/100',series('JPY(100)'),'#ef4444'],['CNH',series('CNH'),'#22c55e'],['금(원/g)',dates.map(d=>gm[d]||null),'#eab308']];
+  if(normChart) normChart.destroy();
+  normChart=new Chart(document.getElementById('normChart'),{
+    type:'line',
+    data:{labels:dates,datasets:sets.map(([l,a,c])=>({label:l,data:norm(a),borderColor:c,backgroundColor:'transparent',borderWidth:2,pointRadius:0,tension:0.3,spanGaps:true}))},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{color:LEG(),font:{size:11}}},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.parsed.y!=null?ctx.parsed.y.toFixed(1):'-')}}},
+      scales:{
+        x:{ticks:{color:'#71717a',font:{size:10},maxTicksLimit:12},grid:{color:GRID()}},
+        y:{ticks:{color:'#71717a',font:{size:10}},grid:{color:GRID()}}
+      }
+    }
+  });
+}
+function copyAll(){
+  const lastFx=cur=>{const rs=fxData.filter(r=>r.cur_unit===cur||(cur==='CNH'&&r.cur_unit==='CNY')).sort((a,b)=>b.rate_date.localeCompare(a.rate_date));return rs.length?Number(rs[0].deal_bas_r||rs[0].kftc_deal_bas_r||0):null;};
+  const g=[...goldData].filter(r=>r.price_krw_g).sort((a,b)=>b.price_date.localeCompare(a.price_date))[0];
+  const s=v=>v==null?'-':sfNum(v,'~2');
+  const txt='달러: '+s(lastFx('USD'))+'\n엔(100): '+s(lastFx('JPY(100)'))+'\n위안: '+s(lastFx('CNH'))+'\n금(g): '+(g?sfNum(Number(g.price_krw_g)):'-');
+  navigator.clipboard.writeText(txt).then(()=>{const b=document.getElementById('copyBtn');b.textContent='✅ 복사됨!';setTimeout(()=>{b.textContent='📋 주요 시세 복사';},1500);});
 }
 
 function renderFxTable(dateFrom,dateTo){
@@ -444,13 +493,13 @@ function renderIntChart(dateFrom,dateTo){
       responsive:true,maintainAspectRatio:false,
       interaction:{mode:'index',intersect:false},
       plugins:{
-        legend:{labels:{color:'#e4e4e7',font:{size:11}}},
+        legend:{labels:{color:LEG(),font:{size:11}}},
         tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+fmt(ctx.parsed.y)+'%'}},
         zoom:zoomOptions
       },
       scales:{
-        x:{ticks:{color:'#71717a',font:{size:10},maxTicksLimit:12},grid:{color:'#2a2d3a'}},
-        y:{ticks:{color:'#71717a',font:{size:10},callback:v=>v+'%'},grid:{color:'#2a2d3a'}}
+        x:{ticks:{color:'#71717a',font:{size:10},maxTicksLimit:12},grid:{color:GRID()}},
+        y:{ticks:{color:'#71717a',font:{size:10},callback:v=>v+'%'},grid:{color:GRID()}}
       }
     }
   });
@@ -494,6 +543,7 @@ async function loadGold(){
       fetch(API+'/rates/gold?days=7300').then(r=>r.json())
     ]);
     goldData=hist.data||[];
+    if(fxData.length) renderNormChart();   // (114) 금이 환율보다 늦게 오면 비교 그래프 다시
     renderGoldCards(latest.data||[]);
     renderPeriodTabs('goldPeriodTabs',goldPeriod,setGoldPeriod);
     renderGoldChart();
@@ -595,7 +645,7 @@ function renderGoldChart(dateFrom,dateTo){
       responsive:true,maintainAspectRatio:false,
       interaction:{mode:'index',intersect:false},
       plugins:{
-        legend:{labels:{color:'#e4e4e7',font:{size:11}}},
+        legend:{labels:{color:LEG(),font:{size:11}}},
         tooltip:{callbacks:{label:ctx=>{
           const v=ctx.parsed.y;
           return isKrw?label+': '+Number(v).toLocaleString('ko-KR')+'원':label+': $'+fmt(v);
@@ -603,8 +653,8 @@ function renderGoldChart(dateFrom,dateTo){
         zoom:zoomOptions
       },
       scales:{
-        x:{ticks:{color:'#71717a',font:{size:10},maxTicksLimit:12},grid:{color:'#2a2d3a'}},
-        y:{ticks:{color:'#71717a',font:{size:10},callback:v=>isKrw?Number(v).toLocaleString('ko-KR'):'$'+fmt(v,0)},grid:{color:'#2a2d3a'}}
+        x:{ticks:{color:'#71717a',font:{size:10},maxTicksLimit:12},grid:{color:GRID()}},
+        y:{ticks:{color:'#71717a',font:{size:10},callback:v=>isKrw?Number(v).toLocaleString('ko-KR'):'$'+fmt(v,0)},grid:{color:GRID()}}
       }
     }
   });
