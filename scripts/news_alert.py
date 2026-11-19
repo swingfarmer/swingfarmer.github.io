@@ -14,6 +14,14 @@
   python3 news_alert.py --cats 증권 해외증시  # 지정 카테고리만
   python3 news_alert.py --cats 부동산 "하남 감북" --hours 24
   python3 news_alert.py --cats 코인 --hours 12
+  python3 news_alert.py --cats 증권 --dry    # 보내지 않고 무엇을 왜 뺐는지만 출력 (보낸 기록도 안 바꿈)
+
+(113) 중복 제거 — 매시간 「최근 2시간」을 모으니 같은 기사가 두 번씩 갔음. 아래를 겹쳐서 뺌:
+  ① 보낸 기록 ~/news_data/news_sent.json — 주소·제목이 같으면 48시간, 같은 사건이면 12시간 안에 다시 안 보냄
+  ② 같은 회차 다른 분야(증권→해외증시→경제 순서)에 이미 넣은 기사는 뺌
+  ③ 같은 사건 판정: 제목 글자 조각(트라이그램) 유사도 + 핵심 단어 겹침(언론사마다 제목을 바꿔 쓴 기사)
+  ④ 주소 정리(http·www·utm 꼬리 뺌) + 네이버 주소·원문 주소 둘 다 비교
+  기록은 텔레그램 보내기에 성공한 것만 남김(실패하면 다음 회차에 다시 시도)
 
 환경변수:
   NAVER_CLIENT_ID      — 네이버 클라우드 NAVER API HUB Client ID
@@ -46,6 +54,9 @@ from telegram_helper import send_dm_bot2 as _send_dm
 # 아카이브 경로 — VM 로컬 (fetch_news.py와 동일)
 NEWS_DATA_DIR = Path(os.path.expanduser("~/news_data"))
 ARCHIVE_DIR = NEWS_DATA_DIR / "archive"
+SENT_PATH = NEWS_DATA_DIR / "news_sent.json"   # (113) 보낸 기록
+SENT_KEEP_H = 48      # 주소·같은 제목: 이 시간 안에 보낸 건 다시 안 보냄
+STORY_KEEP_H = 12     # 같은 사건(제목만 다름): 이 시간 안에 보낸 건 다시 안 보냄 — 길면 다음 날 새 소식까지 막힘
 
 # ──────────────────────────────────────────────
 # 카테고리별 검색어
@@ -180,6 +191,7 @@ def search_news(query, display=15):
                 items.append({
                     "title": title,
                     "link": link,
+                    "orig": it.get("originallink", "") or "",
                     "pubDate": pub,
                     "source": extract_source(it.get("originallink", link)),
                 })
@@ -193,11 +205,125 @@ def search_news(query, display=15):
 # ──────────────────────────────────────────────
 
 def normalize_title(title):
-    """비교용 제목 정규화 — 괄호 접두사, 따옴표, 공백 제거"""
-    title = re.sub(r'[\[\(【《]\s*[^\]\)】》]+[\]\)】》]\s*', '', title)
-    title = re.sub(r'[""\'\'`「」『』]', '', title)
-    title = re.sub(r'\s+', '', title)
+    """비교용 제목 정규화 — 괄호 묶음([속보]·(종합2보) 등), 따옴표·문장부호, 공백 제거"""
+    title = re.sub(r'[\[\(【《<〈]\s*[^\]\)】》>〉]+[\]\)】》>〉]\s*', '', title)
+    title = re.sub(r'(속보|단독|종합|\d+보)\s*[:：]?', '', title)
+    title = re.sub(r'[^0-9A-Za-z가-힣]', '', title)   # (113) …·ㅡ·쉼표·% 같은 부호까지 뺌
     return title.lower()
+
+
+# (113) 같은 사건 판정용 핵심 단어 — 줄임말 통일, 끝 조사 뗌, 두 자리 이상 숫자(2.50·5000)도 단어로 봄
+_JOSA = ("에서", "으로", "에게", "까지", "부터", "보다", "은", "는", "이", "가", "을", "를",
+         "에", "의", "도", "로", "와", "과", "만")
+_STOP = {"속보", "단독", "종합", "오늘", "이번", "관련", "기자", "뉴스", "올해", "지난", "대한"}
+
+
+_ALIAS = {"한은": "한국은행", "美": "미국 ", "中": "중국 ", "日": "일본 ", "韓": "한국 ", "北": "북한 ",
+          "與": "여당 ", "野": "야당 ", "靑": "청와대 ", "銀": "은행 ", "株": "주식 ", "↑": " 상승 ", "↓": " 하락 "}
+# 방향·단계가 다르면 제목 단어가 많이 겹쳐도 다른 소식 (「코스피 상승 출발」 vs 「코스피 하락 출발」, 「~출발」 vs 「~마감」)
+_SIDES = [
+    ({"상승", "급등", "강세", "반등", "오름", "올라", "랠리", "최고"}, {"하락", "급락", "약세", "내림", "내려", "떨어", "추락", "최저"}),
+    ({"순매수", "매수"}, {"순매도", "매도"}),
+    ({"출발", "개장", "장중", "장초반", "오전"}, {"마감", "장마감", "종가"}),
+    ({"인상", "올려", "올린"}, {"인하", "내려", "내린"}),
+]
+
+
+def _fold(title):
+    t = re.sub(r'[\[\(【《<〈]\s*[^\]\)】》>〉]+[\]\)】》>〉]', ' ', title)
+    for k, v in _ALIAS.items():
+        t = t.replace(k, v)
+    return t
+
+
+def _side(words, side_set):
+    return any(any(x in w for x in side_set) for w in words)
+
+
+def story_tokens(title):
+    t = _fold(title)
+    out = set(n for n in re.findall(r'\d+(?:\.\d+)?', t) if len(n.replace('.', '')) >= 2)
+    for w in re.findall(r'[가-힣A-Za-z]{2,}', t):
+        w = w.lower()
+        for j in _JOSA:
+            if len(w) > len(j) + 1 and w.endswith(j):
+                w = w[:-len(j)]
+                break
+        if len(w) >= 2 and w not in _STOP:
+            out.add(w)
+    return out
+
+
+def same_story(a, b):
+    """같은 기사·같은 사건이면 True. a, b = 제목 문자열"""
+    # 방향·단계 검사를 먼저 (글자가 거의 같아도 「급등」↔「급락」은 다른 소식)
+    wa, wb = re.findall(r'[가-힣]+', _fold(a)), re.findall(r'[가-힣]+', _fold(b))
+    for s1, s2 in _SIDES:       # 한쪽은 상승만, 다른 쪽은 하락만 → 다른 소식
+        a1, a2, b1, b2 = _side(wa, s1), _side(wa, s2), _side(wb, s1), _side(wb, s2)
+        if (a1 and not a2 and b2 and not b1) or (a2 and not a1 and b1 and not b2):
+            return False
+    if _side(wa, _SIDES[2][1]) != _side(wb, _SIDES[2][1]):   # 「마감」은 한쪽에만 있어도 새 소식(장중 기사 → 마감 기사)
+        return False
+    if trigram_similarity(a, b) > 0.5:
+        return True
+    ta, tb = story_tokens(a), story_tokens(b)
+    if not ta or not tb:
+        return False
+    shared = len(ta & tb)
+    return shared >= 3 and shared / min(len(ta), len(tb)) >= 0.6
+
+
+def norm_url(u):
+    """주소 비교용 — http/https·www·끝 / ·#·utm 꼬리 뺌 (기사 번호가 든 ?id= 는 남김)"""
+    if not u:
+        return ""
+    u = u.strip().lower()
+    u = re.sub(r'^https?://', '', u)
+    u = re.sub(r'^(www\.|m\.)', '', u)
+    u = u.split('#')[0]
+    if '?' in u:
+        base, q = u.split('?', 1)
+        q = '&'.join(p for p in q.split('&') if p and not p.startswith('utm_'))
+        u = base + ('?' + q if q else '')
+    return u.rstrip('/')
+
+
+def item_urls(it):
+    return {x for x in (norm_url(it.get("link")), norm_url(it.get("orig"))) if x}
+
+
+def load_sent():
+    """보낸 기록 — [{t: epoch초, title, key, urls}]. 48시간 지난 건 버림"""
+    try:
+        with open(SENT_PATH, "r", encoding="utf-8") as f:
+            rows = json.load(f)
+    except Exception:
+        rows = []
+    cut = time.time() - SENT_KEEP_H * 3600
+    return [r for r in rows if r.get("t", 0) >= cut]
+
+
+def save_sent(rows):
+    tmp = str(SENT_PATH) + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(rows, f, ensure_ascii=False)
+    os.replace(tmp, SENT_PATH)
+
+
+def drop_reason(item, sent, run_kept):
+    """빼야 하면 (이유, 겹친 제목), 아니면 None"""
+    urls, key, title = item_urls(item), normalize_title(item["title"]), item["title"]
+    story_cut = time.time() - STORY_KEEP_H * 3600
+    for r in sent:
+        if urls & set(r.get("urls", [])) or (key and key == r.get("key")):
+            return ("보낸기록", r["title"])
+    for r in sent:
+        if r.get("t", 0) >= story_cut and same_story(title, r["title"]):
+            return ("보낸기록", r["title"])
+    for k in run_kept:
+        if urls & item_urls(k) or same_story(title, k["title"]):
+            return ("다른분야", k["title"])
+    return None
 
 
 def trigram_similarity(a, b):
@@ -261,18 +387,20 @@ def score_item(item, category=""):
     return score
 
 
-def smart_dedupe(items, threshold=0.5):
-    """트라이그램 유사도 기반 중복 제거. 스코어 높은 것 우선 보존."""
+def smart_dedupe(items, dropped=None):
+    """같은 기사·같은 사건 중복 제거(same_story + 같은 주소). 스코어 높은 것 우선 보존."""
     items.sort(key=lambda x: x.get("_score", 0), reverse=True)
     kept = []
     for item in items:
-        is_dup = False
+        hit = None
         for existing in kept:
-            if trigram_similarity(item["title"], existing["title"]) > threshold:
-                is_dup = True
+            if item_urls(item) & item_urls(existing) or same_story(item["title"], existing["title"]):
+                hit = existing
                 break
-        if not is_dup:
+        if hit is None:
             kept.append(item)
+        elif dropped is not None:
+            dropped.append(("같은기사", item["title"], hit["title"]))
     return kept
 
 
@@ -290,14 +418,26 @@ def filter_recent(items, hours=2):
     return recent
 
 
-def quality_filter(all_items, category, n=TOP_N):
-    """품질 필터링 파이프라인: 스코어링 → 스마트 중복제거 → 컷오프"""
+def quality_filter(all_items, category, n=TOP_N, sent=None, run_kept=None, dropped=None):
+    """품질 필터링 파이프라인: 스코어링 → 스마트 중복제거 → 보낸 기록·다른 분야 제거 → 컷오프"""
     # 스코어링
     for item in all_items:
         score_item(item, category)
 
     # 스마트 중복 제거
-    unique = smart_dedupe(all_items)
+    unique = smart_dedupe(all_items, dropped)
+
+    # (113) 이미 보낸 것 / 같은 회차 다른 분야에 넣은 것 빼기
+    if sent is not None or run_kept is not None:
+        rest = []
+        for it in unique:
+            why = drop_reason(it, sent or [], run_kept or [])
+            if why:
+                if dropped is not None:
+                    dropped.append((why[0], it["title"], why[1]))
+            else:
+                rest.append(it)
+        unique = rest
 
     # 최소 점수 컷오프
     filtered = [it for it in unique if it.get("_score", 0) >= MIN_SCORE]
@@ -354,6 +494,10 @@ def parse_cats():
     return valid
 
 
+def parse_dry():
+    return '--dry' in sys.argv[1:]
+
+
 def parse_hours():
     """--hours N 으로 필터 시간 지정. 기본 2시간."""
     args = sys.argv[1:]
@@ -376,7 +520,8 @@ def main():
     today = now.strftime("%Y-%m-%d")
     run_cats = parse_cats()
     filter_hours = parse_hours()
-    print(f"뉴스 알림 시작: {now.strftime('%Y-%m-%d %H:%M')} — {run_cats} (최근 {filter_hours}시간)")
+    dry = parse_dry()
+    print(f"뉴스 알림 시작: {now.strftime('%Y-%m-%d %H:%M')} — {run_cats} (최근 {filter_hours}시간){' — 🧪 dry: 안 보냄·기록 안 바꿈' if dry else ''}")
 
     if not NAVER_CLIENT_ID or not NAVER_CLIENT_SECRET:
         print("❌ NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 환경변수 없음")
@@ -397,6 +542,9 @@ def main():
 
     total_searched = 0
     total_sent = 0
+    sent = load_sent()      # (113) 보낸 기록
+    run_kept = []           # (113) 이번 회차에 이미 넣은 기사(다른 분야 중복 제거용)
+    print(f"  보낸 기록 {len(sent)}건 (최근 {SENT_KEEP_H}시간)")
 
     for cat in run_cats:
         queries = CATEGORIES[cat]
@@ -416,27 +564,51 @@ def main():
         # 시간 필터
         all_items = filter_recent(all_items, hours=filter_hours)
 
-        # 품질 필터링 (스코어링 + 스마트 중복제거 + 컷오프)
-        top = quality_filter(all_items, cat, TOP_N)
+        # 품질 필터링 (스코어링 + 스마트 중복제거 + 보낸 기록·다른 분야 제거 + 컷오프)
+        dropped = []
+        top = quality_filter(all_items, cat, TOP_N, sent=sent, run_kept=run_kept, dropped=dropped)
+        cnt = {}
+        for d in dropped:
+            cnt[d[0]] = cnt.get(d[0], 0) + 1
+        if dropped:
+            print(f"  {cat}: 중복 뺌 " + " · ".join(f"{k} {v}" for k, v in cnt.items()))
+        if dry:
+            for why, t, hit in dropped:
+                print(f"     ✂ [{why}] {t[:45]}\n        ≈ {hit[:45]}")
 
         # 아카이브에 저장 (스코어 필드 제거)
         archive_items = [{k: v for k, v in it.items() if not k.startswith("_")} for it in top]
         archive["categories"][cat] = {"items": archive_items, "count": len(archive_items)}
 
-        if top:
+        if top and dry:
+            print(f"  {cat}: 🧪 보낼 것 {len(top)}개")
+            for it in top:
+                print(f"     → ({it.get('_score', 0)}) {it['title'][:60]} [{it.get('source', '')}]")
+            run_kept.extend(top)
+        elif top:
             msg = format_telegram(cat, top)
             ok = send_telegram(msg, category=cat)
+            run_kept.extend(top)
+            if ok:
+                ts = time.time()
+                for it in top:
+                    sent.append({"t": ts, "title": it["title"], "key": normalize_title(it["title"]),
+                                 "urls": sorted(item_urls(it))})
             total_sent += len(top)
             scores = [it.get("_score", 0) for it in top]
             print(f"  {cat}: {len(top)}개 → 봇2 DM {'✅' if ok else '❌'} (점수 {min(scores)}~{max(scores)})")
         else:
             print(f"  {cat}: 0개 ({filter_hours}시간 이내 품질 기사 없음)")
-            if cat == "하남 감북":
+            if cat == "하남 감북" and not dry:
                 now_str = datetime.now(KST).strftime('%m/%d %H:%M')
                 send_telegram(f"📰 <b>{cat} 뉴스</b>  ({now_str})\n\n오늘 관련 뉴스 없음", category=cat)
 
         time.sleep(1)
 
+    if dry:
+        print("\n🧪 dry — 텔레그램·보낸 기록·아카이브 안 바꿈")
+        return
+    save_sent(sent)
     with open(archive_path, "w", encoding="utf-8") as f:
         json.dump(archive, f, ensure_ascii=False, indent=1)
 

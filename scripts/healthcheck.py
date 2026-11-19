@@ -69,6 +69,8 @@ TARGETS = [
     ("data/kr/momentum/weekly.json",       "모멘텀(주간)",      "weekly",  9),
     # 뉴스 — (086) 실제 저장 위치는 VM 로컬 ~/news_data (예전 data/news/index.json 은 없는 경로라 11/8부터 매일 "파일 없음" 경고가 났음)
     ("~/news_data/news.json",              "뉴스",             "daily",   0),
+    # (113) 매시간 뉴스 알림이 매번 다시 쓰는 보낸 기록 — 멈추면 여기서 걸림
+    ("~/news_data/news_sent.json",         "뉴스 알림(보낸 기록)", "daily", 0),
     # 미국 지수·VIX·환율 (야후, 086 추가)
     ("data/market_indicators.json",        "시장지표(야후)",    "weekday", 0),
     ("data/market_history.json",           "시장지표 히스토리", "weekday", 0),
