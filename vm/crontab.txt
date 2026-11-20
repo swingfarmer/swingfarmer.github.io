@@ -17,8 +17,8 @@
 * 8-15 * * 1-5 sleep 30 && . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_live_etf.py >> ~/logs/fetch_live_etf.log 2>&1
 # 🔒 비공개 레포 sf-private(자산·리서치 노트·종목 시뮬레이터·포트폴리오 원본) 받기 — 10분마다 → api_server /api/private 가 읽음 (109)
 */10 * * * * cd ~/sf-private && git pull -q >> ~/logs/sf_private_pull.log 2>&1
-# 공개 레포 자동 받기 — 5분마다(:03·:08…, 정각·auto_push 시각 피함). GitHub에 새 커밋이 있을 때만 pull(Claude가 직접 push → 사용자 git pull 생략). 받은 시각만 로그에 남음 (116)
-3-58/5 * * * * cd ~/swingfarmer.github.io && git fetch -q origin main && (git merge-base --is-ancestor origin/main HEAD || { date '+\%F \%T'; git pull -q --rebase --autostash; }) >> ~/logs/pub_pull.log 2>&1
+# 공개 레포 자동 받기 — 2분마다 홀수 분(:01·:03…, 짝수 분 정각·auto_push :10·:30 피함, 116에서 5분→2분). GitHub에 새 커밋이 있을 때만 pull(Claude가 직접 push → 사용자 git pull 생략). 받은 시각만 로그에 남음 (116)
+1-59/2 * * * * cd ~/swingfarmer.github.io && git fetch -q origin main && (git merge-base --is-ancestor origin/main HEAD || { date '+\%F \%T'; git pull -q --rebase --autostash; }) >> ~/logs/pub_pull.log 2>&1
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
