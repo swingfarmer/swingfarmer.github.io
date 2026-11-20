@@ -12,6 +12,7 @@ VM에서 실행 (먼저 . ~/.env_secrets):
   python3 scripts/db_tables.py --space             # (116) 용량 점검 — 테이블·인덱스·LOB·휴지통이 차지하는 MB (읽기만)
   python3 scripts/db_tables.py --shrink-plan       # (117) 부푼 테이블 찾기 + DATA 공간 줄이기 미리보기 (읽기만)
   python3 scripts/db_tables.py --shrink T1 T2      # (117) 테이블 빈칸 압축(행은 그대로). 백업 있어야 하고 y 입력
+  python3 scripts/db_tables.py --move T1 T2        # (117) --shrink가 안 줄면: 테이블을 새로 촘촘히 다시 씀(MOVE ONLINE, 행·인덱스 그대로). 백업·y 필수
   python3 scripts/db_tables.py --shrink-ts         # (117) DATA 공간 파일 자체를 줄임(무료 한도 계산이 줄어듦). y 입력
 
 삭제는 PURGE 없이 하므로 Oracle 휴지통에 들어감 → --restore 로 되살림.
@@ -322,6 +323,46 @@ def cmd_shrink(conn, cur, names):
     print("※ 테이블을 줄여도 DATA 파일 크기(한도 계산)는 그대로 — 다음 단계 --shrink-ts 가 파일을 줄임" if not bad else "※ 실패가 있음 — 화면 그대로 붙여 줄 것")
 
 
+def cmd_move(conn, cur, names):
+    """(117) SHRINK SPACE가 0 MB 줄어서(117 실측) MOVE ONLINE으로 다시 씀 — 같은 DATA 안 빈칸으로 옮겨 파일은 안 커짐"""
+    for t in names:
+        sql_path, json_path = backup_paths(t)
+        if not (os.path.exists(sql_path) and os.path.exists(json_path)):
+            sys.exit(f"❌ {t} 백업이 없음. 먼저: python3 scripts/db_tables.py --backup {t}")
+    # 원인 단서: 첫 테이블 구조에서 저장 관련 줄만
+    try:
+        cur.execute("SELECT DBMS_METADATA.GET_DDL('TABLE', :t) FROM dual", {'t': names[0]})
+        ddl = cur.fetchone()[0]; ddl = ddl.read() if hasattr(ddl, 'read') else ddl
+        keep = [l.strip() for l in ddl.splitlines()
+                if re.search(r'STORAGE|INITIAL|PCTFREE|COMPRESS|MEMOPTIMIZE|LOGGING|SEGMENT|INMEMORY|ORGANIZATION', l)]
+        print(f"[구조 단서 {names[0]}] " + ' / '.join(keep)[:600])
+    except Exception as e:
+        print('  (구조 못 읽음:', str(e).split(chr(10))[0], ')')
+    _print_alloc(cur, '다시 쓰기 전')
+    before = {}
+    for t in names:
+        before[t] = (count_rows(cur, t),) + _seg_mb(cur, t)
+        print(f"  {t:<18} {before[t][0]:>10,}행  테이블 {before[t][1]:,} MB  인덱스 {before[t][2]:,} MB")
+    if input("다시 쓸까? (y 입력): ").strip().lower() != 'y':
+        print("취소함"); return
+    bad = 0
+    for t in names:
+        try:
+            cur.execute(f'ALTER TABLE "{t}" MOVE ONLINE')
+            n, tb, ix = (count_rows(cur, t),) + _seg_mb(cur, t)
+            cur.execute("SELECT COUNT(*) FROM user_indexes WHERE table_name=:t AND status NOT IN ('VALID','N/A')", {'t': t})
+            inval = cur.fetchone()[0]
+            ok = n == before[t][0] and inval == 0
+            if not ok: bad += 1
+            print(f"{'✅' if ok else '❌'} {t:<18} {n:,}행 | 테이블 {before[t][1]:,} → {tb:,} MB | 인덱스 {before[t][2]:,} → {ix:,} MB"
+                  + (f" | ❌ 망가진 인덱스 {inval}개" if inval else '') + ('' if n == before[t][0] else ' | ❌ 행 수 다름!'))
+        except Exception as e:
+            bad += 1
+            print(f"❌ {t}: {str(e).split(chr(10))[0]}")
+    _print_alloc(cur, '다시 쓴 후')
+    print("※ 실패가 있음 — 화면 그대로 붙여 줄 것" if bad else "※ 다음: --shrink-plan 으로 줄일 크기 다시 확인 → --shrink-ts")
+
+
 def cmd_shrink_ts(cur):
     _print_alloc(cur, '줄이기 전')
     print("DATA 공간 파일을 쓰는 만큼만 남기고 줄임 (데이터는 안 지움. 오라클이 조각을 앞쪽으로 옮긴 뒤 파일 끝을 잘라냄)")
@@ -353,6 +394,8 @@ def main():
         cmd_shrink_plan(cur)
     elif a[0] == '--shrink' and len(a) > 1:
         cmd_shrink(conn, cur, check_names(cur, a[1:]))
+    elif a[0] == '--move' and len(a) > 1:
+        cmd_move(conn, cur, check_names(cur, a[1:]))
     elif a[0] == '--shrink-ts':
         cmd_shrink_ts(cur)
     elif a[0] == '--restore' and len(a) == 2:
