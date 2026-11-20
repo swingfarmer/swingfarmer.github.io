@@ -73,6 +73,8 @@ TARGETS = [
     ("~/news_data/news_sent.json",         "뉴스 알림(보낸 기록)", "daily", 0),
     # (116) 시장 국면 알림 — 평일 21:25마다 다시 씀(updated는 해시에서 빠짐, 거래일마다 기록이 늘어남). node·데이터 빠짐으로 멈추면 여기서 걸림
     ("~/sf_state/regime.json",             "시장 국면 알림",     "weekday", 0),
+    # (116) 대한항공 유가 요약 — 바뀔 때만 다시 씀(오피넷 하루 늦음·싱가포르 휴장) → 5일 허용
+    ("~/sf-private/data/kal/kal_market_summary.csv", "대한항공 유가 요약(sf-private)", "weekday", 5),
     # 미국 지수·VIX·환율 (야후, 086 추가)
     ("data/market_indicators.json",        "시장지표(야후)",    "weekday", 0),
     ("data/market_history.json",           "시장지표 히스토리", "weekday", 0),
