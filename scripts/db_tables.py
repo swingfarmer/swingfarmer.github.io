@@ -236,10 +236,10 @@ def _alloc(cur):
     """SAMPLESCHEMA 뺀 데이터 파일 할당 합계 MB(무료 한도 계산), DATA 할당·빈칸"""
     cur.execute("SELECT ROUND(SUM(bytes)/1048576) FROM dba_data_files WHERE tablespace_name <> 'SAMPLESCHEMA'")
     tot = cur.fetchone()[0]
-    cur.execute("""SELECT ROUND(SUM(bytes)/1048576),
-                          (SELECT ROUND(NVL(SUM(bytes),0)/1048576) FROM dba_free_space WHERE tablespace_name='DATA')
-                   FROM dba_data_files WHERE tablespace_name='DATA'""")
-    d, fr = cur.fetchone()
+    cur.execute("SELECT ROUND(SUM(bytes)/1048576) FROM dba_data_files WHERE tablespace_name='DATA'")
+    d = cur.fetchone()[0]
+    cur.execute("SELECT ROUND(NVL(SUM(bytes),0)/1048576) FROM dba_free_space WHERE tablespace_name='DATA'")
+    fr = cur.fetchone()[0]
     return tot, d, fr
 
 
