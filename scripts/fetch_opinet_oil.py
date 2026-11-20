@@ -15,6 +15,7 @@
   python3 scripts/fetch_opinet_oil.py                      # 최근 며칠 → DB 저장 (크론)
   python3 scripts/fetch_opinet_oil.py --backfill 2025-01 --probe   # 과거 조회 출력만
   python3 scripts/fetch_opinet_oil.py --backfill 2025-01   # 2025-01부터 이번 달까지 한 달씩 → DB (요청 사이 3초)
+  python3 scripts/fetch_opinet_oil.py --status             # (116) DB에 언제부터 몇 일 쌓였는지 월별로 화면에만 (오피넷 호출 안 함)
 """
 import os, sys, re, time, html, argparse
 import urllib.request, urllib.parse, http.cookiejar
@@ -217,6 +218,27 @@ def save(conn, rows):
     return n
 
 
+def db_connect():
+    import oracledb
+    return oracledb.connect(
+        user='ADMIN', password=os.environ.get('ORACLE_DB_PASSWORD', ''),
+        dsn='db1007_medium', config_dir=WALLET_DIR, wallet_location=WALLET_DIR,
+        wallet_password=os.environ.get('ORACLE_WALLET_PASSWORD', ''))
+
+
+def status():
+    """(116) DB 범위만 화면에 — 값 자체는 출력하지 않음(약관: 복제·유통 금지)"""
+    conn = db_connect(); cur = conn.cursor()
+    cur.execute("SELECT MIN(price_date), MAX(price_date), COUNT(*), COUNT(kero), COUNT(dubai) FROM oil_intl_prices")
+    mn, mx, n, nk, nd = cur.fetchone()
+    print(f'전체: {mn:%Y-%m-%d} ~ {mx:%Y-%m-%d} / {n}일 (항공유 {nk}일 · 두바이 {nd}일)' if n else '❌ 비어 있음')
+    cur.execute("""SELECT TO_CHAR(price_date,'YYYY-MM'), COUNT(*), COUNT(kero), COUNT(dubai)
+                   FROM oil_intl_prices GROUP BY TO_CHAR(price_date,'YYYY-MM') ORDER BY 1""")
+    for ym, c, k, d in cur.fetchall():
+        print(f'  {ym}: {c:2d}일 (항공유 {k:2d} · 두바이 {d:2d})')
+    cur.close(); conn.close()
+
+
 def show(rows, limit=8):
     keys = sorted(rows)
     for d in keys[-limit:]:
@@ -230,8 +252,12 @@ def main():
     ap = argparse.ArgumentParser(description='오피넷 국제유가·석유제품 → Oracle')
     ap.add_argument('--probe', action='store_true', help='출력만, 저장 안 함')
     ap.add_argument('--backfill', metavar='YYYY-MM', help='이 달부터 이번 달까지 한 달씩')
+    ap.add_argument('--status', action='store_true', help='(116) DB 범위만 월별로 출력')
     a = ap.parse_args()
     load_env()
+    if a.status:
+        status()
+        return
 
     print(f'=== 오피넷 국제유가 {"과거 " + a.backfill + "~" if a.backfill else "최근"} ({"출력만" if a.probe else "DB 저장"}) ===')
     rows = {}
@@ -258,11 +284,7 @@ def main():
         print('(출력만 — 저장 안 함)')
         return
 
-    import oracledb
-    conn = oracledb.connect(
-        user='ADMIN', password=os.environ.get('ORACLE_DB_PASSWORD', ''),
-        dsn='db1007_medium', config_dir=WALLET_DIR, wallet_location=WALLET_DIR,
-        wallet_password=os.environ.get('ORACLE_WALLET_PASSWORD', ''))
+    conn = db_connect()
     ensure_table(conn)
     n = save(conn, rows)
     conn.close()
