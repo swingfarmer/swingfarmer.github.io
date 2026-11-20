@@ -345,6 +345,9 @@ def cmd_move(conn, cur, names):
         print(f"  {t:<18} {before[t][0]:>10,}행  테이블 {before[t][1]:,} MB  인덱스 {before[t][2]:,} MB")
     if input("다시 쓸까? (y 입력): ").strip().lower() != 'y':
         print("취소함"); return
+    for sql in ("ALTER SESSION DISABLE PARALLEL DDL", "ALTER SESSION DISABLE PARALLEL DML", "ALTER SESSION DISABLE PARALLEL QUERY"):
+        try: cur.execute(sql)
+        except Exception: pass
     bad = 0
     for t in names:
         try:
@@ -358,7 +361,7 @@ def cmd_move(conn, cur, names):
                   + (f" | ❌ 망가진 인덱스 {inval}개" if inval else '') + ('' if n == before[t][0] else ' | ❌ 행 수 다름!'))
         except Exception as e:
             bad += 1
-            print(f"❌ {t}: {str(e).split(chr(10))[0]}")
+            print(f"❌ {t}: " + ' / '.join(l.strip() for l in str(e).splitlines() if l.strip().startswith('ORA-')))
     _print_alloc(cur, '다시 쓴 후')
     print("※ 실패가 있음 — 화면 그대로 붙여 줄 것" if bad else "※ 다음: --shrink-plan 으로 줄일 크기 다시 확인 → --shrink-ts")
 
@@ -372,7 +375,7 @@ def cmd_shrink_ts(cur):
         out = _ts_shrink(cur, 'TS_MODE_SHRINK')
         print(out.strip()[:3000])
     except Exception as e:
-        print('❌ 실패:', str(e).split(chr(10))[0])
+        print('❌ 실패: ' + ' / '.join(l.strip() for l in str(e).splitlines() if l.strip().startswith('ORA-')))
     _print_alloc(cur, '줄이기 후')
 
 
