@@ -146,7 +146,50 @@ def cmd_recyclebin(cur):
 
 
 def cmd_space(cur):
-    """(116) ORA-65114(저장 공간 초과) 원인 찾기 — 읽기만"""
+    """(116) ORA-65114(저장 공간 초과) 원인 찾기 — 읽기만
+    (117) 무료 한도는 「SAMPLESCHEMA 뺀 데이터 파일 할당 크기」로 셈(dba_data_files) — 지운 뒤에도 파일은 안 줄어듦.
+          그래서 맨 위에 그 숫자 + 공간별 할당/빈칸, 아래에 큰 테이블의 행 수·실제 데이터 추정(부풀었는지)"""
+    def q(sql, *a):
+        try:
+            cur.execute(sql, *a); return cur.fetchall()
+        except Exception as e:
+            print('  (못 읽음:', str(e).split(chr(10))[0], ')'); return None
+    r = q("SELECT banner_full FROM v$version")
+    if r: print('DB 버전:', ' / '.join(x[0].replace(chr(10), ' ') for x in r)[:160])
+    r = q("SELECT property_value FROM database_properties WHERE property_name='MAX_PDB_STORAGE'")
+    if r: print('MAX_PDB_STORAGE:', r[0][0])
+    r = q("""SELECT f.tablespace_name, ROUND(SUM(f.bytes)/1048576),
+                    ROUND(NVL(MAX(fs.free),0)/1048576), MAX(f.autoextensible), ROUND(MAX(f.maxbytes)/1048576)
+             FROM dba_data_files f
+             LEFT JOIN (SELECT tablespace_name, SUM(bytes) free FROM dba_free_space GROUP BY tablespace_name) fs
+               ON fs.tablespace_name = f.tablespace_name
+             GROUP BY f.tablespace_name ORDER BY 2 DESC""")
+    if r:
+        tot = sum(x[1] for x in r if x[0] != 'SAMPLESCHEMA')
+        print(f"=== ★ 한도 계산용: 데이터 파일 할당 합계(SAMPLESCHEMA 제외) {tot:,} MB / 20,480 MB = {tot/20480*100:.0f}% ===")
+        print("  공간 / 할당 MB / 그중 빈칸 MB / 자동확장 / 최대 MB")
+        for t, mb, fr, ae, mx in r:
+            print(f"  {t:<20} {mb:>9,} {fr:>9,} {ae:>4} {mx:>10,}")
+    r = q("SELECT tablespace_name, ROUND(SUM(bytes)/1048576) FROM dba_temp_files GROUP BY tablespace_name")
+    if r:
+        for t, mb in r: print(f"  (임시) {t:<14} {mb:>9,} MB")
+    print("=== 큰 테이블: 행 수 · 실제 데이터 추정(행 수×평균 길이) · 조각 크기 ===")
+    r = q("""SELECT t.table_name, t.num_rows, t.avg_row_len, t.blocks, t.compression, t.compress_for,
+                    TO_CHAR(t.last_analyzed,'YYYY-MM-DD'), t.partitioned, ROUND(s.mb,1)
+             FROM user_tables t
+             JOIN (SELECT segment_name, SUM(bytes)/1048576 mb FROM user_segments
+                   WHERE segment_type LIKE 'TABLE%' GROUP BY segment_name) s ON s.segment_name = t.table_name
+             ORDER BY s.mb DESC FETCH FIRST 8 ROWS ONLY""")
+    if r:
+        for tn, nr, arl, bl, cp, cf, la, pt, mb in r:
+            est = (nr or 0) * (arl or 0) / 1048576
+            try:
+                cur.execute(f'SELECT COUNT(*) FROM "{tn}"'); live = cur.fetchone()[0]
+            except Exception:
+                live = None
+            lv = f"{live:,}" if live is not None else '?'
+            print(f"  {tn:<18} 조각 {mb:>8,.1f}MB | 지금 행 {lv:>10} | 통계 행 {nr or 0:>10,} × 평균 {arl or 0}B ≈ {est:,.1f}MB"
+                  f" | 압축 {cp}/{cf or '-'} | 분할 {pt} | 통계일 {la}")
     try:
         cur.execute("SELECT ROUND(SUM(bytes)/1048576) FROM dba_segments")
         print(f"=== DB 전체 사용(모든 계정·시스템 포함) {cur.fetchone()[0]:,} MB (무료 한도 약 20,480 MB) ===")
