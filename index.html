@@ -154,10 +154,14 @@ body.sf-dark .tag.ext{background:rgba(99,102,241,.15)!important;color:#818cf8!im
 body.sf-dark .tag.new{background:rgba(34,197,94,.15)!important;color:#4ade80!important}
 body.sf-dark footer{color:#71717a}
 /* (115) 카드 / 목록 보기 */
-.view-bar{display:flex;justify-content:flex-end;gap:4px;margin:0 0 8px}
+.view-bar{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px;margin:0 0 8px}
+.view-bar button,.menu-total{white-space:nowrap}
+@media(max-width:500px){.vb-left{flex:1 0 100%}}
 .view-bar button{padding:5px 12px;border:1px solid #d1d5db;background:#fff;color:#555;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
 .view-bar button.on{background:#1F4E78;color:#fff;border-color:#1F4E78}
-.lv-tools{display:flex;gap:6px;margin-right:auto}
+.vb-left{display:flex;align-items:center;gap:10px;margin-right:auto}
+.menu-total{font-size:12px;color:#666;font-weight:600}
+.lv-tools{display:flex;gap:6px}
 .lv-tools button{background:none;border:1px solid #d1d5db;color:#1F4E78;font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit}
 .lv-sec{background:#fff;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,0.06);margin-bottom:10px;overflow:hidden}
 .lv-title{display:flex;align-items:center;gap:8px;padding:11px 14px;font-weight:700;color:#1F4E78;font-size:15px;cursor:pointer;user-select:none;background:#f0f5fa}
@@ -173,6 +177,7 @@ body.sf-dark footer{color:#71717a}
 .lv-d a{color:#1F4E78;font-weight:600;margin-right:10px;text-decoration:none}
 @media(max-width:600px){.lv-row{flex-wrap:wrap}.lv-d{white-space:normal;width:100%;padding-left:28px}}
 body.sf-dark .view-bar button,body.sf-dark .lv-tools button{background:#1a1d27;border-color:#2a2d3a;color:#a1a1aa}
+body.sf-dark .menu-total{color:#a1a1aa}
 body.sf-dark .view-bar button.on{background:#26364d;color:#85b5e0;border-color:#3b5373}
 body.sf-dark .lv-sec{background:#1a1d27;box-shadow:none;border:1px solid #2a2d3a}
 body.sf-dark .lv-title{background:#222532;color:#85b5e0}
@@ -226,12 +231,12 @@ body.sf-dark .guide-strip span{color:#a1a1aa}
 </div>
 
 <!-- ═══ (115) 보기 전환: 카드 / 목록 (옛 /1808/ 전체 메뉴를 메인 안으로) — 목록은 아래 패널 카드를 읽어 그림, 선택은 이 브라우저에 기억 ═══ -->
-<div class="view-bar"><span class="lv-tools" id="lvTools" style="display:none"><button type="button" id="lvOpenAll">모두 펼치기</button><button type="button" id="lvCloseAll">모두 접기</button></span><button type="button" data-view="card">🗂 카드</button><button type="button" data-view="list">📋 목록</button></div>
+<div class="view-bar"><span class="vb-left"><span class="menu-total" id="menuTotal" title="메인 카드(메뉴) 전체 개수 — 패널 카드 수로 자동 계산">전체 117개</span><span class="lv-tools" id="lvTools" style="display:none"><button type="button" id="lvOpenAll">모두 펼치기</button><button type="button" id="lvCloseAll">모두 접기</button></span></span><button type="button" data-view="card">🗂 카드</button><button type="button" data-view="list">📋 목록</button></div>
 <div id="listView" style="display:none"><div id="lvBody"></div></div>
 
 <!-- ═══ 카테고리 카드 ═══ -->
 <div class="cat-grid">
-  <div class="cat-card" data-cat="info"><div class="cat-icon">📰</div><div class="cat-name">정보·시장</div><div class="cat-cnt">17개</div></div>
+  <div class="cat-card" data-cat="info"><div class="cat-icon">📰</div><div class="cat-name">정보·시장</div><div class="cat-cnt">16개</div></div>
   <div class="cat-card" data-cat="asset"><div class="cat-icon">💰</div><div class="cat-name">자산·연금·파이어</div><div class="cat-cnt">10개</div></div>
   <div class="cat-card" data-cat="stock"><div class="cat-icon">📈</div><div class="cat-name">주식·투자</div><div class="cat-cnt">35개</div></div>
   <div class="cat-card" data-cat="estate"><div class="cat-icon">🏠</div><div class="cat-name">부동산</div><div class="cat-cnt">15개</div></div>
@@ -450,6 +455,9 @@ body.sf-dark .guide-strip span{color:#a1a1aa}
     var c = card.querySelector('.cat-cnt');
     if(p && c) c.textContent = p.querySelectorAll('.tool-grid > .card').length + '개';
   });
+  /* (116) 전체 개수도 자동 — 패널 카드 전부 */
+  var mt = document.getElementById('menuTotal');
+  if(mt) mt.textContent = '전체 ' + document.querySelectorAll('.tool-panel[id^="panel-"] .tool-grid > .card').length + '개';
   window.closePanel = function(){
     document.querySelectorAll('.tool-panel').forEach(function(p){ p.classList.remove('active'); });
     document.querySelectorAll('.cat-card').forEach(function(c){ c.classList.remove('active'); });
