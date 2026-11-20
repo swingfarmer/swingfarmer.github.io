@@ -34,7 +34,7 @@ def get_conn():
     import oracledb
     w = os.path.expanduser("~/wallet")
     return oracledb.connect(user="ADMIN", password=os.environ.get("ORACLE_DB_PASSWORD", ""),
-                            dsn="db1007_medium", config_dir=w, wallet_location=w,
+                            dsn="db1007_tp", config_dir=w, wallet_location=w,
                             wallet_password=os.environ.get("ORACLE_WALLET_PASSWORD", ""))
 
 

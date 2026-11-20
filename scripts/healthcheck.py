@@ -136,7 +136,7 @@ def check_db_freshness():
         WALLET_DIR = os.path.expanduser('~/wallet')
         conn = oracledb.connect(
             user='ADMIN', password=os.environ.get('ORACLE_DB_PASSWORD', ''),
-            dsn='db1007_medium', config_dir=WALLET_DIR, wallet_location=WALLET_DIR,
+            dsn='db1007_tp', config_dir=WALLET_DIR, wallet_location=WALLET_DIR,
             wallet_password=os.environ.get('ORACLE_WALLET_PASSWORD', ''))
         cur = conn.cursor()
         now = datetime.now()
@@ -320,7 +320,7 @@ def oracle_admin_expiry():
         WALLET_DIR = os.path.expanduser('~/wallet')
         conn = oracledb.connect(
             user='ADMIN', password=os.environ.get('ORACLE_DB_PASSWORD', ''),
-            dsn='db1007_medium', config_dir=WALLET_DIR, wallet_location=WALLET_DIR,
+            dsn='db1007_tp', config_dir=WALLET_DIR, wallet_location=WALLET_DIR,
             wallet_password=os.environ.get('ORACLE_WALLET_PASSWORD', ''))
         cur = conn.cursor()
         try:

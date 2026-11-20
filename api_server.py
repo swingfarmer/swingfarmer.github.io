@@ -51,7 +51,7 @@ def rate_limit_handler(e):
 WALLET_DIR = os.path.expanduser('~/wallet')
 DB_USER = 'ADMIN'
 DB_PASSWORD = os.environ.get('ORACLE_DB_PASSWORD', '')
-DSN = 'db1007_medium'
+DSN = 'db1007_tp'
 
 # ── Firebase 토큰 검증 ──
 FIREBASE_PROJECT_ID = 'swingfarmer-board01'

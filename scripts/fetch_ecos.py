@@ -61,7 +61,7 @@ WALLET_DIR = os.path.expanduser('~/wallet')
 def get_conn():
     return oracledb.connect(
         user='ADMIN', password=os.environ.get('ORACLE_DB_PASSWORD', ''),
-        dsn='db1007_medium', config_dir=WALLET_DIR, wallet_location=WALLET_DIR,
+        dsn='db1007_tp', config_dir=WALLET_DIR, wallet_location=WALLET_DIR,
         wallet_password=os.environ.get('ORACLE_WALLET_PASSWORD', ''))
 
 def fetch_ecos(stat_code, item_code, cycle, start_date, end_date):

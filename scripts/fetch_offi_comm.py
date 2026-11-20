@@ -160,7 +160,7 @@ def get_conn():
     return oracledb.connect(
         user='ADMIN',
         password=os.environ['ORACLE_DB_PASSWORD'],
-        dsn='db1007_medium',
+        dsn='db1007_tp',
         config_dir='/home/ubuntu/wallet',
         wallet_location='/home/ubuntu/wallet',
         wallet_password=os.environ['ORACLE_WALLET_PASSWORD']

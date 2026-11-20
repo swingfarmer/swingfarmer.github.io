@@ -122,7 +122,7 @@ def save_to_oracle(rows_qty, rows_amt, kospi200_map=None, kospi_map=None):
     conn = oracledb.connect(
         user="ADMIN",
         password=os.environ.get("ORACLE_DB_PASSWORD", ""),
-        dsn="db1007_medium",
+        dsn="db1007_tp",
         config_dir=WALLET_DIR,
         wallet_location=WALLET_DIR,
         wallet_password=os.environ.get("ORACLE_WALLET_PASSWORD", "")
@@ -224,7 +224,7 @@ def save_to_oracle(rows_qty, rows_amt, kospi200_map=None, kospi_map=None):
 def export_json(conn_params=None):
     conn = oracledb.connect(
         user="ADMIN", password=os.environ.get("ORACLE_DB_PASSWORD", ""),
-        dsn="db1007_medium", config_dir=WALLET_DIR,
+        dsn="db1007_tp", config_dir=WALLET_DIR,
         wallet_location=WALLET_DIR,
         wallet_password=os.environ.get("ORACLE_WALLET_PASSWORD", "")
     )

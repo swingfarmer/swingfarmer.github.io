@@ -106,7 +106,7 @@ def load_opinet():
         w = os.path.expanduser('~/wallet')
         conn = oracledb.connect(
             user='ADMIN', password=os.environ.get('ORACLE_DB_PASSWORD', ''),
-            dsn='db1007_medium', config_dir=w, wallet_location=w,
+            dsn='db1007_tp', config_dir=w, wallet_location=w,
             wallet_password=os.environ.get('ORACLE_WALLET_PASSWORD', ''), tcp_connect_timeout=15)
         cur = conn.cursor()
         cur.execute("""SELECT TO_CHAR(price_date,'MM/DD'), kero, dubai FROM (
