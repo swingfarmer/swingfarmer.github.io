@@ -13,6 +13,8 @@ VM에서 실행 (먼저 . ~/.env_secrets):
   python3 scripts/db_tables.py --shrink-plan       # (117) 부푼 테이블 찾기 + DATA 공간 줄이기 미리보기 (읽기만)
   python3 scripts/db_tables.py --shrink T1 T2      # (117) 테이블 빈칸 압축(행은 그대로). 백업 있어야 하고 y 입력
   python3 scripts/db_tables.py --move T1 T2        # (117) --shrink가 안 줄면: 테이블을 새로 촘촘히 다시 씀(MOVE ONLINE, 행·인덱스 그대로). 백업·y 필수
+  python3 scripts/db_tables.py --ts-map            # (117) DATA 파일 끝쪽에 걸린 조각 목록 — 파일이 더 안 줄 때 원인 찾기 (읽기만)
+  python3 scripts/db_tables.py --rebuild I1 I2     # (117) 인덱스를 새로 촘촘히 다시 만듦(REBUILD ONLINE). y 필수
   python3 scripts/db_tables.py --shrink-ts         # (117) DATA 공간 파일 자체를 줄임(무료 한도 계산이 줄어듦). y 입력
 
 삭제는 PURGE 없이 하므로 Oracle 휴지통에 들어감 → --restore 로 되살림.
@@ -366,6 +368,56 @@ def cmd_move(conn, cur, names):
     print("※ 실패가 있음 — 화면 그대로 붙여 줄 것" if bad else "※ 다음: --shrink-plan 으로 줄일 크기 다시 확인 → --shrink-ts")
 
 
+def cmd_ts_map(cur):
+    """(117) DATA 파일에서 가장 끝까지 걸쳐 있는 조각 15개 — 이게 파일 끝을 붙잡아 --shrink-ts가 더 못 줄임"""
+    _print_alloc(cur, '지금')
+    cur.execute("SELECT block_size FROM dba_tablespaces WHERE tablespace_name='DATA'")
+    bs = cur.fetchone()[0]
+    cur.execute("""SELECT owner, segment_name, segment_type, MAX(block_id + blocks) endb, SUM(bytes)
+                   FROM dba_extents WHERE tablespace_name='DATA'
+                   GROUP BY owner, segment_name, segment_type, partition_name
+                   ORDER BY endb DESC FETCH FIRST 15 ROWS ONLY""")
+    rows = cur.fetchall()
+    print("  끝 위치(파일 앞에서 MB) / 소유 / 종류 / 이름 / 크기 MB")
+    tabs, idxs = [], []
+    for ow, nm, ty, endb, by in rows:
+        print(f"  {endb*bs/1048576:>9,.0f} {ow:<8} {ty:<16} {nm[:34]:<34} {by/1048576:>8,.1f}")
+        if ow == 'ADMIN' and ty == 'TABLE' and nm not in tabs: tabs.append(nm)
+        if ow == 'ADMIN' and ty == 'INDEX' and nm not in idxs: idxs.append(nm)
+    if tabs: print("  → 테이블 다시 쓰기: python3 scripts/db_tables.py --move " + ' '.join(tabs))
+    if idxs: print("  → 인덱스 다시 만들기: python3 scripts/db_tables.py --rebuild " + ' '.join(idxs))
+    if any(r[0] != 'ADMIN' for r in rows[:3]):
+        print("  ※ 맨 끝 3개 중 ADMIN이 아닌 것(SYS 등)이 있으면 그건 내가 못 옮김 — 그 위치까지만 줄어듦")
+
+
+def cmd_rebuild(cur, names):
+    names = [n.upper() for n in names]
+    for n in names:
+        if not NAME_RE.match(n): sys.exit(f"❌ 인덱스 이름 형식이 이상함: {n}")
+    cur.execute("SELECT index_name, table_name FROM user_indexes")
+    have = dict(cur.fetchall())
+    miss = [n for n in names if n not in have]
+    if miss: sys.exit("❌ 없는 인덱스: " + ', '.join(miss))
+    _print_alloc(cur, '다시 만들기 전')
+    for n in names:
+        cur.execute("SELECT ROUND(NVL(SUM(bytes),0)/1048576,1) FROM user_segments WHERE segment_name=:n", {'n': n})
+        print(f"  {n:<24} (테이블 {have[n]}) {cur.fetchone()[0]:,} MB")
+    if input("다시 만들까? 데이터는 그대로 (y 입력): ").strip().lower() != 'y':
+        print("취소함"); return
+    for sql in ("ALTER SESSION DISABLE PARALLEL DDL", "ALTER SESSION DISABLE PARALLEL QUERY"):
+        try: cur.execute(sql)
+        except Exception: pass
+    for n in names:
+        try:
+            cur.execute(f'ALTER INDEX "{n}" REBUILD ONLINE')
+            cur.execute("SELECT status FROM user_indexes WHERE index_name=:n", {'n': n}); st = cur.fetchone()[0]
+            cur.execute("SELECT ROUND(NVL(SUM(bytes),0)/1048576,1) FROM user_segments WHERE segment_name=:n", {'n': n})
+            print(f"{'✅' if st == 'VALID' else '❌'} {n:<24} {cur.fetchone()[0]:,} MB · 상태 {st}")
+        except Exception as e:
+            print(f"❌ {n}: " + ' / '.join(l.strip() for l in str(e).splitlines() if l.strip().startswith('ORA-')))
+    _print_alloc(cur, '다시 만든 후')
+
+
 def cmd_shrink_ts(cur):
     _print_alloc(cur, '줄이기 전')
     print("DATA 공간 파일을 쓰는 만큼만 남기고 줄임 (데이터는 안 지움. 오라클이 조각을 앞쪽으로 옮긴 뒤 파일 끝을 잘라냄)")
@@ -399,6 +451,10 @@ def main():
         cmd_shrink(conn, cur, check_names(cur, a[1:]))
     elif a[0] == '--move' and len(a) > 1:
         cmd_move(conn, cur, check_names(cur, a[1:]))
+    elif a[0] == '--ts-map':
+        cmd_ts_map(cur)
+    elif a[0] == '--rebuild' and len(a) > 1:
+        cmd_rebuild(cur, a[1:])
     elif a[0] == '--shrink-ts':
         cmd_shrink_ts(cur)
     elif a[0] == '--restore' and len(a) == 2:
