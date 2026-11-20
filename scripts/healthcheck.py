@@ -172,6 +172,19 @@ def check_db_freshness():
                 entry["last_modified"] = None
                 entry["stale_days"] = None
             results.append(entry)
+        # (117) 무료 한도 20GB = SAMPLESCHEMA 뺀 데이터 파일 할당 합계. 116에 113%까지 차서 DB 쓰기 실패(ORA-65114)
+        #       80% 넘으면 경고 → python3 scripts/db_tables.py --shrink-plan 부터 (절차는 db_tables.py 맨 위)
+        ue = {"file": "Oracle DB", "desc": "DB 용량 (무료 한도 20GB)", "cycle": "daily",
+              "max_stale_days": None, "last_modified": now.strftime("%Y-%m-%d"), "stale_days": None}
+        try:
+            cur.execute("SELECT ROUND(SUM(bytes)/1048576) FROM dba_data_files WHERE tablespace_name <> 'SAMPLESCHEMA'")
+            mb = cur.fetchone()[0] or 0
+            pct = mb / 20480 * 100
+            ue["status"] = "stale" if pct >= 80 else "ok"
+            ue["message"] = f"{pct:.0f}% 사용" + (" — db_tables.py --shrink-plan 확인" if pct >= 80 else "")
+        except Exception as e:
+            ue["status"] = "stale"; ue["message"] = f"용량 조회 실패: {str(e)[:80]}"
+        results.append(ue)
         cur.close()
         conn.close()
     except Exception as e:
