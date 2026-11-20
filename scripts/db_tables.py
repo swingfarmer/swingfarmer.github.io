@@ -10,6 +10,9 @@ VM에서 실행 (먼저 . ~/.env_secrets):
   python3 scripts/db_tables.py --recyclebin        # 휴지통(삭제된 테이블) 목록
   python3 scripts/db_tables.py --restore T1        # 휴지통에서 되살리기 (FLASHBACK)
   python3 scripts/db_tables.py --space             # (116) 용량 점검 — 테이블·인덱스·LOB·휴지통이 차지하는 MB (읽기만)
+  python3 scripts/db_tables.py --shrink-plan       # (117) 부푼 테이블 찾기 + DATA 공간 줄이기 미리보기 (읽기만)
+  python3 scripts/db_tables.py --shrink T1 T2      # (117) 테이블 빈칸 압축(행은 그대로). 백업 있어야 하고 y 입력
+  python3 scripts/db_tables.py --shrink-ts         # (117) DATA 공간 파일 자체를 줄임(무료 한도 계산이 줄어듦). y 입력
 
 삭제는 PURGE 없이 하므로 Oracle 휴지통에 들어감 → --restore 로 되살림.
 휴지통에서도 사라졌으면 ~/db_backup/ 의 .sql 로 구조를 다시 만들 수 있음.
@@ -228,6 +231,110 @@ def cmd_restore(conn, cur, name):
     print(f"✅ {t} 되살림 ({count_rows(cur, t):,}행)")
 
 
+# ---------- (117) ORA-65114 정리: 부푼 테이블 압축 → DATA 공간 파일 줄이기 ----------
+def _alloc(cur):
+    """SAMPLESCHEMA 뺀 데이터 파일 할당 합계 MB(무료 한도 계산), DATA 할당·빈칸"""
+    cur.execute("SELECT ROUND(SUM(bytes)/1048576) FROM dba_data_files WHERE tablespace_name <> 'SAMPLESCHEMA'")
+    tot = cur.fetchone()[0]
+    cur.execute("""SELECT ROUND(SUM(bytes)/1048576),
+                          (SELECT ROUND(NVL(SUM(bytes),0)/1048576) FROM dba_free_space WHERE tablespace_name='DATA')
+                   FROM dba_data_files WHERE tablespace_name='DATA'""")
+    d, fr = cur.fetchone()
+    return tot, d, fr
+
+
+def _print_alloc(cur, title):
+    tot, d, fr = _alloc(cur)
+    print(f"=== {title}: 한도 계산 {tot:,} MB / 20,480 MB = {tot/20480*100:.0f}% | DATA 할당 {d:,} MB (빈칸 {fr:,} MB) ===")
+
+
+def _seg_mb(cur, t):
+    cur.execute("SELECT ROUND(NVL(SUM(bytes),0)/1048576,1) FROM user_segments WHERE segment_name=:t", {'t': t})
+    tb = cur.fetchone()[0]
+    cur.execute("""SELECT ROUND(NVL(SUM(s.bytes),0)/1048576,1) FROM user_segments s
+                   JOIN user_indexes i ON i.index_name=s.segment_name WHERE i.table_name=:t""", {'t': t})
+    return tb, cur.fetchone()[0]
+
+
+def _bloated(cur):
+    """조각 10MB 넘고 실제 데이터 추정의 5배 넘는 테이블"""
+    cur.execute("""SELECT t.table_name, ROUND(s.mb,1), ROUND(NVL(t.num_rows,0)*NVL(t.avg_row_len,0)/1048576,1),
+                          s.ext, ROUND(s.ini/1024), ROUND(NVL(s.nxt,0)/1024)
+                   FROM user_tables t
+                   JOIN (SELECT segment_name, SUM(bytes)/1048576 mb, SUM(extents) ext,
+                                MAX(initial_extent) ini, MAX(next_extent) nxt
+                         FROM user_segments WHERE segment_type='TABLE' GROUP BY segment_name) s
+                     ON s.segment_name=t.table_name
+                   WHERE s.mb > 10 ORDER BY s.mb DESC""")
+    return [r for r in cur.fetchall() if r[1] > 5 * max(r[2], 0.1)]
+
+
+def _ts_shrink(cur, mode_name):
+    import oracledb
+    res = cur.var(oracledb.DB_TYPE_CLOB)
+    cur.execute(f"""BEGIN DBMS_SPACE.SHRINK_TABLESPACE(ts_name => 'DATA',
+                      shrink_mode => DBMS_SPACE.{mode_name}, shrink_result => :r); END;""", r=res)
+    v = res.getvalue()
+    return (v.read() if hasattr(v, 'read') else v) or ''
+
+
+def cmd_shrink_plan(cur):
+    _print_alloc(cur, '지금')
+    rows = _bloated(cur)
+    print(f"=== 부푼 테이블 {len(rows)}개 (조각 MB / 실제 데이터 추정 MB / 조각 수 / 첫 조각 KB / 다음 조각 KB) ===")
+    for t, mb, est, ext, ini, nxt in rows:
+        print(f"  {t:<18} {mb:>9,.1f} {est:>8,.1f} {ext:>7,} {ini:>9,} {nxt:>9,}")
+    if rows:
+        print("  → 압축 대상: " + ' '.join(r[0] for r in rows))
+    print("=== DATA 공간 줄이기 미리보기 (DBMS_SPACE 분석 모드 — 아무것도 안 바꿈) ===")
+    try:
+        print(_ts_shrink(cur, 'TS_MODE_ANALYZE').strip()[:3000])
+    except Exception as e:
+        print('  ❌ 미리보기 실패:', str(e).split(chr(10))[0])
+
+
+def cmd_shrink(conn, cur, names):
+    for t in names:
+        sql_path, json_path = backup_paths(t)
+        if not (os.path.exists(sql_path) and os.path.exists(json_path)):
+            sys.exit(f"❌ {t} 백업이 없음. 먼저: python3 scripts/db_tables.py --backup {t}")
+    _print_alloc(cur, '압축 전')
+    print("압축 대상 (행은 안 지움 — 테이블 안 빈칸만 모음, 1~2분에 끝날 것):")
+    before = {}
+    for t in names:
+        before[t] = (count_rows(cur, t),) + _seg_mb(cur, t)
+        print(f"  {t:<18} {before[t][0]:>10,}행  테이블 {before[t][1]:,} MB  인덱스 {before[t][2]:,} MB")
+    if input("압축할까? (y 입력): ").strip().lower() != 'y':
+        print("취소함"); return
+    bad = 0
+    for t in names:
+        try:
+            cur.execute(f'ALTER TABLE "{t}" ENABLE ROW MOVEMENT')
+            cur.execute(f'ALTER TABLE "{t}" SHRINK SPACE CASCADE')
+            n, tb, ix = (count_rows(cur, t),) + _seg_mb(cur, t)
+            ok = '✅' if n == before[t][0] else '❌ 행 수 다름!'
+            if n != before[t][0]: bad += 1
+            print(f"{ok} {t:<18} {n:,}행 | 테이블 {before[t][1]:,} → {tb:,} MB | 인덱스 {before[t][2]:,} → {ix:,} MB")
+        except Exception as e:
+            bad += 1
+            print(f"❌ {t}: {str(e).split(chr(10))[0]}")
+    _print_alloc(cur, '압축 후')
+    print("※ 테이블을 줄여도 DATA 파일 크기(한도 계산)는 그대로 — 다음 단계 --shrink-ts 가 파일을 줄임" if not bad else "※ 실패가 있음 — 화면 그대로 붙여 줄 것")
+
+
+def cmd_shrink_ts(cur):
+    _print_alloc(cur, '줄이기 전')
+    print("DATA 공간 파일을 쓰는 만큼만 남기고 줄임 (데이터는 안 지움. 오라클이 조각을 앞쪽으로 옮긴 뒤 파일 끝을 잘라냄)")
+    if input("진행할까? (y 입력): ").strip().lower() != 'y':
+        print("취소함"); return
+    try:
+        out = _ts_shrink(cur, 'TS_MODE_SHRINK')
+        print(out.strip()[:3000])
+    except Exception as e:
+        print('❌ 실패:', str(e).split(chr(10))[0])
+    _print_alloc(cur, '줄이기 후')
+
+
 def main():
     a = sys.argv[1:]
     conn = connect()
@@ -242,6 +349,12 @@ def main():
         cmd_recyclebin(cur)
     elif a[0] == '--space':
         cmd_space(cur)
+    elif a[0] == '--shrink-plan':
+        cmd_shrink_plan(cur)
+    elif a[0] == '--shrink' and len(a) > 1:
+        cmd_shrink(conn, cur, check_names(cur, a[1:]))
+    elif a[0] == '--shrink-ts':
+        cmd_shrink_ts(cur)
     elif a[0] == '--restore' and len(a) == 2:
         cmd_restore(conn, cur, a[1])
     else:
