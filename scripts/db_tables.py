@@ -9,6 +9,7 @@ VM에서 실행 (먼저 . ~/.env_secrets):
   python3 scripts/db_tables.py --drop T1 T2        # 삭제. 백업 파일이 있어야 하고, y 입력해야 실행
   python3 scripts/db_tables.py --recyclebin        # 휴지통(삭제된 테이블) 목록
   python3 scripts/db_tables.py --restore T1        # 휴지통에서 되살리기 (FLASHBACK)
+  python3 scripts/db_tables.py --space             # (116) 용량 점검 — 테이블·인덱스·LOB·휴지통이 차지하는 MB (읽기만)
 
 삭제는 PURGE 없이 하므로 Oracle 휴지통에 들어감 → --restore 로 되살림.
 휴지통에서도 사라졌으면 ~/db_backup/ 의 .sql 로 구조를 다시 만들 수 있음.
@@ -144,6 +145,34 @@ def cmd_recyclebin(cur):
         print("  (비어 있음 — 되살리려면 ~/db_backup/ 의 .sql 사용)")
 
 
+def cmd_space(cur):
+    """(116) ORA-65114(저장 공간 초과) 원인 찾기 — 읽기만"""
+    try:
+        cur.execute("SELECT ROUND(SUM(bytes)/1048576) FROM dba_segments")
+        print(f"=== DB 전체 사용(모든 계정·시스템 포함) {cur.fetchone()[0]:,} MB (무료 한도 약 20,480 MB) ===")
+    except Exception as e:
+        print('  (dba_segments 못 읽음:', str(e).split(chr(10))[0], ')')
+    try:
+        cur.execute("""SELECT tablespace_name, ROUND(SUM(bytes)/1048576) FROM dba_segments
+                       GROUP BY tablespace_name ORDER BY 2 DESC""")
+        for t, mb in cur.fetchall(): print(f"  공간 {t:<20} {mb:>8,} MB")
+    except Exception:
+        pass
+    cur.execute("SELECT ROUND(SUM(bytes)/1048576) FROM user_segments")
+    print(f"=== 내 계정(ADMIN) 합계 {cur.fetchone()[0]:,} MB ===")
+    cur.execute("""SELECT s.segment_type, NVL(l.table_name, NVL(i.table_name, s.segment_name)), s.segment_name, ROUND(s.bytes/1048576,1)
+                   FROM user_segments s
+                   LEFT JOIN user_lobs l ON l.segment_name = s.segment_name
+                   LEFT JOIN user_indexes i ON i.index_name = s.segment_name
+                   ORDER BY s.bytes DESC FETCH FIRST 20 ROWS ONLY""")
+    print("  상위 20 (종류 / 테이블 / 조각 이름 / MB)")
+    for typ, tb, seg, mb in cur.fetchall():
+        print(f"  {typ:<16} {tb:<30} {seg[:28]:<28} {mb:>9,.1f}")
+    cur.execute("SELECT COUNT(*), ROUND(NVL(SUM(space),0)*8192/1048576) FROM user_recyclebin")
+    n, mb = cur.fetchone()
+    print(f"=== 휴지통 {n}개 · 약 {mb:,} MB (블록 8KB 가정) ===")
+
+
 def cmd_restore(conn, cur, name):
     t = name.upper()
     if not NAME_RE.match(t):
@@ -168,6 +197,8 @@ def main():
         cmd_drop(conn, cur, check_names(cur, a[1:]))
     elif a[0] == '--recyclebin':
         cmd_recyclebin(cur)
+    elif a[0] == '--space':
+        cmd_space(cur)
     elif a[0] == '--restore' and len(a) == 2:
         cmd_restore(conn, cur, a[1])
     else:
