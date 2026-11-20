@@ -13,6 +13,7 @@ VM에서 실행 (먼저 . ~/.env_secrets):
   python3 scripts/db_tables.py --shrink-plan       # (117) 부푼 테이블 찾기 + DATA 공간 줄이기 미리보기 (읽기만)
   python3 scripts/db_tables.py --shrink T1 T2      # (117) 테이블 빈칸 압축(행은 그대로). 백업 있어야 하고 y 입력
   python3 scripts/db_tables.py --move T1 T2        # (117) --shrink가 안 줄면: 테이블을 새로 촘촘히 다시 씀(MOVE ONLINE, 행·인덱스 그대로). 백업·y 필수
+  python3 scripts/db_tables.py --move T1 --no-backup   # (117) 백업이 메모리에 안 들어갈 만큼 큰 테이블(REAL_ESTATE 등)만. y 필수
   python3 scripts/db_tables.py --ts-map            # (117) DATA 파일 끝쪽에 걸린 조각 목록 — 파일이 더 안 줄 때 원인 찾기 (읽기만)
   python3 scripts/db_tables.py --rebuild I1 I2     # (117) 인덱스를 새로 촘촘히 다시 만듦(REBUILD ONLINE). y 필수
   python3 scripts/db_tables.py --shrink-ts         # (117) DATA 공간 파일 자체를 줄임(무료 한도 계산이 줄어듦). y 입력
@@ -325,12 +326,16 @@ def cmd_shrink(conn, cur, names):
     print("※ 테이블을 줄여도 DATA 파일 크기(한도 계산)는 그대로 — 다음 단계 --shrink-ts 가 파일을 줄임" if not bad else "※ 실패가 있음 — 화면 그대로 붙여 줄 것")
 
 
-def cmd_move(conn, cur, names):
+def cmd_move(conn, cur, names, nobackup=False):
     """(117) SHRINK SPACE가 0 MB 줄어서(117 실측) MOVE ONLINE으로 다시 씀 — 같은 DATA 안 빈칸으로 옮겨 파일은 안 커짐"""
-    for t in names:
-        sql_path, json_path = backup_paths(t)
-        if not (os.path.exists(sql_path) and os.path.exists(json_path)):
-            sys.exit(f"❌ {t} 백업이 없음. 먼저: python3 scripts/db_tables.py --backup {t}")
+    if nobackup:
+        print("※ 백업 없이 진행(--no-backup): MOVE는 다 되거나 원래 그대로 — 실패해도 원본이 남음")
+    else:
+        for t in names:
+            sql_path, json_path = backup_paths(t)
+            if not (os.path.exists(sql_path) and os.path.exists(json_path)):
+                sys.exit(f"❌ {t} 백업이 없음. 먼저: python3 scripts/db_tables.py --backup {t}"
+                         f"  (아주 큰 테이블이면 --move {t} --no-backup)")
     # 원인 단서: 첫 테이블 구조에서 저장 관련 줄만
     try:
         cur.execute("SELECT DBMS_METADATA.GET_DDL('TABLE', :t) FROM dual", {'t': names[0]})
@@ -450,7 +455,8 @@ def main():
     elif a[0] == '--shrink' and len(a) > 1:
         cmd_shrink(conn, cur, check_names(cur, a[1:]))
     elif a[0] == '--move' and len(a) > 1:
-        cmd_move(conn, cur, check_names(cur, a[1:]))
+        nb = '--no-backup' in a
+        cmd_move(conn, cur, check_names(cur, [x for x in a[1:] if x != '--no-backup']), nb)
     elif a[0] == '--ts-map':
         cmd_ts_map(cur)
     elif a[0] == '--rebuild' and len(a) > 1:
