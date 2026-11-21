@@ -6,117 +6,133 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
 <meta name="robots" content="noindex, nofollow">
 <title>내 주식 평가 · 신용 담보비율 | 스윙파머</title>
-<meta name="description" content="여러 종목 신용거래 담보비율 자동 계산. 주식수·매수가·현재가 넣으면 자동. 마진콜까지 여유폭·필요 하락률 표시.">
+<meta name="description" content="계좌·증권사별 신용 담보비율. 증권사 화면과 같은 계산식(KB 실측 대조), 담보부족·반대매매까지 여유, 추정자산.">
 <link rel="stylesheet" href="/common.css?v=14">
 <style>
-:root { --sf-max-w: 820px; }
+:root { --sf-max-w: 880px; }
 h1 { color: #1F4E78; font-size: 22px; margin-bottom: 4px; border-bottom: none; padding-bottom: 0; }
-  .sub { color: #666; font-size: 13px; margin-bottom: 18px; }
-  .panel h2 { color: #1F4E78; font-size: 15px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e5e9f0; }
-  .row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-  .row > label { font-size: 13px; color: #333; min-width: 100px; font-weight: 600; }
-  .row .field { flex: 1; min-width: 120px; }
-  /* 입력칸 표준 (landtax와 동일한 흰 박스) */
-  input[type=text] {
-    width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px;
-    background: #fff; color: #1F4E78; font-weight: 600; font-size: 13px;
-    text-align: right; font-family: inherit;
-  }
-  input:focus { outline: 2px solid #1F4E78; }
-  input.auto { background: #f0f9ff; color: #0369a1; }
-  input.auto:focus { background: #fff; color: #1F4E78; }
-  .unit { font-size: 12px; color: #666; margin-left: 4px; flex-shrink: 0; }
-  .hint { background: #f0f7ff; padding: 10px 12px; border-radius: 6px; font-size: 12px; color: #1F4E78; margin-top: 8px; line-height: 1.7; }
-  .warn { background: #fef3c7; padding: 10px 12px; border-radius: 6px; font-size: 13px; color: #92400e; margin-top: 8px; line-height: 1.7; }
-  .warn.danger { background: #fee2e2; color: #991b1b; }
-  .out-row { display: flex; align-items: baseline; gap: 8px; padding: 9px 12px; background: #f5f7fa; border-radius: 8px; margin-bottom: 6px; }
-  .out-row .lbl { flex: 0 0 130px; font-size: 13px; color: #555; }
-  .out-row .v { flex: 1; text-align: right; font-weight: 700; color: #1F4E78; font-size: 15px; }
-  .out-row .v.big { font-size: 17px; }
-  .out-row .v.gain { color: var(--sf-up, #dc2626); }
-  .out-row .v.loss { color: var(--sf-down, #2563eb); }
-  .quote-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #f5f7fa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; font-size: 12px; color: #555; }
-  .quote-bar .q-status { flex: 1; min-width: 180px; line-height: 1.5; }
-  .quote-bar label { display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: 600; white-space: nowrap; }
-  .quote-bar input[type=checkbox] { width: auto; }
-  .quote-bar .btn { padding: 5px 10px; font-size: 12px; }
-  .stk-quote { font-size: 12px; margin: -4px 0 10px; min-height: 16px; color: #888; }
-  .stk-quote .ok { color: #1F4E78; font-weight: 600; }
-  .stk-quote .up { color: var(--sf-up, #dc2626); font-weight: 700; }
-  .stk-quote .down { color: var(--sf-down, #2563eb); font-weight: 700; }
-  /* ── 다크 모드 ── */
-  body.sf-dark .quote-bar { background: #1a1f29 !important; border-color: #2c333f !important; color: #aab3c0 !important; }
-  body.sf-dark .stk-quote { color: #8b95a5; }
-  body.sf-dark .stk-quote .ok { color: #6ba3e0; }
-  body.sf-dark .sub, body.sf-dark .unit, body.sf-dark .footer-note { color: #94a3b8 !important; }
-  body.sf-dark .row > label, body.sf-dark .grid3 label, body.sf-dark .grid2 label { color: #cbd5e1 !important; }
-  body.sf-dark .grid2 label .auto-tag { color: #7dd3fc !important; }
-  body.sf-dark .panel h2 { border-color: #334155 !important; }
-  body.sf-dark .stock-card { background: #1a1f29 !important; border-color: #2c333f !important; box-shadow: none; }
-  body.sf-dark input.auto { background: #132235 !important; color: #7dd3fc !important; }
-  body.sf-dark .section-title.ord { color: #7dd3fc; }
-  body.sf-dark .section-title.crd { color: #fbbf24; }
-  body.sf-dark .out-row { background: #1a1f29 !important; }
-  body.sf-dark .out-row[style*="background"] { background: #24304a !important; }
-  body.sf-dark .out-row .lbl { color: #aab3c0 !important; }
-  body.sf-dark .out-row .lbl small { color: #7b8698 !important; }
-  body.sf-dark .out-row .v { color: #e4e4e7; }
-  body.sf-dark .out-row .v.gain { color: var(--sf-up) !important; }
-  body.sf-dark .out-row .v.loss { color: var(--sf-down) !important; }
-  body.sf-dark .stock-out, body.sf-dark .divider { border-color: #334155 !important; }
-  body.sf-dark .divider { color: #6ba3e0 !important; }
-  body.sf-dark .stock-out > div { background: #232a35 !important; }
-  body.sf-dark .stock-out .l { color: #94a3b8; }
-  body.sf-dark .stock-out .v { color: #e4e4e7; }
-  body.sf-dark .kor-below { color: #34d399; }
-  body.sf-dark .kor-below.big { background: #12261f; color: #6ee7b7; }
-  body.sf-dark .hint { background: #172a3a !important; color: #7dd3fc !important; }
-  body.sf-dark .hint b { color: #bae6fd; }
-  body.sf-dark .warn { background: #2a2418 !important; color: #fbbf24 !important; }
-  body.sf-dark .warn.danger { background: #3f1d1d !important; color: #fecaca !important; }
-  body.sf-dark .btn { background: #2a313d !important; color: #e4e4e7 !important; border-color: #3a4250 !important; }
-  body.sf-dark #btnReset { background: #3f1d1d !important; color: #fca5a5 !important; border-color: #7f1d1d !important; }
-  body.sf-dark .btn-clear { background: #2a313d; color: #aab3c0; border-color: #3a4250; }
-  body.sf-dark .btn-icon { background: #3f1d1d; color: #fca5a5; }
-  .divider { padding: 8px 0 4px; font-size: 12px; color: #666; font-weight: 600; border-top: 1px dashed #e0e4eb; margin-top: 6px; }
-  .stock-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
-  .stock-name-row { display: grid; grid-template-columns: 1fr auto; gap: 6px; margin-bottom: 10px; }
-  .stock-name-row input { padding: 9px 10px; font-size:13px; background: #fff; color: #1a1a1a; font-weight: 600; text-align: left; }
-  .section-title { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; margin: 10px 0 6px; padding-left: 2px; display: flex; align-items: center; gap: 6px; }
-  .section-title.ord { color: #0369a1; }
-  .section-title.crd { color: #b45309; }
-  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 6px; }
-  .grid3 label, .grid2 label { display: block; font-size: 11.5px; color: #555; font-weight: 600; margin-bottom: 3px; }
-  .grid3 input { padding: 8px; font-size: 13px; }
-  .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-  .grid2 label .auto-tag { color: #0369a1; font-weight: 500; margin-left: 2px; }
-  .kor-mini { color: #059669; font-weight: 500; font-size: 10.5px; margin-left: 4px; }
-  .kor-below { font-size: 11px; color: #059669; text-align: right; margin-top: 3px; padding: 0 3px; font-weight: 600; min-height: 14px; }
-  .kor-below.big { font-size: 13px; color: #047857; background: #ecfdf5; padding: 3px 6px; border-radius: 4px; font-weight: 700; min-height: 20px; }
-  .grid2 input { padding: 8px; font-size: 13px; }
-  .stock-out { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 8px 0 0; font-size: 11px; margin-top: 8px; border-top: 1px dashed #e0e4eb; }
-  .stock-out > div { text-align: center; padding: 6px 4px; background: #f5f7fa; border-radius: 6px; }
-  .stock-out .l { color: #888; font-size: 10.5px; }
-  .stock-out .v { font-weight: 700; color: #1F4E78; margin-top: 2px; }
-  .btn-icon { background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; width: 32px; height: 32px; font-size: 14px; cursor: pointer; font-weight: 700; }
-  .btn { padding: 9px 14px; border: 1px solid #d0d5dd; background: #fff; border-radius: 6px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 600; }
-  .btn.pri { background: #0ea5e9; color: #fff; border-color: #0ea5e9; }
-  .btn.pri:hover { background: #0284c7; }
-  .btn.gray { background: #9ca3af; color: #fff; border-color: #9ca3af; }
-  .btn-clear { background: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; padding: 5px 9px; font-size: 10.5px; border-radius: 5px; cursor: pointer; font-family: inherit; font-weight: 600; margin-left: auto; }
-  .btn-clear:hover { background: #e5e7eb; }
-  .ratio-hero { padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 8px; }
-  .ratio-hero.safe { background: linear-gradient(135deg, #10b981, #059669); color: white; }
-  .ratio-hero.warn { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
-  .ratio-hero.danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
-  .ratio-hero.critical { background: linear-gradient(135deg, #7f1d1d, #991b1b); color: white; animation: pulse 1.5s infinite; }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.85; } }
-  .ratio-value { font-size: 40px; font-weight: 800; letter-spacing: -1px; }
-  .ratio-status { font-size: 13px; margin-top: 6px; opacity: 0.95; font-weight: 600; }
-  .footer-note { font-size: 11px; color: #888; text-align: center; margin-top: 20px; line-height: 1.6; }
-</style>
+.sub { color: #666; font-size: 13px; margin-bottom: 14px; line-height: 1.6; }
+.panel h2 { color: #1F4E78; font-size: 15px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e5e9f0; display: flex; align-items: center; gap: 6px; }
+input[type=text], select { width: 100%; padding: 8px 9px; border: 1px solid #ccc; border-radius: 6px; background: #fff; color: #1F4E78; font-weight: 600; font-size: 13px; font-family: inherit; }
+input[type=text] { text-align: right; }
+input.txt { text-align: left; }
+input:focus, select:focus { outline: 2px solid #1F4E78; }
+input.auto { background: #f0f9ff; color: #0369a1; }
+.btn { padding: 7px 12px; border: 1px solid #d0d5dd; background: #fff; border-radius: 6px; font-size: 12.5px; cursor: pointer; font-family: inherit; font-weight: 600; color: #333; }
+.btn:hover { border-color: #1F4E78; }
+.btn.sm { padding: 4px 9px; font-size: 11.5px; }
+.btn-x { background: none; border: none; color: #b91c1c; font-size: 14px; cursor: pointer; font-weight: 700; padding: 2px 6px; }
+.hint { background: #f0f7ff; padding: 9px 12px; border-radius: 6px; font-size: 12px; color: #1F4E78; margin-top: 8px; line-height: 1.7; }
+.info-box { display: none; }
+.kor { font-size: 10.5px; color: #059669; font-weight: 600; text-align: right; min-height: 13px; margin-top: 2px; }
 
+/* 계좌 탭 */
+.acc-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.acc-tab { padding: 7px 12px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; cursor: pointer; font-size: 13px; font-weight: 700; color: #555; }
+.acc-tab.active { background: #1F4E78; color: #fff; border-color: #1F4E78; }
+.acc-tab small { font-weight: 600; opacity: .85; margin-left: 4px; }
+.acc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.acc-grid label, .fld label { display: block; font-size: 11.5px; color: #555; font-weight: 600; margin-bottom: 3px; }
+.acc-more { margin-top: 8px; }
+.acc-more summary { cursor: pointer; font-size: 12px; color: #1F4E78; font-weight: 600; }
+.rule-tag { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 4px; margin-left: 4px; }
+.rule-tag.ok { background: #dcfce7; color: #166534; }
+.rule-tag.no { background: #fef3c7; color: #92400e; }
+
+/* 결과 */
+.res-top { display: grid; grid-template-columns: 220px 1fr; gap: 12px; align-items: stretch; }
+.hero { border-radius: 12px; padding: 16px; text-align: center; color: #fff; display: flex; flex-direction: column; justify-content: center; }
+.hero.safe { background: linear-gradient(135deg, #10b981, #059669); }
+.hero.warn { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.hero.danger { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+.hero.none { background: #94a3b8; }
+.hero .l { font-size: 12px; opacity: .9; font-weight: 600; }
+.hero .v { font-size: 42px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; margin-top: 4px; }
+.hero .s { font-size: 12px; font-weight: 600; margin-top: 4px; opacity: .95; }
+.ktbl { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.ktbl td { padding: 5px 8px; border-bottom: 1px solid #eef1f5; }
+.ktbl td:last-child { text-align: right; font-weight: 700; color: #1F4E78; white-space: nowrap; }
+.ktbl tr.sub td:first-child { padding-left: 20px; color: #666; }
+.ktbl tr.sub td:last-child { font-weight: 600; color: #555; }
+.ktbl tr.tot td { background: #eff6ff; font-weight: 800; }
+.ktbl tr.bad td:last-child { color: #b91c1c; }
+.ktbl small { color: #059669; font-weight: 500; font-size: 10.5px; margin-left: 4px; }
+.res-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.rc { background: #f5f7fa; border-radius: 8px; padding: 10px 12px; }
+.rc .l { font-size: 11px; color: #666; font-weight: 600; }
+.rc .v { font-size: 17px; font-weight: 800; color: #1F4E78; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.rc .d { font-size: 10.5px; color: #888; margin-top: 2px; line-height: 1.5; }
+.wkd { margin-top: 10px; padding: 9px 12px; border-radius: 8px; background: #f5f3ff; color: #4c1d95; font-size: 12.5px; line-height: 1.7; }
+.wkd b { font-size: 14px; }
+.danger-list { margin-top: 10px; font-size: 12px; }
+.danger-list table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.danger-list th { text-align: right; font-size: 10.5px; color: #888; font-weight: 600; padding: 4px 6px; border-bottom: 1px solid #e5e7eb; }
+.danger-list th:first-child, .danger-list td:first-child { text-align: left; }
+.danger-list td { text-align: right; padding: 5px 6px; border-bottom: 1px solid #f0f2f5; }
+
+/* 종목 */
+.quote-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #f5f7fa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 7px 10px; margin-bottom: 10px; font-size: 12px; color: #555; }
+.quote-bar .q-status { flex: 1; min-width: 180px; line-height: 1.5; }
+.quote-bar label { display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: 600; white-space: nowrap; }
+.quote-bar input[type=checkbox] { width: auto; }
+.hcard { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; background: #fff; }
+.h-top { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1.2fr auto; gap: 8px; align-items: end; }
+.h-q { font-size: 11.5px; color: #888; margin-top: 4px; min-height: 15px; }
+.h-q .ok { color: #1F4E78; font-weight: 600; }
+.lots { margin-top: 8px; }
+.lots table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.lots th { font-size: 10.5px; color: #b45309; font-weight: 700; text-align: left; padding: 2px 4px; }
+.lots td { padding: 2px 4px; vertical-align: top; }
+.lots td.days { font-size: 11px; color: #888; white-space: nowrap; padding-top: 9px; }
+.h-sum { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11.5px; color: #555; border-top: 1px dashed #e0e4eb; margin-top: 8px; padding-top: 6px; font-variant-numeric: tabular-nums; }
+.h-sum b { color: #1F4E78; }
+.up { color: var(--sf-up, #dc2626) !important; }
+.dn { color: var(--sf-down, #2563eb) !important; }
+.all-tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.all-tbl th { font-size: 11px; color: #888; font-weight: 600; text-align: right; padding: 5px 8px; border-bottom: 1px solid #e5e7eb; }
+.all-tbl td { text-align: right; padding: 6px 8px; border-bottom: 1px solid #f0f2f5; }
+.all-tbl th:first-child, .all-tbl td:first-child { text-align: left; }
+.all-tbl tr.tot td { font-weight: 800; background: #f0fdf4; }
+.footer-note { font-size: 11px; color: #888; text-align: center; margin-top: 18px; line-height: 1.7; }
+
+@media (max-width: 640px) {
+  .acc-grid { grid-template-columns: 1fr 1fr; }
+  .res-top { grid-template-columns: 1fr; }
+  .res-cards { grid-template-columns: 1fr 1fr; }
+  .h-top { grid-template-columns: 1fr 1fr; }
+  .ktbl small { display: none; }
+}
+
+/* ── 다크 모드 ── */
+body.sf-dark .sub, body.sf-dark .footer-note { color: #94a3b8 !important; }
+body.sf-dark .panel h2 { border-color: #334155 !important; color: #8ab4e8 !important; }
+body.sf-dark input[type=text], body.sf-dark select { background: #0f1620 !important; color: #e4e4e7 !important; border-color: #3a4250 !important; }
+body.sf-dark input.auto { background: #132235 !important; color: #7dd3fc !important; }
+body.sf-dark .acc-grid label, body.sf-dark .fld label { color: #cbd5e1 !important; }
+body.sf-dark .acc-tab { background: #1a1f29; color: #aab3c0; border-color: #3a4250; }
+body.sf-dark .acc-tab.active { background: #2b5d8f; color: #fff; border-color: #2b5d8f; }
+body.sf-dark .btn { background: #2a313d !important; color: #e4e4e7 !important; border-color: #3a4250 !important; }
+body.sf-dark .hint { background: #172a3a !important; color: #7dd3fc !important; }
+body.sf-dark .ktbl td { border-color: #263040; }
+body.sf-dark .ktbl td:last-child { color: #e4e4e7; }
+body.sf-dark .ktbl tr.sub td { color: #aab3c0 !important; }
+body.sf-dark .ktbl tr.tot td { background: #1c2b44; }
+body.sf-dark .rc { background: #1a1f29; }
+body.sf-dark .rc .l, body.sf-dark .rc .d { color: #94a3b8; }
+body.sf-dark .rc .v { color: #e4e4e7; }
+body.sf-dark .wkd { background: #221b3a; color: #c4b5fd; }
+body.sf-dark .quote-bar { background: #1a1f29 !important; border-color: #2c333f !important; color: #aab3c0 !important; }
+body.sf-dark .hcard { background: #1a1f29; border-color: #2c333f; }
+body.sf-dark .h-sum { color: #aab3c0; border-color: #334155; }
+body.sf-dark .h-sum b { color: #e4e4e7; }
+body.sf-dark .h-q .ok { color: #6ba3e0; }
+body.sf-dark .lots th { color: #fbbf24; }
+body.sf-dark .all-tbl td, body.sf-dark .danger-list td { border-color: #263040; }
+body.sf-dark .all-tbl tr.tot td { background: #12261f; }
+body.sf-dark .acc-more summary { color: #8ab4e8; }
+</style>
 <script src="/sf-fmt.js?v=4"></script>
+<script src="/tax-rates.js?v=24"></script>
 <link rel="stylesheet" href="/auth-guard.css?v=4">
 <script type="module" src="/auth-guard.js?v=7"></script>
 </head>
@@ -124,101 +140,76 @@ h1 { color: #1F4E78; font-size: 22px; margin-bottom: 4px; border-bottom: none; p
 <div class="wrap">
 
   <h1>⚖️ 내 주식 평가 · 신용 담보비율</h1>
-  <p class="sub">종목명·주식수·매수가 입력 → <b>현재가 자동</b> 반영, 평가금액·손익 자동 계산. 신용 매수분은 따로 넣으면 담보비율·마진콜 여유까지 계산.</p>
-
-  <!-- 계좌 공통 -->
-  <div class="panel">
-    <h2>🏦 계좌 설정</h2>
-    <div class="row">
-      <label>예수금</label>
-      <div class="field"><input type="text" inputmode="numeric" id="inCash" placeholder="0 (없으면 비움)"></div>
-      <span class="unit">원</span>
-    </div>
-    <div class="kor" id="korCash" style="font-size:11px;color:#059669;text-align:right;padding:2px 4px 0;font-weight:500;min-height:14px;margin-top:-6px;margin-bottom:8px"></div>
-    <div class="row">
-      <label>담보유지비율</label>
-      <div class="field"><input type="text" inputmode="decimal" id="inThreshold" value="140"></div>
-      <span class="unit">% (증권사 기준, 통상 140%)</span>
-    </div>
-    <div class="hint">
-      💡 <b>담보비율</b> = (일반평가 + 신용평가 + 예수금) ÷ 신용매수금액 × 100.<br>
-      💡 기준 미만 시 <b>반대매매(마진콜)</b> 발생. 증권사마다 130~140% 차이 있음.
-    </div>
+  <p class="sub">계좌를 고르고 증권사 화면의 <b>신용 잔고(건별 융자금)</b>와 <b>현금 보유 수량</b>, <b>T+2 예수금</b>만 넣으면 증권사와 같은 방식으로 담보비율·담보부족금액·추정자산을 계산한다. 현재가는 자동.
+    <span class="info-btn" onclick="toggleInfo('mrHow')">i</span></p>
+  <div class="info-box" id="mrHow">
+    <b>쓰는 순서</b> ① 위 계좌 칸에서 계좌·증권사 고르기(없으면 [+ 계좌]) → ② 담보유지비율 확인(평소 140%, 정부 임시 완화 기간엔 130%) → ③ T+2 예수금 → ④ 종목마다 현금 보유 수량, 신용은 증권사 잔고의 <b>건(대출일)마다 한 줄</b>: 수량·융자금(신용/대출금액).<br>
+    <b>계산 (KB 실제 화면으로 맞춤, 118)</b> 담보비율 = 총담보평가금 ÷ 융자 합계 × 100 (소수 버림). 총담보평가금 = 원담보금(신용 주식 수량×현재가) + 부담보금(T+2 예수금 + 국내부담보 = 현금 주식 수량×현재가 + 그 밖의 담보). 소요담보금 = 건마다 융자금×유지비율(원 단위 버림)의 합. 담보부족금액 = 소요담보금 − 총담보평가금(0 아래면 0). 이자는 담보비율 계산에 안 들어감.<br>
+    <b>저장</b> 입력값은 이 브라우저에 자동 저장, 다른 기기에서 보려면 오른쪽 아래 저장 버튼(계정 저장 — 내 로그인으로만 읽힘). GitHub에는 안 올라감.
   </div>
 
-  <!-- 종목 리스트 -->
+  <!-- 계좌 -->
   <div class="panel">
-    <h2 style="display:flex;align-items:center">📊 종목별 입력
-      
-    </h2>
+    <h2>🏦 계좌</h2>
+    <div class="acc-tabs" id="accTabs"></div>
+    <div class="acc-grid">
+      <div><label>계좌 이름</label><input type="text" class="txt acc-in" data-a="name" id="aName" placeholder="예: KB 신용"></div>
+      <div><label>증권사 <span id="ruleTag"></span></label><select class="acc-in" data-a="broker" id="aBroker"></select></div>
+      <div><label>담보유지비율(%) <span class="info-btn" onclick="toggleInfo('maintInfo')">i</span></label><input type="text" inputmode="decimal" class="acc-in" data-a="maint" id="aMaint"></div>
+      <div><label>T+2 예수금(원)</label><input type="text" inputmode="numeric" class="acc-in num" data-a="cash" id="aCash"><div class="kor" id="kCash"></div></div>
+    </div>
+    <div class="info-box" id="maintInfo">평소 신용 담보유지비율은 140%. 정부 정책으로 임시 완화된 기간(KB·우리투자 등 130%)에는 130으로 바꿔 넣는다. 증권사 화면 「계좌담보유지비율」과 같은 숫자를 넣으면 된다.</div>
+    <details class="acc-more">
+      <summary>더 넣을 것 (선택 — 추정자산·기타 담보)</summary>
+      <div class="acc-grid" style="margin-top:8px">
+        <div><label>신용이자 합계(원)</label><input type="text" inputmode="numeric" class="acc-in num" data-a="interest" id="aInt"><div class="kor" id="kInt"></div></div>
+        <div><label>그 밖의 담보(원)</label><input type="text" inputmode="numeric" class="acc-in num" data-a="extra" id="aExtra"><div class="kor" id="kExtra"></div></div>
+        <div><label>매도 수수료(%)</label><input type="text" inputmode="decimal" class="acc-in" data-a="fee" id="aFee"></div>
+        <div style="display:flex;align-items:flex-end;gap:6px"><button class="btn sm" id="btnDelAcc" type="button">🗑 이 계좌 삭제</button></div>
+      </div>
+      <div class="hint">신용이자 합계 = 잔고 화면 「신용이자」 칸을 더한 값(추정자산에서만 뺌, 담보비율엔 안 씀). 그 밖의 담보 = 담보 화면의 수익증권대용·해외부담보·외화예수금 등이 있으면 합계. 매도 수수료는 추정자산의 매도 비용 추정용(세금은 증권거래세 <span id="txRate"></span>% 자동).</div>
+    </details>
+  </div>
+
+  <!-- 결과 -->
+  <div class="panel" id="resPanel">
+    <h2>⚖️ 담보비율 <span id="resAcc" style="font-size:12px;color:#888;font-weight:600"></span></h2>
+    <div class="res-top">
+      <div class="hero none" id="hero"><div class="l">담보비율</div><div class="v" id="hRatio">-</div><div class="s" id="hStatus">신용 건을 넣으면 계산</div></div>
+      <table class="ktbl" id="ktbl"></table>
+    </div>
+    <div class="res-cards" id="resCards"></div>
+    <div class="wkd" id="wkd" style="display:none"></div>
+    <div class="danger-list" id="dangerList"></div>
+  </div>
+
+  <!-- 종목 -->
+  <div class="panel">
+    <h2>📊 종목 <span class="info-btn" onclick="toggleInfo('stkInfo')">i</span></h2>
+    <div class="info-box" id="stkInfo">종목명을 수집 종목(약 380개)과 똑같이 넣으면 현재가가 자동으로 들어간다(장중 1분 간격). 목록에 없으면 현재가를 직접. 신용은 증권사 잔고에 대출일별로 나뉜 줄을 그대로 한 줄씩 — 「수량」「융자금(신용/대출금액)」만 필수, 매입금액은 비우면 융자금과 같게 본다(손익 계산용). 대출일을 넣으면 며칠째인지 보인다.</div>
     <div class="quote-bar">
       <span class="q-status" id="quoteStatus">시세 불러오는 중…</span>
-      <label><input type="checkbox" id="chkAutoPrice" checked> 현재가 자동 반영</label>
-      <button id="btnRefreshQuote" class="btn" type="button">🔄 시세 갱신</button>
+      <label><input type="checkbox" id="chkAutoPrice" checked> 현재가 자동</label>
+      <button id="btnRefreshQuote" class="btn sm" type="button">🔄 시세 갱신</button>
     </div>
     <datalist id="stkNames"></datalist>
-    <div id="stockList"></div>
-    <button id="btnAddStock" class="btn" style="margin-top:6px">➕ 종목 추가</button>
-    <div class="hint" style="margin-top:10px">
-      💡 <b>종목명</b>을 수집 종목(코스피 시총 1조↑·코스닥 5천억↑, 약 380개)과 똑같이 넣으면 현재가가 자동으로 들어감. 장중에는 1분 간격으로 갱신. 목록에 없는 종목은 현재가를 직접 입력.<br>
-      💡 <b>파란색 필드</b>는 자동 계산됨 (주식수 × 단가). 미세 조정 필요하면 직접 수정 가능. 이후 주식수·단가를 다시 만지면 자동 값으로 덮어써짐.<br>
-      💡 신용 안 쓰는 종목은 신용 섹션 비워두면 됨.<br>
-      💡 입력값은 <b>브라우저에 자동 저장</b>됨. 나갔다 와도 마지막 입력 상태 유지. 처음 상태로 되돌리려면 저장 관리 창의 [↺ 화면 처음으로].
-    </div>
+    <div id="holdList"></div>
+    <button id="btnAddHold" class="btn" type="button">➕ 종목 추가</button>
   </div>
 
-  <!-- 평가 요약 (신용 없어도 표시) -->
-  <div class="panel" id="evalPanel" style="display:none">
-    <h2>💼 평가 요약</h2>
-    <div class="out-row"><span class="lbl">총 매수금액</span><span class="v" id="evBuy">-</span></div>
-    <div class="out-row" style="background:#eff6ff"><span class="lbl">📈 총 평가금액</span><span class="v big" id="evVal">-</span></div>
-    <div class="out-row"><span class="lbl">└ 일반 매수분</span><span class="v" id="evOrd">-</span></div>
-    <div class="out-row"><span class="lbl">└ 신용 매수분</span><span class="v" id="evCrd">-</span></div>
-    <div class="out-row"><span class="lbl">평가손익</span><span class="v" id="evPL">-</span></div>
-    <div class="out-row" id="evCashRow" style="display:none"><span class="lbl">예수금</span><span class="v" id="evCash">-</span></div>
-    <div class="out-row" id="evLoanRow" style="display:none"><span class="lbl">신용 융자 (차감)</span><span class="v" id="evLoan">-</span></div>
-    <div class="out-row" style="background:#f0fdf4"><span class="lbl">💰 순자산<br><small style="color:#888;font-weight:400">(평가+예수금−융자)</small></span><span class="v big" id="evNet">-</span></div>
-    <button id="btnSendPf" class="btn" type="button" style="margin-top:8px">📊 순자산·신용을 포트폴리오 빠른 입력으로 보내기</button>
-    <div class="hint" style="margin-top:8px">💡 버튼을 누르면 포트폴리오 대시보드의 빠른 입력에 오늘 날짜·순자산·신용(부채)이 채워짐. 수익률은 순자산 기준으로 계산됨. 확인 후 [추가]를 눌러야 기록됨.</div>
-  </div>
-
-  <!-- 담보비율 결과 -->
-  <div class="panel" id="ratioPanel" style="display:none">
-    <h2>⚖️ 담보비율 결과</h2>
-    <div id="ratioHero" class="ratio-hero safe">
-      <div class="ratio-label">현재 담보비율</div>
-      <div class="ratio-value" id="ratioVal">-</div>
-      <div class="ratio-status" id="ratioStatus">-</div>
-    </div>
-    <div class="warn" id="ratioWarn" style="display:none;margin-top:12px"></div>
-
-    <div class="divider" style="margin-top:14px;font-size:13px;color:#1F4E78">📋 계좌 합계</div>
-    <div class="out-row"><span class="lbl">총 일반 매수금액</span><span class="v" id="sumOrdBuy">-</span></div>
-    <div class="out-row"><span class="lbl">총 일반 평가금액</span><span class="v" id="sumOrdVal">-</span></div>
-    <div class="out-row"><span class="lbl">└ 일반 손익</span><span class="v" id="sumOrdPL">-</span></div>
-    <div class="out-row"><span class="lbl">총 신용 매수금액<br><small style="color:#888;font-weight:400">(= 융자원금)</small></span><span class="v" id="sumCrdBuy">-</span></div>
-    <div class="out-row"><span class="lbl">총 신용 평가금액</span><span class="v" id="sumCrdVal">-</span></div>
-    <div class="out-row"><span class="lbl">└ 신용 손익</span><span class="v" id="sumCrdPL">-</span></div>
-    <div class="out-row" id="cashRow" style="display:none"><span class="lbl">예수금</span><span class="v" id="cashVal">-</span></div>
-    <div class="out-row" style="background:#eff6ff"><span class="lbl">💰 총 담보</span><span class="v big" id="totalCollateral">-</span></div>
-    <div class="out-row" style="background:#fef2f2"><span class="lbl">💳 신용 융자</span><span class="v big" id="totalLoan">-</span></div>
-
-    <div class="divider" style="margin-top:14px;font-size:13px;color:#1F4E78">🛡️ 마진콜 여유 분석</div>
-    <div class="out-row"><span class="lbl">기준 담보금액<br><small style="color:#888;font-weight:400">(임계값 × 융자)</small></span><span class="v" id="marginNeeded">-</span></div>
-    <div class="out-row"><span class="lbl">여유 담보금액</span><span class="v" id="marginRoom">-</span></div>
-    <div class="out-row"><span class="lbl">필요 담보 하락률<br><small style="color:#888;font-weight:400">(현재→마진콜)</small></span><span class="v" id="dropPct">-</span></div>
-    <div class="out-row"><span class="lbl">└ 종목 평균 하락률<br><small style="color:#888;font-weight:400">(주식만 하락 시)</small></span><span class="v" id="stockDropPct">-</span></div>
+  <!-- 전체 계좌 -->
+  <div class="panel">
+    <h2>💼 전체 계좌 · 내 자산</h2>
+    <table class="all-tbl" id="allTbl"></table>
+    <button id="btnSendPf" class="btn" type="button" style="margin-top:10px">📊 전체 추정자산·융자를 포트폴리오 빠른 입력으로 보내기</button>
+    <div class="hint">추정자산 = 평가금액 + T+2 예수금 − 융자 − 신용이자 − 매도 비용(거래세+수수료) — KB 「추정자산」과 같은 방식(수수료 차이로 수만 원 다를 수 있음). 버튼을 누르면 포트폴리오 빠른 입력에 오늘 날짜·추정자산·융자가 채워지고, [추가]를 눌러야 기록된다.</div>
   </div>
 
   <p class="footer-note">
-    ※ <b>신용 매수금액을 융자원금과 동일하게 가정</b>. 실제로는 자기자본(보증금) 비율에 따라 다를 수 있음.<br>
-    ※ 이자·수수료·연체료·평가일 종가 변동 등 미반영. 참고용, 실제 반대매매 판정은 증권사 HTS 확인 필수.<br>
-    ※ 통상 담보유지비율: 신용융자 140%, 미수 130% (증권사 별 상이).
+    ※ KB증권 계산식은 실제 화면 숫자로 원 단위까지 대조함(118). 다른 증권사는 같은 방식으로 계산하되 「미검증」 — 그 증권사 화면을 주면 맞춘다.<br>
+    ※ 현재가는 수집 시세 기준이라 증권사 화면과 몇 분 차이가 나면 담보비율도 그만큼 다름. 실제 반대매매 판정은 증권사 기준.
   </p>
 </div>
-
-<!-- 클라우드 모달 -->
-
 
 <script>
 window.CALC_KEY = 'margin-ratio';
@@ -230,525 +221,409 @@ window.slSetState = function(d){ if(window.mSetState) window.mSetState(d); };
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
-function num(id) { const v = parseFloat(($(id).value || '').replace(/,/g,'')); return isNaN(v) ? 0 : v; }
-function toNum(v) { const n = parseFloat((v || '').toString().replace(/,/g,'')); return isNaN(n) ? 0 : n; }
-function fmt(n) { if (!isFinite(n) || n === 0) return '0원'; return sfNum(n) + '원'; }
-function setCell(id, n, addSign) {
-  const el = $(id);
-  const kor = Math.abs(n) >= 1e4 ? sfKor(n) : '';
-  const sign = addSign && n > 0 ? '+' : '';
-  const suffix = kor ? ` <small style="color:#059669;font-size:11px;font-weight:500">≈ ${sign}${kor}</small>` : '';
-  el.innerHTML = sign + fmt(n) + suffix;
-}
+const toNum = v => { const n = parseFloat(String(v == null ? '' : v).replace(/,/g, '')); return isNaN(n) ? 0 : n; };
+const won = n => sfNum(n) + '원';
+const kor = n => Math.abs(n) >= 1e4 ? sfKor(n) : '';
+const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+const TX = (window.SF_TAX && SF_TAX.stockTx) ? SF_TAX.stockTx.kospi : 0.20;   // 증권거래세(매도대금 %) — tax-rates.js
 
-// 상태: 종목 리스트
-// 각 종목: 종목명 + [일반: 주식수/매수가/현재가/매수금액/평가금액] + [신용: 동일]
-let stocks = [
-  { name: '', ordQty: 0, ordPrice: 0, ordCurr: 0, ordBuy: 0, ordVal: 0, crdQty: 0, crdPrice: 0, crdCurr: 0, crdBuy: 0, crdVal: 0 }
-];
+// ── 증권사별 계산 규칙 ──
+// ordRate: 현금(일반) 주식을 담보로 칠 때 인정 비율(%) / verified: 실제 화면 숫자로 대조했는지
+// KB(118): 원담보금 = 신용 주식 수량×현재가, 국내부담보 = 현금 주식 수량×현재가(100%), T+2 예수금 포함,
+//          담보비율 = 총담보 ÷ 융자 합계(이자 제외) 소수 버림, 소요담보금 = Σ 건별 floor(융자금×유지비율)
+const BROKERS = {
+  KB:     { n: 'KB증권',        ordRate: 100, fee: 0.0045, verified: true },   // fee: 118 추정자산 역산(매도비용 − 거래세 ≈ 평가의 0.0045%)
+  WOORI:  { n: '우리투자증권',  ordRate: 100, fee: 0.015 },
+  KIS:    { n: '한국투자증권',  ordRate: 100, fee: 0.015 },
+  NH:     { n: 'NH투자증권',    ordRate: 100, fee: 0.015 },
+  KIWOOM: { n: '키움증권',      ordRate: 100, fee: 0.015 },
+  MIRAE:  { n: '미래에셋증권',  ordRate: 100, fee: 0.015 },
+  SAMSUNG:{ n: '삼성증권',      ordRate: 100, fee: 0.015 },
+  ETC:    { n: '기타',          ordRate: 100, fee: 0.015 },
+};
+const newLot = () => ({ q: '', loan: '', buy: '', d: '' });
+const newHold = () => ({ name: '', curr: '', qty: '', buy: '', lots: [] });
+const newAcc = (n) => ({ name: n || '내 계좌', broker: 'KB', maint: 140, cash: '', interest: '', extra: '', fee: '', holds: [newHold()] });
 
-function renderStocks() {
-  const box = $('stockList');
-  box.innerHTML = '';
-  stocks.forEach((s, i) => {
-    const card = document.createElement('div');
-    card.className = 'stock-card';
-    const nameEsc = (s.name || '').replace(/"/g,'&quot;');
-    card.innerHTML = `
-      <div class="stock-name-row">
-        <input type="text" placeholder="종목명 (예: 삼성전자) → 현재가 자동" value="${nameEsc}" data-f="name" data-i="${i}" class="stk-in" list="stkNames" autocomplete="off">
-        <button class="btn-icon" data-del="${i}" title="삭제">✕</button>
-      </div>
-      <div class="stk-quote" id="stk-q-${i}"></div>
-      <div class="section-title ord">📗 일반 매수 <button class="btn-clear" data-clear-ord="${i}" type="button">비우기</button></div>
-      <div class="grid3">
-        <div>
-          <label>주식수</label>
-          <input type="text" inputmode="numeric" placeholder="0" value="${s.ordQty || ''}" data-f="ordQty" data-i="${i}" class="stk-in">
-        </div>
-        <div>
-          <label>매수가 (평단)</label>
-          <input type="text" inputmode="numeric" placeholder="0" value="${s.ordPrice || ''}" data-f="ordPrice" data-i="${i}" class="stk-in">
-          <div class="kor-below" id="kor-ordPrice-${i}"></div>
-        </div>
-        <div>
-          <label>현재가</label>
-          <input type="text" inputmode="numeric" placeholder="0" value="${s.ordCurr || ''}" data-f="ordCurr" data-i="${i}" class="stk-in">
-          <div class="kor-below" id="kor-ordCurr-${i}"></div>
-        </div>
-      </div>
-      <div class="grid2">
-        <div>
-          <label>매수금액 <span class="auto-tag">(자동)</span></label>
-          <input type="text" inputmode="numeric" placeholder="0" value="${s.ordBuy || ''}" data-f="ordBuy" data-i="${i}" class="stk-in auto">
-          <div class="kor-below big" id="kor-ordBuy-${i}"></div>
-        </div>
-        <div>
-          <label>평가금액 <span class="auto-tag">(자동)</span></label>
-          <input type="text" inputmode="numeric" placeholder="0" value="${s.ordVal || ''}" data-f="ordVal" data-i="${i}" class="stk-in auto">
-          <div class="kor-below big" id="kor-ordVal-${i}"></div>
-        </div>
-      </div>
-
-      <div class="section-title crd">📕 신용 매수 <button class="btn-clear" data-clear-crd="${i}" type="button">비우기</button></div>
-      <div class="grid3">
-        <div>
-          <label>주식수</label>
-          <input type="text" inputmode="numeric" placeholder="0" value="${s.crdQty || ''}" data-f="crdQty" data-i="${i}" class="stk-in">
-        </div>
-        <div>
-          <label>매수가 (평단)</label>
-          <input type="text" inputmode="numeric" placeholder="0" value="${s.crdPrice || ''}" data-f="crdPrice" data-i="${i}" class="stk-in">
-          <div class="kor-below" id="kor-crdPrice-${i}"></div>
-        </div>
-        <div>
-          <label>현재가</label>
-          <input type="text" inputmode="numeric" placeholder="0" value="${s.crdCurr || ''}" data-f="crdCurr" data-i="${i}" class="stk-in">
-          <div class="kor-below" id="kor-crdCurr-${i}"></div>
-        </div>
-      </div>
-      <div class="grid2">
-        <div>
-          <label>매수금액 <span class="auto-tag">(자동)</span></label>
-          <input type="text" inputmode="numeric" placeholder="0" value="${s.crdBuy || ''}" data-f="crdBuy" data-i="${i}" class="stk-in auto">
-          <div class="kor-below big" id="kor-crdBuy-${i}"></div>
-        </div>
-        <div>
-          <label>평가금액 <span class="auto-tag">(자동)</span></label>
-          <input type="text" inputmode="numeric" placeholder="0" value="${s.crdVal || ''}" data-f="crdVal" data-i="${i}" class="stk-in auto">
-          <div class="kor-below big" id="kor-crdVal-${i}"></div>
-        </div>
-      </div>
-
-      <div class="stock-out" id="stk-out-${i}"></div>
-    `;
-    box.appendChild(card);
-  });
-
-  box.querySelectorAll('.stk-in').forEach(el => {
-    el.addEventListener('input', () => {
-      const i = parseInt(el.dataset.i);
-      const f = el.dataset.f;
-      if (f === 'name') stocks[i][f] = el.value;
-      else stocks[i][f] = toNum(el.value);
-
-      // 종목명·수량이 바뀌면 수집 시세로 현재가 자동 채움
-      if (f === 'name' || f === 'ordQty' || f === 'crdQty' || f === 'crdPrice') fillFromQuote(i);
-
-      // 자동 계산: 주식수/단가 변경 시 매수금액·평가금액 재계산
-      if (f === 'ordQty' || f === 'ordPrice') {
-        stocks[i].ordBuy = (stocks[i].ordQty || 0) * (stocks[i].ordPrice || 0);
-        updateFieldValue(i, 'ordBuy', stocks[i].ordBuy);
-      }
-      if (f === 'ordQty' || f === 'ordCurr') {
-        stocks[i].ordVal = (stocks[i].ordQty || 0) * (stocks[i].ordCurr || 0);
-        updateFieldValue(i, 'ordVal', stocks[i].ordVal);
-      }
-      if (f === 'crdQty' || f === 'crdPrice') {
-        stocks[i].crdBuy = (stocks[i].crdQty || 0) * (stocks[i].crdPrice || 0);
-        updateFieldValue(i, 'crdBuy', stocks[i].crdBuy);
-      }
-      if (f === 'crdQty' || f === 'crdCurr') {
-        stocks[i].crdVal = (stocks[i].crdQty || 0) * (stocks[i].crdCurr || 0);
-        updateFieldValue(i, 'crdVal', stocks[i].crdVal);
-      }
-      calc(); saveLocal();
-    });
-  });
-
-  box.querySelectorAll('[data-del]').forEach(el => {
-    el.addEventListener('click', () => {
-      const i = parseInt(el.dataset.del);
-      if (stocks.length <= 1) { alert('최소 1개 종목은 있어야 합니다.'); return; }
-      stocks.splice(i, 1);
-      renderStocks(); calc(); saveLocal();
-    });
-  });
-
-  box.querySelectorAll('[data-clear-ord]').forEach(el => {
-    el.addEventListener('click', () => {
-      const i = parseInt(el.dataset.clearOrd);
-      ['ordQty','ordPrice','ordCurr','ordBuy','ordVal'].forEach(k => stocks[i][k] = 0);
-      renderStocks(); calc(); saveLocal();
-    });
-  });
-  box.querySelectorAll('[data-clear-crd]').forEach(el => {
-    el.addEventListener('click', () => {
-      const i = parseInt(el.dataset.clearCrd);
-      ['crdQty','crdPrice','crdCurr','crdBuy','crdVal'].forEach(k => stocks[i][k] = 0);
-      renderStocks(); calc(); saveLocal();
-    });
-  });
-  stocks.forEach((_, i) => fillFromQuote(i));
-  calc();
-}
-
-// ───────── 시세 자동 반영 ─────────
-// 1순위: VM 준실시간 API (평일 장중 1분 간격 수집, 장 마감 후에는 마지막 값 유지)
-// 2순위: /data/kr/prices.json (평일 18:30 종가) + 종목명은 scripts/*.csv
-const LIVE_URL = 'https://swingfarmer.duckdns.org/api/prices/live';
-let quotes = {};        // code → { n:종목명, p:현재가, r:등락률(없으면 null) }
-let nameMap = {};       // 정규화한 종목명 → code
-let quoteInfo = null;   // { src:'live'|'close', date, time, open }
+let accs = [newAcc('KB 신용')];
+let cur = 0;
 let autoPrice = true;
-let quoteTimer = null;
+let perp = null;   // /api/perp/est (장 마감 뒤 해외 추정가)
 
-function normName(s) { return (s || '').toString().replace(/\s+/g, '').toUpperCase(); }
+// ── 시세 ──
+const LIVE_URL = 'https://swingfarmer.duckdns.org/api/prices/live';
+const PERP_URL = 'https://swingfarmer.duckdns.org/api/perp/est';
+let quotes = {}, nameMap = {}, quoteInfo = null, quoteTimer = null;
+const normName = s => (s || '').toString().replace(/\s+/g, '').toUpperCase();
 function matchCode(name) {
   const n = normName(name);
   if (!n) return '';
-  if (/^\d{6}$/.test(n) && quotes[n]) return n;   // 종목코드 6자리로 넣어도 됨
+  if (/^\d{6}$/.test(n) && quotes[n]) return n;
   return nameMap[n] || '';
 }
-
-function setCurr(i, kind, price) {
-  const s = stocks[i];
-  const cf = kind + 'Curr', vf = kind + 'Val', qf = kind + 'Qty';
-  const el = document.querySelector(`[data-i="${i}"][data-f="${cf}"]`);
-  if (el && el === document.activeElement) return;   // 직접 입력 중인 칸은 건드리지 않음
-  s[cf] = price;
-  if (el) el.value = price;
-  if (s[qf] > 0) { s[vf] = s[qf] * price; updateFieldValue(i, vf, s[vf]); }
+function priceOf(h) {   // 자동이면 수집 시세, 아니면 입력값
+  const c = matchCode(h.name);
+  if (autoPrice && c && quotes[c]) return quotes[c].p;
+  return toNum(h.curr);
 }
 
-function fillFromQuote(i) {
-  const s = stocks[i];
-  if (!s) return;
-  const code = matchCode(s.name);
-  const q = code ? quotes[code] : null;
-  if (q && autoPrice) {
-    setCurr(i, 'ord', q.p);
-    if (s.crdQty > 0 || s.crdPrice > 0 || s.crdBuy > 0) setCurr(i, 'crd', q.p);
-  }
-  const box = $(`stk-q-${i}`);
-  if (!box) return;
-  if (q) {
-    let chg = '';
-    if (typeof q.r === 'number') {
-      const cls = q.r > 0 ? 'up' : (q.r < 0 ? 'down' : '');
-      const arrow = q.r > 0 ? '▲' : (q.r < 0 ? '▼' : '');
-      chg = ` <span class="${cls}">${arrow}${Math.abs(q.r).toFixed(2)}%</span>`;
+// ── 계산 (계좌 1개) ──
+function calcAcc(a, priceFn) {
+  const br = BROKERS[a.broker] || BROKERS.ETC;
+  const maint = toNum(a.maint) || 140;
+  const pf = priceFn || priceOf;
+  let crdVal = 0, ordVal = 0, loan = 0, need = 0, buy = 0, crdQtyAll = 0;
+  const per = [];
+  a.holds.forEach(h => {
+    const p = pf(h);
+    const oq = toNum(h.qty);
+    let cq = 0, hl = 0, hb = toNum(h.buy);
+    h.lots.forEach(l => {
+      const q = toNum(l.q), ln = toNum(l.loan);
+      cq += q; hl += ln;
+      need += Math.floor(ln * maint / 100 + 1e-7);   // 건마다 원 단위 버림 (KB 소요담보금과 일치)
+      hb += toNum(l.buy) || ln;
+    });
+    crdVal += cq * p; ordVal += oq * p; loan += hl; buy += hb; crdQtyAll += cq;
+    per.push({ h, p, oq, cq, loan: hl, val: (oq + cq) * p, buy: hb, w: cq + oq * br.ordRate / 100 });
+  });
+  const cash = toNum(a.cash), extra = toNum(a.extra), interest = toNum(a.interest);
+  const ordColl = ordVal * br.ordRate / 100;
+  const sub = cash + ordColl + extra;          // 부담보금
+  const total = crdVal + sub;                  // 총담보평가금
+  const ratio = loan > 0 ? total / loan * 100 : null;
+  const evalT = crdVal + ordVal;
+  const feePct = a.fee === '' || a.fee == null ? br.fee : toNum(a.fee);
+  const cost = Math.round(evalT * (TX + feePct) / 100);
+  const est = evalT + cash - loan - interest - cost;
+  const room = total - need;
+  const stockColl = crdVal + ordColl;
+  return { br, maint, crdVal, ordVal, ordColl, cash, extra, sub, total, loan, need, ratio,
+           ratioDisp: ratio == null ? null : Math.floor(ratio + 1e-9), short: Math.max(0, need - total), room,
+           dropAll: stockColl > 0 ? room / stockColl * 100 : null, evalT, buy, pl: evalT - buy, interest, cost, est, per };
+}
+
+// ── 그리기 ──
+function renderTabs() {
+  $('accTabs').innerHTML = accs.map((a, i) => {
+    const r = calcAcc(a);
+    const tag = r.ratioDisp != null ? r.ratioDisp + '%' : '';
+    return `<button class="acc-tab${i === cur ? ' active' : ''}" data-acc="${i}" type="button">${esc(a.name || '계좌 ' + (i + 1))}<small>${tag}</small></button>`;
+  }).join('') + '<button class="acc-tab" id="btnAddAcc" type="button">＋ 계좌</button>';
+  $('accTabs').querySelectorAll('[data-acc]').forEach(b => b.onclick = () => { cur = +b.dataset.acc; renderAll(); save(); });
+  $('btnAddAcc').onclick = () => { accs.push(newAcc('계좌 ' + (accs.length + 1))); cur = accs.length - 1; renderAll(); save(); };
+}
+
+function renderAccFields() {
+  const a = accs[cur];
+  $('aBroker').innerHTML = Object.keys(BROKERS).map(k => `<option value="${k}"${a.broker === k ? ' selected' : ''}>${BROKERS[k].n}</option>`).join('');
+  $('aName').value = a.name || '';
+  $('aMaint').value = a.maint;
+  $('aCash').value = a.cash === '' ? '' : sfNum(toNum(a.cash));
+  $('aInt').value = a.interest === '' ? '' : sfNum(toNum(a.interest));
+  $('aExtra').value = a.extra === '' ? '' : sfNum(toNum(a.extra));
+  const br = BROKERS[a.broker] || BROKERS.ETC;
+  $('aFee').value = a.fee === '' ? '' : a.fee;
+  $('aFee').placeholder = String(br.fee);
+  $('ruleTag').innerHTML = br.verified ? '<span class="rule-tag ok">화면 대조함</span>' : '<span class="rule-tag no">미검증</span>';
+  $('txRate').textContent = sfNum(TX, 2);
+}
+
+function lotDays(d) {
+  const m = /^(\d{4})[-./]?(\d{2})[-./]?(\d{2})$/.exec((d || '').trim());
+  if (!m) return '';
+  const t = new Date(+m[1], +m[2] - 1, +m[3]);
+  const n = Math.floor((new Date(sfDate() + 'T00:00:00') - t) / 864e5);
+  return n >= 0 ? n + '일째' : '';
+}
+
+function renderHolds() {
+  const a = accs[cur];
+  $('holdList').innerHTML = a.holds.map((h, i) => `
+    <div class="hcard">
+      <div class="h-top">
+        <div class="fld"><label>종목명</label><input type="text" class="txt h-in" data-h="${i}" data-f="name" value="${esc(h.name)}" list="stkNames" autocomplete="off" placeholder="예: 대한항공"></div>
+        <div class="fld"><label>현재가</label><input type="text" inputmode="numeric" class="h-in num" data-h="${i}" data-f="curr" value="${h.curr === '' ? '' : sfNum(toNum(h.curr))}"></div>
+        <div class="fld"><label>현금 보유 수량</label><input type="text" inputmode="numeric" class="h-in num" data-h="${i}" data-f="qty" value="${h.qty === '' ? '' : sfNum(toNum(h.qty))}"></div>
+        <div class="fld"><label>현금 매입금액 (선택)</label><input type="text" inputmode="numeric" class="h-in num" data-h="${i}" data-f="buy" value="${h.buy === '' ? '' : sfNum(toNum(h.buy))}"></div>
+        <button class="btn-x" data-delh="${i}" title="종목 삭제" type="button">✕</button>
+      </div>
+      <div class="h-q" id="hq-${i}"></div>
+      <div class="lots">
+        ${h.lots.length ? `<table><tr><th>신용 수량</th><th>융자금 (신용/대출금액)</th><th>매입금액 (비우면 융자금)</th><th>대출일 (선택)</th><th></th><th></th></tr>
+        ${h.lots.map((l, j) => `<tr>
+          <td><input type="text" inputmode="numeric" class="l-in num" data-h="${i}" data-l="${j}" data-f="q" value="${l.q === '' ? '' : sfNum(toNum(l.q))}"></td>
+          <td><input type="text" inputmode="numeric" class="l-in num" data-h="${i}" data-l="${j}" data-f="loan" value="${l.loan === '' ? '' : sfNum(toNum(l.loan))}"></td>
+          <td><input type="text" inputmode="numeric" class="l-in num" data-h="${i}" data-l="${j}" data-f="buy" value="${l.buy === '' ? '' : sfNum(toNum(l.buy))}"></td>
+          <td><input type="text" class="l-in" data-h="${i}" data-l="${j}" data-f="d" value="${esc(l.d)}" placeholder="2026-11-05"></td>
+          <td class="days" id="ld-${i}-${j}">${lotDays(l.d)}</td>
+          <td><button class="btn-x" data-dell="${i}-${j}" title="이 건 삭제" type="button">✕</button></td></tr>`).join('')}</table>` : ''}
+        <button class="btn sm" data-addl="${i}" type="button" style="margin-top:4px">＋ 신용 건</button>
+      </div>
+      <div class="h-sum" id="hs-${i}"></div>
+    </div>`).join('');
+
+  const box = $('holdList');
+  box.querySelectorAll('.h-in').forEach(el => el.addEventListener('input', () => {
+    const h = a.holds[+el.dataset.h];
+    h[el.dataset.f] = el.dataset.f === 'name' ? el.value : el.value.replace(/,/g, '');
+    update();
+  }));
+  box.querySelectorAll('.l-in').forEach(el => el.addEventListener('input', () => {
+    const l = a.holds[+el.dataset.h].lots[+el.dataset.l];
+    l[el.dataset.f] = el.dataset.f === 'd' ? el.value : el.value.replace(/,/g, '');
+    if (el.dataset.f === 'd') { const c = $('ld-' + el.dataset.h + '-' + el.dataset.l); if (c) c.textContent = lotDays(el.value); }
+    update();
+  }));
+  box.querySelectorAll('[data-delh]').forEach(b => b.onclick = () => {
+    const h = a.holds[+b.dataset.delh];
+    if ((h.name || h.lots.length) && !confirm((h.name || '이 종목') + ' 을(를) 지울까요?')) return;
+    a.holds.splice(+b.dataset.delh, 1);
+    if (!a.holds.length) a.holds.push(newHold());
+    renderHolds(); update();
+  });
+  box.querySelectorAll('[data-addl]').forEach(b => b.onclick = () => { a.holds[+b.dataset.addl].lots.push(newLot()); renderHolds(); update(); });
+  box.querySelectorAll('[data-dell]').forEach(b => b.onclick = () => {
+    const [i, j] = b.dataset.dell.split('-').map(Number);
+    a.holds[i].lots.splice(j, 1); renderHolds(); update();
+  });
+  bindNumFmt(box);
+}
+
+function bindNumFmt(root) {   // 칸을 벗어나면 쉼표
+  root.querySelectorAll('input.num').forEach(el => el.addEventListener('blur', () => {
+    if (el.value.trim() === '') return;
+    el.value = sfNum(toNum(el.value));
+  }));
+}
+
+function update() {
+  const a = accs[cur];
+  const r = calcAcc(a);
+  // 종목별 줄
+  r.per.forEach((x, i) => {
+    const c = matchCode(x.h.name), q = c ? quotes[c] : null;
+    const hq = $('hq-' + i);
+    const ci = document.querySelector(`.h-in[data-h="${i}"][data-f="curr"]`);
+    if (ci) {   // 자동 시세가 있으면 그 값(읽기 전용), 없거나 자동을 끄면 직접 입력
+      const on = !!(autoPrice && q);
+      ci.classList.toggle('auto', on); ci.readOnly = on; ci.title = on ? '자동 시세 — 직접 넣으려면 위 「현재가 자동」 해제' : '';
+      if (on) ci.value = sfNum(q.p); else if (ci.dataset.wasAuto === '1') ci.value = x.h.curr === '' ? '' : sfNum(toNum(x.h.curr));
+      ci.dataset.wasAuto = on ? '1' : '';
     }
-    box.innerHTML = `<span class="ok">✓ ${q.n} (${code})</span> · ${q.p.toLocaleString('ko-KR')}원${chg}${autoPrice ? '' : ' · 자동 반영 꺼짐'}`;
-  } else if (normName(s.name) && Object.keys(quotes).length) {
-    box.textContent = '수집 종목에 없음 → 현재가 직접 입력';
+    if (hq) {
+      if (q) {
+        const chg = typeof q.r === 'number' ? ` <span class="${q.r > 0 ? 'up' : q.r < 0 ? 'dn' : ''}">${q.r > 0 ? '▲' : q.r < 0 ? '▼' : ''}${Math.abs(q.r).toFixed(2)}%</span>` : '';
+        hq.innerHTML = `<span class="ok">✓ ${esc(q.n)} (${c})</span> · ${sfNum(q.p)}원${chg}${autoPrice ? '' : ' · 자동 꺼짐(입력값 사용)'}`;
+      } else hq.textContent = normName(x.h.name) && Object.keys(quotes).length ? '수집 종목에 없음 → 현재가 직접 입력' : '';
+    }
+    const hs = $('hs-' + i);
+    if (hs) {
+      const pl = x.val - x.buy;
+      hs.innerHTML = x.val > 0 || x.loan > 0
+        ? `평가 <b>${won(x.val)}</b> <span>(현금 ${sfNum(x.oq)}주 · 신용 ${sfNum(x.cq)}주)</span> · 융자 <b>${won(x.loan)}</b>`
+          + (x.buy > 0 ? ` · 손익 <b class="${pl > 0 ? 'up' : pl < 0 ? 'dn' : ''}">${pl > 0 ? '+' : ''}${sfNum(pl)}원 (${sfPct(pl / x.buy * 100, 2, 1)})</b>` : '')
+        : '';
+    }
+  });
+  $('kCash').textContent = kor(toNum(a.cash)); $('kInt').textContent = kor(toNum(a.interest)); $('kExtra').textContent = kor(toNum(a.extra));
+  renderResult(a, r);
+  renderAll2();
+  save();
+}
+
+function rowK(label, v, cls, small) {
+  return `<tr class="${cls || ''}"><td>${label}</td><td>${sfNum(v)}${small ? `<small>${small}</small>` : ''}</td></tr>`;
+}
+
+function renderResult(a, r) {
+  $('resAcc').textContent = '· ' + (a.name || '') + ' (' + r.br.n + ', 유지 ' + sfNum(r.maint, '~2') + '%)';
+  const hero = $('hero');
+  if (r.ratio == null) {
+    hero.className = 'hero none'; $('hRatio').textContent = '-';
+    $('hStatus').textContent = r.evalT > 0 ? '신용 없음 — 담보비율 해당 없음' : '신용 건을 넣으면 계산';
   } else {
-    box.textContent = '';
+    const gap = r.ratioDisp - r.maint;
+    hero.className = 'hero ' + (r.short > 0 ? 'danger' : gap < 15 ? 'warn' : 'safe');
+    $('hRatio').textContent = r.ratioDisp + '%';
+    $('hStatus').textContent = (r.short > 0 ? '🚨 담보부족 ' + sfKor(r.short) : gap < 15 ? '⚠️ 유지비율까지 ' + sfNum(gap, '~1') + '%p' : '✅ 유지비율보다 ' + sfNum(gap, '~1') + '%p 위') + ' · 정확히 ' + sfNum(r.ratio, 2) + '%';
   }
+  $('ktbl').innerHTML =
+    rowK('융자 합계', r.loan, '', kor(r.loan)) +
+    rowK('소요담보금 (융자 × ' + sfNum(r.maint, '~2') + '%)', r.need) +
+    rowK('담보부족금액', r.short, r.short > 0 ? 'bad' : '') +
+    rowK('원담보금 (신용 주식 평가)', r.crdVal, '', kor(r.crdVal)) +
+    rowK('부담보금', r.sub, '', kor(r.sub)) +
+    rowK('T+2 예수금', r.cash, 'sub') +
+    rowK('국내부담보 (현금 주식' + (r.br.ordRate !== 100 ? ' × ' + r.br.ordRate + '%' : '') + ')', r.ordColl, 'sub') +
+    (r.extra ? rowK('그 밖의 담보', r.extra, 'sub') : '') +
+    rowK('총담보평가금', r.total, 'tot', kor(r.total));
+
+  const cards = [];
+  if (r.ratio != null) {
+    cards.push(`<div class="rc"><div class="l">반대매매까지 여유</div><div class="v ${r.room < 0 ? 'dn' : ''}">${r.room >= 0 ? sfKor(r.room) : '부족 ' + sfKor(-r.room)}</div><div class="d">총담보평가금 − 소요담보금</div></div>`);
+    cards.push(`<div class="rc"><div class="l">전 종목 같이 떨어지면</div><div class="v">${r.dropAll != null && r.room > 0 ? '−' + sfNum(r.dropAll, 1) + '%' : '-'}</div><div class="d">이만큼 빠지면 담보부족 시작</div></div>`);
+  }
+  cards.push(`<div class="rc"><div class="l">추정자산</div><div class="v">${sfKor(r.est)}</div><div class="d">평가 ${sfKor(r.evalT)} + 예수금 − 융자 − 이자 ${r.interest ? sfKor(r.interest) : '0'} − 매도비용 ${sfKor(r.cost)}</div></div>`);
+  $('resCards').innerHTML = cards.join('');
+
+  // 종목 하나만 떨어질 때 담보부족 시작 가격
+  const rows = r.per.filter(x => x.w > 0 && x.p > 0);
+  if (r.ratio != null && rows.length && r.room > 0) {
+    $('dangerList').innerHTML = '<table><tr><th>종목</th><th>현재가</th><th>이 종목만 떨어지면 담보부족 시작</th><th>하락률</th></tr>' + rows.map(x => {
+      const px = x.p - r.room / x.w;
+      return `<tr><td>${esc(x.h.name || '-')}</td><td>${sfNum(x.p)}</td><td>${px > 0 ? sfNum(Math.ceil(px)) + '원' : '이 종목만으론 안 걸림'}</td><td>${px > 0 ? '−' + sfNum((1 - px / x.p) * 100, 1) + '%' : '-'}</td></tr>`;
+    }).join('') + '</table>';
+  } else $('dangerList').innerHTML = '';
+
+  renderWeekend(a, r);
 }
 
-function applyQuotes() {
-  stocks.forEach((_, i) => fillFromQuote(i));
-  calc(); saveLocal();
+// 장 마감 뒤: 해외 추정가(삼성전자·SK하이닉스·현대차)는 그 값, 나머지는 코스피200 변화율 가정
+function renderWeekend(a, r) {
+  const box = $('wkd');
+  if (!perp || perp.session || !perp.items || r.ratio == null || perp.stale) { box.style.display = 'none'; return; }
+  const est = {}; let k200 = null;
+  perp.items.forEach(x => { if (x.kind === 'index') k200 = x; else est[x.code] = x; });
+  let nEst = 0, nK = 0;
+  const pf = h => {
+    const p = priceOf(h), c = matchCode(h.name);
+    if (est[c]) { nEst++; return est[c].est; }
+    if (k200 && p > 0) { nK++; return p * (1 + k200.pct / 100); }
+    return p;
+  };
+  const w = calcAcc(a, pf);
+  if (!nEst && !nK) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = `🌙 <b>장 마감 뒤 해외 추정 반영 시 담보비율 ${w.ratioDisp}%</b> (지금 ${r.ratioDisp}%)` + (w.short > 0 ? ` · <b>담보부족 ${sfKor(w.short)}</b>` : ` · 여유 ${sfKor(w.room)}`) +
+    `<br><span style="font-size:11.5px">${sfDate(perp.base_date, 'md')} 종가 기준 · 해외 추정가가 있는 종목은 그 값` + (k200 ? `, 없는 종목은 코스피200 ${sfPct(k200.pct, 2, 1)}만큼 움직였다고 가정` : '') + ` · <a href="/today/">해외 추정가 보기</a> (참고용)</span>`;
 }
 
+function renderAll2() {   // 전체 계좌 표 + 탭 비율
+  let T = { loan: 0, evalT: 0, est: 0, cash: 0 };
+  const rows = accs.map((a, i) => {
+    const r = calcAcc(a);
+    T.loan += r.loan; T.evalT += r.evalT; T.est += r.est; T.cash += r.cash;
+    return `<tr><td>${esc(a.name || '계좌 ' + (i + 1))} <small style="color:#888">${r.br.n}</small></td><td>${r.ratioDisp != null ? r.ratioDisp + '%' : '-'}</td><td>${sfKor(r.evalT) || 0}</td><td>${sfKor(r.loan) || 0}</td><td>${sfKor(r.est) || 0}</td></tr>`;
+  });
+  $('allTbl').innerHTML = '<tr><th>계좌</th><th>담보비율</th><th>평가금액</th><th>융자</th><th>추정자산</th></tr>' + rows.join('') +
+    (accs.length > 1 ? `<tr class="tot"><td>합계</td><td></td><td>${sfKor(T.evalT) || 0}</td><td>${sfKor(T.loan) || 0}</td><td>${sfKor(T.est) || 0}</td></tr>` : '');
+  window._mrTot = T;
+  document.querySelectorAll('#accTabs [data-acc]').forEach((b, i) => {
+    const r = calcAcc(accs[i]); const s = b.querySelector('small'); if (s) s.textContent = r.ratioDisp != null ? r.ratioDisp + '%' : '';
+  });
+}
+
+function renderAll() { renderTabs(); renderAccFields(); renderHolds(); update(); }
+
+// 계좌 칸 입력
+document.querySelectorAll('.acc-in').forEach(el => el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', () => {
+  const a = accs[cur], f = el.dataset.a;
+  a[f] = (f === 'name' || f === 'broker') ? el.value : el.value.replace(/,/g, '');
+  if (f === 'broker' || f === 'name') { renderTabs(); renderAccFields(); }
+  update();
+}));
+bindNumFmt(document.querySelector('.acc-grid').parentNode);
+$('btnDelAcc').onclick = () => {
+  if (accs.length <= 1) { alert('계좌가 하나뿐이라 지울 수 없어요. 내용을 비우려면 저장 관리 창의 [↺ 화면 처음으로].'); return; }
+  if (!confirm((accs[cur].name || '이 계좌') + ' 을(를) 지울까요?')) return;
+  accs.splice(cur, 1); cur = Math.max(0, cur - 1); renderAll();
+};
+$('btnAddHold').onclick = () => { accs[cur].holds.push(newHold()); renderHolds(); update(); };
+
+// ── 저장 (브라우저 자동 + sf-slots 계정 저장) ──
+const LS_KEY = 'sf_mr_state_v3';
+function mGetState() { return { v: 3, cur, autoPrice, accs: JSON.parse(JSON.stringify(accs)) }; }
+function fromV2(d) {   // 옛 화면(일반/신용 한 칸씩) → 계좌 1개
+  return { v: 3, cur: 0, autoPrice: d.autoPrice !== false, accs: [{
+    name: '내 계좌', broker: 'ETC', maint: toNum(d.threshold) || 140, cash: d.cash || '', interest: '', extra: '', fee: '',
+    holds: (d.stocks || []).map(s => ({ name: s.name || '', curr: s.ordCurr || s.crdCurr || '', qty: s.ordQty || '', buy: s.ordBuy || '',
+      lots: (s.crdQty || s.crdBuy) ? [{ q: s.crdQty || '', loan: s.crdBuy || '', buy: '', d: '' }] : [] })) }] };
+}
+function mSetState(d) {
+  if (!d) return;
+  if (!d.accs && d.stocks) d = fromV2(d);
+  if (!Array.isArray(d.accs) || !d.accs.length) return;
+  accs = d.accs.map(a => Object.assign(newAcc(), a, { holds: (a.holds && a.holds.length ? a.holds : [newHold()]).map(h => Object.assign(newHold(), h, { lots: Array.isArray(h.lots) ? h.lots.map(l => Object.assign(newLot(), l)) : [] })) }));
+  cur = Math.min(Math.max(0, d.cur || 0), accs.length - 1);
+  autoPrice = d.autoPrice !== false; $('chkAutoPrice').checked = autoPrice;
+  renderAll();
+}
+let saveT = null;
+function save() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(LS_KEY, JSON.stringify(mGetState())); } catch (e) {} }, 300); }
+function loadLocal() {
+  try {
+    const r = localStorage.getItem(LS_KEY);
+    if (r) { mSetState(JSON.parse(r)); return true; }
+    const o = localStorage.getItem('sf_mr_state_v2');
+    if (o) { mSetState(JSON.parse(o)); return true; }
+  } catch (e) {}
+  return false;
+}
+window.mGetState = mGetState; window.mSetState = mSetState;
+window.slReset = () => {
+  try { ['sf_mr_state_v3', 'sf_mr_state_v2', 'sf_mr_state_v1', 'sf_mr_loaded_slot'].forEach(k => localStorage.removeItem(k)); } catch (e) {}
+  const ls = $('loadedSlot'); if (ls) ls.style.display = 'none';
+  accs = [newAcc('KB 신용')]; cur = 0; autoPrice = true; $('chkAutoPrice').checked = true; renderAll();
+};
+
+// ── 시세 불러오기 ──
 function parseListCsv(text) {
   const out = {};
   (text || '').split(/\r?\n/).forEach(line => {
-    line = line.trim();
-    if (!line || line.charAt(0) === '#') return;
-    const p = line.split(',');
-    if (p.length >= 2 && /^\d{6}$/.test(p[0].trim())) out[p[0].trim()] = p[1].trim();
+    line = line.trim(); if (!line || line[0] === '#') return;
+    const p = line.split(','); if (p.length >= 2 && /^\d{6}$/.test(p[0].trim())) out[p[0].trim()] = p[1].trim();
   });
   return out;
 }
-
 async function loadQuotes() {
   let live = null, close = null;
-  const jobs = [
+  await Promise.all([
     fetch(LIVE_URL, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(d => { if (d && d.stocks) live = d; }).catch(() => {}),
-    fetch('/data/kr/prices.json?v=' + Date.now()).then(r => r.ok ? r.json() : null).then(d => { if (d && d.prices) close = d; }).catch(() => {})
-  ];
-  await Promise.all(jobs);
-
-  const next = {};
-  let info = null;
-  // 날짜가 더 최신인 쪽 사용 (같으면 실시간 쪽)
+    fetch('/data/kr/prices.json?v=' + Date.now()).then(r => r.ok ? r.json() : null).then(d => { if (d && d.prices) close = d; }).catch(() => {}),
+    fetch(PERP_URL, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(d => { perp = d && !d.error ? d : null; }).catch(() => { perp = null; }),
+  ]);
+  const next = {}; let info = null;
   if (live && (!close || (live.date || '') >= (close.updated || ''))) {
-    Object.keys(live.stocks).forEach(c => {
-      const q = live.stocks[c];
-      if (q && q.p > 0) next[c] = { n: q.n || c, p: q.p, r: typeof q.r === 'number' ? q.r : null };
-    });
+    Object.keys(live.stocks).forEach(c => { const q = live.stocks[c]; if (q && q.p > 0) next[c] = { n: q.n || c, p: q.p, r: typeof q.r === 'number' ? q.r : null }; });
     info = { src: 'live', date: live.date || '', time: live.time || '', open: !!live.market_open };
   } else if (close) {
     let names = {};
     try {
-      const [a, b] = await Promise.all([
-        fetch('/scripts/kospi200_list.csv').then(r => r.ok ? r.text() : ''),
-        fetch('/scripts/kosdaq_list.csv').then(r => r.ok ? r.text() : '')
-      ]);
+      const [a, b] = await Promise.all([fetch('/scripts/kospi200_list.csv').then(r => r.ok ? r.text() : ''), fetch('/scripts/kosdaq_list.csv').then(r => r.ok ? r.text() : '')]);
       names = Object.assign(parseListCsv(a), parseListCsv(b));
     } catch (e) {}
-    Object.keys(close.prices).forEach(c => {
-      const q = close.prices[c];
-      if (q && q.price > 0) next[c] = { n: names[c] || c, p: q.price, r: null };
-    });
+    Object.keys(close.prices).forEach(c => { const q = close.prices[c]; if (q && q.price > 0) next[c] = { n: names[c] || c, p: q.price, r: null }; });
     info = { src: 'close', date: close.updated || '', time: '', open: false };
   }
-
   const st = $('quoteStatus');
-  if (!info || !Object.keys(next).length) {
-    st.textContent = '⚠️ 시세를 불러오지 못함 → 현재가 직접 입력 (잠시 후 [시세 갱신])';
-  } else {
-    quotes = next; quoteInfo = info;
-    nameMap = {};
+  if (!info || !Object.keys(next).length) st.textContent = '⚠️ 시세를 못 불러옴 → 현재가 직접 입력 (잠시 후 [시세 갱신])';
+  else {
+    quotes = next; quoteInfo = info; nameMap = {};
     Object.keys(quotes).forEach(c => { nameMap[normName(quotes[c].n)] = c; });
-    $('stkNames').innerHTML = Object.keys(quotes).map(c => `<option value="${quotes[c].n.replace(/"/g, '&quot;')}">`).join('');
-    const md = info.date.slice(5).replace('-', '/');
-    const n = Object.keys(quotes).length;
-    if (info.src === 'live' && info.open) st.innerHTML = `🔴 <b>장중 준실시간</b> · ${md} ${info.time} 기준 · 1분 간격 자동 갱신 · ${n}종목`;
-    else if (info.src === 'live') st.innerHTML = `${md} ${info.time} 기준 (장 마감) · ${n}종목`;
-    else st.innerHTML = `${md} 종가 기준 (실시간 값 없음) · ${n}종목`;
-    applyQuotes();
+    $('stkNames').innerHTML = Object.keys(quotes).map(c => `<option value="${esc(quotes[c].n)}">`).join('');
+    const md = info.date.slice(5).replace('-', '/'), n = Object.keys(quotes).length;
+    st.innerHTML = info.src === 'live' && info.open ? `🔴 <b>장중 준실시간</b> · ${md} ${info.time} 기준 · 1분마다 · ${n}종목`
+      : info.src === 'live' ? `${md} ${info.time} 기준 (장 마감) · ${n}종목` : `${md} 종가 기준 · ${n}종목`;
+    update();
   }
-
   clearTimeout(quoteTimer);
-  quoteTimer = setTimeout(() => { if (!document.hidden) loadQuotes(); }, (quoteInfo && quoteInfo.open) ? 60 * 1000 : 5 * 60 * 1000);
+  quoteTimer = setTimeout(() => { if (!document.hidden) loadQuotes(); }, quoteInfo && quoteInfo.open ? 60e3 : 5 * 60e3);
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden && quoteInfo) loadQuotes(); });
+$('chkAutoPrice').addEventListener('change', () => { autoPrice = $('chkAutoPrice').checked; update(); });
+$('btnRefreshQuote').addEventListener('click', () => { $('quoteStatus').textContent = '시세 불러오는 중…'; loadQuotes(); });
 
-function updateFieldValue(i, field, value) {
-  const el = document.querySelector(`[data-i="${i}"][data-f="${field}"]`);
-  if (el) el.value = value > 0 ? Math.round(value) : '';
-}
-
-let lastNetAsset = 0;
-let lastLoan = 0;
-function calc() {
-  let sumOrdBuy = 0, sumOrdVal = 0, sumCrdBuy = 0, sumCrdVal = 0;
-  stocks.forEach((s, i) => {
-    const oB = s.ordBuy || 0, oV = s.ordVal || 0;
-    const cB = s.crdBuy || 0, cV = s.crdVal || 0;
-    sumOrdBuy += oB; sumOrdVal += oV; sumCrdBuy += cB; sumCrdVal += cV;
-
-    // 자동 필드 옆 한글 힌트
-    const kOB = $(`kor-ordBuy-${i}`); if (kOB) kOB.textContent = oB > 0 ? '≈ ' + sfKor(oB) : '';
-    const kOV = $(`kor-ordVal-${i}`); if (kOV) kOV.textContent = oV > 0 ? '≈ ' + sfKor(oV) : '';
-    const kCB = $(`kor-crdBuy-${i}`); if (kCB) kCB.textContent = cB > 0 ? '≈ ' + sfKor(cB) : '';
-    const kCV = $(`kor-crdVal-${i}`); if (kCV) kCV.textContent = cV > 0 ? '≈ ' + sfKor(cV) : '';
-    // 매수가/현재가는 10만원 이상일 때만 한글 표시
-    const kOP = $(`kor-ordPrice-${i}`); if (kOP) kOP.textContent = (s.ordPrice || 0) >= 100000 ? '≈ ' + sfKor(s.ordPrice) : '';
-    const kOC = $(`kor-ordCurr-${i}`); if (kOC) kOC.textContent = (s.ordCurr || 0) >= 100000 ? '≈ ' + sfKor(s.ordCurr) : '';
-    const kCP = $(`kor-crdPrice-${i}`); if (kCP) kCP.textContent = (s.crdPrice || 0) >= 100000 ? '≈ ' + sfKor(s.crdPrice) : '';
-    const kCC = $(`kor-crdCurr-${i}`); if (kCC) kCC.textContent = (s.crdCurr || 0) >= 100000 ? '≈ ' + sfKor(s.crdCurr) : '';
-
-    const out = $(`stk-out-${i}`);
-    if (out) {
-      const totalBuy = oB + cB;
-      const totalVal = oV + cV;
-      const pl = totalVal - totalBuy;
-      const plRate = totalBuy > 0 ? (pl / totalBuy * 100) : 0;
-      const plColor = pl > 0 ? 'var(--sf-up, #dc2626)' : (pl < 0 ? 'var(--sf-down, #2563eb)' : '#666');
-      const kBuy = totalBuy > 0 ? `<div style="font-size:10px;color:#059669;margin-top:1px">${sfKor(totalBuy)}</div>` : '';
-      const kVal = totalVal > 0 ? `<div style="font-size:10px;color:#059669;margin-top:1px">${sfKor(totalVal)}</div>` : '';
-      const kPl = totalBuy > 0 && Math.abs(pl) >= 10000 ? `<div style="font-size:10px;color:${plColor};margin-top:1px">${pl > 0 ? '+' : ''}${sfKor(pl)}</div>` : '';
-      out.innerHTML = `
-        <div><div class="l">총 매수</div><div class="v">${totalBuy > 0 ? totalBuy.toLocaleString() : '-'}</div>${kBuy}</div>
-        <div><div class="l">총 평가</div><div class="v">${totalVal > 0 ? totalVal.toLocaleString() : '-'}</div>${kVal}</div>
-        <div><div class="l">손익</div><div class="v" style="color:${plColor}">${totalBuy > 0 ? (pl > 0 ? '+' : '') + Math.round(pl).toLocaleString() + ' (' + (plRate >= 0 ? '+' : '') + plRate.toFixed(1) + '%)' : '-'}</div>${kPl}</div>
-      `;
-    }
-  });
-
-  const cash = num('inCash');
-  const threshold = num('inThreshold') || 140;
-  const collateral = sumOrdVal + sumCrdVal + cash;
-  const loan = sumCrdBuy;
-
-  // 예수금 한글 힌트
-  const kCash = $('korCash'); if (kCash) kCash.textContent = cash > 0 ? '≈ ' + sfKor(cash) : '';
-
-  // 평가 요약 (신용이 없어도 표시)
-  const evalTotal = sumOrdVal + sumCrdVal;
-  const buyTotal = sumOrdBuy + sumCrdBuy;
-  lastNetAsset = evalTotal + cash - loan;
-  lastLoan = loan;
-  if (evalTotal > 0) {
-    $('evalPanel').style.display = 'block';
-    setCell('evBuy', buyTotal);
-    setCell('evVal', evalTotal);
-    setCell('evOrd', sumOrdVal);
-    setCell('evCrd', sumCrdVal);
-    const pl = evalTotal - buyTotal;
-    if (buyTotal > 0) {
-      const rate = pl / buyTotal * 100;
-      const kor = Math.abs(pl) >= 1e4 ? sfKor(pl) : '';
-      $('evPL').innerHTML = (pl > 0 ? '+' : '') + fmt(pl) + ` (${rate >= 0 ? '+' : ''}${rate.toFixed(2)}%)` + (kor ? ` <small style="font-size:11px;font-weight:500">≈ ${pl > 0 ? '+' : ''}${kor}</small>` : '');
-    } else {
-      $('evPL').textContent = '-';
-    }
-    $('evPL').classList.toggle('gain', buyTotal > 0 && pl > 0);
-    $('evPL').classList.toggle('loss', buyTotal > 0 && pl < 0);
-    $('evCashRow').style.display = cash > 0 ? 'flex' : 'none';
-    setCell('evCash', cash);
-    $('evLoanRow').style.display = loan > 0 ? 'flex' : 'none';
-    $('evLoan').innerHTML = '-' + fmt(loan);
-    setCell('evNet', lastNetAsset);
-  } else {
-    $('evalPanel').style.display = 'none';
-  }
-
-  if (loan <= 0) {
-    $('ratioPanel').style.display = 'none';
-    return;
-  }
-  $('ratioPanel').style.display = 'block';
-
-  const ratio = (collateral / loan) * 100;
-  const marginNeeded = loan * (threshold / 100);
-  const marginRoom = collateral - marginNeeded;
-  const dropPct = collateral > 0 ? (marginRoom / collateral * 100) : 0;
-  const stockCollateral = sumOrdVal + sumCrdVal;
-  const stockDropPct = stockCollateral > 0 ? (marginRoom / stockCollateral * 100) : 0;
-
-  const hero = $('ratioHero');
-  const statusEl = $('ratioStatus');
-  $('ratioVal').textContent = ratio.toFixed(1) + '%';
-  hero.className = 'ratio-hero';
-  if (ratio >= threshold + 60) {
-    hero.classList.add('safe');
-    statusEl.textContent = '✅ 안전 (여유 충분)';
-  } else if (ratio >= threshold + 20) {
-    hero.classList.add('safe');
-    statusEl.textContent = '🟢 안전';
-  } else if (ratio >= threshold) {
-    hero.classList.add('warn');
-    statusEl.textContent = '⚠️ 주의 (기준 근접)';
-  } else if (ratio >= threshold - 10) {
-    hero.classList.add('danger');
-    statusEl.textContent = '🚨 위험 (반대매매 임박)';
-  } else {
-    hero.classList.add('critical');
-    statusEl.textContent = '🚨 반대매매 위험!';
-  }
-
-  setCell('sumOrdBuy', sumOrdBuy);
-  setCell('sumOrdVal', sumOrdVal);
-  const ordPL = sumOrdVal - sumOrdBuy;
-  setCell('sumOrdPL', ordPL, true);
-  $('sumOrdPL').classList.toggle('gain', ordPL > 0);
-  $('sumOrdPL').classList.toggle('loss', ordPL < 0);
-
-  setCell('sumCrdBuy', sumCrdBuy);
-  setCell('sumCrdVal', sumCrdVal);
-  const crdPL = sumCrdVal - sumCrdBuy;
-  setCell('sumCrdPL', crdPL, true);
-  $('sumCrdPL').classList.toggle('gain', crdPL > 0);
-  $('sumCrdPL').classList.toggle('loss', crdPL < 0);
-
-  $('cashRow').style.display = cash > 0 ? 'flex' : 'none';
-  setCell('cashVal', cash);
-  setCell('totalCollateral', collateral);
-  setCell('totalLoan', loan);
-  setCell('marginNeeded', marginNeeded);
-  setCell('marginRoom', marginRoom);
-
-  const dropEl = $('dropPct');
-  const stockDropEl = $('stockDropPct');
-  if (marginRoom < 0) {
-    dropEl.innerHTML = '<span style="color:#dc2626">이미 마진콜 상태 (' + Math.abs(marginRoom).toLocaleString() + '원 부족)</span>';
-    stockDropEl.textContent = '-';
-  } else {
-    dropEl.innerHTML = `<span style="color:${dropPct < 5 ? '#dc2626' : (dropPct < 15 ? '#d97706' : '#059669')}">-${dropPct.toFixed(2)}%까지 견딤</span>`;
-    stockDropEl.innerHTML = `<span style="color:${stockDropPct < 5 ? '#dc2626' : (stockDropPct < 15 ? '#d97706' : '#059669')}">-${stockDropPct.toFixed(2)}%까지 견딤</span>`;
-  }
-
-  const warns = [];
-  if (ratio < threshold) {
-    const additional = marginNeeded - collateral;
-    const payback = (collateral - marginNeeded) * -1 / (threshold/100 - 1);
-    warns.push(`🚨 <b>담보비율 ${ratio.toFixed(1)}% (기준 ${threshold}% 미달)</b> — 추가 담보 <b>${sfKor(additional)}</b> 필요 or 신용 <b>${sfKor(payback)}</b> 상환 필요.`);
-  } else if (ratio < threshold + 20) {
-    warns.push(`⚠️ <b>담보비율 ${ratio.toFixed(1)}%</b>, 기준(${threshold}%)까지 여유 ${(ratio - threshold).toFixed(1)}%p. 하락 주의.`);
-  }
-  const warnEl = $('ratioWarn');
-  warnEl.className = ratio < threshold ? 'warn danger' : 'warn';
-  warnEl.innerHTML = warns.join('<br>');
-  warnEl.style.display = warns.length ? 'block' : 'none';
-}
-
-$('btnAddStock').addEventListener('click', () => {
-  stocks.push({ name: '', ordQty: 0, ordPrice: 0, ordCurr: 0, ordBuy: 0, ordVal: 0, crdQty: 0, crdPrice: 0, crdCurr: 0, crdBuy: 0, crdVal: 0 });
-  renderStocks(); saveLocal();
-});
-
-window.slReset = () => {   // (085) 저장 관리 창 [↺ 화면 처음으로]
-  try { localStorage.removeItem('sf_mr_state_v2'); localStorage.removeItem('sf_mr_state_v1'); localStorage.removeItem('sf_mr_loaded_slot'); } catch(e){}
-  var lsEl = document.getElementById('loadedSlot'); if (lsEl) lsEl.style.display = 'none';
-  $('inCash').value = '';
-  $('inThreshold').value = '140';
-  autoPrice = true; $('chkAutoPrice').checked = true;
-  stocks = [{ name: '', ordQty: 0, ordPrice: 0, ordCurr: 0, ordBuy: 0, ordVal: 0, crdQty: 0, crdPrice: 0, crdCurr: 0, crdBuy: 0, crdVal: 0 }];
-  renderStocks();
-};
-
-['inCash', 'inThreshold'].forEach(id => {
-  $(id).addEventListener('input', () => { calc(); saveLocal(); });
-});
-
-// 저장/복원
-function mGetState() {
-  return { cash: $('inCash').value, threshold: $('inThreshold').value, autoPrice: autoPrice, stocks: JSON.parse(JSON.stringify(stocks)) };
-}
-function mSetState(d) {
-  if (!d) return;
-  $('inCash').value = d.cash || '';
-  $('inThreshold').value = d.threshold || '140';
-  autoPrice = d.autoPrice !== false;
-  $('chkAutoPrice').checked = autoPrice;
-  stocks = Array.isArray(d.stocks) && d.stocks.length > 0
-    ? d.stocks.map(s => ({
-        name: s.name || '',
-        ordQty: s.ordQty || 0, ordPrice: s.ordPrice || 0, ordCurr: s.ordCurr || 0,
-        ordBuy: s.ordBuy || 0, ordVal: s.ordVal || 0,
-        crdQty: s.crdQty || 0, crdPrice: s.crdPrice || 0, crdCurr: s.crdCurr || 0,
-        crdBuy: s.crdBuy || 0, crdVal: s.crdVal || 0
-      }))
-    : [{ name: '', ordQty: 0, ordPrice: 0, ordCurr: 0, ordBuy: 0, ordVal: 0, crdQty: 0, crdPrice: 0, crdCurr: 0, crdBuy: 0, crdVal: 0 }];
-  renderStocks();
-}
-function saveLocal() { try { localStorage.setItem('sf_mr_state_v2', JSON.stringify(mGetState())); } catch(e){} }
-function loadLocal() {
-  try {
-    const r = localStorage.getItem('sf_mr_state_v2');
-    if (r) { mSetState(JSON.parse(r)); return; }
-    // v1 마이그레이션 (구 스키마: ordBuy/ordVal만)
-    const old = localStorage.getItem('sf_mr_state_v1');
-    if (old) {
-      const d = JSON.parse(old);
-      if (d && Array.isArray(d.stocks)) {
-        d.stocks = d.stocks.map(s => ({ ...s, ordPrice: 0, ordCurr: 0, crdPrice: 0, crdCurr: 0 }));
-        mSetState(d);
-      }
-    }
-  } catch(e){}
-}
-window.mGetState = mGetState;
-window.mSetState = mSetState;
-
-$('chkAutoPrice').addEventListener('change', () => {
-  autoPrice = $('chkAutoPrice').checked;
-  applyQuotes();
-});
-$('btnRefreshQuote').addEventListener('click', () => {
-  $('quoteStatus').textContent = '시세 불러오는 중…';
-  loadQuotes();
-});
 $('btnSendPf').addEventListener('click', () => {
-  if (!(lastNetAsset > 0)) { alert('보낼 순자산 금액이 없습니다.'); return; }
-  const d = new Date();
-  const ymd = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  try {
-    localStorage.setItem('sf_pf_quick_prefill', JSON.stringify({ date: ymd, asset: Math.round(lastNetAsset), loan: Math.round(lastLoan || 0), ts: Date.now(), from: 'margin-ratio' }));
-  } catch (e) { alert('브라우저 저장소를 쓸 수 없어 보내지 못했습니다.'); return; }
+  const T = window._mrTot || {};
+  if (!(T.est > 0)) { alert('보낼 추정자산이 없습니다.'); return; }
+  try { localStorage.setItem('sf_pf_quick_prefill', JSON.stringify({ date: sfDate(), asset: Math.round(T.est), loan: Math.round(T.loan || 0), ts: Date.now(), from: 'margin-ratio' })); }
+  catch (e) { alert('브라우저 저장소를 쓸 수 없어 보내지 못했습니다.'); return; }
   location.href = '/portfolio/';
 });
 
-loadLocal();
-renderStocks();
+if (!loadLocal()) renderAll();
 loadQuotes();
 </script>
-
-
 </body>
 </html>
