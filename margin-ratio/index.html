@@ -167,7 +167,7 @@ body.sf-dark .acc-more summary { color: #8ab4e8; }
         <div><label>매도 수수료(%)</label><input type="text" inputmode="decimal" class="acc-in" data-a="fee" id="aFee"></div>
         <div style="display:flex;align-items:flex-end;gap:6px"><button class="btn sm" id="btnDelAcc" type="button">🗑 이 계좌 삭제</button></div>
       </div>
-      <div class="hint">신용이자 합계 = 잔고 화면 「신용이자」 칸을 더한 값(추정자산에서만 뺌, 담보비율엔 안 씀). 그 밖의 담보 = 담보 화면의 수익증권대용·해외부담보·외화예수금 등이 있으면 합계. 매도 수수료는 추정자산의 매도 비용 추정용(세금은 증권거래세 <span id="txRate"></span>% 자동).</div>
+      <div class="hint">신용이자 합계 = 잔고 화면 「신용이자」 칸을 더한 값(추정자산에서만 뺌, 담보비율엔 안 씀). 그 밖의 담보 = 담보 화면의 수익증권대용·해외부담보·외화예수금 등이 있으면 합계. 매도 수수료는 추정자산의 매도 비용 추정용(세금은 증권거래세 <span id="txRate"></span>% 자동, ETF는 거래세 없음).</div>
     </details>
   </div>
 
@@ -253,12 +253,13 @@ let perp = null;   // /api/perp/est (장 마감 뒤 해외 추정가)
 // ── 시세 ──
 const LIVE_URL = 'https://swingfarmer.duckdns.org/api/prices/live';
 const PERP_URL = 'https://swingfarmer.duckdns.org/api/perp/est';
+const ETF_LIVE_URL = 'https://swingfarmer.duckdns.org/api/etf/live';   // (119) 국내 ETF 1,190개 — 장중 1분, 아니면 마지막 값
 let quotes = {}, nameMap = {}, quoteInfo = null, quoteTimer = null;
 const normName = s => (s || '').toString().replace(/\s+/g, '').toUpperCase();
 function matchCode(name) {
   const n = normName(name);
   if (!n) return '';
-  if (/^\d{6}$/.test(n) && quotes[n]) return n;
+  if (/^[0-9A-Z]{6}$/.test(n) && quotes[n]) return n;   // ETF 코드는 0072R0처럼 영문 섞임
   return nameMap[n] || '';
 }
 function priceOf(h) {   // 자동이면 수집 시세, 아니면 입력값
@@ -266,13 +267,14 @@ function priceOf(h) {   // 자동이면 수집 시세, 아니면 입력값
   if (autoPrice && c && quotes[c]) return quotes[c].p;
   return toNum(h.curr);
 }
+function isEtf(h) { const c = matchCode(h.name); return !!(c && quotes[c] && quotes[c].etf); }   // (119) ETF는 매도 거래세 없음
 
 // ── 계산 (계좌 1개) ──
 function calcAcc(a, priceFn) {
   const br = BROKERS[a.broker] || BROKERS.ETC;
   const maint = toNum(a.maint) || 140;
   const pf = priceFn || priceOf;
-  let crdVal = 0, ordVal = 0, loan = 0, need = 0, buy = 0, crdQtyAll = 0;
+  let crdVal = 0, ordVal = 0, loan = 0, need = 0, buy = 0, crdQtyAll = 0, etfVal = 0;
   const per = [];
   a.holds.forEach(h => {
     const p = pf(h);
@@ -285,6 +287,7 @@ function calcAcc(a, priceFn) {
       hb += toNum(l.buy) || ln;
     });
     crdVal += cq * p; ordVal += oq * p; loan += hl; buy += hb; crdQtyAll += cq;
+    if (isEtf(h)) etfVal += (oq + cq) * p;
     per.push({ h, p, oq, cq, loan: hl, val: (oq + cq) * p, buy: hb, w: cq + oq * br.ordRate / 100 });
   });
   const cash = toNum(a.cash), extra = toNum(a.extra), interest = toNum(a.interest);
@@ -294,7 +297,7 @@ function calcAcc(a, priceFn) {
   const ratio = loan > 0 ? total / loan * 100 : null;
   const evalT = crdVal + ordVal;
   const feePct = a.fee === '' || a.fee == null ? br.fee : toNum(a.fee);
-  const cost = Math.round(evalT * (TX + feePct) / 100);
+  const cost = Math.round(((evalT - etfVal) * (TX + feePct) + etfVal * feePct) / 100);   // ETF는 수수료만
   const est = evalT + cash - loan - interest - cost;
   const room = total - need;
   const stockColl = crdVal + ordColl;
@@ -414,7 +417,7 @@ function update() {
     if (hq) {
       if (q) {
         const chg = typeof q.r === 'number' ? ` <span class="${q.r > 0 ? 'up' : q.r < 0 ? 'dn' : ''}">${q.r > 0 ? '▲' : q.r < 0 ? '▼' : ''}${Math.abs(q.r).toFixed(2)}%</span>` : '';
-        hq.innerHTML = `<span class="ok">✓ ${esc(q.n)} (${c})</span> · ${sfNum(q.p)}원${chg}${autoPrice ? '' : ' · 자동 꺼짐(입력값 사용)'}`;
+        hq.innerHTML = `<span class="ok">✓ ${esc(q.n)} (${c})</span>${q.etf ? ' · ETF(거래세 없음)' : ''} · ${sfNum(q.p)}원${chg}${autoPrice ? '' : ' · 자동 꺼짐(입력값 사용)'}`;
       } else hq.textContent = normName(x.h.name) && Object.keys(quotes).length ? '수집 종목에 없음 → 현재가 직접 입력' : '';
     }
     const hs = $('hs-' + i);
@@ -489,6 +492,7 @@ function renderWeekend(a, r) {
   const pf = h => {
     const p = priceOf(h), c = matchCode(h.name);
     if (est[c]) { nEst++; return est[c].est; }
+    if (isEtf(h)) return p;   // (119) ETF는 그대로 둠 (금·채권·해외 ETF에 코스피200 변화율을 씌우면 틀림)
     if (k200 && p > 0) { nK++; return p * (1 + k200.pct / 100); }
     return p;
   };
@@ -496,7 +500,7 @@ function renderWeekend(a, r) {
   if (!nEst && !nK) { box.style.display = 'none'; return; }
   box.style.display = 'block';
   box.innerHTML = `🌙 <b>장 마감 뒤 해외 추정 반영 시 담보비율 ${w.ratioDisp}%</b> (지금 ${r.ratioDisp}%)` + (w.short > 0 ? ` · <b>담보부족 ${sfKor(w.short)}</b>` : ` · 여유 ${sfKor(w.room)}`) +
-    `<br><span style="font-size:11.5px">${sfDate(perp.base_date, 'md')} 종가 기준 · 해외 추정가가 있는 종목은 그 값` + (k200 ? `, 없는 종목은 코스피200 ${sfPct(k200.pct, 2, 1)}만큼 움직였다고 가정` : '') + ` · <a href="/today/">해외 추정가 보기</a> (참고용)</span>`;
+    `<br><span style="font-size:11.5px">${sfDate(perp.base_date, 'md')} 종가 기준 · 해외 추정가가 있는 종목은 그 값` + (k200 ? `, 없는 종목은 코스피200 ${sfPct(k200.pct, 2, 1)}만큼 움직였다고 가정(ETF는 그대로)` : '') + ` · <a href="/today/">해외 추정가 보기</a> (참고용)</span>`;
 }
 
 function renderAll2() {   // 전체 계좌 표 + 탭 비율
@@ -577,11 +581,13 @@ function parseListCsv(text) {
   return out;
 }
 async function loadQuotes() {
-  let live = null, close = null;
+  let live = null, close = null, etfLive = null, etfClose = null;
   await Promise.all([
     fetch(LIVE_URL, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(d => { if (d && d.stocks) live = d; }).catch(() => {}),
     fetch('/data/kr/prices.json?v=' + Date.now()).then(r => r.ok ? r.json() : null).then(d => { if (d && d.prices) close = d; }).catch(() => {}),
     fetch(PERP_URL, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(d => { perp = d && !d.error ? d : null; }).catch(() => { perp = null; }),
+    fetch(ETF_LIVE_URL, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(d => { if (d && d.etfs) etfLive = d; }).catch(() => {}),
+    fetch('/data/kr/etf/latest.json?v=' + Date.now()).then(r => r.ok ? r.json() : null).then(d => { if (d && d.rows) etfClose = d; }).catch(() => {}),
   ]);
   const next = {}; let info = null;
   if (live && (!close || (live.date || '') >= (close.updated || ''))) {
@@ -596,15 +602,30 @@ async function loadQuotes() {
     Object.keys(close.prices).forEach(c => { const q = close.prices[c]; if (q && q.price > 0) next[c] = { n: names[c] || c, p: q.price, r: null }; });
     info = { src: 'close', date: close.updated || '', time: '', open: false };
   }
+  // (119) 국내 ETF — 이름·종가는 latest.json, 그보다 새 날짜의 수집값이 있으면 그 값
+  let nEtf = 0;
+  if (etfClose) {
+    const cols = etfClose.cols || [], ic = cols.indexOf('code'), iname = cols.indexOf('name'), icl = cols.indexOf('close'), id1 = cols.indexOf('d1');
+    const useLive = !!(etfLive && (etfLive.date || '') > (etfClose.date || ''));
+    if (ic >= 0 && iname >= 0 && icl >= 0) etfClose.rows.forEach(row => {
+      const c = String(row[ic]).trim(); if (!c || next[c]) return;
+      const lq = useLive && etfLive.etfs[c];
+      const p = lq && lq.p > 0 ? lq.p : +row[icl];
+      if (!(p > 0)) return;
+      next[c] = { n: row[iname], p, r: lq && typeof lq.r === 'number' ? lq.r : (typeof row[id1] === 'number' ? row[id1] : null), etf: true };
+      nEtf++;
+    });
+  }
   const st = $('quoteStatus');
   if (!info || !Object.keys(next).length) st.textContent = '⚠️ 시세를 못 불러옴 → 현재가 직접 입력 (잠시 후 [시세 갱신])';
   else {
     quotes = next; quoteInfo = info; nameMap = {};
     Object.keys(quotes).forEach(c => { nameMap[normName(quotes[c].n)] = c; });
     $('stkNames').innerHTML = Object.keys(quotes).map(c => `<option value="${esc(quotes[c].n)}">`).join('');
-    const md = info.date.slice(5).replace('-', '/'), n = Object.keys(quotes).length;
+    const md = info.date.slice(5).replace('-', '/'), n = Object.keys(quotes).length - nEtf;
     st.innerHTML = info.src === 'live' && info.open ? `🔴 <b>장중 준실시간</b> · ${md} ${info.time} 기준 · 1분마다 · ${n}종목`
       : info.src === 'live' ? `${md} ${info.time} 기준 (장 마감) · ${n}종목` : `${md} 종가 기준 · ${n}종목`;
+    if (nEtf) st.innerHTML += ` + 국내 ETF ${sfNum(nEtf)}개`;
     update();
   }
   clearTimeout(quoteTimer);
