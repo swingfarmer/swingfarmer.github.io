@@ -132,6 +132,7 @@ body.sf-dark .all-tbl tr.tot td { background: #12261f; }
 body.sf-dark .acc-more summary { color: #8ab4e8; }
 </style>
 <script src="/sf-fmt.js?v=4"></script>
+<script src="/sf-live.js?v=1"></script>
 <script src="/tax-rates.js?v=24"></script>
 <link rel="stylesheet" href="/auth-guard.css?v=4">
 <script type="module" src="/auth-guard.js?v=7"></script>
@@ -256,7 +257,7 @@ let perp = null;   // /api/perp/est (장 마감 뒤 해외 추정가)
 const LIVE_URL = 'https://swingfarmer.duckdns.org/api/prices/live';
 const PERP_URL = 'https://swingfarmer.duckdns.org/api/perp/est';
 const ETF_LIVE_URL = 'https://swingfarmer.duckdns.org/api/etf/live';   // (119) 국내 ETF 1,190개 — 장중 1분, 아니면 마지막 값
-let quotes = {}, nameMap = {}, quoteInfo = null, quoteTimer = null;
+let quotes = {}, nameMap = {}, quoteInfo = null;
 const normName = s => (s || '').toString().replace(/\s+/g, '').toUpperCase();
 function matchCode(name) {
   const n = normName(name);
@@ -623,23 +624,23 @@ async function loadQuotes() {
     });
   }
   const st = $('quoteStatus');
-  if (!info || !Object.keys(next).length) st.textContent = '⚠️ 시세를 못 불러옴 → 현재가 직접 입력 (잠시 후 [시세 갱신])';
+  if (!info || !Object.keys(next).length) { st.textContent = '⚠️ 시세를 못 불러옴 → 현재가 직접 입력 (잠시 후 [시세 갱신])'; throw new Error('no quotes'); }
   else {
     quotes = next; quoteInfo = info; nameMap = {};
     Object.keys(quotes).forEach(c => { nameMap[normName(quotes[c].n)] = c; });
     $('stkNames').innerHTML = Object.keys(quotes).map(c => `<option value="${esc(quotes[c].n)}">`).join('');
-    const md = info.date.slice(5).replace('-', '/'), n = Object.keys(quotes).length - nEtf;
-    st.innerHTML = info.src === 'live' && info.open ? `🔴 <b>장중 준실시간</b> · ${md} ${info.time} 기준 · 1분마다 · ${n}종목`
-      : info.src === 'live' ? `${md} ${info.time} 기준 (장 마감) · ${n}종목` : `${md} 종가 기준 · ${n}종목`;
-    if (nEtf) st.innerHTML += ` + 국내 ETF ${sfNum(nEtf)}개`;
+    const n = Object.keys(quotes).length - nEtf;
+    // (122) 기준 시각·주기는 오른쪽 위 공통 표시(/sf-live.js). 여기는 시세 종류·개수만
+    st.textContent = (info.src === 'live' && info.open ? '장중 준실시간 시세' : info.src === 'live' ? '장 마감 시세' : '종가')
+      + ` · ${n}종목` + (nEtf ? ` + 국내 ETF ${sfNum(nEtf)}개` : '');
     update();
   }
-  clearTimeout(quoteTimer);
-  quoteTimer = setTimeout(() => { if (!document.hidden) loadQuotes(); }, quoteInfo && quoteInfo.open ? 60e3 : 5 * 60e3);
+  return { at: info.date + (info.time ? ' ' + info.time : ''), kind: info.src === 'close' ? '종가 ' : '', open: info.open, every: info.open ? 60e3 : 5 * 60e3 };
 }
-document.addEventListener('visibilitychange', () => { if (!document.hidden && quoteInfo) loadQuotes(); });
+// (122) 다시 읽기 타이머 = /sf-live.js (장중 1분, 장 밖 5분마다 확인 — 화면이 보일 때만)
+const quoteLive = sfLive({ load: loadQuotes, start: false, every: 5 * 60e3 });
 $('chkAutoPrice').addEventListener('change', () => { autoPrice = $('chkAutoPrice').checked; update(); });
-$('btnRefreshQuote').addEventListener('click', () => { $('quoteStatus').textContent = '시세 불러오는 중…'; loadQuotes(); });
+$('btnRefreshQuote').addEventListener('click', () => { $('quoteStatus').textContent = '시세 불러오는 중…'; quoteLive.now(); });
 
 $('btnSendPf').addEventListener('click', () => {
   const T = window._mrTot || {};
@@ -650,7 +651,7 @@ $('btnSendPf').addEventListener('click', () => {
 });
 
 if (!loadLocal()) renderAll();
-loadQuotes();
+quoteLive.now();
 </script>
 </body>
 </html>

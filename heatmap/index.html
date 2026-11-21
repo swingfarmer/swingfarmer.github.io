@@ -100,6 +100,7 @@ body:not(.sf-dark) .badge-warn{background:rgba(217,119,6,.12);color:#d97706}
 body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
 </style>
 <script src="/sf-fmt.js?v=4"></script>
+<script src="/sf-live.js?v=1"></script>
 <link rel="stylesheet" href="/auth-guard.css?v=4">
 <script type="module" src="/auth-guard.js?v=7"></script>
 </head>
@@ -168,9 +169,11 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
     const el = document.getElementById('updateDate');
     if (isUS(currentFilter)) {
       const d = usData && usData[currentFilter];
-      el.textContent = d ? `미국 ${usData.date} 종가 기준 · ${US_KEYS[currentFilter]} ${d.items.length}종목 · 화~토 아침 갱신 · 구성 ${d.etf.split(' ').slice(1).join(' ')} (${d.pdf_date})`
+      el.textContent = d ? `미국 ${US_KEYS[currentFilter]} ${d.items.length}종목 · 미장 마감 뒤 화~토 아침 갱신 · 구성 ${d.etf.split(' ').slice(1).join(' ')} (${d.pdf_date})`
         : (usData === false ? '미국 데이터 없음' : '미국 데이터 로딩 중…');
-    } else el.textContent = krLabel;
+      // (122) 오른쪽 위 표시는 미국 종가 날짜로 고정(미국 맵은 하루 한 번 데이터라 다시 읽지 않음)
+      live.show(d ? { at: usData.date, kind: '미국 종가 ', cycle: '하루 한 번' } : { cycle: '' });
+    } else { el.textContent = krLabel; live.show(null); }
   }
   function loadUS() {
     if (usLoading) return usLoading;
@@ -192,8 +195,9 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
   const LIVE_URL = 'https://swingfarmer.duckdns.org/api/prices/live';
   let baseDate = '';      // 종가 데이터(marketcap_top.json) 기준일
   let baseLabel = '';
-  let liveTimer = null;
-  let rendered = false;
+  let rendered = false, liveOk = false;
+  // (122) 오른쪽 위 「기준 시각 · 주기」 + 다시 읽기 타이머는 /sf-live.js (장중 1분, 장 밖 5분마다 확인)
+  const live = sfLive({ load: loadLive, start: false, every: 5 * 60e3 });
 
   // ── 데이터 로드 ──
   async function loadData() {
@@ -227,11 +231,11 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
       }));
 
       baseDate = mcData.date || '';
-      baseLabel = `${mcData.date} 종가 기준 · 시총 상위 ${allItems.length}종목 · 평일 20:50 자동 갱신`;
+      baseLabel = `시총 상위 ${allItems.length}종목 · 종가는 평일 20:50 자동 갱신 · 장중에는 1분 간격 시세`;
       krLabel = baseLabel; showLabel();
 
       // 실시간 값을 최대 2.5초 기다렸다가 한 번에 그림 (회색 화면이 먼저 뜨는 것 방지)
-      await Promise.race([loadLive(), new Promise(r => setTimeout(r, 2500))]);
+      await Promise.race([live.now(), new Promise(r => setTimeout(r, 2500))]);
       if (!rendered) render();
     } catch (e) {
       document.getElementById('heatmap').innerHTML =
@@ -242,7 +246,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
   // ── 준실시간 시세 덮어쓰기 ──
   // 실패하거나 종가 데이터보다 오래된 값이면 아무것도 안 바꿈 (종가 화면 그대로)
   async function loadLive() {
-    let next = 5 * 60 * 1000;   // 장 마감 중에는 5분마다만 확인
+    let info = { at: baseDate, kind: '종가 ', every: 5 * 60e3 };   // 장 마감 중에는 5분마다만 확인
     try {
       const res = await fetch(LIVE_URL, { cache: 'no-store' });
       if (!res.ok) throw new Error('live ' + res.status);
@@ -264,27 +268,21 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
           if (!it.market && q.m) it.market = q.m;
         });
         if (hit) {
-          const md = live.date.slice(5).replace('-', '/');
-          const label = live.market_open
-            ? `🔴 장중 준실시간 · ${md} ${live.time} 기준 · 1분 간격 갱신 · 시총 상위 ${allItems.length}종목`
-            : `${md} ${live.time} 기준 · 시총 상위 ${allItems.length}종목 · 장중에는 1분 간격 갱신`;
-          krLabel = label; showLabel();
+          liveOk = true;
+          info = { at: live.date + ' ' + live.time, open: !!live.market_open, every: live.market_open ? 60e3 : 5 * 60e3 };
+          krLabel = live.market_open ? `시총 상위 ${allItems.length}종목 · 장중 준실시간 시세(1분 간격 수집)`
+                                     : `시총 상위 ${allItems.length}종목 · 마지막 수집 시세 · 장중에는 1분 간격`;
+          showLabel();
           render();
-        }
-        if (live.market_open) next = 60 * 1000;
+        } else if (live.market_open) info.every = 60e3;
       }
     } catch (e) {
-      /* API 접속 불가 → 종가 화면 유지 */
+      /* API 접속 불가 → 화면 유지. 앞서 읽은 시세가 있으면 그 기준 시각 그대로 + 「못 읽음」(sf-live가 1분 뒤 다시) */
+      if (liveOk) throw e;
+      info.warn = '시세 서버 못 읽음 · 종가 표시'; info.every = 60e3;
     }
-    clearTimeout(liveTimer);
-    liveTimer = setTimeout(() => {
-      if (document.hidden) return;   // 탭이 안 보이면 중단 (다시 보이면 아래에서 재개)
-      loadLive();
-    }, next);
+    return info;
   }
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && baseDate) { clearTimeout(liveTimer); loadLive(); }
-  });
 
   // ── 색상 계산 ──
   function getColor(pct, nodata) {

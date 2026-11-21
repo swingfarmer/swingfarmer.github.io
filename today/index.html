@@ -166,6 +166,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
 .pe-warn { color: var(--warn); font-weight: 700; }
 </style>
 <script src="/sf-fmt.js?v=4"></script>
+<script src="/sf-live.js?v=1"></script>
 <link rel="stylesheet" href="/auth-guard.css?v=4">
 <script type="module" src="/auth-guard.js?v=7"></script>
 </head>
@@ -371,6 +372,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
 </script>
 <script>
 // (118) 장 마감 뒤 해외 추정가 — VM fetch_perp_est.py → /api/perp/est. 화면이 보일 때 1분마다 다시 읽음
+// (122) 타이머·칸 오른쪽 「기준 시각 · 주기」는 /sf-live.js (mount = #peAge)
 (function(){
   const URL = 'https://swingfarmer.duckdns.org/api/perp/est';
   const $ = id => document.getElementById(id);
@@ -392,7 +394,6 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
   }
   function render(D){
     if (D.session) {
-      $('peAge').textContent = '';
       $('peBody').innerHTML = '<div class="pe-note">지금은 국내 장중 — 실제 시세는 <a href="/heatmap/">히트맵</a>에서. 장 마감(15:35) 뒤부터 다시 나온다.</div>';
       return;
     }
@@ -400,7 +401,6 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
     const bd = D.base_date ? sfDate(D.base_date, 'md') : '-';
     const upd = D.updated ? sfDate(D.updated, 'hm') : '-';
     const updMd = D.updated ? sfDate(D.updated, 'md') + ' ' : '';
-    $('peAge').innerHTML = D.stale ? '<span class="pe-warn">갱신 멈춤 · 마지막 ' + updMd + upd + '</span>' : '1분마다 갱신';
     $('peBody').innerHTML = '<div class="pe-grid">' + items.map(x => {
       const thin = x.qv < 1e6;   // 24시간 거래대금 100만 달러 미만이면 얇다고 표시
       const idx = x.kind === 'index';   // (118) 코스피200 — 지수라 소수 둘째 자리·pt, 선물값은 달러 표시 없음
@@ -417,13 +417,15 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
       + '<div class="pe-note">기준: ' + bd + ' 국내 종가 · 선 그래프는 그 뒤 변화율 추이 · 출처 바이낸스(종목)·하이퍼리퀴드(코스피200) 무기한 선물 (실제 주식·지수 아님, 참고용)</div>';
   }
   function load(){
-    fetch(URL, {cache: 'no-store'}).then(r => r.json()).then(D => {
+    return fetch(URL, {cache: 'no-store'}).then(r => r.json()).then(D => {
       if (D.error) throw new Error(D.error);
       render(D);
-    }).catch(e => { $('peBody').innerHTML = '<div class="pe-note">해외 추정가를 불러오지 못함 (' + (e.message || e) + ')</div>'; });
+      if (D.session) return { cycle: '', every: 60e3 };   // 국내 장중 — 표시 없이 1분마다 확인만
+      return { at: D.updated, every: 60e3, warn: D.stale ? '갱신 멈춤' : '' };
+    }).catch(e => { $('peBody').innerHTML = '<div class="pe-note">해외 추정가를 불러오지 못함 (' + (e.message || e) + ')</div>'; throw e; });
   }
-  load();
-  setInterval(() => { if (!document.hidden) load(); }, 60000);
+  sfLive({ load: load, every: 60e3, mount: $('peAge'),
+    title: '기준 시각 = VM이 마지막으로 해외 선물 값을 받은 시각. 이 화면이 보일 때만 1분마다 다시 읽음' });
 })();
 </script>
 <script src="/common.js?v=22"></script>
@@ -453,7 +455,7 @@ async function load() {
 
     // Date label
     const dates = [mcap.date, breadth.date, flow.latest?.date].filter(Boolean);
-    document.getElementById('dateLabel').textContent = (dates[0] || mkt.updated || '') + ' 기준 · 장 마감 후 자동 갱신';
+    document.getElementById('dateLabel').textContent = (dates[0] || mkt.updated || '') + ' 장 마감 기준 데이터 · VM이 아침 08:04·밤 21:10에 올림';
 
     // 1. Index + FX
     renderIndex(mkt);
@@ -483,9 +485,12 @@ async function load() {
     // 8. Volume
     renderVolume(volume);
 
+    // (122) 오른쪽 위 공통 표시 — 시장지표가 가장 자주 바뀌어서(07:52·18:45 수집) 그 시각을 기준 시각으로
+    return { at: mkt.updated || dates[0], every: 10 * 60e3 };
   } catch(e) {
     console.error(e);
-    document.getElementById('dateLabel').textContent = '데이터 로딩 실패';
+    if (!_todayLoaded) document.getElementById('dateLabel').textContent = '데이터 로딩 실패';
+    throw e;
   }
 }
 
@@ -721,13 +726,11 @@ function renderVolume(vol) {
   div.innerHTML = h;
 }
 
-load();
 // (121) 화면을 켜 둔 채면 10분마다 다시 읽음. 이 페이지 파일들은 VM이 하루 몇 번(아침 08:04·밤 21:10 자동 push)만 올려서 더 자주 읽어도 소용없음.
 //       해외 추정가 칸은 위에서 따로 1분마다. 다른 탭에 있다가 돌아왔을 때 10분이 지났으면 바로 다시 읽음
-let _todayAt = Date.now();
-function _todayReload(){ _todayAt = Date.now(); load(); }
-setInterval(() => { if (!document.hidden) _todayReload(); }, 10 * 60e3);
-document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - _todayAt > 10 * 60e3) _todayReload(); });
+// (122) 타이머·오른쪽 위 표시는 /sf-live.js
+let _todayLoaded = false;
+sfLive({ load: () => load().then(i => { _todayLoaded = true; return i; }), every: 10 * 60e3 });
 </script>
 </body>
 </html>
