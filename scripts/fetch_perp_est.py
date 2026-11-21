@@ -17,7 +17,7 @@
   /fapi/v1/ticker/24hr?symbol=…   지금 가격·24시간 거래대금(USDT)
   /fapi/v1/klines?symbol=…&interval=1m&startTime=…&limit=1   15:29 KST 1분봉 종가 = 15:30 가격
 
-출력: ~/sf_live/perp_est.json (레포 밖) → api_server /api/perp/est → /today/
+크론: 1분마다(118에서 2분→1분). 출력: ~/sf_live/perp_est.json (레포 밖) → api_server /api/perp/est → /today/
 사용법
   python3 scripts/fetch_perp_est.py          # 크론용
   python3 scripts/fetch_perp_est.py --force  # 장중이어도 1회 수집 (테스트)
@@ -43,7 +43,7 @@ PRICE_FILE = os.path.join(LIVE_DIR, 'prices_live.json')
 OUT_FILE   = os.path.join(LIVE_DIR, 'perp_est.json')
 STATE_FILE = os.path.join(LIVE_DIR, '.perp_state.json')
 LOCK_FILE  = os.path.join(LIVE_DIR, '.perp.lock')
-HIST_MAX   = 24 * 30   # 추이 점 최대 개수 (2분마다면 약 24시간)
+HIST_MAX   = 24 * 30   # 추이 점 최대 개수 (점 간격 2분 → 약 24시간)
 HIST_STEP  = 120       # 추이 점 간격(초) — 이보다 촘촘하면 마지막 점을 덮어씀
 
 

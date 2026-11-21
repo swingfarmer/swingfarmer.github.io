@@ -153,7 +153,10 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
 /* (118) 장 마감 뒤 해외 추정가 */
 .pe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
 .pe-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.pe-top { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
 .pe-name { font-size: 14px; font-weight: 800; }
+.pe-tag { font-size: 10px; color: var(--text-dim); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pe-tag b { color: var(--green); font-weight: 800; }
 .pe-est { font-size: 22px; font-weight: 800; margin-top: 4px; font-variant-numeric: tabular-nums; }
 .pe-est small { font-size: 12px; font-weight: 600; color: var(--text-dim); margin-left: 2px; }
 .pe-chg { font-size: 13px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
@@ -264,7 +267,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
     추정가 = 국내 종가 × (선물 지금 가격 ÷ 종가 시각 15:30의 선물 가격). 환율을 곱하지 않고 변화율만 쓰므로
     선물·현물 사이 가격 차와 주말에 멈춘 환율이 빠진다(kospilab 같은 곳은 선물 달러 가격 × 환율이라 숫자가 조금 다를 수 있음).
     실제 주식이 아니라 역외 고배율 파생상품이고, 주말엔 거래가 얇아 한쪽으로 쏠리기 쉽다 — 분위기 참고용이지 월요일 시가 예측이 아님.
-    2분마다 갱신. 국내 장중(평일 09:00~15:35)에는 실제 시세를 보면 되므로 표시하지 않는다.
+    1분마다 갱신(실시간 아님 — 「1분 거래가」). 카드 오른쪽 위 시각 = 마지막으로 받은 시각. 국내 장중(평일 09:00~15:35)에는 실제 시세를 보면 되므로 표시하지 않는다.
   </div>
   <div id="peBody"><div class="pe-note">불러오는 중…</div></div>
 </div>
@@ -395,11 +398,13 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
     }
     const items = D.items || [], hist = D.hist || [], codes = D.hist_codes || [];
     const bd = D.base_date ? sfDate(D.base_date, 'md') : '-';
-    const age = D.age_sec != null ? (D.age_sec < 90 ? '방금' : Math.round(D.age_sec / 60) + '분 전') : '';
-    $('peAge').innerHTML = (D.stale ? '<span class="pe-warn">갱신 멈춤 · </span>' : '') + age + ' 갱신';
+    const upd = D.updated ? sfDate(D.updated, 'hm') : '-';
+    const updMd = D.updated ? sfDate(D.updated, 'md') + ' ' : '';
+    $('peAge').innerHTML = D.stale ? '<span class="pe-warn">갱신 멈춤 · 마지막 ' + updMd + upd + '</span>' : '1분마다 갱신';
     $('peBody').innerHTML = '<div class="pe-grid">' + items.map(x => {
       const thin = x.qv < 1e6;   // 24시간 거래대금 100만 달러 미만이면 얇다고 표시
-      return '<div class="pe-card"><div class="pe-name">' + x.name + '</div>'
+      return '<div class="pe-card"><div class="pe-top"><span class="pe-name">' + x.name + '</span>'
+        + '<span class="pe-tag">' + (D.stale ? '<span class="pe-warn">● 멈춤</span>' : '<b>●</b>') + ' 1분 거래가 · ' + upd + ' 업데이트</span></div>'
         + '<div class="pe-est">' + sfNum(x.est) + '<small>원</small></div>'
         + '<div class="pe-chg ' + cls(x.chg) + '">' + arrow(x.chg) + ' ' + sfNum(Math.abs(x.chg)) + '원 (' + sfPct(x.pct, 2, 1) + ')</div>'
         + spark(hist, codes.indexOf(x.code) + 1)

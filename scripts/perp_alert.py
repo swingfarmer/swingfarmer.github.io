@@ -2,7 +2,7 @@
 """
 [봇1] 주말 해외 추정가 알림 (118)
 ================================
-~/sf_live/perp_est.json(fetch_perp_est.py, 2분마다)을 읽어 텔레그램 DM으로 보낸다.
+~/sf_live/perp_est.json(fetch_perp_est.py, 1분마다)을 읽어 텔레그램 DM으로 보낸다.
 크론: 토·일 09:00·21:00, 월 07:50(장 전).
   - 추정가 = 국내 종가 × (선물 지금 ÷ 종가 시각 15:30 선물) — 계산은 fetch_perp_est.py
   - 지난 알림보다 얼마나 더 움직였는지도 같이 (상태: ~/sf_live/.perp_alert_state.json)

@@ -1411,7 +1411,7 @@ def api_etf_live():
 
 
 # ── 장 마감 뒤 해외 추정가 (VM 로컬 ~/sf_live/perp_est.json, 118) ──
-# scripts/fetch_perp_est.py 가 2분마다 갱신 (바이낸스 무기한 선물). 여기서는 파일만 읽음.
+# scripts/fetch_perp_est.py 가 1분마다 갱신 (바이낸스 무기한 선물). 여기서는 파일만 읽음.
 PERP_EST_FILE = os.path.join(os.path.expanduser(os.environ.get('SF_LIVE_DIR', '~/sf_live')), 'perp_est.json')
 _perp_cache = {'mtime': 0, 'data': None}
 
