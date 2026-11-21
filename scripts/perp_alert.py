@@ -55,11 +55,12 @@ def build(now):
     bd_s = f'{bdt.month}/{bdt.day}({WD[bdt.weekday()]})' if bdt else '-'
     prev = (read_json(STATE_FILE, {}) or {})
     prev_pct = prev.get('pct', {}) if prev.get('base_date') == bd else {}
-    lines = [head, f'{bd_s} 종가 대비 · 바이낸스 무기한 선물', '']
+    lines = [head, f'{bd_s} 종가 대비 · 바이낸스·하이퍼리퀴드 무기한 선물', '']
     for x in items:
         p = x['pct']
         mark = '🔺' if p > 0 else ('🔻' if p < 0 else '·')
-        line = f"{mark} <b>{x['name']}</b> {won(x['est'])}원 ({p:+.2f}%)"
+        est = f"{x['est']:,.2f}pt" if x.get('kind') == 'index' else f"{won(x['est'])}원"
+        line = f"{mark} <b>{x['name']}</b> {est} ({p:+.2f}%)"
         if x['code'] in prev_pct:
             d = p - prev_pct[x['code']]
             line += f'\n      지난 알림보다 {d:+.2f}%p'

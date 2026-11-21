@@ -263,7 +263,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
     <span class="sec-link" id="peAge"></span>
   </div>
   <div class="info-box" id="peInfo">
-    국내 장이 닫힌 뒤(평일 저녁·밤, 주말, 휴장일)에도 바이낸스에서 24시간 거래되는 주가 연동 무기한 선물로 흐름을 본다.
+    국내 장이 닫힌 뒤(평일 저녁·밤, 주말, 휴장일)에도 24시간 거래되는 무기한 선물로 흐름을 본다 — 종목은 바이낸스, 코스피200은 하이퍼리퀴드(코스피200 종가는 야후).
     추정가 = 국내 종가 × (선물 지금 가격 ÷ 종가 시각 15:30의 선물 가격). 환율을 곱하지 않고 변화율만 쓰므로
     선물·현물 사이 가격 차와 주말에 멈춘 환율이 빠진다(kospilab 같은 곳은 선물 달러 가격 × 환율이라 숫자가 조금 다를 수 있음).
     실제 주식이 아니라 역외 고배율 파생상품이고, 주말엔 거래가 얇아 한쪽으로 쏠리기 쉽다 — 분위기 참고용이지 월요일 시가 예측이 아님.
@@ -403,15 +403,18 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
     $('peAge').innerHTML = D.stale ? '<span class="pe-warn">갱신 멈춤 · 마지막 ' + updMd + upd + '</span>' : '1분마다 갱신';
     $('peBody').innerHTML = '<div class="pe-grid">' + items.map(x => {
       const thin = x.qv < 1e6;   // 24시간 거래대금 100만 달러 미만이면 얇다고 표시
+      const idx = x.kind === 'index';   // (118) 코스피200 — 지수라 소수 둘째 자리·pt, 선물값은 달러 표시 없음
+      const v = n => idx ? sfNum(n, 2) : sfNum(n), unit = idx ? 'pt' : '원';
+      const fut = (idx ? '' : '$') + sfNum(x.usd, 2) + ' (15:30 ' + (idx ? '' : '$') + sfNum(x.usd_base, 2) + ')';
       return '<div class="pe-card"><div class="pe-top"><span class="pe-name">' + x.name + '</span>'
         + '<span class="pe-tag">' + (D.stale ? '<span class="pe-warn">● 멈춤</span>' : '<b>●</b>') + ' 1분 거래가 · ' + upd + ' 업데이트</span></div>'
-        + '<div class="pe-est">' + sfNum(x.est) + '<small>원</small></div>'
-        + '<div class="pe-chg ' + cls(x.chg) + '">' + arrow(x.chg) + ' ' + sfNum(Math.abs(x.chg)) + '원 (' + sfPct(x.pct, 2, 1) + ')</div>'
+        + '<div class="pe-est">' + v(x.est) + '<small>' + unit + '</small></div>'
+        + '<div class="pe-chg ' + cls(x.chg) + '">' + arrow(x.chg) + ' ' + v(Math.abs(x.chg)) + unit + ' (' + sfPct(x.pct, 2, 1) + ')</div>'
         + spark(hist, codes.indexOf(x.code) + 1)
-        + '<div class="pe-sub">' + bd + ' 종가 ' + sfNum(x.close) + '원 대비<br>선물 $' + sfNum(x.usd, 2) + ' (15:30 $' + sfNum(x.usd_base, 2) + ')<br>'
+        + '<div class="pe-sub">' + bd + ' 종가 ' + v(x.close) + unit + ' 대비<br>' + (x.src || '바이낸스') + ' 선물 ' + fut + '<br>'
         + '24시간 거래대금 ' + (thin ? '<span class="pe-warn">' : '') + '$' + sfKor(x.qv * 1, 'short').replace(/원$/, '') + (thin ? ' (얇음)</span>' : '') + '</div></div>';
     }).join('') + '</div>'
-      + '<div class="pe-note">기준: ' + bd + ' 국내 종가 · 선 그래프는 그 뒤 변화율 추이 · 출처 바이낸스 무기한 선물 (실제 주식 아님, 참고용)</div>';
+      + '<div class="pe-note">기준: ' + bd + ' 국내 종가 · 선 그래프는 그 뒤 변화율 추이 · 출처 바이낸스(종목)·하이퍼리퀴드(코스피200) 무기한 선물 (실제 주식·지수 아님, 참고용)</div>';
   }
   function load(){
     fetch(URL, {cache: 'no-store'}).then(r => r.json()).then(D => {

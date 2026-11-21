@@ -2,7 +2,7 @@
 """
 장 마감 뒤 해외 추정가 — 바이낸스 무기한 선물 (VM 크론 전용, 118)
 =================================================================
-국내 장이 닫힌 뒤(평일 저녁·밤, 주말, 휴장일)에도 삼성전자·SK하이닉스·현대차의
+국내 장이 닫힌 뒤(평일 저녁·밤, 주말, 휴장일)에도 코스피200(118, 하이퍼리퀴드)·삼성전자·SK하이닉스·현대차의
 흐름을 보려고, 바이낸스에서 24시간 거래되는 주가 연동 무기한 선물 가격을 받아
 「국내 종가 × (선물 지금 가격 ÷ 국내 종가 시각(15:30) 선물 가격)」으로 원화 추정가를 만든다.
 
@@ -30,6 +30,10 @@ from datetime import datetime, timedelta, timezone
 
 KST = timezone(timedelta(hours=9))
 BASE = os.environ.get('PERP_API_BASE', 'https://fapi.binance.com')   # 테스트 때만 바꿈
+HL_URL = os.environ.get('HL_API_URL', 'https://api.hyperliquid.xyz/info')
+# 코스피200 — 바이낸스엔 없음 → 하이퍼리퀴드 HIP-3(xyz 거래소) 무기한 선물. 종가는 야후 ^KS200 (118)
+K200 = {'code': 'K200', 'name': '코스피200', 'sym': 'xyz:KR200', 'dex': 'xyz', 'yahoo': '^KS200'}
+K200_RETRY = 600   # 기준(종가·15:30 선물)을 못 받으면 10분 뒤 다시
 
 # (종목코드, 이름, 바이낸스 기호) — 118 VM에서 확인한 기호
 ITEMS = [
@@ -71,6 +75,68 @@ def get(path, params):
     req = urllib.request.Request(url, headers={'User-Agent': 'swingfarmer-perp/1.0'})
     with urllib.request.urlopen(req, timeout=10) as r:
         return json.loads(r.read().decode('utf-8'))
+
+
+def hl_post(body):
+    req = urllib.request.Request(HL_URL, data=json.dumps(body).encode('utf-8'),
+                                 headers={'Content-Type': 'application/json', 'User-Agent': 'swingfarmer-perp/1.0'})
+    with urllib.request.urlopen(req, timeout=10) as r:
+        return json.loads(r.read().decode('utf-8'))
+
+
+def k200_base(state, base):
+    """코스피200 기준(그날 종가·15:30 선물). 못 받으면 base에 안 넣고 10분 뒤 다시."""
+    if not base or base.get('k200'):
+        return
+    if time.time() - state.get('k200_try', 0) < K200_RETRY:
+        return
+    state['k200_try'] = time.time()
+    d = base['date']
+    try:
+        import yfinance as yf
+        nd = (datetime.strptime(d, '%Y-%m-%d') + timedelta(days=1)).strftime('%Y-%m-%d')
+        h = yf.Ticker(K200['yahoo']).history(start=d, end=nd)
+        rows = [(i.strftime('%Y-%m-%d'), float(c)) for i, c in zip(h.index, h['Close'])]
+        close = next((c for dd, c in rows if dd == d and c > 0), None)
+    except Exception as e:
+        log(f'⚠ 코스피200 종가(야후) 실패: {e}')
+        close = None
+    if not close:
+        log(f'⚠ 코스피200 {d} 종가 아직 없음 — 10분 뒤 다시')
+        return
+    ms = int(datetime.strptime(d + ' 15:29', '%Y-%m-%d %H:%M').replace(tzinfo=KST).timestamp() * 1000)
+    try:
+        c = hl_post({'type': 'candleSnapshot', 'req': {'coin': K200['sym'], 'interval': '1m',
+                                                       'startTime': ms, 'endTime': ms + 59999}})
+        perp = next((float(x['c']) for x in (c or []) if int(x.get('t', 0)) == ms), None)
+    except Exception as e:
+        log(f'⚠ 코스피200 15:30 선물(하이퍼리퀴드) 실패: {e}')
+        perp = None
+    if not perp:
+        log(f'⚠ 코스피200 {d} 15:30 선물 1분봉 없음 — 10분 뒤 다시')
+        return
+    base['k200'] = {'close': round(close, 2), 'perp': perp}
+    state['hist'] = []
+    log(f'✅ 코스피200 기준 {d}: 종가 {close:.2f} / 15:30 선물 {perp}')
+
+
+def k200_item(base):
+    b = base.get('k200')
+    if not b:
+        return None
+    r = hl_post({'type': 'metaAndAssetCtxs', 'dex': K200['dex']})
+    uni, ctxs = r[0]['universe'], r[1]
+    i = next(j for j, u in enumerate(uni) if u.get('name') == K200['sym'])
+    ctx = ctxs[i]
+    last = float(ctx.get('midPx') or ctx.get('markPx') or 0)
+    if last <= 0:
+        raise ValueError('가격 0')
+    ratio = last / b['perp']
+    est = round(b['close'] * ratio, 2)
+    return {'code': K200['code'], 'name': K200['name'], 'sym': K200['sym'], 'kind': 'index',
+            'close': b['close'], 'est': est, 'chg': round(est - b['close'], 2), 'pct': round((ratio - 1) * 100, 2),
+            'usd': round(last, 4), 'usd_base': b['perp'], 'qv': round(float(ctx.get('dayNtlVlm') or 0)),
+            'tt': 0, 'src': '하이퍼리퀴드'}
 
 
 def in_session(now, holiday_today):
@@ -149,7 +215,14 @@ def main():
         write_json_atomic(STATE_FILE, state)
         return 1
 
+    k200_base(state, base)
     items, fails = [], []
+    try:
+        k = k200_item(base)
+        if k:
+            items.append(k)
+    except Exception as e:
+        fails.append(f"{K200['sym']}: {e}")
     for code, name, sym in ITEMS:
         try:
             t = get('/fapi/v1/ticker/24hr', {'symbol': sym})
@@ -167,6 +240,7 @@ def main():
             'close': cl, 'est': est, 'chg': est - cl, 'pct': round((ratio - 1) * 100, 2),
             'usd': round(last, 4), 'usd_base': b,
             'qv': round(float(t.get('quoteVolume') or 0)),        # 24시간 거래대금(USDT)
+            'src': '바이낸스',
             'tt': int(t.get('closeTime') or 0),                    # 마지막 체결 시각(ms)
         })
         time.sleep(0.2)
@@ -179,7 +253,10 @@ def main():
     # 추이(변화율) — 2분 간격 점, 기준일이 바뀌면 처음부터
     hist = state.get('hist') or []
     ts = int(now.timestamp())
-    pt = [ts] + [next((x['pct'] for x in items if x['code'] == c), None) for c, _, _ in ITEMS]
+    codes = [K200['code']] + [c for c, _, _ in ITEMS]
+    pt = [ts] + [next((x['pct'] for x in items if x['code'] == c), None) for c in codes]
+    if hist and len(hist[-1]) != len(pt):
+        hist = []   # (118) 칸 수가 바뀌면(코스피200 추가) 추이 새로
     if hist and ts - hist[-1][0] < HIST_STEP - 20:
         hist[-1] = pt
     else:
@@ -191,9 +268,9 @@ def main():
         'session': False,
         'base_date': base['date'],
         'items': items,
-        'hist_codes': [c for c, _, _ in ITEMS],
+        'hist_codes': codes,
         'hist': state['hist'],
-        'source': 'Binance USDⓈ-M 무기한 선물',
+        'source': '바이낸스·하이퍼리퀴드 무기한 선물',
     }
     write_json_atomic(OUT_FILE, out)
     write_json_atomic(STATE_FILE, state)
