@@ -233,7 +233,7 @@ const TX = (window.SF_TAX && SF_TAX.stockTx) ? SF_TAX.stockTx.kospi : 0.20;   //
 //          담보비율 = 총담보 ÷ 융자 합계(이자 제외) 소수 버림, 소요담보금 = Σ 건별 floor(융자금×유지비율)
 const BROKERS = {
   KB:     { n: 'KB증권',        ordRate: 100, fee: 0.0045, verified: true },   // fee: 118 추정자산 역산(매도비용 − 거래세 ≈ 평가의 0.0045%)
-  WOORI:  { n: '우리투자증권',  ordRate: 100, fee: 0.015 },
+  WOORI:  { n: '우리투자증권',  ordRate: 100, fee: 0.015, cashDep: 1 },   // (119) 신용 매수 때 현금 보증금(융자의 1%)을 담보로 잡음 — 사용자 설명, 화면 대조 전(159.18%→160.18%, 우투 화면 160%)
   KIS:    { n: '한국투자증권',  ordRate: 100, fee: 0.015 },
   NH:     { n: 'NH투자증권',    ordRate: 100, fee: 0.015 },
   KIWOOM: { n: '키움증권',      ordRate: 100, fee: 0.015 },
@@ -274,7 +274,7 @@ function calcAcc(a, priceFn) {
   const br = BROKERS[a.broker] || BROKERS.ETC;
   const maint = toNum(a.maint) || 140;
   const pf = priceFn || priceOf;
-  let crdVal = 0, ordVal = 0, loan = 0, need = 0, buy = 0, crdQtyAll = 0, etfVal = 0;
+  let crdVal = 0, ordVal = 0, loan = 0, need = 0, buy = 0, crdQtyAll = 0, etfVal = 0, dep = 0;
   const per = [];
   a.holds.forEach(h => {
     const p = pf(h);
@@ -284,6 +284,7 @@ function calcAcc(a, priceFn) {
       const q = toNum(l.q), ln = toNum(l.loan);
       cq += q; hl += ln;
       need += Math.floor(ln * maint / 100 + 1e-7);   // 건마다 원 단위 버림 (KB 소요담보금과 일치)
+      if (br.cashDep) dep += Math.floor(ln * br.cashDep / 100 + 1e-7);   // (119) 현금 보증금
       hb += toNum(l.buy) || ln;
     });
     crdVal += cq * p; ordVal += oq * p; loan += hl; buy += hb; crdQtyAll += cq;
@@ -292,16 +293,16 @@ function calcAcc(a, priceFn) {
   });
   const cash = toNum(a.cash), extra = toNum(a.extra), interest = toNum(a.interest);
   const ordColl = ordVal * br.ordRate / 100;
-  const sub = cash + ordColl + extra;          // 부담보금
+  const sub = cash + ordColl + extra + dep;    // 부담보금 (dep = 신용 현금 보증금, 우투)
   const total = crdVal + sub;                  // 총담보평가금
   const ratio = loan > 0 ? total / loan * 100 : null;
   const evalT = crdVal + ordVal;
   const feePct = a.fee === '' || a.fee == null ? br.fee : toNum(a.fee);
   const cost = Math.round(((evalT - etfVal) * (TX + feePct) + etfVal * feePct) / 100);   // ETF는 수수료만
-  const est = evalT + cash - loan - interest - cost;
+  const est = evalT + cash + dep - loan - interest - cost;   // 보증금도 내 돈
   const room = total - need;
   const stockColl = crdVal + ordColl;
-  return { br, maint, crdVal, ordVal, ordColl, cash, extra, sub, total, loan, need, ratio,
+  return { br, maint, crdVal, ordVal, ordColl, cash, extra, dep, sub, total, loan, need, ratio,
            ratioDisp: ratio == null ? null : Math.floor(ratio + 1e-9), short: Math.max(0, need - total), room,
            dropAll: stockColl > 0 ? room / stockColl * 100 : null, evalT, buy, pl: evalT - buy, interest, cost, est, per };
 }
@@ -459,6 +460,7 @@ function renderResult(a, r) {
     rowK('부담보금', r.sub, '', kor(r.sub)) +
     rowK('T+2 예수금', r.cash, 'sub') +
     rowK('국내부담보 (현금 주식' + (r.br.ordRate !== 100 ? ' × ' + r.br.ordRate + '%' : '') + ')', r.ordColl, 'sub') +
+    (r.dep ? rowK('신용 현금 보증금 (융자의 ' + r.br.cashDep + '%, 추정)', r.dep, 'sub') : '') +
     (r.extra ? rowK('그 밖의 담보', r.extra, 'sub') : '') +
     rowK('총담보평가금', r.total, 'tot', kor(r.total));
 
