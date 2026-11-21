@@ -1,5 +1,5 @@
 /* ============================================================
-   sf-tree.js v1 (121) — 내 메뉴 트리 (모든 페이지 왼쪽)
+   sf-tree.js v2 (121) — 내 메뉴 트리 (모든 페이지 왼쪽)
    common.js가 읽는다(페이지에 따로 넣지 않음). 관리자 로그인일 때만 탭이 보인다.
 
    ■ 모양
@@ -13,10 +13,11 @@
      - 폴더 2단계까지(폴더 안 폴더 1번). 지금 페이지는 파란색(location.pathname 비교, #탭은 안 봄)
      - 이름 바꾸기 = 더블클릭 / 삭제 = 오른쪽 클릭 → 한 번 더 물음 / 끌기 = 손잡이(⋮⋮)
    ■ 저장
-     - 바뀔 때마다 Firestore calc_data/{SF_ADMIN_UIDS[0]} 의 sf_tree.{로그인 uid} 에 자동 저장
-       (로그인 아이디마다 따로 — 같은 아이디면 어느 PC에서나 같은 트리). 메인 저장(FAB)에는 안 들어감(119 결정)
+     - 바뀔 때마다 Firestore calc_data/{SF_ADMIN_UIDS[0]} 의 sf_tree.{칸 이름} 에 자동 저장. 메인 저장(FAB)에는 안 들어감(119 결정)
+     - 칸 이름 (121 사용자 결정): 사용자 본인 아이디 2개(SF_ADMIN_UIDS 1·2번째) = 'owner' 한 칸을 같이 씀(어느 아이디·PC든 같은 트리)
+       그 밖의 관리자 아이디(3번째 = Claude 작업용 aichatetc) = 자기 uid 칸 따로 → Claude 시험이 사용자 트리를 안 건드림
      - 바뀌기 직전 모습을 hist에 최근 20번 보관 → 「↶ 되돌리기」
-     - 이 브라우저 사본: localStorage sf-tree-cache:{uid} (계정에서 못 읽을 때·첫 화면용)
+     - 이 브라우저 사본: localStorage sf-tree-cache:{칸 이름} (계정에서 못 읽을 때·첫 화면용)
    ■ 옛 문법만 쓴다(?. ?? 안 씀) — 공통 js 규칙
    ============================================================ */
 (function () {
@@ -31,11 +32,13 @@
   var LS_OPEN = 'sf-tree-open', LS_FOLD = 'sf-tree-fold', LS_CACHE = 'sf-tree-cache:';
   var FB = 'https://www.gstatic.com/firebasejs/12.14.0/';
 
-  var uid = null;             // 로그인 관리자 uid
+  var uid = null;             // 저장 칸 이름 ('owner' 또는 uid)
+  var OWNER_N = 2;            // SF_ADMIN_UIDS 앞에서 이 개수까지 = 사용자 본인 아이디 → 'owner' 칸 공유
   var tree = [];              // [{id, t:'f'|'p', name, href?, kids?}]
   var hist = [];              // 직전 모습(JSON 문자열) 목록, 끝이 가장 최근
   var fold = {};              // 폴더 id → true(접힘)
-  var remoteOk = null;        // null 아직 / true / false(계정 저장 실패)
+  var remoteOk = null;
+  var realUid = null;         // 로그인 uid (옛 칸 옮겨 오기용)        // null 아직 / true / false(계정 저장 실패)
   var saveTimer = null;
   var menuList = null;        // 메뉴 검색 목록
   var els = {};
@@ -141,6 +144,10 @@
       var d = s.exists() ? s.data() : {};
       var mine = d[FIELD] && d[FIELD][me];
       remoteOk = true;
+      if (!mine && me === 'owner' && d[FIELD] && realUid) {   // 121 바꾸기 전 자기 uid 칸에 저장한 게 있으면 그걸로 시작
+        var old = d[FIELD][realUid];
+        if (old && typeof old.tree === 'string') mine = old;
+      }
       if (mine && typeof mine.tree === 'string') {
         tree = clean(JSON.parse(mine.tree), 0);
         hist = Array.isArray(mine.hist) ? mine.hist.filter(function (h) { return typeof h === 'string'; }).slice(-HIST_MAX) : [];
@@ -270,7 +277,7 @@
       + '<b>삭제</b>: 오른쪽 클릭 → 한 번 더 물어봐요. 폴더를 지우면 안에 든 것도 같이 지워져요<br>'
       + '<b>순서·폴더 넣고 빼기</b>: 왼쪽 손잡이(⋮⋮)를 끌어요. 파란 줄 = 그 자리에 놓임, 폴더가 점선 테두리 = 폴더 안으로. 맨 아래 빈 곳에 놓으면 폴더 밖 맨 끝<br>'
       + '<b>폴더</b>는 2단계까지(폴더 안에 폴더 한 번). 폴더 이름을 누르면 접고 펼쳐요<br>'
-      + '<b>저장</b>: 바꿀 때마다 계정(Firestore)에 자동 저장 — <b>로그인한 아이디마다 따로</b>라 같은 아이디면 어느 PC에서나 같은 트리예요. 메인 저장(💾 FAB)에는 안 들어가요(불러올 때 트리가 옛날로 덮이지 않게).<br>'
+      + '<b>저장</b>: 바꿀 때마다 계정(Firestore)에 자동 저장 — <b>내 관리자 아이디 2개는 같은 트리</b>를 같이 써서 어느 아이디·PC에서나 같아요(Claude 작업용 아이디만 따로). 메인 저장(💾 FAB)에는 안 들어가요(불러올 때 트리가 옛날로 덮이지 않게).<br>'
       + '<b>되살리기</b>: 바꾸기 직전 모습을 계정에 최근 20번 보관해요. 잘못 지웠으면 「↶ 되돌리기」를 누른 만큼 한 단계씩 돌아가요.<br>'
       + '펼침·닫힘과 폴더 접힘은 이 브라우저에만 기억돼요.</div>'
       + '<div class="st-search"><input class="st-q" type="search" autocomplete="off" placeholder="🔍 메뉴 검색해서 추가" aria-label="메뉴 검색해서 추가"><div class="st-drop"></div></div>'
@@ -715,8 +722,10 @@
   function showFor(u) {
     var ok = !!(u && window.SF_ADMIN_UIDS && window.SF_ADMIN_UIDS.indexOf(u.uid) !== -1);
     if (!ok) { uid = null; document.body.classList.remove('sf-tree-on'); layout(); return; }
-    if (uid === u.uid) return;
-    uid = u.uid;
+    var idx = window.SF_ADMIN_UIDS.indexOf(u.uid), key = idx < OWNER_N ? 'owner' : u.uid;
+    realUid = u.uid;
+    if (uid === key) return;
+    uid = key;
     var c = null;
     try { c = JSON.parse(ls(LS_CACHE + uid) || 'null'); } catch (e) {}
     tree = c ? clean(c.tree, 0) : [];
