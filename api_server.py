@@ -1410,5 +1410,35 @@ def api_etf_live():
     return resp
 
 
+# ── 장 마감 뒤 해외 추정가 (VM 로컬 ~/sf_live/perp_est.json, 118) ──
+# scripts/fetch_perp_est.py 가 2분마다 갱신 (바이낸스 무기한 선물). 여기서는 파일만 읽음.
+PERP_EST_FILE = os.path.join(os.path.expanduser(os.environ.get('SF_LIVE_DIR', '~/sf_live')), 'perp_est.json')
+_perp_cache = {'mtime': 0, 'data': None}
+
+@app.route('/api/perp/est')
+@limiter.limit("120/minute")
+def api_perp_est():
+    """해외 추정가 {session, base_date, items:[{code,name,close,est,chg,pct,usd,qv,tt}], hist}. age_sec = 마지막 수집 후 경과 초."""
+    try:
+        mtime = os.path.getmtime(PERP_EST_FILE)
+    except OSError:
+        return jsonify({'error': '해외 추정가 파일 없음 (수집기 미실행)'}), 404
+    if _perp_cache['data'] is None or mtime != _perp_cache['mtime']:
+        try:
+            with open(PERP_EST_FILE, 'r', encoding='utf-8') as f:
+                _perp_cache['data'] = json.load(f)
+            _perp_cache['mtime'] = mtime
+        except Exception:
+            if _perp_cache['data'] is None:
+                return jsonify({'error': '해외 추정가 파일 읽기 실패'}), 503
+    data = dict(_perp_cache['data'])
+    data['age_sec'] = int(time.time() - _perp_cache['mtime'])
+    if data['age_sec'] > 600 and not data.get('session'):   # 10분 넘게 멈춤
+        data['stale'] = True
+    resp = jsonify(data)
+    resp.headers['Cache-Control'] = 'no-store'
+    return resp
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)

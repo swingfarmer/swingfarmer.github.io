@@ -59,6 +59,7 @@ TARGETS = [
     # 장중 준실시간 — 레포 밖 VM 로컬 파일 (~로 시작하면 홈 기준, 083)
     ("~/sf_live/prices_live.json",        "주식 준실시간",     "weekday", 0),
     ("~/sf_live/etf_live.json",           "국내 ETF 준실시간", "weekday", 0),
+    ("~/sf_live/perp_est.json",           "해외 추정가(바이낸스)", "daily", 0),   # (118) 2분마다, 장중엔 session 표시만
     # 선물
     ("data/futures_investor.json",         "선물 투자자별",     "weekday", 0),
     # 시장지표

@@ -15,6 +15,8 @@
 * 8-15 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_live_prices.py >> ~/logs/fetch_live_prices.log 2>&1
 # 국내 ETF 장중 준실시간 — 평일 매분 30초에 (주식과 엇갈림, 1,190개 약 15초) → ~/sf_live/etf_live.json → /etf/ (083)
 * 8-15 * * 1-5 sleep 30 && . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_live_etf.py >> ~/logs/fetch_live_etf.log 2>&1
+# 장 마감 뒤 해외 추정가 — 2분마다 짝수 분 15초에, 매일 (바이낸스 무기한 선물: 삼성전자·SK하이닉스·현대차, 키 없음). 국내 장중엔 바이낸스 안 부르고 바로 끝남 → ~/sf_live/perp_est.json → /today/ (118)
+*/2 * * * * sleep 15 && cd ~/swingfarmer.github.io && python3 scripts/fetch_perp_est.py >> ~/logs/fetch_perp_est.log 2>&1
 # 🔒 비공개 레포 sf-private(자산·리서치 노트·종목 시뮬레이터·포트폴리오 원본) 받기 — 10분마다 → api_server /api/private 가 읽음 (109)
 */10 * * * * cd ~/sf-private && git pull -q >> ~/logs/sf_private_pull.log 2>&1
 # 공개 레포 자동 받기 — 2분마다 홀수 분(:01·:03…, 짝수 분 정각·auto_push :10·:30 피함, 116에서 5분→2분). GitHub에 새 커밋이 있을 때만 pull(Claude가 직접 push → 사용자 git pull 생략). 받은 시각만 로그에 남음 (116)
