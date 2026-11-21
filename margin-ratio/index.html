@@ -158,6 +158,8 @@ body.sf-dark .acc-more summary { color: #8ab4e8; }
       <div><label>담보유지비율(%) <span class="info-btn" onclick="toggleInfo('maintInfo')">i</span></label><input type="text" inputmode="decimal" class="acc-in" data-a="maint" id="aMaint"></div>
       <div><label>T+2 예수금(원)</label><input type="text" inputmode="numeric" class="acc-in num" data-a="cash" id="aCash"><div class="kor" id="kCash"></div></div>
     </div>
+    <div id="buyInWrap" style="display:none;margin:4px 0 6px;font-size:13px"><label style="cursor:pointer"><input type="checkbox" id="aBuyIn"> 융자금 칸에 <b>매수금액</b>을 넣었음 → 융자는 그 <span id="loanRateTxt"></span>%로 계산 <span class="info-btn" onclick="toggleInfo('buyInInfo')">i</span></label></div>
+    <div class="info-box" id="buyInInfo">우리투자증권은 신용 매수 때 매수금액의 1%를 현금으로 내고 나머지 99%만 융자로 잡는다. 신용잔고의 「대출금액」을 몰라서 매수금액을 넣었으면 체크(담보비율은 화면과 같게 나오고 소요담보금은 수천 원 다를 수 있음). 「대출금액」을 그대로 넣었으면 체크 해제.</div>
     <div class="info-box" id="maintInfo">평소 신용 담보유지비율은 140%. 정부 정책으로 임시 완화된 기간(KB·우리투자 등 130%)에는 130으로 바꿔 넣는다. 증권사 화면 「계좌담보유지비율」과 같은 숫자를 넣으면 된다.</div>
     <details class="acc-more">
       <summary>더 넣을 것 (선택 — 추정자산·기타 담보)</summary>
@@ -233,7 +235,7 @@ const TX = (window.SF_TAX && SF_TAX.stockTx) ? SF_TAX.stockTx.kospi : 0.20;   //
 //          담보비율 = 총담보 ÷ 융자 합계(이자 제외) 소수 버림, 소요담보금 = Σ 건별 floor(융자금×유지비율)
 const BROKERS = {
   KB:     { n: 'KB증권',        ordRate: 100, fee: 0.0045, verified: true },   // fee: 118 추정자산 역산(매도비용 − 거래세 ≈ 평가의 0.0045%)
-  WOORI:  { n: '우리투자증권',  ordRate: 100, fee: 0.015 },   // (119) 담보 쪽은 화면과 원 단위 일치(융자원담보·부담보증권(현금 주식 100%)·예수금, 권리평가금 0). 신용 매수 때 1%는 현금으로 내고 융자는 매수금액의 약 99% → 융자금 칸에 신용잔고의 「대출금액」을 넣어야 맞음
+  WOORI:  { n: '우리투자증권',  ordRate: 100, fee: 0.015, loanRate: 99 },   // (119) 담보 쪽은 화면과 원 단위 일치(융자원담보·부담보증권(현금 주식 100%)·예수금, 권리평가금 0). 신용 매수 때 1%는 현금으로 내서 융자 = 매수금액의 약 99% → 「융자금 칸에 매수금액」 체크면 ×99%(담보비율 일치, 소요담보금은 수천 원 차이 — 정확히 하려면 신용잔고 「대출금액」을 넣고 체크 해제)
   KIS:    { n: '한국투자증권',  ordRate: 100, fee: 0.015 },
   NH:     { n: 'NH투자증권',    ordRate: 100, fee: 0.015 },
   KIWOOM: { n: '키움증권',      ordRate: 100, fee: 0.015 },
@@ -273,6 +275,7 @@ function isEtf(h) { const c = matchCode(h.name); return !!(c && quotes[c] && quo
 function calcAcc(a, priceFn) {
   const br = BROKERS[a.broker] || BROKERS.ETC;
   const maint = toNum(a.maint) || 140;
+  const lr = br.loanRate && a.buyIn !== false ? br.loanRate / 100 : 1;   // (119) 융자금 칸 = 매수금액이면 ×loanRate
   const pf = priceFn || priceOf;
   let crdVal = 0, ordVal = 0, loan = 0, need = 0, buy = 0, crdQtyAll = 0, etfVal = 0;
   const per = [];
@@ -281,10 +284,10 @@ function calcAcc(a, priceFn) {
     const oq = toNum(h.qty);
     let cq = 0, hl = 0, hb = toNum(h.buy);
     h.lots.forEach(l => {
-      const q = toNum(l.q), ln = toNum(l.loan);
+      const q = toNum(l.q), ln0 = toNum(l.loan), ln = lr === 1 ? ln0 : Math.floor(ln0 * lr + 1e-7);
       cq += q; hl += ln;
       need += Math.floor(ln * maint / 100 + 1e-7);   // 건마다 원 단위 버림 (KB 소요담보금과 일치)
-      hb += toNum(l.buy) || ln;
+      hb += toNum(l.buy) || ln0;
     });
     crdVal += cq * p; ordVal += oq * p; loan += hl; buy += hb; crdQtyAll += cq;
     if (isEtf(h)) etfVal += (oq + cq) * p;
@@ -328,6 +331,8 @@ function renderAccFields() {
   const br = BROKERS[a.broker] || BROKERS.ETC;
   $('aFee').value = a.fee === '' ? '' : a.fee;
   $('aFee').placeholder = String(br.fee);
+  $('buyInWrap').style.display = br.loanRate ? 'block' : 'none';
+  if (br.loanRate) { $('aBuyIn').checked = a.buyIn !== false; $('loanRateTxt').textContent = br.loanRate; }
   $('ruleTag').innerHTML = br.verified ? '<span class="rule-tag ok">화면 대조함</span>' : '<span class="rule-tag no">미검증</span>';
   $('txRate').textContent = sfNum(TX, 2);
 }
@@ -528,6 +533,7 @@ document.querySelectorAll('.acc-in').forEach(el => el.addEventListener(el.tagNam
   update();
 }));
 bindNumFmt(document.querySelector('.acc-grid').parentNode);
+$('aBuyIn').addEventListener('change', () => { accs[cur].buyIn = $('aBuyIn').checked; update(); });
 $('btnDelAcc').onclick = () => {
   if (accs.length <= 1) { alert('계좌가 하나뿐이라 지울 수 없어요. 내용을 비우려면 저장 관리 창의 [↺ 화면 처음으로].'); return; }
   if (!confirm((accs[cur].name || '이 계좌') + ' 을(를) 지울까요?')) return;
