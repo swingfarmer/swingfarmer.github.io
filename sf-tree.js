@@ -1,5 +1,5 @@
 /* ============================================================
-   sf-tree.js v2 (121) — 내 메뉴 트리 (모든 페이지 왼쪽)
+   sf-tree.js v3 (121) — 내 메뉴 트리 (모든 페이지 왼쪽)
    common.js가 읽는다(페이지에 따로 넣지 않음). 관리자 로그인일 때만 탭이 보인다.
 
    ■ 모양
@@ -18,6 +18,8 @@
        그 밖의 관리자 아이디(3번째 = Claude 작업용 aichatetc) = 자기 uid 칸 따로 → Claude 시험이 사용자 트리를 안 건드림
      - 바뀌기 직전 모습을 hist에 최근 20번 보관 → 「↶ 되돌리기」
      - 이 브라우저 사본: localStorage sf-tree-cache:{칸 이름} (계정에서 못 읽을 때·첫 화면용)
+   ■ (121 v3) 「↷ 앞으로」(fut), 줄 끝 ✕ 삭제, 헤더 📂 숨기기(localStorage sf-tree-hide), 닫힌 탭이 본문을 가리면 32px 밂,
+     떠나기 직전 저장 보내기 + 이 브라우저 사본이 계정에 못 올라갔으면 다음 페이지에서 올림(at·synced)
    ■ 옛 문법만 쓴다(?. ?? 안 씀) — 공통 js 규칙
    ============================================================ */
 (function () {
@@ -33,12 +35,17 @@
   var FB = 'https://www.gstatic.com/firebasejs/12.14.0/';
 
   var uid = null;             // 저장 칸 이름 ('owner' 또는 uid)
-  var OWNER_N = 2;            // SF_ADMIN_UIDS 앞에서 이 개수까지 = 사용자 본인 아이디 → 'owner' 칸 공유
+  // (121) 사용자 본인 아이디 = 'owner' 한 칸 공유. 본인 아이디가 늘면 여기에 uid를 더하면 같이 씀(따로 쓰고 싶으면 안 넣으면 됨).
+  //       여기 없는 관리자 아이디(Claude 작업용·다른 사람)는 자기 uid 칸을 따로 씀
+  var OWNER_UIDS = ['1JrHgD2bpTRjrS2jw7MbpHciBph1', 'Ydd8v6LCN2TPjkqKD4DejLSWwaL2'];
+  var LS_HIDE = 'sf-tree-hide';   // 헤더 📂 버튼으로 내 메뉴 통째로 숨김(이 브라우저만)
+  var fut = [];               // 「↷ 앞으로」용 — 되돌린 모습들(끝이 가장 최근에 되돌린 것)
   var tree = [];              // [{id, t:'f'|'p', name, href?, kids?}]
   var hist = [];              // 직전 모습(JSON 문자열) 목록, 끝이 가장 최근
   var fold = {};              // 폴더 id → true(접힘)
   var remoteOk = null;
-  var realUid = null;         // 로그인 uid (옛 칸 옮겨 오기용)        // null 아직 / true / false(계정 저장 실패)
+  var realUid = null;         // 로그인 uid (옛 칸 옮겨 오기용)
+  var localAt = 0;            // 지금 트리를 마지막으로 바꾼 시각        // null 아직 / true / false(계정 저장 실패)
   var saveTimer = null;
   var menuList = null;        // 메뉴 검색 목록
   var els = {};
@@ -96,25 +103,43 @@
     if (JSON.stringify(tree) === before) { render(); return; }
     hist.push(before);
     if (hist.length > HIST_MAX) hist = hist.slice(hist.length - HIST_MAX);
+    fut = [];   // 새로 바꾸면 「앞으로」 갈 길은 사라짐(일반 프로그램과 같음)
     afterChange();
   }
   function undo() {
     if (!hist.length) return;
+    fut.push(JSON.stringify(tree));
+    if (fut.length > HIST_MAX) fut = fut.slice(fut.length - HIST_MAX);
     tree = clean(JSON.parse(hist.pop()), 0);
     afterChange();
     flash('↶ 한 단계 되돌렸어요');
+  }
+  function redo() {
+    if (!fut.length) return;
+    hist.push(JSON.stringify(tree));
+    if (hist.length > HIST_MAX) hist = hist.slice(hist.length - HIST_MAX);
+    tree = clean(JSON.parse(fut.pop()), 0);
+    afterChange();
+    flash('↷ 한 단계 앞으로 갔어요');
   }
   function afterChange() {
     saveLocal();
     render();
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(saveRemote, 600);
+    saveTimer = setTimeout(saveRemote, 250);
   }
+  // 바꾸자마자 다른 페이지로 가도 계정 저장이 빠지지 않게: 떠날 때 남은 저장을 바로 보냄
+  //  + 다음 페이지에서 이 브라우저 사본이 계정에 못 올라간 채면 사본을 올림(loadRemote, synced·at)
 
   /* ── 저장 ── */
   function saveLocal() {
     if (!uid) return;
-    ls(LS_CACHE + uid, JSON.stringify({ tree: tree, hist: hist, at: Date.now() }));
+    localAt = Date.now();
+    ls(LS_CACHE + uid, JSON.stringify({ tree: tree, hist: hist, fut: fut, at: localAt, synced: false }));
+  }
+  function markSynced(at) {
+    if (!uid) return;
+    try { var c = JSON.parse(ls(LS_CACHE + uid) || 'null'); if (c && c.at === at) { c.synced = true; ls(LS_CACHE + uid, JSON.stringify(c)); } } catch (e) {}
   }
   var fsP = null;
   function fs() {
@@ -131,10 +156,12 @@
     if (!uid) return;
     var me = uid;
     var payload = {};
-    payload[me] = { tree: JSON.stringify(tree), hist: hist.slice(), at: Date.now() };
+    var at = localAt || Date.now();
+    payload[me] = { tree: JSON.stringify(tree), hist: hist.slice(), fut: fut.slice(), at: at };
     var data = {}; data[FIELD] = payload;
+    clearTimeout(saveTimer); saveTimer = null;
     fs().then(function (x) { return x.f.setDoc(x.ref, data, { merge: true }); })
-      .then(function () { remoteOk = true; renderStatus(); })
+      .then(function () { remoteOk = true; markSynced(at); renderStatus(); })
       .catch(function (e) { console.warn('[sf-tree] 계정 저장 실패', e); remoteOk = false; renderStatus(); });
   }
   function loadRemote() {
@@ -148,10 +175,17 @@
         var old = d[FIELD][realUid];
         if (old && typeof old.tree === 'string') mine = old;
       }
-      if (mine && typeof mine.tree === 'string') {
+      var c = null;
+      try { c = JSON.parse(ls(LS_CACHE + me) || 'null'); } catch (e) {}
+      if (c && c.synced === false && (!mine || !(mine.at >= c.at))) {
+        saveRemote();   // 이 브라우저에서 바꾼 게 계정에 못 올라간 채 페이지를 떠났음 → 지금 올림
+      } else if (mine && typeof mine.tree === 'string') {
+        var strs = function (a) { return Array.isArray(a) ? a.filter(function (h) { return typeof h === 'string'; }).slice(-HIST_MAX) : []; };
         tree = clean(JSON.parse(mine.tree), 0);
-        hist = Array.isArray(mine.hist) ? mine.hist.filter(function (h) { return typeof h === 'string'; }).slice(-HIST_MAX) : [];
-        saveLocal();
+        hist = strs(mine.hist);
+        fut = strs(mine.fut);
+        localAt = mine.at || Date.now();
+        ls(LS_CACHE + me, JSON.stringify({ tree: tree, hist: hist, fut: fut, at: localAt, synced: true }));
         render();
       } else if (tree.length) {
         saveRemote();   // 계정엔 없고 이 브라우저에만 있으면 올림
@@ -201,6 +235,14 @@
   + '.st-row.cur > .st-name{color:#1d4ed8;font-weight:800}'
   + '.st-row.dragging{opacity:.35}'
   + '.st-row.into{background:#dbeafe;outline:2px dashed #3b82f6;outline-offset:-2px}'
+  + '.st-del-x{flex:0 0 auto;border:none;background:none;color:#94a3b8;font-size:11px;line-height:1;padding:4px 5px;border-radius:4px;cursor:pointer;visibility:hidden}'
+  + '.st-row:hover .st-del-x{visibility:visible}'
+  + '.st-del-x:hover{background:#fee2e2;color:#dc2626}'
+  + '@media(hover:none){.st-del-x{visibility:visible}}'
+  + 'body.sf-dark .st-del-x:hover{background:#3b1d1d;color:#f87171}'
+  + 'body.sf-tree-hidden #sf-tree,body.sf-tree-hidden #sf-tree-tab,body.sf-tree-hidden #sf-tree-back{display:none!important}'
+  + '#sf-tree-hbtn{display:none}body.sf-tree-on #sf-tree-hbtn{display:inline-flex}'
+  + 'body.sf-tree-hidden #sf-tree-hbtn{opacity:.45}'
   + '.st-edit{flex:1;min-width:0;font-size:12.5px;padding:2px 5px;border:1px solid #3b82f6;border-radius:5px;font-family:inherit;color:#1f2937;background:#fff}'
   + '.st-line{position:absolute;left:6px;right:6px;height:0;border-top:2px solid #3b82f6;pointer-events:none;display:none}'
   + '.st-line:before{content:"";position:absolute;left:-4px;top:-5px;width:8px;height:8px;border-radius:50%;background:#3b82f6}'
@@ -269,16 +311,18 @@
       + '<div class="st-head"><span class="st-title">📂 내 메뉴</span>'
       + '<button type="button" class="st-btn" data-act="folder" title="맨 아래에 새 폴더">+ 폴더</button>'
       + '<button type="button" class="st-btn" data-act="here" title="지금 보고 있는 페이지를 맨 아래에 추가">+ 이 페이지</button>'
-      + '<button type="button" class="st-btn" data-act="undo" title="마지막으로 바꾼 것을 되돌림(최근 20번)">↶ 되돌리기</button>'
+      + '<button type="button" class="st-btn" data-act="undo" title="마지막으로 바꾼 것을 되돌림(최근 20번)">↶ 뒤로</button>'
+      + '<button type="button" class="st-btn" data-act="redo" title="되돌린 것을 다시 앞으로">↷ 앞으로</button>'
       + '<button type="button" class="st-ibtn" data-act="info" title="사용법·저장 방식">i</button></div>'
       + '<div class="st-info">'
       + '<b>추가</b>: 「+ 이 페이지」 = 지금 페이지, 아래 검색칸 = 메인 메뉴에서 골라 넣기. 둘 다 맨 아래에 들어가요.<br>'
       + '<b>이름 바꾸기</b>: 이름을 더블클릭 → 고치고 Enter (Esc = 취소)<br>'
-      + '<b>삭제</b>: 오른쪽 클릭 → 한 번 더 물어봐요. 폴더를 지우면 안에 든 것도 같이 지워져요<br>'
+      + '<b>삭제</b>: 줄에 마우스를 올리면 오른쪽 끝에 ✕ (또는 오른쪽 클릭) → 한 번 더 물어봐요. 폴더를 지우면 안에 든 것도 같이 지워져요<br>'
       + '<b>순서·폴더 넣고 빼기</b>: 왼쪽 손잡이(⋮⋮)를 끌어요. 파란 줄 = 그 자리에 놓임, 폴더가 점선 테두리 = 폴더 안으로. 맨 아래 빈 곳에 놓으면 폴더 밖 맨 끝<br>'
       + '<b>폴더</b>는 2단계까지(폴더 안에 폴더 한 번). 폴더 이름을 누르면 접고 펼쳐요<br>'
       + '<b>저장</b>: 바꿀 때마다 계정(Firestore)에 자동 저장 — <b>내 관리자 아이디 2개는 같은 트리</b>를 같이 써서 어느 아이디·PC에서나 같아요(Claude 작업용 아이디만 따로). 메인 저장(💾 FAB)에는 안 들어가요(불러올 때 트리가 옛날로 덮이지 않게).<br>'
-      + '<b>되살리기</b>: 바꾸기 직전 모습을 계정에 최근 20번 보관해요. 잘못 지웠으면 「↶ 되돌리기」를 누른 만큼 한 단계씩 돌아가요.<br>'
+      + '<b>되살리기</b>: 바꾸기 직전 모습을 계정에 최근 20번 보관해요. 잘못 지웠으면 「↶ 뒤로」를 누른 만큼 한 단계씩 돌아가고, 너무 많이 돌아갔으면 「↷ 앞으로」로 다시 와요(뒤로 간 다음 새로 바꾸면 앞으로 갈 길은 사라져요).<br>'
+      + '<b>숨기기</b>: 맨 위 헤더의 📂 버튼을 누르면 내 메뉴 탭이 통째로 사라져요(본문이 왼쪽 끝까지 쓰는 페이지용). 다시 누르면 나와요. 이 브라우저에만 기억돼요.<br>'
       + '펼침·닫힘과 폴더 접힘은 이 브라우저에만 기억돼요.</div>'
       + '<div class="st-search"><input class="st-q" type="search" autocomplete="off" placeholder="🔍 메뉴 검색해서 추가" aria-label="메뉴 검색해서 추가"><div class="st-drop"></div></div>'
       + '<div class="st-list"><div class="st-line"></div></div>'
@@ -289,7 +333,7 @@
     document.body.appendChild(p);
     document.body.appendChild(tab);
     els = { tab: tab, panel: p, back: back, list: p.querySelector('.st-list'), line: p.querySelector('.st-line'), foot: p.querySelector('.st-foot'),
-      info: p.querySelector('.st-info'), q: p.querySelector('.st-q'), drop: p.querySelector('.st-drop'), undo: p.querySelector('[data-act="undo"]'), toast: p.querySelector('.st-toast') };
+      info: p.querySelector('.st-info'), q: p.querySelector('.st-q'), drop: p.querySelector('.st-drop'), undo: p.querySelector('[data-act="undo"]'), redo: p.querySelector('[data-act="redo"]'), toast: p.querySelector('.st-toast') };
 
     p.querySelector('.st-head').addEventListener('click', function (e) {
       var b = e.target.closest('[data-act]');
@@ -297,6 +341,7 @@
       var a = b.getAttribute('data-act');
       if (a === 'info') els.info.classList.toggle('show');
       else if (a === 'undo') undo();
+      else if (a === 'redo') redo();
       else if (a === 'folder') addFolder();
       else if (a === 'here') addPage(location.pathname + location.hash, pageTitle());
     });
@@ -323,13 +368,15 @@
         var closed = !!fold[n.id];
         html.push('<div class="st-row st-folder" data-id="' + esc(n.id) + '" style="padding-left:' + pad + 'px">'
           + '<span class="st-handle" title="끌어서 옮기기">⋮⋮</span><span class="st-arrow">' + (closed ? '▸' : '▾') + '</span>'
-          + '<span class="st-name" title="' + esc(n.name) + '">📁 ' + esc(n.name) + '</span></div>');
+          + '<span class="st-name" title="' + esc(n.name) + '">📁 ' + esc(n.name) + '</span>'
+          + '<button type="button" class="st-del-x" title="지우기">✕</button></div>');
         if (!closed) for (var i = 0; i < n.kids.length; i++) row(n.kids[i], level + 1);
       } else {
         var isCur = normPath(n.href) === cur;
         html.push('<div class="st-row st-page' + (isCur ? ' cur' : '') + '" data-id="' + esc(n.id) + '" style="padding-left:' + pad + 'px">'
           + '<span class="st-handle" title="끌어서 옮기기">⋮⋮</span><span class="st-arrow"></span>'
-          + '<a class="st-name" href="' + esc(n.href) + '" title="' + esc(n.name + ' — ' + n.href) + '">' + esc(n.name) + '</a></div>');
+          + '<a class="st-name" href="' + esc(n.href) + '" title="' + esc(n.name + ' — ' + n.href) + '">' + esc(n.name) + '</a>'
+          + '<button type="button" class="st-del-x" title="지우기">✕</button></div>');
       }
     }
     for (var i = 0; i < tree.length; i++) row(tree[i], 0);
@@ -338,6 +385,8 @@
     els.list.appendChild(els.line);
     els.undo.disabled = !hist.length;
     els.undo.title = hist.length ? '마지막으로 바꾼 것을 되돌림 (되돌릴 수 있는 것 ' + hist.length + '번)' : '되돌릴 것이 없어요';
+    els.redo.disabled = !fut.length;
+    els.redo.title = fut.length ? '되돌린 것을 다시 앞으로 (' + fut.length + '번)' : '앞으로 갈 것이 없어요 (「↶ 뒤로」를 누른 뒤에 쓸 수 있어요)';
     renderStatus();
   }
   function renderStatus() {
@@ -463,6 +512,7 @@
       var row = e.target.closest('.st-row');
       if (!row || e.target.closest('.st-handle') || e.target.closest('.st-edit')) return;
       var id = row.getAttribute('data-id');
+      if (e.target.closest('.st-del-x')) { e.preventDefault(); askDelete(id); return; }
       if (row.classList.contains('st-folder')) {
         if (fold[id]) delete fold[id]; else fold[id] = true;
         saveFold(); render();
@@ -702,11 +752,13 @@
     else document.body.style.removeProperty('padding-left');
   }
   function layout() {
-    var open = document.body.classList.contains('sf-tree-open') && document.body.classList.contains('sf-tree-on');
+    var b = document.body.classList, on = b.contains('sf-tree-on') && !b.contains('sf-tree-hidden');
+    var open = on && b.contains('sf-tree-open');
     setPad(0);
-    if (!open || isMobile()) return;
+    if (!on || isMobile()) return;
     if (basePad === null) basePad = parseFloat(getComputedStyle(document.body).paddingLeft) || 0;
-    var target = PANEL_W + 34, L0 = contentLeft();
+    // 닫혀 있어도 세로 탭(약 26px)이 본문 글자를 가리지 않게 — 본문이 왼쪽 끝까지 붙은 페이지만 그만큼 밂
+    var target = open ? PANEL_W + 34 : 32, L0 = contentLeft();
     if (L0 >= target) return;
     var P = target - L0;
     setPad(basePad + P);
@@ -722,7 +774,7 @@
   function showFor(u) {
     var ok = !!(u && window.SF_ADMIN_UIDS && window.SF_ADMIN_UIDS.indexOf(u.uid) !== -1);
     if (!ok) { uid = null; document.body.classList.remove('sf-tree-on'); layout(); return; }
-    var idx = window.SF_ADMIN_UIDS.indexOf(u.uid), key = idx < OWNER_N ? 'owner' : u.uid;
+    var key = OWNER_UIDS.indexOf(u.uid) !== -1 ? 'owner' : u.uid;
     realUid = u.uid;
     if (uid === key) return;
     uid = key;
@@ -730,17 +782,39 @@
     try { c = JSON.parse(ls(LS_CACHE + uid) || 'null'); } catch (e) {}
     tree = c ? clean(c.tree, 0) : [];
     hist = c && Array.isArray(c.hist) ? c.hist.slice(-HIST_MAX) : [];
+    fut = c && Array.isArray(c.fut) ? c.fut.slice(-HIST_MAX) : [];
+    localAt = c && c.at || 0;
     remoteOk = null;
     render();
     document.body.classList.add('sf-tree-on');
     setOpen(ls(LS_OPEN) === '1');
     loadRemote();
   }
+  function setHidden(h) {
+    document.body.classList.toggle('sf-tree-hidden', !!h);
+    ls(LS_HIDE, h ? '1' : null);
+    var hb = document.getElementById('sf-tree-hbtn');
+    if (hb) hb.title = h ? '내 메뉴 보이기 (지금 숨김)' : '내 메뉴 숨기기 — 본문이 왼쪽 끝까지 쓰는 페이지에서';
+    layout();
+  }
+  function addHeaderBtn(tries) {
+    var tools = document.querySelector('#sf-header .sf-tools');
+    if (!tools) { if ((tries || 0) < 50) setTimeout(function () { addHeaderBtn((tries || 0) + 1); }, 100); return; }
+    if (document.getElementById('sf-tree-hbtn')) return;
+    var hb = document.createElement('button');
+    hb.id = 'sf-tree-hbtn'; hb.type = 'button'; hb.className = 'sf-btn'; hb.textContent = '📂';
+    hb.addEventListener('click', function () { setHidden(!document.body.classList.contains('sf-tree-hidden')); });
+    var guide = tools.querySelector('a[href="/guide/"]');
+    tools.insertBefore(hb, guide || tools.firstChild);
+    setHidden(ls(LS_HIDE) === '1');
+  }
   function start() {
     try { fold = JSON.parse(ls(LS_FOLD) || '{}') || {}; } catch (e) { fold = {}; }
     build();
     els.tab.innerHTML = '<span class="st-arr">›</span> 내 메뉴';
     window.addEventListener('resize', relayoutSoon);
+    window.addEventListener('pagehide', function () { if (saveTimer) saveRemote(); });
+    addHeaderBtn();
     window.addEventListener('load', function () { setTimeout(layout, 300); });
     setTimeout(layout, 1500);
     var tries = 0;
