@@ -426,7 +426,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
   setInterval(() => { if (!document.hidden) load(); }, 60000);
 })();
 </script>
-<script src="/common.js?v=21"></script>
+<script src="/common.js?v=22"></script>
 <script>
 const BASE = '/data';
 const fmt = (n, d=0) => sfNum(n, d);
@@ -437,17 +437,18 @@ const fmtBil = (n) => {
   return Math.abs(n) >= 1e8 ? sfKor(Math.round(n/1e8)*1e8,'short') : fmt(n);   // 억 정수로 반올림   // (104) 표기는 sf-fmt.js
 };
 
+const NC = { cache: 'no-cache' };   // (121) 다시 읽을 때 브라우저에 남은 옛 파일 말고 새 파일(바뀐 게 없으면 서버가 304로 짧게 답함)
 async function load() {
   try {
     const [mkt, flow, investor, breadth, sector, volume, scrIdx, mcap] = await Promise.all([
-      fetch(BASE+'/market_indicators.json').then(r=>r.json()),
-      fetch(BASE+'/dashboard/foreign_flow.json').then(r=>r.json()),
-      fetch(BASE+'/krx/investor_top.json').then(r=>r.json()),
-      fetch(BASE+'/krx/new_high_low.json').then(r=>r.json()),
-      fetch(BASE+'/krx/sector_change.json').then(r=>r.json()),
-      fetch(BASE+'/krx/volume_top.json').then(r=>r.json()),
-      fetch(BASE+'/kr/screener/index.json').then(r=>r.json()),
-      fetch(BASE+'/krx/marketcap_top.json').then(r=>r.json()),
+      fetch(BASE+'/market_indicators.json', NC).then(r=>r.json()),
+      fetch(BASE+'/dashboard/foreign_flow.json', NC).then(r=>r.json()),
+      fetch(BASE+'/krx/investor_top.json', NC).then(r=>r.json()),
+      fetch(BASE+'/krx/new_high_low.json', NC).then(r=>r.json()),
+      fetch(BASE+'/krx/sector_change.json', NC).then(r=>r.json()),
+      fetch(BASE+'/krx/volume_top.json', NC).then(r=>r.json()),
+      fetch(BASE+'/kr/screener/index.json', NC).then(r=>r.json()),
+      fetch(BASE+'/krx/marketcap_top.json', NC).then(r=>r.json()),
     ]);
 
     // Date label
@@ -472,7 +473,7 @@ async function load() {
     // 6. Screener
     const scrDate = scrIdx.latest;
     if (scrDate) {
-      const scr = await fetch(BASE+'/kr/screener/'+scrDate+'.json').then(r=>r.json());
+      const scr = await fetch(BASE+'/kr/screener/'+scrDate+'.json', NC).then(r=>r.json());
       renderScreener(scr);
     }
 
@@ -721,6 +722,12 @@ function renderVolume(vol) {
 }
 
 load();
+// (121) 화면을 켜 둔 채면 10분마다 다시 읽음. 이 페이지 파일들은 VM이 하루 몇 번(아침 08:04·밤 21:10 자동 push)만 올려서 더 자주 읽어도 소용없음.
+//       해외 추정가 칸은 위에서 따로 1분마다. 다른 탭에 있다가 돌아왔을 때 10분이 지났으면 바로 다시 읽음
+let _todayAt = Date.now();
+function _todayReload(){ _todayAt = Date.now(); load(); }
+setInterval(() => { if (!document.hidden) _todayReload(); }, 10 * 60e3);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && Date.now() - _todayAt > 10 * 60e3) _todayReload(); });
 </script>
 </body>
 </html>

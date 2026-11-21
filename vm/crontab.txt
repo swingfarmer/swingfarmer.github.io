@@ -19,7 +19,7 @@
 * * * * * sleep 15 && cd ~/swingfarmer.github.io && python3 scripts/fetch_perp_est.py >> ~/logs/fetch_perp_est.log 2>&1
 # 🔒 비공개 레포 sf-private(자산·리서치 노트·종목 시뮬레이터·포트폴리오 원본) 받기 — 10분마다 → api_server /api/private 가 읽음 (109)
 */10 * * * * cd ~/sf-private && git pull -q >> ~/logs/sf_private_pull.log 2>&1
-# 공개 레포 자동 받기 — 2분마다 홀수 분(:01·:03…, 짝수 분 정각·auto_push :10·:30 피함, 116에서 5분→2분). GitHub에 새 커밋이 있을 때만 pull(Claude가 직접 push → 사용자 git pull 생략). 받은 시각만 로그에 남음 (116)
+# 공개 레포 자동 받기 — 2분마다 홀수 분(:01·:03…, 짝수 분 정각·auto_push 08:04·21:10 피함, 116에서 5분→2분). GitHub에 새 커밋이 있을 때만 pull(Claude가 직접 push → 사용자 git pull 생략). 받은 시각만 로그에 남음 (116)
 1-59/2 * * * * cd ~/swingfarmer.github.io && git fetch -q origin main && (git merge-base --is-ancestor origin/main HEAD || { date '+\%F \%T'; git pull -q --rebase --autostash; }) >> ~/logs/pub_pull.log 2>&1
 
 
@@ -53,8 +53,6 @@
 20 7 * * 1-6 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_us_index_map.py >> ~/logs/fetch_us_index_map.log 2>&1
 # [봇2] 뉴스 — 정치 아침 (--hours 12) — 매일 07:25
 25 7 * * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/news_alert.py --cats 정치 --hours 12 >> ~/cron.log 2>&1
-# 자동 push — 매일 07:30
-30 7 * * * bash ~/auto_push.sh >> ~/cron.log 2>&1
 # [봇2] 뉴스 — 코인 아침 (--hours 12) — 매일 07:35
 35 7 * * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/news_alert.py --cats 코인 --hours 12 >> ~/cron.log 2>&1
 # 환율/금리 — 매일 07:50
@@ -63,6 +61,8 @@
 52 7 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_market_indicators.py >> ~/cron.log 2>&1
 # [봇1] 시장지표 텔레그램 — 평일 08:00
 0 8 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/market_alert.py >> ~/cron.log 2>&1
+# 자동 push — 매일 08:04 (121: 07:30에서 옮김 — 07:50 환율·07:52 시장지표가 밤 21:10까지 사이트에 안 올라가던 것. 이제 아침 수집분이 다 끝난 뒤 올림)
+4 8 * * * bash ~/auto_push.sh >> ~/cron.log 2>&1
 # [봇1] 세금 납부 알림 (D-7·D-3·당일에만 발송) — 매일 09:00
 0 9 * * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/tax_reminder.py >> ~/cron.log 2>&1
 

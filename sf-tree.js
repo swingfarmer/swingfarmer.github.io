@@ -1,5 +1,5 @@
 /* ============================================================
-   sf-tree.js v3 (121) — 내 메뉴 트리 (모든 페이지 왼쪽)
+   sf-tree.js v4 (121) — 내 메뉴 트리 (모든 페이지 왼쪽)
    common.js가 읽는다(페이지에 따로 넣지 않음). 관리자 로그인일 때만 탭이 보인다.
 
    ■ 모양
@@ -16,7 +16,7 @@
      - 바뀔 때마다 Firestore calc_data/{SF_ADMIN_UIDS[0]} 의 sf_tree.{칸 이름} 에 자동 저장. 메인 저장(FAB)에는 안 들어감(119 결정)
      - 칸 이름 (121 사용자 결정): 사용자 본인 아이디 2개(SF_ADMIN_UIDS 1·2번째) = 'owner' 한 칸을 같이 씀(어느 아이디·PC든 같은 트리)
        그 밖의 관리자 아이디(3번째 = Claude 작업용 aichatetc) = 자기 uid 칸 따로 → Claude 시험이 사용자 트리를 안 건드림
-     - 바뀌기 직전 모습을 hist에 최근 20번 보관 → 「↶ 되돌리기」
+     - 바뀌기 직전 모습을 hist에 최근 20번 보관 → 「↶ 뒤로」·「↷ 앞으로」
      - 이 브라우저 사본: localStorage sf-tree-cache:{칸 이름} (계정에서 못 읽을 때·첫 화면용)
    ■ (121 v3) 「↷ 앞으로」(fut), 줄 끝 ✕ 삭제, 헤더 📂 숨기기(localStorage sf-tree-hide), 닫힌 탭이 본문을 가리면 32px 밂,
      떠나기 직전 저장 보내기 + 이 브라우저 사본이 계정에 못 올라갔으면 다음 페이지에서 올림(at·synced)
@@ -578,7 +578,7 @@
     askEl.className = 'st-ask';
     askEl.innerHTML = '<b>「' + esc(n.name) + '」</b> 지울까요?'
       + (n.t === 'f' && cnt ? '<br><span style="color:#dc2626">안에 든 ' + cnt + '개도 같이 지워져요.</span>' : '')
-      + '<br><span style="font-size:11px;opacity:.75">잘못 지우면 「↶ 되돌리기」로 살릴 수 있어요.</span>'
+      + '<br><span style="font-size:11px;opacity:.75">잘못 지우면 「↶ 뒤로」로 살릴 수 있어요.</span>'
       + '<div class="st-ask-btns"><button type="button" class="st-btn" data-a="no">취소</button><button type="button" class="st-btn st-del" data-a="yes">지우기</button></div>';
     els.panel.appendChild(askEl);
     askEl.addEventListener('click', function (e) {
