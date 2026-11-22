@@ -1,7 +1,13 @@
 """
-부동산 실거래가 트래커 — 수집 스크립트 v4 (Oracle DB 동기화)
+부동산 실거래가 트래커 — 수집 스크립트 v5 (Oracle DB 동기화)
 ==========================================================
-연도별로 수집 → JSON 저장 + Oracle DB 적재 → 메모리 해제.
+구(region) 하나씩 수집 → 바로 Oracle DB 적재 → 메모리 해제 (122).
+  (122) 예전 v4는 연도 전체를 메모리에 쌓은 뒤 한 번에 넣어서, 11월쯤엔 300MB를 넘겨
+        1GB VM이 메모리 부족으로 굳었음(11/22 05:30). 지금은 구 하나치(수 MB)만 들고 있음.
+  (122) 연도별 JSON(data/realestate/YYYY.json, 레포·사이트 어디서도 안 읽음)은 더 안 만듦.
+        건수 요약 data/realestate_index.json(헬스체크가 봄)은 그대로.
+  --months N 은 「최근 N개월이 걸친 연도」를 통째로 다시 받음(그해 1월~이번 달). 늦게 들어온 해제(계약 취소)까지
+        매일 반영하려는 것 — 범위는 v4와 같음.
 
 사용법:
   python3 -u scripts/fetch_realestate.py              → 전체 (Tier1 20년 + Tier2 3년)
@@ -81,17 +87,12 @@ def get_oracle_conn():
         wallet_password=os.environ.get('ORACLE_WALLET_PASSWORD', ''))
 
 
-def sync_to_oracle(yr, items, ok_regions, deal_types):
-    """구·연도 단위 동기화: ok_regions(모든 달 성공한 구)만, deal_types(S/J/W)만 지우고 다시 넣음"""
+def sync_to_oracle(conn, yr, items, ok_regions, deal_types):
+    """구·연도 단위 동기화: ok_regions(모든 달 성공한 구)만, deal_types(S/J/W)만 지우고 다시 넣음.
+    (122) 접속(conn)은 부르는 쪽이 연도마다 한 번 열어 넘김. 구 하나씩 불러서 구마다 commit.
+    반환: (삭제 건수, 적재 건수) — 실패하면 None"""
     if not ok_regions:
-        print('  ⚠️ 성공한 구 없음 — DB 그대로 둠')
-        return 0
-    try:
-        conn = get_oracle_conn()
-    except Exception as e:
-        print(f'  ⚠️ Oracle 접속 실패: {e}')
-        return 0
-
+        return (0, 0)
     cur = conn.cursor()
     try:
         dt_ph = ','.join(f':dt{i}' for i in range(len(deal_types)))
@@ -126,16 +127,14 @@ def sync_to_oracle(yr, items, ok_regions, deal_types):
                 VALUES (:v_pt,:v_dt,:v_rg,:v_dg,:v_nm,:v_am,:v_fn,:v_pr,:v_dp,:v_mr,:v_yr,:v_mo,:v_dd,:v_by)""", rows)
             inserted += len(batch)
 
-        conn.commit()   # 지우기+넣기 한 번에 확정 (중간 실패 시 rollback)
-        print(f'  🗄️ Oracle: {len(ok_regions)}개 구 {deleted:,}건 삭제 → {inserted:,}건 적재')
-        return inserted
+        conn.commit()   # 이 구의 지우기+넣기 한 번에 확정 (중간 실패 시 rollback)
+        return (deleted, inserted)
     except Exception as e:
         conn.rollback()
-        print(f'  ⚠️ Oracle 적재 실패(되돌림): {e}')
-        return 0
+        print(f'  ⚠️ Oracle 적재 실패(되돌림, 이 구는 DB 그대로): {e}')
+        return None
     finally:
         cur.close()
-        conn.close()
 
 
 def get_year_months(year):
@@ -209,23 +208,11 @@ def calc_stats(items):
     return rs, top
 
 
-def save_year(yr, items):
-    """연도 데이터 즉시 저장."""
-    trades = [i for i in items if i['T']=='S']
-    jeonse = [i for i in items if i['T']=='J']
-    wolse = [i for i in items if i['T']=='W']
-    rs, top = calc_stats(items) if trades else ({}, [])
-
-    data = {
-        'year': int(yr),
-        'stats': {'total':len(items),'trade':len(trades),'jeonse':len(jeonse),'wolse':len(wolse)},
-        'region_stats': rs, 'top_apts': top, 'items': items,
-    }
-    fpath = os.path.join(OUTPUT_DIR, f'{yr}.json')
-    with open(fpath, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False)
-    size = os.path.getsize(fpath) / 1024 / 1024
-    return {'total':len(items),'trade':len(trades),'jeonse':len(jeonse),'wolse':len(wolse),'size_mb':round(size,1)}
+def count_types(cnt, items):
+    """(122) 연도 건수 요약용 — 구마다 더함 (연도 JSON·통계 파일은 안 만듦)"""
+    for i in items:
+        cnt['total'] += 1
+        cnt[{'S': 'trade', 'J': 'jeonse', 'W': 'wolse'}[i['T']]] += 1
 
 
 def main():
@@ -269,10 +256,9 @@ def main():
     if total_calls > 10000:
         print(f'⚠️ API 콜 {total_calls} > 10,000. 옵션 줄이세요'); sys.exit(1)
 
-    print(f'🏠 실거래가 수집 v3 (메모리 최적화)')
+    print(f'🏠 실거래가 수집 v5 (구마다 바로 DB 적재 — 메모리 최소)')
     print(f'   연도: {min(year_regions)}~{max(year_regions)} ({len(year_regions)}년)')
     print(f'   API 콜: {total_calls}건 | 예상: {total_calls*CALL_DELAY/60:.0f}분')
-    print(f'   ✅ 연도별 즉시 저장 (OOM 방지)')
     print()
 
     index_years = {}
@@ -288,11 +274,20 @@ def main():
         yr_calls = len(regs) * len(months) * len(types)
         print(f'━━━ {yr}년 ({len(regs)}개 지역, {len(months)}개월, {yr_calls}콜) ━━━')
 
-        items = []
         yr_done = 0
         failed = set()   # 한 달이라도 실패한 구 이름
+        cnt = {'total': 0, 'trade': 0, 'jeonse': 0, 'wolse': 0}
+        dts = (['S'] if 'trade' in types else []) + (['J', 'W'] if 'rent' in types else [])
+        conn = None
+        if not args.no_db:
+            try:
+                conn = get_oracle_conn()
+            except Exception as e:
+                print(f'  ⚠️ Oracle 접속 실패 — 이 연도 DB 그대로 둠: {e}')
+        n_del = n_ins = n_ok = 0
 
         for code, name in regs.items():
+            items = []   # (122) 이 구 것만 — 끝나면 DB에 넣고 버림
             for ym in months:
                 for dtype in types:
                     yr_done += 1
@@ -314,21 +309,27 @@ def main():
                     items.extend(parsed)
                     print(f' {len(parsed)}건', flush=True)
 
-        # ── 이 연도 즉시 저장 + Oracle 동기화 + 메모리 해제 ──
-        if items and not failed:
-            stats = save_year(yr, items)
-            index_years[yr] = stats
-            print(f'  💾 {yr}.json 저장: {stats["total"]:,}건 ({stats["size_mb"]}MB)')
+            # ── 이 구 바로 DB 적재 (한 달이라도 실패한 구는 DB 그대로) + 메모리 해제 ──
+            count_types(cnt, items)
+            if conn is not None and name not in failed:
+                r = sync_to_oracle(conn, yr, items, {name}, dts)
+                if r is None:
+                    failed.add(name)
+                else:
+                    n_del += r[0]; n_ins += r[1]; n_ok += 1
+            del items
+
+        if conn is not None:
+            try: conn.close()
+            except Exception: pass
+            print(f'  🗄️ Oracle: {n_ok}개 구 {n_del:,}건 삭제 → {n_ins:,}건 적재')
+        if cnt['total'] and not failed:
+            index_years[yr] = dict(cnt)
+            print(f'  📊 {yr}년 {cnt["total"]:,}건 (매매 {cnt["trade"]:,} · 전세 {cnt["jeonse"]:,} · 월세 {cnt["wolse"]:,})')
         if failed:
             print(f'  ⚠️ 실패한 구 {len(failed)}개 — DB 기존 데이터 유지: {", ".join(sorted(failed))}')
-        if not args.no_db:
-            dts = (['S'] if 'trade' in types else []) + (['J', 'W'] if 'rent' in types else [])
-            ok = set(regs.values()) - failed
-            sync_to_oracle(yr, items, ok, dts)
-        if not items:
+        if not cnt['total']:
             print(f'  ⚠️ {yr}년 데이터 없음')
-
-        del items  # 메모리 해제
         print()
 
     # ── 인덱스 저장 ──
