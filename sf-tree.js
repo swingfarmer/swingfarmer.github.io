@@ -12,6 +12,7 @@
      - [+ 폴더] [+ 이 페이지] + 메뉴 검색(메인 카드 목록 = menu-search.js와 같은 출처: 메인 .tool-panel .tool-grid > a.card)
      - 폴더 2단계까지(폴더 안 폴더 1번). 지금 페이지는 파란색(location.pathname 비교, #탭은 안 봄)
      - 이름 바꾸기 = 줄 끝 ✎(또는 더블클릭) / 삭제 = 줄 끝 ✕(또는 오른쪽 클릭) → 한 번 더 물음 / 끌기 = 손잡이(⋮⋮)
+     - (123 v5.1) 스크롤바: 얇게 + 다크에서 어두운 색 (예전엔 다크에서도 밝은 회색 굵은 막대)
      - (123 v5) 폴더 표시: 펼침 ▾ 📂 / 접힘 ▸ 📁 + 안에 든 메뉴 수 배지. 폴더 더블클릭이 접기·펼치기와 겹쳐 이름 바꾸기가 잘 안 돼서 ✎ 버튼을 둠
    ■ 저장
      - 바뀔 때마다 Firestore calc_data/{SF_ADMIN_UIDS[0]} 의 sf_tree.{칸 이름} 에 자동 저장. 메인 저장(FAB)에는 안 들어감(119 결정)
@@ -223,6 +224,8 @@
   + '.st-hit small{display:block;color:#64748b;font-size:10.5px}'
   + '.st-none{padding:10px;color:#94a3b8;font-size:12px;text-align:center}'
   + '.st-list{flex:1;overflow-y:auto;padding:4px 4px 40px;position:relative}'
+  + '.st-list,.st-drop{scrollbar-width:thin;scrollbar-color:#cbd5e1 transparent}'
+  + 'body.sf-dark .st-list,body.sf-dark .st-drop{scrollbar-color:#3f4451 transparent}'
   + '.st-empty{color:#94a3b8;font-size:12px;line-height:1.6;padding:14px 10px;text-align:center}'
   + '.st-row{display:flex;align-items:center;gap:3px;min-height:28px;padding:2px 4px;border-radius:6px;cursor:default;user-select:none;-webkit-user-select:none}'
   + '.st-row:hover{background:#f1f5f9}'
