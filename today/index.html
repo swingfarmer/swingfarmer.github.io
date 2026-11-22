@@ -164,6 +164,16 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
 .pe-spark { display: block; width: 100%; height: 34px; margin-top: 6px; }
 .pe-note { font-size: 11px; color: var(--text-dim); margin-top: 8px; line-height: 1.5; }
 .pe-warn { color: var(--warn); font-weight: 700; }
+/* (124) 미국 주요 종목 — 작은 카드 */
+.pe-us-h { font-size: 13px; font-weight: 800; margin: 16px 0 8px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.pe-us-h small { font-size: 11px; font-weight: 600; color: var(--text-dim); }
+.pe-us { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.pe-mini { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.pe-mini .n { font-size: 13px; font-weight: 800; }
+.pe-mini .e { font-size: 17px; font-weight: 800; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.pe-mini .c { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pe-mini .s { font-size: 10.5px; color: var(--text-dim); margin-top: 4px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+.pe-mini .pe-spark { height: 26px; margin-top: 4px; }
 </style>
 <script src="/sf-fmt.js?v=4"></script>
 <script src="/sf-live.js?v=1"></script>
@@ -267,7 +277,10 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
     국내 장이 닫힌 뒤(평일 저녁·밤, 주말, 휴장일)에도 24시간 거래되는 무기한 선물로 흐름을 본다 — 종목은 바이낸스, 코스피200은 하이퍼리퀴드(코스피200 종가는 야후).
     추정가 = 국내 종가 × (선물 지금 가격 ÷ 종가 시각 15:30의 선물 가격). 환율을 곱하지 않고 변화율만 쓰므로
     선물·현물 사이 가격 차와 주말에 멈춘 환율이 빠진다(kospilab 같은 곳은 선물 달러 가격 × 환율이라 숫자가 조금 다를 수 있음).
-    실제 주식이 아니라 역외 고배율 파생상품이고, 주말엔 거래가 얇아 한쪽으로 쏠리기 쉽다 — 분위기 참고용이지 월요일 시가 예측이 아님.
+    실제 주식이 아니라 역외 고배율 파생상품이고, 주말엔 거래가 얇아 한쪽으로 쏠리기 쉽다 — 분위기 참고용이지 월요일 시가 예측이 아님.<br>
+    (124) <b>🇺🇸 미국 주요 종목</b>(엔비디아·마이크론·테슬라·스페이스X·앤트로픽·S&amp;P500·나스닥100)도 같은 방식 — 하이퍼리퀴드 선물로
+    추정가 = 미국 직전 정규장 종가(야후) × (선물 지금 ÷ 그날 16:00(미국 동부) 선물). 미국 장이 닫힌 밤·주말·국내 낮에 보는 용도이고, 국내 장중에도 나온다.
+    미국 장중(한국 밤 23:30~06:00, 서머타임 22:30~05:00)에는 실제 시세와 거의 같다.
     1분마다 갱신(실시간 아님 — 「1분 거래가」). 카드 오른쪽 위 시각 = 마지막으로 받은 시각. 국내 장중(평일 09:00~15:35)에는 실제 시세를 보면 되므로 표시하지 않는다.
   </div>
   <div id="peBody"><div class="pe-note">불러오는 중…</div></div>
@@ -392,9 +405,27 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
       + '<line x1="0" x2="' + W + '" y1="' + Y(0).toFixed(1) + '" y2="' + Y(0).toFixed(1) + '" stroke="var(--border)" stroke-dasharray="3 3"/>'
       + '<path d="' + d + '" fill="none" stroke="' + col + '" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>';
   }
+  // (124) 미국 주요 종목 — 작은 카드
+  function usHtml(U, stale){
+    if (!U || !(U.items || []).length) return '';
+    const bd = U.base_date ? sfDate(U.base_date, 'md') : '-', codes = U.hist_codes || [], hist = U.hist || [];
+    return '<div class="pe-us-h"><span>🇺🇸 미국 주요 종목' + (stale ? ' <span class="pe-warn">● 멈춤</span>' : '') + '</span><small>'
+      + (U.session ? '지금 미국 장중 — 실제 시세와 거의 같음 · ' : '') + bd + ' 미국 종가 대비</small></div>'
+      + '<div class="pe-us">' + U.items.map(x => {
+        const idx = x.kind === 'index', v = n => idx ? sfNum(n, 2) : '$' + sfNum(n, 2);
+        const thin = x.qv < 1e6;
+        return '<div class="pe-mini"><div class="n">' + x.name + '</div>'
+          + '<div class="e">' + v(x.est) + '</div>'
+          + '<div class="c ' + cls(x.pct) + '">' + arrow(x.pct) + ' ' + sfPct(x.pct, 2, 1) + '</div>'
+          + spark(hist, codes.indexOf(x.code) + 1)
+          + '<div class="s">종가 ' + v(x.close) + (thin ? '<br><span class="pe-warn">거래 얇음</span>' : '') + '</div></div>';
+      }).join('') + '</div>';
+  }
   function render(D){
     if (D.session) {
-      $('peBody').innerHTML = '<div class="pe-note">지금은 국내 장중 — 실제 시세는 <a href="/heatmap/">히트맵</a>에서. 장 마감(15:35) 뒤부터 다시 나온다.</div>';
+      $('peBody').innerHTML = '<div class="pe-note">지금은 국내 장중 — 국내 종목 실제 시세는 <a href="/heatmap/">히트맵</a>에서. 국내 추정가는 장 마감(15:35) 뒤부터 다시 나온다.</div>'
+        + usHtml(D.us, D.stale_us)
+        + (D.us ? '<div class="pe-note">출처 하이퍼리퀴드 무기한 선물 (실제 주식·지수 아님, 참고용)</div>' : '');
       return;
     }
     const items = D.items || [], hist = D.hist || [], codes = D.hist_codes || [];
@@ -414,13 +445,14 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
         + '<div class="pe-sub">' + bd + ' 종가 ' + v(x.close) + unit + ' 대비<br>' + (x.src || '바이낸스') + ' 선물 ' + fut + '<br>'
         + '24시간 거래대금 ' + (thin ? '<span class="pe-warn">' : '') + '$' + sfKor(x.qv * 1, 'short').replace(/원$/, '') + (thin ? ' (얇음)</span>' : '') + '</div></div>';
     }).join('') + '</div>'
-      + '<div class="pe-note">기준: ' + bd + ' 국내 종가 · 선 그래프는 그 뒤 변화율 추이 · 출처 바이낸스(종목)·하이퍼리퀴드(코스피200) 무기한 선물 (실제 주식·지수 아님, 참고용)</div>';
+      + usHtml(D.us, D.stale)
+      + '<div class="pe-note">기준: ' + bd + ' 국내 종가' + (D.us ? '·미국 종가' : '') + ' · 선 그래프는 그 뒤 변화율 추이 · 출처 바이낸스(국내 종목)·하이퍼리퀴드(코스피200·미국) 무기한 선물 (실제 주식·지수 아님, 참고용)</div>';
   }
   function load(){
     return fetch(URL, {cache: 'no-store'}).then(r => r.json()).then(D => {
       if (D.error) throw new Error(D.error);
       render(D);
-      if (D.session) return { cycle: '', every: 60e3 };   // 국내 장중 — 표시 없이 1분마다 확인만
+      if (D.session && !D.us) return { cycle: '', every: 60e3 };   // 국내 장중 + 미국 값 없음 — 표시 없이 1분마다 확인만
       return { at: D.updated, every: 60e3, warn: D.stale ? '갱신 멈춤' : '' };
     }).catch(e => { $('peBody').innerHTML = '<div class="pe-note">해외 추정가를 불러오지 못함 (' + (e.message || e) + ')</div>'; throw e; });
   }

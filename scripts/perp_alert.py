@@ -4,6 +4,7 @@
 ================================
 ~/sf_live/perp_est.json(fetch_perp_est.py, 1분마다)을 읽어 텔레그램 DM으로 보낸다.
 크론: 토·일 09:00·21:00, 월 07:50(장 전).
+  - (124) 미국 주요 종목(하이퍼리퀴드, 미국 종가 대비)도 아래에 붙임 — perp_est.json의 us 칸
   - 추정가 = 국내 종가 × (선물 지금 ÷ 종가 시각 15:30 선물) — 계산은 fetch_perp_est.py
   - 지난 알림보다 얼마나 더 움직였는지도 같이 (상태: ~/sf_live/.perp_alert_state.json)
   - 파일이 15분 넘게 안 바뀌었으면 「수집 멈춤」으로 보냄 (조용히 넘어가지 않게)
@@ -13,7 +14,7 @@
   python3 scripts/perp_alert.py --dry    # 보내지 않고 화면에만
 """
 
-import os, sys, json, time
+import os, sys, json, time, html
 from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -67,8 +68,25 @@ def build(now):
         if (x.get('qv') or 0) < 1e6:
             line += '\n      ⚠ 24시간 거래대금 100만 달러 미만 (얇음)'
         lines.append(line)
+    # (124) 미국 주요 종목
+    U = D.get('us') or {}
+    ui = U.get('items') or []
+    ubd = U.get('base_date', '')
+    prev_us = prev.get('us_pct', {}) if prev.get('us_base_date') == ubd else {}
+    if ui:
+        udt = datetime.strptime(ubd, '%Y-%m-%d')
+        lines += ['', f'🇺🇸 <b>미국</b> — {udt.month}/{udt.day}({WD[udt.weekday()]}) 미국 종가 대비']
+        for x in ui:
+            p = x['pct']
+            mark = '🔺' if p > 0 else ('🔻' if p < 0 else '·')
+            est = f"{x['est']:,.2f}" if x.get('kind') == 'index' else f"${x['est']:,.2f}"
+            line = f"{mark} <b>{html.escape(x['name'])}</b> {est} ({p:+.2f}%)"   # S&P500의 & — 텔레그램 HTML 깨짐 방지
+            if x['code'] in prev_us:
+                line += f" · 지난 알림보다 {p - prev_us[x['code']]:+.2f}%p"
+            lines.append(line)
     lines += ['', '실제 주식 아님 · 분위기 참고용', 'https://swingfarmer.github.io/today/']
-    state = {'base_date': bd, 'pct': {x['code']: x['pct'] for x in items}, 'sent': now.isoformat()}
+    state = {'base_date': bd, 'pct': {x['code']: x['pct'] for x in items}, 'sent': now.isoformat(),
+             'us_base_date': ubd, 'us_pct': {x['code']: x['pct'] for x in ui}}
     return '\n'.join(lines), state
 
 

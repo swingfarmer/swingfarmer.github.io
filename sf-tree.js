@@ -1,5 +1,5 @@
 /* ============================================================
-   sf-tree.js v5.5 (124) — 내 메뉴 트리 (모든 페이지 왼쪽)
+   sf-tree.js v5.6 (124) — 내 메뉴 트리 (모든 페이지 왼쪽)
    common.js가 읽는다(페이지에 따로 넣지 않음). 관리자 로그인일 때만 탭이 보인다.
 
    ■ 모양
@@ -13,6 +13,7 @@
      - 폴더 2단계까지(폴더 안 폴더 1번). 지금 페이지는 파란색(location.pathname 비교, #탭은 안 봄)
      - 이름 바꾸기 = 줄 끝 ✎(또는 더블클릭) / 삭제 = 줄 끝 ✕(또는 오른쪽 클릭) → 한 번 더 물음 / 끌기 = 손잡이(⋮⋮)
      - (124 v5.5) 폰(760px 이하)만: 접힌 「› 내 메뉴」 탭을 손가락으로 위아래로 끌어 자리 옮김(본문 카드를 가릴 때).
+       (v5.6) 끄는 동안 손가락을 따라 화면 어디든 떠다니고(살짝 커짐·그림자), 손을 떼면 왼쪽 벽으로 미끄러져 붙음. 높이만 기억
        자리 = localStorage sf-tree-tabY(화면 위에서부터 px, 브라우저별). 화면 밖으로 안 나가게 맞춤. 짧게 누르면 예전처럼 열기/닫기. PC는 그대로
        (v5.2~5.4에 넣었던 「줄 꾹 눌러 끌기」는 사용자 뜻을 잘못 알아 넣은 것 → 뺌. 남긴 것: 목록 글자 선택 막음, 링크 끌기 막음,
         안드로이드 꾹 누름에서 나오던 contextmenu(=삭제 질문) 막음 — 폰 삭제는 줄 끝 ✕)
@@ -306,7 +307,8 @@
   + 'body.sf-tree-open #sf-tree-tab{left:min(290px,86vw)}'
   + 'body.sf-tree-on.sf-tree-open #sf-tree-back{display:block}'
   + '#sf-tree-tab{top:auto;bottom:150px;padding:10px 5px;font-size:12px;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}'
-  + '#sf-tree-tab.st-tab-moving{opacity:.85;box-shadow:0 0 0 3px rgba(96,165,250,.6)}'
+  + '#sf-tree-tab.st-tab-moving{opacity:.92;border-radius:8px;transform:scale(1.08);box-shadow:0 8px 22px rgba(0,0,0,.35),0 0 0 2px rgba(96,165,250,.7);transition:transform .12s,border-radius .12s}'
+  + '#sf-tree-tab.st-tab-snap{transition:left .28s cubic-bezier(.2,1.3,.4,1),transform .2s,border-radius .2s}'
   + '.st-row{min-height:34px;-webkit-touch-callout:none}.st-handle{width:22px;font-size:14px}}'
   + '@media print{#sf-tree,#sf-tree-tab,#sf-tree-back{display:none!important}}';
 
@@ -689,25 +691,31 @@
     t.addEventListener('pointerdown', function (e) {
       if (!isMobile() || (e.button !== undefined && e.button !== 0)) return;
       var r = t.getBoundingClientRect();
-      tabDrag = { y: e.clientY, off: e.clientY - r.top, on: false };
+      tabDrag = { x: e.clientX, y: e.clientY, off: e.clientY - r.top, offX: e.clientX - r.left, on: false };
       try { t.setPointerCapture(e.pointerId); } catch (err) {}
     });
     t.addEventListener('pointermove', function (e) {
       if (!tabDrag) return;
       if (!tabDrag.on) {
-        if (Math.abs(e.clientY - tabDrag.y) < 8) return;
+        if (Math.abs(e.clientY - tabDrag.y) + Math.abs(e.clientX - tabDrag.x) < 8) return;
         tabDrag.on = true;
+        t.classList.remove('st-tab-snap');
         t.classList.add('st-tab-moving');
       }
       if (e.cancelable) e.preventDefault();
       t.style.top = tabClamp(e.clientY - tabDrag.off) + 'px';
       t.style.bottom = 'auto';
+      t.style.left = Math.max(0, Math.min(window.innerWidth - t.offsetWidth, e.clientX - tabDrag.offX)) + 'px';
     });
     function end() {
       if (!tabDrag) return;
       var d = tabDrag; tabDrag = null;
       t.classList.remove('st-tab-moving');
       if (!d.on) return;
+      // 왼쪽 벽으로 미끄러져 붙기 (left를 비우면 CSS 자리 = 0 또는 펼친 트리 옆)
+      t.classList.add('st-tab-snap');
+      t.style.left = '';
+      setTimeout(function () { t.classList.remove('st-tab-snap'); }, 320);
       ls(LS_TABY, String(Math.round(parseFloat(t.style.top) || 0)));
       tabJustMoved = true;
       setTimeout(function () { tabJustMoved = false; }, 400);
