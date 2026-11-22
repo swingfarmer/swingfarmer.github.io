@@ -768,7 +768,7 @@ window.sfApiFetch = function(url, opts) {
     buildHeader();
     buildBreadcrumb();
     // (121) 내 메뉴 트리 — 왼쪽 세로 탭. 관리자 로그인일 때만 보임. 내용·저장 방식은 /sf-tree.js 맨 위 주석
-    try { var stS = document.createElement('script'); stS.src = '/sf-tree.js?v=9'; document.body.appendChild(stS); } catch (e) {}
+    try { var stS = document.createElement('script'); stS.src = '/sf-tree.js?v=10'; document.body.appendChild(stS); } catch (e) {}
     try { taxFileCheck(); } catch (e) {}
 
     // 저장된 설정 불러오기

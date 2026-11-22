@@ -1,5 +1,5 @@
 /* ============================================================
-   sf-tree.js v5.4 (124) — 내 메뉴 트리 (모든 페이지 왼쪽)
+   sf-tree.js v5.5 (124) — 내 메뉴 트리 (모든 페이지 왼쪽)
    common.js가 읽는다(페이지에 따로 넣지 않음). 관리자 로그인일 때만 탭이 보인다.
 
    ■ 모양
@@ -12,10 +12,10 @@
      - [+ 폴더] [+ 이 페이지] + 메뉴 검색(메인 카드 목록 = menu-search.js와 같은 출처: 메인 .tool-panel .tool-grid > a.card)
      - 폴더 2단계까지(폴더 안 폴더 1번). 지금 페이지는 파란색(location.pathname 비교, #탭은 안 봄)
      - 이름 바꾸기 = 줄 끝 ✎(또는 더블클릭) / 삭제 = 줄 끝 ✕(또는 오른쪽 클릭) → 한 번 더 물음 / 끌기 = 손잡이(⋮⋮)
-     - (124 v5.2) 폰(터치)만: 줄 아무 데나 꾹(0.45초) 누르면 떨림 + 파란 바탕 → 그대로 끌어서 옮김. 누르자마자 움직이면 보통 스크롤.
-       (v5.3) 링크·글자를 브라우저가 따로 끌지 못하게 막음(안드로이드 링크 끌기가 먼저 시작되면 우리 끌기가 취소됨)
-       (v5.4) 꾹 누를 때 글자 선택(복사 범위)이 잡히던 것 → 목록 전체 user-select:none !important + selectstart 막음 + 꾹 눌림 순간 선택 지움
-       PC 마우스는 그대로(손잡이만). 터치 꾹 누름에서 나오던 contextmenu(=삭제 질문)는 막음 — 폰 삭제는 줄 끝 ✕
+     - (124 v5.5) 폰(760px 이하)만: 접힌 「› 내 메뉴」 탭을 손가락으로 위아래로 끌어 자리 옮김(본문 카드를 가릴 때).
+       자리 = localStorage sf-tree-tabY(화면 위에서부터 px, 브라우저별). 화면 밖으로 안 나가게 맞춤. 짧게 누르면 예전처럼 열기/닫기. PC는 그대로
+       (v5.2~5.4에 넣었던 「줄 꾹 눌러 끌기」는 사용자 뜻을 잘못 알아 넣은 것 → 뺌. 남긴 것: 목록 글자 선택 막음, 링크 끌기 막음,
+        안드로이드 꾹 누름에서 나오던 contextmenu(=삭제 질문) 막음 — 폰 삭제는 줄 끝 ✕)
      - (123 v5.1) 스크롤바: 얇게 + 다크에서 어두운 색 (예전엔 다크에서도 밝은 회색 굵은 막대)
      - (123 v5) 폴더 표시: 펼침 ▾ 📂 / 접힘 ▸ 📁 + 안에 든 메뉴 수 배지. 폴더 더블클릭이 접기·펼치기와 겹쳐 이름 바꾸기가 잘 안 돼서 ✎ 버튼을 둠
    ■ 저장
@@ -305,9 +305,9 @@
   + '@media(max-width:' + MOBILE_MAX + 'px){#sf-tree{width:min(290px,86vw);box-shadow:4px 0 18px rgba(0,0,0,.25)}'
   + 'body.sf-tree-open #sf-tree-tab{left:min(290px,86vw)}'
   + 'body.sf-tree-on.sf-tree-open #sf-tree-back{display:block}'
-  + '#sf-tree-tab{top:auto;bottom:150px;padding:10px 5px;font-size:12px}'
+  + '#sf-tree-tab{top:auto;bottom:150px;padding:10px 5px;font-size:12px;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}'
+  + '#sf-tree-tab.st-tab-moving{opacity:.85;box-shadow:0 0 0 3px rgba(96,165,250,.6)}'
   + '.st-row{min-height:34px;-webkit-touch-callout:none}.st-handle{width:22px;font-size:14px}}'
-  + '.st-row.st-hold{background:#dbeafe!important}body.sf-dark .st-row.st-hold{background:#1e3a5f!important}'
   + '@media print{#sf-tree,#sf-tree-tab,#sf-tree-back{display:none!important}}';
 
   /* ── 화면 만들기 ── */
@@ -320,7 +320,7 @@
     var tab = document.createElement('button');
     tab.id = 'sf-tree-tab';
     tab.type = 'button';
-    tab.addEventListener('click', function () { setOpen(!document.body.classList.contains('sf-tree-open')); });
+    tab.addEventListener('click', function () { if (tabJustMoved) return; setOpen(!document.body.classList.contains('sf-tree-open')); });
 
     var back = document.createElement('div');
     back.id = 'sf-tree-back';
@@ -339,12 +339,13 @@
       + '<b>추가</b>: 「+ 이 페이지」 = 지금 페이지, 아래 검색칸 = 메인 메뉴에서 골라 넣기. 둘 다 맨 아래에 들어가요.<br>'
       + '<b>이름 바꾸기</b>: 줄에 마우스를 올리면 오른쪽 끝에 ✎ (또는 더블클릭) → 고치고 Enter (Esc = 취소)<br>'
       + '<b>삭제</b>: 줄에 마우스를 올리면 오른쪽 끝에 ✕ (또는 오른쪽 클릭) → 한 번 더 물어봐요. 폴더를 지우면 안에 든 것도 같이 지워져요<br>'
-      + '<b>순서·폴더 넣고 빼기</b>: 왼쪽 손잡이(⋮⋮)를 끌어요. 파란 줄 = 그 자리에 놓임, 폴더가 점선 테두리 = 폴더 안으로. 맨 아래 빈 곳에 놓으면 폴더 밖 맨 끝. <b>폰</b>은 줄 아무 데나 꾹 누르고(살짝 떨리고 파랗게 바뀜) 그대로 끌어도 돼요 — 누르자마자 움직이면 보통 스크롤<br>'
+      + '<b>탭 자리</b>: 폰에서는 접힌 「› 내 메뉴」 탭을 손가락으로 위아래로 끌면 자리가 옮겨져요(이 브라우저에 기억)<br>'
+      + '<b>순서·폴더 넣고 빼기</b>: 왼쪽 손잡이(⋮⋮)를 끌어요. 파란 줄 = 그 자리에 놓임, 폴더가 점선 테두리 = 폴더 안으로. 맨 아래 빈 곳에 놓으면 폴더 밖 맨 끝.<br>'
       + '<b>폴더</b>는 2단계까지(폴더 안에 폴더 한 번). 폴더 이름을 누르면 접고 펼쳐요 — ▾📂 = 펼침, ▸📁 + 숫자 = 접힘(숫자는 안에 든 메뉴 수)<br>'
       + '<b>저장</b>: 바꿀 때마다 계정(Firestore)에 자동 저장 — <b>내 관리자 아이디 2개는 같은 트리</b>를 같이 써서 어느 아이디·PC에서나 같아요(Claude 작업용 아이디만 따로). 메인 저장(💾 FAB)에는 안 들어가요(불러올 때 트리가 옛날로 덮이지 않게).<br>'
       + '<b>되살리기</b>: 바꾸기 직전 모습을 계정에 최근 20번 보관해요. 잘못 지웠으면 「↶ 뒤로」를 누른 만큼 한 단계씩 돌아가고, 너무 많이 돌아갔으면 「↷ 앞으로」로 다시 와요(뒤로 간 다음 새로 바꾸면 앞으로 갈 길은 사라져요).<br>'
       + '<b>숨기기</b>: 맨 위 헤더의 📂 버튼을 누르면 내 메뉴 탭이 통째로 사라져요(본문이 왼쪽 끝까지 쓰는 페이지용). 다시 누르면 나와요. 이 브라우저에만 기억돼요.<br>'
-      + '펼침·닫힘과 폴더 접힘은 이 브라우저에만 기억돼요. <span style="opacity:.6">(트리 v5.4)</span></div>'
+      + '펼침·닫힘과 폴더 접힘은 이 브라우저에만 기억돼요. <span style="opacity:.6">(트리 v5.5)</span></div>'
       + '<div class="st-search"><input class="st-q" type="search" autocomplete="off" placeholder="🔍 메뉴 검색해서 추가" aria-label="메뉴 검색해서 추가"><div class="st-drop"></div></div>'
       + '<div class="st-list"><div class="st-line"></div></div>'
       + '<div class="st-foot"></div>'
@@ -368,6 +369,7 @@
     });
     bindSearch();
     bindList();
+    bindTabDrag();
   }
 
   function setOpen(on) {
@@ -574,14 +576,9 @@
       askDelete(row.getAttribute('data-id'));
     });
     L.addEventListener('pointerdown', onDown);
-    // (124) 폰(터치)만: 꾹 눌러 끌기. touchmove를 막아야 스크롤이 안 되므로 passive:false
     L.addEventListener('dragstart', function (e) { e.preventDefault(); });
     L.addEventListener('selectstart', function (e) { if (!e.target.closest || !e.target.closest('.st-edit')) e.preventDefault(); });
-    L.addEventListener('touchstart', onTouchStart, { passive: true });
-    L.addEventListener('touchmove', onTouchMove, { passive: false });
-    L.addEventListener('touchend', onTouchEnd);
-    L.addEventListener('touchcancel', onTouchCancel);
-    L.addEventListener('scroll', function () { if (hold && !hold.on) cancelHold(); }, { passive: true });
+    L.addEventListener('touchstart', noteTouch, { passive: true });
   }
 
   function startRename(id) {
@@ -670,67 +667,57 @@
     paintTarget();
   }
 
-  /* ── (124) 폰: 꾹 눌러 끌기 (터치만 — PC 마우스는 위 손잡이 방식 그대로) ── */
-  var HOLD_MS = 450, HOLD_SLOP = 10;
-  var hold = null, lastTouch = 0;
-  function onTouchStart(e) {
-    lastTouch = Date.now();
-    if (drag || e.touches.length !== 1) { cancelHold(); return; }
-    var t = e.target;
-    if (t.closest('.st-handle') || t.closest('.st-del-x') || t.closest('.st-ren-x') || t.closest('.st-edit')) return;   // 손잡이는 원래 방식
-    var row = t.closest('.st-row');
-    if (!row) return;
-    var p = e.touches[0];
-    hold = { row: row, x: p.clientX, y: p.clientY, on: false };
-    hold.timer = setTimeout(function () {
-      if (!hold) return;
-      hold.on = true;
-      clearTimeout(clickT);
-      row.classList.add('st-hold');
-      clearSel();
-      try { if (navigator.vibrate) navigator.vibrate(15); } catch (err) {}
-      drag = { id: row.getAttribute('data-id'), x: hold.x, y: hold.y, on: false, row: row, target: null };
-      moveTo(hold.x, hold.y, true);
-    }, HOLD_MS);
+  /* ── (124) 폰 터치 기록: 꾹 누름에서 나오는 contextmenu(삭제 질문)를 구분하려고 ── */
+  var lastTouch = 0;
+  function noteTouch() { lastTouch = Date.now(); }
+
+  /* ── (124 v5.5) 폰: 접힌 탭 위아래로 끌어 옮기기 ── */
+  var LS_TABY = 'sf-tree-tabY', tabDrag = null, tabJustMoved = false;
+  function tabClamp(y) {
+    var h = els.tab.offsetHeight || 80;
+    return Math.max(56, Math.min(window.innerHeight - h - 8, y));
   }
-  function onTouchMove(e) {
-    lastTouch = Date.now();
-    if (!hold) return;
-    var p = e.touches[0];
-    if (!hold.on) {   // 아직 꾹 누르기 전에 움직임 = 스크롤
-      if (Math.abs(p.clientX - hold.x) + Math.abs(p.clientY - hold.y) > HOLD_SLOP) cancelHold();
-      return;
+  function placeTab() {
+    if (!els.tab) return;
+    var y = parseFloat(ls(LS_TABY));
+    if (!isMobile() || isNaN(y)) { els.tab.style.top = ''; els.tab.style.bottom = ''; return; }
+    els.tab.style.top = tabClamp(y) + 'px';
+    els.tab.style.bottom = 'auto';
+  }
+  function bindTabDrag() {
+    var t = els.tab;
+    t.addEventListener('pointerdown', function (e) {
+      if (!isMobile() || (e.button !== undefined && e.button !== 0)) return;
+      var r = t.getBoundingClientRect();
+      tabDrag = { y: e.clientY, off: e.clientY - r.top, on: false };
+      try { t.setPointerCapture(e.pointerId); } catch (err) {}
+    });
+    t.addEventListener('pointermove', function (e) {
+      if (!tabDrag) return;
+      if (!tabDrag.on) {
+        if (Math.abs(e.clientY - tabDrag.y) < 8) return;
+        tabDrag.on = true;
+        t.classList.add('st-tab-moving');
+      }
+      if (e.cancelable) e.preventDefault();
+      t.style.top = tabClamp(e.clientY - tabDrag.off) + 'px';
+      t.style.bottom = 'auto';
+    });
+    function end() {
+      if (!tabDrag) return;
+      var d = tabDrag; tabDrag = null;
+      t.classList.remove('st-tab-moving');
+      if (!d.on) return;
+      ls(LS_TABY, String(Math.round(parseFloat(t.style.top) || 0)));
+      tabJustMoved = true;
+      setTimeout(function () { tabJustMoved = false; }, 400);
     }
-    if (e.cancelable) e.preventDefault();
-    clearSel();
-    if (drag) moveTo(p.clientX, p.clientY, true);
+    t.addEventListener('pointerup', end);
+    t.addEventListener('pointercancel', end);
+    window.addEventListener('resize', placeTab);
+    placeTab();
   }
-  function onTouchEnd(e) {
-    lastTouch = Date.now();
-    if (!hold) return;
-    var h = hold;
-    cancelHold();
-    if (!h.on) return;   // 짧게 누름 = 원래대로(이동·접기)
-    if (e.cancelable) e.preventDefault();   // 꾹 누른 뒤 뗌 → 링크 이동 안 함
-    var d = drag;
-    endDrag();
-    drag = null;
-    dragJustEnded = true;
-    setTimeout(function () { dragJustEnded = false; }, 500);
-    if (d && d.target) moveNode(d.id, d.target);
-  }
-  function onTouchCancel() {
-    lastTouch = Date.now();
-    if (hold && hold.on) { endDrag(); drag = null; }
-    cancelHold();
-  }
-  function clearSel() { try { var sel = window.getSelection && window.getSelection(); if (sel && sel.rangeCount) sel.removeAllRanges(); } catch (err) {} }
-  function cancelHold() {
-    if (!hold) return;
-    clearTimeout(hold.timer);
-    if (hold.row) hold.row.classList.remove('st-hold');
-    hold = null;
-  }
+
   function autoScroll(y) {
     var r = els.list.getBoundingClientRect();
     if (y < r.top + 24) els.list.scrollTop -= 8;
@@ -893,6 +880,7 @@
     remoteOk = null;
     render();
     document.body.classList.add('sf-tree-on');
+    placeTab();
     setOpen(ls(LS_OPEN) === '1');
     loadRemote();
   }
