@@ -199,6 +199,68 @@ def check_db_freshness():
     return results
 
 
+# ── (122) VM 메모리 감시 ──
+# 11/22 05:30 부동산 수집이 300MB까지 커져 1GB VM이 메모리 부족으로 굳음(swap 없음) → swap 2GB 추가 + 수집 고침.
+# swap은 안전장치일 뿐 1GB 안에서 도는 게 정상 → 리눅스 누적 카운터(/proc/vmstat, 부팅 뒤부터 셈)를
+# 지난 점검 때 값과 비교해 「그사이 1GB를 넘은 적이 있었나」를 본다. 순간 값만 보면 새벽에 넘쳤다 돌아온 걸 못 잡음.
+#   oom_kill  = 메모리 부족으로 강제 종료된 프로그램 수 → 1 이상이면 경고
+#   pswpout   = swap으로 밀려난 쪽수(4KB) → 50MB 넘으면 경고
+#   SwapTotal = 0이면(swap 꺼짐) 경고
+# 상태는 ~/.sf_memwatch_state.json(VM 로컬). 재부팅하면 카운터가 0부터라 boot_id로 알아챔.
+MEM_STATE = os.path.expanduser(os.environ.get("SF_MEMWATCH_STATE", "~/.sf_memwatch_state.json"))
+PROC = os.environ.get("SF_PROC_DIR", "/proc")   # 시험 때만 바꿈
+SWAP_WARN_MB = 50
+
+def _read_kv(path):
+    out = {}
+    with open(path) as f:
+        for line in f:
+            parts = line.replace(":", " ").split()
+            if len(parts) >= 2:
+                try: out[parts[0]] = int(parts[1])
+                except ValueError: pass
+    return out
+
+def check_memory():
+    now = datetime.now()
+    e = {"file": "VM", "desc": "VM 메모리 (1GB)", "cycle": "daily", "max_stale_days": None,
+         "last_modified": now.strftime("%Y-%m-%d"), "stale_days": None}
+    try:
+        vm = _read_kv(os.path.join(PROC, "vmstat"))
+        mi = _read_kv(os.path.join(PROC, "meminfo"))   # kB
+        with open(os.path.join(PROC, "sys/kernel/random/boot_id")) as f:
+            boot = f.read().strip()
+        oom, pout = vm.get("oom_kill", 0), vm.get("pswpout", 0)
+        try:
+            with open(MEM_STATE) as f: prev = json.load(f)
+        except Exception:
+            prev = {}
+        rebooted = bool(prev) and prev.get("boot") != boot
+        base = prev if (prev and not rebooted) else {"oom": 0, "pout": 0}   # 재부팅·첫 실행 = 부팅 뒤 전체
+        d_oom = max(0, oom - base.get("oom", 0))
+        d_swap_mb = max(0, pout - base.get("pout", 0)) * 4096 / 1048576
+        swap_total = mi.get("SwapTotal", 0) // 1024
+        swap_used = (mi.get("SwapTotal", 0) - mi.get("SwapFree", 0)) // 1024
+        avail = mi.get("MemAvailable", 0) // 1024
+        since = "지난 점검 뒤" if (prev and not rebooted) else "부팅 뒤"
+        warn = []
+        if d_oom:
+            warn.append(f"{since} 메모리 부족으로 프로그램 {d_oom}개 강제 종료됨 — journalctl -k --since '1 day ago' | grep -i 'killed process'")
+        if swap_total == 0:
+            warn.append("swap 꺼짐(0MB) — free -m 확인, /etc/fstab의 /swapfile 줄")
+        if d_swap_mb > SWAP_WARN_MB:
+            warn.append(f"{since} swap으로 {d_swap_mb:.0f}MB 밀려남 = 1GB를 넘게 쓴 작업이 있었음(그 시각 크론 확인)")
+        info = f"여유 {avail}MB · swap 사용 {swap_used}/{swap_total}MB" + (" · 재부팅 있었음" if rebooted else "")
+        e["status"] = "stale" if warn else "ok"
+        e["message"] = (" / ".join(warn) + " · " + info) if warn else ("정상 · " + info)
+        with open(MEM_STATE, "w") as f:
+            json.dump({"boot": boot, "oom": oom, "pout": pout, "at": now.strftime("%Y-%m-%d %H:%M")}, f)
+    except Exception as ex:
+        e["status"] = "stale"
+        e["message"] = f"메모리 점검 실패: {str(ex)[:80]}"
+    return [e]
+
+
 # ── (086) 내용이 며칠째 그대로인지 감시 ──
 # 파일 갱신 시각만 보면 "스크립트는 돌았는데 소스(야후 등)가 옛 값·빈 값을 준 경우"를 못 잡음.
 # 갱신 시각 같은 칸을 빼고 내용 해시를 비교해, 바뀌어야 하는 날이 3번 지나도록 그대로면 경고.
@@ -493,6 +555,7 @@ def main():
 
     results = check_freshness()
     results += check_db_freshness()
+    results += check_memory()   # (122)
     status = build_status_json(results)
 
     ok = status["ok"]
