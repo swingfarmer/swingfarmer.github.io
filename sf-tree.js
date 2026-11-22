@@ -1,5 +1,5 @@
 /* ============================================================
-   sf-tree.js v5 (123) — 내 메뉴 트리 (모든 페이지 왼쪽)
+   sf-tree.js v5.2 (124) — 내 메뉴 트리 (모든 페이지 왼쪽)
    common.js가 읽는다(페이지에 따로 넣지 않음). 관리자 로그인일 때만 탭이 보인다.
 
    ■ 모양
@@ -12,6 +12,8 @@
      - [+ 폴더] [+ 이 페이지] + 메뉴 검색(메인 카드 목록 = menu-search.js와 같은 출처: 메인 .tool-panel .tool-grid > a.card)
      - 폴더 2단계까지(폴더 안 폴더 1번). 지금 페이지는 파란색(location.pathname 비교, #탭은 안 봄)
      - 이름 바꾸기 = 줄 끝 ✎(또는 더블클릭) / 삭제 = 줄 끝 ✕(또는 오른쪽 클릭) → 한 번 더 물음 / 끌기 = 손잡이(⋮⋮)
+     - (124 v5.2) 폰(터치)만: 줄 아무 데나 꾹(0.45초) 누르면 떨림 + 파란 바탕 → 그대로 끌어서 옮김. 누르자마자 움직이면 보통 스크롤.
+       PC 마우스는 그대로(손잡이만). 터치 꾹 누름에서 나오던 contextmenu(=삭제 질문)는 막음 — 폰 삭제는 줄 끝 ✕
      - (123 v5.1) 스크롤바: 얇게 + 다크에서 어두운 색 (예전엔 다크에서도 밝은 회색 굵은 막대)
      - (123 v5) 폴더 표시: 펼침 ▾ 📂 / 접힘 ▸ 📁 + 안에 든 메뉴 수 배지. 폴더 더블클릭이 접기·펼치기와 겹쳐 이름 바꾸기가 잘 안 돼서 ✎ 버튼을 둠
    ■ 저장
@@ -300,7 +302,8 @@
   + 'body.sf-tree-open #sf-tree-tab{left:min(290px,86vw)}'
   + 'body.sf-tree-on.sf-tree-open #sf-tree-back{display:block}'
   + '#sf-tree-tab{top:auto;bottom:150px;padding:10px 5px;font-size:12px}'
-  + '.st-row{min-height:34px}.st-handle{width:22px;font-size:14px}}'
+  + '.st-row{min-height:34px;-webkit-touch-callout:none}.st-handle{width:22px;font-size:14px}}'
+  + '.st-row.st-hold{background:#dbeafe!important}body.sf-dark .st-row.st-hold{background:#1e3a5f!important}'
   + '@media print{#sf-tree,#sf-tree-tab,#sf-tree-back{display:none!important}}';
 
   /* ── 화면 만들기 ── */
@@ -332,7 +335,7 @@
       + '<b>추가</b>: 「+ 이 페이지」 = 지금 페이지, 아래 검색칸 = 메인 메뉴에서 골라 넣기. 둘 다 맨 아래에 들어가요.<br>'
       + '<b>이름 바꾸기</b>: 줄에 마우스를 올리면 오른쪽 끝에 ✎ (또는 더블클릭) → 고치고 Enter (Esc = 취소)<br>'
       + '<b>삭제</b>: 줄에 마우스를 올리면 오른쪽 끝에 ✕ (또는 오른쪽 클릭) → 한 번 더 물어봐요. 폴더를 지우면 안에 든 것도 같이 지워져요<br>'
-      + '<b>순서·폴더 넣고 빼기</b>: 왼쪽 손잡이(⋮⋮)를 끌어요. 파란 줄 = 그 자리에 놓임, 폴더가 점선 테두리 = 폴더 안으로. 맨 아래 빈 곳에 놓으면 폴더 밖 맨 끝<br>'
+      + '<b>순서·폴더 넣고 빼기</b>: 왼쪽 손잡이(⋮⋮)를 끌어요. 파란 줄 = 그 자리에 놓임, 폴더가 점선 테두리 = 폴더 안으로. 맨 아래 빈 곳에 놓으면 폴더 밖 맨 끝. <b>폰</b>은 줄 아무 데나 꾹 누르고(살짝 떨리고 파랗게 바뀜) 그대로 끌어도 돼요 — 누르자마자 움직이면 보통 스크롤<br>'
       + '<b>폴더</b>는 2단계까지(폴더 안에 폴더 한 번). 폴더 이름을 누르면 접고 펼쳐요 — ▾📂 = 펼침, ▸📁 + 숫자 = 접힘(숫자는 안에 든 메뉴 수)<br>'
       + '<b>저장</b>: 바꿀 때마다 계정(Firestore)에 자동 저장 — <b>내 관리자 아이디 2개는 같은 트리</b>를 같이 써서 어느 아이디·PC에서나 같아요(Claude 작업용 아이디만 따로). 메인 저장(💾 FAB)에는 안 들어가요(불러올 때 트리가 옛날로 덮이지 않게).<br>'
       + '<b>되살리기</b>: 바꾸기 직전 모습을 계정에 최근 20번 보관해요. 잘못 지웠으면 「↶ 뒤로」를 누른 만큼 한 단계씩 돌아가고, 너무 많이 돌아갔으면 「↷ 앞으로」로 다시 와요(뒤로 간 다음 새로 바꾸면 앞으로 갈 길은 사라져요).<br>'
@@ -562,10 +565,17 @@
     L.addEventListener('contextmenu', function (e) {
       var row = e.target.closest('.st-row');
       if (!row) return;
+      if (Date.now() - lastTouch < 1500) { e.preventDefault(); return; }   // (124) 폰 꾹 누름 = 끌기. 삭제 질문 안 띄움
       e.preventDefault();
       askDelete(row.getAttribute('data-id'));
     });
     L.addEventListener('pointerdown', onDown);
+    // (124) 폰(터치)만: 꾹 눌러 끌기. touchmove를 막아야 스크롤이 안 되므로 passive:false
+    L.addEventListener('touchstart', onTouchStart, { passive: true });
+    L.addEventListener('touchmove', onTouchMove, { passive: false });
+    L.addEventListener('touchend', onTouchEnd);
+    L.addEventListener('touchcancel', onTouchCancel);
+    L.addEventListener('scroll', function () { if (hold && !hold.on) cancelHold(); }, { passive: true });
   }
 
   function startRename(id) {
@@ -631,10 +641,8 @@
     document.addEventListener('keydown', onKey);
   }
   function onKey(e) { if (e.key === 'Escape') onCancel(); }
-  function onMove(e) {
-    if (!drag) return;
-    if (!drag.on) {
-      if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) < 5) return;
+  function onMove(e) { if (drag) moveTo(e.clientX, e.clientY, false); }
+  function startGhost() {
       drag.on = true;
       var f = find(drag.id);
       drag.row.classList.add('dragging');
@@ -643,12 +651,76 @@
       g.textContent = (f.node.t === 'f' ? '📁 ' : '') + f.node.name;
       document.body.appendChild(g);
       drag.ghost = g;
+  }
+  function moveTo(x, y, force) {
+    if (!drag.on) {
+      if (!force && Math.abs(x - drag.x) + Math.abs(y - drag.y) < 5) return;
+      startGhost();
     }
-    drag.ghost.style.left = (e.clientX + 12) + 'px';
-    drag.ghost.style.top = (e.clientY - 10) + 'px';
-    autoScroll(e.clientY);
-    drag.target = pickTarget(e.clientX, e.clientY);
+    drag.ghost.style.left = (x + 12) + 'px';
+    drag.ghost.style.top = (y - 10) + 'px';
+    autoScroll(y);
+    drag.target = pickTarget(x, y);
     paintTarget();
+  }
+
+  /* ── (124) 폰: 꾹 눌러 끌기 (터치만 — PC 마우스는 위 손잡이 방식 그대로) ── */
+  var HOLD_MS = 450, HOLD_SLOP = 10;
+  var hold = null, lastTouch = 0;
+  function onTouchStart(e) {
+    lastTouch = Date.now();
+    if (drag || e.touches.length !== 1) { cancelHold(); return; }
+    var t = e.target;
+    if (t.closest('.st-handle') || t.closest('.st-del-x') || t.closest('.st-ren-x') || t.closest('.st-edit')) return;   // 손잡이는 원래 방식
+    var row = t.closest('.st-row');
+    if (!row) return;
+    var p = e.touches[0];
+    hold = { row: row, x: p.clientX, y: p.clientY, on: false };
+    hold.timer = setTimeout(function () {
+      if (!hold) return;
+      hold.on = true;
+      clearTimeout(clickT);
+      row.classList.add('st-hold');
+      try { if (navigator.vibrate) navigator.vibrate(15); } catch (err) {}
+      drag = { id: row.getAttribute('data-id'), x: hold.x, y: hold.y, on: false, row: row, target: null };
+      moveTo(hold.x, hold.y, true);
+    }, HOLD_MS);
+  }
+  function onTouchMove(e) {
+    lastTouch = Date.now();
+    if (!hold) return;
+    var p = e.touches[0];
+    if (!hold.on) {   // 아직 꾹 누르기 전에 움직임 = 스크롤
+      if (Math.abs(p.clientX - hold.x) + Math.abs(p.clientY - hold.y) > HOLD_SLOP) cancelHold();
+      return;
+    }
+    if (e.cancelable) e.preventDefault();
+    if (drag) moveTo(p.clientX, p.clientY, true);
+  }
+  function onTouchEnd(e) {
+    lastTouch = Date.now();
+    if (!hold) return;
+    var h = hold;
+    cancelHold();
+    if (!h.on) return;   // 짧게 누름 = 원래대로(이동·접기)
+    if (e.cancelable) e.preventDefault();   // 꾹 누른 뒤 뗌 → 링크 이동 안 함
+    var d = drag;
+    endDrag();
+    drag = null;
+    dragJustEnded = true;
+    setTimeout(function () { dragJustEnded = false; }, 500);
+    if (d && d.target) moveNode(d.id, d.target);
+  }
+  function onTouchCancel() {
+    lastTouch = Date.now();
+    if (hold && hold.on) { endDrag(); drag = null; }
+    cancelHold();
+  }
+  function cancelHold() {
+    if (!hold) return;
+    clearTimeout(hold.timer);
+    if (hold.row) hold.row.classList.remove('st-hold');
+    hold = null;
   }
   function autoScroll(y) {
     var r = els.list.getBoundingClientRect();
