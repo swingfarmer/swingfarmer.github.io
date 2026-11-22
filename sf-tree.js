@@ -1,5 +1,5 @@
 /* ============================================================
-   sf-tree.js v4 (121) — 내 메뉴 트리 (모든 페이지 왼쪽)
+   sf-tree.js v5 (123) — 내 메뉴 트리 (모든 페이지 왼쪽)
    common.js가 읽는다(페이지에 따로 넣지 않음). 관리자 로그인일 때만 탭이 보인다.
 
    ■ 모양
@@ -11,7 +11,8 @@
    ■ 트리
      - [+ 폴더] [+ 이 페이지] + 메뉴 검색(메인 카드 목록 = menu-search.js와 같은 출처: 메인 .tool-panel .tool-grid > a.card)
      - 폴더 2단계까지(폴더 안 폴더 1번). 지금 페이지는 파란색(location.pathname 비교, #탭은 안 봄)
-     - 이름 바꾸기 = 더블클릭 / 삭제 = 오른쪽 클릭 → 한 번 더 물음 / 끌기 = 손잡이(⋮⋮)
+     - 이름 바꾸기 = 줄 끝 ✎(또는 더블클릭) / 삭제 = 줄 끝 ✕(또는 오른쪽 클릭) → 한 번 더 물음 / 끌기 = 손잡이(⋮⋮)
+     - (123 v5) 폴더 표시: 펼침 ▾ 📂 / 접힘 ▸ 📁 + 안에 든 메뉴 수 배지. 폴더 더블클릭이 접기·펼치기와 겹쳐 이름 바꾸기가 잘 안 돼서 ✎ 버튼을 둠
    ■ 저장
      - 바뀔 때마다 Firestore calc_data/{SF_ADMIN_UIDS[0]} 의 sf_tree.{칸 이름} 에 자동 저장. 메인 저장(FAB)에는 안 들어감(119 결정)
      - 칸 이름 (121 사용자 결정): 사용자 본인 아이디 2개(SF_ADMIN_UIDS 1·2번째) = 'owner' 한 칸을 같이 씀(어느 아이디·PC든 같은 트리)
@@ -228,6 +229,10 @@
   + '.st-handle{flex:0 0 auto;width:16px;text-align:center;color:#94a3b8;cursor:grab;font-size:12px;letter-spacing:-2px;touch-action:none;padding:4px 0}'
   + '.st-handle:hover{color:#1F4E78}'
   + '.st-arrow{flex:0 0 auto;width:14px;text-align:center;color:#64748b;font-size:10px}'
+  + '.st-folder > .st-arrow{font-size:12px;color:#1F4E78}'
+  + '.st-cnt{flex:0 0 auto;font-size:10.5px;font-weight:700;color:#1F4E78;background:#e2ebf5;border-radius:9px;padding:0 6px;line-height:16px}'
+  + '.st-folder.closed{background:#f5f8fb}'
+  + '.st-folder.closed:hover{background:#eaf0f6}'
   + '.st-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#1f2937;text-decoration:none;padding:3px 2px}'
   + 'a.st-name:hover{text-decoration:underline}'
   + '.st-folder > .st-name{font-weight:700;cursor:pointer}'
@@ -235,10 +240,12 @@
   + '.st-row.cur > .st-name{color:#1d4ed8;font-weight:800}'
   + '.st-row.dragging{opacity:.35}'
   + '.st-row.into{background:#dbeafe;outline:2px dashed #3b82f6;outline-offset:-2px}'
-  + '.st-del-x{flex:0 0 auto;border:none;background:none;color:#94a3b8;font-size:11px;line-height:1;padding:4px 5px;border-radius:4px;cursor:pointer;visibility:hidden}'
-  + '.st-row:hover .st-del-x{visibility:visible}'
+  + '.st-del-x,.st-ren-x{flex:0 0 auto;border:none;background:none;color:#94a3b8;font-size:11px;line-height:1;padding:4px 5px;border-radius:4px;cursor:pointer;visibility:hidden}'
+  + '.st-row:hover .st-del-x,.st-row:hover .st-ren-x{visibility:visible}'
   + '.st-del-x:hover{background:#fee2e2;color:#dc2626}'
-  + '@media(hover:none){.st-del-x{visibility:visible}}'
+  + '.st-ren-x:hover{background:#dbeafe;color:#1d4ed8}'
+  + '@media(hover:none){.st-del-x,.st-ren-x{visibility:visible}}'
+  + 'body.sf-dark .st-ren-x:hover{background:#1e3a5f;color:#93c5fd}'
   + 'body.sf-dark .st-del-x:hover{background:#3b1d1d;color:#f87171}'
   + 'body.sf-tree-hidden #sf-tree,body.sf-tree-hidden #sf-tree-tab,body.sf-tree-hidden #sf-tree-back{display:none!important}'
   + '#sf-tree-hbtn{display:none}body.sf-tree-on #sf-tree-hbtn{display:inline-flex}'
@@ -273,6 +280,10 @@
   + 'body.sf-dark .st-row:hover{background:#232a35}'
   + 'body.sf-dark .st-name{color:#e4e4e7}'
   + 'body.sf-dark .st-handle,body.sf-dark .st-arrow{color:#71717a}'
+  + 'body.sf-dark .st-folder > .st-arrow{color:#93c5fd}'
+  + 'body.sf-dark .st-cnt{background:#1e3a5f;color:#93c5fd}'
+  + 'body.sf-dark .st-folder.closed{background:#1f2430}'
+  + 'body.sf-dark .st-folder.closed:hover{background:#232a35}'
   + 'body.sf-dark .st-handle:hover{color:#93c5fd}'
   + 'body.sf-dark .st-row.cur,body.sf-dark .st-row.into{background:#1e3a5f}'
   + 'body.sf-dark .st-row.cur > .st-name{color:#93c5fd}'
@@ -316,10 +327,10 @@
       + '<button type="button" class="st-ibtn" data-act="info" title="사용법·저장 방식">i</button></div>'
       + '<div class="st-info">'
       + '<b>추가</b>: 「+ 이 페이지」 = 지금 페이지, 아래 검색칸 = 메인 메뉴에서 골라 넣기. 둘 다 맨 아래에 들어가요.<br>'
-      + '<b>이름 바꾸기</b>: 이름을 더블클릭 → 고치고 Enter (Esc = 취소)<br>'
+      + '<b>이름 바꾸기</b>: 줄에 마우스를 올리면 오른쪽 끝에 ✎ (또는 더블클릭) → 고치고 Enter (Esc = 취소)<br>'
       + '<b>삭제</b>: 줄에 마우스를 올리면 오른쪽 끝에 ✕ (또는 오른쪽 클릭) → 한 번 더 물어봐요. 폴더를 지우면 안에 든 것도 같이 지워져요<br>'
       + '<b>순서·폴더 넣고 빼기</b>: 왼쪽 손잡이(⋮⋮)를 끌어요. 파란 줄 = 그 자리에 놓임, 폴더가 점선 테두리 = 폴더 안으로. 맨 아래 빈 곳에 놓으면 폴더 밖 맨 끝<br>'
-      + '<b>폴더</b>는 2단계까지(폴더 안에 폴더 한 번). 폴더 이름을 누르면 접고 펼쳐요<br>'
+      + '<b>폴더</b>는 2단계까지(폴더 안에 폴더 한 번). 폴더 이름을 누르면 접고 펼쳐요 — ▾📂 = 펼침, ▸📁 + 숫자 = 접힘(숫자는 안에 든 메뉴 수)<br>'
       + '<b>저장</b>: 바꿀 때마다 계정(Firestore)에 자동 저장 — <b>내 관리자 아이디 2개는 같은 트리</b>를 같이 써서 어느 아이디·PC에서나 같아요(Claude 작업용 아이디만 따로). 메인 저장(💾 FAB)에는 안 들어가요(불러올 때 트리가 옛날로 덮이지 않게).<br>'
       + '<b>되살리기</b>: 바꾸기 직전 모습을 계정에 최근 20번 보관해요. 잘못 지웠으면 「↶ 뒤로」를 누른 만큼 한 단계씩 돌아가고, 너무 많이 돌아갔으면 「↷ 앞으로」로 다시 와요(뒤로 간 다음 새로 바꾸면 앞으로 갈 길은 사라져요).<br>'
       + '<b>숨기기</b>: 맨 위 헤더의 📂 버튼을 누르면 내 메뉴 탭이 통째로 사라져요(본문이 왼쪽 끝까지 쓰는 페이지용). 다시 누르면 나와요. 이 브라우저에만 기억돼요.<br>'
@@ -358,6 +369,11 @@
   }
 
   /* ── 그리기 ── */
+  function countPages(n) {   // 폴더 안 메뉴 수(하위 폴더 안 것까지)
+    var c = 0;
+    for (var i = 0; i < n.kids.length; i++) c += n.kids[i].t === 'f' ? countPages(n.kids[i]) : 1;
+    return c;
+  }
   function render() {
     if (!els.list) return;
     var cur = normPath(location.pathname);
@@ -366,9 +382,11 @@
       var pad = 4 + level * 16;
       if (n.t === 'f') {
         var closed = !!fold[n.id];
-        html.push('<div class="st-row st-folder" data-id="' + esc(n.id) + '" style="padding-left:' + pad + 'px">'
+        html.push('<div class="st-row st-folder' + (closed ? ' closed' : '') + '" data-id="' + esc(n.id) + '" style="padding-left:' + pad + 'px">'
           + '<span class="st-handle" title="끌어서 옮기기">⋮⋮</span><span class="st-arrow">' + (closed ? '▸' : '▾') + '</span>'
-          + '<span class="st-name" title="' + esc(n.name) + '">📁 ' + esc(n.name) + '</span>'
+          + '<span class="st-name" title="' + esc(n.name) + (closed ? ' (접힘 — 누르면 펼침)' : ' (펼침 — 누르면 접힘)') + '">' + (closed ? '📁 ' : '📂 ') + esc(n.name) + '</span>'
+          + (closed ? '<span class="st-cnt" title="안에 든 메뉴 수">' + countPages(n) + '</span>' : '')
+          + '<button type="button" class="st-ren-x" title="이름 바꾸기">✎</button>'
           + '<button type="button" class="st-del-x" title="지우기">✕</button></div>');
         if (!closed) for (var i = 0; i < n.kids.length; i++) row(n.kids[i], level + 1);
       } else {
@@ -376,6 +394,7 @@
         html.push('<div class="st-row st-page' + (isCur ? ' cur' : '') + '" data-id="' + esc(n.id) + '" style="padding-left:' + pad + 'px">'
           + '<span class="st-handle" title="끌어서 옮기기">⋮⋮</span><span class="st-arrow"></span>'
           + '<a class="st-name" href="' + esc(n.href) + '" title="' + esc(n.name + ' — ' + n.href) + '">' + esc(n.name) + '</a>'
+          + '<button type="button" class="st-ren-x" title="이름 바꾸기">✎</button>'
           + '<button type="button" class="st-del-x" title="지우기">✕</button></div>');
       }
     }
@@ -513,6 +532,7 @@
       if (!row || e.target.closest('.st-handle') || e.target.closest('.st-edit')) return;
       var id = row.getAttribute('data-id');
       if (e.target.closest('.st-del-x')) { e.preventDefault(); askDelete(id); return; }
+      if (e.target.closest('.st-ren-x')) { e.preventDefault(); clearTimeout(clickT); startRename(id); return; }
       if (row.classList.contains('st-folder')) {
         if (fold[id]) delete fold[id]; else fold[id] = true;
         saveFold(); render();
@@ -531,7 +551,7 @@
     });
     L.addEventListener('dblclick', function (e) {
       var row = e.target.closest('.st-row');
-      if (!row || e.target.closest('.st-handle')) return;
+      if (!row || e.target.closest('.st-handle') || e.target.closest('.st-del-x') || e.target.closest('.st-ren-x')) return;
       clearTimeout(clickT);
       e.preventDefault();
       startRename(row.getAttribute('data-id'));
@@ -554,6 +574,8 @@
     inp.className = 'st-edit';
     inp.value = f.node.name;
     nameEl.style.display = 'none';
+    var hideEls = row.querySelectorAll('.st-cnt,.st-ren-x,.st-del-x');
+    for (var hi = 0; hi < hideEls.length; hi++) hideEls[hi].style.display = 'none';
     row.appendChild(inp);
     inp.focus(); inp.select();
     var done = false;
