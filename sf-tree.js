@@ -1,5 +1,5 @@
 /* ============================================================
-   sf-tree.js v5.2 (124) — 내 메뉴 트리 (모든 페이지 왼쪽)
+   sf-tree.js v5.3 (124) — 내 메뉴 트리 (모든 페이지 왼쪽)
    common.js가 읽는다(페이지에 따로 넣지 않음). 관리자 로그인일 때만 탭이 보인다.
 
    ■ 모양
@@ -13,6 +13,7 @@
      - 폴더 2단계까지(폴더 안 폴더 1번). 지금 페이지는 파란색(location.pathname 비교, #탭은 안 봄)
      - 이름 바꾸기 = 줄 끝 ✎(또는 더블클릭) / 삭제 = 줄 끝 ✕(또는 오른쪽 클릭) → 한 번 더 물음 / 끌기 = 손잡이(⋮⋮)
      - (124 v5.2) 폰(터치)만: 줄 아무 데나 꾹(0.45초) 누르면 떨림 + 파란 바탕 → 그대로 끌어서 옮김. 누르자마자 움직이면 보통 스크롤.
+       (v5.3) 링크·글자를 브라우저가 따로 끌지 못하게 막음(안드로이드 링크 끌기가 먼저 시작되면 우리 끌기가 취소됨)
        PC 마우스는 그대로(손잡이만). 터치 꾹 누름에서 나오던 contextmenu(=삭제 질문)는 막음 — 폰 삭제는 줄 끝 ✕
      - (123 v5.1) 스크롤바: 얇게 + 다크에서 어두운 색 (예전엔 다크에서도 밝은 회색 굵은 막대)
      - (123 v5) 폴더 표시: 펼침 ▾ 📂 / 접힘 ▸ 📁 + 안에 든 메뉴 수 배지. 폴더 더블클릭이 접기·펼치기와 겹쳐 이름 바꾸기가 잘 안 돼서 ✎ 버튼을 둠
@@ -229,6 +230,7 @@
   + '.st-list,.st-drop{scrollbar-width:thin;scrollbar-color:#cbd5e1 transparent}'
   + 'body.sf-dark .st-list,body.sf-dark .st-drop{scrollbar-color:#3f4451 transparent}'
   + '.st-empty{color:#94a3b8;font-size:12px;line-height:1.6;padding:14px 10px;text-align:center}'
+  + '.st-row,.st-row a{-webkit-user-drag:none}'
   + '.st-row{display:flex;align-items:center;gap:3px;min-height:28px;padding:2px 4px;border-radius:6px;cursor:default;user-select:none;-webkit-user-select:none}'
   + '.st-row:hover{background:#f1f5f9}'
   + '.st-handle{flex:0 0 auto;width:16px;text-align:center;color:#94a3b8;cursor:grab;font-size:12px;letter-spacing:-2px;touch-action:none;padding:4px 0}'
@@ -340,7 +342,7 @@
       + '<b>저장</b>: 바꿀 때마다 계정(Firestore)에 자동 저장 — <b>내 관리자 아이디 2개는 같은 트리</b>를 같이 써서 어느 아이디·PC에서나 같아요(Claude 작업용 아이디만 따로). 메인 저장(💾 FAB)에는 안 들어가요(불러올 때 트리가 옛날로 덮이지 않게).<br>'
       + '<b>되살리기</b>: 바꾸기 직전 모습을 계정에 최근 20번 보관해요. 잘못 지웠으면 「↶ 뒤로」를 누른 만큼 한 단계씩 돌아가고, 너무 많이 돌아갔으면 「↷ 앞으로」로 다시 와요(뒤로 간 다음 새로 바꾸면 앞으로 갈 길은 사라져요).<br>'
       + '<b>숨기기</b>: 맨 위 헤더의 📂 버튼을 누르면 내 메뉴 탭이 통째로 사라져요(본문이 왼쪽 끝까지 쓰는 페이지용). 다시 누르면 나와요. 이 브라우저에만 기억돼요.<br>'
-      + '펼침·닫힘과 폴더 접힘은 이 브라우저에만 기억돼요.</div>'
+      + '펼침·닫힘과 폴더 접힘은 이 브라우저에만 기억돼요. <span style="opacity:.6">(트리 v5.3)</span></div>'
       + '<div class="st-search"><input class="st-q" type="search" autocomplete="off" placeholder="🔍 메뉴 검색해서 추가" aria-label="메뉴 검색해서 추가"><div class="st-drop"></div></div>'
       + '<div class="st-list"><div class="st-line"></div></div>'
       + '<div class="st-foot"></div>'
@@ -399,7 +401,7 @@
         var isCur = normPath(n.href) === cur;
         html.push('<div class="st-row st-page' + (isCur ? ' cur' : '') + '" data-id="' + esc(n.id) + '" style="padding-left:' + pad + 'px">'
           + '<span class="st-handle" title="끌어서 옮기기">⋮⋮</span><span class="st-arrow"></span>'
-          + '<a class="st-name" href="' + esc(n.href) + '" title="' + esc(n.name + ' — ' + n.href) + '">' + esc(n.name) + '</a>'
+          + '<a class="st-name" draggable="false" href="' + esc(n.href) + '" title="' + esc(n.name + ' — ' + n.href) + '">' + esc(n.name) + '</a>'
           + '<button type="button" class="st-ren-x" title="이름 바꾸기">✎</button>'
           + '<button type="button" class="st-del-x" title="지우기">✕</button></div>');
       }
@@ -571,6 +573,7 @@
     });
     L.addEventListener('pointerdown', onDown);
     // (124) 폰(터치)만: 꾹 눌러 끌기. touchmove를 막아야 스크롤이 안 되므로 passive:false
+    L.addEventListener('dragstart', function (e) { e.preventDefault(); });
     L.addEventListener('touchstart', onTouchStart, { passive: true });
     L.addEventListener('touchmove', onTouchMove, { passive: false });
     L.addEventListener('touchend', onTouchEnd);
