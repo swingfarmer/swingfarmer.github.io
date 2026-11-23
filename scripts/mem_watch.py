@@ -44,7 +44,14 @@ def main():
         st = json.load(open(STATE))
     except Exception:
         st = {}
-    prev = st.get("pout", pout) if st.get("boot") == boot else 0
+    # (127) 상태 파일이 없을 때(첫 실행)는 기준만 잡고 넘어감 — 전엔 0으로 잡아 부팅 뒤 누적치를
+    #       「지난 1분 동안」처럼 적었음(11/23 21:36 「+353MB」 줄). 재부팅이면 카운터가 0부터라 0이 맞음.
+    if not st:
+        prev = pout
+    elif st.get("boot") == boot:
+        prev = st.get("pout", pout)
+    else:
+        prev = 0
     d_mb = max(0, pout - prev) * 4096 / 1048576
 
     if d_mb > SWAP_STEP_MB or avail < LOW_AVAIL_MB:
