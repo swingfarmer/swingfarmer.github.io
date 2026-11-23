@@ -249,7 +249,7 @@ def check_memory():
         if swap_total == 0:
             warn.append("swap 꺼짐(0MB) — free -m 확인, /etc/fstab의 /swapfile 줄")
         if d_swap_mb > SWAP_WARN_MB:
-            warn.append(f"{since} swap으로 {d_swap_mb:.0f}MB 밀려남 = 1GB를 넘게 쓴 작업이 있었음(그 시각 크론 확인)")
+            warn.append(f"{since} swap으로 {d_swap_mb:.0f}MB 밀려남 = 1GB를 넘게 쓴 작업이 있었음(시각·작업은 tail -40 ~/logs/mem_watch.log)")
         info = f"여유 {avail}MB · swap 사용 {swap_used}/{swap_total}MB" + (" · 재부팅 있었음" if rebooted else "")
         e["status"] = "stale" if warn else "ok"
         e["message"] = (" / ".join(warn) + " · " + info) if warn else ("정상 · " + info)
