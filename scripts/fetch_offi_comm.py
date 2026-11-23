@@ -19,6 +19,11 @@ DB 반영 방식 (082 수정)
   지금: 종류(오피스텔 매매 / 오피스텔 전월세 / 상업용 매매)·구·연도 단위로
         "그 구의 모든 달 호출이 성공했을 때만" 기존 행을 지우고 다시 넣음 → 몇 번 돌려도 중복 없음.
         실패한 구는 기존 데이터 유지. API 에러(한도 초과 등)는 실패로 처리 (scripts/re_api.py).
+
+v2 (123): 구 하나씩 받자마자 바로 DB에 넣고 메모리에서 버림.
+  예전엔 종류·연도 하나치(25개 구 × 최대 12개월)를 메모리에 다 쌓은 뒤 한 번에 넣어서
+  연말로 갈수록 커졌음(1GB VM — 122 아파트 수집이 같은 이유로 VM을 굳힘). 범위·DB 결과는 예전과 같음.
+  DB 반영이 실패하면 그 구만 되돌리고 기존 유지(예전: 그 연도 전체).
 """
 
 import os, sys, time, argparse, subprocess
@@ -249,7 +254,7 @@ def main():
         for yr in years:
             total_calls += len(regions) * len(get_year_months(int(yr)))
 
-    print(f'🏢 오피스텔·상업 실거래가 수집 → Oracle DB (구·연도 단위 교체)')
+    print(f'🏢 오피스텔·상업 실거래가 수집 v2 → Oracle DB (구마다 바로 교체 — 메모리 최소)')
     print(f'   연도: {min(years)}~{max(years)} ({len(years)}년)')
     print(f'   API 콜: {total_calls}건 | 예상: {total_calls*CALL_DELAY/60:.0f}분+')
     print()
@@ -265,30 +270,38 @@ def main():
         for yr in years:
             months = get_year_months(int(yr))
             if not months: continue
-            rows, failed = [], set()
+            failed = set()
+            n_ok = y_del = y_ins = 0
             for code, name in regions.items():
+                rows = []   # (123) 이 구 것만 — 끝나면 DB에 넣고 버림
+                bad = False
                 for ym in months:
                     global_done += 1
                     pct = global_done / total_calls * 100 if total_calls else 0
                     print(f'  [{global_done}/{total_calls} {pct:.0f}%] {name} {ym}...', end='', flush=True)
                     pages = api_call(ENDPOINTS[ep_key], code, ym)
                     if pages is None:
-                        failed.add(name)
+                        bad = True
                         print()
                         continue
                     n0 = len(rows)
                     for xml in pages:
                         rows.extend(parse_func(xml, name))
+                    del pages
                     print(f' {len(rows)-n0}건', flush=True)
-            ok = set(regions.values()) - failed
-            try:
-                d, n = sync(cur, conn, ep_key, yr, rows, ok)
-            except Exception as e:
-                conn.rollback()
-                print(f'  ⚠️ {yr} DB 반영 실패(되돌림): {e}')
-                continue
-            tot_del += d; tot_ins += n; fail_total += len(failed)
-            msg = f'  💾 {yr}: {len(ok)}개 구 {d:,}건 삭제 → {n:,}건 적재'
+                if bad:
+                    failed.add(name)
+                else:
+                    try:
+                        d, n = sync(cur, conn, ep_key, yr, rows, {name})
+                        y_del += d; y_ins += n; n_ok += 1
+                    except Exception as e:
+                        conn.rollback()
+                        failed.add(name)
+                        print(f'  ⚠️ {yr} {name} DB 반영 실패(되돌림, 기존 유지): {e}')
+                del rows
+            tot_del += y_del; tot_ins += y_ins; fail_total += len(failed)
+            msg = f'  💾 {yr}: {n_ok}개 구 {y_del:,}건 삭제 → {y_ins:,}건 적재'
             if failed:
                 msg += f' / ⚠️ 실패 {len(failed)}개 구는 기존 유지: {", ".join(sorted(failed))}'
             print(msg)
