@@ -504,7 +504,7 @@ body.sf-dark .guide-strip span{color:#a1a1aa}
       document.querySelectorAll('.view-bar button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-view') === v); });
       if(keep !== false){ try{ localStorage.setItem(VKEY, v); }catch(e){} }
     }
-    document.querySelectorAll('.view-bar button').forEach(function(b){ b.addEventListener('click', function(){ setView(b.getAttribute('data-view')); }); });
+    document.querySelectorAll('.view-bar button[data-view]').forEach(function(b){ b.addEventListener('click', function(){ setView(b.getAttribute('data-view')); }); });   // (124) [data-view]만 — 모두 펼치기·접기 버튼도 .view-bar 안이라 카드 보기로 바뀌던 것
     var qv = /[?&]view=(list|card)\b/.exec(location.search);   // 옛 /1808/ → 404가 /?view=list 로 보냄
     var v0 = qv ? qv[1] : null; if(!v0){ try{ v0 = localStorage.getItem(VKEY); }catch(e){} }
     setView(v0 === 'list' ? 'list' : 'card', !!qv);

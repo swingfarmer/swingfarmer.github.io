@@ -1,5 +1,5 @@
 /* ============================================================
-   sf-tree.js v5.6 (124) — 내 메뉴 트리 (모든 페이지 왼쪽)
+   sf-tree.js v5.7 (124) — 내 메뉴 트리 (모든 페이지 왼쪽)
    common.js가 읽는다(페이지에 따로 넣지 않음). 관리자 로그인일 때만 탭이 보인다.
 
    ■ 모양
@@ -12,6 +12,8 @@
      - [+ 폴더] [+ 이 페이지] + 메뉴 검색(메인 카드 목록 = menu-search.js와 같은 출처: 메인 .tool-panel .tool-grid > a.card)
      - 폴더 2단계까지(폴더 안 폴더 1번). 지금 페이지는 파란색(location.pathname 비교, #탭은 안 봄)
      - 이름 바꾸기 = 줄 끝 ✎(또는 더블클릭) / 삭제 = 줄 끝 ✕(또는 오른쪽 클릭) → 한 번 더 물음 / 끌기 = 손잡이(⋮⋮)
+     - (124 v5.7) 🔒 잠금(PC·폰 둘 다, 기본 잠금): 잠그면 손잡이·✎·✕·+폴더·+이 페이지·뒤로/앞으로·검색 추가가 숨고, 더블클릭 이름 바꾸기·오른쪽 클릭 삭제도 안 됨.
+       이동(누르기)·폴더 접고 펴기·탭 자리 옮기기는 됨. 상태 = localStorage sf-tree-lock('0'이면 풀림, 브라우저별). 머리줄 🔒/🔓 버튼으로 바꿈
      - (124 v5.5) 폰(760px 이하)만: 접힌 「› 내 메뉴」 탭을 손가락으로 위아래로 끌어 자리 옮김(본문 카드를 가릴 때).
        (v5.6) 끄는 동안 손가락을 따라 화면 어디든 떠다니고(살짝 커짐·그림자), 손을 떼면 왼쪽 벽으로 미끄러져 붙음. 높이만 기억
        자리 = localStorage sf-tree-tabY(화면 위에서부터 px, 브라우저별). 화면 밖으로 안 나가게 맞춤. 짧게 누르면 예전처럼 열기/닫기. PC는 그대로
@@ -215,6 +217,8 @@
   + '.st-btn{border:1px solid #cbd5e1;background:#f8fafc;color:#1F4E78;border-radius:6px;padding:3px 7px;font:600 11.5px/1.4 inherit;cursor:pointer;white-space:nowrap}'
   + '.st-btn:hover{background:#e8f0f8}'
   + '.st-btn:disabled{opacity:.4;cursor:default}'
+  + '#sf-tree.st-locked .st-handle,#sf-tree.st-locked .st-del-x,#sf-tree.st-locked .st-ren-x,#sf-tree.st-locked .st-search,#sf-tree.st-locked .st-head .st-btn:not(.st-lockb){display:none!important}'
+  + '#sf-tree:not(.st-locked) .st-lockb{background:#fef3c7;border-color:#f59e0b;color:#92400e}body.sf-dark #sf-tree:not(.st-locked) .st-lockb{background:#3a2e10;border-color:#b45309;color:#fcd34d}'
   + '.st-ibtn{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#1F4E78;color:#fff;font:700 11px/1 inherit;cursor:pointer;border:none;padding:0}'
   + '.st-info{display:none;margin:6px 8px 0;padding:8px 10px;background:#eef5fc;color:#1e3a5f;border-radius:8px;font-size:11.5px;line-height:1.55}'
   + '.st-info.show{display:block}'
@@ -332,12 +336,14 @@
     p.id = 'sf-tree';
     p.innerHTML = ''
       + '<div class="st-head"><span class="st-title">📂 내 메뉴</span>'
+      + '<button type="button" class="st-btn st-lockb" data-act="lock"></button>'
       + '<button type="button" class="st-btn" data-act="folder" title="맨 아래에 새 폴더">+ 폴더</button>'
       + '<button type="button" class="st-btn" data-act="here" title="지금 보고 있는 페이지를 맨 아래에 추가">+ 이 페이지</button>'
       + '<button type="button" class="st-btn" data-act="undo" title="마지막으로 바꾼 것을 되돌림(최근 20번)">↶ 뒤로</button>'
       + '<button type="button" class="st-btn" data-act="redo" title="되돌린 것을 다시 앞으로">↷ 앞으로</button>'
       + '<button type="button" class="st-ibtn" data-act="info" title="사용법·저장 방식">i</button></div>'
       + '<div class="st-info">'
+      + '<b>🔒 잠금</b>: 잠겨 있으면 메뉴를 옮기거나 지우거나 이름을 바꿀 수 없어요(실수 방지). 누르고 이동·폴더 접기는 그대로. 고칠 때만 「🔒 잠금」을 눌러 「🔓 풀림」으로 바꾸고, 다 고치면 다시 잠가요. 이 브라우저에 기억(처음엔 잠금)<br>'
       + '<b>추가</b>: 「+ 이 페이지」 = 지금 페이지, 아래 검색칸 = 메인 메뉴에서 골라 넣기. 둘 다 맨 아래에 들어가요.<br>'
       + '<b>이름 바꾸기</b>: 줄에 마우스를 올리면 오른쪽 끝에 ✎ (또는 더블클릭) → 고치고 Enter (Esc = 취소)<br>'
       + '<b>삭제</b>: 줄에 마우스를 올리면 오른쪽 끝에 ✕ (또는 오른쪽 클릭) → 한 번 더 물어봐요. 폴더를 지우면 안에 든 것도 같이 지워져요<br>'
@@ -347,7 +353,7 @@
       + '<b>저장</b>: 바꿀 때마다 계정(Firestore)에 자동 저장 — <b>내 관리자 아이디 2개는 같은 트리</b>를 같이 써서 어느 아이디·PC에서나 같아요(Claude 작업용 아이디만 따로). 메인 저장(💾 FAB)에는 안 들어가요(불러올 때 트리가 옛날로 덮이지 않게).<br>'
       + '<b>되살리기</b>: 바꾸기 직전 모습을 계정에 최근 20번 보관해요. 잘못 지웠으면 「↶ 뒤로」를 누른 만큼 한 단계씩 돌아가고, 너무 많이 돌아갔으면 「↷ 앞으로」로 다시 와요(뒤로 간 다음 새로 바꾸면 앞으로 갈 길은 사라져요).<br>'
       + '<b>숨기기</b>: 맨 위 헤더의 📂 버튼을 누르면 내 메뉴 탭이 통째로 사라져요(본문이 왼쪽 끝까지 쓰는 페이지용). 다시 누르면 나와요. 이 브라우저에만 기억돼요.<br>'
-      + '펼침·닫힘과 폴더 접힘은 이 브라우저에만 기억돼요. <span style="opacity:.6">(트리 v5.5)</span></div>'
+      + '펼침·닫힘과 폴더 접힘은 이 브라우저에만 기억돼요. <span style="opacity:.6">(트리 v5.7)</span></div>'
       + '<div class="st-search"><input class="st-q" type="search" autocomplete="off" placeholder="🔍 메뉴 검색해서 추가" aria-label="메뉴 검색해서 추가"><div class="st-drop"></div></div>'
       + '<div class="st-list"><div class="st-line"></div></div>'
       + '<div class="st-foot"></div>'
@@ -364,6 +370,8 @@
       if (!b) return;
       var a = b.getAttribute('data-act');
       if (a === 'info') els.info.classList.toggle('show');
+      else if (a === 'lock') setLock(!locked);
+      else if (locked) return;
       else if (a === 'undo') undo();
       else if (a === 'redo') redo();
       else if (a === 'folder') addFolder();
@@ -372,6 +380,20 @@
     bindSearch();
     bindList();
     bindTabDrag();
+    setLock(locked, true);
+  }
+
+  /* ── (124 v5.7) 잠금 ── */
+  var LS_LOCK = 'sf-tree-lock', locked = ls('sf-tree-lock') !== '0';
+  function setLock(v, quiet) {
+    locked = !!v;
+    ls(LS_LOCK, locked ? '1' : '0');
+    if (!els.panel) return;
+    els.panel.classList.toggle('st-locked', locked);
+    var b = els.panel.querySelector('.st-lockb');
+    if (b) { b.textContent = locked ? '🔒 잠금' : '🔓 풀림'; b.title = locked ? '잠겨 있음 — 눌러서 풀면 옮기기·이름 바꾸기·지우기·추가 가능' : '풀려 있음 — 눌러서 잠그면 실수로 못 바꿈'; }
+    if (locked && drag) onCancel();
+    if (!quiet) flash(locked ? '🔒 잠갔어요 — 메뉴를 바꿀 수 없어요' : '🔓 풀었어요 — 다 고치면 다시 잠가 주세요');
   }
 
   function setOpen(on) {
@@ -545,8 +567,8 @@
       var row = e.target.closest('.st-row');
       if (!row || e.target.closest('.st-handle') || e.target.closest('.st-edit')) return;
       var id = row.getAttribute('data-id');
-      if (e.target.closest('.st-del-x')) { e.preventDefault(); askDelete(id); return; }
-      if (e.target.closest('.st-ren-x')) { e.preventDefault(); clearTimeout(clickT); startRename(id); return; }
+      if (!locked && e.target.closest('.st-del-x')) { e.preventDefault(); askDelete(id); return; }
+      if (!locked && e.target.closest('.st-ren-x')) { e.preventDefault(); clearTimeout(clickT); startRename(id); return; }
       if (row.classList.contains('st-folder')) {
         if (fold[id]) delete fold[id]; else fold[id] = true;
         saveFold(); render();
@@ -558,6 +580,7 @@
       e.preventDefault();   // 더블클릭(이름 바꾸기)과 구분하려고 잠깐 기다렸다 이동
       var href = a.getAttribute('href');
       clearTimeout(clickT);
+      if (locked) { if (isMobile()) setOpen(false); location.href = href; return; }   // (124) 잠금이면 기다릴 필요 없음
       clickT = setTimeout(function () {
         if (isMobile()) setOpen(false);
         location.href = href;
@@ -565,7 +588,7 @@
     });
     L.addEventListener('dblclick', function (e) {
       var row = e.target.closest('.st-row');
-      if (!row || e.target.closest('.st-handle') || e.target.closest('.st-del-x') || e.target.closest('.st-ren-x')) return;
+      if (locked || !row || e.target.closest('.st-handle') || e.target.closest('.st-del-x') || e.target.closest('.st-ren-x')) return;
       clearTimeout(clickT);
       e.preventDefault();
       startRename(row.getAttribute('data-id'));
@@ -573,7 +596,8 @@
     L.addEventListener('contextmenu', function (e) {
       var row = e.target.closest('.st-row');
       if (!row) return;
-      if (Date.now() - lastTouch < 1500) { e.preventDefault(); return; }   // (124) 폰 꾹 누름 = 끌기. 삭제 질문 안 띄움
+      if (Date.now() - lastTouch < 1500) { e.preventDefault(); return; }   // (124) 폰 꾹 누름 — 삭제 질문 안 띄움
+      if (locked) return;   // (124) 잠금 — 브라우저 기본 메뉴
       e.preventDefault();
       askDelete(row.getAttribute('data-id'));
     });
@@ -584,6 +608,7 @@
   }
 
   function startRename(id) {
+    if (locked) return;
     var row = els.list.querySelector('.st-row[data-id="' + id + '"]');
     var f = find(id);
     if (!row || !f) return;
@@ -610,6 +635,7 @@
   var askEl = null;
   function closeAsk() { if (askEl) { askEl.remove(); askEl = null; } }
   function askDelete(id) {
+    if (locked) return;
     closeAsk();
     var f = find(id);
     if (!f) return;
@@ -635,7 +661,7 @@
   var drag = null, dragJustEnded = false;
   function onDown(e) {
     var h = e.target.closest('.st-handle');
-    if (!h || (e.button !== undefined && e.button !== 0)) return;
+    if (locked || !h || (e.button !== undefined && e.button !== 0)) return;
     var row = h.closest('.st-row');
     drag = { id: row.getAttribute('data-id'), x: e.clientX, y: e.clientY, on: false, row: row, target: null, pid: e.pointerId };
     try { h.setPointerCapture(e.pointerId); } catch (err) {}
