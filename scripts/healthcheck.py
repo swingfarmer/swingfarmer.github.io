@@ -42,7 +42,7 @@ TARGETS = [
     # 버핏지수
     ("data/buffett.json",                  "버핏지수",          "weekday", 0),
     # 풋콜레이쇼
-    ("data/dashboard/putcall.json",        "풋콜레이쇼",        "weekday", 0),
+    ("data/dashboard/putcall.json",        "풋콜레이쇼",        "weekday", 1),   # (125) 화~토 07:15 미장 뒤 수집 → 월요일 밤엔 토요일 것이 2일 경과라 허용 +1 (월요일에 돌리면 주말 자료가 월요일 날짜로 들어감)
     # 증시자금·코스피 PER (108) — 평일 18:37
     ("data/dashboard/market_funds.json",   "증시자금·코스피 PER", "weekday", 0),
     # 외국인수급
