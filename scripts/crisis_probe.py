@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
 """
-위기 발동 조건 백테스트용 원자료 받기 — 읽기 전용 (112)
-======================================================
-자산배분 노트 5장 「발동 조건」 숫자를 과거 위기에 대 보려고
-코스피(KRX 1001, 1980~)·S&P500(^GSPC)·VIX(^VIX)·미국 10년물(^TNX) 일별 종가를 받아
+위기 비교용 원자료 받기 — 읽기 전용 (112 → 126 확장)
+=====================================================
+코스피(KRX 1001, 1980~)와 해외 지수·금리·환율·유가 일별 종가를 받아
 레포 루트 `_tmp_crisis.csv` 한 파일로만 저장한다(공개 시세, 분석 끝나면 바로 git rm).
 DB·다른 파일에는 아무것도 안 씀.
+
+열: kospi / spx(^GSPC) vix(^VIX) tnx(^TNX 10년물) — 112부터
+    (126) ixic(나스닥 종합) sox(필라델피아 반도체) sse(상하이 000001.SS) twii(대만 가권)
+          n225(닛케이 — 1990 일본 L자 비교) dxy(달러인덱스)
+          krw(원/달러, FRED DEXKOUS 1981~) irx(미 3개월, FRED DTB3 1954~) wti(FRED DCOILWTICO 1986~)
+    FRED가 막히면 야후(KRW=X·^IRX·CL=F)로 대신 받음. 한 열이 실패해도 나머지는 저장.
 
   . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/crisis_probe.py
 """
 import csv
 import os
 import time
+import urllib.request
 from datetime import datetime, timedelta, timezone
 
 import yfinance as yf
@@ -59,19 +65,68 @@ def yahoo(t):
     return out
 
 
+def fred(sid):
+    """FRED 공개 csv (키 필요 없음). 값 '.'(휴장)은 뺌."""
+    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    txt = urllib.request.urlopen(req, timeout=60).read().decode("utf-8")
+    out = {}
+    for line in txt.splitlines()[1:]:
+        p = line.split(",")
+        if len(p) == 2 and p[1] not in (".", ""):
+            v = float(p[1])
+            if v > 0:
+                out[p[0]] = v
+    print(f"  FRED {sid}: {len(out)}일 ({min(out) if out else '-'} ~ {max(out) if out else '-'})")
+    return out
+
+
+def safe(fn, arg):
+    try:
+        return fn(arg)
+    except Exception as ex:
+        print(f"  ❌ {arg}: {ex}")
+        return {}
+
+
+# (열 이름, 받는 법) — 앞쪽이 실패하면 뒤쪽으로
+SERIES = [
+    ("spx", [(yahoo, "^GSPC")]),
+    ("vix", [(yahoo, "^VIX")]),
+    ("tnx", [(yahoo, "^TNX")]),
+    ("ixic", [(yahoo, "^IXIC")]),
+    ("sox", [(yahoo, "^SOX")]),
+    ("sse", [(yahoo, "000001.SS")]),
+    ("twii", [(yahoo, "^TWII")]),
+    ("n225", [(yahoo, "^N225")]),
+    ("dxy", [(yahoo, "DX-Y.NYB")]),
+    ("krw", [(fred, "DEXKOUS"), (yahoo, "KRW=X")]),
+    ("irx", [(fred, "DTB3"), (yahoo, "^IRX")]),
+    ("wti", [(fred, "DCOILWTICO"), (yahoo, "CL=F")]),
+]
+
+
 def main():
-    k = kospi()
-    s = yahoo("^GSPC"); time.sleep(1)
-    v = yahoo("^VIX"); time.sleep(1)
-    r = yahoo("^TNX")
-    days = sorted(set(k) | set(s))
+    cols = {"kospi": kospi()}
+    for name, ways in SERIES:
+        got = {}
+        for fn, arg in ways:
+            got = safe(fn, arg)
+            if got:
+                break
+        cols[name] = got
+        time.sleep(1)
+    days = sorted(set().union(*[set(v) for v in cols.values()]))
+    names = list(cols)
     with open(OUT, "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["date", "kospi", "spx", "vix", "tnx"])
+        w.writerow(["date"] + names)
         for d in days:
-            w.writerow([d, k.get(d, ""), s.get(d, ""), v.get(d, ""), r.get(d, "")])
+            w.writerow([d] + [cols[n].get(d, "") for n in names])
     print(f"\n저장: {OUT} ({len(days)}줄, {os.path.getsize(OUT) // 1024}KB)")
-    print(f"코스피 {min(k)}~{max(k)} {len(k)}일 / S&P {min(s)}~{max(s)} {len(s)}일")
+    for n in names:
+        v = cols[n]
+        print(f"  {n:6} {min(v) if v else '-'} ~ {max(v) if v else '-'}  {len(v)}일" + ("  ← 비었음" if not v else ""))
 
 
 if __name__ == "__main__":
