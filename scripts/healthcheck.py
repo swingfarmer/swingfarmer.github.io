@@ -21,7 +21,7 @@ from telegram_helper import send_dm
 
 # ── 모니터링 대상 정의 ──
 # (파일 경로, 설명, 주기, 허용 stale 일수)
-# 주기: "weekday"=평일만, "daily"=매일, "weekly"=주1회, "monthly"=월1회
+# 주기: "weekday"=평일만, "tue_sat"=화~토(미장 다음 날 아침 수집, 127), "daily"=매일, "weekly"=주1회, "monthly"=월1회
 TARGETS = [
     # 환율/금리
     ("data/rates.json",                    "환율/금리",         "daily",   0),
@@ -42,7 +42,7 @@ TARGETS = [
     # 버핏지수
     ("data/buffett.json",                  "버핏지수",          "weekday", 0),
     # 풋콜레이쇼
-    ("data/dashboard/putcall.json",        "풋콜레이쇼",        "weekday", 1),   # (125) 화~토 07:15 미장 뒤 수집 → 월요일 밤엔 토요일 것이 2일 경과라 허용 +1 (월요일에 돌리면 주말 자료가 월요일 날짜로 들어감)
+    ("data/dashboard/putcall.json",        "풋콜레이쇼",        "tue_sat", 0),   # (127) 화~토 07:15 미장 뒤 수집 → 일요일 밤 1일·월요일 밤 2일 경과가 정상. 125의 「weekday, 1」은 고정 1일이 돼서 일·월 밤마다 경고가 났음
     # 증시자금·코스피 PER (108) — 평일 18:37
     ("data/dashboard/market_funds.json",   "증시자금·코스피 PER", "weekday", 0),
     # 외국인수급
@@ -112,6 +112,13 @@ def get_effective_max_stale(cycle, max_stale_override, now):
             return 2
         else:           # 일: 금요일(2일전) 데이터 허용
             return 3
+    elif cycle == "tue_sat":
+        # (127) 화~토 아침 수집: 토요일 것이 일요일 밤 1일·월요일 밤 2일 경과
+        if dow == 0:    # 월
+            return 3
+        elif dow == 6:  # 일
+            return 2
+        return 1
     elif cycle == "daily":
         return 1        # 매일 업데이트니까 항상 1일
     else:
@@ -294,13 +301,13 @@ def change_days(since, today, cycle):
     a = datetime.strptime(since, "%Y-%m-%d"); b = datetime.strptime(today, "%Y-%m-%d")
     n, d = 0, a + timedelta(days=1)
     while d <= b:
-        if cycle == "daily" or d.weekday() <= 4: n += 1
+        if cycle == "daily" or (cycle == "tue_sat" and 1 <= d.weekday() <= 5) or (cycle == "weekday" and d.weekday() <= 4): n += 1
         d += timedelta(days=1)
     return n
 
 def check_unchanged(rel_path, abs_path, cycle, st, today):
     """그대로면 (일수, since) 반환, 아니면 None"""
-    if cycle not in ("weekday", "daily") or rel_path in HASH_SKIP:
+    if cycle not in ("weekday", "tue_sat", "daily") or rel_path in HASH_SKIP:
         return None
     try:
         h = content_hash(abs_path)
