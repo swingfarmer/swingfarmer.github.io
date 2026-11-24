@@ -1,5 +1,5 @@
 /* ============================================================
-   sf-tree.js v5.8 (129) — 내 메뉴 트리 (모든 페이지 왼쪽)
+   sf-tree.js v5.9 (132) — 내 메뉴 트리 (모든 페이지 왼쪽)
    common.js가 읽는다(페이지에 따로 넣지 않음). 관리자 로그인일 때만 탭이 보인다.
 
    ■ 모양
@@ -9,6 +9,9 @@
      - 펼침/닫힘 상태 = localStorage sf-tree-open (페이지를 옮겨도 그대로, 브라우저별)
      - 폴더 접힘/펼침 = localStorage sf-tree-fold (브라우저별, 저장·되돌리기 대상 아님)
      - (129 v5.8) 접힌 탭을 키움(누르기 편하게 — PC 글씨 15px·폭 약 33px, 폰 14px) + 페이지를 스크롤하는 동안 탭을 잠깐 숨김(멈추고 0.15초 뒤 다시 보임 — 0.5초는 느리다고 해서 줄임, 펼쳤을 땐 안 숨김)
+     - (132 v5.9) PC만: 펼친 트리 오른쪽 테두리(↔)를 끌어 넓이 바꿈(200~480px, 화면이 좁으면 본문 300px 남게) — 잠금과 관계없이 됨(보이는 모양만, 내용은 안 바뀜).
+       테두리 더블클릭 = 기본(240px)으로. 넓이 = localStorage sf-tree-w(브라우저별 — PC마다 모니터가 달라서 계정에 안 둠). 폰은 그대로(화면 86%, 최대 290px)
+       넓이는 CSS 변수 --sf-tree-w(html 요소)로 패널·탭 자리·본문 밀기가 같이 따라감
    ■ 트리
      - [+ 폴더] [+ 이 페이지] + 메뉴 검색(메인 카드 목록 = menu-search.js와 같은 출처: 메인 .tool-panel .tool-grid > a.card)
      - 폴더 2단계까지(폴더 안 폴더 1번). 지금 페이지는 파란색(location.pathname 비교, #탭은 안 봄)
@@ -37,7 +40,8 @@
   if (window.__sfTreeLoaded) return;
   window.__sfTreeLoaded = true;
 
-  var PANEL_W = 240;          // 펼친 트리 폭(PC). 본문은 이 폭 + 탭 폭(40)만큼 왼쪽 여백이 있게 밂
+  var PANEL_W = 240;          // 펼친 트리 기본 폭(PC). 본문은 이 폭 + 탭 폭(40)만큼 왼쪽 여백이 있게 밂
+  var W_MIN = 200, W_MAX = 480, LS_W = 'sf-tree-w';   // (132) 끌어서 바꾸는 넓이 범위·저장 키
   var MOBILE_MAX = 760;       // 이 폭 이하 = 폰 방식(덮기)
   var HIST_MAX = 20;
   var FIELD = 'sf_tree';
@@ -210,8 +214,8 @@
   + '#sf-tree-tab.st-tab-scroll{opacity:0;pointer-events:none}'   /* (129) 스크롤하는 동안 숨김 */
   + '#sf-tree-tab .st-arr{display:inline-block;writing-mode:horizontal-tb;font-size:18px;line-height:1;margin-bottom:3px}'   /* 세로 글씨 안에서 화살표만 바로 세움 */
   + 'body.sf-tree-on #sf-tree-tab{display:block}'
-  + 'body.sf-tree-open #sf-tree-tab{left:' + PANEL_W + 'px}'
-  + '#sf-tree{position:fixed;left:0;top:56px;bottom:0;width:' + PANEL_W + 'px;z-index:9500;background:#fff;border-right:1px solid #dbe3ec;box-shadow:2px 0 10px rgba(0,0,0,.06);display:none;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic",sans-serif;font-size:13px;color:#1f2937;box-sizing:border-box}'
+  + 'body.sf-tree-open #sf-tree-tab{left:var(--sf-tree-w,' + PANEL_W + 'px)}'
+  + '#sf-tree{position:fixed;left:0;top:56px;bottom:0;width:var(--sf-tree-w,' + PANEL_W + 'px);z-index:9500;background:#fff;border-right:1px solid #dbe3ec;box-shadow:2px 0 10px rgba(0,0,0,.06);display:none;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic",sans-serif;font-size:13px;color:#1f2937;box-sizing:border-box}'
   + 'body.sf-tree-on.sf-tree-open #sf-tree{display:flex}'
   + '#sf-tree *{box-sizing:border-box}'
   + '.st-head{display:flex;align-items:center;gap:4px;padding:8px 8px 6px;border-bottom:1px solid #eef2f6;flex-wrap:wrap}'
@@ -278,6 +282,11 @@
   + '.st-toast{position:absolute;left:50%;bottom:30px;transform:translateX(-50%);background:#1f2937;color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s}'
   + '.st-toast.show{opacity:.92}'
   + '#sf-tree-back{position:fixed;inset:56px 0 0 0;background:rgba(0,0,0,.35);z-index:9490;display:none}'
+  /* (132) PC 넓이 손잡이 — 오른쪽 테두리 */
+  + '.st-grip{position:absolute;top:0;bottom:0;right:-4px;width:8px;cursor:col-resize;z-index:4;touch-action:none}'
+  + '.st-grip:hover,.st-grip.on{background:linear-gradient(90deg,transparent 3px,#3b82f6 3px,#3b82f6 5px,transparent 5px)}'
+  + 'body.st-resizing,body.st-resizing *{cursor:col-resize!important;user-select:none!important;-webkit-user-select:none!important}'
+  + 'body.sf-dark .st-grip:hover,body.sf-dark .st-grip.on{background:linear-gradient(90deg,transparent 3px,#60a5fa 3px,#60a5fa 5px,transparent 5px)}'
   /* 다크 */
   + 'body.sf-dark #sf-tree-tab{background:#2a4a6e}'
   + 'body.sf-dark #sf-tree{background:#1a1d27;border-right-color:#2a2d3a;color:#e4e4e7}'
@@ -315,7 +324,7 @@
   + '#sf-tree-tab{top:auto;bottom:150px;padding:14px 8px;font-size:14px;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}'
   + '#sf-tree-tab.st-tab-moving{opacity:.92;border-radius:8px;transform:scale(1.08);box-shadow:0 8px 22px rgba(0,0,0,.35),0 0 0 2px rgba(96,165,250,.7);transition:transform .12s,border-radius .12s}'
   + '#sf-tree-tab.st-tab-snap{transition:left .28s cubic-bezier(.2,1.3,.4,1),transform .2s,border-radius .2s}'
-  + '.st-row{min-height:34px;-webkit-touch-callout:none}.st-handle{width:22px;font-size:14px}}'
+  + '.st-row{min-height:34px;-webkit-touch-callout:none}.st-handle{width:22px;font-size:14px}.st-grip{display:none}}'
   + '@media print{#sf-tree,#sf-tree-tab,#sf-tree-back{display:none!important}}';
 
   /* ── 화면 만들기 ── */
@@ -363,11 +372,13 @@
       + '<b>저장</b>: 바꿀 때마다 계정(Firestore)에 자동 저장 — <b>내 관리자 아이디 2개는 같은 트리</b>를 같이 써서 어느 아이디·PC에서나 같아요(Claude 작업용 아이디만 따로). 메인 저장(💾 FAB)에는 안 들어가요(불러올 때 트리가 옛날로 덮이지 않게).<br>'
       + '<b>되살리기</b>: 바꾸기 직전 모습을 계정에 최근 20번 보관해요. 잘못 지웠으면 「↶ 뒤로」를 누른 만큼 한 단계씩 돌아가고, 너무 많이 돌아갔으면 「↷ 앞으로」로 다시 와요(뒤로 간 다음 새로 바꾸면 앞으로 갈 길은 사라져요).<br>'
       + '<b>숨기기</b>: 맨 위 헤더의 📂 버튼을 누르면 내 메뉴 탭이 통째로 사라져요(본문이 왼쪽 끝까지 쓰는 페이지용). 다시 누르면 나와요. 이 브라우저에만 기억돼요.<br>'
-      + '펼침·닫힘과 폴더 접힘은 이 브라우저에만 기억돼요. <span style="opacity:.6">(트리 v5.7)</span></div>'
+      + '<b>넓이(PC)</b>: 이 메뉴 오른쪽 테두리에 마우스를 대면 ↔ — 끌어서 넓히고 좁혀요(200~480px, 잠금과 관계없이 됨). <b>테두리를 더블클릭하면 처음 넓이(240px)로</b> 돌아가요. 이 브라우저(PC)에만 기억돼요. 폰은 그대로.<br>'
+      + '펼침·닫힘과 폴더 접힘은 이 브라우저에만 기억돼요. <span style="opacity:.6">(트리 v5.9)</span></div>'
       + '<div class="st-search"><input class="st-q" type="search" autocomplete="off" placeholder="🔍 메뉴 검색해서 추가" aria-label="메뉴 검색해서 추가"><div class="st-drop"></div></div>'
       + '<div class="st-list"><div class="st-line"></div></div>'
       + '<div class="st-foot"></div>'
-      + '<div class="st-toast"></div>';
+      + '<div class="st-toast"></div>'
+      + '<div class="st-grip" title="끌어서 넓이 바꾸기 · 더블클릭 = 처음 넓이(240px)"></div>';
 
     document.body.appendChild(back);
     document.body.appendChild(p);
@@ -390,7 +401,56 @@
     bindSearch();
     bindList();
     bindTabDrag();
+    bindGrip();
     setLock(locked, true);
+  }
+
+  /* ── (132 v5.9) PC 넓이: 오른쪽 테두리 끌기 / 더블클릭 = 기본 ── */
+  function maxW() { return Math.max(W_MIN, Math.min(W_MAX, window.innerWidth - 300)); }
+  function clampW(w) { return Math.round(Math.max(W_MIN, Math.min(maxW(), w))); }
+  function panelW() {
+    var w = parseFloat(ls(LS_W));
+    return isNaN(w) ? PANEL_W : clampW(w);
+  }
+  function applyW(w) {
+    if (w === PANEL_W) document.documentElement.style.removeProperty('--sf-tree-w');
+    else document.documentElement.style.setProperty('--sf-tree-w', w + 'px');
+  }
+  function bindGrip() {
+    var g = els.panel.querySelector('.st-grip'), rs = null, raf = 0;
+    applyW(panelW());
+    g.addEventListener('pointerdown', function (e) {
+      if (isMobile() || (e.button !== undefined && e.button !== 0)) return;
+      e.preventDefault();
+      rs = { x: e.clientX, w: els.panel.getBoundingClientRect().width };
+      try { g.setPointerCapture(e.pointerId); } catch (err) {}
+      g.classList.add('on');
+      document.body.classList.add('st-resizing');
+    });
+    g.addEventListener('pointermove', function (e) {
+      if (!rs) return;
+      var w = clampW(rs.w + e.clientX - rs.x);
+      applyW(w);
+      rs.cur = w;
+      if (!raf) raf = requestAnimationFrame(function () { raf = 0; layout(); });
+    });
+    function end() {
+      if (!rs) return;
+      var w = rs.cur; rs = null;
+      g.classList.remove('on');
+      document.body.classList.remove('st-resizing');
+      if (w) { if (w === PANEL_W) ls(LS_W, null); else ls(LS_W, String(w)); }
+      layout();
+    }
+    g.addEventListener('pointerup', end);
+    g.addEventListener('pointercancel', end);
+    g.addEventListener('dblclick', function () {
+      ls(LS_W, null);
+      applyW(PANEL_W);
+      layout();
+      flash('↔ 처음 넓이(' + PANEL_W + 'px)로 돌렸어요');
+    });
+    window.addEventListener('resize', function () { applyW(panelW()); });
   }
 
   /* ── (124 v5.7) 잠금 ── */
@@ -895,7 +955,7 @@
     if (!on || isMobile()) return;
     if (basePad === null) basePad = parseFloat(getComputedStyle(document.body).paddingLeft) || 0;
     // 닫혀 있어도 세로 탭(약 33px, 129에서 키움)이 본문 글자를 가리지 않게 — 본문이 왼쪽 끝까지 붙은 페이지만 그만큼 밂
-    var target = open ? PANEL_W + 40 : 38, L0 = contentLeft();
+    var target = open ? panelW() + 40 : 38, L0 = contentLeft();
     if (L0 >= target) return;
     var P = target - L0;
     setPad(basePad + P);
