@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.join(REPO, 'scripts'))
 STATE = os.path.expanduser('~/sf_state/regime.json')
 KEEP = 60
 MIN_N = 6              # 점수 있는 지표가 이보다 적으면 데이터가 빠진 것 → 기록 안 함
-SITE = 'https://swingfarmer.github.io'
+# (130) 텔레그램 DM에 사이트 링크를 넣지 않음(사용자 요청)
 KST = timezone(timedelta(hours=9))
 
 
@@ -85,8 +85,6 @@ def message(prev, cur, days, name, test=False):
             L.append(f' · {esc(x["n"])} {esc(p["v"])}→{esc(x["v"])} ({sgn(p["s"], 0)}→{sgn(x["s"], 0)})')
     else:
         L.append('점수가 바뀐 지표는 없음 (평균만 경계를 넘음)')
-    L.append(f'이 국면에 볼 메뉴: {SITE}/guide/#{cur["auto"]}')
-    L.append(f'지금 점수: {SITE}/today/')
     return '\n'.join(L)
 
 

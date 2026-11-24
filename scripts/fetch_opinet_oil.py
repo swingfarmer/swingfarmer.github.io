@@ -251,7 +251,7 @@ def show(rows, limit=8):
         print(f'  … 총 {len(keys)}일 ({keys[0]} ~ {keys[-1]})')
 
 
-SITE_OIL = 'https://swingfarmer.github.io/dashboard/#oil'
+# (130) 텔레그램 DM에 사이트 링크를 넣지 않음(사용자 요청)
 
 
 def prev_weekday(today):
@@ -288,7 +288,6 @@ def watch():
             t += f" ({k - float(pr[0]):+.2f})"
         if du:
             t += f" · 두바이 ${du:.2f} · 스프레드 ${k - du:.2f}"
-        t += f'\n<a href="{SITE_OIL}">사이트에서 보기</a>'
         try:
             sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
             from telegram_helper import send_dm

@@ -84,7 +84,7 @@ def build(now):
             if x['code'] in prev_us:
                 line += f" · 지난 알림보다 {p - prev_us[x['code']]:+.2f}%p"
             lines.append(line)
-    lines += ['', '실제 주식 아님 · 분위기 참고용', 'https://swingfarmer.github.io/today/']
+    lines += ['', '실제 주식 아님 · 분위기 참고용']   # (130) DM에 사이트 링크 안 넣음
     state = {'base_date': bd, 'pct': {x['code']: x['pct'] for x in items}, 'sent': now.isoformat(),
              'us_base_date': ubd, 'us_pct': {x['code']: x['pct'] for x in ui}}
     return '\n'.join(lines), state
