@@ -54,6 +54,14 @@ a { color: var(--accent); text-decoration: none; }
 .cyc-tbl .why { color: var(--text-dim); }
 .cyc-note { font-size: 11px; color: var(--text-dim); line-height: 1.7; margin-top: 10px; }
 .cyc-wrap { overflow-x: auto; }
+@media (max-width: 760px) {   /* 좁은 화면: 표 대신 칸마다 카드 */
+  .cyc-tbl thead { display: none; }
+  .cyc-tbl, .cyc-tbl tbody, .cyc-tbl tr, .cyc-tbl td { display: block; width: 100%; }
+  .cyc-tbl tr { border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; margin-bottom: 8px; background: var(--card); }
+  .cyc-tbl td { border: 0; padding: 2px 0; white-space: normal !important; }
+  .cyc-tbl td:first-child { font-size: 13px; padding-bottom: 4px; }
+  .cyc-tbl td:not(:first-child)::before { content: attr(data-l) " · "; color: var(--text-dim); font-weight: 600; font-size: 10.5px; }
+}
 .rank-tbl th { text-align: left; padding: 6px 8px; color: var(--text-dim); font-weight: 500; font-size: 10px; border-bottom: 1px solid var(--border); }
 .rank-tbl th:nth-child(n+3) { text-align: right; }
 .rank-tbl td { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,.04); }
@@ -380,19 +388,19 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
   <table class="cyc-tbl">
     <thead><tr><th>칸</th><th>국내 장중 (평일 09:00~15:30)</th><th>그 밖 (장 마감 뒤·밤·주말)</th><th>출처</th><th>이렇게 한 이유</th></tr></thead>
     <tbody>
-      <tr><td>시장 국면</td><td>안 바뀜</td><td>저녁 지표가 사이트에 올라간 뒤(21:10) 다시 매김</td><td>사이트 지표 파일</td><td class="why">종가로 매기는 점수 — 장중 값으로 매기면 하루에도 몇 번씩 국면이 뒤집혀 뜻이 없어짐</td></tr>
-      <tr><td>해외 추정가</td><td>1분 (미국 종목만)</td><td>1분 (국내 3종목·코스피200·미국)</td><td>바이낸스·하이퍼리퀴드 무기한 선물</td><td class="why">국내 장중엔 진짜 시세가 있어서 국내 추정은 안 함. 장 마감 뒤엔 24시간 도는 선물로 다음 날을 미리 봄</td></tr>
-      <tr><td>코스피·코스닥</td><td><b>1분</b></td><td>15:40 최종값 → 다음 날 아침부터는 전 거래일 종가</td><td>KIS 업종지수</td><td class="why">이미 1분마다 도는 국내 시세 수집에 2번 더 붙임 (KIS 한도 초당 20회라 여유)</td></tr>
-      <tr><td>S&amp;P·나스닥·VIX·미10년</td><td colspan="2"><b>5분</b> — 미국 장이 열린 동안(밤 23:30~새벽 06:00, 서머타임 땐 1시간 빠름)만 값이 움직이고, 닫혀 있으면 「미국 날짜 종가」로 표시</td><td>야후</td><td class="why">야후는 공식 API가 아니라 1분마다 부르면 막힐 수 있고, 막히면 아침 시장지표 수집까지 같이 막힘 → 5분(하루 288회)</td></tr>
-      <tr><td>USD/KRW·JPY100/KRW·WTI</td><td colspan="2"><b>5분</b> — 거의 24시간 거래라 대부분 「🔴」(주말엔 금요일 마지막 거래)</td><td>야후</td><td class="why">위와 같음</td></tr>
-      <tr><td>금(원/g)</td><td colspan="2">하루 1번 — 매일 07:50 수집 → 08:04 사이트 반영</td><td>국내 금 시세</td><td class="why">국제 금값×환율과는 다른 숫자라 섞지 않음</td></tr>
-      <tr><td>수급 요약</td><td><b>1분</b> — 코스피 외국인·기관·개인·프로그램 <b>금액</b></td><td>20:50 수집 → 21:10 반영 — 코스피200 합산 <b>수량(주)</b></td><td>장중 KIS 잠정 / 마감 KRX</td><td class="why">장중엔 KIS가 시장 전체 금액을 줌. 마감 값은 예전부터 쓰던 수량 기준이라 그대로 둠 — 단위가 달라 제목 옆에 같이 적음</td></tr>
-      <tr><td>외국인·기관 TOP5</td><td><b>1분</b> — 장중 가집계(코스피+코스닥)</td><td>20:50 → 21:10 확정값</td><td>KIS 가집계 / KRX</td><td class="why">가집계는 증권사가 장중에 모은 추정이라 마감 확정값과 조금 다를 수 있음</td></tr>
-      <tr><td>52주 신고가·신저가</td><td colspan="2">하루 1번 — 20:55 수집 → 21:10 반영</td><td>KRX</td><td class="why">KIS는 「신고가 근접 상위 30개」만 줘서 전체 개수를 못 셈(거래정지 종목도 섞임)</td></tr>
-      <tr><td>업종 등락</td><td><b>1분</b> — 코스피 업종</td><td>20:50 → 21:10</td><td>KIS 업종 / KRX</td><td class="why">KIS가 업종 전체를 한 번에 줘서 1분에 1회면 됨</td></tr>
-      <tr><td>스크리너 시그널</td><td colspan="2">하루 1번 — 20:45 계산 → 21:10 반영</td><td>사이트 스크리너</td><td class="why">종가·거래량 다 모인 뒤 거는 조건이라 장중엔 의미 없음</td></tr>
-      <tr><td>시총 상위 등락</td><td><b>1분</b></td><td>20:50 → 21:10</td><td>국내 시세 수집(381종목) / KRX</td><td class="why">이미 받는 1분 시세로 계산 — 추가 호출 없음</td></tr>
-      <tr><td>거래대금 TOP10</td><td><b>1분</b> — ETF·ETN 뺌</td><td>20:50 → 21:10</td><td>KIS 순위 / KRX</td><td class="why">마감 파일과 같은 기준이 되게 ETF를 뺌</td></tr>
+      <tr><td data-l="칸">시장 국면</td><td data-l="국내 장중">안 바뀜</td><td data-l="그 밖">저녁 지표가 사이트에 올라간 뒤(21:10) 다시 매김</td><td data-l="출처">사이트 지표 파일</td><td data-l="이유" class="why">종가로 매기는 점수 — 장중 값으로 매기면 하루에도 몇 번씩 국면이 뒤집혀 뜻이 없어짐</td></tr>
+      <tr><td data-l="칸">해외 추정가</td><td data-l="국내 장중">1분 (미국 종목만)</td><td data-l="그 밖">1분 (국내 3종목·코스피200·미국)</td><td data-l="출처">바이낸스·하이퍼리퀴드 무기한 선물</td><td data-l="이유" class="why">국내 장중엔 진짜 시세가 있어서 국내 추정은 안 함. 장 마감 뒤엔 24시간 도는 선물로 다음 날을 미리 봄</td></tr>
+      <tr><td data-l="칸">코스피·코스닥</td><td data-l="국내 장중"><b>1분</b></td><td data-l="그 밖">15:40 최종값 → 다음 날 아침부터는 전 거래일 종가</td><td data-l="출처">KIS 업종지수</td><td data-l="이유" class="why">이미 1분마다 도는 국내 시세 수집에 2번 더 붙임 (KIS 한도 초당 20회라 여유)</td></tr>
+      <tr><td data-l="칸">S&amp;P·나스닥·VIX·미10년</td><td data-l="장중·그 밖" colspan="2"><b>5분</b> — 미국 장이 열린 동안(밤 23:30~새벽 06:00, 서머타임 땐 1시간 빠름)만 값이 움직이고, 닫혀 있으면 「미국 날짜 종가」로 표시</td><td data-l="출처">야후</td><td data-l="이유" class="why">야후는 공식 API가 아니라 1분마다 부르면 막힐 수 있고, 막히면 아침 시장지표 수집까지 같이 막힘 → 5분(하루 288회)</td></tr>
+      <tr><td data-l="칸">USD/KRW·JPY100/KRW·WTI</td><td data-l="장중·그 밖" colspan="2"><b>5분</b> — 거의 24시간 거래라 대부분 「🔴」(주말엔 금요일 마지막 거래)</td><td data-l="출처">야후</td><td data-l="이유" class="why">위와 같음</td></tr>
+      <tr><td data-l="칸">금(원/g)</td><td data-l="장중·그 밖" colspan="2">하루 1번 — 매일 07:50 수집 → 08:04 사이트 반영</td><td data-l="출처">국내 금 시세</td><td data-l="이유" class="why">국제 금값×환율과는 다른 숫자라 섞지 않음</td></tr>
+      <tr><td data-l="칸">수급 요약</td><td data-l="국내 장중"><b>1분</b> — 코스피 외국인·기관·개인·프로그램 <b>금액</b></td><td data-l="그 밖">20:50 수집 → 21:10 반영 — 코스피200 합산 <b>수량(주)</b></td><td data-l="출처">장중 KIS 잠정 / 마감 KRX</td><td data-l="이유" class="why">장중엔 KIS가 시장 전체 금액을 줌. 마감 값은 예전부터 쓰던 수량 기준이라 그대로 둠 — 단위가 달라 제목 옆에 같이 적음</td></tr>
+      <tr><td data-l="칸">외국인·기관 TOP5</td><td data-l="국내 장중"><b>1분</b> — 장중 가집계(코스피+코스닥)</td><td data-l="그 밖">20:50 → 21:10 확정값</td><td data-l="출처">KIS 가집계 / KRX</td><td data-l="이유" class="why">가집계는 증권사가 장중에 모은 추정이라 마감 확정값과 조금 다를 수 있음</td></tr>
+      <tr><td data-l="칸">52주 신고가·신저가</td><td data-l="장중·그 밖" colspan="2">하루 1번 — 20:55 수집 → 21:10 반영</td><td data-l="출처">KRX</td><td data-l="이유" class="why">KIS는 「신고가 근접 상위 30개」만 줘서 전체 개수를 못 셈(거래정지 종목도 섞임)</td></tr>
+      <tr><td data-l="칸">업종 등락</td><td data-l="국내 장중"><b>1분</b> — 코스피 업종</td><td data-l="그 밖">20:50 → 21:10</td><td data-l="출처">KIS 업종 / KRX</td><td data-l="이유" class="why">KIS가 업종 전체를 한 번에 줘서 1분에 1회면 됨</td></tr>
+      <tr><td data-l="칸">스크리너 시그널</td><td data-l="장중·그 밖" colspan="2">하루 1번 — 20:45 계산 → 21:10 반영</td><td data-l="출처">사이트 스크리너</td><td data-l="이유" class="why">종가·거래량 다 모인 뒤 거는 조건이라 장중엔 의미 없음</td></tr>
+      <tr><td data-l="칸">시총 상위 등락</td><td data-l="국내 장중"><b>1분</b></td><td data-l="그 밖">20:50 → 21:10</td><td data-l="출처">국내 시세 수집(381종목) / KRX</td><td data-l="이유" class="why">이미 받는 1분 시세로 계산 — 추가 호출 없음</td></tr>
+      <tr><td data-l="칸">거래대금 TOP10</td><td data-l="국내 장중"><b>1분</b> — ETF·ETN 뺌</td><td data-l="그 밖">20:50 → 21:10</td><td data-l="출처">KIS 순위 / KRX</td><td data-l="이유" class="why">마감 파일과 같은 기준이 되게 ETF를 뺌</td></tr>
     </tbody>
   </table>
   </div>
