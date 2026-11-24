@@ -1,5 +1,5 @@
 /* ============================================================
-   sf-tree.js v5.7 (124) — 내 메뉴 트리 (모든 페이지 왼쪽)
+   sf-tree.js v5.8 (129) — 내 메뉴 트리 (모든 페이지 왼쪽)
    common.js가 읽는다(페이지에 따로 넣지 않음). 관리자 로그인일 때만 탭이 보인다.
 
    ■ 모양
@@ -8,6 +8,7 @@
      - 폰(760px 이하): 본문 위로 덮음. 메뉴 하나 누르면 닫힘
      - 펼침/닫힘 상태 = localStorage sf-tree-open (페이지를 옮겨도 그대로, 브라우저별)
      - 폴더 접힘/펼침 = localStorage sf-tree-fold (브라우저별, 저장·되돌리기 대상 아님)
+     - (129 v5.8) 접힌 탭을 키움(누르기 편하게 — PC 글씨 15px·폭 약 33px, 폰 14px) + 페이지를 스크롤하는 동안 탭을 잠깐 숨김(멈추고 0.5초 뒤 다시 보임, 펼쳤을 땐 안 숨김)
    ■ 트리
      - [+ 폴더] [+ 이 페이지] + 메뉴 검색(메인 카드 목록 = menu-search.js와 같은 출처: 메인 .tool-panel .tool-grid > a.card)
      - 폴더 2단계까지(폴더 안 폴더 1번). 지금 페이지는 파란색(location.pathname 비교, #탭은 안 봄)
@@ -27,7 +28,7 @@
        그 밖의 관리자 아이디(3번째 = Claude 작업용 aichatetc) = 자기 uid 칸 따로 → Claude 시험이 사용자 트리를 안 건드림
      - 바뀌기 직전 모습을 hist에 최근 20번 보관 → 「↶ 뒤로」·「↷ 앞으로」
      - 이 브라우저 사본: localStorage sf-tree-cache:{칸 이름} (계정에서 못 읽을 때·첫 화면용)
-   ■ (121 v3) 「↷ 앞으로」(fut), 줄 끝 ✕ 삭제, 헤더 📂 숨기기(localStorage sf-tree-hide), 닫힌 탭이 본문을 가리면 32px 밂,
+   ■ (121 v3) 「↷ 앞으로」(fut), 줄 끝 ✕ 삭제, 헤더 📂 숨기기(localStorage sf-tree-hide), 닫힌 탭이 본문을 가리면 38px 밂(129),
      떠나기 직전 저장 보내기 + 이 브라우저 사본이 계정에 못 올라갔으면 다음 페이지에서 올림(at·synced)
    ■ 옛 문법만 쓴다(?. ?? 안 씀) — 공통 js 규칙
    ============================================================ */
@@ -36,7 +37,7 @@
   if (window.__sfTreeLoaded) return;
   window.__sfTreeLoaded = true;
 
-  var PANEL_W = 240;          // 펼친 트리 폭(PC). 본문은 이 폭 + 탭 폭(34)만큼 왼쪽 여백이 있게 밂
+  var PANEL_W = 240;          // 펼친 트리 폭(PC). 본문은 이 폭 + 탭 폭(40)만큼 왼쪽 여백이 있게 밂
   var MOBILE_MAX = 760;       // 이 폭 이하 = 폰 방식(덮기)
   var HIST_MAX = 20;
   var FIELD = 'sf_tree';
@@ -204,9 +205,10 @@
 
   /* ── 스타일 ── */
   var CSS = ''
-  + '#sf-tree-tab{position:fixed;left:0;top:150px;z-index:9510;writing-mode:vertical-rl;text-orientation:mixed;background:#1F4E78;color:#fff;border:none;border-radius:0 8px 8px 0;padding:12px 6px;font:700 13px/1 -apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic",sans-serif;letter-spacing:1px;cursor:pointer;box-shadow:2px 2px 8px rgba(0,0,0,.18);display:none}'
+  + '#sf-tree-tab{position:fixed;left:0;top:150px;z-index:9510;writing-mode:vertical-rl;text-orientation:mixed;background:#1F4E78;color:#fff;border:none;border-radius:0 8px 8px 0;padding:18px 9px;font:700 15px/1 -apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic",sans-serif;letter-spacing:1px;cursor:pointer;box-shadow:2px 2px 8px rgba(0,0,0,.18);display:none;transition:opacity .15s}'
   + '#sf-tree-tab:hover{background:#2a6299}'
-  + '#sf-tree-tab .st-arr{display:inline-block;writing-mode:horizontal-tb;font-size:15px;line-height:1;margin-bottom:2px}'   /* 세로 글씨 안에서 화살표만 바로 세움 */
+  + '#sf-tree-tab.st-tab-scroll{opacity:0;pointer-events:none}'   /* (129) 스크롤하는 동안 숨김 */
+  + '#sf-tree-tab .st-arr{display:inline-block;writing-mode:horizontal-tb;font-size:18px;line-height:1;margin-bottom:3px}'   /* 세로 글씨 안에서 화살표만 바로 세움 */
   + 'body.sf-tree-on #sf-tree-tab{display:block}'
   + 'body.sf-tree-open #sf-tree-tab{left:' + PANEL_W + 'px}'
   + '#sf-tree{position:fixed;left:0;top:56px;bottom:0;width:' + PANEL_W + 'px;z-index:9500;background:#fff;border-right:1px solid #dbe3ec;box-shadow:2px 0 10px rgba(0,0,0,.06);display:none;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic",sans-serif;font-size:13px;color:#1f2937;box-sizing:border-box}'
@@ -310,7 +312,7 @@
   + '@media(max-width:' + MOBILE_MAX + 'px){#sf-tree{width:min(290px,86vw);box-shadow:4px 0 18px rgba(0,0,0,.25)}'
   + 'body.sf-tree-open #sf-tree-tab{left:min(290px,86vw)}'
   + 'body.sf-tree-on.sf-tree-open #sf-tree-back{display:block}'
-  + '#sf-tree-tab{top:auto;bottom:150px;padding:10px 5px;font-size:12px;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}'
+  + '#sf-tree-tab{top:auto;bottom:150px;padding:14px 8px;font-size:14px;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}'
   + '#sf-tree-tab.st-tab-moving{opacity:.92;border-radius:8px;transform:scale(1.08);box-shadow:0 8px 22px rgba(0,0,0,.35),0 0 0 2px rgba(96,165,250,.7);transition:transform .12s,border-radius .12s}'
   + '#sf-tree-tab.st-tab-snap{transition:left .28s cubic-bezier(.2,1.3,.4,1),transform .2s,border-radius .2s}'
   + '.st-row{min-height:34px;-webkit-touch-callout:none}.st-handle{width:22px;font-size:14px}}'
@@ -327,6 +329,14 @@
     tab.id = 'sf-tree-tab';
     tab.type = 'button';
     tab.addEventListener('click', function () { if (tabJustMoved) return; setOpen(!document.body.classList.contains('sf-tree-open')); });
+    // (129) 접혀 있을 때 페이지를 스크롤하는 동안 탭을 숨김 — 멈추고 0.5초 뒤 다시 보임
+    var scrollT = null;
+    window.addEventListener('scroll', function () {
+      if (document.body.classList.contains('sf-tree-open') || tab.classList.contains('st-tab-moving')) return;
+      tab.classList.add('st-tab-scroll');
+      clearTimeout(scrollT);
+      scrollT = setTimeout(function () { tab.classList.remove('st-tab-scroll'); }, 500);
+    }, { passive: true });
 
     var back = document.createElement('div');
     back.id = 'sf-tree-back';
@@ -884,8 +894,8 @@
     setPad(0);
     if (!on || isMobile()) return;
     if (basePad === null) basePad = parseFloat(getComputedStyle(document.body).paddingLeft) || 0;
-    // 닫혀 있어도 세로 탭(약 26px)이 본문 글자를 가리지 않게 — 본문이 왼쪽 끝까지 붙은 페이지만 그만큼 밂
-    var target = open ? PANEL_W + 34 : 32, L0 = contentLeft();
+    // 닫혀 있어도 세로 탭(약 33px, 129에서 키움)이 본문 글자를 가리지 않게 — 본문이 왼쪽 끝까지 붙은 페이지만 그만큼 밂
+    var target = open ? PANEL_W + 40 : 38, L0 = contentLeft();
     if (L0 >= target) return;
     var P = target - L0;
     setPad(basePad + P);

@@ -7,7 +7,8 @@
   · 등유(Jet/Kero) = 항공유. 유류할증료 산정 기준(MOPS)과 같은 제품 → /kal/ 기준값
   · 오피넷 오픈 API(8종)는 국내 주유소 가격뿐이라 국제가격은 웹 화면을 읽는다
 - 오피넷 약관: 승낙 없는 복제·유통·제3자 이용 금지 → 레포(공개)에 JSON으로 두지 않고
-  Oracle에만 저장, 사이트는 로그인 API(/api/oil-intl, 관리자)로만 읽는다. 하루 1번(2회 요청)만 부른다.
+  Oracle에만 저장, 사이트는 로그인 API(/api/oil-intl, 관리자)로만 읽는다. (129) 올라오자마자 받으려고 --watch가
+  15분마다 보지만, 그날 값이 들어오면 오피넷을 더 부르지 않는다(1회 = 2요청).
 - 갱신: 화~토, 하루 늦게(T+1). 싱가포르 휴장일은 값이 없음('-')
 
 사용법 (레포 루트에서, . ~/.env_secrets 먼저)
@@ -15,11 +16,13 @@
   python3 scripts/fetch_opinet_oil.py                      # 최근 며칠 → DB 저장 (크론)
   python3 scripts/fetch_opinet_oil.py --backfill 2025-01 --probe   # 과거 조회 출력만
   python3 scripts/fetch_opinet_oil.py --backfill 2025-01   # 2025-01부터 이번 달까지 한 달씩 → DB (요청 사이 3초)
+  python3 scripts/fetch_opinet_oil.py --watch              # (129) 크론 화~토 08:00~18:45 15분마다: 전 평일 값(항공유·두바이)이
+                                                           #   DB에 이미 있으면 오피넷을 안 부르고 끝, 없으면 읽어서 저장 → 항공유가 새로 생기면 봇1 DM
   python3 scripts/fetch_opinet_oil.py --status             # (116) DB에 언제부터 몇 일 쌓였는지 월별로 화면에만 (오피넷 호출 안 함)
 """
 import os, sys, re, time, html, argparse
 import urllib.request, urllib.parse, http.cookiejar
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 
 BASE = 'https://www.opinet.co.kr'
 PAGES = {'crude': '/glopcoilSelect.do', 'prod': '/glopopdSelect.do'}
@@ -248,15 +251,66 @@ def show(rows, limit=8):
         print(f'  … 총 {len(keys)}일 ({keys[0]} ~ {keys[-1]})')
 
 
+SITE_OIL = 'https://swingfarmer.github.io/dashboard/#oil'
+
+
+def prev_weekday(today):
+    d = today - timedelta(days=1)
+    while d.weekday() >= 5:
+        d -= timedelta(days=1)
+    return d
+
+
+def watch():
+    """(129) 전 평일 값이 올라왔는지 확인 — 이미 DB에 있으면 조용히 끝(오피넷 호출 없음)."""
+    now = datetime.now(timezone(timedelta(hours=9)))
+    target = prev_weekday(now.date())
+    conn = db_connect(); cur = conn.cursor()
+    cur.execute("SELECT kero, dubai FROM oil_intl_prices WHERE price_date = :d", {'d': target})
+    had = cur.fetchone()
+    had_kero = bool(had and had[0])
+    if had and had[0] and had[1]:
+        cur.close(); conn.close(); return          # 둘 다 있음 — 할 일 없음 (로그도 안 씀)
+    rows = fetch_recent()
+    got = rows.get(target) or {}
+    if not got.get('kero') and not got.get('dubai'):
+        print(f'[{now:%m/%d %H:%M}] 아직 없음 — {target:%m/%d} 값 (최신 {max(rows):%m/%d})' if rows else f'[{now:%m/%d %H:%M}] ❌ 읽은 값 없음')
+        cur.close(); conn.close(); return
+    save(conn, rows)
+    print(f'[{now:%m/%d %H:%M}] ✅ {target:%m/%d} 값 저장 (항공유 {"있음" if got.get("kero") else "없음"} · 두바이 {"있음" if got.get("dubai") else "없음"})')
+    if got.get('kero') and not had_kero:
+        cur.execute("""SELECT kero FROM (SELECT kero FROM oil_intl_prices WHERE price_date < :d AND kero > 0
+                       ORDER BY price_date DESC) WHERE ROWNUM = 1""", {'d': target})
+        pr = cur.fetchone()
+        k, du = float(got['kero']), (float(got['dubai']) if got.get('dubai') else None)
+        t = f"<b>✈️ 오피넷 {target.month}/{target.day} 값 올라옴</b> ({now:%H:%M} 확인)\n항공유 ${k:.2f}"
+        if pr and pr[0]:
+            t += f" ({k - float(pr[0]):+.2f})"
+        if du:
+            t += f" · 두바이 ${du:.2f} · 스프레드 ${k - du:.2f}"
+        t += f'\n<a href="{SITE_OIL}">사이트에서 보기</a>'
+        try:
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            from telegram_helper import send_dm
+            send_dm(t)
+        except Exception as e:
+            print(f'  ⚠ 텔레그램 실패: {e}')
+    cur.close(); conn.close()
+
+
 def main():
     ap = argparse.ArgumentParser(description='오피넷 국제유가·석유제품 → Oracle')
     ap.add_argument('--probe', action='store_true', help='출력만, 저장 안 함')
     ap.add_argument('--backfill', metavar='YYYY-MM', help='이 달부터 이번 달까지 한 달씩')
     ap.add_argument('--status', action='store_true', help='(116) DB 범위만 월별로 출력')
+    ap.add_argument('--watch', action='store_true', help='(129) 전 평일 값이 올라왔는지 — 있으면 오피넷 안 부름, 새로 받으면 봇1 DM')
     a = ap.parse_args()
     load_env()
     if a.status:
         status()
+        return
+    if a.watch:
+        watch()
         return
 
     print(f'=== 오피넷 국제유가 {"과거 " + a.backfill + "~" if a.backfill else "최근"} ({"출력만" if a.probe else "DB 저장"}) ===')

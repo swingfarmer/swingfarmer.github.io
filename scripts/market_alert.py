@@ -135,7 +135,7 @@ def opinet_line(o):
         t += f" ({o['kero_chg']:+.2f})"
     if o['dubai'] is not None:
         t += f" · 두바이 ${o['dubai']:.2f} · 스프레드 ${o['spread']:.2f}"
-    return t + f" <i>({o['date']}, 싱가포르)</i>"
+    return t + f" <i>({o['date']}, 싱가포르)</i> <a href=\"https://swingfarmer.github.io/dashboard/#oil\">사이트</a>"
 
 
 def build_message(data, news_items=None, opinet=None):

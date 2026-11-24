@@ -26,6 +26,8 @@ a { color: var(--accent); text-decoration: none; }
 /* Index + FX cards */
 .idx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
 .idx-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+a.idx-link { display: block; text-decoration: none; color: inherit; }   /* (129) 두바이·항공유 카드 → /dashboard/#oil */
+a.idx-link:hover { border-color: #3b82f6; }
 .idx-label { font-size: 10px; color: var(--text-dim); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .idx-val { font-size: 17px; font-weight: 800; margin-top: 2px; font-variant-numeric: tabular-nums; }
 .idx-chg { font-size: 11px; font-weight: 600; margin-top: 1px; }
@@ -394,7 +396,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
       <tr><td data-l="칸">코스피·코스닥</td><td data-l="국내 장중"><b>1분</b></td><td data-l="그 밖">15:40 최종값 → 다음 날 아침부터는 전 거래일 종가</td><td data-l="출처">KIS 업종지수</td><td data-l="이유" class="why">이미 1분마다 도는 국내 시세 수집에 2번 더 붙임 (KIS 한도 초당 20회라 여유)</td></tr>
       <tr><td data-l="칸">S&amp;P·나스닥·VIX·미10년</td><td data-l="장중·그 밖" colspan="2"><b>5분</b> — 미국 장이 열린 동안(밤 23:30~새벽 06:00, 서머타임 땐 1시간 빠름)만 값이 움직이고, 닫혀 있으면 「미국 날짜 종가」로 표시</td><td data-l="출처">야후</td><td data-l="이유" class="why">야후는 공식 API가 아니라 1분마다 부르면 막힐 수 있고, 막히면 아침 시장지표 수집까지 같이 막힘 → 5분(하루 288회)</td></tr>
       <tr><td data-l="칸">USD/KRW·JPY100/KRW·WTI</td><td data-l="장중·그 밖" colspan="2"><b>5분</b> — 거의 24시간 거래라 대부분 「🔴」(주말엔 금요일 마지막 거래)</td><td data-l="출처">야후</td><td data-l="이유" class="why">위와 같음</td></tr>
-      <tr><td data-l="칸">두바이유·항공유 🔒</td><td data-l="장중·그 밖" colspan="2">하루 1번 — 오피넷이 <b>전날 값</b>을 오후에 올림 → VM 화~토 18:20(+21:20 한 번 더) 수집. 월요일 값은 화요일 저녁부터 보임</td><td data-l="출처">오피넷(한국석유공사)</td><td data-l="이유" class="why">오피넷 약관(복제·유통 금지)이라 공개 파일 없이 관리자 로그인일 때만 보임. 두바이는 야후에 없어서 오피넷 값을 씀</td></tr>
+      <tr><td data-l="칸">두바이유·항공유 🔒</td><td data-l="장중·그 밖" colspan="2">하루 1번 — 오피넷이 <b>전날 값</b>을 다음 날 낮에 올림 → VM이 화~토 08:00~18:45 <b>15분마다</b> 올라왔는지 보고 바로 받음(받으면 텔레그램 봇1). 카드를 누르면 대시보드 ⛽ 국제유가 탭</td><td data-l="출처">오피넷(한국석유공사)</td><td data-l="이유" class="why">오피넷 약관(복제·유통 금지)이라 공개 파일 없이 관리자 로그인일 때만 보임. 두바이는 야후에 없어서 오피넷 값을 씀. 15분 간격은 올라오자마자 보되 오피넷을 너무 자주 부르지 않으려고(그날 값이 들어오면 더 안 부름)</td></tr>
       <tr><td data-l="칸">금(원/g)</td><td data-l="장중·그 밖" colspan="2">하루 1번 — 매일 07:50 수집 → 08:04 사이트 반영</td><td data-l="출처">국내 금 시세</td><td data-l="이유" class="why">국제 금값×환율과는 다른 숫자라 섞지 않음</td></tr>
       <tr><td data-l="칸">수급 요약</td><td data-l="국내 장중"><b>1분</b> — 코스피 외국인·기관·개인·프로그램 <b>금액</b> — KRX 몫(NXT 빼고)</td><td data-l="그 밖">20:50 수집 → 21:10 반영 — 코스피200 합산 <b>수량(주)</b></td><td data-l="출처">장중 KIS 잠정 / 마감 KRX</td><td data-l="이유" class="why">장중엔 KIS가 시장 금액을 줌 — 단 KRX 몫만이라 HTS 「통합」보다 NXT만큼 작음(129 확인: 기관·개인은 HTS 「KRX」와 같음). 마감 값은 예전부터 쓰던 수량 기준이라 그대로 둠 — 단위가 달라 제목 옆에 같이 적음</td></tr>
       <tr><td data-l="칸">외국인·기관 TOP5</td><td data-l="국내 장중"><b>1분</b> — 장중 가집계(코스피+코스닥)</td><td data-l="그 밖">20:50 → 21:10 확정값</td><td data-l="출처">KIS 가집계 / KRX</td><td data-l="이유" class="why">가집계는 증권사가 장중에 모은 추정이라 마감 확정값과 조금 다를 수 있음</td></tr>
@@ -515,7 +517,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
     title: '기준 시각 = VM이 마지막으로 해외 선물 값을 받은 시각. 이 화면이 보일 때만 1분마다 다시 읽음' });
 })();
 </script>
-<script src="/common.js?v=22"></script>
+<script src="/common.js?v=23"></script>
 <script>
 const BASE = '/data';
 const fmt = (n, d=0) => sfNum(n, d);
@@ -663,12 +665,12 @@ function renderIndex(mkt) {
       if (!a.length) continue;
       const L = a[a.length - 1], P = a.length > 1 ? a[a.length - 2] : null;
       const r = P ? (L[c.k] / P[c.k] - 1) * 100 : null;
-      html += `<div class="idx-card">
-      <div class="idx-label">${c.label}</div>
+      html += `<a class="idx-card idx-link" href="/dashboard/#oil" title="시장 대시보드 ⛽ 국제유가 탭 — 일별 표·추이">
+      <div class="idx-label">${c.label} ›</div>
       <div class="idx-val">$${fmt(L[c.k], 2)}</div>
       ${r != null ? `<div class="idx-chg ${pctClass(r)}">${fmtPct(r)}</div>` : ''}
       <div class="idx-basis">오피넷 ${md(L.price_date)} 값 · 하루 늦게</div>
-    </div>`;
+    </a>`;
     }
   }
   document.getElementById('idxGrid').innerHTML = html;
