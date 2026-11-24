@@ -283,59 +283,56 @@ async function loadVasily(){
   try{const r=await fetch(`${DATA_BASE}/dashboard/foreign_flow.json`);if(!r.ok)throw r.status;const d=await r.json();renderVasily(d,el);}
   catch(e){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--text-dim)">외국인 데이터 없음 — fetch_foreign_flow.py 실행 필요</div>';}
 }
+// (129) 기준을 코스피200 수량(주) → 코스피 금액(KRX 몫, 백만원)으로. 수량은 카드·표에 같이. 연속·MA·±2σ·시그널은 외국인 금액 기준
 function renderVasily(data,el){
   const rows=data.history||[];
   if(!rows.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-dim)">데이터 없음</div>';return;}
   const lat=rows[rows.length-1];
-  const sF=lat.frgn_net_spot||0, sI=lat.inst_net_spot||0, sP=lat.program_net||0;
+  const eok=v=>v==null?'—':sfKor(v*1e6,'eok');                  // 백만원 → 「1,234억」
+  const man=v=>v==null?'':(v>0?'+':'')+sfNum(v/10000,1)+'만주';
+  const sF=lat.frgn_amt, sI=lat.inst_amt, sP=lat.prog_amt, sR=lat.prsn_amt;
   const hasBand = lat.ma20!=null && lat.upper_2s!=null;
-  const sigText = lat.signal==='buy'?'🟢 매수 시그널':lat.signal==='sell'?'🔴 과열 시그널':'—';
+  const sigText = lat.signal==='buy'?'🟢 매수 시그널(−2σ 이탈)':lat.signal==='sell'?'🔴 과열 시그널(+2σ 돌파)':'—';
   const sigCls = lat.signal==='buy'?'sig-buy':lat.signal==='sell'?'sig-sell':'sig-none';
   const consec = lat.consec_sell>0 ? `${lat.consec_sell}일 연속 순매도` : lat.consec_buy>0 ? `${lat.consec_buy}일 연속 순매수` : '—';
   const consecCls = lat.consec_sell>=10?'chg down':lat.consec_buy>=10?'chg up':'';
+  const card=(lbl,v,sub)=>`<div class="d-card"><div class="lbl">${lbl}</div><div class="val" style="color:var(--${(v||0)>=0?'sf-up':'sf-down'})">${eok(v)}</div><div class="chg ${chgClass(v)}">${sub||''}</div></div>`;
 
-  let h=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;margin-bottom:8px;">
-    <div class="d-card"><div class="lbl">외국인 순매수</div><div class="val" style="color:var(--${sF>=0?'sf-up':'sf-down'})">${fmtMan(sF)}</div><div class="chg ${chgClass(sF)}">주 (${lat.date})</div></div>
-    <div class="d-card"><div class="lbl">기관 순매수</div><div class="val" style="color:var(--${sI>=0?'sf-up':'sf-down'})">${fmtMan(sI)}</div><div class="chg ${chgClass(sI)}">주</div></div>
-    <div class="d-card"><div class="lbl">프로그램</div><div class="val" style="color:var(--${sP>=0?'sf-up':'sf-down'})">${fmtMan(sP)}</div><div class="chg ${chgClass(sP)}">주</div></div>
+  let h=`<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">코스피 <b>금액</b>(KRX 몫, NXT 빼고 — HTS 「투자자별 매매동향 코스피 KRX」와 같은 숫자) · 수량은 코스피200 408종목 합산(참고) · 연속·이동평균·±2σ는 외국인 금액 기준</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;margin-bottom:8px;">
+    ${card('외국인 순매수',sF,`${man(lat.frgn_qty)} (${lat.date})`)}
+    ${card('기관 순매수',sI,man(lat.inst_qty))}
+    ${card('개인 순매수',sR,'')}
+    ${card('프로그램',sP,man(lat.prog_qty))}
     <div class="d-card"><div class="lbl">바실리 시그널</div><div class="val"><span class="sig-badge ${sigCls}">${sigText}</span></div></div>
     <div class="d-card"><div class="lbl">연속 매매</div><div class="val" style="font-size:13px"><span class="${consecCls}">${consec}</span></div></div>
-    <div class="d-card"><div class="lbl">MA20 / ±2σ</div><div class="val" style="font-size:12px">${hasBand?fmtMan(lat.ma20):'데이터 부족'}</div>${hasBand?`<div class="chg flat" style="font-size:9px">[${fmtMan(lat.lower_2s)} ~ ${fmtMan(lat.upper_2s)}]</div>`:''}</div>
+    <div class="d-card"><div class="lbl">MA20 / ±2σ</div><div class="val" style="font-size:12px">${hasBand?eok(lat.ma20):'데이터 부족'}</div>${hasBand?`<div class="chg flat" style="font-size:9px">[${eok(lat.lower_2s)} ~ ${eok(lat.upper_2s)}]</div>`:''}</div>
   </div>`;
 
-  // 시그널 차트: 외국인 순매수 바 + MA5 + MA20 + ±2σ 밴드
-  h+=`<div class="chart-box full" style="margin-bottom:8px"><h3>외국인 순매수 + 이동평균 + ±2σ 밴드 (만주)</h3><canvas id="ch_vasily_main" style="height:250px!important"></canvas></div>`;
+  h+=`<div class="chart-box full" style="margin-bottom:8px"><h3>외국인 순매수 + 이동평균 + ±2σ 밴드 (억원)</h3><canvas id="ch_vasily_main" style="height:250px!important"></canvas></div>`;
 
-  // 테이블
-  h+=`<div class="chart-box full"><h3>일별 상세 (최근)</h3><table class="flow-table"><thead><tr><th>날짜</th><th>외국인</th><th>기관</th><th>프로그램</th><th>MA5</th><th>MA20</th><th>시그널</th><th>연속</th></tr></thead><tbody>`;
+  h+=`<div class="chart-box full"><h3>일별 상세 (최근) — 억원 · 수량은 만주</h3><table class="flow-table"><thead><tr><th>날짜</th><th>외국인</th><th>외국인 수량</th><th>기관</th><th>개인</th><th>프로그램</th><th>MA5</th><th>MA20</th><th>시그널</th><th>연속</th></tr></thead><tbody>`;
   rows.slice().reverse().slice(0,30).forEach(r=>{
-    const f=r.frgn_net_spot||0;
     const sigBadge=r.signal==='buy'?'<span class="sig-badge sig-buy">매수</span>':r.signal==='sell'?'<span class="sig-badge sig-sell">과열</span>':'';
     const csc=r.consec_sell>0?`매도${r.consec_sell}일`:r.consec_buy>0?`매수${r.consec_buy}일`:'';
-    h+=`<tr><td>${r.date||''}</td><td class="chg ${chgClass(f)}">${fmtMan(f)}</td><td class="chg ${chgClass(r.inst_net_spot)}">${fmtMan(r.inst_net_spot)}</td><td class="chg ${chgClass(r.program_net)}">${fmtMan(r.program_net)}</td><td>${r.ma5!=null?fmtMan(r.ma5):'—'}</td><td>${r.ma20!=null?fmtMan(r.ma20):'—'}</td><td>${sigBadge}</td><td style="font-size:10px">${csc}</td></tr>`;
+    h+=`<tr><td>${r.date||''}</td><td class="chg ${chgClass(r.frgn_amt)}">${eok(r.frgn_amt)}</td><td class="chg ${chgClass(r.frgn_qty)}" style="font-size:10px">${man(r.frgn_qty)||'—'}</td><td class="chg ${chgClass(r.inst_amt)}">${eok(r.inst_amt)}</td><td class="chg ${chgClass(r.prsn_amt)}">${eok(r.prsn_amt)}</td><td class="chg ${chgClass(r.prog_amt)}">${eok(r.prog_amt)}</td><td>${eok(r.ma5)}</td><td>${eok(r.ma20)}</td><td>${sigBadge}</td><td style="font-size:10px">${csc}</td></tr>`;
   });
   h+='</tbody></table></div>';
 
-  // 기관 차트
-  h+='<div class="chart-grid" style="margin-top:8px"><div class="chart-box"><h3>기관 순매수 (만주)</h3><canvas id="ch_v_i"></canvas></div><div class="chart-box"><h3>프로그램 순매수 (만주)</h3><canvas id="ch_v_p"></canvas></div></div>';
+  h+='<div class="chart-grid" style="margin-top:8px"><div class="chart-box"><h3>기관 순매수 (억원)</h3><canvas id="ch_v_i"></canvas></div><div class="chart-box"><h3>프로그램 순매수 (억원)</h3><canvas id="ch_v_p"></canvas></div></div>';
   el.innerHTML=h;
 
-  // ── 메인 시그널 차트 ──
+  const E=v=>v==null?null:v/100;   // 백만원 → 억원
   const lb=rows.map(r=>(r.date||'').slice(5));
-  const fD=rows.map(r=>(r.frgn_net_spot||0)/10000);
-  const ma5D=rows.map(r=>r.ma5!=null?r.ma5/10000:null);
-  const ma20D=rows.map(r=>r.ma20!=null?r.ma20/10000:null);
-  const upperD=rows.map(r=>r.upper_2s!=null?r.upper_2s/10000:null);
-  const lowerD=rows.map(r=>r.lower_2s!=null?r.lower_2s/10000:null);
-
-  // 시그널 포인트 (밴드 터치한 날만)
+  const fD=rows.map(r=>E(r.frgn_amt));
+  const ma5D=rows.map(r=>E(r.ma5)), ma20D=rows.map(r=>E(r.ma20)), upperD=rows.map(r=>E(r.upper_2s)), lowerD=rows.map(r=>E(r.lower_2s));
   const buyPts=rows.map((r,i)=>r.signal==='buy'?fD[i]:null);
   const sellPts=rows.map((r,i)=>r.signal==='sell'?fD[i]:null);
-
+  const bar=d=>d.map(v=>(v||0)>=0?'rgba(239,68,68,.55)':'rgba(59,130,246,.55)');
   new Chart(document.getElementById('ch_vasily_main'),{
     type:'bar',
     data:{labels:lb,datasets:[
-      {type:'bar',label:'외국인 순매수',data:fD,backgroundColor:fD.map(v=>v>=0?'rgba(239,68,68,.55)':'rgba(59,130,246,.55)'),order:4},
+      {type:'bar',label:'외국인 순매수',data:fD,backgroundColor:bar(fD),order:4},
       {type:'line',label:'5MA',data:ma5D,borderColor:'#f0b93a',borderWidth:1,borderDash:[3,2],tension:.3,order:3,pointRadius:0},
       {type:'line',label:'20MA',data:ma20D,borderColor:'#4da6ff',borderWidth:1.5,tension:.3,order:2,pointRadius:0},
       {type:'line',label:'+2σ',data:upperD,borderColor:'rgba(255,71,87,.3)',borderWidth:1,borderDash:[4,4],tension:.3,order:1,pointRadius:0,fill:false},
@@ -345,14 +342,11 @@ function renderVasily(data,el){
     ]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:true,labels:{boxWidth:8,font:{size:8},usePointStyle:true}}},
-      scales:{x:{ticks:{maxTicksLimit:12}},y:{title:{display:true,text:'만주',font:{size:8}}}}}
+      scales:{x:{ticks:{maxTicksLimit:12}},y:{title:{display:true,text:'억원',font:{size:8}}}}}
   });
-
-  // 기관/프로그램 차트
-  const iD=rows.map(r=>(r.inst_net_spot||0)/10000);
-  const pD=rows.map(r=>(r.program_net||0)/10000);
-  new Chart(document.getElementById('ch_v_i'),{type:'bar',data:{labels:lb,datasets:[{data:iD,backgroundColor:iD.map(v=>v>=0?'rgba(239,68,68,.55)':'rgba(59,130,246,.55)')}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{title:{display:true,text:'만주',font:{size:8}}}}}});
-  new Chart(document.getElementById('ch_v_p'),{type:'bar',data:{labels:lb,datasets:[{data:pD,backgroundColor:pD.map(v=>v>=0?'rgba(239,68,68,.55)':'rgba(59,130,246,.55)')}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{title:{display:true,text:'만주',font:{size:8}}}}}});
+  const iD=rows.map(r=>E(r.inst_amt)), pD=rows.map(r=>E(r.prog_amt));
+  new Chart(document.getElementById('ch_v_i'),{type:'bar',data:{labels:lb,datasets:[{data:iD,backgroundColor:bar(iD)}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{title:{display:true,text:'억원',font:{size:8}}}}}});
+  new Chart(document.getElementById('ch_v_p'),{type:'bar',data:{labels:lb,datasets:[{data:pD,backgroundColor:bar(pD)}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{title:{display:true,text:'억원',font:{size:8}}}}}});
 }
 
 /* ── ④ BOD ── */
