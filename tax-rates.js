@@ -1,12 +1,12 @@
 /* 세율 공통 (086) — 세법이 바뀌면 이 파일 하나만 고치면 됨
- * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=21 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
+ * 쓰는 법: 페이지에서 script 태그로 /tax-rates.js?v=N 를 페이지 스크립트보다 먼저 넣고 window.SF_TAX 를 읽는다.
  * 구간 배열: [[상한(원), 세율%], ...] 누진. 세율은 국세 기준, 지방소득세(국세의 10%)는 별도 → SF_TAX.wl(세율)로 포함값.
  * 바꾼 뒤: 이 파일 ?v= 를 쓰는 페이지 전부 올릴 것. 확인일(checked)도 고칠 것.
  * 이 파일을 쓰는 페이지: /bond/, /tax/stock-kr/, /tax/stock-us/, /dividend-manager/, /property/, /realestate/entity-choice/, /realestate/commercial-yield/, /tax/income/, /tax/retirement/, /tax/retirement-compare/, /severance-exec/, /salary/, /insurance4/, /tax/corp-invest/, /tax/house/, /tax/land/, /realestate/home-swap/, /stock-tools/dividend/, /finance-tools/compound/, /fire/, /tax/financial-income/, /barbell/, /paygrowth/, /landtax/, /tax/inheritance/, /tax/gift/, /tax/acquisition/, /corp-tax/, /tax/pension-deduction/, /pension/, /realestate/office-buy-vs-rent/, /realestate/jeonse-vs-buy/, /gambuk/, /tax-calendar/, /realestate/jaechohwan/ 외 (나머지 세금 페이지는 순차 이전 예정)
  */
 window.SF_TAX = Object.freeze({
   year: 2026,
-  checked: '2026-11-17',  // 104: 고배당 적자 특례 highDivReq.lossPayout·lossDebt / 103: 재초환 부담금 rebuild, 고배당 요건 highDivReq·이월결손금 기간·장례비 한도, kor·korc 형식은 sf-fmt.js sfKor / 102: 부가세율 vat / 101: 화면 문구는 data-tx 하나로(옛 tx- 클래스 + put 방식 없앰) — 함수 경로·data-tx-a 인자·=계산식·배열(구간표) 형식 추가, wl 이 local 을 씀, cgtRule·childAge 연도 생략 = 올해 / 100: data-tx 차이 형식(-경로) / 099: 양도세 공통(fullYears·ltcHouse·ltcLand·cgtTax), 화면 문구 data-tx, personalDed·nontaxMeal / 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가 / 090: 고용보험 사업주분·고배당 분리과세·미국 배당 원천·주택·토지 양도세 추가, 양도세 정부안도 여기로(cgtPlan·cgtRule), ISA·연금 분리과세 / 092: 근로소득공제·근로소득세액공제·자녀세액공제(나이 연도별)·공익수용 감면(조특법 77) 추가, 토지 자경 5년 한도 / 092_03: 국민연금 연도별 인상(socialPlan·socialRule), 4대보험 근로자분 계산(ins4), 간이세액 근사(wageTax) 공통 함수 / 093: 상속·증여세 구간·공제(inhGift·inhDed·giftDed), 취득세(acq·acqHouseRate·acqCalc) / 094: 법인세 연도별(corpBr)·최저한세·이월결손금·기업업무추진비 한도, 연금계좌 세액공제·사적연금 분리과세, 국민연금 수급연령·조기/연기 / 094_03: 과밀억제권역 법인 취득세 중과(acqCalc capHeavy) / 094_04: 가족 간 금전대여 적정이자율(famLoan) / 095_01: 법인세 중간예납(corpInt·corpInterim·splitMax), 자동차세 연납 공제율(carPre)
+  checked: '2026-11-24',  // 131: 취득세 감면·중과 입력(acq.first 생애최초·farmCut 자경농민·acqCalc firstCap·inheritOne·farmer) / 104: 고배당 적자 특례 highDivReq.lossPayout·lossDebt / 103: 재초환 부담금 rebuild, 고배당 요건 highDivReq·이월결손금 기간·장례비 한도, kor·korc 형식은 sf-fmt.js sfKor / 102: 부가세율 vat / 101: 화면 문구는 data-tx 하나로(옛 tx- 클래스 + put 방식 없앰) — 함수 경로·data-tx-a 인자·=계산식·배열(구간표) 형식 추가, wl 이 local 을 씀, cgtRule·childAge 연도 생략 = 올해 / 100: data-tx 차이 형식(-경로) / 099: 양도세 공통(fullYears·ltcHouse·ltcLand·cgtTax), 화면 문구 data-tx, personalDed·nontaxMeal / 089: 4대보험·간이세액표 자녀·퇴직소득 칸 추가 / 090: 고용보험 사업주분·고배당 분리과세·미국 배당 원천·주택·토지 양도세 추가, 양도세 정부안도 여기로(cgtPlan·cgtRule), ISA·연금 분리과세 / 092: 근로소득공제·근로소득세액공제·자녀세액공제(나이 연도별)·공익수용 감면(조특법 77) 추가, 토지 자경 5년 한도 / 092_03: 국민연금 연도별 인상(socialPlan·socialRule), 4대보험 근로자분 계산(ins4), 간이세액 근사(wageTax) 공통 함수 / 093: 상속·증여세 구간·공제(inhGift·inhDed·giftDed), 취득세(acq·acqHouseRate·acqCalc) / 094: 법인세 연도별(corpBr)·최저한세·이월결손금·기업업무추진비 한도, 연금계좌 세액공제·사적연금 분리과세, 국민연금 수급연령·조기/연기 / 094_03: 과밀억제권역 법인 취득세 중과(acqCalc capHeavy) / 094_04: 가족 간 금전대여 적정이자율(famLoan) / 095_01: 법인세 중간예납(corpInt·corpInterim·splitMax), 자동차세 연납 공제율(carPre)
   // 이자·배당 원천징수 (소득세 14% + 지방소득세 1.4%)
   interest: 15.4,
   // 금융소득 종합과세 기준 (이자+배당, 연)
@@ -166,7 +166,15 @@ window.SF_TAX = Object.freeze({
   //   농특세 = 표준세율을 2%로 본 취득세 × 10% = 0.2%, 중과 주택은 (세율 − 2%) × 10% (8% → 0.6, 12% → 1.0). 주택은 전용 85㎡ 이하 비과세
   acq: {house: {lo: 6e8, hi: 9e8, rLo: 1, rHi: 3, heavy2: 8, heavy3: 12, gift: 3.5, giftHeavy: 12, giftHeavyMin: 3e8, inherit: 2.8, build: 2.8},
         farm: {buy: 3, gift: 3.5, inherit: 2.3, build: 2.8}, other: {buy: 4, gift: 3.5, inherit: 2.8, build: 2.8},
-        base: 2, eduHeavy: 4, eduR: 20, ruralR: 10, ruralArea: 85, capMul: 3},
+        base: 2, eduHeavy: 4, eduR: 20, ruralR: 10, ruralArea: 85, capMul: 3,
+  //   (131) 생애최초 주택 구입 감면 (지특법 36조의3, 2028.12.31 취득분까지) — 무주택 세대가 12억 이하 주택을 유상 취득: 취득세에서 cap 공제(세액이 그 이하면 면제)
+  //     capSmall: 소형주택(전용 60㎡ 이하·수도권 6억/비수도권 3억 이하·아파트 제외 공동주택·도시형·다가구 호수) 또는 인구감소지역 주택 / 지방교육세도 같은 비율로 줄어듦
+  //     농특세: 85㎡ 초과면 원래 0.2% + 감면받은 취득세 × rural% (농특세법 5조), 85㎡ 이하는 없음
+  //     정부안(2026.8, 국회 계류): 40세 미만 한도 300만, 주거용 오피스텔 포함 — 통과되면 여기만 고칠 것
+        first: {max: 12e8, cap: 2e6, capSmall: 3e6, rural: 20},
+  //   (131) 자경농민 농지 감면 (지특법 6조1항, 2026.12.31까지 — 연장안 국회 계류) — 2년 이상 영농 농업인이 직접 경작할 농지 매매·증여: 취득세·지방교육세 farmCut% 경감, 농특세 비과세
+  //     상속(지방세법 15조1항 — 감면 대상 농지·무주택 1주택): 상속 세율 − base(2.3 → 0.3, 2.8 → 0.8), 지방교육세는 특례 전 세율 기준 그대로, 농특세 없음
+        farmCut: 50},
   //   과밀억제권역 법인 중과 (지방세법 13조2항, 094_03) — 설립·지점설치 5년 안에 권역(서울 전역·경기 일부) 부동산 취득: 취득세 = 표준세율 × capMul − 2% × 2,
   //   지방교육세도 × capMul(151조), 농특세 그대로 → 상가 4.6% → 9.4%. acqCalc({..., capHeavy: true})
   // (103) 재건축초과이익 환수 부담금 (재건축초과이익 환수법, 2024.3.27 시행) — /realestate/jaechohwan/
@@ -231,7 +239,9 @@ window.SF_TAX = Object.freeze({
     if (price <= a.lo) return a.rLo; if (price > a.hi) return a.rHi;
     return a.rLo + (price - a.lo) / (a.hi - a.lo) * (a.rHi - a.rLo); },
   // acqCalc({kind:'house'|'farm'|'other', type:'buy'|'gift'|'inherit'|'build', price, area(㎡), houses, reg, corp, giftHeavy})
-  //   → {rate, eduRate, ruralRate(%), totalRate, acq, edu, rural, total, heavy}. capHeavy: 비주택 과밀억제권역 법인 중과. giftHeavy: 주택 증여 중과 요건(증여자 다주택·3억 이상·조정) 충족 여부를 페이지가 판정해서 넘김
+  //   → {rate, eduRate, ruralRate(%), totalRate, acq, edu, rural, total, heavy, cut}. capHeavy: 비주택 과밀억제권역 법인 중과. giftHeavy: 주택 증여 중과 요건(증여자 다주택·3억 이상·조정) 충족 여부를 페이지가 판정해서 넘김
+  //   (131) firstCap: 생애최초 감면 한도(원, 0·없음 = 안 함 — 주택·매매·중과 아님·12억 이하일 때만 적용) → acq 는 공제 뒤 세액, cut = 공제액, 세율(%) 칸은 공제 전
+  //         inheritOne: 무주택 세대 1주택 상속(주택·상속) / farmer: 자경농민(농지 매매·증여·상속)
   acqCalc: function(o){ var A=window.SF_TAX.acq, kind=o.kind||'other', type=o.type||'buy', p=o.price||0, rate, heavy=false, edu, rural, std;
     if (kind === 'house'){
       if (type === 'buy'){ rate = window.SF_TAX.acqHouseRate(p, o.houses, o.reg, o.corp); heavy = rate >= A.house.heavy2; }
@@ -245,10 +255,20 @@ window.SF_TAX = Object.freeze({
       std = A[kind === 'farm' ? 'farm' : 'other'][type];
       edu = (std - A.base) * A.eduR / 100; rural = A.base * A.ruralR / 100; rate = std;
       if (o.capHeavy){ rate = std * A.capMul - A.base * 2; edu = edu * A.capMul; heavy = true; }
+      else if (o.farmer && kind === 'farm'){
+        if (type === 'inherit'){ rate = Math.round((std - A.base) * 1e6) / 1e6; rural = 0; }
+        else if (type === 'buy' || type === 'gift'){ rate = std * (100 - A.farmCut) / 100; edu = edu * (100 - A.farmCut) / 100; rural = 0; }
+      }
     }
+    if (kind === 'house' && type === 'inherit' && o.inheritOne){ rate = Math.round((A.house.inherit - A.base) * 1e6) / 1e6; rural = 0; }
     edu = Math.round(edu * 1e6) / 1e6; rural = Math.round(rural * 1e6) / 1e6;
-    var acq = p * rate / 100, e = p * edu / 100, r = p * rural / 100;
-    return {rate: rate, eduRate: edu, ruralRate: rural, totalRate: Math.round((rate + edu + rural) * 1e6) / 1e6, acq: acq, edu: e, rural: r, total: acq + e + r, heavy: heavy}; },
+    var acq = p * rate / 100, e = p * edu / 100, r = p * rural / 100, cut = 0;
+    if (o.firstCap > 0 && kind === 'house' && type === 'buy' && !heavy && p <= A.first.max && acq > 0){
+      cut = Math.min(acq, o.firstCap); e = e * (acq - cut) / acq;
+      if (o.area > A.ruralArea) r += cut * A.first.rural / 100;
+      acq -= cut;
+    }
+    return {rate: rate, eduRate: edu, ruralRate: rural, totalRate: Math.round((rate + edu + rural) * 1e6) / 1e6, acq: acq, edu: e, rural: r, total: acq + e + r, heavy: heavy, cut: cut}; },
   // corpInterim(상반기 과표, 구간) → 가결산 중간예납 산출세액(국세). 6개월 기준: 연환산 × 2 → 세율 → ÷ 2
   corpInterim: function(half, br){ if(!(half>0)) return 0; return window.SF_TAX.prog(half*2, br)/2; },
   // splitMax(납부세액) → 분납 가능한 최대 금액 (국세: split 초과 ~ 2×split 이하는 초과분, 그보다 크면 50% 이하)

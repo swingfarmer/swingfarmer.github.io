@@ -20,7 +20,7 @@
 
 
 <h1>🏘️ 취득세 계산기</h1>
-<p class="desc">부동산 매수 시 취득세 자동 계산. 주택/오피스텔/토지/상가 구분, 다주택 중과·증여·상속 자동 분기. 2026.11 현행법 기준 (세율 확인일 <span data-tx="checked">2026-11-17</span>).</p>
+<p class="desc">부동산 매수 시 취득세 자동 계산. 주택/오피스텔/토지/상가 구분, 다주택 중과·증여·상속 자동 분기, 생애최초·1주택 상속·자경농민 감면과 과밀억제권역 법인 중과. 2026.11 현행법 기준 (세율 확인일 <span data-tx="checked">2026-11-17</span>).</p>
 
 <div class="panel">
   <h2>📥 입력값</h2>
@@ -85,6 +85,41 @@
         <option value="Y" data-tx="acq.house.giftHeavy" data-tx-t="Y (주택 {}% 적용)">Y (주택 12% 적용)</option>
       </select>
     </div>
+
+    <div class="section-label" id="specialLabel">④ 감면·중과 (해당할 때만 보임)</div>
+    <div class="input-row" id="firstRow">
+      <label>생애최초 주택 감면 <span class="info-btn" onclick="toggleInfo('firstInfo')">i</span></label>
+      <select id="firstHome">
+        <option value="N" selected>N</option>
+        <option value="Y" data-tx="acq.first.cap" data-tx-f="korc" data-tx-t="Y (한도 {}원)">Y (한도 200만원)</option>
+        <option value="S" data-tx="acq.first.capSmall" data-tx-f="korc" data-tx-t="Y · 소형·인구감소지역 (한도 {}원)">Y · 소형·인구감소지역 (한도 300만원)</option>
+      </select>
+    </div>
+    <div class="info-box" id="firstInfo" style="display:none"><b>생애최초</b>(지방세특례제한법 36조의3, 2028.12.31 취득분까지): 본인·배우자(세대) 모두 집을 가진 적이 없고, 취득가액 <span data-tx="acq.first.max" data-tx-f="kor">12억</span> 이하 주택을 <b>매매·분양</b>으로 살 때. 취득세에서 <span data-tx="acq.first.cap" data-tx-f="korc">200만</span>원을 빼 줌(세액이 그보다 적으면 0). 지방교육세도 같은 비율로 줄고, 85㎡ 넘으면 감면받은 취득세의 <span data-tx="acq.first.rural">20</span>%가 농어촌특별세로 붙어요. 소득 요건 없음.<br><b>소형·인구감소지역</b> 한도 <span data-tx="acq.first.capSmall" data-tx-f="korc">300만</span>원: 전용 60㎡ 이하 + 수도권 6억·비수도권 3억 이하인 아파트 아닌 공동주택(연립·다세대)·도시형 생활주택·다가구 호수, 또는 인구감소지역 주택.<br>3년 안에 팔거나 증여·임대하면 감면액을 다시 내요. 주택 수 1(무주택에서 처음 사는 경우)·매매·개인일 때만 보입니다. 정부안(2026.8, 국회 심의 중): 40세 미만 한도 300만원·주거용 오피스텔 포함 — 통과되면 반영 예정.</div>
+    <div class="input-row" id="inheritRow">
+      <label>무주택 세대 1주택 상속 <span class="info-btn" onclick="toggleInfo('inheritInfo')">i</span></label>
+      <select id="inheritOne">
+        <option value="N" selected>N</option>
+        <option value="Y" data-tx="=acq.house.inherit - acq.base" data-tx-t="Y (취득세 {}%)">Y (취득세 0.8%)</option>
+      </select>
+    </div>
+    <div class="info-box" id="inheritInfo" style="display:none"><b>상속 1가구 1주택 특례</b>(지방세법 15조1항): 상속받는 사람과 같은 주민등록 세대 전원이 상속 개시일(사망일)에 무주택이고, 이 상속으로 1주택이 되는 경우. 취득세 <span data-tx="acq.house.inherit">2.8</span>% → <span data-tx="=acq.house.inherit - acq.base">0.8</span>%, 지방교육세는 그대로 <span data-tx="acqCalc.eduRate" data-tx-a='[{"kind":"house","type":"inherit","price":1}]'>0.16</span>%, 농어촌특별세 없음 → 합계 <span data-tx="acqCalc.totalRate" data-tx-a='[{"kind":"house","type":"inherit","price":1,"inheritOne":true}]'>0.96</span>%. 여러 명이 나눠 받으면 지분이 가장 큰 사람(같으면 그 집에 살던 사람 → 나이 많은 사람) 기준으로 판정.</div>
+    <div class="input-row" id="farmerRow">
+      <label>자경농민 (2년 이상 영농) <span class="info-btn" onclick="toggleInfo('farmerInfo')">i</span></label>
+      <select id="farmer">
+        <option value="N" selected>N</option>
+        <option value="Y">Y</option>
+      </select>
+    </div>
+    <div class="info-box" id="farmerInfo" style="display:none"><b>자경농민 농지 감면</b>(지방세특례제한법 6조1항, 현재 2026.12.31 취득분까지 — 연장안 국회 심의 중): 본인 또는 같은 세대 배우자가 2년 이상 농업을 주업으로 하고, 직접 경작할 농지를 살 때. <b>매매·증여</b>: 취득세·지방교육세 <span data-tx="acq.farmCut">50</span>% 경감 + 농어촌특별세 없음 → 매매 <span data-tx="acqCalc.totalRate" data-tx-a='[{"kind":"farm","type":"buy","price":1,"farmer":true}]'>1.6</span>%. <b>상속</b>(지방세법 15조1항): 취득세 <span data-tx="acq.farm.inherit">2.3</span>% → <span data-tx="=acq.farm.inherit - acq.base">0.3</span>%, 합계 <span data-tx="acqCalc.totalRate" data-tx-a='[{"kind":"farm","type":"inherit","price":1,"farmer":true}]'>0.36</span>%. 2년 안에 직접 경작하지 않거나 매각·다른 용도로 쓰면 추징. 농지·개인일 때만 보입니다.</div>
+    <div class="input-row" id="capRow">
+      <label>과밀억제권역 · 설립 5년 안 법인 <span class="info-btn" onclick="toggleInfo('capInfo')">i</span></label>
+      <select id="capHeavy">
+        <option value="N" selected>N</option>
+        <option value="Y" data-tx="acqCalc.totalRate" data-tx-a='[{"kind":"other","type":"buy","price":1,"capHeavy":true}]' data-tx-t="Y (상가 매매 {}%)">Y (상가 매매 9.4%)</option>
+      </select>
+    </div>
+    <div class="info-box" id="capInfo" style="display:none"><b>과밀억제권역 법인 중과</b>(지방세법 13조2항): 서울 전역·인천 일부·경기 일부(수원·성남·고양·과천 등) 과밀억제권역에서 <b>설립(또는 지점 설치·전입) 5년이 안 된 법인</b>이 그 권역 안 부동산을 취득하면 취득세 = 표준세율 × <span data-tx="acq.capMul">3</span> − <span data-tx="acq.base">2</span>% × 2, 지방교육세도 × <span data-tx="acq.capMul">3</span>. 상가 매매 <span data-tx="acqCalc.totalRate" data-tx-a='[{"kind":"other","type":"buy","price":1}]'>4.6</span>% → <span data-tx="acqCalc.totalRate" data-tx-a='[{"kind":"other","type":"buy","price":1,"capHeavy":true}]'>9.4</span>%. 산업단지 등 예외 있음. 법인 주택은 이미 <span data-tx="acq.house.heavy3">12</span>%라 해당 없음 — 주택 외·법인 Y일 때만 보입니다.</div>
   </div>
 </div>
 
@@ -93,7 +128,7 @@
   <table class="calc-table">
     <tbody>
       <tr><td>적용 취득세율</td><td id="rate">-</td><td id="rateDesc">구분·유형·주택수·지역·법인 자동 적용</td></tr>
-      <tr><td>취득세</td><td id="acquireTax">-</td><td>취득가액 × 적용세율</td></tr>
+      <tr><td>취득세</td><td id="acquireTax">-</td><td id="acqDesc">취득가액 × 적용세율</td></tr>
       <tr><td>지방교육세</td><td id="eduTax">-</td><td id="eduDesc">취득세의 일부</td></tr>
       <tr><td>농어촌특별세</td><td id="ruralTax">-</td><td id="ruralDesc"><span data-tx="acq.ruralArea">85</span>㎡ 초과 / 농지외 / 상가</td></tr>
     </tbody>
@@ -138,15 +173,24 @@
   <h3>④ 부가세금</h3>
   <ul>
     <li><b>지방교육세:</b> (표준세율 − <span data-tx="acq.base">2</span>%) × <span data-tx="acq.eduR">20</span>% → 매매 <span data-tx="acqCalc.rate" data-tx-a='[{"kind":"other","type":"buy","price":1}]'>4</span>%면 <span data-tx="acqCalc.eduRate" data-tx-a='[{"kind":"other","type":"buy","price":1}]'>0.4</span>% / 농지 매매 <span data-tx="acqCalc.rate" data-tx-a='[{"kind":"farm","type":"buy","price":1}]'>3</span>%면 <span data-tx="acqCalc.eduRate" data-tx-a='[{"kind":"farm","type":"buy","price":1}]'>0.2</span>% / 증여 <span data-tx="acqCalc.rate" data-tx-a='[{"kind":"other","type":"gift","price":1}]'>3.5</span>%면 <span data-tx="acqCalc.eduRate" data-tx-a='[{"kind":"other","type":"gift","price":1}]'>0.3</span>% / 상속·신축 <span data-tx="acqCalc.rate" data-tx-a='[{"kind":"other","type":"inherit","price":1}]'>2.8</span>%면 <span data-tx="acqCalc.eduRate" data-tx-a='[{"kind":"other","type":"inherit","price":1}]'>0.16</span>% / 농지 상속 <span data-tx="acqCalc.rate" data-tx-a='[{"kind":"farm","type":"inherit","price":1}]'>2.3</span>%면 <span data-tx="acqCalc.eduRate" data-tx-a='[{"kind":"farm","type":"inherit","price":1}]'>0.06</span>%. 주택 매매 <span data-tx="acq.house.rLo">1</span>~<span data-tx="acq.house.rHi">3</span>%는 취득세 × 10%, 중과(<span data-tx="acq.house.heavy2">8</span>·<span data-tx="acq.house.heavy3">12</span>%)는 <span data-tx="acqCalc.eduRate" data-tx-a='[{"kind":"house","type":"buy","price":1e9,"area":100,"houses":1,"houses":3,"reg":true}]'>0.4</span>%</li>
-    <li><b>농어촌특별세:</b> 기본 <span data-tx="acqCalc.ruralRate" data-tx-a='[{"kind":"other","type":"buy","price":1}]'>0.2</span>% (농지·농지외·상가·오피스텔 모두). 주택은 <span data-tx="acq.ruralArea">85</span>㎡ 초과만 — 일반 <span data-tx="acqCalc.ruralRate" data-tx-a='[{"kind":"house","type":"buy","price":1e9,"area":100,"houses":1}]'>0.2</span>% / <span data-tx="acq.house.heavy2">8</span>% 중과 <span data-tx="acqCalc.ruralRate" data-tx-a='[{"kind":"house","type":"buy","price":1e9,"area":100,"houses":1,"houses":2,"reg":true}]'>0.6</span>% / <span data-tx="acq.house.heavy3">12</span>% 중과 <span data-tx="acqCalc.ruralRate" data-tx-a='[{"kind":"house","type":"buy","price":1e9,"area":100,"houses":1,"houses":3,"reg":true}]'>1</span>% (<span data-tx="acq.ruralArea">85</span>㎡ 이하 면제). 2년 이상 자경농민 농지 감면은 미반영</li>
+    <li><b>농어촌특별세:</b> 기본 <span data-tx="acqCalc.ruralRate" data-tx-a='[{"kind":"other","type":"buy","price":1}]'>0.2</span>% (농지·농지외·상가·오피스텔 모두). 주택은 <span data-tx="acq.ruralArea">85</span>㎡ 초과만 — 일반 <span data-tx="acqCalc.ruralRate" data-tx-a='[{"kind":"house","type":"buy","price":1e9,"area":100,"houses":1}]'>0.2</span>% / <span data-tx="acq.house.heavy2">8</span>% 중과 <span data-tx="acqCalc.ruralRate" data-tx-a='[{"kind":"house","type":"buy","price":1e9,"area":100,"houses":1,"houses":2,"reg":true}]'>0.6</span>% / <span data-tx="acq.house.heavy3">12</span>% 중과 <span data-tx="acqCalc.ruralRate" data-tx-a='[{"kind":"house","type":"buy","price":1e9,"area":100,"houses":1,"houses":3,"reg":true}]'>1</span>% (<span data-tx="acq.ruralArea">85</span>㎡ 이하 면제). 자경농민 농지·무주택 1주택 상속 특례는 없음</li>
+  </ul>
+
+  <h3>⑤ 감면·중과 (131 추가)</h3>
+  <ul>
+    <li><b>생애최초:</b> 무주택 세대가 <span data-tx="acq.first.max" data-tx-f="kor">12억</span> 이하 주택 매매 → 취득세에서 <span data-tx="acq.first.cap" data-tx-f="korc">200만</span>원(소형·인구감소지역 <span data-tx="acq.first.capSmall" data-tx-f="korc">300만</span>원) 공제, 지방교육세도 같은 비율로 줄어듦. 예) 3억 84㎡ → 취득세 300만 − 200만 = 100만 + 교육세 10만</li>
+    <li><b>무주택 1주택 상속:</b> <span data-tx="acq.house.inherit">2.8</span>% → <span data-tx="=acq.house.inherit - acq.base">0.8</span>% (합계 <span data-tx="acqCalc.totalRate" data-tx-a='[{"kind":"house","type":"inherit","price":1,"inheritOne":true}]'>0.96</span>%)</li>
+    <li><b>자경농민:</b> 농지 매매·증여 취득세·교육세 <span data-tx="acq.farmCut">50</span>% 경감 + 농특세 없음 (매매 <span data-tx="acqCalc.totalRate" data-tx-a='[{"kind":"farm","type":"buy","price":1,"farmer":true}]'>1.6</span>%) / 상속 <span data-tx="acqCalc.totalRate" data-tx-a='[{"kind":"farm","type":"inherit","price":1,"farmer":true}]'>0.36</span>%</li>
+    <li><b>과밀억제권역 법인:</b> 설립 5년 안 법인이 권역 안 비주택 취득 → 상가 매매 <span data-tx="acqCalc.totalRate" data-tx-a='[{"kind":"other","type":"buy","price":1,"capHeavy":true}]'>9.4</span>%</li>
+    <li>각 칸은 해당하는 구분·유형일 때만 보여요. 요건(무주택·거주·영농 기간 등)은 계산기가 확인하지 못하니 i 설명을 보고 직접 판단.</li>
   </ul>
 
   <div class="warn-box">
-    <b>⚠ 주의:</b> 생애최초 감면, 신혼부부·출산 감면, 무주택자 1주택 상속 특례(0.8%), 자경농민 감면, 과밀억제권역 법인 중과 등 특례는 미반영. 일시적 2주택은 주택수 1로 넣으면 됨. 실제 신고시 확인 필요.
+    <b>⚠ 주의:</b> 생애최초·1주택 상속·자경농민·과밀억제권역 법인 중과는 ④ 칸으로 반영(131). 출산·양육 가구 감면(500만 한도), 지방 미분양·인구감소지역 세컨드홈 감면, 지자체 조례 감면 등은 미반영. 일시적 2주택은 주택수 1로 넣으면 됨. 실제 신고시 확인 필요.
   </div>
 </div>
 
-<script src="/tax-rates.js?v=24"></script>
+<script src="/tax-rates.js?v=25"></script>
 <script>
 // (093) 취득세율·지방교육세·농특세는 /tax-rates.js(SF_TAX.acq, 함수 acqHouseRate·acqCalc)에서 받음 — /realestate/home-swap/과 같은 식.
 //       (101: 못 읽을 때 쓰던 대체 사본 지움). 093에서 고친 것:
@@ -182,19 +226,34 @@ function calculate() {
   const type = TYPE[acquireType] || 'buy';
   // 주택 증여 중과: 조정지역 + 시가표준액 3억 이상 + 증여자 다주택 (주택수 칸을 증여자 기준으로 넣는 것으로 봄)
   const giftHeavy = kind === 'house' && type === 'gift' && isRegulated && houseCount >= 2 && price >= A.house.giftHeavyMin;
-  const c = acqCalc({kind, type, price, area, houses: houseCount, reg: isRegulated, corp: isCorp && type === 'buy', giftHeavy});
+  // (131) ④ 감면·중과 칸 — 해당할 때만 보이고, 숨은 칸 값은 계산에 안 씀(저장값은 그대로 둠)
+  const showFirst = kind === 'house' && type === 'buy' && !isCorp && houseCount <= 1;
+  const showInherit = kind === 'house' && type === 'inherit' && !isCorp;
+  const showFarmer = kind === 'farm' && type !== 'build' && !isCorp;
+  const showCap = kind !== 'house' && isCorp;
+  [['firstRow', showFirst, 'firstInfo'], ['inheritRow', showInherit, 'inheritInfo'], ['farmerRow', showFarmer, 'farmerInfo'], ['capRow', showCap, 'capInfo']].forEach(([id, on, info]) => {
+    document.getElementById(id).style.display = on ? 'flex' : 'none';
+    if (!on) document.getElementById(info).style.display = 'none';
+  });
+  document.getElementById('specialLabel').style.display = (showFirst || showInherit || showFarmer || showCap) ? '' : 'none';
+  const firstSel = document.getElementById('firstHome').value;
+  const firstCap = showFirst && firstSel !== 'N' ? (firstSel === 'S' ? A.first.capSmall : A.first.cap) : 0;
+  const inheritOne = showInherit && document.getElementById('inheritOne').value === 'Y';
+  const farmer = showFarmer && document.getElementById('farmer').value === 'Y';
+  const capHeavy = showCap && document.getElementById('capHeavy').value === 'Y';
+  const c = acqCalc({kind, type, price, area, houses: houseCount, reg: isRegulated, corp: isCorp && type === 'buy', giftHeavy, firstCap, inheritOne, farmer, capHeavy});
   const rate = c.rate / 100;
 
   let rateDesc = '';
   if (kind === 'house') {
     if (type === 'gift') rateDesc = giftHeavy ? '주택 증여 중과 (조정·증여자 다주택·3억 이상) ' + pc(c.rate) : '주택 증여 ' + pc(c.rate);
-    else if (type === 'inherit') rateDesc = '주택 상속 ' + pc(c.rate);
+    else if (type === 'inherit') rateDesc = inheritOne ? '무주택 세대 1주택 상속 특례 ' + pc(c.rate) : '주택 상속 ' + pc(c.rate);
     else if (type === 'build') rateDesc = '주택 신축 ' + pc(c.rate);
     else if (isCorp) rateDesc = '법인 → ' + pc(c.rate);
     else if (c.heavy) rateDesc = houseCount + '주택 ' + (isRegulated ? '조정' : '비조정') + ' → ' + pc(c.rate);
     else rateDesc = `주택 매매 ${(c.rate).toFixed(2)}% (일반세율)`;
   } else if (kind === 'farm') {
-    rateDesc = `농지 ${acquireType} ${pc(c.rate)}`;
+    rateDesc = `농지 ${acquireType} ${pc(c.rate)}` + (farmer ? (type === 'inherit' ? ' (자경농민 상속 특례)' : ' (자경농민 ' + A.farmCut + '% 경감)') : '');
   } else if (propertyType === '오피스텔') {
     rateDesc = `[${officetelUse} 오피스텔] 일반건물 ${acquireType} ${pc(c.rate)}`;
   } else if (propertyType === '상가') {
@@ -202,15 +261,23 @@ function calculate() {
   } else {
     rateDesc = `농지외 토지 ${acquireType} ${pc(c.rate)}`;
   }
+  if (capHeavy) rateDesc += ' (과밀억제권역 법인 중과)';
 
   let eduDesc;
   if (kind === 'house' && c.heavy) eduDesc = '중과 ' + pc(c.eduRate) + ' (4% 기준)';
   else if (kind === 'house' && type === 'buy') eduDesc = '취득세 × 10% (' + pc(c.eduRate) + ')';
+  else if (inheritOne) eduDesc = '특례 전 (' + pc(A.house.inherit) + ' − 2%) × 20% = ' + pc(c.eduRate);
+  else if (farmer && type === 'inherit') eduDesc = '특례 전 (' + pc(A.farm.inherit) + ' − 2%) × 20% = ' + pc(c.eduRate);
+  else if (farmer) eduDesc = '(' + pc(A.farm[type]) + ' − 2%) × 20% × ' + (100 - A.farmCut) + '% = ' + pc(c.eduRate);
+  else if (capHeavy) eduDesc = '(표준세율 − 2%) × 20% × ' + A.capMul + ' = ' + pc(c.eduRate);
   else eduDesc = '(' + pc(c.rate) + ' − 2%) × 20% = ' + pc(c.eduRate);
+  if (c.cut > 0) eduDesc += ' → 생애최초 감면 비율만큼 줄어듦';
 
   let ruralDesc;
-  if (kind === 'house') ruralDesc = area > A.ruralArea ? (A.ruralArea + '㎡ 초과' + (c.heavy ? ' + 중과 ' : ' ') + pc(c.ruralRate)) : (A.ruralArea + '㎡ 이하 → 면제');
-  else ruralDesc = pc(c.ruralRate) + (kind === 'farm' ? ' (2년 이상 자경농민 감면은 미반영)' : '');
+  if (inheritOne) ruralDesc = '1주택 상속 특례 → 없음';
+  else if (kind === 'house') ruralDesc = area > A.ruralArea ? (A.ruralArea + '㎡ 초과' + (c.heavy ? ' + 중과 ' : ' ') + pc(c.ruralRate) + (c.cut > 0 ? ' + 감면받은 취득세 × ' + A.first.rural + '%' : '')) : (A.ruralArea + '㎡ 이하 → 면제');
+  else if (farmer) ruralDesc = '자경농민 → 비과세';
+  else ruralDesc = pc(c.ruralRate) + (kind === 'farm' ? ' (자경농민이면 ④에서 Y)' : '');
 
   const finalTax = c.total;
   const effectiveRate = price > 0 ? finalTax / price : 0;
@@ -218,6 +285,7 @@ function calculate() {
   document.getElementById('rate').textContent = fmtPct(rate);
   document.getElementById('rateDesc').textContent = rateDesc;
   document.getElementById('acquireTax').textContent = fmt(c.acq) + ' 원';
+  document.getElementById('acqDesc').textContent = c.cut > 0 ? ('취득가액 × 적용세율 ' + fmt(c.acq + c.cut) + '원 − 생애최초 감면 ' + fmt(c.cut) + '원') : (firstCap > 0 && price > A.first.max ? '취득가액 × 적용세율 (' + sfKor(A.first.max, 'kor') + ' 초과라 생애최초 감면 안 됨)' : (firstCap > 0 && c.heavy ? '취득가액 × 적용세율 (중과 대상이라 생애최초 감면 안 됨)' : '취득가액 × 적용세율'));
   document.getElementById('eduTax').textContent = fmt(c.edu) + ' 원';
   document.getElementById('eduDesc').textContent = eduDesc;
   document.getElementById('ruralTax').textContent = fmt(c.rural) + ' 원';
@@ -257,6 +325,10 @@ window.slGetState = function(){
     isRegulated: document.getElementById('isRegulated').value,
     acquireType: document.getElementById('acquireType').value,
     isCorp: document.getElementById('isCorp').value,
+    firstHome: document.getElementById('firstHome').value,
+    inheritOne: document.getElementById('inheritOne').value,
+    farmer: document.getElementById('farmer').value,
+    capHeavy: document.getElementById('capHeavy').value,
   };
 };
 window.slSetState = function(d){
@@ -269,6 +341,7 @@ window.slSetState = function(d){
   if(d.isRegulated !== undefined) document.getElementById('isRegulated').value = d.isRegulated;
   if(d.acquireType !== undefined) document.getElementById('acquireType').value = d.acquireType;
   if(d.isCorp !== undefined) document.getElementById('isCorp').value = d.isCorp;
+  ['firstHome', 'inheritOne', 'farmer', 'capHeavy'].forEach(k => { document.getElementById(k).value = d[k] !== undefined ? d[k] : 'N'; });  // (131) 옛 슬롯엔 없음 → N
   if(typeof calculate === 'function') calculate();
 };
 </script>
