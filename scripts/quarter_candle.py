@@ -21,7 +21,7 @@
   python3 scripts/quarter_candle.py --save-only  # 차트용 json만 저장, 발송 안 함 (평일 16:50 크론)
 
 (131) 차트: data/dashboard/quarter_candle.json → /dashboard/#qcandle 「🕯 분기봉」 탭
-  모든 실행(--dry 빼고)이 json을 저장. 칸: q = [분기, 시가, 고가, 저가, 종가, 20하단, 20상단, 10하단, 10상단, 판정20, 판정10, 연속]
+  모든 실행(--dry 빼고)이 json을 저장. 칸: q(분기)·m(월, 131) = [분기 또는 월, 시가, 고가, 저가, 종가, 20하단, 20상단, 10하단, 10상단, 판정20, 판정10, 연속]
   판정 T = 상단에서 음봉 / B = 하단에서 양봉 / '' = 아님. 연속 = +n 양봉 n분기째 / −n 음봉 / 0 보합. 엔벨 값은 그 분기까지의 저가 평균(앞 분기 모자라면 null)
 """
 
@@ -62,6 +62,15 @@ def to_quarters(months):
         q['color'] = color(q['open'], q['close'])
         q['pct'] = (q['close'] / q['open'] - 1) * 100 if q['open'] else 0.0
     return qs
+
+
+def to_months(months):
+    """(131) 월봉 보기용 — to_quarters와 같은 모양(key = (연, 월))"""
+    out = []
+    for d, o, c, h, l in months:
+        out.append({'key': (d.year, d.month), 'open': o, 'close': c, 'high': h, 'low': l, 'n': 1,
+                    'color': color(o, c), 'pct': (c / o - 1) * 100 if o else 0.0})
+    return out
 
 
 def streak(qs, upto):
@@ -152,10 +161,10 @@ def save_json(data_syms, today, last_trade):
            'envs': ENVS, 'basis': '저가 L',
            'cols': ['분기', '시가', '고가', '저가', '종가'] + [f'{n}{x}' for n, _ in ENVS for x in ('하단', '상단')] + [f'판정{n}' for n, _ in ENVS] + ['연속'],
            'indices': {}}
-    for sym, label, qs in data_syms:
+    def rows_of(qs, lab):
         rows = []
         for i, q in enumerate(qs):
-            row = [f"{q['key'][0]}Q{q['key'][1]}", r2(q['open']), r2(q['high']), r2(q['low']), r2(q['close'])]
+            row = [lab(q['key']), r2(q['open']), r2(q['high']), r2(q['low']), r2(q['close'])]
             hits = []
             for n, pct in ENVS:
                 e = envelope(qs, n, pct, i)
@@ -163,13 +172,17 @@ def save_json(data_syms, today, last_trade):
                 hits.append({'top': 'T', 'bottom': 'B'}.get(e[2], '') if e else '')
             sk = streak(qs, i)  # + 양봉 연속 / − 음봉 연속 / 0 보합
             rows.append(row + hits + [sk if q['color'] == 'up' else -sk if q['color'] == 'down' else 0])
-        out['indices'][sym.lstrip('^')] = {'name': label, 'q': rows}
+        return rows
+    for sym, label, qs, ms in data_syms:
+        out['indices'][sym.lstrip('^')] = {'name': label,
+            'q': rows_of(qs, lambda k: '%dQ%d' % k),
+            'm': rows_of(ms, lambda k: '%d-%02d' % k)}  # (131) 월봉 — HTS 월봉 엔벨과 대조용
     path = os.path.join(SCRIPT_DIR, '..', 'data', 'dashboard', 'quarter_candle.json')
     tmp = path + '.tmp'
     with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(out, f, ensure_ascii=False, separators=(',', ':'))
     os.replace(tmp, path)
-    cnt = ', '.join('%s %d분기' % (k, len(v['q'])) for k, v in out['indices'].items())
+    cnt = ', '.join('%s %d분기·%d개월' % (k, len(v['q']), len(v['m'])) for k, v in out['indices'].items())
     print('  💾 저장: data/dashboard/quarter_candle.json (' + cnt + ')')
 
 
@@ -218,7 +231,7 @@ def main():
         if (qs[-1]['key'][0], qs[-1]['key'][1]) != (today.year, (today.month - 1) // 3 + 1):
             print(f'  ⚠ {label} 마지막 분기 {qs[-1]["key"]} ≠ 이번 분기 — 야후 갱신 늦음?')
         print(f'  {label}: 월봉 {len(months)}개 ({months[0][0]:%Y-%m}~{months[-1][0]:%Y-%m}), 마지막 거래일 {lt:%Y-%m-%d}' if lt else f'  {label}: 월봉 {len(months)}개')
-        data.append((label, qs)); syms.append((sym, label, qs)); last_trade = last_trade or lt
+        data.append((label, qs)); syms.append((sym, label, qs, to_months(months))); last_trade = last_trade or lt
     if not data:
         print('  ❌ 받은 지수 없음 — 발송 안 함'); sys.exit(1)
     if len(syms) == len(INDICES) and not a.dry:  # 하나라도 못 받으면 옛 json 유지
