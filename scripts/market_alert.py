@@ -127,14 +127,14 @@ def load_opinet():
 
 
 def opinet_line(o):
-    """✈️ 항공유 $151.7 (+0.6) · 두바이 $92.7 · 스프레드 $59.0 (11/17)"""
+    """✈️ 항공유 $151.72 (+0.61) · 두바이 $92.70 · 스프레드 $59.02 (11/17) — (129) 오피넷과 같게 소수 둘째 자리"""
     if not o:
         return None
-    t = f"<b>✈️ 항공유</b>: ${o['kero']:.1f}"
+    t = f"<b>✈️ 항공유</b>: ${o['kero']:.2f}"
     if o['kero_chg'] is not None:
-        t += f" ({o['kero_chg']:+.1f})"
+        t += f" ({o['kero_chg']:+.2f})"
     if o['dubai'] is not None:
-        t += f" · 두바이 ${o['dubai']:.1f} · 스프레드 ${o['spread']:.1f}"
+        t += f" · 두바이 ${o['dubai']:.2f} · 스프레드 ${o['spread']:.2f}"
     return t + f" <i>({o['date']}, 싱가포르)</i>"
 
 
