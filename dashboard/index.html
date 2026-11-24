@@ -37,7 +37,8 @@
 .chart-box.full { grid-column:1/-1; }
 .chart-box h3 { font-size:11px;color:var(--text-dim);margin-bottom:6px;font-weight:500; }
 .chart-box canvas { width:100%!important;height:180px!important; }
-#qcCanvas { height:100%!important; }  /* (131) 분기봉은 감싼 칸 높이(380px·크게)를 따름 — Chart.js가 canvas style을 덮어써서 id로 고정 */
+#qcCanvas { height:100%!important; }
+.qc-info { display:none; background:var(--card); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:6px; padding:8px 12px; margin:0 0 8px; font-size:11px; line-height:1.7; color:var(--text); }  /* (131) 분기봉 「자세히 보는 법」 i 펼침 */  /* (131) 분기봉은 감싼 칸 높이(380px·크게)를 따름 — Chart.js가 canvas style을 덮어써서 id로 고정 */
 .period-bar { display:flex;gap:3px;margin-bottom:8px; }
 .period-btn { background:var(--card);border:1px solid var(--border);border-radius:4px;color:var(--text-dim);font-size:10px;padding:2px 8px;cursor:pointer; }
 .period-btn.active { background:var(--accent);color:#fff;border-color:var(--accent); }
@@ -782,11 +783,21 @@ function draw(){
     '<div class="sub-row" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))">' +
       '<div class="s-card"><div class="lbl">' + lab(last[0]) + ' (진행 중)</div><div class="val" style="color:' + colorOf(last) + '">' + (last[4] > last[1] ? '🔴 양봉 ' : last[4] < last[1] ? '🔵 음봉 ' : '⚪ 보합 ') + sfPct(pct, 2, true) + '</div><div style="font-size:10px;color:var(--text-dim)">이대로 끝나면 ' + skTxt + '</div></div>' + envRows + '</div>' +
     '<div class="period-bar" style="flex-wrap:wrap;gap:6px">' + btns('idx', Object.keys(d.indices).map(function(k){ return [k, d.indices[k].name]; })) + '<span style="width:8px"></span>' + btns('tf', [['q', '분기봉'], ['m', '월봉']]) + '<span style="width:8px"></span>' + btns('range', [['all', '전체'], ['y15', '15년'], ['y8', '8년']]) + '<span style="width:8px"></span>' + btns('log', [[true, '로그'], [false, '보통']]) + '<span style="width:8px"></span>' + btns('big', [[false, '보통 크기'], [true, '크게']]) +
-      '<button class="period-btn" id="qcReset" style="margin-left:auto">↺ 확대 풀기</button></div>' +
-    '<div style="font-size:10px;color:var(--text-dim);margin:-2px 0 6px">🔍 그래프에서 <b>마우스로 끌어 상자를 그리면</b> 그 구간만 크게 · <b>Ctrl + 휠</b> 확대·축소 · <b>Shift + 끌기</b> 좌우 이동 · <b>더블클릭</b> 또는 「↺ 확대 풀기」로 원래대로 (폰: 두 손가락 벌리기·밀기). 확대하면 세로 눈금도 그 구간에 맞춰짐.</div>' +
+      '<span style="margin-left:auto;font-size:11px;color:var(--text-dim)">🔍 자세히 보는 법<span class="info-btn" onclick="toggleInfo(\'qcZoomInfo\');window._qcInfo=document.getElementById(\'qcZoomInfo\').style.display===\'block\'">i</span></span>' +
+      '<button class="period-btn" id="qcReset">↺ 확대 풀기</button></div>' +
+    '<div class="qc-info" id="qcZoomInfo"><b>🔍 그래프 자세히 보기</b> (분기봉·월봉 같음)<br>' +
+      '· <b>마우스로 끌어 상자 그리기</b> → 그 구간만 확대 (제일 쉬움)<br>' +
+      '· <b>Ctrl + 휠</b> → 확대·축소 (그냥 휠은 페이지 스크롤)<br>' +
+      '· <b>Shift + 끌기</b> → 확대한 채 좌우 이동<br>' +
+      '· <b>더블클릭</b> 또는 <b>↺ 확대 풀기</b> → 원래대로<br>' +
+      '· 폰: 두 손가락으로 벌리기(확대)·밀기(이동)<br>' +
+      '· 확대하면 세로 눈금이 보이는 구간의 고가·저가·엔벨에 자동으로 맞춰짐 → 옛 구간도 납작하지 않음<br>' +
+      '· <b>크게</b> 버튼 → 그래프를 화면 높이만큼 (고른 크기·종목·봉·기간은 다음에 열어도 그대로)<br>' +
+      '· 마우스를 봉에 올리면 그 분기(달)의 시가·고가·저가·종가·등락과 엔벨 <b>하단 · 상단</b> 값</div>' +
     '<div class="chart-box"><div style="position:relative;height:' + (st.big ? 'calc(100vh - 150px)' : '380px') + '"><canvas id="qcCanvas"></canvas></div>' +
     '<div style="font-size:10px;color:var(--text-dim);margin-top:4px">🔴 양봉 · 🔵 음봉 · <span style="color:' + ENV_COL[20] + '">┄ 엔벨 20·20</span> · <span style="color:' + ENV_COL[10] + '">┄ 엔벨 10·10</span> · ▼ 상단에서 음봉 · ▲ 하단에서 양봉 (색 = 어느 엔벨)</div></div>' +
     '<div class="chart-box" style="margin-top:8px;overflow-x:auto"><h3>최근 12' + U + '</h3><table class="flow-table"><tr><th>' + (M ? '월' : '분기') + '</th><th>시가</th><th>고가</th><th>저가</th><th>종가</th><th>등락</th><th>연속</th>' + envs.map(function(e){ return '<th>엔벨 ' + e[0] + '·' + e[1] + '</th>'; }).join('') + '</tr>' + tb + '</table></div>';
+  if (window._qcInfo) document.getElementById('qcZoomInfo').style.display = 'block';  // 버튼 눌러 다시 그려도 펼친 설명 유지 (130 지금 비중과 같은 문제)
   el.querySelectorAll('button[data-qc]').forEach(function(b){ b.onclick = function(){ var k = b.dataset.qc, v = b.dataset.v; st[k] = (k === 'log' || k === 'big') ? v === 'true' : v; try { localStorage.setItem('sf-qc-view', JSON.stringify(st)); } catch (_) {} draw(); }; });
   // 그래프 — 막대 2겹(꼬리 [저가,고가] 가늘게 + 몸통 [시가,종가]) + 엔벨 선 4개 + 판정 표시(▼ 고가 위 / ▲ 저가 아래)
   var labels = R.map(function(r){ return r[0].slice(2).replace(/[Q-]/, '.'); });
