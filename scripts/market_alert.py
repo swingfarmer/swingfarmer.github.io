@@ -2,7 +2,7 @@
 시장 지표 텔레그램 알림
 ======================
 fetch_market_indicators.py 결과 → 텔레그램 발송.
-아침(07:30) + 저녁(18:50) 2회 cron.
+아침(08:00) + 저녁(18:50) 평일 2회 cron. (130) 주요 뉴스 칸·항공유 「사이트」 링크 뺌 — 지표만.
 
 환경변수: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 """
@@ -17,11 +17,9 @@ KST = timezone(timedelta(hours=9))
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR   = os.path.dirname(SCRIPT_DIR)
 INDICATORS_FILE = os.path.join(ROOT_DIR, 'data', 'market_indicators.json')
-NEWS_FILE = os.path.expanduser('~/news_data/news.json')
 RATES_FILE = os.path.join(ROOT_DIR, 'data', 'rates.json')
 RATES_HIST_FILE = os.path.join(ROOT_DIR, 'data', 'rates_history.json')
 FX_STATE_FILE = os.path.join(SCRIPT_DIR, 'fx_alert_state.json')
-NEWS_CATS = ['economy', 'stock', 'breaking']  # 경제, 증시, 속보
 
 
 def send_telegram(text):
@@ -135,13 +133,11 @@ def opinet_line(o):
         t += f" ({o['kero_chg']:+.2f})"
     if o['dubai'] is not None:
         t += f" · 두바이 ${o['dubai']:.2f} · 스프레드 ${o['spread']:.2f}"
-    return t + f" <i>({o['date']}, 싱가포르)</i> <a href=\"https://swingfarmer.github.io/dashboard/#oil\">사이트</a>"
+    return t + f" <i>({o['date']}, 싱가포르)</i>"
 
 
-def build_message(data, news_items=None, opinet=None):
-    """market_indicators.json + news → 텔레그램 메시지 생성."""
-    if news_items is None:
-        news_items = []
+def build_message(data, opinet=None):
+    """market_indicators.json → 텔레그램 메시지 생성. (130) 주요 뉴스 칸 뺌 — 뉴스는 봇2가 매시간 따로 보냄, 여기는 지표만."""
     now = datetime.now(KST)
     hour = now.hour
     session = '🌅 아침' if hour < 12 else '🌙 저녁'
@@ -256,42 +252,10 @@ def build_message(data, news_items=None, opinet=None):
             gold_line += f" {arrow}{abs(chg_pct):.2f}% ({chg_amt:+,.0f}){gold_warn}"
         lines.append(gold_line)
 
-    # ── 뉴스 헤드라인 ──
-    if news_items:
-        lines.append('\n<b>📰 주요 뉴스</b>')
-        for item in news_items[:5]:
-            lines.append(f"  · {item['title']}")
-
     # 업데이트 시각
     lines.append(f"\n<i>데이터: {data.get('updated', '-')}</i>")
 
     return '\n'.join(lines)
-
-
-def load_news():
-    """news.json에서 경제/증시/속보 헤드라인 추출."""
-    if not os.path.exists(NEWS_FILE):
-        return []
-    try:
-        with open(NEWS_FILE, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        items = []
-        cats = data.get('categories', {})
-        for cat in NEWS_CATS:
-            cat_data = cats.get(cat, {})
-            cat_items = cat_data.get('items', [])
-            for item in cat_items[:3]:
-                items.append({
-                    'title': item.get('title', ''),
-                    'cat': cat,
-                    'pubDate': item.get('pubDate', ''),
-                })
-        # 최신순 정렬
-        items.sort(key=lambda x: x.get('pubDate', ''), reverse=True)
-        return items[:5]
-    except Exception as e:
-        print(f'  뉴스 로드 실패: {e}')
-        return []
 
 
 def main():
@@ -311,8 +275,7 @@ def main():
             send_telegram(fx_msg)
 
     # ── 정기 브리핑 ──
-    news = load_news()
-    msg = build_message(data, news, load_opinet())
+    msg = build_message(data, load_opinet())
     print(msg.replace('<b>', '').replace('</b>', '').replace('<i>', '').replace('</i>', ''))
     print(f'\n메시지 길이: {len(msg)}자')
 
