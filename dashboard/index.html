@@ -192,12 +192,14 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
     <button class="chart-tab" data-tab="vasily">🔴 수급(바실리)</button>
     <button class="chart-tab" data-tab="bod">🇺🇸 S&amp;P 500</button>
     <button class="chart-tab" data-tab="putcall">⚖️ 풋콜레이쇼</button>
+    <button class="chart-tab" data-tab="qcandle">🕯 분기봉</button>
   </div>
   <div class="tab-pane active ind-pane" id="tab-indicators"><div id="indContent"><div class="loading">데이터 로딩 중...</div></div></div>
   <div class="tab-pane" id="tab-oil"><div id="oilSec"><div class="section-title">⛽ 국제유가 · 석유제품 <span style="font-size:11px;color:var(--text-dim);font-weight:400">오피넷 · $/bbl</span><span class="oil-date" id="oilDate"></span></div>
     <div class="oil-lock" id="oilMsg">불러오는 중…</div><div id="oilBody" style="display:none"></div></div></div>
   <div class="tab-pane" id="tab-vasily"><div id="vasilyContent"><div style="text-align:center;padding:30px;color:var(--text-dim);font-size:12px;">데이터 로딩중…</div></div></div>
   <div class="tab-pane" id="tab-bod"><div id="bodContent"><div style="text-align:center;padding:30px;color:var(--text-dim);font-size:12px;">데이터 로딩중…</div></div></div>
+  <div class="tab-pane" id="tab-qcandle"><div id="qcContent"><div style="text-align:center;padding:30px;color:var(--text-dim);font-size:12px;">데이터 로딩중…</div></div></div>
   <div class="tab-pane" id="tab-putcall"><div id="putcallContent"><div style="text-align:center;padding:30px;color:var(--text-dim);font-size:12px;">데이터 로딩중…</div></div></div>
 
   <!-- 사용설명서 -->
@@ -213,7 +215,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
       <p>코스피·코스닥 / 미국 3대 지수 / 미국 금리(13주·5·10·30년) / 환율 / VIX / WTI·금 히스토리 그래프 + 장단기 금리 스프레드(10년 − 13주, 마이너스면 역전). 아래에 GPU 임대료 외부 링크·주요 뉴스.</p>
       <h4>⛽ 국제유가 탭 🔒</h4>
       <p>오피넷 두바이·브렌트·WTI·항공유(싱가포르 등유)·스프레드(항공유 − 두바이)·휘발유·경유·나프타. 카드(전날 대비) + 추이 그래프(3개월·1년·3년) + 일별·월평균·분기평균 표. 오피넷 약관 때문에 관리자 로그인일 때만 보임.</p>
-      <p>주소 끝에 <code>#oil</code> · <code>#vasily</code> · <code>#bod</code> · <code>#putcall</code>을 붙이면 그 탭이 바로 열림.</p>
+      <p>주소 끝에 <code>#oil</code> · <code>#vasily</code> · <code>#bod</code> · <code>#putcall</code> · <code>#qcandle</code>을 붙이면 그 탭이 바로 열림.</p>
 
       <h4>🔴 바실리 탭 — 외국인 수급 역발상 시그널</h4>
       <p><strong>개념:</strong> 외국인이 극단적으로 팔 때(투매) 오히려 매수 기회, 극단적으로 살 때 과열 경계. 군중 심리의 반대편에 서는 역발상(Contrarian) 전략.</p>
@@ -238,12 +240,21 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
       <p><span class="tag tag-green">P/C < 0.7</span> 콜 우위 → 낙관 (과열 주의)</p>
       <p>5일 MA·21일 MA 추세선. 21일 MA가 1.0 근처이면 바닥 탐색 시그널.</p>
 
+      <h4>🕯 분기봉 탭 (131)</h4>
+      <p>코스피·코스닥 분기봉(분기 첫 거래일 시가 → 마지막 거래일 종가, 🔴 양봉·🔵 음봉) + 엔벨로프 두 개: <strong>20·20</strong>(분기 저가 20분기 평균 ±20%, 주황 점선)·<strong>10·10</strong>(저가 10분기 평균 ±10%, 보라 점선). HTS 설정 「20 20 20 L」「10 10 10 L」과 같은 계산.</p>
+      <p>· <span class="tag tag-red">▼ 상단에서 음봉</span> = 분기 고가가 상단선 이상인데 음봉 (위 표시 — 주황 20·20, 보라 10·10)</p>
+      <p>· <span class="tag tag-green">▲ 하단에서 양봉</span> = 분기 저가가 하단선 이하인데 양봉 (아래 표시)</p>
+      <p>· 그래프 칸에 마우스를 올리면 그 분기 시가·고가·저가·종가·엔벨 값. 막대가 길어 옛 분기가 납작하면 「로그」 눈금(기본)이 같은 % 움직임을 같은 높이로 보여 줌.</p>
+      <p>· 진행 중인 분기(맨 오른쪽)는 아직 확정 아님. 텔레그램 봇1이 매월 말일 16:40에 같은 내용(분기말 확정·그 밖 중간점검)을 보냄.</p>
+      <p>· 데이터: 야후 월봉(코스피 1997~, 코스닥 2000~) → 평일 16:50 계산 → 21:10 사이트 반영.</p>
+
       <h4>⏰ 데이터 갱신 시각</h4>
       <p>07:10 — 시장지표 (미장 종가)</p>
       <p>07:15 — 풋콜레이쇼 (SPY 옵션)</p>
       <p>18:45 — 시장지표 (한국장 종가)</p>
       <p>20:45 — 스크리너 (KOSPI200 수급)</p>
       <p>20:50 — 바실리 (수급 합산+시그널)</p>
+      <p>16:50 — 분기봉 (계산은 16:50, 사이트 반영은 21:10 push 뒤)</p>
     </div>
   </div>
   <div class="note">데이터 자동 수집 · 투자 판단의 참고 자료이며 매매 추천이 아닙니다</div>
@@ -361,7 +372,7 @@ function renderPC(data,el){const rows=data.history||[];if(!rows.length){el.inner
 // (129) 주소 #탭으로 들어오면 그 탭을 열고 탭 줄까지 내려 줌(위쪽 종합 진단에 가려 다른 페이지처럼 보이던 것) + 같은 페이지에서 #만 바뀌어도 동작(114 규칙)
 function openHash(){const h=location.hash.slice(1);if(!h||!document.querySelector('#tabBar .chart-tab[data-tab="'+h+'"]'))return;if(h!=='indicators')showTab(h);var last=-1,n=0,go=function(){if(last>=0&&Math.abs(scrollY-last)>5)return;var t=document.getElementById('tabBar');window.scrollTo(0,Math.max(0,t.getBoundingClientRect().top+scrollY-64));last=scrollY;if(++n<20)setTimeout(go,300);};setTimeout(go,80);}  /* 위 진단 카드·탭 내용이 늦게 그려져 탭 줄 자리가 바뀌므로 6초 동안 0.3초마다 다시 맞춤 — 사용자가 직접 스크롤하면 바로 멈춤. 64 = 위 고정 머리줄 */
 window.addEventListener('hashchange',openHash);
-function showTab(t){const b=document.querySelector('#tabBar .chart-tab[data-tab="'+t+'"]');if(!b)return;document.querySelectorAll('#tabBar .chart-tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab-pane').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('tab-'+t).classList.add('active');if(t==='vasily')loadVasily();if(t==='bod')loadBOD();if(t==='putcall')loadPutCall();if(t==='oil')window.initOil();}
+function showTab(t){const b=document.querySelector('#tabBar .chart-tab[data-tab="'+t+'"]');if(!b)return;document.querySelectorAll('#tabBar .chart-tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab-pane').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('tab-'+t).classList.add('active');if(t==='vasily')loadVasily();if(t==='bod')loadBOD();if(t==='putcall')loadPutCall();if(t==='qcandle')window.loadQC();if(t==='oil')window.initOil();}
 document.getElementById('tabBar').addEventListener('click',e=>{const b=e.target.closest('.chart-tab');if(!b)return;showTab(b.dataset.tab);try{history.replaceState(null,'',b.dataset.tab==='indicators'?location.pathname:'#'+b.dataset.tab);}catch(_){}});
 document.getElementById('guideToggle').addEventListener('click',()=>{const b=document.getElementById('guideBody');b.classList.toggle('open');document.getElementById('guideToggle').textContent=b.classList.contains('open')?'📖 사용설명서 (클릭하여 접기)':'📖 사용설명서 (클릭하여 펼치기)';});
 
@@ -712,6 +723,80 @@ function drawOilChart(){
 }
 
 loadAll();
+})();
+</script>
+<script>
+// ═══ (131) 🕯 분기봉 탭 — data/dashboard/quarter_candle.json (scripts/quarter_candle.py, 평일 16:50). 계산(분기 묶기·엔벨·판정·연속)은 전부 파이썬 한 곳, 여기는 그리기만 ═══
+(function(){
+var QC = null, qcChart = null, st = {idx: 'KS11', range: 'all', log: true};
+try { var sv = JSON.parse(localStorage.getItem('sf-qc-view') || 'null'); if (sv) st = Object.assign(st, sv); } catch (_) {}
+function cssv(n, d){ var v = getComputedStyle(document.body).getPropertyValue(n).trim(); return v || d; }
+function f0(v){ return v == null ? '-' : sfNum(v, 0); }
+function f2(v){ return v == null ? '-' : sfNum(v, 2); }
+var ENV_COL = {20: '#f59e0b', 10: '#a855f7'};
+window.loadQC = async function(){
+  var el = document.getElementById('qcContent');
+  if (!QC) {
+    try { var r = await fetch(DATA_BASE + '/dashboard/quarter_candle.json?x=' + Date.now()); if (!r.ok) throw r.status; QC = await r.json(); }
+    catch (e) { el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-dim)">분기봉 데이터 없음 — VM에서 quarter_candle.py 실행 필요</div>'; return; }
+  }
+  draw();
+};
+function btns(key, items){ return items.map(function(x){ return '<button class="period-btn' + (st[key] === x[0] ? ' active' : '') + '" data-qc="' + key + '" data-v="' + x[0] + '">' + x[1] + '</button>'; }).join(''); }
+function hitTxt(h, n, pct){ return h === 'T' ? '<span style="color:' + ENV_COL[n] + ';font-weight:700">▼ 상단 음봉</span>' : h === 'B' ? '<span style="color:' + ENV_COL[n] + ';font-weight:700">▲ 하단 양봉</span>' : '<span style="color:var(--text-dim)">-</span>'; }
+function draw(){
+  var el = document.getElementById('qcContent'), d = QC, I = d.indices[st.idx];
+  if (!I) { st.idx = Object.keys(d.indices)[0]; I = d.indices[st.idx]; }
+  var envs = d.envs, nE = envs.length, rows = I.q;
+  var ci = function(name){ return d.cols.indexOf(name); };
+  var iS = ci('연속');
+  var from = st.range === 'all' ? 0 : Math.max(0, rows.length - (st.range === 'y15' ? 60 : 32));
+  var R = rows.slice(from), last = rows[rows.length - 1], lt = d.last_trade ? sfDate(d.last_trade, 'md') : '';
+  var up = cssv('--sf-up', '#dc2626'), dn = cssv('--sf-down', '#2563eb');
+  var colorOf = function(r){ return r[4] > r[1] ? up : r[4] < r[1] ? dn : '#94a3b8'; };
+  var sk = last[iS], skTxt = sk > 0 ? (sk >= 2 ? sk + '분기 연속 양봉' : '양봉') : sk < 0 ? (-sk >= 2 ? (-sk) + '분기 연속 음봉' : '음봉') : '보합';
+  var pct = (last[4] / last[1] - 1) * 100;
+  var envRows = envs.map(function(e, k){ var lo = last[5 + 2*k], hi = last[6 + 2*k], h = last[5 + 2*nE + k];
+    return '<div class="s-card"><div class="lbl">엔벨 ' + e[0] + '·' + e[1] + ' (' + d.basis + ')</div><div class="val" style="font-size:11px">하단 ' + f0(lo) + ' · 상단 ' + f0(hi) + '</div><div style="font-size:10px">' + hitTxt(h, e[0]) + (h ? ' (진행 중)' : '') + '</div></div>'; }).join('');
+  var tb = rows.slice(-12).reverse().map(function(r){
+    var p = (r[4] / r[1] - 1) * 100, s = r[iS];
+    return '<tr><td>' + r[0].replace('Q', ' ') + 'Q' + (r === last ? ' (진행)' : '') + '</td><td>' + f2(r[1]) + '</td><td>' + f2(r[2]) + '</td><td>' + f2(r[3]) + '</td><td>' + f2(r[4]) + '</td><td style="color:' + colorOf(r) + ';font-weight:700">' + sfPct(p, 2, true) + '</td><td>' + (s > 0 ? '🔴' + s : s < 0 ? '🔵' + (-s) : '⚪') + '</td>' +
+      envs.map(function(e, k){ return '<td>' + hitTxt(r[5 + 2*nE + k], e[0]) + '</td>'; }).join('') + '</tr>'; }).join('');
+  el.innerHTML =
+    '<div class="section-title">🕯 ' + I.name + ' 분기봉 <span style="font-size:11px;color:var(--text-dim);font-weight:400">' + lt + ' 종가 · 평일 하루 1번 (16:50 계산)</span></div>' +
+    '<div class="sub-row" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))">' +
+      '<div class="s-card"><div class="lbl">' + last[0].replace('Q', ' ') + 'Q (진행 중)</div><div class="val" style="color:' + colorOf(last) + '">' + (last[4] > last[1] ? '🔴 양봉 ' : last[4] < last[1] ? '🔵 음봉 ' : '⚪ 보합 ') + sfPct(pct, 2, true) + '</div><div style="font-size:10px;color:var(--text-dim)">이대로 끝나면 ' + skTxt + '</div></div>' + envRows + '</div>' +
+    '<div class="period-bar" style="flex-wrap:wrap;gap:6px">' + btns('idx', Object.keys(d.indices).map(function(k){ return [k, d.indices[k].name]; })) + '<span style="width:8px"></span>' + btns('range', [['all', '전체'], ['y15', '15년'], ['y8', '8년']]) + '<span style="width:8px"></span>' + btns('log', [[true, '로그'], [false, '보통']]) + '</div>' +
+    '<div class="chart-box"><canvas id="qcCanvas" style="height:380px!important"></canvas>' +
+    '<div style="font-size:10px;color:var(--text-dim);margin-top:4px">🔴 양봉 · 🔵 음봉 · <span style="color:' + ENV_COL[20] + '">┄ 엔벨 20·20</span> · <span style="color:' + ENV_COL[10] + '">┄ 엔벨 10·10</span> · ▼ 상단에서 음봉 · ▲ 하단에서 양봉 (색 = 어느 엔벨)</div></div>' +
+    '<div class="chart-box" style="margin-top:8px;overflow-x:auto"><h3>최근 12분기</h3><table class="flow-table"><tr><th>분기</th><th>시가</th><th>고가</th><th>저가</th><th>종가</th><th>등락</th><th>연속</th>' + envs.map(function(e){ return '<th>엔벨 ' + e[0] + '·' + e[1] + '</th>'; }).join('') + '</tr>' + tb + '</table></div>';
+  el.querySelectorAll('button[data-qc]').forEach(function(b){ b.onclick = function(){ var k = b.dataset.qc, v = b.dataset.v; st[k] = k === 'log' ? v === 'true' : v; try { localStorage.setItem('sf-qc-view', JSON.stringify(st)); } catch (_) {} draw(); }; });
+  // 그래프 — 막대 2겹(꼬리 [저가,고가] 가늘게 + 몸통 [시가,종가]) + 엔벨 선 4개 + 판정 표시(▼ 고가 위 / ▲ 저가 아래)
+  var labels = R.map(function(r){ return r[0].slice(2).replace('Q', '.'); });
+  var cols = R.map(colorOf);
+  var ds = [
+    {type: 'bar', label: '꼬리', data: R.map(function(r){ return [r[3], r[2]]; }), backgroundColor: cols, barPercentage: 0.12, categoryPercentage: 1, grouped: false, order: 2},
+    {type: 'bar', label: '몸통', data: R.map(function(r){ return r[1] === r[4] ? [r[1] * 0.999, r[4] * 1.001] : [r[1], r[4]]; }), backgroundColor: cols, barPercentage: 0.7, categoryPercentage: 1, grouped: false, order: 1}
+  ];
+  envs.forEach(function(e, k){
+    ['하단', '상단'].forEach(function(nm, j){ ds.push({type: 'line', label: '엔벨 ' + e[0] + '·' + e[1] + ' ' + nm, data: R.map(function(r){ return r[5 + 2*k + j]; }), borderColor: ENV_COL[e[0]], borderWidth: 1.2, borderDash: k ? [2, 3] : [5, 4], pointRadius: 0, spanGaps: false, order: 0}); });
+    ds.push({type: 'line', label: e[0] + '·' + e[1] + ' 판정', showLine: false, order: -1,
+      data: R.map(function(r){ var h = r[5 + 2*nE + k]; return h === 'T' ? r[2] * (1.06 + k * 0.07) : h === 'B' ? r[3] / (1.06 + k * 0.07) : null; }),
+      pointStyle: 'triangle', pointRadius: 5, pointHoverRadius: 6, backgroundColor: ENV_COL[e[0]], borderColor: ENV_COL[e[0]],
+      pointRotation: R.map(function(r){ return r[5 + 2*nE + k] === 'T' ? 180 : 0; })});
+  });
+  if (qcChart) qcChart.destroy();
+  var gridC = document.body.classList.contains('sf-dark') ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+  qcChart = new Chart(document.getElementById('qcCanvas'), {data: {labels: labels, datasets: ds},
+    options: {responsive: true, maintainAspectRatio: false, animation: false, interaction: {mode: 'index', intersect: false},
+      scales: {x: {grid: {display: false}, ticks: {autoSkip: true, maxTicksLimit: 16, maxRotation: 0}},
+               y: {type: st.log ? 'logarithmic' : 'linear', grid: {color: gridC}, ticks: {callback: function(v){ return sfNum(v); }, maxTicksLimit: 10}}},
+      plugins: {legend: {display: false}, tooltip: {filter: function(it){ return it.datasetIndex === 1; },
+        callbacks: {title: function(it){ return R[it[0].dataIndex][0].replace('Q', ' ') + 'Q'; },
+          label: function(it){ var r = R[it.dataIndex], p = (r[4] / r[1] - 1) * 100, out = ['시가 ' + f2(r[1]) + ' · 종가 ' + f2(r[4]) + ' (' + sfPct(p, 2, true) + ')', '고가 ' + f2(r[2]) + ' · 저가 ' + f2(r[3])];
+            envs.forEach(function(e, k){ var h = r[5 + 2*nE + k]; out.push('엔벨 ' + e[0] + '·' + e[1] + ' ' + f0(r[5 + 2*k]) + ' ~ ' + f0(r[6 + 2*k]) + (h === 'T' ? ' ▼상단 음봉' : h === 'B' ? ' ▲하단 양봉' : '')); });
+            return out; }}}}}});
+}
 })();
 </script>
 <script src="/common.js?v=24"></script>

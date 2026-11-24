@@ -82,7 +82,9 @@
 # [봇1·실패 시] 수출입은행 환율 백업 (전날 누락분) — 화~토 14:00
 0 14 * * 2-6 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_exim.py >> ~/logs/fetch_exim.log 2>&1
 
-# ── 장 마감 후 (18:00~19:30) ──
+# ── 장 마감 후 (16:50~19:30) ──
+# 분기봉 차트 json (코스피·코스닥 분기봉 + 엔벨 20·20/10·10, /dashboard/#qcandle) — 평일 16:50, 발송 없음 (131)
+50 16 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/quarter_candle.py --save-only >> ~/logs/quarter_candle.log 2>&1
 # 한국은행 금리 → DB, 이어서 /bond/용 data/bond/ktb_curve.json 내보내기 — 평일 18:10 (084)
 10 18 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_ecos.py >> ~/logs/fetch_ecos.log 2>&1 ; python3 scripts/export_ktb.py >> ~/logs/export_ktb.log 2>&1
 # 종가 수집 (KIS) → data/kr/prices.json — 평일 18:30

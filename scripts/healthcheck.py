@@ -47,6 +47,8 @@ TARGETS = [
     ("data/dashboard/market_funds.json",   "증시자금·코스피 PER", "weekday", 0),
     # 외국인수급
     ("data/dashboard/foreign_flow.json",   "외국인수급 합산",   "weekday", 0),
+    # 분기봉 차트 (131) — 평일 16:50 quarter_candle.py --save-only
+    ("data/dashboard/quarter_candle.json", "분기봉(코스피·코스닥)", "weekday", 0),
     # KRX 대시보드
     ("data/krx/investor_top.json",         "KRX 외국인/기관",   "weekday", 0),
     ("data/krx/volume_top.json",           "KRX 거래대금",      "weekday", 0),

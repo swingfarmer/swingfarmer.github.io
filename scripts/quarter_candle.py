@@ -18,6 +18,11 @@
   python3 scripts/quarter_candle.py          # 계산 + 텔레그램 발송
   python3 scripts/quarter_candle.py --dry    # 화면에만 출력 (발송 안 함)
   python3 scripts/quarter_candle.py --final  # 분기 마지막 달이 아니어도 「확정」 모양으로 (시험용)
+  python3 scripts/quarter_candle.py --save-only  # 차트용 json만 저장, 발송 안 함 (평일 16:50 크론)
+
+(131) 차트: data/dashboard/quarter_candle.json → /dashboard/#qcandle 「🕯 분기봉」 탭
+  모든 실행(--dry 빼고)이 json을 저장. 칸: q = [분기, 시가, 고가, 저가, 종가, 20하단, 20상단, 10하단, 10상단, 판정20, 판정10, 연속]
+  판정 T = 상단에서 음봉 / B = 하단에서 양봉 / '' = 아님. 연속 = +n 양봉 n분기째 / −n 음봉 / 0 보합. 엔벨 값은 그 분기까지의 저가 평균(앞 분기 모자라면 null)
 """
 
 import os, sys, argparse
@@ -70,12 +75,13 @@ def streak(qs, upto):
     return n
 
 
-def envelope(qs, n, pct):
-    """마지막 분기 기준 저가 n분기 평균 ± pct% → (하단, 상단, 판정) / 분기 모자라면 None"""
-    if len(qs) < n: return None
-    ma = sum(q['low'] for q in qs[-n:]) / n
+def envelope(qs, n, pct, i=None):
+    """i번째(기본 마지막) 분기 기준 저가 n분기 평균 ± pct% → (하단, 상단, 판정) / 분기 모자라면 None"""
+    if i is None: i = len(qs) - 1
+    if i + 1 < n: return None
+    ma = sum(q['low'] for q in qs[i + 1 - n:i + 1]) / n
     lo, hi = ma * (1 - pct / 100), ma * (1 + pct / 100)
-    cur = qs[-1]; hit = None
+    cur = qs[i]; hit = None
     if cur['color'] == 'down' and cur['high'] >= hi: hit = 'top'
     elif cur['color'] == 'up' and cur['low'] <= lo: hit = 'bottom'
     return lo, hi, hit
@@ -137,6 +143,35 @@ def build_message(data, today, final, last_trade):
     return '\n'.join(lines)
 
 
+def save_json(data_syms, today, last_trade):
+    """차트용 json (data/dashboard/quarter_candle.json)"""
+    import json
+    r2 = lambda v: None if v is None else round(v, 2)
+    out = {'updated': today.strftime('%Y-%m-%d %H:%M'),
+           'last_trade': last_trade.strftime('%Y-%m-%d') if last_trade else None,
+           'envs': ENVS, 'basis': '저가 L',
+           'cols': ['분기', '시가', '고가', '저가', '종가'] + [f'{n}{x}' for n, _ in ENVS for x in ('하단', '상단')] + [f'판정{n}' for n, _ in ENVS] + ['연속'],
+           'indices': {}}
+    for sym, label, qs in data_syms:
+        rows = []
+        for i, q in enumerate(qs):
+            row = [f"{q['key'][0]}Q{q['key'][1]}", r2(q['open']), r2(q['high']), r2(q['low']), r2(q['close'])]
+            hits = []
+            for n, pct in ENVS:
+                e = envelope(qs, n, pct, i)
+                row += [r2(e[0]), r2(e[1])] if e else [None, None]
+                hits.append({'top': 'T', 'bottom': 'B'}.get(e[2], '') if e else '')
+            sk = streak(qs, i)  # + 양봉 연속 / − 음봉 연속 / 0 보합
+            rows.append(row + hits + [sk if q['color'] == 'up' else -sk if q['color'] == 'down' else 0])
+        out['indices'][sym.lstrip('^')] = {'name': label, 'q': rows}
+    path = os.path.join(SCRIPT_DIR, '..', 'data', 'dashboard', 'quarter_candle.json')
+    tmp = path + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump(out, f, ensure_ascii=False, separators=(',', ':'))
+    os.replace(tmp, path)
+    print(f'  💾 저장: data/dashboard/quarter_candle.json ({", ".join(f"{k} {len(v["q"])}분기" for k, v in out["indices"].items())})')
+
+
 def fetch(sym):
     import yfinance as yf  # 월 1번만 돌아서 무거운 import 괜찮음
     t = yf.Ticker(sym)
@@ -164,11 +199,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--dry', action='store_true', help='출력만, 발송 안 함')
     ap.add_argument('--final', action='store_true', help='확정 모양으로 (시험용)')
+    ap.add_argument('--save-only', action='store_true', help='차트 json만 저장, 발송 안 함')
     a = ap.parse_args()
     today = datetime.now(KST)
     final = a.final or today.month % 3 == 0
     print(f'🕯 분기봉 {"확정" if final else "중간점검"} 시작 {today:%Y-%m-%d %H:%M}')
-    data, last_trade = [], None
+    data, syms, last_trade = [], [], None
     for sym, label in INDICES:
         try:
             months, lt = fetch(sym)
@@ -181,9 +217,13 @@ def main():
         if (qs[-1]['key'][0], qs[-1]['key'][1]) != (today.year, (today.month - 1) // 3 + 1):
             print(f'  ⚠ {label} 마지막 분기 {qs[-1]["key"]} ≠ 이번 분기 — 야후 갱신 늦음?')
         print(f'  {label}: 월봉 {len(months)}개 ({months[0][0]:%Y-%m}~{months[-1][0]:%Y-%m}), 마지막 거래일 {lt:%Y-%m-%d}' if lt else f'  {label}: 월봉 {len(months)}개')
-        data.append((label, qs)); last_trade = last_trade or lt
+        data.append((label, qs)); syms.append((sym, label, qs)); last_trade = last_trade or lt
     if not data:
         print('  ❌ 받은 지수 없음 — 발송 안 함'); sys.exit(1)
+    if len(syms) == len(INDICES) and not a.dry:  # 하나라도 못 받으면 옛 json 유지
+        save_json(syms, today, last_trade)
+    if a.save_only:
+        return
     msg = build_message(data, today, final, last_trade)
     print(msg)
     if a.dry:
