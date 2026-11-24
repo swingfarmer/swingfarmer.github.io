@@ -27,6 +27,8 @@ a { color: var(--accent); text-decoration: none; }
 .idx-label { font-size: 10px; color: var(--text-dim); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .idx-val { font-size: 17px; font-weight: 800; margin-top: 2px; font-variant-numeric: tabular-nums; }
 .idx-chg { font-size: 11px; font-weight: 600; margin-top: 1px; }
+.idx-basis { font-size: 10px; color: var(--text-dim); margin-top: 2px; white-space: nowrap; }   /* (128) 코스피·코스닥 기준 시각 */
+.idx-basis.live { color: var(--sf-up); font-weight: 700; }
 
 /* Alert badge */
 .alert-badge { display: inline-block; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
@@ -551,10 +553,12 @@ function renderIndex(mkt) {
     let alertHtml = '';
     if (isVix && item.price >= 30) alertHtml = '<span class="alert-badge danger">⚠ 공포</span>';
     else if (isVix && item.price >= 25) alertHtml = '<span class="alert-badge warn">주의</span>';
-    html += `<div class="idx-card">
+    const krKey = p.cat === 'kr_index' ? (p.name === '코스피' ? 'KOSPI' : 'KOSDAQ') : '';
+    html += `<div class="idx-card"${krKey ? ' data-kr="'+krKey+'"' : ''}>
       <div class="idx-label">${item.name}${alertHtml}</div>
       <div class="idx-val">${fmt(item.price, item.price < 100 ? 2 : item.price < 10000 ? 0 : 0)}</div>
       <div class="idx-chg ${cls}">${fmtPct(item.change_pct)}</div>
+      ${krKey ? '<div class="idx-basis">' + krBasis(mkt) + '</div>' : ''}
     </div>`;
   }
   // rates
@@ -585,7 +589,51 @@ function renderIndex(mkt) {
     </div>`;
   }
   grid.innerHTML = html;
+  applyKrLive();   // (128) 장중 값이 이미 있으면 바로 덮음 (10분마다 다시 그릴 때 아침 값으로 돌아가지 않게)
 }
+
+// (128) 코스피·코스닥 — 파일(market_indicators.json)은 07:52·18:45 수집이라 장중엔 전날 종가.
+//       장중·장 마감 직후에는 VM 1분 수집(/api/prices/live의 indices, KIS 업종지수)으로 덮는다.
+function krBasis(mkt) {
+  const m = String(mkt.updated || '').match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
+  if (!m) return '';
+  // 18:45 수집분이면 그날 종가, 07:52 수집분이면 전 거래일 종가
+  return (+m[4] >= 16 ? (+m[2]) + '/' + (+m[3]) + ' 종가' : '전 거래일 종가') ;
+}
+let _krLive = null;   // {date, time, market_open, indices}
+function applyKrLive() {
+  const L = _krLive;
+  if (!L || !L.indices) return;
+  const kst = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  if (L.date !== kst) return;   // 오늘 수집분만 (주말·휴장일엔 파일 값 그대로)
+  document.querySelectorAll('#idxGrid [data-kr]').forEach(card => {
+    const q = L.indices[card.dataset.kr];
+    if (!q) return;
+    card.querySelector('.idx-val').textContent = fmt(q.p, 2);
+    const chg = card.querySelector('.idx-chg');
+    chg.className = 'idx-chg ' + pctClass(q.r);
+    chg.textContent = fmtPct(q.r);
+    const b = card.querySelector('.idx-basis');
+    if (L.market_open) { b.className = 'idx-basis live'; b.textContent = '🔴 장중 ' + L.time; }
+    else { b.className = 'idx-basis'; b.textContent = '오늘 ' + L.time + ' 기준'; }
+  });
+}
+const KR_LIVE_URL = 'https://swingfarmer.duckdns.org/api/prices/live';
+async function pollKrLive() {
+  // 평일 08:59~15:45(KST)에만 부름 — 수집기도 그 시간에만 돎
+  const k = new Date(Date.now() + 9 * 3600e3), wd = k.getUTCDay(), hm = k.getUTCHours() * 100 + k.getUTCMinutes();
+  if (wd === 0 || wd === 6 || hm < 859 || hm > 1545) return;
+  try {
+    const r = await fetch(KR_LIVE_URL, { cache: 'no-store' });
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.stale) return;   // 수집이 5분 넘게 멈췄으면 아침 파일 값 그대로
+    _krLive = { date: d.date, time: d.time, market_open: !!d.market_open, indices: d.indices };
+    applyKrLive();
+  } catch (e) { /* VM 응답 없으면 파일 값 그대로 */ }
+}
+pollKrLive();
+setInterval(pollKrLive, 60e3);
 
 function renderSupply(flow) {
   const d = flow.latest;

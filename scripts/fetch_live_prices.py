@@ -281,6 +281,37 @@ def fetch_single(token, code):
     }
 
 
+INDEX_CODES = (('KOSPI', '0001'), ('KOSDAQ', '1001'))
+
+def fetch_indices(token):
+    """(128) 코스피·코스닥 지수 현재값 — 업종 현재지수 [FHPUP02100000]. 1분에 2회 추가 호출.
+    실패해도 종목 수집에는 영향 없음(빈 dict). /today/ 「지수」 칸 장중 표시용."""
+    out = {}
+    for name, iscd in INDEX_CODES:
+        try:
+            data = kis_get('/uapi/domestic-stock/v1/quotations/inquire-index-price', 'FHPUP02100000',
+                           {'FID_COND_MRKT_DIV_CODE': 'U', 'FID_INPUT_ISCD': iscd}, token)
+        except TokenExpired:
+            raise
+        if str(data.get('rt_cd')) != '0':
+            log(f"  ⚠ 지수 {name} 실패: {data.get('msg_cd','')} {data.get('msg1','')}".rstrip())
+            continue
+        o = data.get('output') or {}
+        if isinstance(o, list):
+            o = o[0] if o else {}
+        p = to_float(o.get('bstp_nmix_prpr'))
+        if p <= 0:
+            continue
+        sign = o.get('prdy_vrss_sign')
+        out[name] = {
+            'p': round(p, 2),
+            'c': round(signed(to_float(o.get('bstp_nmix_prdy_vrss')), sign), 2),
+            'r': round(signed(to_float(o.get('bstp_nmix_prdy_ctrt')), sign), 2),
+        }
+        time.sleep(SINGLE_DELAY)
+    return out
+
+
 def collect(token, stocks, state):
     """전 종목 수집. 반환: (quotes dict, mode 문자열)."""
     quotes = {}
@@ -386,6 +417,13 @@ def main():
             write_json_atomic(STATE_FILE, state)
             return 1
 
+    # (128) 지수 — 실패해도 종목 파일은 그대로 씀
+    try:
+        indices = fetch_indices(token)
+    except TokenExpired:
+        indices = {}
+        log('  ⚠ 지수 조회 중 토큰 만료 — 이번 회차 지수 생략')
+
     if len(quotes) < len(stocks) * 0.5:
         log(f'❌ 수집 실패 (받은 종목 {len(quotes)}/{len(stocks)}) — 기존 파일 유지')
         write_json_atomic(STATE_FILE, state)
@@ -421,10 +459,11 @@ def main():
         'count': len(out_stocks),
         'total': len(stocks),
         'stocks': out_stocks,
+        'indices': indices,     # (128) {KOSPI:{p,c,r}, KOSDAQ:{...}} — /today/ 지수 칸
     }
     write_json_atomic(OUT_FILE, output)
     write_json_atomic(STATE_FILE, state)
-    log(f'✅ {len(out_stocks)}/{len(stocks)}종목 저장 ({mode}, {time.time() - t0:.1f}초, 장중={market_open})')
+    log(f'✅ {len(out_stocks)}/{len(stocks)}종목 저장 + 지수 {len(indices)}개 ({mode}, {time.time() - t0:.1f}초, 장중={market_open})')
     return 0
 
 
