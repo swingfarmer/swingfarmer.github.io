@@ -326,7 +326,7 @@ def _q(path, tr, params, token):
 
 def fetch_market(token, stock_codes):
     """(128) /today/ 장중 칸 — 1분에 KIS 6회 추가. 금액 단위: 투자자·프로그램·가집계 = 백만원, 거래대금 = 원.
-    sector: 코스피 업종 등락 / inv: 코스피 투자자별 순매수(시장별 투자자 999·S001) / prog: 프로그램 순매수(코스피)
+    sector: 코스피 업종 등락 / inv: 코스피 투자자별 순매수(시장별 투자자 KSP·0001 = KRX 몫, NXT 빼고 — 129 HTS 「KRX」와 기관·개인 억 단위까지 같음. 999·S001은 코스피가 아니었음) / prog: 프로그램 순매수(코스피)
     frgn_top·orgn_top: 외국인·기관 순매수 상위(장중 가집계, 코스피+코스닥) / vol_top: 거래대금 상위(ETF·ETN 뺌)"""
     import re
     global ETF_RE
@@ -346,7 +346,7 @@ def fetch_market(token, stock_codes):
         out['adv'] = {'up': to_int(o1.get('ascn_issu_cnt')), 'down': to_int(o1.get('down_issu_cnt')),
                       'flat': to_int(o1.get('stnr_issu_cnt'))}
     d = _q(f'{Q}/inquire-investor-time-by-market', 'FHPTJ04030000',
-           {'FID_INPUT_ISCD': '999', 'FID_INPUT_ISCD_2': 'S001'}, token)
+           {'FID_INPUT_ISCD': 'KSP', 'FID_INPUT_ISCD_2': '0001'}, token)
     if d:
         r = (d.get('output') or [{}])
         r = r[0] if isinstance(r, list) and r else (r if isinstance(r, dict) else {})

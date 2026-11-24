@@ -394,7 +394,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
       <tr><td data-l="칸">S&amp;P·나스닥·VIX·미10년</td><td data-l="장중·그 밖" colspan="2"><b>5분</b> — 미국 장이 열린 동안(밤 23:30~새벽 06:00, 서머타임 땐 1시간 빠름)만 값이 움직이고, 닫혀 있으면 「미국 날짜 종가」로 표시</td><td data-l="출처">야후</td><td data-l="이유" class="why">야후는 공식 API가 아니라 1분마다 부르면 막힐 수 있고, 막히면 아침 시장지표 수집까지 같이 막힘 → 5분(하루 288회)</td></tr>
       <tr><td data-l="칸">USD/KRW·JPY100/KRW·WTI</td><td data-l="장중·그 밖" colspan="2"><b>5분</b> — 거의 24시간 거래라 대부분 「🔴」(주말엔 금요일 마지막 거래)</td><td data-l="출처">야후</td><td data-l="이유" class="why">위와 같음</td></tr>
       <tr><td data-l="칸">금(원/g)</td><td data-l="장중·그 밖" colspan="2">하루 1번 — 매일 07:50 수집 → 08:04 사이트 반영</td><td data-l="출처">국내 금 시세</td><td data-l="이유" class="why">국제 금값×환율과는 다른 숫자라 섞지 않음</td></tr>
-      <tr><td data-l="칸">수급 요약</td><td data-l="국내 장중"><b>1분</b> — 코스피 외국인·기관·개인·프로그램 <b>금액</b></td><td data-l="그 밖">20:50 수집 → 21:10 반영 — 코스피200 합산 <b>수량(주)</b></td><td data-l="출처">장중 KIS 잠정 / 마감 KRX</td><td data-l="이유" class="why">장중엔 KIS가 시장 전체 금액을 줌. 마감 값은 예전부터 쓰던 수량 기준이라 그대로 둠 — 단위가 달라 제목 옆에 같이 적음</td></tr>
+      <tr><td data-l="칸">수급 요약</td><td data-l="국내 장중"><b>1분</b> — 코스피 외국인·기관·개인·프로그램 <b>금액</b> — KRX 몫(NXT 빼고)</td><td data-l="그 밖">20:50 수집 → 21:10 반영 — 코스피200 합산 <b>수량(주)</b></td><td data-l="출처">장중 KIS 잠정 / 마감 KRX</td><td data-l="이유" class="why">장중엔 KIS가 시장 금액을 줌 — 단 KRX 몫만이라 HTS 「통합」보다 NXT만큼 작음(129 확인: 기관·개인은 HTS 「KRX」와 같음). 마감 값은 예전부터 쓰던 수량 기준이라 그대로 둠 — 단위가 달라 제목 옆에 같이 적음</td></tr>
       <tr><td data-l="칸">외국인·기관 TOP5</td><td data-l="국내 장중"><b>1분</b> — 장중 가집계(코스피+코스닥)</td><td data-l="그 밖">20:50 → 21:10 확정값</td><td data-l="출처">KIS 가집계 / KRX</td><td data-l="이유" class="why">가집계는 증권사가 장중에 모은 추정이라 마감 확정값과 조금 다를 수 있음</td></tr>
       <tr><td data-l="칸">52주 신고가·신저가</td><td data-l="장중·그 밖" colspan="2">하루 1번 — 20:55 수집 → 21:10 반영</td><td data-l="출처">KRX</td><td data-l="이유" class="why">KIS는 「신고가 근접 상위 30개」만 줘서 전체 개수를 못 셈(거래정지 종목도 섞임)</td></tr>
       <tr><td data-l="칸">업종 등락</td><td data-l="국내 장중"><b>1분</b> — 코스피 업종</td><td data-l="그 밖">20:50 → 21:10</td><td data-l="출처">KIS 업종 / KRX</td><td data-l="이유" class="why">KIS가 업종 전체를 한 번에 줘서 1분에 1회면 됨</td></tr>
@@ -658,7 +658,7 @@ function paint() {
   // 수급 요약
   if (m && m.inv) {
     renderSupplyLive(m.inv, m.prog);
-    setBasis('secSupply', liveTag(L) + ' · 코스피 금액', L.market_open);
+    setBasis('secSupply', liveTag(L) + ' · 코스피 KRX 금액(NXT 빼고)', L.market_open);
   } else {
     renderSupply(_F.flow);
     setBasis('secSupply', md(_F.flow.latest && _F.flow.latest.date) + ' 장 마감 · 코스피200 합산 수량(주)', false);
