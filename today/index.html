@@ -578,7 +578,12 @@ function renderIndex(mkt) {
       const q = L.indices[c.k]; p = q.p; r = q.r; live = L.market_open; tag = L.market_open ? '🔴 ' + L.time : '오늘 ' + L.time;
     } else if (M && M[c.k] && M[c.k].p != null) {
       const q = M[c.k], t = kstHM(q.mt || _M.t), fresh = Date.now() / 1000 - (q.mt || 0) < 20 * 60;
-      p = q.p; r = q.r; live = fresh; tag = fresh ? '🔴 ' + t.hm + ' · 5분마다' : t.md + ' ' + t.hm + ' 마지막 거래';
+      p = q.p; r = q.r; live = fresh;
+      if (fresh) tag = '🔴 ' + t.hm + ' · 5분마다';
+      else if (/^\^/.test(c.k)) {   // 미국 지수·VIX·금리 — 미국 날짜로 「종가」
+        const et = new Date((q.mt || _M.t) * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'numeric', day: 'numeric' });
+        tag = '미국 ' + et + ' 종가';
+      } else tag = t.md + ' ' + t.hm + ' 마지막 거래';
     }
     if (p == null) continue;
     if (live) liveN++;
@@ -616,7 +621,7 @@ function paint() {
   }
   // 업종
   if (m && m.sector && m.sector.length) {
-    renderSector({ sectors: m.sector.map(x => ({ name: x.n, change_pct: x.r })) });
+    renderSector({ sectors: m.sector.filter(x => !/VKOSPI|변동성/.test(x.n)).map(x => ({ name: x.n, change_pct: x.r })) });
     setBasis('secSector', liveTag(L) + ' · 코스피 업종', L.market_open);
   } else {
     renderSector(_F.sector);
