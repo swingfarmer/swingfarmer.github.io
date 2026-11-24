@@ -26,7 +26,7 @@ sys.path.insert(0, SCRIPT_DIR)
 KST = timezone(timedelta(hours=9))
 INDICES = [('^KS11', '코스피'), ('^KQ11', '코스닥')]
 RECENT = 8      # 최근 몇 분기 색 줄
-JUMP_WARN = 5.0  # 분기 시가가 직전 분기 종가와 이만큼(%) 넘게 벌어지면 로그 경고 (야후 시가 빠짐 의심)
+JUMP_WARN = 5.0  # 최근 2분기 시가가 직전 분기 종가와 이만큼(%) 넘게 벌어지면 로그 경고 (야후 시가 빠짐 의심 — 실제 갭일 수도 있음: 2026-04-01 +8% 상승일)
 
 
 def color(o, c):
@@ -66,7 +66,7 @@ def streak(qs, upto):
 
 
 def jump_check(qs, label):
-    for i in range(1, len(qs)):
+    for i in range(max(1, len(qs) - 2), len(qs)):  # 최근 2분기만 (131: 옛 분기 실제 갭(2026 2Q +5.5% 등)이 매달 로그에 반복되지 않게)
         prev, cur = qs[i - 1]['close'], qs[i]['open']
         if prev and abs(cur / prev - 1) * 100 > JUMP_WARN:
             y, q = qs[i]['key']
