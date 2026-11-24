@@ -398,7 +398,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
       <tr><td data-l="칸">USD/KRW·JPY100/KRW·WTI</td><td data-l="장중·그 밖" colspan="2"><b>5분</b> — 거의 24시간 거래라 대부분 「🔴」(주말엔 금요일 마지막 거래)</td><td data-l="출처">야후</td><td data-l="이유" class="why">위와 같음</td></tr>
       <tr><td data-l="칸">두바이유·항공유 🔒</td><td data-l="장중·그 밖" colspan="2">하루 1번 — 오피넷이 <b>전날 값</b>을 다음 날 낮에 올림 → VM이 화~토 08:00~18:45 <b>15분마다</b> 올라왔는지 보고 바로 받음(받으면 텔레그램 봇1). 카드를 누르면 대시보드 ⛽ 국제유가 탭</td><td data-l="출처">오피넷(한국석유공사)</td><td data-l="이유" class="why">오피넷 약관(복제·유통 금지)이라 공개 파일 없이 관리자 로그인일 때만 보임. 두바이는 야후에 없어서 오피넷 값을 씀. 15분 간격은 올라오자마자 보되 오피넷을 너무 자주 부르지 않으려고(그날 값이 들어오면 더 안 부름)</td></tr>
       <tr><td data-l="칸">금(원/g)</td><td data-l="장중·그 밖" colspan="2">하루 1번 — 매일 07:50 수집 → 08:04 사이트 반영</td><td data-l="출처">국내 금 시세</td><td data-l="이유" class="why">국제 금값×환율과는 다른 숫자라 섞지 않음</td></tr>
-      <tr><td data-l="칸">수급 요약</td><td data-l="국내 장중"><b>1분</b> — 코스피 외국인·기관·개인·프로그램 <b>금액</b> — KRX 몫(NXT 빼고)</td><td data-l="그 밖">20:50 수집 → 21:10 반영 — 코스피200 합산 <b>수량(주)</b></td><td data-l="출처">장중 KIS 잠정 / 마감 KRX</td><td data-l="이유" class="why">장중엔 KIS가 시장 금액을 줌 — 단 KRX 몫만이라 HTS 「통합」보다 NXT만큼 작음(129 확인: 기관·개인은 HTS 「KRX」와 같음). 마감 값은 예전부터 쓰던 수량 기준이라 그대로 둠 — 단위가 달라 제목 옆에 같이 적음</td></tr>
+      <tr><td data-l="칸">수급 요약</td><td data-l="국내 장중"><b>1분</b> — 코스피 외국인·기관·개인·프로그램 <b>금액</b> — KRX 몫(NXT 빼고)</td><td data-l="그 밖">장 마감 뒤엔 그날 15:40 최종 금액을 밤까지 · 다음 날 아침엔 전날 파일(20:50 수집 → 21:10 반영 — 코스피200 합산 <b>수량(주)</b>)</td><td data-l="출처">장중 KIS 잠정 / 마감 KRX</td><td data-l="이유" class="why">장중엔 KIS가 시장 금액을 줌 — 단 KRX 몫만이라 HTS 「통합」보다 NXT만큼 작음(129 확인: 기관·개인은 HTS 「KRX」와 같음). 마감 값은 예전부터 쓰던 수량 기준이라 그대로 둠 — 단위가 달라 제목 옆에 같이 적음</td></tr>
       <tr><td data-l="칸">외국인·기관 TOP5</td><td data-l="국내 장중"><b>1분</b> — 장중 가집계(코스피+코스닥)</td><td data-l="그 밖">20:50 → 21:10 확정값</td><td data-l="출처">KIS 가집계 / KRX</td><td data-l="이유" class="why">가집계는 증권사가 장중에 모은 추정이라 마감 확정값과 조금 다를 수 있음</td></tr>
       <tr><td data-l="칸">52주 신고가·신저가</td><td data-l="장중·그 밖" colspan="2">하루 1번 — 20:55 수집 → 21:10 반영</td><td data-l="출처">KRX</td><td data-l="이유" class="why">KIS는 「신고가 근접 상위 30개」만 줘서 전체 개수를 못 셈(거래정지 종목도 섞임)</td></tr>
       <tr><td data-l="칸">업종 등락</td><td data-l="국내 장중"><b>1분</b> — 코스피 업종</td><td data-l="그 밖">20:50 → 21:10</td><td data-l="출처">KIS 업종 / KRX</td><td data-l="이유" class="why">KIS가 업종 전체를 한 번에 줘서 1분에 1회면 됨</td></tr>
@@ -517,7 +517,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
     title: '기준 시각 = VM이 마지막으로 해외 선물 값을 받은 시각. 이 화면이 보일 때만 1분마다 다시 읽음' });
 })();
 </script>
-<script src="/common.js?v=23"></script>
+<script src="/common.js?v=24"></script>
 <script>
 const BASE = '/data';
 const fmt = (n, d=0) => sfNum(n, d);
@@ -588,7 +588,8 @@ const kstNow = () => new Date(Date.now() + 9 * 3600e3);
 const kstDay = () => kstNow().toISOString().slice(0, 10);
 const md = d => { const m = String(d || '').match(/\d{4}-(\d{2})-(\d{2})/); return m ? (+m[1]) + '/' + (+m[2]) : ''; };
 function kstHM(sec) { const d = new Date(sec * 1000 + 9 * 3600e3); return { md: (d.getUTCMonth() + 1) + '/' + d.getUTCDate(), hm: String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0') }; }
-function liveKR() { return _L && !_L.stale && _L.date === kstDay() ? _L : null; }
+// (129) 장 마감 뒤 최종값(15:35 이후 수집분)은 5분 지나 stale이 돼도 그날 계속 씀 — 전엔 전날 파일로 돌아가 「11/23 장 마감」이 나왔음. 장중에 멈춘 건 그대로 파일로
+function liveKR() { return _L && _L.date === kstDay() && (!_L.stale || String(_L.time) >= '15:35') ? _L : null; }
 function liveTag(L) { return L.market_open ? '🔴 장중 ' + L.time + ' · 1분마다' : '오늘 ' + L.time + ' 기준 (장 마감 뒤 최종)'; }
 function setBasis(secId, text, live) {
   const head = document.querySelector('#' + secId + ' .sec-head');
@@ -601,16 +602,17 @@ function setBasis(secId, text, live) {
 
 // 지수·환율·금리 카드 — k: 실시간 덮어쓸 열쇠(KOSPI·KOSDAQ = 국내 1분, 그 밖 = 야후 기호)
 const IDX_CARDS = [
-  { k: 'KOSPI',    find: i => i.cat === 'kr_index' && i.name === '코스피', label: '코스피' },
-  { k: 'KOSDAQ',   find: i => i.cat === 'kr_index' && i.name === '코스닥', label: '코스닥' },
-  { k: '^GSPC',    find: i => i.cat === 'us_index' && i.name === 'S&P 500', label: 'S&P 500' },
-  { k: '^IXIC',    find: i => i.cat === 'us_index' && i.name === '나스닥 종합', label: '나스닥 종합' },
-  { k: '^VIX',     find: i => i.name === 'VIX 공포지수', label: 'VIX 공포지수' },
-  { k: '^TNX',     find: i => i.name === '미국 10년물', label: '미 10년물' },
-  { k: 'KRW=X',    rate: 'USD_KRW', label: 'USD/KRW' },
-  { k: 'JPYKRW=X', rate: 'JPY100_KRW', label: 'JPY100/KRW' },
-  { k: 'GOLD',     rate: 'GOLD_KRW_G', label: '금(원/g)' },
-  { k: 'CL=F',     find: i => i.name === 'WTI 원유', label: 'WTI 원유' },
+// (129) href = 카드를 누르면 가는 자세히 보는 페이지
+  { k: 'KOSPI',    find: i => i.cat === 'kr_index' && i.name === '코스피', label: '코스피', href: '/market/' },
+  { k: 'KOSDAQ',   find: i => i.cat === 'kr_index' && i.name === '코스닥', label: '코스닥', href: '/market/' },
+  { k: '^GSPC',    find: i => i.cat === 'us_index' && i.name === 'S&P 500', label: 'S&P 500', href: '/dashboard/#bod' },
+  { k: '^IXIC',    find: i => i.cat === 'us_index' && i.name === '나스닥 종합', label: '나스닥 종합', href: '/dashboard/#indicators' },
+  { k: '^VIX',     find: i => i.name === 'VIX 공포지수', label: 'VIX 공포지수', href: '/dashboard/#indicators' },
+  { k: '^TNX',     find: i => i.name === '미국 10년물', label: '미 10년물', href: '/bond/' },
+  { k: 'KRW=X',    rate: 'USD_KRW', label: 'USD/KRW', href: '/rates/' },
+  { k: 'JPYKRW=X', rate: 'JPY100_KRW', label: 'JPY100/KRW', href: '/rates/' },
+  { k: 'GOLD',     rate: 'GOLD_KRW_G', label: '금(원/g)', href: '/rates/' },
+  { k: 'CL=F',     find: i => i.name === 'WTI 원유', label: 'WTI 원유', href: '/dashboard/#oil' },
 ];
 function idxText(k, p) {
   if (p == null) return '-';
@@ -651,21 +653,21 @@ function renderIndex(mkt) {
     }
     if (p == null) continue;
     if (live) liveN++;
-    html += `<div class="idx-card">
-      <div class="idx-label">${c.label}${idxAlert(c.k, p)}</div>
+    html += `<a class="idx-card idx-link" href="${c.href}">
+      <div class="idx-label">${c.label} ›${idxAlert(c.k, p)}</div>
       <div class="idx-val">${idxText(c.k, p)}</div>
       ${r != null ? `<div class="idx-chg ${pctClass(r)}">${fmtPct(r)}</div>` : ''}
       <div class="idx-basis${live ? ' live' : ''}">${tag}</div>
-    </div>`;
+    </a>`;
   }
   // (129) 두바이유·항공유 — 오피넷(하루 늦게 올라옴), 로그인일 때만. 소수 둘째 자리(오피넷과 같게)
   if (_OIL && _OIL.length) {
-    for (const c of [{ k: 'dubai', label: '두바이유' }, { k: 'kero', label: '항공유(싱가포르 등유)' }]) {
+    for (const c of [{ k: 'dubai', label: '두바이유', href: '/dashboard/#oil' }, { k: 'kero', label: '항공유(싱가포르 등유)', href: '/stock-tools/fuel-tracker/' }]) {
       const a = _OIL.filter(r => r[c.k] != null);
       if (!a.length) continue;
       const L = a[a.length - 1], P = a.length > 1 ? a[a.length - 2] : null;
       const r = P ? (L[c.k] / P[c.k] - 1) * 100 : null;
-      html += `<a class="idx-card idx-link" href="/dashboard/#oil" title="시장 대시보드 ⛽ 국제유가 탭 — 일별 표·추이">
+      html += `<a class="idx-card idx-link" href="${c.href}">
       <div class="idx-label">${c.label} ›</div>
       <div class="idx-val">$${fmt(L[c.k], 2)}</div>
       ${r != null ? `<div class="idx-chg ${pctClass(r)}">${fmtPct(r)}</div>` : ''}

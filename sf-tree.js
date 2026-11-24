@@ -8,7 +8,7 @@
      - 폰(760px 이하): 본문 위로 덮음. 메뉴 하나 누르면 닫힘
      - 펼침/닫힘 상태 = localStorage sf-tree-open (페이지를 옮겨도 그대로, 브라우저별)
      - 폴더 접힘/펼침 = localStorage sf-tree-fold (브라우저별, 저장·되돌리기 대상 아님)
-     - (129 v5.8) 접힌 탭을 키움(누르기 편하게 — PC 글씨 15px·폭 약 33px, 폰 14px) + 페이지를 스크롤하는 동안 탭을 잠깐 숨김(멈추고 0.5초 뒤 다시 보임, 펼쳤을 땐 안 숨김)
+     - (129 v5.8) 접힌 탭을 키움(누르기 편하게 — PC 글씨 15px·폭 약 33px, 폰 14px) + 페이지를 스크롤하는 동안 탭을 잠깐 숨김(멈추고 0.15초 뒤 다시 보임 — 0.5초는 느리다고 해서 줄임, 펼쳤을 땐 안 숨김)
    ■ 트리
      - [+ 폴더] [+ 이 페이지] + 메뉴 검색(메인 카드 목록 = menu-search.js와 같은 출처: 메인 .tool-panel .tool-grid > a.card)
      - 폴더 2단계까지(폴더 안 폴더 1번). 지금 페이지는 파란색(location.pathname 비교, #탭은 안 봄)
@@ -329,13 +329,13 @@
     tab.id = 'sf-tree-tab';
     tab.type = 'button';
     tab.addEventListener('click', function () { if (tabJustMoved) return; setOpen(!document.body.classList.contains('sf-tree-open')); });
-    // (129) 접혀 있을 때 페이지를 스크롤하는 동안 탭을 숨김 — 멈추고 0.5초 뒤 다시 보임
+    // (129) 접혀 있을 때 페이지를 스크롤하는 동안 탭을 숨김 — 멈추고 0.15초 뒤 다시 보임
     var scrollT = null;
     window.addEventListener('scroll', function () {
       if (document.body.classList.contains('sf-tree-open') || tab.classList.contains('st-tab-moving')) return;
       tab.classList.add('st-tab-scroll');
       clearTimeout(scrollT);
-      scrollT = setTimeout(function () { tab.classList.remove('st-tab-scroll'); }, 500);
+      scrollT = setTimeout(function () { tab.classList.remove('st-tab-scroll'); }, 150);
     }, { passive: true });
 
     var back = document.createElement('div');

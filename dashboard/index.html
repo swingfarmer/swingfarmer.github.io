@@ -364,11 +364,14 @@ function renderPC(data,el){const rows=data.history||[];if(!rows.length){el.inner
 
 /* 이벤트 */
 // (113) 탭 선택은 #tabBar 안에서만(유가 칸 안 기간·표 버튼도 .chart-tab). 주소 끝 #oil·#vasily·#bod·#putcall로 그 탭을 바로 엶
+// (129) 주소 #탭으로 들어오면 그 탭을 열고 탭 줄까지 내려 줌(위쪽 종합 진단에 가려 다른 페이지처럼 보이던 것) + 같은 페이지에서 #만 바뀌어도 동작(114 규칙)
+function openHash(){const h=location.hash.slice(1);if(!h||!document.querySelector('#tabBar .chart-tab[data-tab="'+h+'"]'))return;if(h!=='indicators')showTab(h);setTimeout(function(){document.getElementById('tabBar').scrollIntoView({block:'start'});},80);}
+window.addEventListener('hashchange',openHash);
 function showTab(t){const b=document.querySelector('#tabBar .chart-tab[data-tab="'+t+'"]');if(!b)return;document.querySelectorAll('#tabBar .chart-tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab-pane').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById('tab-'+t).classList.add('active');if(t==='vasily')loadVasily();if(t==='bod')loadBOD();if(t==='putcall')loadPutCall();if(t==='oil')window.initOil();}
 document.getElementById('tabBar').addEventListener('click',e=>{const b=e.target.closest('.chart-tab');if(!b)return;showTab(b.dataset.tab);try{history.replaceState(null,'',b.dataset.tab==='indicators'?location.pathname:'#'+b.dataset.tab);}catch(_){}});
 document.getElementById('guideToggle').addEventListener('click',()=>{const b=document.getElementById('guideBody');b.classList.toggle('open');document.getElementById('guideToggle').textContent=b.classList.contains('open')?'📖 사용설명서 (클릭하여 접기)':'📖 사용설명서 (클릭하여 펼치기)';});
 
-async function init(){try{const[iR,hR]=await Promise.all([fetch(`${DATA_BASE}/market_indicators.json`),fetch(`${DATA_BASE}/market_history.json`)]);if(hR.ok){historyData=parseHistory(await hR.json());}if(iR.ok){renderDiag(parseIndicators(await iR.json()));}if(location.hash.length>1&&location.hash!=='#indicators')showTab(location.hash.slice(1));}catch(e){console.error(e);document.getElementById('diagCards').innerHTML='<div style="text-align:center;padding:20px;color:var(--text-dim)">데이터 로딩 실패</div>';}}
+async function init(){try{const[iR,hR]=await Promise.all([fetch(`${DATA_BASE}/market_indicators.json`),fetch(`${DATA_BASE}/market_history.json`)]);if(hR.ok){historyData=parseHistory(await hR.json());}if(iR.ok){renderDiag(parseIndicators(await iR.json()));}openHash();}catch(e){console.error(e);document.getElementById('diagCards').innerHTML='<div style="text-align:center;padding:20px;color:var(--text-dim)">데이터 로딩 실패</div>';}}
 init();
 </script>
 <script>
@@ -717,6 +720,6 @@ function drawOilChart(){
 loadAll();
 })();
 </script>
-<script src="/common.js?v=23"></script>
+<script src="/common.js?v=24"></script>
 </body>
 </html>
