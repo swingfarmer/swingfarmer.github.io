@@ -167,6 +167,8 @@
 0 6 1 * * cd ~/swingfarmer.github.io && /usr/bin/python3 scripts/update_stock_list.py >> ~/cron.log 2>&1
 # [봇1] 월봉 20월선 확정 — 매월 말일 16:20 (28~31일에 돌고, 내일이 다음 달일 때만 실행)
 20 16 28-31 * * [ "$(date -d tomorrow +\%m)" != "$(date +\%m)" ] && . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_ma_check.py --monthly-final >> ~/logs/ma_check.log 2>&1
+# [봇1] 분기봉 양봉·음봉 (코스피·코스닥, 몇 분기 연속) — 매월 말일 16:40, 3·6·9·12월은 확정·그 밖은 중간점검 (131, 월봉 확정 16:20 뒤로 띄움)
+40 16 28-31 * * [ "$(date -d tomorrow +\%m)" != "$(date +\%m)" ] && . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/quarter_candle.py >> ~/logs/quarter_candle.log 2>&1
 # DART 재무 — 연간 — 4/5 09:00
 0 9 5 4 * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_dart.py --period annual >> ~/cron.log 2>&1
 # DART 재무 — 1분기 — 5/20 09:00
