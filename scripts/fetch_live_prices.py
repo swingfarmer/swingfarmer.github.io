@@ -312,6 +312,79 @@ def fetch_indices(token):
     return out
 
 
+ETF_RE = None
+
+def _q(path, tr, params, token):
+    """KIS 조회 1회 — 실패면 None (지수·시장 칸은 실패해도 종목 수집에 영향 없음)."""
+    d = kis_get(path, tr, params, token)
+    time.sleep(SINGLE_DELAY)
+    if str(d.get('rt_cd')) != '0':
+        log(f"  ⚠ {tr} 실패: {d.get('msg_cd','')} {d.get('msg1','')}".rstrip())
+        return None
+    return d
+
+
+def fetch_market(token, stock_codes):
+    """(128) /today/ 장중 칸 — 1분에 KIS 6회 추가. 금액 단위: 투자자·프로그램·가집계 = 백만원, 거래대금 = 원.
+    sector: 코스피 업종 등락 / inv: 코스피 투자자별 순매수(시장별 투자자 999·S001) / prog: 프로그램 순매수(코스피)
+    frgn_top·orgn_top: 외국인·기관 순매수 상위(장중 가집계, 코스피+코스닥) / vol_top: 거래대금 상위(ETF·ETN 뺌)"""
+    import re
+    global ETF_RE
+    if ETF_RE is None:
+        ETF_RE = re.compile(r'^(KODEX|TIGER|RISE|ACE|SOL|KBSTAR|HANARO|PLUS|KOSEF|ARIRANG|TIMEFOLIO|1Q|WON|BNK|FOCUS|TRUSTON|마이다스|에셋플러스|히어로즈|UNICORN|VITA|ITF|KoAct|KIWOOM|파워) |ETN')
+    Q = '/uapi/domestic-stock/v1/quotations'
+    out = {}
+    d = _q(f'{Q}/inquire-index-category-price', 'FHPUP02140000',
+           {'FID_COND_MRKT_DIV_CODE': 'U', 'FID_INPUT_ISCD': '0001', 'FID_COND_SCR_DIV_CODE': '20214',
+            'FID_MRKT_CLS_CODE': 'K', 'FID_BLNG_CLS_CODE': '0'}, token)
+    if d:
+        rows = d.get('output2') or []
+        out['sector'] = [{'n': str(r.get('hts_kor_isnm', '')).strip(),
+                          'r': round(signed(to_float(r.get('bstp_nmix_prdy_ctrt')), r.get('prdy_vrss_sign')), 2)}
+                         for r in rows if str(r.get('bstp_cls_code', '')) not in ('0001', '0002', '0003', '0004')]
+        o1 = d.get('output1') or {}
+        out['adv'] = {'up': to_int(o1.get('ascn_issu_cnt')), 'down': to_int(o1.get('down_issu_cnt')),
+                      'flat': to_int(o1.get('stnr_issu_cnt'))}
+    d = _q(f'{Q}/inquire-investor-time-by-market', 'FHPTJ04030000',
+           {'FID_INPUT_ISCD': '999', 'FID_INPUT_ISCD_2': 'S001'}, token)
+    if d:
+        r = (d.get('output') or [{}])
+        r = r[0] if isinstance(r, list) and r else (r if isinstance(r, dict) else {})
+        out['inv'] = {'frgn': to_int(r.get('frgn_ntby_tr_pbmn')), 'orgn': to_int(r.get('orgn_ntby_tr_pbmn')),
+                      'prsn': to_int(r.get('prsn_ntby_tr_pbmn'))}
+    d = _q(f'{Q}/comp-program-trade-today', 'FHPPG04600101',
+           {'FID_COND_MRKT_DIV_CODE': 'J', 'FID_MRKT_CLS_CODE': 'K', 'FID_SCTN_CLS_CODE': '',
+            'FID_INPUT_ISCD': '', 'FID_COND_MRKT_DIV_CODE1': '', 'FID_INPUT_HOUR_1': ''}, token)
+    if d and d.get('output'):
+        r = d['output'][0]
+        out['prog'] = {'t': str(r.get('bsop_hour', '')), 'net': to_int(r.get('whol_smtn_ntby_tr_pbmn'))}
+    for etc, key, fld in (('1', 'frgn_top', 'frgn_ntby_tr_pbmn'), ('2', 'orgn_top', 'orgn_ntby_tr_pbmn')):
+        d = _q(f'{Q}/foreign-institution-total', 'FHPTJ04400000',
+               {'FID_COND_MRKT_DIV_CODE': 'V', 'FID_COND_SCR_DIV_CODE': '16449', 'FID_INPUT_ISCD': '0000',
+                'FID_DIV_CLS_CODE': '1', 'FID_RANK_SORT_CLS_CODE': '0', 'FID_ETC_CLS_CODE': etc}, token)
+        if d:
+            rows = [{'c': str(r.get('mksc_shrn_iscd', '')), 'n': str(r.get('hts_kor_isnm', '')).strip(),
+                     'a': to_int(r.get(fld))} for r in (d.get('output') or [])]
+            rows.sort(key=lambda x: -x['a'])
+            out[key] = [x for x in rows if x['a'] > 0][:5]
+    d = _q(f'{Q}/volume-rank', 'FHPST01710000',
+           {'FID_COND_MRKT_DIV_CODE': 'J', 'FID_COND_SCR_DIV_CODE': '20171', 'FID_INPUT_ISCD': '0000',
+            'FID_DIV_CLS_CODE': '0', 'FID_BLNG_CLS_CODE': '3', 'FID_TRGT_CLS_CODE': '111111111',
+            'FID_TRGT_EXLS_CLS_CODE': '0000000000', 'FID_INPUT_PRICE_1': '', 'FID_INPUT_PRICE_2': '',
+            'FID_VOL_CNT': '', 'FID_INPUT_DATE_1': ''}, token)
+    if d:
+        rows = []
+        for r in d.get('output') or []:
+            c, n = str(r.get('mksc_shrn_iscd', '')), str(r.get('hts_kor_isnm', '')).strip()
+            if c not in stock_codes and ETF_RE.search(n):
+                continue   # ETF·ETN 뺌 (장 마감 파일 volume_top과 같은 기준)
+            rows.append({'c': c, 'n': n, 'p': to_int(r.get('stck_prpr')),
+                         'r': round(signed(to_float(r.get('prdy_ctrt')), r.get('prdy_vrss_sign')), 2),
+                         'v': to_int(r.get('acml_tr_pbmn'))})
+        out['vol_top'] = rows[:10]
+    return out
+
+
 def collect(token, stocks, state):
     """전 종목 수집. 반환: (quotes dict, mode 문자열)."""
     quotes = {}
@@ -417,12 +490,15 @@ def main():
             write_json_atomic(STATE_FILE, state)
             return 1
 
-    # (128) 지수 — 실패해도 종목 파일은 그대로 씀
+    # (128) 지수·시장 칸 — 실패해도 종목 파일은 그대로 씀
+    indices, market = {}, {}
     try:
         indices = fetch_indices(token)
+        market = fetch_market(token, {s['code'] for s in stocks})
     except TokenExpired:
-        indices = {}
-        log('  ⚠ 지수 조회 중 토큰 만료 — 이번 회차 지수 생략')
+        log('  ⚠ 지수·시장 조회 중 토큰 만료 — 이번 회차 생략')
+    except Exception as e:
+        log(f'  ⚠ 지수·시장 조회 예외: {e}')
 
     if len(quotes) < len(stocks) * 0.5:
         log(f'❌ 수집 실패 (받은 종목 {len(quotes)}/{len(stocks)}) — 기존 파일 유지')
@@ -460,10 +536,11 @@ def main():
         'total': len(stocks),
         'stocks': out_stocks,
         'indices': indices,     # (128) {KOSPI:{p,c,r}, KOSDAQ:{...}} — /today/ 지수 칸
+        'market': market,       # (128) /today/ 수급·업종·순매수·거래대금 칸 (fetch_market 설명)
     }
     write_json_atomic(OUT_FILE, output)
     write_json_atomic(STATE_FILE, state)
-    log(f'✅ {len(out_stocks)}/{len(stocks)}종목 저장 + 지수 {len(indices)}개 ({mode}, {time.time() - t0:.1f}초, 장중={market_open})')
+    log(f'✅ {len(out_stocks)}/{len(stocks)}종목 저장 + 지수 {len(indices)}개 · 시장 {len(market)}칸 ({mode}, {time.time() - t0:.1f}초, 장중={market_open})')
     return 0
 
 

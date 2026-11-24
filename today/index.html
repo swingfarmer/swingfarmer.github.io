@@ -17,6 +17,8 @@ a { color: var(--accent); text-decoration: none; }
 /* Section */
 .section { margin-bottom: 24px; }
 .sec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.sec-basis { font-size: 10px; color: var(--text-dim); font-weight: 600; margin-left: 8px; margin-right: auto; }   /* (128) 이 칸 값이 언제 것인지 */
+.sec-basis.live { color: var(--sf-up); }
 .sec-title { font-size: 15px; font-weight: 700; }
 .sec-link { font-size: 11px; color: var(--text-dim); font-weight: 600; }
 .sec-link:hover { color: var(--accent); }
@@ -489,35 +491,20 @@ async function load() {
 
     // Date label
     const dates = [mcap.date, breadth.date, flow.latest?.date].filter(Boolean);
-    document.getElementById('dateLabel').textContent = (dates[0] || mkt.updated || '') + ' 장 마감 기준 데이터 · VM이 아침 08:04·밤 21:10에 올림';
+    document.getElementById('dateLabel').textContent = '칸 제목 옆에 언제 값인지 적혀 있음 · 장중엔 국내 1분·해외 지표 5분마다 바뀌고, 나머지는 ' + md(dates[0]) + ' 장 마감 값 (128)';
 
-    // 1. Index + FX
-    renderIndex(mkt);
-
-    // 2. Supply
-    renderSupply(flow);
-
-    // 3. Investor top
-    renderInvestor(investor);
-
-    // 4. Breadth
-    renderBreadth(breadth);
-
-    // 5. Sector
-    renderSector(sector);
+    // 1~5·7·8 — 파일 값을 두고, 실시간이 있으면 덮어서 그림 (paint)
+    _F = { mkt, flow, investor, breadth, sector, volume, mcap };
+    paint();
+    setBasis('secBreadth', md(breadth.date) + ' 장 마감 · 하루 1번(20:50)', false);
 
     // 6. Screener
     const scrDate = scrIdx.latest;
     if (scrDate) {
       const scr = await fetch(BASE+'/kr/screener/'+scrDate+'.json', NC).then(r=>r.json());
       renderScreener(scr);
+      setBasis('secScreener', md(scrDate) + ' 장 마감 · 하루 1번', false);
     }
-
-    // 7. Movers
-    renderMovers(mcap);
-
-    // 8. Volume
-    renderVolume(volume);
 
     // (122) 오른쪽 위 공통 표시 — 시장지표가 가장 자주 바뀌어서(07:52·18:45 수집) 그 시각을 기준 시각으로
     return { at: mkt.updated || dates[0], every: 10 * 60e3 };
@@ -528,112 +515,163 @@ async function load() {
   }
 }
 
-function renderIndex(mkt) {
-  const picks = [
-    { cat: 'kr_index', name: '코스피' },
-    { cat: 'kr_index', name: '코스닥' },
-    { cat: 'us_index', name: 'S&P 500' },
-    { cat: 'us_index', name: '나스닥 종합' },
-    { cat: 'volatility', name: 'VIX 공포지수' },
-  ];
-  const fxItems = [];
-  if (mkt.rates) {
-    const r = mkt.rates;
-    fxItems.push({ label: 'USD/KRW', val: fmt(r.USD_KRW, 2) });
-    fxItems.push({ label: 'JPY100/KRW', val: fmt(r.JPY100_KRW, 2) });
-    fxItems.push({ label: '금(원/g)', val: fmt(r.GOLD_KRW_G, 0) });
-  }
-  const grid = document.getElementById('idxGrid');
-  let html = '';
-  for (const p of picks) {
-    const item = mkt.indicators.find(i => i.cat === p.cat && i.name === p.name);
-    if (!item) continue;
-    const cls = pctClass(item.change_pct);
-    const isVix = p.name.includes('VIX');
-    let alertHtml = '';
-    if (isVix && item.price >= 30) alertHtml = '<span class="alert-badge danger">⚠ 공포</span>';
-    else if (isVix && item.price >= 25) alertHtml = '<span class="alert-badge warn">주의</span>';
-    const krKey = p.cat === 'kr_index' ? (p.name === '코스피' ? 'KOSPI' : 'KOSDAQ') : '';
-    html += `<div class="idx-card"${krKey ? ' data-kr="'+krKey+'"' : ''}>
-      <div class="idx-label">${item.name}${alertHtml}</div>
-      <div class="idx-val">${fmt(item.price, item.price < 100 ? 2 : item.price < 10000 ? 0 : 0)}</div>
-      <div class="idx-chg ${cls}">${fmtPct(item.change_pct)}</div>
-      ${krKey ? '<div class="idx-basis">' + krBasis(mkt) + '</div>' : ''}
-    </div>`;
-  }
-  // rates
-  const rateItem = mkt.indicators.find(i => i.name === '미국 10년물');
-  if (rateItem) {
-    let alertHtml = '';
-    if (rateItem.price >= 5) alertHtml = '<span class="alert-badge danger">⚠ 고금리</span>';
-    else if (rateItem.price >= 4.5) alertHtml = '<span class="alert-badge warn">주의</span>';
-    html += `<div class="idx-card">
-      <div class="idx-label">미 10년물${alertHtml}</div>
-      <div class="idx-val">${rateItem.price.toFixed(3)}%</div>
-      <div class="idx-chg ${pctClass(rateItem.change_pct)}">${fmtPct(rateItem.change_pct)}</div>
-    </div>`;
-  }
-  for (const fx of fxItems) {
-    html += `<div class="idx-card">
-      <div class="idx-label">${fx.label}</div>
-      <div class="idx-val">${fx.val}</div>
-    </div>`;
-  }
-  // WTI
-  const wti = mkt.indicators.find(i => i.name === 'WTI 원유');
-  if (wti) {
-    html += `<div class="idx-card">
-      <div class="idx-label">WTI 원유</div>
-      <div class="idx-val">$${fmt(wti.price, 2)}</div>
-      <div class="idx-chg ${pctClass(wti.change_pct)}">${fmtPct(wti.change_pct)}</div>
-    </div>`;
-  }
-  grid.innerHTML = html;
-  applyKrLive();   // (128) 장중 값이 이미 있으면 바로 덮음 (10분마다 다시 그릴 때 아침 값으로 돌아가지 않게)
+// (128) 칸마다 「언제 값인지」를 제목 옆에 적고, 장중엔 VM 1분 수집(/api/prices/live)·야후 5분(/api/perp/est의 macro)으로 덮어씀.
+//       파일(data/*.json)은 아침 07:52·저녁 18:45·20:50 등 하루 몇 번만 바뀜 → 실시간이 없을 땐 파일 값 + 그 날짜.
+let _F = null;      // 파일 값 {mkt, flow, investor, breadth, sector, volume, mcap}
+let _L = null;      // /api/prices/live (국내 1분)
+let _M = null;      // /api/perp/est 의 macro (야후 5분)
+const kstNow = () => new Date(Date.now() + 9 * 3600e3);
+const kstDay = () => kstNow().toISOString().slice(0, 10);
+const md = d => { const m = String(d || '').match(/\d{4}-(\d{2})-(\d{2})/); return m ? (+m[1]) + '/' + (+m[2]) : ''; };
+function kstHM(sec) { const d = new Date(sec * 1000 + 9 * 3600e3); return { md: (d.getUTCMonth() + 1) + '/' + d.getUTCDate(), hm: String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0') }; }
+function liveKR() { return _L && !_L.stale && _L.date === kstDay() ? _L : null; }
+function liveTag(L) { return L.market_open ? '🔴 장중 ' + L.time + ' · 1분마다' : '오늘 ' + L.time + ' 기준 (장 마감 뒤 최종)'; }
+function setBasis(secId, text, live) {
+  const head = document.querySelector('#' + secId + ' .sec-head');
+  if (!head) return;
+  let b = head.querySelector('.sec-basis');
+  if (!b) { b = document.createElement('span'); b.className = 'sec-basis'; head.querySelector('.sec-title').after(b); }
+  b.className = 'sec-basis' + (live ? ' live' : '');
+  b.textContent = text;
 }
 
-// (128) 코스피·코스닥 — 파일(market_indicators.json)은 07:52·18:45 수집이라 장중엔 전날 종가.
-//       장중·장 마감 직후에는 VM 1분 수집(/api/prices/live의 indices, KIS 업종지수)으로 덮는다.
-function krBasis(mkt) {
-  const m = String(mkt.updated || '').match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
-  if (!m) return '';
-  // 18:45 수집분이면 그날 종가, 07:52 수집분이면 전 거래일 종가
-  return (+m[4] >= 16 ? (+m[2]) + '/' + (+m[3]) + ' 종가' : '전 거래일 종가') ;
+// 지수·환율·금리 카드 — k: 실시간 덮어쓸 열쇠(KOSPI·KOSDAQ = 국내 1분, 그 밖 = 야후 기호)
+const IDX_CARDS = [
+  { k: 'KOSPI',    find: i => i.cat === 'kr_index' && i.name === '코스피', label: '코스피' },
+  { k: 'KOSDAQ',   find: i => i.cat === 'kr_index' && i.name === '코스닥', label: '코스닥' },
+  { k: '^GSPC',    find: i => i.cat === 'us_index' && i.name === 'S&P 500', label: 'S&P 500' },
+  { k: '^IXIC',    find: i => i.cat === 'us_index' && i.name === '나스닥 종합', label: '나스닥 종합' },
+  { k: '^VIX',     find: i => i.name === 'VIX 공포지수', label: 'VIX 공포지수' },
+  { k: '^TNX',     find: i => i.name === '미국 10년물', label: '미 10년물' },
+  { k: 'KRW=X',    rate: 'USD_KRW', label: 'USD/KRW' },
+  { k: 'JPYKRW=X', rate: 'JPY100_KRW', label: 'JPY100/KRW' },
+  { k: 'GOLD',     rate: 'GOLD_KRW_G', label: '금(원/g)' },
+  { k: 'CL=F',     find: i => i.name === 'WTI 원유', label: 'WTI 원유' },
+];
+function idxText(k, p) {
+  if (p == null) return '-';
+  if (k === '^TNX') return p.toFixed(3) + '%';
+  if (k === 'CL=F') return '$' + fmt(p, 2);
+  if (k === 'JPYKRW=X') return fmt(p * 100, 2);
+  if (k === 'KRW=X') return fmt(p, 2);
+  if (k === 'GOLD') return fmt(p, 0);
+  if (k === 'KOSPI' || k === 'KOSDAQ') return fmt(p, 2);
+  return fmt(p, p < 100 ? 2 : 0);
 }
-let _krLive = null;   // {date, time, market_open, indices}
-function applyKrLive() {
-  const L = _krLive;
-  if (!L || !L.indices) return;
-  const kst = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
-  if (L.date !== kst) return;   // 오늘 수집분만 (주말·휴장일엔 파일 값 그대로)
-  document.querySelectorAll('#idxGrid [data-kr]').forEach(card => {
-    const q = L.indices[card.dataset.kr];
-    if (!q) return;
-    card.querySelector('.idx-val').textContent = fmt(q.p, 2);
-    const chg = card.querySelector('.idx-chg');
-    chg.className = 'idx-chg ' + pctClass(q.r);
-    chg.textContent = fmtPct(q.r);
-    const b = card.querySelector('.idx-basis');
-    if (L.market_open) { b.className = 'idx-basis live'; b.textContent = '🔴 장중 ' + L.time; }
-    else { b.className = 'idx-basis'; b.textContent = '오늘 ' + L.time + ' 기준'; }
-  });
+function idxAlert(k, p) {
+  if (k === '^VIX') return p >= 30 ? '<span class="alert-badge danger">⚠ 공포</span>' : p >= 25 ? '<span class="alert-badge warn">주의</span>' : '';
+  if (k === '^TNX') return p >= 5 ? '<span class="alert-badge danger">⚠ 고금리</span>' : p >= 4.5 ? '<span class="alert-badge warn">주의</span>' : '';
+  return '';
 }
-const KR_LIVE_URL = 'https://swingfarmer.duckdns.org/api/prices/live';
-async function pollKrLive() {
-  // 평일 08:59~15:45(KST)에만 부름 — 수집기도 그 시간에만 돎
-  const k = new Date(Date.now() + 9 * 3600e3), wd = k.getUTCDay(), hm = k.getUTCHours() * 100 + k.getUTCMinutes();
-  if (wd === 0 || wd === 6 || hm < 859 || hm > 1545) return;
-  try {
-    const r = await fetch(KR_LIVE_URL, { cache: 'no-store' });
-    if (!r.ok) return;
-    const d = await r.json();
-    if (d.stale) return;   // 수집이 5분 넘게 멈췄으면 아침 파일 값 그대로
-    _krLive = { date: d.date, time: d.time, market_open: !!d.market_open, indices: d.indices };
-    applyKrLive();
-  } catch (e) { /* VM 응답 없으면 파일 값 그대로 */ }
+function renderIndex(mkt) {
+  const fileAt = String(mkt.updated || '').match(/\d{4}-(\d{2})-(\d{2}) (\d{2}:\d{2})/);
+  const fileTag = fileAt ? (+fileAt[1]) + '/' + (+fileAt[2]) + ' ' + fileAt[3] + ' 수집' : '';
+  const rateAt = String((mkt.rates || {}).updated || '').match(/\d{4}-(\d{2})-(\d{2}) (\d{2}:\d{2})/);
+  const rateTag = rateAt ? (+rateAt[1]) + '/' + (+rateAt[2]) + ' ' + rateAt[3] + ' 수집' : fileTag;
+  const L = liveKR(), M = _M && _M.items;
+  let html = '', liveN = 0;
+  for (const c of IDX_CARDS) {
+    let p = null, r = null, tag = '', live = false;
+    if (c.find) { const it = mkt.indicators.find(c.find); if (it) { p = it.price; r = it.change_pct; tag = fileTag; } }
+    else if (mkt.rates) { p = mkt.rates[c.rate]; tag = rateTag; }
+    if ((c.k === 'KOSPI' || c.k === 'KOSDAQ') && L && L.indices && L.indices[c.k]) {
+      const q = L.indices[c.k]; p = q.p; r = q.r; live = L.market_open; tag = L.market_open ? '🔴 ' + L.time : '오늘 ' + L.time;
+    } else if (M && M[c.k] && M[c.k].p != null) {
+      const q = M[c.k], t = kstHM(q.mt || _M.t), fresh = Date.now() / 1000 - (q.mt || 0) < 20 * 60;
+      p = q.p; r = q.r; live = fresh; tag = fresh ? '🔴 ' + t.hm + ' · 5분마다' : t.md + ' ' + t.hm + ' 마지막 거래';
+    }
+    if (p == null) continue;
+    if (live) liveN++;
+    html += `<div class="idx-card">
+      <div class="idx-label">${c.label}${idxAlert(c.k, p)}</div>
+      <div class="idx-val">${idxText(c.k, p)}</div>
+      ${r != null ? `<div class="idx-chg ${pctClass(r)}">${fmtPct(r)}</div>` : ''}
+      <div class="idx-basis${live ? ' live' : ''}">${tag}</div>
+    </div>`;
+  }
+  document.getElementById('idxGrid').innerHTML = html;
+  setBasis('secIndex', liveN ? '카드마다 기준 시각 · 국내 1분·해외 5분' : '카드마다 기준 시각', liveN > 0);
 }
-pollKrLive();
-setInterval(pollKrLive, 60e3);
+
+function paint() {
+  if (!_F) return;
+  const L = liveKR(), m = L && L.market ? L.market : null;
+  renderIndex(_F.mkt);
+  // 수급 요약
+  if (m && m.inv) {
+    renderSupplyLive(m.inv, m.prog);
+    setBasis('secSupply', liveTag(L) + ' · 코스피 금액', L.market_open);
+  } else {
+    renderSupply(_F.flow);
+    setBasis('secSupply', md(_F.flow.latest && _F.flow.latest.date) + ' 장 마감 · 코스피200 합산 수량(주)', false);
+  }
+  // 외국인·기관 순매수
+  if (m && m.frgn_top && m.orgn_top) {
+    const cv = a => a.map(x => ({ name: x.n, net_buy: x.a * 1e6 }));
+    renderInvestor({ foreign: cv(m.frgn_top), institution: cv(m.orgn_top) });
+    setBasis('secInvestor', liveTag(L) + ' · 장중 가집계', L.market_open);
+  } else {
+    renderInvestor(_F.investor);
+    setBasis('secInvestor', md(_F.investor.date) + ' 장 마감', false);
+  }
+  // 업종
+  if (m && m.sector && m.sector.length) {
+    renderSector({ sectors: m.sector.map(x => ({ name: x.n, change_pct: x.r })) });
+    setBasis('secSector', liveTag(L) + ' · 코스피 업종', L.market_open);
+  } else {
+    renderSector(_F.sector);
+    setBasis('secSector', md(_F.sector.date) + ' 장 마감', false);
+  }
+  // 시총 상위 — 파일의 종목 목록 + 1분 시세
+  if (L && L.stocks) {
+    const items = _F.mcap.items.map(it => { const q = L.stocks[it.ticker]; return q ? { ...it, close: q.p, change_pct: q.r } : null; }).filter(Boolean);
+    renderMovers({ items });
+    setBasis('secMovers', liveTag(L), L.market_open);
+  } else {
+    renderMovers(_F.mcap);
+    setBasis('secMovers', md(_F.mcap.date) + ' 장 마감', false);
+  }
+  // 거래대금
+  if (m && m.vol_top && m.vol_top.length) {
+    renderVolume({ items: m.vol_top.map(x => ({ name: x.n, close: x.p, change_pct: x.r, trading_value: x.v })) });
+    setBasis('secVolume', liveTag(L) + ' · ETF 뺌', L.market_open);
+  } else {
+    renderVolume(_F.volume);
+    setBasis('secVolume', md(_F.volume.date) + ' 장 마감', false);
+  }
+}
+
+function renderSupplyLive(inv, prog) {
+  // 단위: 백만원 → 원 (fmtBil이 억·조로 표시)
+  const items = [
+    { label: '외국인', val: inv.frgn * 1e6 },
+    { label: '기관', val: inv.orgn * 1e6 },
+    { label: '개인', val: inv.prsn * 1e6 },
+  ];
+  if (prog) items.push({ label: '프로그램', val: prog.net * 1e6 });
+  document.getElementById('supplyRow').innerHTML = items.map(it => `<div class="supply-card">
+      <div class="supply-label">${it.label}</div>
+      <div class="supply-val ${pctClass(it.val)}">${fmtBil(it.val)}</div>
+      <div class="supply-sub">순매수 금액</div>
+    </div>`).join('');
+}
+
+const LIVE_URL = 'https://swingfarmer.duckdns.org/api/prices/live';
+const PERP_URL = 'https://swingfarmer.duckdns.org/api/perp/est';
+async function pollLive() {
+  if (document.hidden) return;
+  const k = kstNow(), wd = k.getUTCDay(), hm = k.getUTCHours() * 100 + k.getUTCMinutes();
+  const krTime = wd >= 1 && wd <= 5 && hm >= 859 && hm <= 1545;   // 국내 수집기가 도는 시간 (장 마감 뒤 최종값까지)
+  const jobs = [fetch(PERP_URL, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null)];
+  if (krTime || !_L) jobs.push(fetch(LIVE_URL, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null));
+  const [pe, lv] = await Promise.all(jobs);
+  if (pe && pe.macro && !pe.stale) _M = pe.macro;
+  if (lv) _L = lv;
+  paint();
+}
+pollLive();
+setInterval(pollLive, 60e3);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) pollLive(); });
 
 function renderSupply(flow) {
   const d = flow.latest;

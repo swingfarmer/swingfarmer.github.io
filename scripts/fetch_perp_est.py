@@ -330,6 +330,40 @@ def base_from_prices(state):
     return new, False
 
 
+# (128) /today/ 지수·환율·금리 칸 — 야후 spark 1회에 8종목. 야후는 비공식이라 5분에 한 번만 부름(하루 288회)
+MACRO_SYMS = '^GSPC,^IXIC,^VIX,^TNX,CL=F,KRW=X,JPYKRW=X,GC=F'
+MACRO_EVERY = 300
+
+
+def macro_block(state, now):
+    m = state.get('macro')
+    if m and now.timestamp() - m.get('t', 0) < MACRO_EVERY - 20:
+        return m
+    url = 'https://query1.finance.yahoo.com/v7/finance/spark?' + urllib.parse.urlencode(
+        {'symbols': MACRO_SYMS, 'range': '1d', 'interval': '5m'})
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            d = json.loads(r.read().decode())
+        items = {}
+        for x in (d.get('spark') or {}).get('result') or []:
+            meta = ((x.get('response') or [{}])[0].get('meta') or {})
+            p, pc = meta.get('regularMarketPrice'), meta.get('chartPreviousClose') or meta.get('previousClose')
+            if not p:
+                continue
+            items[x.get('symbol')] = {'p': p, 'pc': pc, 'r': round((p / pc - 1) * 100, 2) if pc else None,
+                                      'mt': meta.get('regularMarketTime')}
+        if items:
+            m = {'t': int(now.timestamp()), 'items': items}
+            state['macro'] = m
+    except Exception as e:
+        if not m or now.minute % 30 == 0:
+            log(f'⚠ 야후 spark 실패: {str(e)[:100]}')
+        if m:
+            m['t'] = int(now.timestamp()) - MACRO_EVERY + 120   # 실패하면 2분 뒤 다시
+    return m
+
+
 def main():
     force = '--force' in sys.argv
     os.makedirs(LIVE_DIR, exist_ok=True)
@@ -354,9 +388,11 @@ def main():
     except Exception as e:
         log(f'⚠ 미국 종목 실패: {e}')
 
+    macro = macro_block(state, now)   # (128)
+
     if in_session(now, holiday_today) and not force:
         # 국내 장중 — 국내 종목은 안 부르고, 미국만 (124: 예전엔 session만 적고 끝)
-        write_json_atomic(OUT_FILE, {'updated': now.strftime('%Y-%m-%dT%H:%M:%S+09:00'), 'session': True, 'us': us})
+        write_json_atomic(OUT_FILE, {'updated': now.strftime('%Y-%m-%dT%H:%M:%S+09:00'), 'session': True, 'us': us, 'macro': macro})
         write_json_atomic(STATE_FILE, state)
         return 0
 
@@ -424,6 +460,7 @@ def main():
         'hist': state['hist'],
         'source': '바이낸스·하이퍼리퀴드 무기한 선물',
         'us': us,
+        'macro': macro,   # (128) 야후 지수·환율·금리·유가 (5분마다)
     }
     write_json_atomic(OUT_FILE, out)
     write_json_atomic(STATE_FILE, state)
