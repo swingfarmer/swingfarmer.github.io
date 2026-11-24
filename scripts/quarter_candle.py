@@ -169,7 +169,8 @@ def save_json(data_syms, today, last_trade):
     with open(tmp, 'w', encoding='utf-8') as f:
         json.dump(out, f, ensure_ascii=False, separators=(',', ':'))
     os.replace(tmp, path)
-    print(f'  💾 저장: data/dashboard/quarter_candle.json ({", ".join(f"{k} {len(v["q"])}분기" for k, v in out["indices"].items())})')
+    cnt = ', '.join('%s %d분기' % (k, len(v['q'])) for k, v in out['indices'].items())
+    print('  💾 저장: data/dashboard/quarter_candle.json (' + cnt + ')')
 
 
 def fetch(sym):
