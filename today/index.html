@@ -525,7 +525,11 @@ const fmtBil = (n) => {
 };
 
 const NC = { cache: 'no-cache' };   // (121) 다시 읽을 때 브라우저에 남은 옛 파일 말고 새 파일(바뀐 게 없으면 서버가 304로 짧게 답함)
+// (128) sfLive가 1분마다 부름 — 실시간(국내 1분·야후 5분)은 매번, 파일(data/*.json)은 10분에 한 번만 다시 읽음
+let _fAt = 0;
 async function load() {
+  await fetchLive();
+  if (_F && Date.now() - _fAt < 10 * 60e3) { paint(); return liveInfo(); }
   try {
     const [mkt, flow, investor, breadth, sector, volume, scrIdx, mcap] = await Promise.all([
       fetch(BASE+'/market_indicators.json', NC).then(r=>r.json()),
@@ -555,8 +559,8 @@ async function load() {
       setBasis('secScreener', md(scrDate) + ' 장 마감 · 하루 1번', false);
     }
 
-    // (122) 오른쪽 위 공통 표시 — 시장지표가 가장 자주 바뀌어서(07:52·18:45 수집) 그 시각을 기준 시각으로
-    return { at: mkt.updated || dates[0], every: 10 * 60e3 };
+    _fAt = Date.now();
+    return liveInfo();
   } catch(e) {
     console.error(e);
     if (!_todayLoaded) document.getElementById('dateLabel').textContent = '데이터 로딩 실패';
@@ -712,8 +716,13 @@ function renderSupplyLive(inv, prog) {
 
 const LIVE_URL = 'https://swingfarmer.duckdns.org/api/prices/live';
 const PERP_URL = 'https://swingfarmer.duckdns.org/api/perp/est';
-async function pollLive() {
-  if (document.hidden) return;
+// (122) 오른쪽 위 공통 표시 — 국내 1분 값이 있으면 그 시각(🔴 장중), 없으면 시장지표 파일 시각
+function liveInfo() {
+  const L = liveKR();
+  if (L) return { at: L.date + ' ' + L.time, open: !!L.market_open, every: 60e3 };
+  return { at: _F && _F.mkt.updated, every: 60e3 };
+}
+async function fetchLive() {
   const k = kstNow(), wd = k.getUTCDay(), hm = k.getUTCHours() * 100 + k.getUTCMinutes();
   const krTime = wd >= 1 && wd <= 5 && hm >= 859 && hm <= 1545;   // 국내 수집기가 도는 시간 (장 마감 뒤 최종값까지)
   const jobs = [fetch(PERP_URL, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null)];
@@ -721,11 +730,7 @@ async function pollLive() {
   const [pe, lv] = await Promise.all(jobs);
   if (pe && pe.macro && !pe.stale) _M = pe.macro;
   if (lv) _L = lv;
-  paint();
 }
-pollLive();
-setInterval(pollLive, 60e3);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) pollLive(); });
 
 function renderSupply(flow) {
   const d = flow.latest;
@@ -902,7 +907,7 @@ function renderVolume(vol) {
 //       해외 추정가 칸은 위에서 따로 1분마다. 다른 탭에 있다가 돌아왔을 때 10분이 지났으면 바로 다시 읽음
 // (122) 타이머·오른쪽 위 표시는 /sf-live.js
 let _todayLoaded = false;
-sfLive({ load: () => load().then(i => { _todayLoaded = true; return i; }), every: 10 * 60e3 });
+sfLive({ load: () => load().then(i => { _todayLoaded = true; return i; }), every: 60e3 });   // (128) 10분 → 1분 (파일은 load 안에서 10분에 한 번)
 </script>
 </body>
 </html>
