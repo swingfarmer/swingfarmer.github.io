@@ -607,6 +607,22 @@ async function handleImport(e){
   e.target.value = '';
 }
 
+// ── (130) 저장 방식 안내 표준 문구 ──
+// 페이지에 <span class="sf-save-note"></span>(자세히) 또는 data-f="short"(한 줄)만 두면 여기 문구로 채움.
+// 저장 방식이 바뀌면 이 두 줄만 고친다(옛 「서버로 전송되지 않음·이 브라우저에만」 문구가 페이지마다 남아 있던 것을 130에서 정리).
+var SF_SAVE_NOTE = {
+  long: '<b>자동 저장</b>: 입력하면 <b>이 브라우저</b>에 바로 저장돼요(이 기기만 — 브라우저 기록을 지우면 사라짐). ' +
+        '<b>계정 저장</b>: 오른쪽 아래 <b>파란 동그라미 버튼(저장 관리)</b> → 이름 붙여 저장하면 사이트 계정 저장소(Firebase)에 올라가 <b>다른 PC·폰에서도</b> 불러와요. GitHub(공개 레포)에는 안 올라가요.',
+  short: '입력은 이 브라우저에 자동 저장 · 다른 기기에서도 보려면 오른쪽 아래 파란 버튼(저장 관리)으로 계정에 저장'
+};
+function fillSaveNotes(){
+  document.querySelectorAll('.sf-save-note').forEach(function(el){
+    el.innerHTML = el.getAttribute('data-f') === 'short' ? SF_SAVE_NOTE.short : SF_SAVE_NOTE.long;
+  });
+}
+window.SF_SAVE_NOTE = SF_SAVE_NOTE;
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fillSaveNotes); else fillSaveNotes();
+
 // ── 트리거 버튼 자동 주입 ──
 // 페이지에 #sfSlotTrigger가 없으면 자동으로 생성
 document.addEventListener('DOMContentLoaded', function(){
