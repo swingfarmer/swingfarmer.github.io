@@ -189,17 +189,17 @@ body.sf-dark .alert-critical{background:rgba(69,10,10,.9)!important;color:#fca5a
   <div class="cards">
     <div class="card purple">
       <div class="card-label">DXY ↔ KOSPI 상관계수</div>
-      <div class="card-value">-0.47</div>
+      <div class="card-value" data-corr="dxy-kospi">-0.47</div>
       <div class="card-desc">역상관 확인. 달러약세 → 코스피 상승 패턴 통계적으로 유의미</div>
     </div>
     <div class="card blue">
       <div class="card-label">DXY ↔ S&P500 상관계수</div>
-      <div class="card-value">-0.17</div>
+      <div class="card-value" data-corr="dxy-sp500">-0.17</div>
       <div class="card-desc">미국증시는 달러방향과 거의 무관. 독자적 움직임</div>
     </div>
     <div class="card green">
       <div class="card-label">KOSPI ↔ S&P500 상관계수</div>
-      <div class="card-value">+0.61</div>
+      <div class="card-value" data-corr="kospi-sp500">+0.61</div>
       <div class="card-desc">한미 증시 동조화 존재. 단 코스피 변동성이 훨씬 큼</div>
     </div>
   </div>
@@ -483,10 +483,10 @@ body.sf-dark .alert-critical{background:rgba(69,10,10,.9)!important;color:#fca5a
 
   <div class="insights" id="tab-insights">
     <h2>핵심 인사이트 6가지</h2>
-    <div class="insight-item"><span class="insight-num">1</span><span class="insight-title">기본 공식: 약달러 → 코스피 상승</span><div class="insight-body">DXY ↔ KOSPI 상관계수 -0.47. 통계적으로 의미 있는 역상관. 외국인 자금은 달러 약세기에 신흥국(한국)으로 유입. 26년 중 14년(54%)이 이 패턴.</div></div>
-    <div class="insight-item"><span class="insight-num">2</span><span class="insight-title">미국 증시는 달러와 거의 무관</span><div class="insight-body">DXY ↔ S&P500 상관계수 -0.17. 미국 기업 실적·연준 정책·AI 같은 구조적 요인이 환율보다 우선. 환율 신호로 미국 증시 예측은 약함.</div></div>
+    <div class="insight-item"><span class="insight-num">1</span><span class="insight-title">기본 공식: 약달러 → 코스피 상승</span><div class="insight-body">DXY ↔ KOSPI 상관계수 <span data-corr="dxy-kospi">-0.47</span>. 통계적으로 의미 있는 역상관. 외국인 자금은 달러 약세기에 신흥국(한국)으로 유입. <span id="matchCnt">26년 중 14년(54%)</span>이 이 패턴.</div></div>
+    <div class="insight-item"><span class="insight-num">2</span><span class="insight-title">미국 증시는 달러와 거의 무관</span><div class="insight-body">DXY ↔ S&P500 상관계수 <span data-corr="dxy-sp500">-0.17</span>. 미국 기업 실적·연준 정책·AI 같은 구조적 요인이 환율보다 우선. 환율 신호로 미국 증시 예측은 약함.</div></div>
     <div class="insight-item"><span class="insight-num">3</span><span class="insight-title">예외가 강한 변수일 때 발생</span><div class="insight-body">2005·2007년 중국발 수출 호조, 2024년 12·3 비상계엄 같은 특수 상황. DXY가 약해도 한국 고유 리스크가 더 크면 코스피 하락.</div></div>
-    <div class="insight-item"><span class="insight-num">4</span><span class="insight-title">한미 증시 동조화는 강함 (+0.61)</span><div class="insight-body">코스피와 S&P500은 같은 방향. 단 코스피 변동폭이 1.5~2배. 미국이 -20%면 한국은 -30% 식. 위기에 더 약하고, 회복도 빠름.</div></div>
+    <div class="insight-item"><span class="insight-num">4</span><span class="insight-title">한미 증시 동조화는 강함 (<span data-corr="kospi-sp500">+0.61</span>)</span><div class="insight-body">코스피와 S&P500은 같은 방향. 단 코스피 변동폭이 1.5~2배. 미국이 -20%면 한국은 -30% 식. 위기에 더 약하고, 회복도 빠름.</div></div>
     <div class="insight-item"><span class="insight-num">5</span><span class="insight-title">정당별 달러 패턴은 참고용</span><div class="insight-body">"공화당=약달러, 민주당=강달러" 패턴이 88년 이후 6/6 임기 중 5개에서 일치. 단 인과는 약하고, 실제 변수는 연준·금리·무역수지. 단순한 정치 이벤트 베팅은 위험.</div></div>
     <div class="insight-item"><span class="insight-num">6</span><span class="insight-title">실전 활용</span><div class="insight-body">DXY 트렌드는 코스피 방향성 가늠 보조 지표로 사용. 단독 신호로는 부족 (54% 적중률). 환율 + 금리 + 외국인 순매수 + 기업이익 함께 봐야.</div></div>
   </div>
@@ -528,7 +528,8 @@ const data = [
   { year: 2022, dxy: 8.2, kospi: -24.9, sp500: -19.4, pattern: 'match', note: '연준급격긴축·강달러' },
   { year: 2023, dxy: -2.1, kospi: 18.7, sp500: 24.2, pattern: 'match', note: '약달러반전·AI랠리' },
   { year: 2024, dxy: 7.1, kospi: -9.6, sp500: 23.3, pattern: 'except', note: '계엄 + 미증시 독주' },
-  { year: 2025, dxy: -6.0, kospi: 35.0, sp500: 13.0, pattern: 'match', note: '약달러+한국 밸류업' }
+  // (133) 2025는 연중에 넣은 값(DXY -6.0·코스피 +35.0·S&P +13.0)이 멈춰 있던 것 → 연간 확정치로 고침. 코스피 2,399.49→4,214.17, S&P 5,881.63→6,845.50 (사이트 종가 기록 data/market_history.json), DXY 108.5→98.3 (연말 보도)
+  { year: 2025, dxy: -9.4, kospi: 75.6, sp500: 16.4, pattern: 'match', note: '약달러+한국 밸류업·반도체' }
 ];
 
 function fmt(v) { return sfPct(v, 1, 1); }   // (106) 표기는 sf-fmt.js
@@ -628,6 +629,16 @@ function switchTab(type, btn) {
 })();
 
 renderTable();
+// (133) 상관계수·일치 연수는 위 data 표에서 계산 (예전엔 손으로 넣은 -0.47·-0.17·+0.61·14년이 표와 안 맞았음)
+(function(){
+  function corr(a,b){const n=a.length,ma=a.reduce((s,x)=>s+x,0)/n,mb=b.reduce((s,x)=>s+x,0)/n;
+    let sab=0,saa=0,sbb=0;for(let i=0;i<n;i++){sab+=(a[i]-ma)*(b[i]-mb);saa+=(a[i]-ma)**2;sbb+=(b[i]-mb)**2;}return sab/Math.sqrt(saa*sbb);}
+  const col=k=>data.map(d=>d[k]);
+  const v={'dxy-kospi':corr(col('dxy'),col('kospi')),'dxy-sp500':corr(col('dxy'),col('sp500')),'kospi-sp500':corr(col('kospi'),col('sp500'))};
+  document.querySelectorAll('[data-corr]').forEach(el=>{const x=v[el.dataset.corr];el.textContent=(x>0?'+':'')+x.toFixed(2);});
+  const m=data.filter(d=>d.pattern==='match').length;
+  document.getElementById('matchCnt').textContent=data.length+'년 중 '+m+'년('+Math.round(m/data.length*100)+'%)';
+})();
 buildChart();
 
 // 다크모드 토글 감지해서 차트 다시 그리기
