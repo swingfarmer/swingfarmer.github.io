@@ -4,6 +4,7 @@
    - 점수 기준을 바꿀 때는 여기 한 곳만 고친다 → 두 페이지가 같이 바뀜.
    - 지표마다 −2(공포) ~ +2(과열), 평균이 CUT.hot 이상 과열 / CUT.fear 이하 공포 / 그 사이 혼조.
    - (129 v2) 외국인 현물 연속일수 = 코스피 금액(KRX) 기준 (fetch_foreign_flow.py가 수량 → 금액으로 바뀜)
+   - (133 v3) 외국인 현물 값 뒤에 「(M/D 마감)」 — 장중 /today/ 수급 칸(오늘 포함·잠정)과 반대로 읽히지 않게. 점수는 그대로 마감 확정값
    - 필요: /sf-fmt.js (sfNum·sfPct·sfKor·sfDate) — 부를 때만 씀.
    사용: sfRegime().then(R => { R.auto('hot'|'mix'|'fear'), R.avg, R.I(지표 목록), R.S(점수 있는 지표), R.src(원본 json) })
    ============================================================ */
@@ -56,7 +57,7 @@
     }
     if (ff && ff.latest) {
       var L = ff.latest, sc = L.consec_buy >= 5 ? 1 : L.consec_sell >= 5 ? -1 : 0;
-      I.push({ n: '외국인 현물 (코스피 금액)', v: L.consec_buy ? L.consec_buy + '일 연속 순매수' : L.consec_sell ? L.consec_sell + '일 연속 순매도' : '-', s: sc, d: '5일↑ 연속 순매수 +1 · 연속 순매도 −1 (±1까지만)' });
+      I.push({ n: '외국인 현물 (코스피 금액)', v: (L.consec_buy ? L.consec_buy + '일 연속 순매수' : L.consec_sell ? L.consec_sell + '일 연속 순매도' : '-') + (L.date ? ' (' + sfDate(L.date, 'md') + ' 마감)' : ''), s: sc, d: '5일↑ 연속 순매수 +1 · 연속 순매도 −1 (±1까지만)' });
     }
     // (108) 코스피 PER·신용잔고÷예탁금 — 10년 안 백분위로 점수 (data/dashboard/market_funds.json, fetch_market_funds.py)
     if (mf && mf.latest) {
