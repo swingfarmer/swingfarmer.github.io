@@ -12,6 +12,7 @@ DB·다른 파일에는 아무것도 안 씀.
           krw(원/달러, FRED DEXKOUS 1981~) irx(미 3개월, FRED DTB3 1954~) wti(FRED DCOILWTICO 1986~)
     (134) fed(미 기준금리 목표 — FRED DFEDTAR 1982~2008.12 + DFEDTARU 상단 2008.12~)
           bok(한국은행 기준금리 — ECOS 722Y001/0101000 1999.5~, ECOS_API_KEY 필요)
+          fed는 FRED가 막히면 ECOS 902Y006(주요국 정책금리, 월별) 미국으로
     FRED가 막히면 야후(KRW=X·^IRX·CL=F)로 대신 받음. 한 열이 실패해도 나머지는 저장.
 
   . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/crisis_probe.py
@@ -94,26 +95,41 @@ def fed(_):
     return out
 
 
-def bok(_):
-    """(134) 한국은행 기준금리(일별) — ECOS. 키는 ~/.env_secrets ECOS_API_KEY."""
+def ecos(stat, cycle, start, item, label):
+    """(134) ECOS 한 계열. 일별(D) TIME=YYYYMMDD, 월별(M) TIME=YYYYMM → 그달 1일."""
     key = os.environ.get("ECOS_API_KEY", "")
     if not key:
         print("  ❌ ECOS_API_KEY 없음 — . ~/.env_secrets 먼저")
         return {}
+    end = END if cycle == "D" else END[:6]
     url = (f"https://ecos.bok.or.kr/api/StatisticSearch/{key}/json/kr/1/100000/"
-           f"722Y001/D/19990101/{END}/0101000")
+           f"{stat}/{cycle}/{start}/{end}/{item}")
     raw = urllib.request.urlopen(url, timeout=60, context=ssl.create_default_context()).read()
     data = json.loads(raw.decode("utf-8"))
     rows = data.get("StatisticSearch", {}).get("row", [])
     if not rows:
-        print(f"  ❌ ECOS 응답: {str(data.get('RESULT', data))[:120]}")
+        print(f"  ❌ ECOS {label} 응답: {str(data.get('RESULT', data))[:120]}")
     out = {}
     for r in rows:
         t, v = r.get("TIME", ""), r.get("DATA_VALUE", "")
-        if len(t) == 8 and v not in ("", None):
+        if v in ("", None):
+            continue
+        if len(t) == 8:
             out[f"{t[:4]}-{t[4:6]}-{t[6:]}"] = float(v)
-    print(f"  ECOS 기준금리: {len(out)}일 ({min(out) if out else '-'} ~ {max(out) if out else '-'})")
+        elif len(t) == 6:
+            out[f"{t[:4]}-{t[4:6]}-01"] = float(v)
+    print(f"  ECOS {label}: {len(out)}개 ({min(out) if out else '-'} ~ {max(out) if out else '-'})")
     return out
+
+
+def bok(_):
+    """(134) 한국은행 기준금리(일별) — ECOS 722Y001/0101000."""
+    return ecos("722Y001", "D", "19990101", "0101000", "한은 기준금리")
+
+
+def fed_ecos(_):
+    """(134) FRED가 막힐 때 예비: ECOS 주요국 정책금리(902Y006, 월별) 미국."""
+    return ecos("902Y006", "M", "199001", "US", "미국 정책금리(월별)")
 
 
 def safe(fn, arg):
@@ -138,7 +154,7 @@ SERIES = [
     ("krw", [(fred, "DEXKOUS"), (yahoo, "KRW=X")]),
     ("irx", [(fred, "DTB3"), (yahoo, "^IRX")]),
     ("wti", [(fred, "DCOILWTICO"), (yahoo, "CL=F")]),
-    ("fed", [(fed, "fed")]),
+    ("fed", [(fed, "fed"), (fed_ecos, "fed_ecos")]),
     ("bok", [(bok, "bok")]),
 ]
 
