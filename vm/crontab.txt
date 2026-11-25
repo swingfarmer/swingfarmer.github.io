@@ -167,6 +167,8 @@
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 종목리스트 갱신 — 매월 1일 06:00
 0 6 1 * * cd ~/swingfarmer.github.io && /usr/bin/python3 scripts/update_stock_list.py >> ~/cron.log 2>&1
+# [봇1] 정기 갱신 알림 — 매월 1·16일 09:10 (133: 손으로 할 때 된 것·헬스체크 밖 자동 데이터 멈춤·오래된 리포트 2편 권유. 목록 원본 ~/sf-private/handoff/update_list.json, 알릴 것 없으면 조용히 끝)
+10 9 1,16 * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/update_due.py >> ~/logs/update_due.log 2>&1
 # [봇1] 월봉 20월선 확정 — 매월 말일 16:20 (28~31일에 돌고, 내일이 다음 달일 때만 실행)
 20 16 28-31 * * [ "$(date -d tomorrow +\%m)" != "$(date +\%m)" ] && . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_ma_check.py --monthly-final >> ~/logs/ma_check.log 2>&1
 # [봇1] 분기봉 양봉·음봉 (코스피·코스닥, 몇 분기 연속) — 매월 말일 16:40, 3·6·9·12월은 확정·그 밖은 중간점검 (131, 월봉 확정 16:20 뒤로 띄움)
