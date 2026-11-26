@@ -330,8 +330,8 @@ def base_from_prices(state):
     return new, False
 
 
-# (128) /today/ 지수·환율·금리 칸 — 야후 spark 1회에 8종목. 야후는 비공식이라 5분에 한 번만 부름(하루 288회)
-MACRO_SYMS = '^GSPC,^IXIC,^VIX,^TNX,CL=F,KRW=X,JPYKRW=X,GC=F'
+# (128) /today/ 지수·환율·금리 칸 — 야후 spark 1회에 9종목(136 델타 추가, 호출 수는 그대로). 야후는 비공식이라 5분에 한 번만 부름(하루 288회)
+MACRO_SYMS = '^GSPC,^IXIC,^VIX,^TNX,CL=F,KRW=X,JPYKRW=X,GC=F,DAL'   # (136) DAL 델타항공 — 하이퍼리퀴드에 선물 없어 야후 시세만
 MACRO_EVERY = 300
 
 

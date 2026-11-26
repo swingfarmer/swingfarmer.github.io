@@ -394,7 +394,7 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
       <tr><td data-l="칸">시장 국면</td><td data-l="국내 장중">안 바뀜</td><td data-l="그 밖">저녁 지표가 사이트에 올라간 뒤(21:10) 다시 매김</td><td data-l="출처">사이트 지표 파일</td><td data-l="이유" class="why">종가로 매기는 점수 — 장중 값으로 매기면 하루에도 몇 번씩 국면이 뒤집혀 뜻이 없어짐</td></tr>
       <tr><td data-l="칸">해외 추정가</td><td data-l="국내 장중">1분 (미국 종목만)</td><td data-l="그 밖">1분 (국내 3종목·코스피200·미국)</td><td data-l="출처">바이낸스·하이퍼리퀴드 무기한 선물</td><td data-l="이유" class="why">국내 장중엔 진짜 시세가 있어서 국내 추정은 안 함. 장 마감 뒤엔 24시간 도는 선물로 다음 날을 미리 봄</td></tr>
       <tr><td data-l="칸">코스피·코스닥</td><td data-l="국내 장중"><b>1분</b></td><td data-l="그 밖">15:40 최종값 → 다음 날 아침부터는 전 거래일 종가</td><td data-l="출처">KIS 업종지수</td><td data-l="이유" class="why">이미 1분마다 도는 국내 시세 수집에 2번 더 붙임 (KIS 한도 초당 20회라 여유)</td></tr>
-      <tr><td data-l="칸">S&amp;P·나스닥·VIX·미10년</td><td data-l="장중·그 밖" colspan="2"><b>5분</b> — 미국 장이 열린 동안(밤 23:30~새벽 06:00, 서머타임 땐 1시간 빠름)만 값이 움직이고, 닫혀 있으면 「미국 날짜 종가」로 표시</td><td data-l="출처">야후</td><td data-l="이유" class="why">야후는 공식 API가 아니라 1분마다 부르면 막힐 수 있고, 막히면 아침 시장지표 수집까지 같이 막힘 → 5분(하루 288회)</td></tr>
+      <tr><td data-l="칸">S&amp;P·나스닥·VIX·미10년·델타항공</td><td data-l="장중·그 밖" colspan="2"><b>5분</b> — 미국 장이 열린 동안(밤 23:30~새벽 06:00, 서머타임 땐 1시간 빠름)만 값이 움직이고, 닫혀 있으면 「미국 날짜 종가」로 표시</td><td data-l="출처">야후</td><td data-l="이유" class="why">야후는 공식 API가 아니라 1분마다 부르면 막힐 수 있고, 막히면 아침 시장지표 수집까지 같이 막힘 → 5분(하루 288회)</td></tr>
       <tr><td data-l="칸">USD/KRW·JPY100/KRW·WTI</td><td data-l="장중·그 밖" colspan="2"><b>5분</b> — 거의 24시간 거래라 대부분 「🔴」(주말엔 금요일 마지막 거래)</td><td data-l="출처">야후</td><td data-l="이유" class="why">위와 같음</td></tr>
       <tr><td data-l="칸">두바이유·항공유 🔒</td><td data-l="장중·그 밖" colspan="2">하루 1번 — 오피넷이 <b>전날 값</b>을 다음 날 낮에 올림 → VM이 화~토 08:00~18:45 <b>15분마다</b> 올라왔는지 보고 바로 받음(받으면 텔레그램 봇1). 카드를 누르면 대시보드 ⛽ 국제유가 탭</td><td data-l="출처">오피넷(한국석유공사)</td><td data-l="이유" class="why">오피넷 약관(복제·유통 금지)이라 공개 파일 없이 관리자 로그인일 때만 보임. 두바이는 야후에 없어서 오피넷 값을 씀. 15분 간격은 올라오자마자 보되 오피넷을 너무 자주 부르지 않으려고(그날 값이 들어오면 더 안 부름)</td></tr>
       <tr><td data-l="칸">금(원/g)</td><td data-l="장중·그 밖" colspan="2">하루 1번 — 매일 07:50 수집 → 08:04 사이트 반영</td><td data-l="출처">국내 금 시세</td><td data-l="이유" class="why">국제 금값×환율과는 다른 숫자라 섞지 않음</td></tr>
@@ -613,11 +613,13 @@ const IDX_CARDS = [
   { k: 'JPYKRW=X', rate: 'JPY100_KRW', label: 'JPY100/KRW', href: '/rates/' },
   { k: 'GOLD',     rate: 'GOLD_KRW_G', label: '금(원/g)', href: '/rates/' },
   { k: 'CL=F',     find: i => i.name === 'WTI 원유', label: 'WTI 원유', href: '/dashboard/#oil' },
+  // (136) 델타항공 — 항공주 거래 참고용. 하이퍼리퀴드 선물이 없어 추정가 대신 야후 실제 시세(5분). 사이트에 자세히 보는 페이지가 없어 야후 시세 화면으로
+  { k: 'DAL',      label: '델타항공(DAL)', href: 'https://finance.yahoo.com/quote/DAL/' },
 ];
 function idxText(k, p) {
   if (p == null) return '-';
   if (k === '^TNX') return p.toFixed(3) + '%';
-  if (k === 'CL=F') return '$' + fmt(p, 2);
+  if (k === 'CL=F' || k === 'DAL') return '$' + fmt(p, 2);
   if (k === 'JPYKRW=X') return fmt(p * 100, 2);
   if (k === 'KRW=X') return fmt(p, 2);
   if (k === 'GOLD') return fmt(p, 0);
@@ -646,14 +648,14 @@ function renderIndex(mkt) {
       const q = M[c.k], t = kstHM(q.mt || _M.t), fresh = Date.now() / 1000 - (q.mt || 0) < 20 * 60;
       p = q.p; r = q.r; live = fresh;
       if (fresh) tag = '🔴 ' + t.hm + ' · 5분마다';
-      else if (/^\^/.test(c.k)) {   // 미국 지수·VIX·금리 — 미국 날짜로 「종가」
+      else if (/^\^/.test(c.k) || c.k === 'DAL') {   // 미국 지수·VIX·금리·종목 — 미국 날짜로 「종가」
         const et = new Date((q.mt || _M.t) * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'numeric', day: 'numeric' });
         tag = '미국 ' + et + ' 종가';
       } else tag = t.md + ' ' + t.hm + ' 마지막 거래';
     }
     if (p == null) continue;
     if (live) liveN++;
-    html += `<a class="idx-card idx-link" href="${c.href}">
+    html += `<a class="idx-card idx-link" href="${c.href}"${/^https?:/.test(c.href) ? ' target="_blank" rel="noopener"' : ''}>
       <div class="idx-label">${c.label} ›${idxAlert(c.k, p)}</div>
       <div class="idx-val">${idxText(c.k, p)}</div>
       ${r != null ? `<div class="idx-chg ${pctClass(r)}">${fmtPct(r)}</div>` : ''}
