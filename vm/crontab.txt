@@ -21,6 +21,8 @@
 * * * * * python3 ~/swingfarmer.github.io/scripts/mem_watch.py >> ~/logs/mem_watch_err.log 2>&1
 # 🔒 비공개 레포 sf-private(자산·리서치 노트·종목 시뮬레이터·포트폴리오 원본) 받기 — 10분마다 → api_server /api/private 가 읽음 (109)
 */10 * * * * cd ~/sf-private && git pull -q >> ~/logs/sf_private_pull.log 2>&1
+# 관심 종목 장중 시세 → sf-private/data/live/watch_prices.json — 평일 09:02~15:47 15분마다, 바뀌었을 때만 push (135, 대한항공 021 요청: 종목 채팅이 읽는 용. 새 KIS 호출 없음 — prices_live.json에서 골라 옮김. 목록은 sf-private data/live/watch.json)
+2,17,32,47 9-15 * * 1-5 cd ~/swingfarmer.github.io && python3 scripts/export_watch_prices.py >> ~/logs/export_watch_prices.log 2>&1
 # 공개 레포 자동 받기 — 2분마다 홀수 분(:01·:03…, 짝수 분 정각·auto_push 08:04·21:10 피함, 116에서 5분→2분). GitHub에 새 커밋이 있을 때만 pull(Claude가 직접 push → 사용자 git pull 생략). 받은 시각만 로그에 남음 (116)
 1-59/2 * * * * cd ~/swingfarmer.github.io && git fetch -q origin main && (git merge-base --is-ancestor origin/main HEAD || { date '+\%F \%T'; git pull -q --rebase --autostash; }) >> ~/logs/pub_pull.log 2>&1
 

@@ -78,6 +78,8 @@ TARGETS = [
     ("~/sf_state/regime.json",             "시장 국면 알림",     "weekday", 0),
     # (116) 대한항공 유가 요약 — 바뀔 때만 다시 씀(오피넷 하루 늦음·싱가포르 휴장) → 5일 허용
     ("~/sf-private/data/kal/kal_market_summary.csv", "대한항공 유가 요약(sf-private)", "weekday", 5),
+    # (135) 관심 종목 장중 시세 — 평일 15분마다 push(종목 채팅용). 휴장일엔 안 씀 → 1일 허용
+    ("~/sf-private/data/live/watch_prices.json", "관심 종목 장중 시세(sf-private)", "weekday", 1),
     # 미국 지수·VIX·환율 (야후, 086 추가)
     ("data/market_indicators.json",        "시장지표(야후)",    "weekday", 0),
     ("data/market_history.json",           "시장지표 히스토리", "weekday", 0),
