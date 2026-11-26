@@ -63,8 +63,12 @@
 50 7 * * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_rates.py >> ~/cron.log 2>&1
 # 시장지표 수집 — 평일 07:52 (fetch_rates 다음)
 52 7 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_market_indicators.py >> ~/cron.log 2>&1
-# [봇1] 오피넷 국제유가 올라왔는지 — 화~토 08:00~18:45 15분마다 (129: 장중에 최대한 빨리 보려고. 전 평일 값이 DB에 있으면 오피넷 안 부르고 끝, 새로 받으면 DM. 21:20 줄은 그대로)
-*/15 8-18 * * 2-6 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_opinet_oil.py --watch >> ~/logs/fetch_opinet_oil.log 2>&1
+# [봇1] 오피넷 국제유가 올라왔는지 — 화~토 (129: 장중에 최대한 빨리 보려고. 전 평일 값이 DB에 있으면 오피넷 안 부르고 끝, 새로 받으면 DM. 21:20 줄은 그대로)
+# (135 시험) 11/25·26 둘 다 08:45 없음 → 09:00 있음 → 08:40~09:10만 1분마다, 그 뒤 18:45까지 15분마다(늦는 날 대비). 며칠 로그 보고 확정
+40-59 8 * * 2-6 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_opinet_oil.py --watch >> ~/logs/fetch_opinet_oil.log 2>&1
+0-10 9 * * 2-6 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_opinet_oil.py --watch >> ~/logs/fetch_opinet_oil.log 2>&1
+15,30,45 9 * * 2-6 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_opinet_oil.py --watch >> ~/logs/fetch_opinet_oil.log 2>&1
+*/15 10-18 * * 2-6 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_opinet_oil.py --watch >> ~/logs/fetch_opinet_oil.log 2>&1
 # [봇1] 시장지표 텔레그램 — 평일 08:00
 0 8 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/market_alert.py >> ~/cron.log 2>&1
 # 자동 push — 매일 08:04 (121: 07:30에서 옮김 — 07:50 환율·07:52 시장지표가 밤 21:10까지 사이트에 안 올라가던 것. 이제 아침 수집분이 다 끝난 뒤 올림)
@@ -131,7 +135,7 @@
 10 21 * * * bash ~/auto_push.sh >> ~/cron.log 2>&1
 # [봇2] 뉴스 — 코인 저녁 (--hours 12) — 매일 21:15
 15 21 * * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/news_alert.py --cats 코인 --hours 12 >> ~/cron.log 2>&1
-# 오피넷 국제유가(두바이·브렌트·WTI)+싱가포르 석유제품(등유=항공유) → Oracle OIL_INTL_PRICES — 화~토 21:20 (107, 하루 늦게 올라옴, /kal/ 기본값. 129: 낮에는 --watch가 15분마다 — 08:00 줄 위)
+# 오피넷 국제유가(두바이·브렌트·WTI)+싱가포르 석유제품(등유=항공유) → Oracle OIL_INTL_PRICES — 화~토 21:20 (107, 하루 늦게 올라옴, /kal/ 기본값. 129: 낮에는 --watch — 08:40 줄 위, 135에서 08:40~09:10 1분마다로 시험)
 20 21 * * 2-6 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/fetch_opinet_oil.py >> ~/logs/fetch_opinet_oil.log 2>&1
 # [봇1] 시장 국면(공포·혼조·과열) 바뀜 알림 — 새 국면이 이틀(거래일) 연속일 때만 DM. 점수는 /sf-regime.js를 node로 그대로 계산 — 평일 21:25 (116, 신고가·신저가 20:55 수집 뒤)
 25 21 * * 1-5 . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/regime_alert.py >> ~/logs/regime_alert.log 2>&1
