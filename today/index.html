@@ -190,6 +190,12 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
 .wt-btn:hover { border-color: var(--accent); }
 .wt-editor { margin-top: 10px; padding: 10px 12px; border: 1px dashed var(--border); border-radius: 8px; }
 .wt-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.wt-q { position: relative; flex: 2 1 220px; min-width: 0; display: flex; }
+.wt-q input { flex: 1; }
+.wt-sug { position: absolute; left: 0; right: 0; top: 100%; z-index: 20; background: var(--card); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,.15); display: none; max-height: 290px; overflow-y: auto; }
+.wt-sug div { padding: 6px 10px; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+.wt-sug div:hover, .wt-sug div.on { background: rgba(59,130,246,.12); }
+.wt-sug small { color: var(--text-dim); white-space: nowrap; }
 .wt-row input { flex: 1 1 140px; min-width: 0; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--text); font-size: 13px; }
 .wt-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .wt-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 9px; border: 1px solid var(--border); border-radius: 999px; font-size: 12px; }
@@ -330,13 +336,15 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
     살까 지켜보는 종목을 모아 보는 칸 — <b>✎ 편집</b>에서 언제든 더하고 뺀다(관리자 로그인일 때만 보이고 저장됨, 다른 기기에서도 같은 목록).<br>
     · 국내: 6자리 종목코드(예: 003490). 시세는 VM 1분 수집 — 시총 코스피 1조원↑·코스닥 5천억원↑ 종목만 있어서, 그 밖 종목은 「시세 없음」으로 뜬다.<br>
     · 미국: 티커(예: DAL, UAL). 야후 5분 — 더하면 5분 안에 나온다. 미국 장중(한국 밤 23:30~06:00, 서머타임 22:30~05:00)엔 🔴, 닫혀 있으면 「미국 날짜 종가」.<br>
-    · 이름 칸은 비워도 됨(국내는 자동으로 채움, 미국은 티커로 표시). 최대 20개. 카드를 누르면 네이버 증권(국내)·야후(미국) 시세 화면이 새 탭으로 열림.<br>
+    · 찾기 칸에 이름 일부만 쳐도 목록이 뜬다 — 누르면 바로 들어감. 국내는 시세가 나오는 종목(코스피 1조원↑·코스닥 5천억원↑) 이름·코드, 미국은 S&amp;P500·나스닥100 티커·영문 이름 + 자주 쓰는 한글 이름(델타·유나이티드·엔비디아 등). 목록에 없으면 코드·티커를 그대로 치고 「+ 추가」.<br>
+    · 이름 칸은 비워도 됨(국내는 자동으로 채움, 미국은 티커로 표시). 최대 20개.<br>
+    · 처음 열 때 로그인 확인에 1~2초 걸려서, 그동안은 이 브라우저가 마지막으로 본 목록·시세를 먼저 보여 준다(칸 오른쪽 위 「로그인 확인 중」). 로그아웃 상태로 확인되면 지운다. 카드를 누르면 네이버 증권(국내)·야후(미국) 시세 화면이 새 탭으로 열림.<br>
     · 종목 채팅이 읽는 「관심 종목 장중 시세」(sf-private data/live/watch.json)와는 따로다 — 이 칸은 매수 후보를 보는 용도.
   </div>
   <div class="idx-grid" id="wtGrid"><div class="pe-note">불러오는 중…</div></div>
   <div class="wt-editor" id="wtEditor" style="display:none">
     <div class="wt-row">
-      <input type="text" id="wtCode" placeholder="코드·티커 (003490 / DAL)" maxlength="10" autocomplete="off">
+      <div class="wt-q"><input type="text" id="wtCode" placeholder="이름·코드·티커로 찾기 (대한항공 / 003490 / 델타 / DAL)" maxlength="20" autocomplete="off"><div class="wt-sug" id="wtSug"></div></div>
       <input type="text" id="wtName" placeholder="이름 (비워도 됨)" maxlength="20" autocomplete="off">
       <button type="button" class="wt-btn" id="wtAdd">+ 추가</button>
     </div>
@@ -1031,21 +1039,87 @@ let _todayLoaded = false;
     save(LIST.concat([{ c, n, m: /^[0-9]/.test(c) ? 'kr' : 'us' }]), c + ' 더함');
   }
   $('wtAdd').addEventListener('click', add);
-  ['wtCode', 'wtName'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') add(); }));
+  $('wtName').addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
+  $('wtCode').addEventListener('keydown', e => { if (e.key === 'Enter' && !SUG.length) add(); });   // 찾기 목록이 없을 때만 그대로 추가
+  // 로그인 확인 전에 바로 보이게 — 이 브라우저가 마지막으로 본 목록·시세(관리자 로그인 때만 저장, 로그아웃 확인되면 지움)
+  const CK = 'sf-today-watch';
+  function cacheGet(){ try { return JSON.parse(localStorage.getItem(CK) || 'null'); } catch (e) { return null; } }
+  function cacheSet(v){ try { if (v) localStorage.setItem(CK, JSON.stringify(v)); else localStorage.removeItem(CK); } catch (e) {} }
   let tries = 0;
   async function load(){
-    if (!user()) {
-      $('wtEditBtn').style.display = 'none';
-      $('wtGrid').innerHTML = '<div class="pe-note">🔒 관리자로 로그인하면 보입니다.</div>';
+    const a = window._sfAuth;
+    if (!a || (!a.currentUser && !a.authStateReady && tries < 30)) {   // 로그인 모듈이 아직 안 뜸 — 0.5초마다 다시
       tries++;
-      return { at: new Date(), every: tries < 8 ? 5e3 : 60e3, cycle: '로그인 기다림' };   // 로그인 정보가 몇 초 늦게 살아나는 경우
+      const c = cacheGet();
+      if (c && !DATA) { DATA = c.data; LIST = c.data.list || []; render(); }
+      return { at: c ? new Date(c.at) : new Date(), every: 500, cycle: '로그인 확인 중' };
+    }
+    if (a.authStateReady) await a.authStateReady();
+    if (!a.currentUser) {
+      cacheSet(null); DATA = null;
+      $('wtEditBtn').style.display = 'none'; $('wtEditor').style.display = 'none'; editing = false;
+      $('wtGrid').innerHTML = '<div class="pe-note">🔒 관리자로 로그인하면 보입니다.</div>';
+      return { at: new Date(), every: 60e3, cycle: '로그인 기다림' };
     }
     DATA = await call('GET');
     if (!editing) LIST = DATA.list || [];
+    cacheSet({ at: Date.now(), data: DATA });
     $('wtEditBtn').style.display = '';
     render();
     return { at: new Date(), open: !!DATA.kr_open, every: 60e3 };
   }
+  // ── 찾기: 국내 = 시세 나오는 수집 목록(csv), 미국 = S&P500·나스닥100 구성(data/us/index_map.json) + 한글 별칭 ──
+  const KO_US = { '델타': 'DAL', '델타항공': 'DAL', '유나이티드': 'UAL', '유나이티드항공': 'UAL', '아메리칸항공': 'AAL', '사우스웨스트': 'LUV',
+    '엔비디아': 'NVDA', '애플': 'AAPL', '테슬라': 'TSLA', '마이크로소프트': 'MSFT', '아마존': 'AMZN', '구글': 'GOOGL', '알파벳': 'GOOGL',
+    '메타': 'META', '브로드컴': 'AVGO', '마이크론': 'MU', '넷플릭스': 'NFLX', 'AMD': 'AMD', '인텔': 'INTC', '팔란티어': 'PLTR', '보잉': 'BA',
+    '버크셔': 'BRK-B', '일라이릴리': 'LLY', '코카콜라': 'KO', '코스트코': 'COST', '월마트': 'WMT', '제이피모건': 'JPM', '엑손모빌': 'XOM' };
+  let IDX = null;
+  async function loadIdx(){
+    if (IDX) return IDX;
+    const csv = t => t.split('\n').filter(l => /^[0-9A-Z]{6},/.test(l)).map(l => { const [c, n, g] = l.split(','); return { c, n, g: (g || '').trim(), m: 'kr' }; });
+    const [a, b, u] = await Promise.all([
+      fetch('/scripts/kospi200_list.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
+      fetch('/scripts/kosdaq_list.csv').then(r => r.ok ? r.text() : '').catch(() => ''),
+      fetch('/data/us/index_map.json').then(r => r.ok ? r.json() : {}).catch(() => ({}))]);
+    const us = {}, ko = {};
+    Object.keys(KO_US).forEach(k => { (ko[KO_US[k]] = ko[KO_US[k]] || []).push(k); });
+    ['sp500', 'ndx'].forEach(k => ((u[k] || {}).items || []).forEach(x => { if (!us[x[0]]) us[x[0]] = { c: x[0], n: x[1], m: 'us', ko: (ko[x[0]] || []).join(' ') }; }));
+    Object.keys(ko).forEach(t => { if (!us[t]) us[t] = { c: t, n: '', m: 'us', ko: ko[t].join(' ') }; });
+    IDX = csv(a).map(x => Object.assign(x, { g: '코스피 · ' + x.g })).concat(csv(b).map(x => Object.assign(x, { g: '코스닥 · ' + x.g })), Object.values(us));
+    return IDX;
+  }
+  let SUG = [], sugOn = -1;
+  function sugShow(){
+    const box = $('wtSug');
+    if (!SUG.length) { box.style.display = 'none'; return; }
+    box.innerHTML = SUG.map((x, i) => `<div data-i="${i}" class="${i === sugOn ? 'on' : ''}"><span>${esc(x.m === 'us' ? (x.ko ? x.ko.split(' ')[0] + ' ' : '') + x.c : x.n)} <small>${esc(x.m === 'us' ? '' : x.c)}</small></span><small>${esc(x.m === 'us' ? (x.n || '미국') : x.g)}</small></div>`).join('');
+    box.style.display = 'block';
+  }
+  async function sugFind(){
+    const q = $('wtCode').value.trim(), Q = q.toUpperCase();
+    if (!q) { SUG = []; sugShow(); return; }
+    const all = await loadIdx();
+    const hit = x => x.m === 'kr' ? (x.n.includes(q) || x.c.startsWith(Q)) : (x.c.startsWith(Q) || (x.ko && x.ko.includes(q)) || (Q.length >= 3 && x.n.toUpperCase().includes(Q)));
+    const rank = x => (x.c === Q || x.n === q) ? 0 : (x.c.startsWith(Q) || x.n.startsWith(q) || (x.ko && x.ko.split(' ').some(k => k.startsWith(q)))) ? 1 : 2;
+    SUG = all.filter(hit).sort((a, b) => rank(a) - rank(b)).slice(0, 8); sugOn = SUG.length ? 0 : -1; sugShow();
+  }
+  function sugPick(x){
+    SUG = []; sugShow();
+    if (LIST.some(y => y.c === x.c)) { $('wtMsg').textContent = '이미 있음: ' + (x.m === 'kr' ? x.n : x.c); return; }
+    if (LIST.length >= 20) { $('wtMsg').textContent = '⚠️ 20개까지'; return; }
+    $('wtCode').value = ''; $('wtName').value = '';
+    const n = x.m === 'kr' ? x.n : (x.ko ? x.ko.split(' ')[0] : '');
+    save(LIST.concat([{ c: x.c, n, m: x.m }]), (n || x.c) + ' 더함');
+  }
+  $('wtCode').addEventListener('input', sugFind);
+  $('wtCode').addEventListener('keydown', e => {
+    if (!SUG.length) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); sugOn = (sugOn + (e.key === 'ArrowDown' ? 1 : SUG.length - 1)) % SUG.length; sugShow(); }
+    else if (e.key === 'Enter' && sugOn >= 0) { e.preventDefault(); e.stopImmediatePropagation(); sugPick(SUG[sugOn]); }
+    else if (e.key === 'Escape') { SUG = []; sugShow(); }
+  });
+  $('wtSug').addEventListener('mousedown', e => { const d = e.target.closest('div[data-i]'); if (d) { e.preventDefault(); sugPick(SUG[+d.dataset.i]); } });
+  $('wtCode').addEventListener('blur', () => setTimeout(() => { SUG = []; sugShow(); }, 150));
   const live = sfLive({ load, every: 60e3, mount: $('wtAge') });
 })();
 
