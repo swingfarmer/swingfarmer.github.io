@@ -330,8 +330,29 @@ def base_from_prices(state):
     return new, False
 
 
-# (128) /today/ 지수·환율·금리 칸 — 야후 spark 1회에 9종목(136 델타 추가, 호출 수는 그대로). 야후는 비공식이라 5분에 한 번만 부름(하루 288회)
-MACRO_SYMS = '^GSPC,^IXIC,^VIX,^TNX,CL=F,KRW=X,JPYKRW=X,GC=F,DAL'   # (136) DAL 델타항공 — 하이퍼리퀴드에 선물 없어 야후 시세만
+# (128) /today/ 지수·환율·금리 칸 — 야후 spark 1회에 8종목(+136 관심 종목 미국 티커). 야후는 비공식이라 5분에 한 번만 부름(하루 288회)
+MACRO_SYMS = '^GSPC,^IXIC,^VIX,^TNX,CL=F,KRW=X,JPYKRW=X,GC=F'
+# (136) /today/ ⭐ 매수 관심 종목 중 미국 티커 — 같은 야후 호출에 붙여 받고(호출 수 그대로), 결과는 공개 파일(perp_est.json)이 아니라
+#       watch_us.json에만 씀(관리자 API /api/watch가 읽음). 목록은 api가 저장하는 ~/sf_live/today_watch.json
+WATCH_FILE = os.path.join(os.path.expanduser(os.environ.get('SF_LIVE_DIR', '~/sf_live')), 'today_watch.json')
+WATCH_US_FILE = os.path.join(os.path.expanduser(os.environ.get('SF_LIVE_DIR', '~/sf_live')), 'watch_us.json')
+WATCH_US_MAX = 12   # 야후 spark 한 번에 20개까지 — 지표 8개 + 12
+
+
+def watch_us_syms():
+    try:
+        with open(WATCH_FILE, encoding='utf-8') as f:
+            lst = json.load(f)
+    except Exception:
+        lst = [{'c': 'DAL', 'm': 'us'}]   # 아직 저장 안 했으면 api 기본값과 같게
+    out = []
+    for x in lst if isinstance(lst, list) else []:
+        c = str(x.get('c', ''))
+        if x.get('m') == 'us' and c and c not in out and c not in MACRO_SYMS.split(','):
+            out.append(c)
+    return out[:WATCH_US_MAX]
+
+
 MACRO_EVERY = 300
 
 
@@ -339,8 +360,9 @@ def macro_block(state, now):
     m = state.get('macro')
     if m and now.timestamp() - m.get('t', 0) < MACRO_EVERY - 20:
         return m
+    wsyms = watch_us_syms()
     url = 'https://query1.finance.yahoo.com/v7/finance/spark?' + urllib.parse.urlencode(
-        {'symbols': MACRO_SYMS, 'range': '1d', 'interval': '5m'})
+        {'symbols': ','.join([MACRO_SYMS] + wsyms), 'range': '1d', 'interval': '5m'})
     try:
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=10) as r:
@@ -353,9 +375,17 @@ def macro_block(state, now):
                 continue
             items[x.get('symbol')] = {'p': p, 'pc': pc, 'r': round((p / pc - 1) * 100, 2) if pc else None,
                                       'mt': meta.get('regularMarketTime')}
+        witems = {k: items.pop(k) for k in list(items) if k in wsyms}
         if items:
             m = {'t': int(now.timestamp()), 'items': items}
             state['macro'] = m
+        try:   # (136) 관심 종목 미국 시세 — 공개 파일과 따로
+            tmp = WATCH_US_FILE + '.tmp'
+            with open(tmp, 'w', encoding='utf-8') as f:
+                json.dump({'t': int(now.timestamp()), 'items': witems}, f, ensure_ascii=False)
+            os.replace(tmp, WATCH_US_FILE)
+        except Exception as e:
+            log(f'⚠ 관심 종목 미국 시세 저장 실패: {e}')
     except Exception as e:
         if not m or now.minute % 30 == 0:
             log(f'⚠ 야후 spark 실패: {str(e)[:100]}')

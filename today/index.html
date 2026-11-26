@@ -185,6 +185,17 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
 .pe-sub { font-size: 11px; color: var(--text-dim); margin-top: 6px; line-height: 1.6; font-variant-numeric: tabular-nums; }
 .pe-spark { display: block; width: 100%; height: 34px; margin-top: 6px; }
 .pe-note { font-size: 11px; color: var(--text-dim); margin-top: 8px; line-height: 1.5; }
+/* (136) 매수 관심 종목 */
+.wt-btn { font-size: 11.5px; padding: 2px 9px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--text); cursor: pointer; font-weight: 600; }
+.wt-btn:hover { border-color: var(--accent); }
+.wt-editor { margin-top: 10px; padding: 10px 12px; border: 1px dashed var(--border); border-radius: 8px; }
+.wt-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.wt-row input { flex: 1 1 140px; min-width: 0; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--text); font-size: 13px; }
+.wt-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.wt-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 9px; border: 1px solid var(--border); border-radius: 999px; font-size: 12px; }
+.wt-chip button { border: 0; background: none; color: var(--text-dim); cursor: pointer; font-size: 13px; padding: 0 4px; }
+.wt-chip button:hover { color: var(--red); }
+.wt-none { color: var(--text-dim); font-size: 12px; }
 .pe-warn { color: var(--warn); font-weight: 700; }
 /* (124) 미국 주요 종목 — 작은 카드 */
 .pe-us-h { font-size: 13px; font-weight: 800; margin: 16px 0 8px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
@@ -309,6 +320,31 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
   <div id="peBody"><div class="pe-note">불러오는 중…</div></div>
 </div>
 
+<!-- 0-2. (136) 매수 관심 종목 — 관리자만, ✎ 편집으로 더하고 뺌 -->
+<div class="section" id="secWatch">
+  <div class="sec-head">
+    <span class="sec-title">⭐ 매수 관심 종목 <span class="info-btn" onclick="toggleInfo('wtInfo')">i</span></span>
+    <span class="sec-link"><span id="wtAge"></span> <button type="button" class="wt-btn" id="wtEditBtn" style="display:none">✎ 편집</button></span>
+  </div>
+  <div class="info-box" id="wtInfo">
+    살까 지켜보는 종목을 모아 보는 칸 — <b>✎ 편집</b>에서 언제든 더하고 뺀다(관리자 로그인일 때만 보이고 저장됨, 다른 기기에서도 같은 목록).<br>
+    · 국내: 6자리 종목코드(예: 003490). 시세는 VM 1분 수집 — 시총 코스피 1조원↑·코스닥 5천억원↑ 종목만 있어서, 그 밖 종목은 「시세 없음」으로 뜬다.<br>
+    · 미국: 티커(예: DAL, UAL). 야후 5분 — 더하면 5분 안에 나온다. 미국 장중(한국 밤 23:30~06:00, 서머타임 22:30~05:00)엔 🔴, 닫혀 있으면 「미국 날짜 종가」.<br>
+    · 이름 칸은 비워도 됨(국내는 자동으로 채움, 미국은 티커로 표시). 최대 20개. 카드를 누르면 네이버 증권(국내)·야후(미국) 시세 화면이 새 탭으로 열림.<br>
+    · 종목 채팅이 읽는 「관심 종목 장중 시세」(sf-private data/live/watch.json)와는 따로다 — 이 칸은 매수 후보를 보는 용도.
+  </div>
+  <div class="idx-grid" id="wtGrid"><div class="pe-note">불러오는 중…</div></div>
+  <div class="wt-editor" id="wtEditor" style="display:none">
+    <div class="wt-row">
+      <input type="text" id="wtCode" placeholder="코드·티커 (003490 / DAL)" maxlength="10" autocomplete="off">
+      <input type="text" id="wtName" placeholder="이름 (비워도 됨)" maxlength="20" autocomplete="off">
+      <button type="button" class="wt-btn" id="wtAdd">+ 추가</button>
+    </div>
+    <div class="wt-list" id="wtList"></div>
+    <div class="pe-note" id="wtMsg">✕를 누르면 바로 빠지고 바로 저장된다.</div>
+  </div>
+</div>
+
 <!-- 1. 지수 + 환율 -->
 <div class="section" id="secIndex">
   <div class="sec-head">
@@ -393,8 +429,9 @@ body:not(.sf-dark) .badge-danger{background:rgba(220,38,38,.12);color:#dc2626}
     <tbody>
       <tr><td data-l="칸">시장 국면</td><td data-l="국내 장중">안 바뀜</td><td data-l="그 밖">저녁 지표가 사이트에 올라간 뒤(21:10) 다시 매김</td><td data-l="출처">사이트 지표 파일</td><td data-l="이유" class="why">종가로 매기는 점수 — 장중 값으로 매기면 하루에도 몇 번씩 국면이 뒤집혀 뜻이 없어짐</td></tr>
       <tr><td data-l="칸">해외 추정가</td><td data-l="국내 장중">1분 (미국 종목만)</td><td data-l="그 밖">1분 (국내 3종목·코스피200·미국)</td><td data-l="출처">바이낸스·하이퍼리퀴드 무기한 선물</td><td data-l="이유" class="why">국내 장중엔 진짜 시세가 있어서 국내 추정은 안 함. 장 마감 뒤엔 24시간 도는 선물로 다음 날을 미리 봄</td></tr>
+      <tr><td data-l="칸">⭐ 매수 관심 종목 🔒</td><td data-l="국내 장중">국내 <b>1분</b> · 미국 <b>5분</b></td><td data-l="그 밖">국내 그날 장 마감 값 · 미국 5분(장 닫히면 미국 날짜 종가)</td><td data-l="출처">KIS 1분 수집 · 야후</td><td data-l="이유" class="why">관심 목록은 개인 정보라 관리자 로그인일 때만 — 공개 파일에 안 두고 VM에만 저장. 새 호출은 늘리지 않음(국내는 이미 도는 1분 수집, 미국은 지수 받는 야후 호출에 같이 붙임)</td></tr>
       <tr><td data-l="칸">코스피·코스닥</td><td data-l="국내 장중"><b>1분</b></td><td data-l="그 밖">15:40 최종값 → 다음 날 아침부터는 전 거래일 종가</td><td data-l="출처">KIS 업종지수</td><td data-l="이유" class="why">이미 1분마다 도는 국내 시세 수집에 2번 더 붙임 (KIS 한도 초당 20회라 여유)</td></tr>
-      <tr><td data-l="칸">S&amp;P·나스닥·VIX·미10년·델타항공</td><td data-l="장중·그 밖" colspan="2"><b>5분</b> — 미국 장이 열린 동안(밤 23:30~새벽 06:00, 서머타임 땐 1시간 빠름)만 값이 움직이고, 닫혀 있으면 「미국 날짜 종가」로 표시</td><td data-l="출처">야후</td><td data-l="이유" class="why">야후는 공식 API가 아니라 1분마다 부르면 막힐 수 있고, 막히면 아침 시장지표 수집까지 같이 막힘 → 5분(하루 288회)</td></tr>
+      <tr><td data-l="칸">S&amp;P·나스닥·VIX·미10년</td><td data-l="장중·그 밖" colspan="2"><b>5분</b> — 미국 장이 열린 동안(밤 23:30~새벽 06:00, 서머타임 땐 1시간 빠름)만 값이 움직이고, 닫혀 있으면 「미국 날짜 종가」로 표시</td><td data-l="출처">야후</td><td data-l="이유" class="why">야후는 공식 API가 아니라 1분마다 부르면 막힐 수 있고, 막히면 아침 시장지표 수집까지 같이 막힘 → 5분(하루 288회)</td></tr>
       <tr><td data-l="칸">USD/KRW·JPY100/KRW·WTI</td><td data-l="장중·그 밖" colspan="2"><b>5분</b> — 거의 24시간 거래라 대부분 「🔴」(주말엔 금요일 마지막 거래)</td><td data-l="출처">야후</td><td data-l="이유" class="why">위와 같음</td></tr>
       <tr><td data-l="칸">두바이유·항공유 🔒</td><td data-l="장중·그 밖" colspan="2">하루 1번 — 오피넷이 <b>전날 값</b>을 다음 날 낮에 올림 → VM이 화~토 08:00~18:45 <b>15분마다</b> 올라왔는지 보고 바로 받음(받으면 텔레그램 봇1). 카드를 누르면 대시보드 ⛽ 국제유가 탭</td><td data-l="출처">오피넷(한국석유공사)</td><td data-l="이유" class="why">오피넷 약관(복제·유통 금지)이라 공개 파일 없이 관리자 로그인일 때만 보임. 두바이는 야후에 없어서 오피넷 값을 씀. 15분 간격은 올라오자마자 보되 오피넷을 너무 자주 부르지 않으려고(그날 값이 들어오면 더 안 부름)</td></tr>
       <tr><td data-l="칸">금(원/g)</td><td data-l="장중·그 밖" colspan="2">하루 1번 — 매일 07:50 수집 → 08:04 사이트 반영</td><td data-l="출처">국내 금 시세</td><td data-l="이유" class="why">국제 금값×환율과는 다른 숫자라 섞지 않음</td></tr>
@@ -613,13 +650,11 @@ const IDX_CARDS = [
   { k: 'JPYKRW=X', rate: 'JPY100_KRW', label: 'JPY100/KRW', href: '/rates/' },
   { k: 'GOLD',     rate: 'GOLD_KRW_G', label: '금(원/g)', href: '/rates/' },
   { k: 'CL=F',     find: i => i.name === 'WTI 원유', label: 'WTI 원유', href: '/dashboard/#oil' },
-  // (136) 델타항공 — 항공주 거래 참고용. 하이퍼리퀴드 선물이 없어 추정가 대신 야후 실제 시세(5분). 사이트에 자세히 보는 페이지가 없어 야후 시세 화면으로
-  { k: 'DAL',      label: '델타항공(DAL)', href: 'https://finance.yahoo.com/quote/DAL/' },
 ];
 function idxText(k, p) {
   if (p == null) return '-';
   if (k === '^TNX') return p.toFixed(3) + '%';
-  if (k === 'CL=F' || k === 'DAL') return '$' + fmt(p, 2);
+  if (k === 'CL=F') return '$' + fmt(p, 2);
   if (k === 'JPYKRW=X') return fmt(p * 100, 2);
   if (k === 'KRW=X') return fmt(p, 2);
   if (k === 'GOLD') return fmt(p, 0);
@@ -648,7 +683,7 @@ function renderIndex(mkt) {
       const q = M[c.k], t = kstHM(q.mt || _M.t), fresh = Date.now() / 1000 - (q.mt || 0) < 20 * 60;
       p = q.p; r = q.r; live = fresh;
       if (fresh) tag = '🔴 ' + t.hm + ' · 5분마다';
-      else if (/^\^/.test(c.k) || c.k === 'DAL') {   // 미국 지수·VIX·금리·종목 — 미국 날짜로 「종가」
+      else if (/^\^/.test(c.k)) {   // 미국 지수·VIX·금리 — 미국 날짜로 「종가」
         const et = new Date((q.mt || _M.t) * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'numeric', day: 'numeric' });
         tag = '미국 ' + et + ' 종가';
       } else tag = t.md + ' ' + t.hm + ' 마지막 거래';
@@ -937,6 +972,83 @@ function renderVolume(vol) {
 //       해외 추정가 칸은 위에서 따로 1분마다. 다른 탭에 있다가 돌아왔을 때 10분이 지났으면 바로 다시 읽음
 // (122) 타이머·오른쪽 위 표시는 /sf-live.js
 let _todayLoaded = false;
+// (136) ⭐ 매수 관심 종목 — 관리자 API /api/watch (목록·시세 같이). 로그인 전엔 「로그인하면 보입니다」, 1분마다 다시
+(function(){
+  const URL = 'https://swingfarmer.duckdns.org/api/watch';
+  const $ = id => document.getElementById(id);
+  let LIST = [], DATA = null, editing = false;
+  function user(){ return window._sfAuth && window._sfAuth.currentUser; }
+  async function call(method, body){
+    const t = await user().getIdToken();
+    const r = await fetch(URL, { method, cache: 'no-store', headers: Object.assign({ Authorization: 'Bearer ' + t }, body ? { 'Content-Type': 'application/json' } : {}), body: body ? JSON.stringify(body) : undefined });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+    return d;
+  }
+  const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function render(){
+    const D = DATA || {}, kr = D.kr || {}, us = D.us || {};
+    if (!LIST.length) { $('wtGrid').innerHTML = '<div class="pe-note">비어 있음 — ✎ 편집에서 더하세요.</div>'; }
+    else $('wtGrid').innerHTML = LIST.map(x => {
+      let p = null, r = null, tag = '', live = false, val = '-';
+      if (x.m === 'kr') {
+        const q = kr[x.c];
+        if (q) { p = q.p; r = q.r; val = fmt(p, 0) + '<small>원</small>';
+          live = !!D.kr_open; tag = live ? '🔴 ' + (D.kr_time || '') + ' · 1분마다' : (D.kr_date ? sfDate(D.kr_date, 'md') + ' ' : '') + (D.kr_time || '') + ' 기준'; }
+        else tag = '시세 없음 (수집 목록 밖)';
+      } else {
+        const q = us[x.c];
+        if (q && q.p != null) { p = q.p; r = q.r; val = '$' + fmt(p, 2);
+          live = Date.now() / 1000 - (q.mt || 0) < 20 * 60;
+          if (live) tag = '🔴 ' + kstHM(q.mt).hm + ' · 5분마다';
+          else tag = '미국 ' + new Date((q.mt || D.us_t) * 1000).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'numeric', day: 'numeric' }) + ' 종가'; }
+        else tag = '받는 중 (더한 뒤 5분 안)';
+      }
+      const name = x.n || (x.m === 'kr' && kr[x.c] && kr[x.c].n) || x.c;
+      const href = x.m === 'kr' ? 'https://finance.naver.com/item/main.naver?code=' + x.c : 'https://finance.yahoo.com/quote/' + encodeURIComponent(x.c) + '/';
+      return `<a class="idx-card idx-link" href="${href}" target="_blank" rel="noopener">
+        <div class="idx-label">${esc(name)} <small style="opacity:.6">${esc(x.c)}</small> ›</div>
+        <div class="idx-val">${val}</div>
+        ${r != null ? `<div class="idx-chg ${pctClass(r)}">${fmtPct(r)}</div>` : ''}
+        <div class="idx-basis${live ? ' live' : ''}">${tag}</div></a>`;
+    }).join('');
+    $('wtList').innerHTML = LIST.length ? LIST.map((x, i) => `<span class="wt-chip">${esc(x.n || x.c)} <small style="opacity:.6">${esc(x.c)}</small><button type="button" data-i="${i}" title="빼기">✕</button></span>`).join('') : '<span class="wt-none">없음</span>';
+  }
+  async function save(next, msg){
+    $('wtMsg').textContent = '저장 중…';
+    try { const d = await call('POST', { list: next }); LIST = d.list || next; render(); $('wtMsg').textContent = msg + ' · 저장됨'; live.now(); }
+    catch (e) { $('wtMsg').textContent = '⚠️ 저장 못 함: ' + e.message; }
+  }
+  $('wtEditBtn').addEventListener('click', () => { editing = !editing; $('wtEditor').style.display = editing ? '' : 'none'; $('wtEditBtn').textContent = editing ? '닫기' : '✎ 편집'; });
+  $('wtList').addEventListener('click', e => { const b = e.target.closest('button[data-i]'); if (!b) return; const i = +b.dataset.i, x = LIST[i]; save(LIST.filter((_, j) => j !== i), (x.n || x.c) + ' 뺌'); });
+  function add(){
+    const c = $('wtCode').value.trim().toUpperCase(), n = $('wtName').value.trim();
+    if (!c) return;
+    if (!/^[0-9][0-9A-Z]{5}$/.test(c) && !/^[A-Z][A-Z0-9.\-]{0,9}$/.test(c)) { $('wtMsg').textContent = '⚠️ 국내는 6자리 코드, 미국은 티커(영문)'; return; }
+    if (LIST.some(x => x.c === c)) { $('wtMsg').textContent = '이미 있음: ' + c; return; }
+    if (LIST.length >= 20) { $('wtMsg').textContent = '⚠️ 20개까지'; return; }
+    $('wtCode').value = ''; $('wtName').value = '';
+    save(LIST.concat([{ c, n, m: /^[0-9]/.test(c) ? 'kr' : 'us' }]), c + ' 더함');
+  }
+  $('wtAdd').addEventListener('click', add);
+  ['wtCode', 'wtName'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') add(); }));
+  let tries = 0;
+  async function load(){
+    if (!user()) {
+      $('wtEditBtn').style.display = 'none';
+      $('wtGrid').innerHTML = '<div class="pe-note">🔒 관리자로 로그인하면 보입니다.</div>';
+      tries++;
+      return { at: new Date(), every: tries < 8 ? 5e3 : 60e3, cycle: '로그인 기다림' };   // 로그인 정보가 몇 초 늦게 살아나는 경우
+    }
+    DATA = await call('GET');
+    if (!editing) LIST = DATA.list || [];
+    $('wtEditBtn').style.display = '';
+    render();
+    return { at: new Date(), open: !!DATA.kr_open, every: 60e3 };
+  }
+  const live = sfLive({ load, every: 60e3, mount: $('wtAge') });
+})();
+
 sfLive({ load: () => load().then(i => { _todayLoaded = true; return i; }), every: 60e3 });   // (128) 10분 → 1분 (파일은 load 안에서 10분에 한 번)
 </script>
 </body>

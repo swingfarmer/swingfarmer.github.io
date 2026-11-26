@@ -1440,5 +1440,84 @@ def api_perp_est():
     return resp
 
 
+
+# ── (136) /today/ ⭐ 매수 관심 종목 — 관리자만 (관심 목록은 개인 정보라 공개 API에 안 둠) ──
+# 목록: VM 로컬 ~/sf_live/today_watch.json [{c:코드·티커, n:이름, m:'kr'|'us'}] — 페이지 ✎ 편집에서 저장
+# 시세: 국내 = prices_live.json(1분 수집, 시총 코스피 1조↑·코스닥 5천억↑만) / 미국 = fetch_perp_est.py가 야후 5분에 같이 받아 쓰는 watch_us.json
+SF_LIVE = os.path.expanduser(os.environ.get('SF_LIVE_DIR', '~/sf_live'))
+WATCH_FILE = os.path.join(SF_LIVE, 'today_watch.json')
+WATCH_US_FILE = os.path.join(SF_LIVE, 'watch_us.json')
+WATCH_DEFAULT = [{'c': 'DAL', 'n': '델타항공', 'm': 'us'}]
+WATCH_MAX = 20
+import re as _re
+_WATCH_KR = _re.compile(r'^[0-9][0-9A-Z]{5}$')
+_WATCH_US = _re.compile(r'^[A-Z][A-Z0-9.\-]{0,9}$')
+
+
+def _read_json(path, default):
+    try:
+        with open(path, encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return default
+
+
+def _watch_list():
+    v = _read_json(WATCH_FILE, None)
+    return v if isinstance(v, list) else list(WATCH_DEFAULT)
+
+
+@app.route('/api/watch')
+@require_admin_read
+def api_watch():
+    lst = _watch_list()
+    pl = _read_json(LIVE_PRICE_FILE, {}) or {}
+    stocks = pl.get('stocks') or {}
+    kr = {}
+    for x in lst:
+        if x.get('m') == 'kr' and x.get('c') in stocks:
+            s_ = stocks[x['c']]
+            kr[x['c']] = {k: s_.get(k) for k in ('n', 'p', 'c', 'r', 'pc') if s_.get(k) is not None}
+    us = _read_json(WATCH_US_FILE, {}) or {}
+    age = None
+    try:
+        age = int(time.time() - os.path.getmtime(LIVE_PRICE_FILE))
+    except OSError:
+        pass
+    resp = jsonify({'list': lst, 'kr': kr, 'kr_date': pl.get('date'), 'kr_time': pl.get('time'),
+                    'kr_open': bool(pl.get('market_open')) and (age is not None and age <= 300),
+                    'us': us.get('items') or {}, 'us_t': us.get('t')})
+    resp.headers['Cache-Control'] = 'no-store'
+    return resp
+
+
+@app.route('/api/watch', methods=['POST'])
+@require_auth
+def api_watch_save():
+    data = request.get_json(force=True) or {}
+    raw = data.get('list')
+    if not isinstance(raw, list) or len(raw) > WATCH_MAX:
+        return jsonify({'error': f'목록은 {WATCH_MAX}개까지'}), 400
+    out, seen = [], set()
+    for x in raw:
+        c = str((x or {}).get('c', '')).strip().upper()
+        n = str((x or {}).get('n', '')).strip()[:20]
+        if _WATCH_KR.match(c):
+            m = 'kr'
+        elif _WATCH_US.match(c):
+            m = 'us'
+        else:
+            return jsonify({'error': f'코드 형식이 아님: {c[:12]} (국내 6자리, 미국 티커)'}), 400
+        if c in seen:
+            continue
+        seen.add(c)
+        out.append({'c': c, 'n': n, 'm': m})
+    os.makedirs(SF_LIVE, exist_ok=True)
+    tmp = WATCH_FILE + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump(out, f, ensure_ascii=False)
+    os.replace(tmp, WATCH_FILE)
+    return jsonify({'ok': True, 'list': out})
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
