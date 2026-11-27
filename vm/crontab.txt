@@ -42,7 +42,9 @@
 # ③ 매일·평일 (시간순)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-# ── 새벽 (05:00~06:00) ──
+# ── 새벽 (04:00~06:00) ──
+# [봇1] Firestore 저장 문서(계산기 저장·내 메뉴 트리·가이드) 백업 → ~/backups/firestore/ (VM 안에만, 30일 + 매달 1일치) — 매일 04:40. 실패·문서 급감 때만 알림 (140)
+40 4 * * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 scripts/backup_firestore.py >> ~/logs/backup_firestore.log 2>&1
 # [봇2] 실거래가 수집(아파트 → 오피스텔·상업) + 관심 부동산 새 거래 알림 — 매일 05:30 (082)
 30 5 * * * . ~/.env_secrets && cd ~/swingfarmer.github.io && python3 -u scripts/fetch_realestate.py --months 2 >> ~/logs/fetch_realestate.log 2>&1 ; python3 -u scripts/fetch_offi_comm.py --months 2 >> ~/logs/fetch_offi_comm.log 2>&1 ; python3 scripts/re_watch.py >> ~/logs/re_watch.log 2>&1
 # 로그 정리 — 매일 06:00

@@ -233,5 +233,39 @@ function render(d) {
 
 })();
 </script>
+
+<!-- (140) Firestore 매일 백업용 토큰 — 맨 위 관리자 계정(SF_ADMIN_UIDS[0])으로 로그인했을 때만 보임 -->
+<div id="fbBackupBox" style="display:none;margin-top:28px;padding:14px 16px;border:1px solid var(--sf-border);border-radius:10px;background:var(--sf-surface);">
+  <div style="font-weight:700;font-size:14px;margin-bottom:6px;">🗄 Firestore 백업 토큰 <span style="font-weight:400;font-size:12px;color:var(--sf-text-dim);">(맨 위 본인 계정 전용)</span></div>
+  <div style="font-size:12.5px;line-height:1.6;color:var(--sf-text-dim);margin-bottom:10px;">
+    VM이 매일 04:40에 저장 문서(계산기 저장·내 메뉴 트리·가이드 수정분)를 받아 VM 안에만 보관함(최근 30일 + 매달 1일치).<br>
+    처음 한 번, 또는 텔레그램에 「백업 토큰 끊김」 알림이 왔을 때만: 아래 버튼 → VM 터미널에 붙여 넣고 엔터.<br>
+    토큰은 화면에 안 보이고 클립보드로만 복사됨. 채팅·메모에 붙이지 말 것(본인 계정 열쇠).
+  </div>
+  <button id="fbBackupBtn" style="padding:8px 14px;border:1px solid var(--sf-border);border-radius:6px;background:var(--sf-brand);color:#fff;font-weight:600;font-size:13px;cursor:pointer;font-family:var(--sf-font);">VM 등록 명령 복사</button>
+  <span id="fbBackupMsg" style="margin-left:10px;font-size:12.5px;"></span>
+</div>
+<script>
+(function(){
+  var tries = 0;
+  var t = setInterval(function(){
+    tries++;
+    var a = window._sfAuth, u = a && a.currentUser;
+    if (u || tries > 60) clearInterval(t);
+    if (!u || !window.SF_ADMIN_UIDS || u.uid !== window.SF_ADMIN_UIDS[0]) return;
+    var box = document.getElementById('fbBackupBox');
+    box.style.display = 'block';
+    document.getElementById('fbBackupBtn').onclick = function(){
+      var msg = document.getElementById('fbBackupMsg');
+      var tok = u.refreshToken;
+      if (!tok) { msg.textContent = '⚠ 토큰을 못 읽음 — 새로고침 뒤 다시'; return; }
+      var cmd = "printf '%s' '" + tok + "' > ~/.fb_backup_token && chmod 600 ~/.fb_backup_token && echo 토큰 저장됨";
+      navigator.clipboard.writeText(cmd).then(function(){
+        msg.textContent = '✅ 복사됨 — VM 터미널에 붙여 넣고 엔터';
+      }, function(){ msg.textContent = '⚠ 복사 실패 — 브라우저 클립보드 허용 확인'; });
+    };
+  }, 500);
+})();
+</script>
 </body>
 </html>

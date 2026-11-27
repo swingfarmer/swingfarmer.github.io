@@ -76,6 +76,8 @@ TARGETS = [
     ("~/news_data/news_sent.json",         "뉴스 알림(보낸 기록)", "daily", 0),
     # (116) 시장 국면 알림 — 평일 21:25마다 다시 씀(updated는 해시에서 빠짐, 거래일마다 기록이 늘어남). node·데이터 빠짐으로 멈추면 여기서 걸림
     ("~/sf_state/regime.json",             "시장 국면 알림",     "weekday", 0),
+    # (140) Firestore 저장 문서 매일 04:40 백업 상태 — 토큰 끊김·실패 때 오래됨으로 잡힘
+    ("~/backups/firestore/last.json",      "Firestore 백업",     "daily",   0),
     # (116) 대한항공 유가 요약 — 바뀔 때만 다시 씀(오피넷 하루 늦음·싱가포르 휴장) → 5일 허용
     ("~/sf-private/data/kal/kal_market_summary.csv", "대한항공 유가 요약(sf-private)", "weekday", 5),
     # (135) 관심 종목 장중 시세 — 평일 15분마다 push(종목 채팅용). 휴장일엔 안 씀 → 1일 허용
