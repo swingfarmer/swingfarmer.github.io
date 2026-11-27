@@ -49,6 +49,8 @@ input.auto { background: #f0f9ff; color: #0369a1; }
 .hero .l { font-size: 12px; opacity: .9; font-weight: 600; }
 .hero .v { font-size: 42px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; margin-top: 4px; }
 .hero .s { font-size: 12px; font-weight: 600; margin-top: 4px; opacity: .95; }
+.hero .b { font-size: 12px; font-weight: 700; margin-top: 6px; padding: 3px 8px; border-radius: 6px; background: rgba(0,0,0,.18); display: inline-block; align-self: center; }
+.hero .b:empty { display: none; }
 .ktbl { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
 .ktbl td { padding: 5px 8px; border-bottom: 1px solid #eef1f5; }
 .ktbl td:last-child { text-align: right; font-weight: 700; color: #1F4E78; white-space: nowrap; }
@@ -57,7 +59,7 @@ input.auto { background: #f0f9ff; color: #0369a1; }
 .ktbl tr.tot td { background: #eff6ff; font-weight: 800; }
 .ktbl tr.bad td:last-child { color: #b91c1c; }
 .ktbl small { color: #059669; font-weight: 500; font-size: 10.5px; margin-left: 4px; }
-.res-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.res-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
 .rc { background: #f5f7fa; border-radius: 8px; padding: 10px 12px; }
 .rc .l { font-size: 11px; color: #666; font-weight: 600; }
 .rc .v { font-size: 17px; font-weight: 800; color: #1F4E78; margin-top: 2px; font-variant-numeric: tabular-nums; }
@@ -114,6 +116,7 @@ body.sf-dark .acc-tab.active { background: #2b5d8f; color: #fff; border-color: #
 body.sf-dark .btn { background: #2a313d !important; color: #e4e4e7 !important; border-color: #3a4250 !important; }
 body.sf-dark .hint { background: #172a3a !important; color: #7dd3fc !important; }
 body.sf-dark .ktbl td { border-color: #263040; }
+body.sf-dark .ktbl tr.bad td:last-child { color: #f87171 !important; }
 body.sf-dark .ktbl td:last-child { color: #e4e4e7; }
 body.sf-dark .ktbl tr.sub td { color: #aab3c0 !important; }
 body.sf-dark .ktbl tr.tot td { background: #1c2b44; }
@@ -146,6 +149,7 @@ body.sf-dark .acc-more summary { color: #8ab4e8; }
   <div class="info-box" id="mrHow">
     <b>쓰는 순서</b> ① 위 계좌 칸에서 계좌·증권사 고르기(없으면 [+ 계좌]) → ② 담보유지비율 확인(평소 140%, 정부 임시 완화 기간엔 130%) → ③ T+2 예수금 → ④ 종목마다 현금 보유 수량, 신용은 증권사 잔고의 <b>건(대출일)마다 한 줄</b>: 수량·융자금(신용/대출금액).<br>
     <b>계산 (KB 실제 화면으로 맞춤, 118)</b> 담보비율 = 총담보평가금 ÷ 융자 합계 × 100 (소수 버림). 총담보평가금 = 원담보금(신용 주식 수량×현재가) + 부담보금(T+2 예수금 + 국내부담보 = 현금 주식 수량×현재가 + 그 밖의 담보). 소요담보금 = 건마다 융자금×유지비율(원 단위 버림)의 합. 담보부족금액 = 소요담보금 − 총담보평가금(0 아래면 0). 이자는 담보비율 계산에 안 들어감.<br>
+    <b>신규 신용 매수 불가 구간 (139)</b> 담보비율이 유지비율은 넘어도 「매수 가능 담보비율」(보통 140%) 아래거나, 순자산(총담보평가금 − 융자)이 「매수 최소 순자산」 아래면 반대매매는 안 당해도 새 신용 매수는 막힌다. 매수 가능 최소 담보 = 건마다 융자금×매수 가능 비율(원 단위 버림)의 합 — 소요담보금과 같은 식. 「신규 매수 불가까지」 카드와 종목 표 오른쪽 칸이 그 경계 금액·주가.<br>
     <b>저장</b> 입력값은 이 브라우저에 자동 저장, 다른 기기에서 보려면 오른쪽 아래 저장 버튼(계정 저장 — 내 로그인으로만 읽힘). GitHub에는 안 올라감.
   </div>
 
@@ -158,7 +162,10 @@ body.sf-dark .acc-more summary { color: #8ab4e8; }
       <div><label>증권사 <span id="ruleTag"></span></label><select class="acc-in" data-a="broker" id="aBroker"></select></div>
       <div><label>담보유지비율(%) <span class="info-btn" onclick="toggleInfo('maintInfo')">i</span></label><input type="text" inputmode="decimal" class="acc-in" data-a="maint" id="aMaint"></div>
       <div><label>T+2 예수금(원)</label><input type="text" inputmode="numeric" class="acc-in num" data-a="cash" id="aCash"><div class="kor" id="kCash"></div></div>
+      <div><label>매수 가능 담보비율(%) <span class="info-btn" onclick="toggleInfo('buyRInfo')">i</span></label><input type="text" inputmode="decimal" class="acc-in" data-a="buyRatio" id="aBuyR"></div>
+      <div><label>매수 최소 순자산(원)</label><input type="text" inputmode="numeric" class="acc-in num" data-a="minNet" id="aMinNet"><div class="kor" id="kMinNet"></div></div>
     </div>
+    <div class="info-box" id="buyRInfo">신규 신용 매수가 되려면 담보비율이 이 값 이상이어야 한다(규정상 신용 시행 때 140% 이상). 지금처럼 정부 완화로 유지비율만 130%로 내려간 기간엔 매수 기준은 140% 그대로인 곳이 많아서, 130~140% 사이 = <b>반대매매는 안 당하지만 신규 매수는 못 하는 구간</b>. 「매수 최소 순자산」 = 총담보평가금 − 융자가 이 금액 아래면 주문 불가(신용계좌 설정보증금 — 미래에셋 공시 100만원). 증권사 안내·주문 거부 화면과 다르면 그 숫자로 바꿔 넣는다(KB·우투 이 두 칸은 미검증). 기준을 안 쓰려면 순자산 칸을 0으로.</div>
     <div id="buyInWrap" style="display:none;margin:4px 0 6px;font-size:13px"><label style="cursor:pointer"><input type="checkbox" id="aBuyIn"> 융자금 칸에 <b>매수금액</b>을 넣었음 → 융자는 그 <span id="loanRateTxt"></span>%로 계산 <span class="info-btn" onclick="toggleInfo('buyInInfo')">i</span></label></div>
     <div class="info-box" id="buyInInfo">우리투자증권은 신용 매수 때 매수금액의 1%를 현금으로 내고 나머지 99%만 융자로 잡는다. 신용잔고의 「대출금액」을 몰라서 매수금액을 넣었으면 체크(담보비율은 화면과 같게 나오고 소요담보금은 수천 원 다를 수 있음). 「대출금액」을 그대로 넣었으면 체크 해제.</div>
     <div class="info-box" id="maintInfo">평소 신용 담보유지비율은 140%. 정부 정책으로 임시 완화된 기간(KB·우리투자 등 130%)에는 130으로 바꿔 넣는다. 증권사 화면 「계좌담보유지비율」과 같은 숫자를 넣으면 된다.</div>
@@ -178,7 +185,7 @@ body.sf-dark .acc-more summary { color: #8ab4e8; }
   <div class="panel" id="resPanel">
     <h2>⚖️ 담보비율 <span id="resAcc" style="font-size:12px;color:#888;font-weight:600"></span></h2>
     <div class="res-top">
-      <div class="hero none" id="hero"><div class="l">담보비율</div><div class="v" id="hRatio">-</div><div class="s" id="hStatus">신용 건을 넣으면 계산</div></div>
+      <div class="hero none" id="hero"><div class="l">담보비율</div><div class="v" id="hRatio">-</div><div class="s" id="hStatus">신용 건을 넣으면 계산</div><div class="b" id="hBuy"></div></div>
       <table class="ktbl" id="ktbl"></table>
     </div>
     <div class="res-cards" id="resCards"></div>
@@ -210,6 +217,7 @@ body.sf-dark .acc-more summary { color: #8ab4e8; }
 
   <p class="footer-note">
     ※ KB증권 계산식은 실제 화면 숫자로 원 단위까지 대조함(118). 다른 증권사는 같은 방식으로 계산하되 「미검증」 — 그 증권사 화면을 주면 맞춘다.<br>
+    ※ 신규 매수 불가 구간의 기준(매수 가능 담보비율·최소 순자산)은 증권사마다 달라 「미검증」 — 주문 거부 화면이나 안내문을 주면 맞춘다.<br>
     ※ 현재가는 수집 시세 기준이라 증권사 화면과 몇 분 차이가 나면 담보비율도 그만큼 다름. 실제 반대매매 판정은 증권사 기준.
   </p>
 </div>
@@ -246,7 +254,7 @@ const BROKERS = {
 };
 const newLot = () => ({ q: '', loan: '', buy: '', d: '' });
 const newHold = () => ({ name: '', curr: '', qty: '', buy: '', lots: [] });
-const newAcc = (n) => ({ name: n || '내 계좌', broker: 'KB', maint: 140, cash: '', interest: '', extra: '', fee: '', holds: [newHold()] });
+const newAcc = (n) => ({ name: n || '내 계좌', broker: 'KB', maint: 140, buyRatio: 140, minNet: 1000000, cash: '', interest: '', extra: '', fee: '', holds: [newHold()] });
 
 let accs = [newAcc('KB 신용')];
 let cur = 0;
@@ -276,9 +284,11 @@ function isEtf(h) { const c = matchCode(h.name); return !!(c && quotes[c] && quo
 function calcAcc(a, priceFn) {
   const br = BROKERS[a.broker] || BROKERS.ETC;
   const maint = toNum(a.maint) || 140;
+  const buyR = toNum(a.buyRatio) || 140;                                  // (139) 신규 신용 매수 가능 담보비율
+  const minNet = a.minNet === '' || a.minNet == null ? 0 : toNum(a.minNet);   // (139) 매수 최소 순자산
   const lr = br.loanRate && a.buyIn !== false ? br.loanRate / 100 : 1;   // (119) 융자금 칸 = 매수금액이면 ×loanRate
   const pf = priceFn || priceOf;
-  let crdVal = 0, ordVal = 0, loan = 0, need = 0, buy = 0, crdQtyAll = 0, etfVal = 0;
+  let crdVal = 0, ordVal = 0, loan = 0, need = 0, needBuy = 0, buy = 0, crdQtyAll = 0, etfVal = 0;
   const per = [];
   a.holds.forEach(h => {
     const p = pf(h);
@@ -288,6 +298,7 @@ function calcAcc(a, priceFn) {
       const q = toNum(l.q), ln0 = toNum(l.loan), ln = lr === 1 ? ln0 : Math.floor(ln0 * lr + 1e-7);
       cq += q; hl += ln;
       need += Math.floor(ln * maint / 100 + 1e-7);   // 건마다 원 단위 버림 (KB 소요담보금과 일치)
+      needBuy += Math.floor(ln * buyR / 100 + 1e-7); // (139) 같은 식 — 매수 가능 최소 담보
       hb += toNum(l.buy) || ln0;
     });
     crdVal += cq * p; ordVal += oq * p; loan += hl; buy += hb; crdQtyAll += cq;
@@ -305,7 +316,14 @@ function calcAcc(a, priceFn) {
   const est = evalT + cash - loan - interest - cost;
   const room = total - need;
   const stockColl = crdVal + ordColl;
-  return { br, maint, crdVal, ordVal, ordColl, cash, extra, sub, total, loan, need, ratio,
+  // (139) 신규 신용 매수 — 비율(총담보 ≥ 융자×매수 가능 비율)과 금액(순자산 ≥ 최소) 중 먼저 걸리는 쪽
+  const net = total - loan;
+  const buyRoom = loan > 0 ? total - needBuy : null;
+  const netRoom = net - minNet;
+  const buyLim = buyRoom == null ? netRoom : Math.min(buyRoom, netRoom);
+  const buyBy = buyRoom != null && buyRoom <= netRoom ? 'ratio' : 'net';
+  return { br, maint, buyR, minNet, needBuy, net, buyRoom, netRoom, buyLim, buyBy, canBuy: buyLim >= 0,
+           dropBuy: stockColl > 0 && buyLim > 0 ? buyLim / stockColl * 100 : null, crdVal, ordVal, ordColl, cash, extra, sub, total, loan, need, ratio,
            ratioDisp: ratio == null ? null : Math.floor(ratio + 1e-9), short: Math.max(0, need - total), room,
            dropAll: stockColl > 0 ? room / stockColl * 100 : null, evalT, buy, pl: evalT - buy, interest, cost, est, per };
 }
@@ -326,6 +344,8 @@ function renderAccFields() {
   $('aBroker').innerHTML = Object.keys(BROKERS).map(k => `<option value="${k}"${a.broker === k ? ' selected' : ''}>${BROKERS[k].n}</option>`).join('');
   $('aName').value = a.name || '';
   $('aMaint').value = a.maint;
+  $('aBuyR').value = a.buyRatio;
+  $('aMinNet').value = a.minNet === '' ? '' : sfNum(toNum(a.minNet));
   $('aCash').value = a.cash === '' ? '' : sfNum(toNum(a.cash));
   $('aInt').value = a.interest === '' ? '' : sfNum(toNum(a.interest));
   $('aExtra').value = a.extra === '' ? '' : sfNum(toNum(a.extra));
@@ -435,12 +455,18 @@ function update() {
         : '';
     }
   });
-  $('kCash').textContent = kor(toNum(a.cash)); $('kInt').textContent = kor(toNum(a.interest)); $('kExtra').textContent = kor(toNum(a.extra));
+  $('kCash').textContent = kor(toNum(a.cash)); $('kInt').textContent = kor(toNum(a.interest)); $('kExtra').textContent = kor(toNum(a.extra)); $('kMinNet').textContent = kor(toNum(a.minNet));
   renderResult(a, r);
   renderAll2();
   save();
 }
 
+function buyText(r) {   // (139) 히어로 아래 한 줄
+  if (!(r.total > 0) || !(r.loan > 0 || r.minNet > 0)) return '';
+  if (r.short > 0) return '🚨 반대매매 구간 — 신규 매수도 불가';
+  if (r.canBuy) return '🟢 신규 신용 매수 가능';
+  return '⛔ 신규 매수 불가 구간 (반대매매는 아님) — ' + (r.buyBy === 'ratio' ? '담보비율 ' + sfNum(r.buyR, '~2') + '% 아래' : '순자산 ' + sfKor(r.minNet) + ' 아래');
+}
 function rowK(label, v, cls, small) {
   return `<tr class="${cls || ''}"><td>${label}</td><td>${sfNum(v)}${small ? `<small>${small}</small>` : ''}</td></tr>`;
 }
@@ -453,25 +479,34 @@ function renderResult(a, r) {
     $('hStatus').textContent = r.evalT > 0 ? '신용 없음 — 담보비율 해당 없음' : '신용 건을 넣으면 계산';
   } else {
     const gap = r.ratioDisp - r.maint;
-    hero.className = 'hero ' + (r.short > 0 ? 'danger' : gap < 15 ? 'warn' : 'safe');
+    hero.className = 'hero ' + (r.short > 0 ? 'danger' : (gap < 15 || !r.canBuy) ? 'warn' : 'safe');
     $('hRatio').textContent = r.ratioDisp + '%';
     $('hStatus').textContent = (r.short > 0 ? '🚨 담보부족 ' + sfKor(r.short) : gap < 15 ? '⚠️ 유지비율까지 ' + sfNum(gap, '~1') + '%p' : '✅ 유지비율보다 ' + sfNum(gap, '~1') + '%p 위') + ' · 정확히 ' + sfNum(r.ratio, 2) + '%';
   }
+  $('hBuy').textContent = buyText(r);
   $('ktbl').innerHTML =
     rowK('융자 합계', r.loan, '', kor(r.loan)) +
     rowK('소요담보금 (융자 × ' + sfNum(r.maint, '~2') + '%)', r.need) +
     rowK('담보부족금액', r.short, r.short > 0 ? 'bad' : '') +
+    (r.loan > 0 ? rowK('매수 가능 최소 담보 (융자 × ' + sfNum(r.buyR, '~2') + '%)', r.needBuy, r.buyRoom < 0 ? 'bad' : '') : '') +
     rowK('원담보금 (신용 주식 평가)', r.crdVal, '', kor(r.crdVal)) +
     rowK('부담보금', r.sub, '', kor(r.sub)) +
     rowK('T+2 예수금', r.cash, 'sub') +
     rowK('국내부담보 (현금 주식' + (r.br.ordRate !== 100 ? ' × ' + r.br.ordRate + '%' : '') + ')', r.ordColl, 'sub') +
     (r.extra ? rowK('그 밖의 담보', r.extra, 'sub') : '') +
-    rowK('총담보평가금', r.total, 'tot', kor(r.total));
+    rowK('총담보평가금', r.total, 'tot', kor(r.total)) +
+    ((r.loan > 0 || r.minNet > 0) && r.total > 0 ? rowK('순자산 (총담보 − 융자)' + (r.minNet > 0 ? ' · 최소 ' + sfKor(r.minNet) : ''), r.net, r.netRoom < 0 ? 'bad' : '', kor(r.net)) : '');
 
   const cards = [];
   if (r.ratio != null) {
     cards.push(`<div class="rc"><div class="l">반대매매까지 여유</div><div class="v ${r.room < 0 ? 'dn' : ''}">${r.room >= 0 ? sfKor(r.room) : '부족 ' + sfKor(-r.room)}</div><div class="d">총담보평가금 − 소요담보금</div></div>`);
     cards.push(`<div class="rc"><div class="l">전 종목 같이 떨어지면</div><div class="v">${r.dropAll != null && r.room > 0 ? '−' + sfNum(r.dropAll, 1) + '%' : '-'}</div><div class="d">이만큼 빠지면 담보부족 시작</div></div>`);
+  }
+  if ((r.loan > 0 || r.minNet > 0) && r.total > 0) {
+    const why = r.buyBy === 'ratio' ? '담보비율 ' + sfNum(r.buyR, '~2') + '% 기준' : '순자산 ' + sfKor(r.minNet) + ' 기준';
+    cards.push(r.canBuy
+      ? `<div class="rc"><div class="l">신규 매수 불가까지</div><div class="v">${sfKor(r.buyLim) || '0원'}</div><div class="d">${r.dropBuy != null ? '전 종목 −' + sfNum(r.dropBuy, 1) + '% 빠지면 매수 막힘' : ''} · ${why}(먼저 걸리는 쪽)</div></div>`
+      : `<div class="rc"><div class="l">신규 신용 매수</div><div class="v dn">불가 · 부족 ${sfKor(-r.buyLim)}</div><div class="d">${why} — 현금을 이만큼 넣으면 매수 가능${r.short > 0 ? '' : ' · 반대매매 대상은 아님'}</div></div>`);
   }
   cards.push(`<div class="rc"><div class="l">추정자산</div><div class="v">${sfKor(r.est)}</div><div class="d">평가 ${sfKor(r.evalT)} + 예수금 − 융자 − 이자 ${r.interest ? sfKor(r.interest) : '0'} − 매도비용 ${sfKor(r.cost)}</div></div>`);
   $('resCards').innerHTML = cards.join('');
@@ -479,10 +514,13 @@ function renderResult(a, r) {
   // 종목 하나만 떨어질 때 담보부족 시작 가격
   const rows = r.per.filter(x => x.w > 0 && x.p > 0);
   if (r.ratio != null && rows.length && r.room > 0) {
-    $('dangerList').innerHTML = '<table><tr><th>종목</th><th>현재가</th><th>이 종목만 떨어지면 담보부족 시작</th><th>하락률</th></tr>' + rows.map(x => {
-      const px = x.p - r.room / x.w;
-      return `<tr><td>${esc(x.h.name || '-')}</td><td>${sfNum(x.p)}</td><td>${px > 0 ? sfNum(Math.ceil(px)) + '원' : '이 종목만으론 안 걸림'}</td><td>${px > 0 ? '−' + sfNum((1 - px / x.p) * 100, 1) + '%' : '-'}</td></tr>`;
-    }).join('') + '</table>';
+    const cell = (lim, x) => {   // lim: 여유 금액 → 이 종목만 떨어질 때 경계 가격
+      if (lim < 0) return '<td>지금 이미</td><td>-</td>';
+      const px = x.p - lim / x.w;
+      return px > 0 ? `<td>${sfNum(Math.ceil(px))}원</td><td>−${sfNum((1 - px / x.p) * 100, 1)}%</td>` : '<td>이 종목만으론 안 걸림</td><td>-</td>';
+    };
+    $('dangerList').innerHTML = '<table><tr><th>종목</th><th>현재가</th><th>이 종목만 떨어지면 담보부족 시작</th><th>하락률</th><th>신규 매수 불가 시작</th><th>하락률</th></tr>' + rows.map(x =>
+      `<tr><td>${esc(x.h.name || '-')}</td><td>${sfNum(x.p)}</td>${cell(r.room, x)}${cell(r.buyLim, x)}</tr>`).join('') + '</table>';
   } else $('dangerList').innerHTML = '';
 
   renderWeekend(a, r);
@@ -505,7 +543,7 @@ function renderWeekend(a, r) {
   const w = calcAcc(a, pf);
   if (!nEst && !nK) { box.style.display = 'none'; return; }
   box.style.display = 'block';
-  box.innerHTML = `🌙 <b>장 마감 뒤 해외 추정 반영 시 담보비율 ${w.ratioDisp}%</b> (지금 ${r.ratioDisp}%)` + (w.short > 0 ? ` · <b>담보부족 ${sfKor(w.short)}</b>` : ` · 여유 ${sfKor(w.room)}`) +
+  box.innerHTML = `🌙 <b>장 마감 뒤 해외 추정 반영 시 담보비율 ${w.ratioDisp}%</b> (지금 ${r.ratioDisp}%)` + (w.short > 0 ? ` · <b>담보부족 ${sfKor(w.short)}</b>` : ` · 여유 ${sfKor(w.room)}`) + (w.short > 0 ? '' : w.canBuy ? ' · 신규 매수 가능' : ' · <b>신규 매수 불가</b>') +
     `<br><span style="font-size:11.5px">${sfDate(perp.base_date, 'md')} 종가 기준 · 해외 추정가가 있는 종목은 그 값` + (k200 ? `, 없는 종목은 코스피200 ${sfPct(k200.pct, 2, 1)}만큼 움직였다고 가정(ETF는 그대로)` : '') + ` · <a href="/today/">해외 추정가 보기</a> (참고용)</span>`;
 }
 
@@ -514,10 +552,10 @@ function renderAll2() {   // 전체 계좌 표 + 탭 비율
   const rows = accs.map((a, i) => {
     const r = calcAcc(a);
     T.loan += r.loan; T.evalT += r.evalT; T.est += r.est; T.cash += r.cash;
-    return `<tr><td>${esc(a.name || '계좌 ' + (i + 1))} <small style="color:#888">${r.br.n}</small></td><td>${r.ratioDisp != null ? r.ratioDisp + '%' : '-'}</td><td>${sfKor(r.evalT) || 0}</td><td>${sfKor(r.loan) || 0}</td><td>${sfKor(r.est) || 0}</td></tr>`;
+    return `<tr><td>${esc(a.name || '계좌 ' + (i + 1))} <small style="color:#888">${r.br.n}</small></td><td>${r.ratioDisp != null ? r.ratioDisp + '%' : '-'}</td><td>${r.total > 0 ? (r.short > 0 ? '🚨' : r.canBuy ? '✅' : '⛔') : '-'}</td><td>${sfKor(r.evalT) || 0}</td><td>${sfKor(r.loan) || 0}</td><td>${sfKor(r.est) || 0}</td></tr>`;
   });
-  $('allTbl').innerHTML = '<tr><th>계좌</th><th>담보비율</th><th>평가금액</th><th>융자</th><th>추정자산</th></tr>' + rows.join('') +
-    (accs.length > 1 ? `<tr class="tot"><td>합계</td><td></td><td>${sfKor(T.evalT) || 0}</td><td>${sfKor(T.loan) || 0}</td><td>${sfKor(T.est) || 0}</td></tr>` : '');
+  $('allTbl').innerHTML = '<tr><th>계좌</th><th>담보비율</th><th>신규 매수</th><th>평가금액</th><th>융자</th><th>추정자산</th></tr>' + rows.join('') +
+    (accs.length > 1 ? `<tr class="tot"><td>합계</td><td></td><td></td><td>${sfKor(T.evalT) || 0}</td><td>${sfKor(T.loan) || 0}</td><td>${sfKor(T.est) || 0}</td></tr>` : '');
   window._mrTot = T;
   document.querySelectorAll('#accTabs [data-acc]').forEach((b, i) => {
     const r = calcAcc(accs[i]); const s = b.querySelector('small'); if (s) s.textContent = r.ratioDisp != null ? r.ratioDisp + '%' : '';
@@ -547,7 +585,7 @@ const LS_KEY = 'sf_mr_state_v3';
 function mGetState() { return { v: 3, cur, autoPrice, accs: JSON.parse(JSON.stringify(accs)) }; }
 function fromV2(d) {   // 옛 화면(일반/신용 한 칸씩) → 계좌 1개
   return { v: 3, cur: 0, autoPrice: d.autoPrice !== false, accs: [{
-    name: '내 계좌', broker: 'ETC', maint: toNum(d.threshold) || 140, cash: d.cash || '', interest: '', extra: '', fee: '',
+    name: '내 계좌', broker: 'ETC', maint: toNum(d.threshold) || 140, buyRatio: 140, minNet: 1000000, cash: d.cash || '', interest: '', extra: '', fee: '',
     holds: (d.stocks || []).map(s => ({ name: s.name || '', curr: s.ordCurr || s.crdCurr || '', qty: s.ordQty || '', buy: s.ordBuy || '',
       lots: (s.crdQty || s.crdBuy) ? [{ q: s.crdQty || '', loan: s.crdBuy || '', buy: '', d: '' }] : [] })) }] };
 }
