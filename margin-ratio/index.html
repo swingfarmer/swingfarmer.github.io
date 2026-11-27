@@ -165,6 +165,15 @@ body.sf-dark .acc-more summary { color: #8ab4e8; }
       <div><label>매수 가능 담보비율(%) <span class="info-btn" onclick="toggleInfo('buyRInfo')">i</span></label><input type="text" inputmode="decimal" class="acc-in" data-a="buyRatio" id="aBuyR"></div>
       <div><label>매수 최소 순자산(원)</label><input type="text" inputmode="numeric" class="acc-in num" data-a="minNet" id="aMinNet"><div class="kor" id="kMinNet"></div></div>
     </div>
+    <div class="acc-grid" style="margin-top:8px">
+      <div><label>살 종목 보증금률(%) <span class="info-btn" onclick="toggleInfo('depInfo')">i</span></label><input type="text" inputmode="decimal" class="acc-in" data-a="depRate" id="aDep"><div class="kor" id="kDep"></div></div>
+      <div><label>그중 현금(%)</label><input type="text" inputmode="decimal" class="acc-in" data-a="depCash" id="aDepCash"></div>
+      <div><label>현금 주식 대용비율(%)</label><input type="text" inputmode="decimal" class="acc-in" data-a="subRate" id="aSub"></div>
+      <div style="display:flex;align-items:flex-end;font-size:12.5px"><label style="cursor:pointer;font-weight:600"><input type="checkbox" id="aLock"> 기존 신용 보증금만큼 대용이 묶임</label></div>
+    </div>
+    <div class="info-box" id="depInfo"><b>신용으로 더 살 수 있는 금액</b>(아래 결과 카드)을 계산하는 칸. 보증금률은 <b>사려는 종목</b>의 신용 보증금률(HTS 종목 정보 — 예: 증거금율 40% 종목은 신용 50%). <b>비워 두면 증권사 일정대로 자동</b>: 우리투자 11/30까지 45%(대용 44 + 현금 1), 12/1부터 50%(대용 49 + 현금 1). 숫자를 넣으면 그 값이 우선(다시 비우면 자동으로 돌아감).<br>
+      계산 = 둘 중 작은 값 ① 사고 나서도 담보비율이 「매수 가능 담보비율」 이상 = (총담보 − 융자×매수 가능 비율) ÷ ((매수 가능 비율 − 1) × (1 − 현금%)) ② 보증금 한도 = (쓸 수 있는 대용 + 예수금) ÷ 보증금률, 현금% 몫은 예수금으로만. 쓸 수 있는 대용 = 현금 주식 평가 × 대용비율 − (체크 시) 기존 신용 매수금액 × (보증금률 − 현금%).<br>
+      ①은 담보비율 식이라 확실, ②는 <b>미검증</b>(대용비율·묶이는 방식·신용 주식 이익을 대용으로 쳐 주는지 증권사마다 다름) — 주문창 「주문가능금액」과 비교해서 맞춘다.</div>
     <div class="info-box" id="buyRInfo">신규 신용 매수가 되려면 담보비율이 이 값 이상이어야 한다(규정상 신용 시행 때 140% 이상). 지금처럼 정부 완화로 유지비율만 130%로 내려간 기간엔 매수 기준은 140% 그대로인 곳이 많아서, 130~140% 사이 = <b>반대매매는 안 당하지만 신규 매수는 못 하는 구간</b>. 「매수 최소 순자산」 = 총담보평가금 − 융자가 이 금액 아래면 주문 불가(신용계좌 설정보증금 — 미래에셋 공시 100만원). 증권사 안내·주문 거부 화면과 다르면 그 숫자로 바꿔 넣는다(KB·우투 이 두 칸은 미검증). 기준을 안 쓰려면 순자산 칸을 0으로.</div>
     <div id="buyInWrap" style="display:none;margin:4px 0 6px;font-size:13px"><label style="cursor:pointer"><input type="checkbox" id="aBuyIn"> 융자금 칸에 <b>매수금액</b>을 넣었음 → 융자는 그 <span id="loanRateTxt"></span>%로 계산 <span class="info-btn" onclick="toggleInfo('buyInInfo')">i</span></label></div>
     <div class="info-box" id="buyInInfo">우리투자증권은 신용 매수 때 매수금액의 1%를 현금으로 내고 나머지 99%만 융자로 잡는다. 신용잔고의 「대출금액」을 몰라서 매수금액을 넣었으면 체크(담보비율은 화면과 같게 나오고 소요담보금은 수천 원 다를 수 있음). 「대출금액」을 그대로 넣었으면 체크 해제.</div>
@@ -242,9 +251,12 @@ const TX = (window.SF_TAX && SF_TAX.stockTx) ? SF_TAX.stockTx.kospi : 0.20;   //
 // ordRate: 현금(일반) 주식을 담보로 칠 때 인정 비율(%) / verified: 실제 화면 숫자로 대조했는지
 // KB(118): 원담보금 = 신용 주식 수량×현재가, 국내부담보 = 현금 주식 수량×현재가(100%), T+2 예수금 포함,
 //          담보비율 = 총담보 ÷ 융자 합계(이자 제외) 소수 버림, 소요담보금 = Σ 건별 floor(융자금×유지비율)
+// dep: 신용 매수 보증금률 일정 — from(이 날부터) · rate(보증금률 %) · cash(그중 현금 %) · src(출처). 비우면 오늘 날짜로 자동 선택
+const DEP_DEFAULT = [{ from: '', rate: 50, cash: 0, src: '기본값(미검증) — 증거금 40% 종목 = 보증금 50%' }];
 const BROKERS = {
   KB:     { n: 'KB증권',        ordRate: 100, fee: 0.0045, verified: true },   // fee: 118 추정자산 역산(매도비용 − 거래세 ≈ 평가의 0.0045%)
-  WOORI:  { n: '우리투자증권',  ordRate: 100, fee: 0.015, loanRate: 99 },   // (119) 담보 쪽은 화면과 원 단위 일치(융자원담보·부담보증권(현금 주식 100%)·예수금, 권리평가금 0). 신용 매수 때 1%는 현금으로 내서 융자 = 매수금액의 약 99% → 「융자금 칸에 매수금액」 체크면 ×99%(담보비율 일치, 소요담보금은 수천 원 차이 — 정확히 하려면 신용잔고 「대출금액」을 넣고 체크 해제)
+  WOORI:  { n: '우리투자증권',  ordRate: 100, fee: 0.015, loanRate: 99,
+            dep: [{ from: '', rate: 45, cash: 1, src: '우투 공지(대용 44 + 현금 1)' }, { from: '2026-12-01', rate: 50, cash: 1, src: '우투 공지 12월부터(대용 49 + 현금 1)' }] },   // (119) 담보 쪽은 화면과 원 단위 일치(융자원담보·부담보증권(현금 주식 100%)·예수금, 권리평가금 0). 신용 매수 때 1%는 현금으로 내서 융자 = 매수금액의 약 99% → 「융자금 칸에 매수금액」 체크면 ×99%(담보비율 일치, 소요담보금은 수천 원 차이 — 정확히 하려면 신용잔고 「대출금액」을 넣고 체크 해제)
   KIS:    { n: '한국투자증권',  ordRate: 100, fee: 0.015 },
   NH:     { n: 'NH투자증권',    ordRate: 100, fee: 0.015 },
   KIWOOM: { n: '키움증권',      ordRate: 100, fee: 0.015 },
@@ -252,9 +264,15 @@ const BROKERS = {
   SAMSUNG:{ n: '삼성증권',      ordRate: 100, fee: 0.015 },
   ETC:    { n: '기타',          ordRate: 100, fee: 0.015 },
 };
+function depAuto(br) {   // (139) 오늘 날짜에 맞는 보증금률 — 날짜가 지나면 자동으로 다음 값
+  const t = sfDate(), list = br.dep || DEP_DEFAULT;
+  let cur = list[0];
+  list.forEach(x => { if (!x.from || x.from <= t) cur = x; });
+  return cur;
+}
 const newLot = () => ({ q: '', loan: '', buy: '', d: '' });
 const newHold = () => ({ name: '', curr: '', qty: '', buy: '', lots: [] });
-const newAcc = (n) => ({ name: n || '내 계좌', broker: 'KB', maint: 140, buyRatio: 140, minNet: 1000000, cash: '', interest: '', extra: '', fee: '', holds: [newHold()] });
+const newAcc = (n) => ({ name: n || '내 계좌', broker: 'KB', maint: 140, buyRatio: 140, minNet: 1000000, depRate: '', depCash: '', subRate: 70, lockSub: true, cash: '', interest: '', extra: '', fee: '', holds: [newHold()] });
 
 let accs = [newAcc('KB 신용')];
 let cur = 0;
@@ -322,7 +340,21 @@ function calcAcc(a, priceFn) {
   const netRoom = net - minNet;
   const buyLim = buyRoom == null ? netRoom : Math.min(buyRoom, netRoom);
   const buyBy = buyRoom != null && buyRoom <= netRoom ? 'ratio' : 'net';
-  return { br, maint, buyR, minNet, needBuy, net, buyRoom, netRoom, buyLim, buyBy, canBuy: buyLim >= 0,
+  // (139) 신용으로 더 살 수 있는 금액 — ① 매수 뒤 담보비율 ≥ 매수 가능 비율 ② 보증금(대용+현금) 한도
+  const dA = depAuto(br);
+  const dep = a.depRate === '' || a.depRate == null ? dA.rate : toNum(a.depRate);
+  const depC = a.depCash === '' || a.depCash == null ? dA.cash : toNum(a.depCash);
+  const subR = a.subRate === '' || a.subRate == null ? 0 : toNum(a.subRate);
+  const bR = buyR / 100, cF = depC / 100;
+  const capRatio = loan > 0 ? Math.max(0, (total - loan * bR) / ((bR - 1) * (1 - cF))) : Infinity;
+  let crdBuyAmt = 0;
+  a.holds.forEach(h => h.lots.forEach(l => { crdBuyAmt += toNum(l.buy) || toNum(l.loan); }));
+  const subVal = ordVal * subR / 100;
+  const subLock = a.lockSub !== false ? crdBuyAmt * Math.max(0, dep - depC) / 100 : 0;
+  const subFree = Math.max(0, subVal - subLock);
+  const capDep = dep > 0 ? Math.min((subFree + cash) / (dep / 100), cF > 0 ? cash / cF : Infinity) : Infinity;
+  const canMore = buyLim >= 0 ? Math.max(0, Math.floor(Math.min(capRatio, capDep))) : 0;
+  return { br, maint, buyR, minNet, dep, depC, depSrc: (a.depRate === '' || a.depRate == null) ? dA.src : '직접 입력', subR, subVal, subLock, subFree, capRatio, capDep, canMore, needBuy, net, buyRoom, netRoom, buyLim, buyBy, canBuy: buyLim >= 0,
            dropBuy: stockColl > 0 && buyLim > 0 ? buyLim / stockColl * 100 : null, crdVal, ordVal, ordColl, cash, extra, sub, total, loan, need, ratio,
            ratioDisp: ratio == null ? null : Math.floor(ratio + 1e-9), short: Math.max(0, need - total), room,
            dropAll: stockColl > 0 ? room / stockColl * 100 : null, evalT, buy, pl: evalT - buy, interest, cost, est, per };
@@ -346,6 +378,10 @@ function renderAccFields() {
   $('aMaint').value = a.maint;
   $('aBuyR').value = a.buyRatio;
   $('aMinNet').value = a.minNet === '' ? '' : sfNum(toNum(a.minNet));
+  { const br0 = BROKERS[a.broker] || BROKERS.ETC, d0 = depAuto(br0);
+    $('aDep').value = a.depRate; $('aDep').placeholder = '자동 ' + d0.rate;
+    $('aDepCash').value = a.depCash; $('aDepCash').placeholder = '자동 ' + d0.cash;
+    $('aSub').value = a.subRate; $('aLock').checked = a.lockSub !== false; }
   $('aCash').value = a.cash === '' ? '' : sfNum(toNum(a.cash));
   $('aInt').value = a.interest === '' ? '' : sfNum(toNum(a.interest));
   $('aExtra').value = a.extra === '' ? '' : sfNum(toNum(a.extra));
@@ -456,6 +492,7 @@ function update() {
     }
   });
   $('kCash').textContent = kor(toNum(a.cash)); $('kInt').textContent = kor(toNum(a.interest)); $('kExtra').textContent = kor(toNum(a.extra)); $('kMinNet').textContent = kor(toNum(a.minNet));
+  { const d0 = depAuto(BROKERS[a.broker] || BROKERS.ETC); $('kDep').textContent = (a.depRate === '' || a.depRate == null) ? '자동: ' + d0.src : '직접 입력값 사용 (비우면 자동 ' + d0.rate + '%)'; }
   renderResult(a, r);
   renderAll2();
   save();
@@ -507,6 +544,10 @@ function renderResult(a, r) {
     cards.push(r.canBuy
       ? `<div class="rc"><div class="l">신규 매수 불가까지</div><div class="v">${sfKor(r.buyLim) || '0원'}</div><div class="d">${r.dropBuy != null ? '전 종목 −' + sfNum(r.dropBuy, 1) + '% 빠지면 매수 막힘' : ''} · ${why}(먼저 걸리는 쪽)</div></div>`
       : `<div class="rc"><div class="l">신규 신용 매수</div><div class="v dn">불가 · 부족 ${sfKor(-r.buyLim)}</div><div class="d">${why} — 현금을 이만큼 넣으면 매수 가능${r.short > 0 ? '' : ' · 반대매매 대상은 아님'}</div></div>`);
+  }
+  if (r.total > 0 && (r.loan > 0 || r.minNet > 0)) {
+    const lim = r.capRatio <= r.capDep ? '① 담보비율 ' + sfNum(r.buyR, '~2') + '% 유지' : '② 보증금 ' + sfNum(r.dep, '~2') + '%';
+    cards.push(`<div class="rc"><div class="l">신용으로 더 살 수 있는 금액 <span class="rule-tag no">추정</span></div><div class="v">${r.canMore > 0 ? sfKor(r.canMore) : '0원'}</div><div class="d">${!r.canBuy ? '지금 매수 불가 구간' : '먼저 걸리는 쪽: ' + lim}<br>① ${isFinite(r.capRatio) ? sfKor(Math.floor(r.capRatio)) || '0원' : '-'} · ② ${isFinite(r.capDep) ? sfKor(Math.floor(r.capDep)) || '0원' : '-'} (쓸 대용 ${sfKor(r.subFree) || '0원'}${r.subLock ? ', 묶임 ' + sfKor(r.subLock) : ''})<br>보증금률 ${sfNum(r.dep, '~2')}%(현금 ${sfNum(r.depC, '~2')}%) · ${esc(r.depSrc)}</div></div>`);
   }
   cards.push(`<div class="rc"><div class="l">추정자산</div><div class="v">${sfKor(r.est)}</div><div class="d">평가 ${sfKor(r.evalT)} + 예수금 − 융자 − 이자 ${r.interest ? sfKor(r.interest) : '0'} − 매도비용 ${sfKor(r.cost)}</div></div>`);
   $('resCards').innerHTML = cards.join('');
@@ -572,6 +613,7 @@ document.querySelectorAll('.acc-in').forEach(el => el.addEventListener(el.tagNam
   update();
 }));
 bindNumFmt(document.querySelector('.acc-grid').parentNode);
+$('aLock').addEventListener('change', () => { accs[cur].lockSub = $('aLock').checked; update(); });
 $('aBuyIn').addEventListener('change', () => { accs[cur].buyIn = $('aBuyIn').checked; update(); });
 $('btnDelAcc').onclick = () => {
   if (accs.length <= 1) { alert('계좌가 하나뿐이라 지울 수 없어요. 내용을 비우려면 저장 관리 창의 [↺ 화면 처음으로].'); return; }
@@ -585,7 +627,7 @@ const LS_KEY = 'sf_mr_state_v3';
 function mGetState() { return { v: 3, cur, autoPrice, accs: JSON.parse(JSON.stringify(accs)) }; }
 function fromV2(d) {   // 옛 화면(일반/신용 한 칸씩) → 계좌 1개
   return { v: 3, cur: 0, autoPrice: d.autoPrice !== false, accs: [{
-    name: '내 계좌', broker: 'ETC', maint: toNum(d.threshold) || 140, buyRatio: 140, minNet: 1000000, cash: d.cash || '', interest: '', extra: '', fee: '',
+    name: '내 계좌', broker: 'ETC', maint: toNum(d.threshold) || 140, buyRatio: 140, minNet: 1000000, depRate: '', depCash: '', subRate: 70, lockSub: true, cash: d.cash || '', interest: '', extra: '', fee: '',
     holds: (d.stocks || []).map(s => ({ name: s.name || '', curr: s.ordCurr || s.crdCurr || '', qty: s.ordQty || '', buy: s.ordBuy || '',
       lots: (s.crdQty || s.crdBuy) ? [{ q: s.crdQty || '', loan: s.crdBuy || '', buy: '', d: '' }] : [] })) }] };
 }
