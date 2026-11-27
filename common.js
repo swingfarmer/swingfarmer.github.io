@@ -1,5 +1,5 @@
 /* ============================================
-   스윙파머 공통 스크립트 (common.js) v7 (115: v18 — 방문 날짜 기록·🧭 지도 버튼 / 121: v19 — 내 메뉴 트리 /sf-tree.js 읽기 / 129: v23·v24 — sf-tree ?v=13·14 / 132: v25 — sf-tree ?v=15 넓이 끌기 / 140: v26 — 관리자 4번째 UID(외부용 계정)·sf-tree ?v=16)
+   스윙파머 공통 스크립트 (common.js) v7 (115: v18 — 방문 날짜 기록·🧭 지도 버튼 / 121: v19 — 내 메뉴 트리 /sf-tree.js 읽기 / 129: v23·v24 — sf-tree ?v=13·14 / 132: v25 — sf-tree ?v=15 넓이 끌기 / 140: v26 — 관리자 4번째 UID(외부용 계정)·sf-tree ?v=16 / 141: v27 — 차트 선 켜고 끄기(SVG+.lg 범례 자동, Chart.js 범례 커서))
    - 인증 게이트 (Firebase Auth, 관리자 전용)
    - 상단 고정 헤더 (메인 링크 + 글자크기 + 다크모드)
    - 다크모드 (localStorage 저장)
@@ -888,4 +888,100 @@ window.sfApiFetch = function(url, opts) {
     init();
     tpDelayedRestore();
   }
+})();
+
+/* ── (141) 차트 선 켜고 끄기 — 모든 페이지 공통 ──────────────────────────
+   1) 손으로 그린 SVG 차트: <svg> 바로 다음에 범례 <div class="lg"> 가 있으면 자동.
+      범례 칸 <i style="background:색"> 의 색과 같은 stroke/fill 을 가진 선·점·글자를 묶어서 누르면 숨김/보임.
+      색이 겹치거나 따로 묶고 싶으면 svg 안 요소와 범례 칸에 같은 data-series="이름" 을 달면 그걸 씀.
+      묶을 게 없는 칸(설명 글 등)은 그대로 둠. 하나라도 끄면 범례 끝에 「모두 보이기」 생김.
+   2) Chart.js 차트: 범례 누르면 끄고 켜기는 Chart.js 기본 기능 — 여기선 손가락 커서만 붙임.
+   새로 그리는 차트도 위 규칙(svg + 바로 다음 .lg)만 지키면 따로 코드 필요 없음. 나중에 그린 차트는 자동으로 다시 훑음. */
+(function () {
+  var SKIP = /(^|\s)(g|t|h)(\s|$)/;                    // 눈금선·축 글자·기준선 class 는 안 건드림
+  var cv = null;
+  function norm(c) {
+    if (!c || c === 'none' || c === 'transparent') return '';
+    try {
+      cv = cv || document.createElement('canvas').getContext('2d');
+      cv.fillStyle = '#000'; cv.fillStyle = c; var a = cv.fillStyle;
+      cv.fillStyle = '#fff'; cv.fillStyle = c;
+      return a === cv.fillStyle ? a.toLowerCase() : '';   // 못 읽는 색이면 빈 값
+    } catch (e) { return ''; }
+  }
+  function css() {
+    if (document.getElementById('sf-lg-css')) return;
+    var s = document.createElement('style'); s.id = 'sf-lg-css';
+    s.textContent = '.sf-lg-on{cursor:pointer;user-select:none;-webkit-user-select:none;border-radius:4px;padding:1px 3px;margin:-1px -3px;transition:opacity .15s}'
+      + '.sf-lg-on:hover{background:rgba(148,163,184,.18)}'
+      + '.sf-lg-off{opacity:.35;text-decoration:line-through}'
+      + '.sf-lg-all{cursor:pointer;font-size:11px;color:#2563eb;text-decoration:underline;margin-left:4px}'
+      + '.sf-lg-tip{font-size:11px;color:#94a3b8;margin-left:2px}'
+      + 'body.sf-dark .sf-lg-all{color:#93c5fd}body.sf-dark .sf-lg-tip{color:#71717a}';
+    (document.head || document.documentElement).appendChild(s);
+  }
+  function bind(svg, lg) {
+    if (svg.__sfLg) return; svg.__sfLg = 1;
+    var els = Array.prototype.slice.call(svg.querySelectorAll('path,polyline,polygon,line,circle,rect,text,ellipse,g[data-series]'))
+      .filter(function (el) { return !SKIP.test(el.getAttribute('class') || ''); });
+    var items = [];
+    Array.prototype.forEach.call(lg.children, function (sp) {
+      var key = sp.getAttribute('data-series'), group;
+      if (key) {
+        group = els.filter(function (el) { return el.getAttribute('data-series') === key; });
+      } else {
+        var i = sp.querySelector('i');
+        var col = i && norm(i.style.background || i.style.backgroundColor);
+        if (!col) return;
+        group = els.filter(function (el) {
+          if (el.hasAttribute('data-series')) return false;
+          return norm(el.getAttribute('stroke')) === col || norm(el.getAttribute('fill')) === col;
+        });
+      }
+      if (!group.length) return;
+      sp.classList.add('sf-lg-on'); sp.title = '눌러서 이 선 끄기·켜기';
+      var it = { sp: sp, group: group, off: false };
+      sp.addEventListener('click', function () { set(it, !it.off); upd(); });
+      items.push(it);
+    });
+    if (!items.length) return;
+    css();
+    var all = document.createElement('span'); all.className = 'sf-lg-all'; all.textContent = '모두 보이기'; all.style.display = 'none';
+    all.addEventListener('click', function () { items.forEach(function (it) { set(it, false); }); upd(); });
+    var tip = document.createElement('span'); tip.className = 'sf-lg-tip'; tip.textContent = '· 범례를 누르면 선을 끄고 켬';
+    lg.appendChild(tip); lg.appendChild(all);
+    function set(it, off) {
+      it.off = off; it.sp.classList.toggle('sf-lg-off', off);
+      it.group.forEach(function (el) { el.style.display = off ? 'none' : ''; });
+    }
+    function upd() { var any = items.some(function (it) { return it.off; }); all.style.display = any ? '' : 'none'; tip.style.display = any ? 'none' : ''; }
+  }
+  function scan(root) {
+    try {
+      Array.prototype.forEach.call((root || document).querySelectorAll('svg'), function (svg) {
+        if (svg.__sfLg) return;
+        var lg = svg.nextElementSibling;
+        if (lg && (lg.classList.contains('lg') || lg.hasAttribute('data-sf-legend'))) bind(svg, lg);
+      });
+    } catch (e) {}
+  }
+  function chartjs() {
+    var C = window.Chart;
+    if (!C || C.__sfLg || !C.defaults || !C.defaults.plugins || !C.defaults.plugins.legend) return;
+    C.__sfLg = 1;
+    var L = C.defaults.plugins.legend, oh = L.onHover, ol = L.onLeave;
+    L.onHover = function (e) { try { e.native.target.style.cursor = 'pointer'; } catch (x) {} if (oh) return oh.apply(this, arguments); };
+    L.onLeave = function (e) { try { e.native.target.style.cursor = ''; } catch (x) {} if (ol) return ol.apply(this, arguments); };
+  }
+  window.sfChartToggle = function (root) { scan(root); chartjs(); };   // 직접 다시 훑고 싶을 때
+  function start() {
+    scan(); chartjs();
+    var t = null;
+    try {
+      new MutationObserver(function () { clearTimeout(t); t = setTimeout(function () { scan(); chartjs(); }, 300); })
+        .observe(document.body, { childList: true, subtree: true });
+    } catch (e) {}
+  }
+  chartjs();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
