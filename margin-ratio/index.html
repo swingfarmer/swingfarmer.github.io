@@ -542,12 +542,12 @@ function renderResult(a, r) {
   if ((r.loan > 0 || r.minNet > 0) && r.total > 0) {
     const why = r.buyBy === 'ratio' ? '담보비율 ' + sfNum(r.buyR, '~2') + '% 기준' : '순자산 ' + sfKor(r.minNet) + ' 기준';
     cards.push(r.canBuy
-      ? `<div class="rc"><div class="l">신규 매수 불가까지</div><div class="v">${sfKor(r.buyLim) || '0원'}</div><div class="d">${r.dropBuy != null ? '전 종목 −' + sfNum(r.dropBuy, 1) + '% 빠지면 매수 막힘' : ''} · ${why}(먼저 걸리는 쪽)</div></div>`
-      : `<div class="rc"><div class="l">신규 신용 매수</div><div class="v dn">불가 · 부족 ${sfKor(-r.buyLim)}</div><div class="d">${why} — 현금을 이만큼 넣으면 매수 가능${r.short > 0 ? '' : ' · 반대매매 대상은 아님'}</div></div>`);
+      ? `<div class="rc"><div class="l">신규 매수 막히기까지</div><div class="v">${sfKor(r.buyLim) || '0원'}</div><div class="d">${r.dropBuy != null ? '전 종목 −' + sfNum(r.dropBuy, 1) + '% 빠지면 매수 막힘' : ''} · ${why}(먼저 걸리는 쪽)</div></div>`
+      : `<div class="rc"><div class="l">신규 매수 풀리려면</div><div class="v dn">담보 ${sfKor(-r.buyLim)} 더 필요</div><div class="d">${why} — 신용·현금 주식·예수금을 합친 총담보가 이만큼 늘면(주가 상승·현금 입금) 매수 가능${r.short > 0 ? '' : ' · 반대매매 대상은 아님'}</div></div>`);
   }
-  if (r.total > 0 && (r.loan > 0 || r.minNet > 0)) {
+  if (r.total > 0 && (r.loan > 0 || r.minNet > 0) && r.canBuy) {   // 매수 불가 구간이면 금액 카드는 안 보임(풀리려면 카드만)
     const lim = r.capRatio <= r.capDep ? '① 담보비율 ' + sfNum(r.buyR, '~2') + '% 유지' : '② 보증금 ' + sfNum(r.dep, '~2') + '%';
-    cards.push(`<div class="rc"><div class="l">신용으로 더 살 수 있는 금액 <span class="rule-tag no">추정</span></div><div class="v">${r.canMore > 0 ? sfKor(r.canMore) : '0원'}</div><div class="d">${!r.canBuy ? '지금 매수 불가 구간' : '먼저 걸리는 쪽: ' + lim}<br>① ${isFinite(r.capRatio) ? sfKor(Math.floor(r.capRatio)) || '0원' : '-'} · ② ${isFinite(r.capDep) ? sfKor(Math.floor(r.capDep)) || '0원' : '-'} (쓸 대용 ${sfKor(r.subFree) || '0원'}${r.subLock ? ', 묶임 ' + sfKor(r.subLock) : ''})<br>보증금률 ${sfNum(r.dep, '~2')}%(현금 ${sfNum(r.depC, '~2')}%) · ${esc(r.depSrc)}</div></div>`);
+    cards.push(`<div class="rc"><div class="l">신용으로 더 살 수 있는 금액 <span class="rule-tag no">추정</span></div><div class="v">${r.canMore > 0 ? sfKor(r.canMore) : '0원'}</div><div class="d">먼저 걸리는 쪽: ${lim}<br>① ${isFinite(r.capRatio) ? sfKor(Math.floor(r.capRatio)) || '0원' : '-'} · ② ${isFinite(r.capDep) ? sfKor(Math.floor(r.capDep)) || '0원' : '-'} (쓸 대용 ${sfKor(r.subFree) || '0원'}${r.subLock ? ', 묶임 ' + sfKor(r.subLock) : ''})<br>보증금률 ${sfNum(r.dep, '~2')}%(현금 ${sfNum(r.depC, '~2')}%) · ${esc(r.depSrc)}</div></div>`);
   }
   cards.push(`<div class="rc"><div class="l">추정자산</div><div class="v">${sfKor(r.est)}</div><div class="d">평가 ${sfKor(r.evalT)} + 예수금 − 융자 − 이자 ${r.interest ? sfKor(r.interest) : '0'} − 매도비용 ${sfKor(r.cost)}</div></div>`);
   $('resCards').innerHTML = cards.join('');
