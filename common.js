@@ -1,5 +1,5 @@
 /* ============================================
-   스윙파머 공통 스크립트 (common.js) v7 (115: v18 — 방문 날짜 기록·🧭 지도 버튼 / 121: v19 — 내 메뉴 트리 /sf-tree.js 읽기 / 129: v23·v24 — sf-tree ?v=13·14 / 132: v25 — sf-tree ?v=15 넓이 끌기)
+   스윙파머 공통 스크립트 (common.js) v7 (115: v18 — 방문 날짜 기록·🧭 지도 버튼 / 121: v19 — 내 메뉴 트리 /sf-tree.js 읽기 / 129: v23·v24 — sf-tree ?v=13·14 / 132: v25 — sf-tree ?v=15 넓이 끌기 / 140: v26 — 관리자 4번째 UID(외부용 계정)·sf-tree ?v=16)
    - 인증 게이트 (Firebase Auth, 관리자 전용)
    - 상단 고정 헤더 (메인 링크 + 글자크기 + 다크모드)
    - 다크모드 (localStorage 저장)
@@ -12,7 +12,7 @@
    auth-guard.js · sf-slots.js · 이 파일 · VM api_server.py 가 모두 이 줄을 읽음.
    UID를 바꾸거나 추가하면: 이 줄 수정 → 전 페이지 common.js ?v= 올림 → VM git pull (api_server는 다음 요청부터 자동 반영).
    첫 번째 UID = 저장 슬롯(Firestore calc_data/{UID}) 위치. 순서 바꾸면 기존 저장 슬롯이 안 보임. */
-window.SF_ADMIN_UIDS = Object.freeze(['1JrHgD2bpTRjrS2jw7MbpHciBph1','Ydd8v6LCN2TPjkqKD4DejLSWwaL2','NvfkyqGneQMRIsOoQm6gD8udHqk2']);   // (107) 3번째 = Claude 작업용 계정 aichatetc@gmail.com. 맨 앞 UID는 저장(calc_data) 문서 주인이라 순서 바꾸지 말 것
+window.SF_ADMIN_UIDS = Object.freeze(['1JrHgD2bpTRjrS2jw7MbpHciBph1','Ydd8v6LCN2TPjkqKD4DejLSWwaL2','NvfkyqGneQMRIsOoQm6gD8udHqk2','DwZTLdBWiUVNXaifJxW6yg371rI2']);   // (107) 3번째 = Claude 작업용 계정 aichatetc@gmail.com. (140) 4번째 = 사용자 외부용 swingfarmer2026@gmail.com(읽기·쓰기 다 됨, 내 메뉴 트리는 owner 칸 공유). 맨 앞 UID는 저장(calc_data) 문서 주인이라 순서 바꾸지 말 것
 
 /* ── 인증 게이트 (눈가림) ── */
 /* ── Firebase 초기화 (공용) ── */
@@ -768,7 +768,7 @@ window.sfApiFetch = function(url, opts) {
     buildHeader();
     buildBreadcrumb();
     // (121) 내 메뉴 트리 — 왼쪽 세로 탭. 관리자 로그인일 때만 보임. 내용·저장 방식은 /sf-tree.js 맨 위 주석
-    try { var stS = document.createElement('script'); stS.src = '/sf-tree.js?v=15'; document.body.appendChild(stS); } catch (e) {}
+    try { var stS = document.createElement('script'); stS.src = '/sf-tree.js?v=16'; document.body.appendChild(stS); } catch (e) {}
     try { taxFileCheck(); } catch (e) {}
 
     // 저장된 설정 불러오기

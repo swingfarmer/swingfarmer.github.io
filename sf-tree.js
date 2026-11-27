@@ -1,5 +1,5 @@
 /* ============================================================
-   sf-tree.js v5.9 (132) — 내 메뉴 트리 (모든 페이지 왼쪽)
+   sf-tree.js v5.10 (140: 외부용 계정도 owner 칸 공유) — 내 메뉴 트리 (모든 페이지 왼쪽)
    common.js가 읽는다(페이지에 따로 넣지 않음). 관리자 로그인일 때만 탭이 보인다.
 
    ■ 모양
@@ -51,7 +51,7 @@
   var uid = null;             // 저장 칸 이름 ('owner' 또는 uid)
   // (121) 사용자 본인 아이디 = 'owner' 한 칸 공유. 본인 아이디가 늘면 여기에 uid를 더하면 같이 씀(따로 쓰고 싶으면 안 넣으면 됨).
   //       여기 없는 관리자 아이디(Claude 작업용·다른 사람)는 자기 uid 칸을 따로 씀
-  var OWNER_UIDS = ['1JrHgD2bpTRjrS2jw7MbpHciBph1', 'Ydd8v6LCN2TPjkqKD4DejLSWwaL2'];
+  var OWNER_UIDS = ['1JrHgD2bpTRjrS2jw7MbpHciBph1', 'Ydd8v6LCN2TPjkqKD4DejLSWwaL2', 'DwZTLdBWiUVNXaifJxW6yg371rI2'];   // (140) 3번째 = 외부용 swingfarmer2026
   var LS_HIDE = 'sf-tree-hide';   // 헤더 📂 버튼으로 내 메뉴 통째로 숨김(이 브라우저만)
   var fut = [];               // 「↷ 앞으로」용 — 되돌린 모습들(끝이 가장 최근에 되돌린 것)
   var tree = [];              // [{id, t:'f'|'p', name, href?, kids?}]
