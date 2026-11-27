@@ -240,7 +240,7 @@ function render(d) {
   <div style="font-size:12.5px;line-height:1.6;color:var(--sf-text-dim);margin-bottom:10px;">
     VM이 매일 04:40에 저장 문서(계산기 저장·내 메뉴 트리·가이드 수정분)를 받아 VM 안에만 보관함(최근 30일 + 매달 1일치).<br>
     처음 한 번, 또는 텔레그램에 「백업 토큰 끊김」 알림이 왔을 때만: 아래 버튼 → VM 터미널에 붙여 넣고 엔터.<br>
-    토큰은 화면에 안 보이고 클립보드로만 복사됨. 채팅·메모에 붙이지 말 것(본인 계정 열쇠).
+    토큰은 화면에 안 보이고 클립보드로만 복사됨(명령 앞 공백 = 터미널 기록에 안 남김). 채팅·메모에 붙이지 말 것(본인 계정 열쇠).
   </div>
   <button id="fbBackupBtn" style="padding:8px 14px;border:1px solid var(--sf-border);border-radius:6px;background:var(--sf-brand);color:#fff;font-weight:600;font-size:13px;cursor:pointer;font-family:var(--sf-font);">VM 등록 명령 복사</button>
   <span id="fbBackupMsg" style="margin-left:10px;font-size:12.5px;"></span>
@@ -259,7 +259,7 @@ function render(d) {
       var msg = document.getElementById('fbBackupMsg');
       var tok = u.refreshToken;
       if (!tok) { msg.textContent = '⚠ 토큰을 못 읽음 — 새로고침 뒤 다시'; return; }
-      var cmd = "printf '%s' '" + tok + "' > ~/.fb_backup_token && chmod 600 ~/.fb_backup_token && echo 토큰 저장됨";
+      var cmd = " printf '%s' '" + tok + "' > ~/.fb_backup_token && chmod 600 ~/.fb_backup_token && echo 토큰 저장됨";
       navigator.clipboard.writeText(cmd).then(function(){
         msg.textContent = '✅ 복사됨 — VM 터미널에 붙여 넣고 엔터';
       }, function(){ msg.textContent = '⚠ 복사 실패 — 브라우저 클립보드 허용 확인'; });
