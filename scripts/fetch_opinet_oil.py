@@ -9,7 +9,8 @@
 - 오피넷 약관: 승낙 없는 복제·유통·제3자 이용 금지 → 레포(공개)에 JSON으로 두지 않고
   Oracle에만 저장, 사이트는 로그인 API(/api/oil-intl, 관리자)로만 읽는다. (129) 올라오자마자 받으려고 --watch가
   15분마다 보지만, 그날 값이 들어오면 오피넷을 더 부르지 않는다(1회 = 2요청).
-- 갱신: 화~토, 하루 늦게(T+1). 싱가포르 휴장일은 값이 없음('-')
+- 갱신: 화~토, 하루 늦게(T+1). 싱가포르 휴장일은 값이 없음('-') — (141) --watch는 SG_HOLIDAYS 날짜를 건너뜀
+- (141) 게시 시각: 11/25·26 08:46~09:00 사이, 11/27·28 08:49 → --watch 1분 감시 08:45~09:10
 
 사용법 (레포 루트에서, . ~/.env_secrets 먼저)
   python3 scripts/fetch_opinet_oil.py --probe              # 최근 며칠 읽어서 화면에만 출력 (저장 안 함)
@@ -261,10 +262,23 @@ def prev_weekday(today):
     return d
 
 
+# (141) 싱가포르 공휴일(평일만) — Platts 싱가포르가 쉬어서 항공유(MOPS 등유)·두바이 값이 안 나옴('-').
+#   그날 값을 기다리는 --watch는 오피넷을 안 부르고 조용히 끝(브렌트·WTI는 21:20 정기 실행이 그대로 받음).
+#   출처: 싱가포르 인력부(MOM) 공휴일 목록 — 일요일이면 다음 월요일. 매년 12월 다음 해 것 추가(정기 갱신 opinet-sg-holidays).
+#   설 연휴는 Platts가 이틀 쉬는 해가 있음(2026: 2/17·18) — 그해 공지 보고 하루 더 넣기.
+SG_HOLIDAYS = {
+    '2026-12-25',                                   # 크리스마스(금)
+    '2027-01-01',                                   # 새해(금)
+    '2027-02-08',                                   # 설(2/6 토·2/7 일 → 2/8 월 대체) — Platts 공지로 2/9 쉬는지 확인
+}
+
+
 def watch():
     """(129) 전 평일 값이 올라왔는지 확인 — 이미 DB에 있으면 조용히 끝(오피넷 호출 없음)."""
     now = datetime.now(timezone(timedelta(hours=9)))
     target = prev_weekday(now.date())
+    if target.isoformat() in SG_HOLIDAYS:
+        return                                      # (141) 싱가포르 공휴일 — 값이 안 나오는 날
     conn = db_connect(); cur = conn.cursor()
     cur.execute("SELECT kero, dubai FROM oil_intl_prices WHERE price_date = :d", {'d': target})
     had = cur.fetchone()
