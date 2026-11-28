@@ -12,11 +12,17 @@ mem_watch.py — VM 메모리(1GB) 범인 찾기용 매분 기록 (125)
 보는 법:  tail -40 ~/logs/mem_watch.log
 """
 import os, json, time, subprocess
+import re as _re
 
 STATE = os.path.expanduser("~/sf_state/mem_watch.json")
 LOG = os.path.expanduser("~/logs/mem_watch.log")
 SWAP_STEP_MB = 5
 LOW_AVAIL_MB = 120
+
+
+def _mask(t):
+    t = _re.sub(r'(https?://[^:/\s@]+:)[^@\s]+@', r'\1***@', t)
+    return _re.sub(r'(ghp_|github_pat_|gho_|ghs_)[A-Za-z0-9_]+', r'\1***', t)
 
 
 def read_kv(path, sep=None):
@@ -58,6 +64,8 @@ def main():
         try:
             top = subprocess.run(["ps", "-eo", "rss,etime,args", "--sort=-rss"],
                                  capture_output=True, text=True, timeout=10).stdout.splitlines()[1:7]
+            # (141) 명령줄에 든 비밀값 가림 — git 원격 주소의 토큰(https://이름:토큰@)·ghp_/github_pat_ 토큰
+            top = [_mask(t) for t in top]
         except Exception as e:
             top = [f"(ps 실패: {e})"]
         with open(LOG, "a") as f:
