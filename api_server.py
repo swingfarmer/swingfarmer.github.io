@@ -380,6 +380,7 @@ def re_stats():
 
 # ══ categories ══
 @app.route('/api/categories', methods=['GET'])
+@require_admin_read  # (141) 로그인 없이 열려 있던 옛 게시판 읽기 — 관리자만
 def list_categories():
     conn = get_conn(); cur = conn.cursor()
     cur.execute("SELECT id, name, sort_order FROM categories ORDER BY sort_order, id")
@@ -428,6 +429,7 @@ def delete_category(cat_id):
 
 # ══ posts ══
 @app.route('/api/posts', methods=['GET'])
+@require_admin_read  # (141) 로그인 없이 열려 있던 옛 게시판 읽기 — 관리자만
 def list_posts():
     page = int(request.args.get('page', 1))
     per = int(request.args.get('per_page', 20))
@@ -464,6 +466,7 @@ def list_posts():
     return jsonify({'total': total, 'page': page, 'per_page': per, 'pages': (total+per-1)//per, 'data': posts})
 
 @app.route('/api/posts/<int:post_id>', methods=['GET'])
+@require_admin_read  # (141) 로그인 없이 열려 있던 옛 게시판 읽기 — 관리자만
 def get_post(post_id):
     conn = get_conn(); cur = conn.cursor()
     cur.execute("UPDATE posts SET views=NVL(views,0)+1 WHERE id=:id", {'id': post_id})
@@ -534,6 +537,7 @@ def delete_post(post_id):
 
 # ══ notes (투자메모·일지) ══
 @app.route('/api/note-categories', methods=['GET'])
+@require_admin_read  # (141) 로그인 없이 열려 있던 옛 게시판 읽기 — 관리자만
 def list_note_categories():
     conn = get_conn(); cur = conn.cursor()
     cur.execute("SELECT id, name, sort_order FROM note_categories ORDER BY sort_order, id")
@@ -864,6 +868,7 @@ def delete_file(file_id):
     return jsonify({'ok': True})
 
 @app.route('/api/files', methods=['GET'])
+@require_admin_read  # (141) 로그인 없이 열려 있던 옛 게시판 읽기 — 관리자만
 def list_files():
     conn = get_conn(); cur = conn.cursor()
     cur.execute("""SELECT id, original_name, stored_path, file_size, mime_type, created_at
@@ -1091,8 +1096,9 @@ def prices_daily_summary():
 # ══ user settings (키-값 저장) ══
 
 @app.route('/api/settings/<key>')
+@require_admin_read  # (141) 로그인 없이 열려 있던 옛 게시판 읽기 — 관리자만
 def get_setting(key):
-    """설정값 조회 (인증 불필요)."""
+    """설정값 조회 — (141) 관리자만 (예전엔 인증 불필요)."""
     conn = get_conn(); cur = conn.cursor()
     try:
         cur.execute("SELECT setting_value FROM user_settings WHERE setting_key = :k", {'k': key})
