@@ -105,11 +105,15 @@ def get_effective_max_stale(cycle, max_stale_override, now):
     - daily:   매일 업데이트 → 항상 당일 필수(1)
     - weekly/monthly: 고정값 사용 (max_stale_override 그대로)
     """
+    dow = now.weekday()  # 0=월 ~ 6=일
+
     if max_stale_override > 0:
         # weekly, monthly 등 고정값이 있는 항목
+        # (141) 평일·화~토 항목은 고정값이 요일 기준보다 작으면 요일 기준을 씀 — 관심 종목 시세(1일)가
+        #   토요일 밤 「1일 경과」로 경고하던 것(금 15:47 → 토 21:30). 4·5일 항목은 그대로
+        if cycle in ("weekday", "tue_sat"):
+            return max(max_stale_override, get_effective_max_stale(cycle, 0, now))
         return max_stale_override
-
-    dow = now.weekday()  # 0=월 ~ 6=일
 
     if cycle == "weekday":
         if dow <= 4:    # 월~금: 오늘 업데이트 안 됐으면 알람
